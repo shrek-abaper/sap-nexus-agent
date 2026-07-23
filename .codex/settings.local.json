@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"sap-nexus-agent/.codex/skills/comet/scripts/comet-hook-guard.mjs\" --project-root \"sap-nexus-agent\""
+            "command": "node \"./.codex/skills/comet/scripts/comet-hook-guard.mjs\" --project-root \".\""
           }
         ]
       }
