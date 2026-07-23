@@ -1,0 +1,14 @@
+{
+  "change": "sap-nexus-agent-llm-intent-adapter",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "fd7d70ecf521a8f6f199d63878a92073008134672270726784573b12beefbe94",
+  "files": [
+    { "path": "openspec/changes/sap-nexus-agent-llm-intent-adapter/proposal.md", "sha256": "74b8264959b6d608f50d134732c7b81b1eeecee8da811ad23b37a649e23f40a3" },
+    { "path": "openspec/changes/sap-nexus-agent-llm-intent-adapter/design.md", "sha256": "cd9a9d2ce998036055fe64f07ac79feb559a91b3eafea67fdff37797b9a2984e" },
+    { "path": "openspec/changes/sap-nexus-agent-llm-intent-adapter/tasks.md", "sha256": "ab41eba95c349900261d675bd8515d742a1d3bdd087c55052eba7b48e4802373" },
+    { "path": "openspec/changes/sap-nexus-agent-llm-intent-adapter/specs/agent-callplan-evidence/spec.md", "sha256": "99febb711f2c717b11240fe9c551d306c34708dddeba331ef13296a3ef03abd7" }
+  ]
+}

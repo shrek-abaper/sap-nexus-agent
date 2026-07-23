@@ -1,0 +1,14 @@
+{
+  "change": "flexible-intent-recognition",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "78ff8149e0401a92c73d1c2cbfc0e5edeabde89dc6007216a5b9ea3786df38d3",
+  "files": [
+    { "path": "openspec/changes/flexible-intent-recognition/proposal.md", "sha256": "c9adbebfe315d24dbb9eb84163ec24fd34c2377c9186b80fe919720adfdbcdba" },
+    { "path": "openspec/changes/flexible-intent-recognition/design.md", "sha256": "c749483cc88548a16d92cb8c9c44e108b18fe01599062f0d16e9f9e7c398316b" },
+    { "path": "openspec/changes/flexible-intent-recognition/tasks.md", "sha256": "d876cde55ccd734176c8e0ab7fa6facfd88df29a49c7011e5aaf886f2b80294b" },
+    { "path": "openspec/changes/flexible-intent-recognition/specs/capability-registry-gateway/spec.md", "sha256": "53f62b915ebd97ab80d75f2f487de278d95decd259ca7c5b9a1a7257063d1134" }
+  ]
+}

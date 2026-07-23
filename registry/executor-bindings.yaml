@@ -1,0 +1,55 @@
+version: 1
+bindings:
+  - bindingId: sap.mm.inventory.md04-stock-req-list
+    type: JCO_RFC
+    rfcName: BAPI_MATERIAL_STOCK_REQ_LIST
+    allowedImports:
+      - MATERIAL_LONG
+      - MATERIAL
+      - PLANT
+      - MRP_AREA
+      - UNIT
+    allowedOutputs:
+      - MRP_IND_LINES
+      - RETURN
+    constraints:
+      sideEffect: none
+      timeoutMs: 30000
+  - bindingId: sap.mm.purchaseorder.list-odata
+    type: ODATA
+    serviceRef: API_PURCHASEORDER_PROCESS_SRV
+    entitySet: A_PurchaseOrder
+    method: GET
+    filterMapping:
+      poNumber: PurchaseOrder
+      vendor: Supplier
+      plant: Plant
+      material: Material
+    topLimit: 50
+    selectFields:
+      - PurchaseOrder
+      - Supplier
+      - Plant
+      - Material
+      - OrderQuantity
+      - PurchaseOrderQuantityUnit
+    constraints:
+      sideEffect: none
+      timeoutMs: 30000
+  - bindingId: sap.mm.pr.create-draft
+    type: JCO_RFC
+    rfcName: BAPI_PR_CREATE
+    allowedImports:
+      - PRITEM
+      - PRITEMEXP
+      - PRHEADER
+      - PRHEADEREXP
+      - RETURN
+    allowedOutputs:
+      - NUMBER
+      - PRITEMEXP
+      - PRHEADEREXP
+      - RETURN
+    constraints:
+      sideEffect: sap_write
+      timeoutMs: 30000

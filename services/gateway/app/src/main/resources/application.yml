@@ -1,0 +1,12 @@
+server:
+  port: 8080
+sapnexus:
+  registry:
+    path: ../registry/capabilities.yaml
+    bindings-path: ../registry/executor-bindings.yaml
+  trace:
+    path: ../runtime/gateway-jco/traces.jsonl
+sap:
+  gateway:
+    odata:
+      proxy-url: http://localhost:8081

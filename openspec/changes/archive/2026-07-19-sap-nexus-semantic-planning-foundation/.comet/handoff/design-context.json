@@ -1,0 +1,15 @@
+{
+  "change": "sap-nexus-semantic-planning-foundation",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "ed65326858b325567d674ea6c8b177d96a7145be11acdfd1885802cc08c54a32",
+  "files": [
+    { "path": "openspec/changes/sap-nexus-semantic-planning-foundation/proposal.md", "sha256": "b32084b6bf770755bcd1df409790a96406bf9f1ea0fcaf69379269afdd2def7c" },
+    { "path": "openspec/changes/sap-nexus-semantic-planning-foundation/design.md", "sha256": "aee1d26a7957b5f72a9397dbb9367f4f34b6566e7be0879708ae38c1b118122b" },
+    { "path": "openspec/changes/sap-nexus-semantic-planning-foundation/tasks.md", "sha256": "8c85ef503718b39544b585a23240979bb85262173218586b9c0467ca016bdd54" },
+    { "path": "openspec/changes/sap-nexus-semantic-planning-foundation/specs/registry-ontology-contract/spec.md", "sha256": "188986f3b3fc532deb599876b7678b80516f28e526d5d6d16dbe8438dee81a2e" },
+    { "path": "openspec/changes/sap-nexus-semantic-planning-foundation/specs/semantic-planning-foundation/spec.md", "sha256": "ba2b5c8a4bb3bdce1e2f82772d342fae60881f2c5c5b124403d34b36b2cd85f4" }
+  ]
+}

@@ -1,0 +1,14 @@
+goalSpecVersion: 1
+goalId: goal.material-supply.fixture-001
+goalType: sapnexus:MaterialSupplySnapshot
+executionMode: READ_ONLY
+desiredFactTypes:
+  - sapnexus:InventoryAvailabilityFact
+  - sapnexus:PurchaseOrderSupplyFact
+constraints:
+  - name: material
+    semanticType: sapnexus:MaterialNumber
+    value: DEMOA4B
+  - name: plant
+    semanticType: sapnexus:Plant
+    value: "5300"

@@ -1,0 +1,14 @@
+{
+  "change": "llm-grounded-narration",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "0668ebf25cae8664c5067781a722fd2a4184c570293f0eb207e27113af27532e",
+  "files": [
+    { "path": "openspec/changes/llm-grounded-narration/proposal.md", "sha256": "db67b4671554064ff6a5dd035f1fab34eb4eb2874693e9f48b8bd05da1c0bfaf" },
+    { "path": "openspec/changes/llm-grounded-narration/design.md", "sha256": "9e7d416c374d3704fb7929a8f343751f48d41e9fdc0ce840322520efb5d71639" },
+    { "path": "openspec/changes/llm-grounded-narration/tasks.md", "sha256": "fe222e22079aafa3019654acb2ebc5afbac7c16f7e9f13b641ac02a18e24a4d2" },
+    { "path": "openspec/changes/llm-grounded-narration/specs/agent-callplan-evidence/spec.md", "sha256": "30ab4558e0e9c69b568bb3e9d08c8f9a3cb7afbeb552db4b8cf8bc1ef663f898" }
+  ]
+}

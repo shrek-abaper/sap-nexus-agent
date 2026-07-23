@@ -1,0 +1,19 @@
+apply plugin: 'org.springframework.boot'
+
+dependencies {
+    implementation project(':core')
+    implementation project(':jco')
+    implementation project(':odata')
+
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.yaml:snakeyaml:2.2'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+tasks.named('bootRun') {
+    if (System.getenv('SAP_JCO_LIB_PATH')) {
+        jvmArgs "-Djava.library.path=${System.getenv('SAP_JCO_LIB_PATH')}"
+    }
+}

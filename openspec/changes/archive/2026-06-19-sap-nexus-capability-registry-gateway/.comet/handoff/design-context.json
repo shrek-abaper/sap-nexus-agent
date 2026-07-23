@@ -1,0 +1,14 @@
+{
+  "change": "sap-nexus-capability-registry-gateway",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "0017e63bf3cba355b88dab1662697a8513b907521821969a8deb5aacf83f2095",
+  "files": [
+    { "path": "openspec/changes/sap-nexus-capability-registry-gateway/proposal.md", "sha256": "899e50f13ba5449b0f29fdfcaa738887d173137b399d9111dc193f8672116d03" },
+    { "path": "openspec/changes/sap-nexus-capability-registry-gateway/design.md", "sha256": "e24a9f183ab59edc40a7d51e7ee3d0dd839332fbe1e9fd4bef9a964c49f5046e" },
+    { "path": "openspec/changes/sap-nexus-capability-registry-gateway/tasks.md", "sha256": "9a14f882ff1434674aaa1e140b7675aaaee4466ec8e29b466d232310c18e6848" },
+    { "path": "openspec/changes/sap-nexus-capability-registry-gateway/specs/capability-registry-gateway/spec.md", "sha256": "8efb23eea70f94e70a9c29af05f1fa490ab909229ca2baabd11611766e5ca704" }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "change": "sap-nexus-odata-gateway-read-pilot",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "49e39d46f87f905aff4545c6bd79a1210668cf0d732f6c3dfc8d342e651a87c7",
+  "files": [
+    { "path": "openspec/changes/sap-nexus-odata-gateway-read-pilot/proposal.md", "sha256": "8c70ad0ba13f1cb5acdc63f1661afe572f276cc32ec33bd66897f98ac97c2805" },
+    { "path": "openspec/changes/sap-nexus-odata-gateway-read-pilot/design.md", "sha256": "2c799fcef7f40f6480b67fe0aab1441bb2cf53a69c890aac3b1095cf75d6eccb" },
+    { "path": "openspec/changes/sap-nexus-odata-gateway-read-pilot/tasks.md", "sha256": "19f252fe0d591586aa088790b3cb98d015ed22a281f0200ac404f023ba301095" },
+    { "path": "openspec/changes/sap-nexus-odata-gateway-read-pilot/specs/agent-callplan-evidence/spec.md", "sha256": "0974edb7b57e70679244f27b64acaa81dda60c53d592c9ebfa3e36f605755109" },
+    { "path": "openspec/changes/sap-nexus-odata-gateway-read-pilot/specs/gateway-execution-contract/spec.md", "sha256": "67adedbab31a19484a2efdcf3f37a3cdfe6d140167939c3e0d297a6eb5059d9d" },
+    { "path": "openspec/changes/sap-nexus-odata-gateway-read-pilot/specs/odata-gateway-read/spec.md", "sha256": "12bf78f49ee222b0b3d996bbe7b4098c8927c9b7b713ef9b954b2b362f17e753" }
+  ]
+}

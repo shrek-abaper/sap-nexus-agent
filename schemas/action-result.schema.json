@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sap-nexus-agent.local/schemas/action-result.schema.json",
+  "title": "SAP Nexus ActionResult",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "traceId",
+    "capabilityId",
+    "success",
+    "prNumber",
+    "commitStatus",
+    "returnMessages",
+    "durationMs",
+    "errorType"
+  ],
+  "properties": {
+    "traceId": { "type": "string", "minLength": 1 },
+    "capabilityId": { "type": "string", "minLength": 1 },
+    "success": { "type": "boolean" },
+    "prNumber": { "type": "string" },
+    "commitStatus": { "type": "string", "enum": ["committed", "rolled_back", "none"] },
+    "returnMessages": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/sapReturnMessage" }
+    },
+    "durationMs": { "type": "integer", "minimum": 0 },
+    "errorType": {
+      "type": "string",
+      "enum": [
+        "NONE",
+        "APPROVAL_REQUIRED",
+        "APPROVAL_EXPIRED",
+        "APPROVAL_VERSION_MISMATCH",
+        "APPROVAL_DUPLICATE",
+        "SAP_BUSINESS_ERROR",
+        "SAP_COMMIT_ERROR",
+        "SAP_AUTH_ERROR",
+        "SAP_COMMUNICATION_ERROR",
+        "NORMALIZATION_ERROR"
+      ]
+    }
+  },
+  "$defs": {
+    "sapReturnMessage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "message"],
+      "properties": {
+        "type": { "type": "string", "minLength": 1 },
+        "id": { "type": "string" },
+        "number": { "type": "string" },
+        "message": { "type": "string" },
+        "field": { "type": "string" }
+      }
+    }
+  }
+}

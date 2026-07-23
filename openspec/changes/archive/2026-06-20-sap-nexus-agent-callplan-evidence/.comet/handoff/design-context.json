@@ -1,0 +1,14 @@
+{
+  "change": "sap-nexus-agent-callplan-evidence",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "d751ff8585fd72d60b09b10608a6f39ff064b4d8f2bbbdecf7cdeba7a834d60f",
+  "files": [
+    { "path": "openspec/changes/sap-nexus-agent-callplan-evidence/proposal.md", "sha256": "8dc5e8e871cf0e815ad2598cae922c9ac95ecff93de743556fbcf1830b246943" },
+    { "path": "openspec/changes/sap-nexus-agent-callplan-evidence/design.md", "sha256": "fa016a573990b4f6e71b04692756930b962bbb0d473b7e09031b9b87e15e96dc" },
+    { "path": "openspec/changes/sap-nexus-agent-callplan-evidence/tasks.md", "sha256": "483388a228654346fb38dde542f57aaa98a55f88749463292cffec46f1bb0589" },
+    { "path": "openspec/changes/sap-nexus-agent-callplan-evidence/specs/agent-callplan-evidence/spec.md", "sha256": "f49ae65aa83b027a211cd9deb7d04907eac2a6ab2dc0555b30c2e7d9da1fb5a3" }
+  ]
+}

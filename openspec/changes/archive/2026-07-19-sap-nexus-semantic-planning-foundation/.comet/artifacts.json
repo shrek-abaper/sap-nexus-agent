@@ -1,0 +1,9 @@
+{
+  "openspec_proposal": "openspec/changes/sap-nexus-semantic-planning-foundation/proposal.md",
+  "openspec_design": "openspec/changes/sap-nexus-semantic-planning-foundation/design.md",
+  "openspec_tasks": "openspec/changes/sap-nexus-semantic-planning-foundation/tasks.md",
+  "openspec_delta_spec": "openspec/changes/sap-nexus-semantic-planning-foundation/specs/registry-ontology-contract/spec.md",
+  "handoff_context": "openspec/changes/sap-nexus-semantic-planning-foundation/.comet/handoff/design-context.json",
+  "handoff_markdown": "openspec/changes/sap-nexus-semantic-planning-foundation/.comet/handoff/design-context.md",
+  "archive_directory": "openspec/changes/archive/2026-07-19-sap-nexus-semantic-planning-foundation"
+}

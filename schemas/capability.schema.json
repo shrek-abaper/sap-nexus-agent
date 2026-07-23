@@ -1,0 +1,228 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sap-nexus-agent.local/schemas/capability.schema.json",
+  "title": "SAP Nexus Capability Registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "capabilities"],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 2
+    },
+    "capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/capability" }
+    }
+  },
+  "$defs": {
+    "capability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "capabilityId",
+        "name",
+        "description",
+        "status",
+        "kind",
+        "domain",
+        "businessObject",
+        "ontologyIri",
+        "semanticType",
+        "inputs",
+        "outputs",
+        "executor",
+        "executorBinding",
+        "evalLinkage",
+        "governance"
+      ],
+      "properties": {
+        "capabilityId": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Za-z0-9]*(\\.[A-Z][A-Za-z0-9]*)+$"
+        },
+        "name": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "minLength": 1 },
+        "status": { "type": "string", "enum": ["active", "disabled"] },
+        "kind": { "type": "string", "enum": ["Function", "Action"] },
+        "domain": { "type": "string", "minLength": 1 },
+        "businessObject": { "type": "string", "minLength": 1 },
+        "ontologyIri": { "type": "string", "minLength": 1 },
+        "semanticType": { "type": "string", "minLength": 1 },
+        "inputs": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/ioField" }
+        },
+        "outputs": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/outputField" }
+        },
+        "executor": { "$ref": "#/$defs/executor" },
+        "executorBinding": { "$ref": "#/$defs/executorBinding" },
+        "evalLinkage": { "$ref": "#/$defs/evalLinkage" },
+        "governance": { "$ref": "#/$defs/governance" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "kind": { "const": "Function" } },
+            "required": ["kind"]
+          },
+          "then": {
+            "properties": {
+              "governance": {
+                "properties": {
+                  "sideEffect": { "const": "none" },
+                  "requiresApproval": { "const": false },
+                  "approvalPolicy": { "const": "not_required" }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "kind": { "const": "Action" } },
+            "required": ["kind"]
+          },
+          "then": {
+            "properties": {
+              "governance": {
+                "properties": {
+                  "sideEffect": { "const": "sap_write" },
+                  "requiresApproval": { "const": true },
+                  "approvalPolicy": { "const": "human_required" }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "ioField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "semanticType", "bindingKind", "required", "type", "sapParameter"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "semanticName": { "type": "string", "minLength": 1 },
+        "semanticType": { "type": "string", "minLength": 1 },
+        "bindingKind": { "type": "string", "enum": ["identifier", "fact"] },
+        "satisfiableByFactType": { "type": "string", "minLength": 1 },
+        "required": { "type": "boolean" },
+        "type": { "type": "string", "enum": ["string", "number", "integer", "boolean", "object", "array"] },
+        "minLength": { "type": "integer", "minimum": 0 },
+        "maxLength": { "type": "integer", "minimum": 1 },
+        "sapParameter": { "type": "string", "minLength": 1 }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "bindingKind": { "const": "fact" } },
+            "required": ["bindingKind"]
+          },
+          "then": { "required": ["satisfiableByFactType"] }
+        },
+        {
+          "if": {
+            "properties": { "bindingKind": { "const": "identifier" } },
+            "required": ["bindingKind"]
+          },
+          "then": { "not": { "required": ["satisfiableByFactType"] } }
+        }
+      ]
+    },
+    "outputField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "semanticType", "type", "evidenceRole"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "semanticType": { "type": "string", "minLength": 1 },
+        "type": { "type": "string", "enum": ["string", "number", "integer", "boolean", "object", "array"] },
+        "evidenceRole": { "type": "string", "minLength": 1 },
+        "factTypeRef": { "type": "string", "minLength": 1 }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "evidenceRole": { "const": "primaryFact" } },
+            "required": ["evidenceRole"]
+          },
+          "then": { "required": ["factTypeRef"] }
+        }
+      ]
+    },
+    "executor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": { "type": "string", "enum": ["JCO_RFC", "ODATA"] },
+        "rfcName": { "type": "string", "minLength": 1 },
+        "inputMapping": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": { "type": "string", "minLength": 1 }
+        },
+        "outputMapping": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": { "type": "string", "minLength": 1 }
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "JCO_RFC" } }, "required": ["type"] },
+          "then": { "required": ["rfcName", "inputMapping", "outputMapping"] }
+        }
+      ]
+    },
+    "executorBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "bindingId"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["JCO_RFC", "ODATA", "CDS_ADT", "CDS_ODATA", "REST_JSON"]
+        },
+        "bindingId": { "type": "string", "minLength": 1 }
+      }
+    },
+    "evalLinkage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evalFile", "caseIds"],
+      "properties": {
+        "evalFile": { "type": "string", "minLength": 1 },
+        "caseIds": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "governance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sideEffect",
+        "requiresApproval",
+        "approvalPolicy",
+        "dataClassification",
+        "auditRequired"
+      ],
+      "properties": {
+        "sideEffect": { "type": "string", "enum": ["none", "read", "write", "sap_write"] },
+        "requiresApproval": { "type": "boolean" },
+        "approvalPolicy": { "type": "string", "enum": ["not_required", "human_required"] },
+        "dataClassification": { "type": "string", "minLength": 1 },
+        "auditRequired": { "type": "boolean" }
+      }
+    }
+  }
+}

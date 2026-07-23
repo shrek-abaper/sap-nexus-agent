@@ -1,0 +1,28 @@
+version: 1
+factTypes:
+  - factTypeId: sapnexus:InventoryAvailabilityFact
+    name: Inventory Availability Fact
+    description: Available inventory quantity for a material and plant.
+    businessObject: InventoryStock
+    predicate: sapnexus:hasInventoryAvailability
+    semanticType: sapnexus:InventoryAvailability
+    keyedBy:
+      - sapnexus:MaterialNumber
+      - sapnexus:Plant
+  - factTypeId: sapnexus:PurchaseOrderSupplyFact
+    name: Purchase Order Supply Fact
+    description: Purchase-order supply items for a material and plant.
+    businessObject: PurchaseOrder
+    predicate: sapnexus:hasPurchaseOrderSupply
+    semanticType: sapnexus:PurchaseOrderSupply
+    keyedBy:
+      - sapnexus:MaterialNumber
+      - sapnexus:Plant
+  - factTypeId: sapnexus:PurchaseRequisitionCreatedFact
+    name: Purchase Requisition Created Fact
+    description: Identity of a purchase requisition created by an approved Action.
+    businessObject: PurchaseRequisition
+    predicate: sapnexus:hasCreatedPurchaseRequisition
+    semanticType: sapnexus:PurchaseRequisitionCreated
+    keyedBy:
+      - sapnexus:PrNumber

@@ -1,0 +1,129 @@
+{
+  "cases": [
+    {
+      "id": "po-by-number",
+      "userQuery": "查询采购订单 DEMOPO2 的明细",
+      "gateway": {
+        "execute": {
+          "traceId": "gw-po-number",
+          "capabilityId": "MM.PurchaseOrder.GetList",
+          "success": true,
+          "executor": {
+            "type": "ODATA"
+          },
+          "returnMessages": [],
+          "data": {
+            "purchaseOrders": [
+              {
+                "purchaseOrder": "DEMOPO2",
+                "supplier": "DEMOV3",
+                "material": "DEMOA4B",
+                "plant": "5300",
+                "orderQuantity": "20.000",
+                "purchaseOrderUnit": "EA"
+              }
+            ],
+            "totalCount": 1
+          },
+          "durationMs": 10,
+          "errorType": "NONE"
+        }
+      },
+      "expected": {
+        "status": "success",
+        "capabilityId": "MM.PurchaseOrder.GetList",
+        "validateCalls": 1,
+        "executeCalls": 1,
+        "responseContains": [
+          "DEMOPO2",
+          "DEMOV3",
+          "DEMOA4B",
+          "5300",
+          "20.000",
+          "EA"
+        ]
+      }
+    },
+    {
+      "id": "po-by-vendor",
+      "userQuery": "查供应商 DEMOV1 的采购订单",
+      "expected": {
+        "status": "success",
+        "capabilityId": "MM.PurchaseOrder.GetList",
+        "validateCalls": 1,
+        "executeCalls": 1,
+        "responseContains": [
+          "4500000001",
+          "DEMOV1"
+        ]
+      },
+      "gateway": {
+        "execute": {
+          "traceId": "gw-po-vendor",
+          "capabilityId": "MM.PurchaseOrder.GetList",
+          "success": true,
+          "executor": {
+            "type": "ODATA"
+          },
+          "returnMessages": [],
+          "data": {
+            "purchaseOrders": [
+              {
+                "purchaseOrder": "4500000001",
+                "supplier": "DEMOV1",
+                "material": "DEMOA1",
+                "plant": "1000",
+                "orderQuantity": 100,
+                "purchaseOrderUnit": "EA"
+              }
+            ],
+            "totalCount": 1
+          },
+          "durationMs": 10,
+          "errorType": "NONE"
+        }
+      }
+    },
+    {
+      "id": "po-by-material-and-plant",
+      "userQuery": "查工厂 5300 物料 DEMOA4B 的采购订单",
+      "gateway": {
+        "execute": {
+          "traceId": "gw-po-item-filter",
+          "capabilityId": "MM.PurchaseOrder.GetList",
+          "success": true,
+          "executor": {
+            "type": "ODATA"
+          },
+          "returnMessages": [],
+          "data": {
+            "purchaseOrders": [
+              {
+                "purchaseOrder": "DEMOPO2",
+                "supplier": "DEMOV3",
+                "material": "DEMOA4B",
+                "plant": "5300",
+                "orderQuantity": "20.000",
+                "purchaseOrderUnit": "EA"
+              }
+            ],
+            "totalCount": 1
+          },
+          "durationMs": 10,
+          "errorType": "NONE"
+        }
+      },
+      "expected": {
+        "status": "success",
+        "capabilityId": "MM.PurchaseOrder.GetList",
+        "validateCalls": 1,
+        "executeCalls": 1,
+        "responseContains": [
+          "DEMOPO2",
+          "DEMOA4B",
+          "5300"
+        ]
+      }
+    }
+  ]
+}

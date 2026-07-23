@@ -1,0 +1,33 @@
+workflow: full
+language: zh-CN
+phase: archive
+context_compression: off
+build_mode: subagent-driven-development
+build_pause: null
+subagent_dispatch: confirmed
+tdd_mode: tdd
+review_mode: standard
+isolation: branch
+verify_mode: full
+auto_transition: true
+base_ref: e5ab58f809fbaa7b120fe17672dfb8fb1236f44b
+design_doc: docs/superpowers/specs/2026-07-08-sap-nexus-odata-gateway-read-pilot-design.md
+plan: docs/superpowers/plans/2026-07-08-sap-nexus-odata-gateway-read-pilot.md
+verify_result: pass
+verification_report: docs/superpowers/reports/2026-07-09-sap-nexus-odata-gateway-read-pilot-verify.md
+branch_status: handled
+created_at: 2026-07-08
+verified_at: 2026-07-09
+archived: true
+direct_override: null
+build_command: sap-nexus-agent/services/gateway/gradlew
+  -p sap-nexus-agent/services/gateway test
+  --console=plain
+verify_command: .venv/bin/python -m pytest agent/tests -q && .venv/bin/python -m
+  sap_nexus_agent.eval evals/eval_harness_seed_cases.json && openspec validate
+  --all --strict
+handoff_context: openspec/changes/sap-nexus-odata-gateway-read-pilot/.comet/handoff/design-context.json
+handoff_hash: 49e39d46f87f905aff4545c6bd79a1210668cf0d732f6c3dfc8d342e651a87c7
+classic_profile: full
+classic_migration: 1
+run_id: 3d683e27-2116-4d71-aa0a-62e21dd104bd

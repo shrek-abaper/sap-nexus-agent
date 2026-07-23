@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sap-nexus-agent.local/schemas/capability-relation.schema.json",
+  "title": "SAP Nexus Capability Relation Catalog",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "relations"],
+  "properties": {
+    "version": { "type": "integer", "const": 1 },
+    "relations": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/relation" }
+    }
+  },
+  "$defs": {
+    "relation": {
+      "oneOf": [
+        { "$ref": "#/$defs/dependsOn" },
+        { "$ref": "#/$defs/precondition" }
+      ]
+    },
+    "dependsOn": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["relationId", "relationType", "capabilityId", "dependsOnCapabilityId"],
+      "properties": {
+        "relationId": { "type": "string", "minLength": 1 },
+        "relationType": { "const": "dependsOn" },
+        "capabilityId": { "type": "string", "minLength": 1 },
+        "dependsOnCapabilityId": { "type": "string", "minLength": 1 }
+      }
+    },
+    "precondition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["relationId", "relationType", "capabilityId", "requiredFactType"],
+      "properties": {
+        "relationId": { "type": "string", "minLength": 1 },
+        "relationType": { "const": "precondition" },
+        "capabilityId": { "type": "string", "minLength": 1 },
+        "requiredFactType": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

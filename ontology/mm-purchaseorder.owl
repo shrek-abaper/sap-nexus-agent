@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<rdf:RDF
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:sapnexus="https://sap-nexus-agent.local/ontology#">
+
+  <owl:Ontology rdf:about="https://sap-nexus-agent.local/ontology/mm-purchaseorder">
+    <owl:imports rdf:resource="https://sap-nexus-agent.local/ontology/core"/>
+  </owl:Ontology>
+
+  <owl:Class rdf:about="sapnexus:PurchaseOrder">
+    <rdfs:subClassOf rdf:resource="sapnexus:BusinessObject"/>
+  </owl:Class>
+  <owl:Class rdf:about="sapnexus:PurchaseOrderItem"/>
+  <owl:Class rdf:about="sapnexus:PurchaseOrderNumber"/>
+  <owl:Class rdf:about="sapnexus:Supplier">
+    <rdfs:subClassOf rdf:resource="sapnexus:BusinessObject"/>
+  </owl:Class>
+
+  <owl:NamedIndividual rdf:about="sapnexus:MM_PurchaseOrder_GetList">
+    <rdf:type rdf:resource="sapnexus:Function"/>
+    <rdfs:label>MM.PurchaseOrder.GetList</rdfs:label>
+  </owl:NamedIndividual>
+</rdf:RDF>

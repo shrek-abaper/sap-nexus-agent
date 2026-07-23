@@ -1,0 +1,269 @@
+version: 2
+capabilities:
+  - capabilityId: MM.Inventory.GetAvailability
+    name: Inventory Availability
+    description: Read material availability for a plant through SAP MD04 stock/requirements list.
+    status: active
+    kind: Function
+    domain: MM
+    businessObject: InventoryStock
+    ontologyIri: sapnexus:MM_Inventory_GetAvailability
+    semanticType: sapnexus:InventoryAvailabilityReadFunction
+    inputs:
+      - name: material
+        semanticName: materialNumber
+        semanticType: sapnexus:MaterialNumber
+        bindingKind: identifier
+        required: true
+        type: string
+        minLength: 1
+        maxLength: 40
+        sapParameter: MATERIAL
+      - name: plant
+        semanticName: plant
+        semanticType: sapnexus:Plant
+        bindingKind: identifier
+        required: true
+        type: string
+        minLength: 1
+        maxLength: 4
+        sapParameter: PLANT
+      - name: unit
+        semanticName: unitOfMeasure
+        semanticType: sapnexus:UnitOfMeasure
+        bindingKind: identifier
+        required: false
+        type: string
+        minLength: 1
+        maxLength: 3
+        sapParameter: UNIT
+    outputs:
+      - name: availableQuantity
+        semanticType: sapnexus:AvailableQuantity
+        type: number
+        evidenceRole: primaryFact
+        factTypeRef: sapnexus:InventoryAvailabilityFact
+      - name: returnMessages
+        semanticType: sapnexus:SapReturnMessage
+        type: array
+        evidenceRole: executionEvidence
+    executor:
+      type: JCO_RFC
+      rfcName: BAPI_MATERIAL_STOCK_REQ_LIST
+      inputMapping:
+        material: MATERIAL_LONG,MATERIAL
+        plant: PLANT,MRP_AREA
+        unit: UNIT
+      outputMapping:
+        availableQuantity: MRP_IND_LINES.WB.AVAIL_QTY1
+        returnMessages: RETURN
+    executorBinding:
+      type: JCO_RFC
+      bindingId: sap.mm.inventory.md04-stock-req-list
+    evalLinkage:
+      evalFile: evals/inventory_availability_cases.yaml
+      caseIds:
+        - happy-path
+        - missing-plant
+        - missing-material
+        - invalid-plant
+        - unknown-intent
+        - gateway-sensitive-failure
+        - user-rfc-name
+    governance:
+      sideEffect: none
+      requiresApproval: false
+      approvalPolicy: not_required
+      dataClassification: internal
+      auditRequired: true
+  - capabilityId: MM.PurchaseOrder.GetList
+    name: Purchase Order List
+    description: Read purchase order list through SAP OData service.
+    status: active
+    kind: Function
+    domain: MM
+    businessObject: PurchaseOrder
+    ontologyIri: sapnexus:MM_PurchaseOrder_GetList
+    semanticType: sapnexus:PurchaseOrderListReadFunction
+    inputs:
+      - name: poNumber
+        semanticName: purchaseOrderNumber
+        semanticType: sapnexus:PurchaseOrderNumber
+        bindingKind: identifier
+        required: false
+        type: string
+        minLength: 1
+        maxLength: 40
+        sapParameter: PurchaseOrder
+      - name: vendor
+        semanticName: supplier
+        semanticType: sapnexus:Supplier
+        bindingKind: identifier
+        required: false
+        type: string
+        minLength: 1
+        maxLength: 10
+        sapParameter: Supplier
+      - name: plant
+        semanticName: plant
+        semanticType: sapnexus:Plant
+        bindingKind: identifier
+        required: false
+        type: string
+        minLength: 1
+        maxLength: 4
+        sapParameter: Plant
+      - name: material
+        semanticName: materialNumber
+        semanticType: sapnexus:MaterialNumber
+        bindingKind: identifier
+        required: false
+        type: string
+        minLength: 1
+        maxLength: 40
+        sapParameter: Material
+    outputs:
+      - name: purchaseOrders
+        semanticType: sapnexus:PurchaseOrderItem
+        type: array
+        evidenceRole: primaryFact
+        factTypeRef: sapnexus:PurchaseOrderSupplyFact
+    executor:
+      type: ODATA
+    executorBinding:
+      type: ODATA
+      bindingId: sap.mm.purchaseorder.list-odata
+    evalLinkage:
+      evalFile: evals/purchase_order_cases.json
+      caseIds:
+        - po-by-number
+        - po-by-vendor
+        - po-by-material-and-plant
+    governance:
+      sideEffect: none
+      requiresApproval: false
+      approvalPolicy: not_required
+      dataClassification: internal
+      auditRequired: true
+  - capabilityId: MM.PR.CreateDraft
+    name: Purchase Requisition Create Draft
+    description: 创建采购申请 (PR) 草稿, 支持实物直采与间采 (成本中心)
+    status: active
+    kind: Action
+    domain: MM
+    businessObject: PurchaseRequisition
+    ontologyIri: sapnexus:MM_PR_CreateDraft
+    semanticType: sapnexus:PurchaseRequisitionCreateAction
+    inputs:
+      - name: material
+        semanticName: materialNumber
+        semanticType: sapnexus:MaterialNumber
+        bindingKind: identifier
+        required: true
+        type: string
+        minLength: 1
+        maxLength: 40
+        sapParameter: PRITEM.MATERIAL
+      - name: plant
+        semanticName: plant
+        semanticType: sapnexus:Plant
+        bindingKind: identifier
+        required: true
+        type: string
+        minLength: 1
+        maxLength: 4
+        sapParameter: PRITEM.PLANT
+      - name: quantity
+        semanticName: quantity
+        semanticType: sapnexus:Quantity
+        bindingKind: identifier
+        required: true
+        type: number
+        sapParameter: PRITEM.QUANTITY
+      - name: unit
+        semanticName: unitOfMeasure
+        semanticType: sapnexus:UnitOfMeasure
+        bindingKind: identifier
+        required: true
+        type: string
+        minLength: 1
+        maxLength: 3
+        sapParameter: PRITEM.UNIT
+      - name: delivery_date
+        semanticName: deliveryDate
+        semanticType: sapnexus:DeliveryDate
+        bindingKind: identifier
+        required: true
+        type: string
+        sapParameter: PRITEM.DELIV_DATE
+      - name: purchasing_group
+        semanticName: purchasingGroup
+        semanticType: sapnexus:PurchasingGroup
+        bindingKind: identifier
+        required: true
+        type: string
+        minLength: 1
+        maxLength: 3
+        sapParameter: PRITEM.PUR_GROUP
+      - name: acct_assgn_cat
+        semanticName: accountAssignmentCategory
+        semanticType: sapnexus:AcctAssignmentCat
+        bindingKind: identifier
+        required: false
+        type: string
+        maxLength: 1
+        sapParameter: PRITEM.ACCTASSCAT
+      - name: cost_center
+        semanticName: costCenter
+        semanticType: sapnexus:CostCenter
+        bindingKind: identifier
+        required: false
+        type: string
+        maxLength: 10
+        sapParameter: PRITEM.COSTCENTER
+    outputs:
+      - name: prNumber
+        semanticType: sapnexus:PrNumber
+        type: string
+        evidenceRole: primaryFact
+        factTypeRef: sapnexus:PurchaseRequisitionCreatedFact
+      - name: returnMessages
+        semanticType: sapnexus:SapReturnMessage
+        type: array
+        evidenceRole: executionEvidence
+    executor:
+      type: JCO_RFC
+      rfcName: BAPI_PR_CREATE
+      inputMapping:
+        material: PRITEM.MATERIAL
+        plant: PRITEM.PLANT
+        quantity: PRITEM.QUANTITY
+        unit: PRITEM.UNIT
+        delivery_date: PRITEM.DELIV_DATE
+        purchasing_group: PRITEM.PUR_GROUP
+        acct_assgn_cat: PRITEM.ACCTASSCAT
+        cost_center: PRITEM.COSTCENTER
+      outputMapping:
+        prNumber: EXPORTS.NUMBER
+        returnMessages: RETURN
+    executorBinding:
+      type: JCO_RFC
+      bindingId: sap.mm.pr.create-draft
+    evalLinkage:
+      evalFile: evals/pr_create_cases.json
+      caseIds:
+        - pr-create-success-direct
+        - pr-create-success-indirect
+        - pr-create-missing-param
+        - pr-create-indirect-missing-cost-center
+        - pr-create-approval-missing
+        - pr-create-approval-expired
+        - pr-create-approval-version-mismatch
+        - pr-create-duplicate-submit
+        - pr-create-sap-business-error
+    governance:
+      sideEffect: sap_write
+      requiresApproval: true
+      approvalPolicy: human_required
+      dataClassification: internal
+      auditRequired: true

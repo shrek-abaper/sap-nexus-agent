@@ -1,0 +1,50 @@
+<?xml version="1.0"?>
+<rdf:RDF
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:sapnexus="https://sap-nexus-agent.local/ontology#">
+
+  <owl:Ontology rdf:about="https://sap-nexus-agent.local/ontology/core"/>
+
+  <owl:Class rdf:about="sapnexus:Capability"/>
+  <owl:Class rdf:about="sapnexus:Skill">
+    <rdfs:subClassOf rdf:resource="sapnexus:Capability"/>
+  </owl:Class>
+  <owl:Class rdf:about="sapnexus:Function">
+    <rdfs:subClassOf rdf:resource="sapnexus:Capability"/>
+  </owl:Class>
+  <owl:Class rdf:about="sapnexus:Action">
+    <rdfs:subClassOf rdf:resource="sapnexus:Capability"/>
+  </owl:Class>
+
+  <owl:Class rdf:about="sapnexus:BusinessObject"/>
+  <owl:Class rdf:about="sapnexus:ReasoningFact"/>
+  <owl:Class rdf:about="sapnexus:RecommendationPlan"/>
+  <owl:Class rdf:about="sapnexus:ApprovalRecord"/>
+  <owl:Class rdf:about="sapnexus:ActionResult"/>
+
+  <owl:Class rdf:about="sapnexus:ExecutorBinding"/>
+  <owl:Class rdf:about="sapnexus:TechnicalAdapter"/>
+  <owl:Class rdf:about="sapnexus:JcoRfcBinding">
+    <rdfs:subClassOf rdf:resource="sapnexus:ExecutorBinding"/>
+  </owl:Class>
+  <owl:Class rdf:about="sapnexus:ODataBinding">
+    <rdfs:subClassOf rdf:resource="sapnexus:ExecutorBinding"/>
+  </owl:Class>
+  <owl:Class rdf:about="sapnexus:CdsAdtBinding">
+    <rdfs:subClassOf rdf:resource="sapnexus:ExecutorBinding"/>
+  </owl:Class>
+  <owl:Class rdf:about="sapnexus:CdsODataBinding">
+    <rdfs:subClassOf rdf:resource="sapnexus:ExecutorBinding"/>
+  </owl:Class>
+  <owl:Class rdf:about="sapnexus:RestJsonBinding">
+    <rdfs:subClassOf rdf:resource="sapnexus:ExecutorBinding"/>
+  </owl:Class>
+
+  <owl:Class rdf:about="sapnexus:ExternalSystem"/>
+  <owl:Class rdf:about="sapnexus:CredentialReference"/>
+  <owl:Class rdf:about="sapnexus:JsonRequestSchema"/>
+  <owl:Class rdf:about="sapnexus:JsonResponseSchema"/>
+  <owl:Class rdf:about="sapnexus:ResponseMapping"/>
+</rdf:RDF>

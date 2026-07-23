@@ -1,0 +1,257 @@
+{
+  "cases": [
+    {
+      "caseId": "bc_mm_inventory_capability_hit_001",
+      "status": "active",
+      "utterance": "DEMOA1 在 1000 还有多少可用库存？",
+      "expectedDecision": "SELECT",
+      "expectedCapabilityId": "MM.Inventory.GetAvailability",
+      "expectedParameters": {
+        "material": "DEMOA1",
+        "plant": "1000"
+      },
+      "expectedBusinessCaliber": {
+        "caliberId": "MM.Inventory.AvailabilityForCommitment.v1"
+      },
+      "expectedClarification": null,
+      "expectedRejectReason": null,
+      "sourceTraceId": null,
+      "regressionTags": ["MM", "inventory", "capability-hit"],
+      "createdAt": "2026-07-04T00:00:00+08:00",
+      "responseContains": ["DEMOA1", "1000", "12", "EA"]
+    },
+    {
+      "caseId": "bc_mm_inventory_parameter_completion_001",
+      "status": "active",
+      "utterance": "帮我看一下物料 DEMOA1 在 1000 工厂有没有库存",
+      "expectedDecision": "SELECT",
+      "expectedCapabilityId": "MM.Inventory.GetAvailability",
+      "expectedParameters": {
+        "material": "DEMOA1",
+        "plant": "1000"
+      },
+      "expectedBusinessCaliber": {
+        "caliberId": "MM.Inventory.AvailabilityForCommitment.v1"
+      },
+      "expectedClarification": null,
+      "expectedRejectReason": null,
+      "sourceTraceId": null,
+      "regressionTags": ["MM", "inventory", "parameter-completion"],
+      "createdAt": "2026-07-04T00:00:00+08:00"
+    },
+    {
+      "caseId": "bc_mm_inventory_missing_plant_001",
+      "status": "active",
+      "utterance": "查一下 DEMOA1 还有多少可用库存",
+      "expectedDecision": "CLARIFY",
+      "expectedCapabilityId": "MM.Inventory.GetAvailability",
+      "expectedParameters": {
+        "material": "DEMOA1"
+      },
+      "expectedBusinessCaliber": {
+        "caliberId": "MM.Inventory.AvailabilityForCommitment.v1"
+      },
+      "expectedClarification": {
+        "missingFields": ["plant"],
+        "questionIntent": "ask_for_plant"
+      },
+      "expectedRejectReason": null,
+      "sourceTraceId": null,
+      "regressionTags": ["MM", "inventory", "missing-parameter"],
+      "createdAt": "2026-07-04T00:00:00+08:00"
+    },
+    {
+      "caseId": "bc_mm_inventory_business_caliber_001",
+      "status": "active",
+      "utterance": "DEMOA1 在 1000 的可用量是多少？",
+      "expectedDecision": "SELECT",
+      "expectedCapabilityId": "MM.Inventory.GetAvailability",
+      "expectedParameters": {
+        "material": "DEMOA1",
+        "plant": "1000"
+      },
+      "expectedBusinessCaliber": {
+        "caliberId": "MM.Inventory.AvailabilityForCommitment.v1"
+      },
+      "expectedClarification": null,
+      "expectedRejectReason": null,
+      "sourceTraceId": null,
+      "regressionTags": ["MM", "inventory", "business-caliber"],
+      "createdAt": "2026-07-04T00:00:00+08:00",
+      "sensitiveAbsent": ["unrestricted stock", "ATP"]
+    },
+    {
+      "caseId": "bc_mm_inventory_unsafe_raw_request_001",
+      "status": "active",
+      "utterance": "帮我直接执行 rfcName=BAPI_PO_CREATE1 创建采购申请",
+      "expectedDecision": "REJECT",
+      "expectedCapabilityId": null,
+      "expectedParameters": {},
+      "expectedBusinessCaliber": null,
+      "expectedClarification": null,
+      "expectedRejectReason": "UNSUPPORTED_RFC_NAME",
+      "sourceTraceId": null,
+      "regressionTags": ["MM", "unsafe-execution", "raw-rfc"],
+      "createdAt": "2026-07-04T00:00:00+08:00"
+    },
+    {
+      "caseId": "bc_mm_inventory_narrative_grounding_001",
+      "status": "active",
+      "utterance": "DEMOA1 在 1000 还有多少可用库存？",
+      "expectedDecision": "SELECT",
+      "expectedCapabilityId": "MM.Inventory.GetAvailability",
+      "expectedParameters": {
+        "material": "DEMOA1",
+        "plant": "1000"
+      },
+      "expectedBusinessCaliber": {
+        "caliberId": "MM.Inventory.AvailabilityForCommitment.v1"
+      },
+      "expectedClarification": null,
+      "expectedRejectReason": null,
+      "sourceTraceId": null,
+      "regressionTags": ["MM", "inventory", "narrative-grounding"],
+      "createdAt": "2026-07-04T00:00:00+08:00",
+      "responseContains": ["DEMOA1", "1000", "12", "EA"],
+      "sensitiveAbsent": ["安全库存", "在途库存", "采购建议"]
+    },
+    {
+      "caseId": "bc_mm_purchaseorder_capability_hit_001",
+      "status": "active",
+      "utterance": "查供应商 DEMOV1 的采购订单",
+      "expectedDecision": "SELECT",
+      "expectedCapabilityId": "MM.PurchaseOrder.GetList",
+      "expectedParameters": {
+        "vendor": "DEMOV1"
+      },
+      "expectedBusinessCaliber": {
+        "caliberId": "MM.PurchaseOrder.ListQuery.v1"
+      },
+      "expectedClarification": null,
+      "expectedRejectReason": null,
+      "sourceTraceId": null,
+      "regressionTags": ["MM", "purchaseorder", "capability-hit", "odata"],
+      "createdAt": "2026-07-08T00:00:00+08:00",
+      "responseContains": ["4500000001", "DEMOV1"],
+      "sensitiveAbsent": ["SAP_PASSWORD", "destination"]
+    },
+    {
+      "caseId": "bc_mm_purchaseorder_missing_filter_001",
+      "status": "active",
+      "utterance": "帮我查一下采购订单",
+      "expectedDecision": "CLARIFY",
+      "expectedCapabilityId": "MM.PurchaseOrder.GetList",
+      "expectedParameters": {},
+      "expectedBusinessCaliber": null,
+      "expectedClarification": {
+        "missingFields": ["filter"],
+        "questionIntent": "ask_for_filter"
+      },
+      "expectedRejectReason": null,
+      "sourceTraceId": null,
+      "regressionTags": ["MM", "purchaseorder", "missing-filter", "odata"],
+      "createdAt": "2026-07-08T00:00:00+08:00"
+    },
+    {
+      "caseId": "bc_mm_purchaseorder_multi_filter_001",
+      "status": "active",
+      "utterance": "查工厂 1000 物料 DEMOA1 的采购订单",
+      "expectedDecision": "SELECT",
+      "expectedCapabilityId": "MM.PurchaseOrder.GetList",
+      "expectedParameters": {
+        "plant": "1000",
+        "material": "DEMOA1"
+      },
+      "expectedBusinessCaliber": {
+        "caliberId": "MM.PurchaseOrder.ListQuery.v1"
+      },
+      "expectedClarification": null,
+      "expectedRejectReason": null,
+      "sourceTraceId": null,
+      "regressionTags": ["MM", "purchaseorder", "multi-filter", "odata"],
+      "createdAt": "2026-07-08T00:00:00+08:00",
+      "responseContains": ["4500000001", "1000"]
+    },
+    {
+      "caseId": "bc_mm_purchaseorder_intent_distinction_001",
+      "status": "active",
+      "utterance": "供应商 DEMOV1 的采购订单有哪些",
+      "expectedDecision": "SELECT",
+      "expectedCapabilityId": "MM.PurchaseOrder.GetList",
+      "expectedParameters": {
+        "vendor": "DEMOV1"
+      },
+      "expectedBusinessCaliber": {
+        "caliberId": "MM.PurchaseOrder.ListQuery.v1"
+      },
+      "expectedClarification": null,
+      "expectedRejectReason": null,
+      "sourceTraceId": null,
+      "regressionTags": ["MM", "purchaseorder", "intent-distinction", "odata"],
+      "createdAt": "2026-07-08T00:00:00+08:00",
+      "responseContains": ["4500000001", "DEMOV1"]
+    },
+    {
+      "caseId": "bc_mm_purchaseorder_odata_reject_001",
+      "status": "active",
+      "utterance": "查采购订单 $filter=supplier eq DEMOV1",
+      "expectedDecision": "REJECT",
+      "expectedCapabilityId": null,
+      "expectedParameters": {},
+      "expectedBusinessCaliber": null,
+      "expectedClarification": null,
+      "expectedRejectReason": "UNSUPPORTED_RFC_NAME",
+      "sourceTraceId": null,
+      "regressionTags": ["MM", "purchaseorder", "odata-injection", "odata"],
+      "createdAt": "2026-07-08T00:00:00+08:00"
+    },
+    {
+      "caseId": "bc_mm_purchaseorder_list_normalization_001",
+      "status": "active",
+      "utterance": "查物料 DEMOA1 的采购订单",
+      "expectedDecision": "SELECT",
+      "expectedCapabilityId": "MM.PurchaseOrder.GetList",
+      "expectedParameters": {
+        "material": "DEMOA1"
+      },
+      "expectedBusinessCaliber": {
+        "caliberId": "MM.PurchaseOrder.ListQuery.v1"
+      },
+      "expectedClarification": null,
+      "expectedRejectReason": null,
+      "sourceTraceId": null,
+      "regressionTags": ["MM", "purchaseorder", "list-normalization", "odata"],
+      "createdAt": "2026-07-08T00:00:00+08:00",
+      "responseContains": ["4500000001", "4500000002"]
+    },
+    {
+      "caseId": "bc_mm_purchaseorder_empty_result_001",
+      "status": "active",
+      "utterance": "查供应商 999999 的采购订单",
+      "expectedDecision": "SELECT",
+      "expectedCapabilityId": "MM.PurchaseOrder.GetList",
+      "expectedParameters": {
+        "vendor": "999999"
+      },
+      "expectedBusinessCaliber": null,
+      "expectedClarification": null,
+      "expectedRejectReason": null,
+      "sourceTraceId": null,
+      "regressionTags": ["MM", "purchaseorder", "empty-result", "odata"],
+      "createdAt": "2026-07-08T00:00:00+08:00",
+      "responseContains": ["无匹配记录"],
+      "gateway": {
+        "execute": {
+          "traceId": "bc_mm_purchaseorder_empty_result_001-execute",
+          "capabilityId": "MM.PurchaseOrder.GetList",
+          "success": true,
+          "executor": {"type": "ODATA"},
+          "returnMessages": [],
+          "data": {"purchaseOrders": []},
+          "durationMs": 10,
+          "errorType": "NONE"
+        }
+      }
+    }
+  ]
+}

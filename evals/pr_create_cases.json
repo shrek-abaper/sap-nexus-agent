@@ -1,0 +1,180 @@
+{
+  "cases": [
+    {
+      "id": "pr-create-success-direct",
+      "userQuery": "给物料 M001 工厂 1000 建 100 EA 采购申请 交货 2026-08-01 采购组 601",
+      "gateway": {
+        "execute": {
+          "traceId": "trace-success-direct",
+          "capabilityId": "MM.PR.CreateDraft",
+          "success": true,
+          "prNumber": "0010001234",
+          "commitStatus": "committed",
+          "returnMessages": [],
+          "durationMs": 150,
+          "errorType": "NONE"
+        }
+      },
+      "expected": {
+        "status": "success",
+        "capabilityId": "MM.PR.CreateDraft",
+        "validateCalls": 1,
+        "executeCalls": 1,
+        "responseContains": ["0010001234"]
+      }
+    },
+    {
+      "id": "pr-create-success-indirect",
+      "userQuery": "给物料 M001 工厂 1000 建 100 EA 采购申请 交货 2026-08-01 采购组 601 间采 K 成本中心 1000",
+      "gateway": {
+        "execute": {
+          "traceId": "trace-success-indirect",
+          "capabilityId": "MM.PR.CreateDraft",
+          "success": true,
+          "prNumber": "0010001235",
+          "commitStatus": "committed",
+          "returnMessages": [],
+          "durationMs": 160,
+          "errorType": "NONE"
+        }
+      },
+      "expected": {
+        "status": "success",
+        "capabilityId": "MM.PR.CreateDraft",
+        "validateCalls": 1,
+        "executeCalls": 1,
+        "responseContains": ["0010001235"]
+      }
+    },
+    {
+      "id": "pr-create-missing-param",
+      "userQuery": "建个采购申请",
+      "expected": {
+        "status": "clarification",
+        "missingParameters": ["material", "plant", "quantity", "unit", "delivery_date", "purchasing_group"],
+        "validateCalls": 0,
+        "executeCalls": 0
+      }
+    },
+    {
+      "id": "pr-create-indirect-missing-cost-center",
+      "userQuery": "给物料 M001 工厂 1000 建 100 EA 采购申请 交货 2026-08-01 采购组 601 间采 K",
+      "expected": {
+        "status": "clarification",
+        "missingParameters": ["cost_center"],
+        "validateCalls": 0,
+        "executeCalls": 0
+      }
+    },
+    {
+      "id": "pr-create-approval-missing",
+      "userQuery": "给物料 M001 工厂 1000 建 100 EA 采购申请 交货 2026-08-01 采购组 601",
+      "gateway": {
+        "execute": {
+          "traceId": "trace-approval-missing",
+          "capabilityId": "MM.PR.CreateDraft",
+          "success": false,
+          "prNumber": "",
+          "commitStatus": "none",
+          "returnMessages": [],
+          "durationMs": 1,
+          "errorType": "APPROVAL_REQUIRED"
+        }
+      },
+      "expected": {
+        "status": "failure",
+        "errorType": "APPROVAL_REQUIRED",
+        "validateCalls": 1,
+        "executeCalls": 1
+      }
+    },
+    {
+      "id": "pr-create-approval-expired",
+      "userQuery": "给物料 M001 工厂 1000 建 100 EA 采购申请 交货 2026-08-01 采购组 601",
+      "gateway": {
+        "execute": {
+          "traceId": "trace-approval-expired",
+          "capabilityId": "MM.PR.CreateDraft",
+          "success": false,
+          "prNumber": "",
+          "commitStatus": "none",
+          "returnMessages": [],
+          "durationMs": 1,
+          "errorType": "APPROVAL_EXPIRED"
+        }
+      },
+      "expected": {
+        "status": "failure",
+        "errorType": "APPROVAL_EXPIRED",
+        "validateCalls": 1,
+        "executeCalls": 1
+      }
+    },
+    {
+      "id": "pr-create-approval-version-mismatch",
+      "userQuery": "给物料 M001 工厂 1000 建 100 EA 采购申请 交货 2026-08-01 采购组 601",
+      "gateway": {
+        "execute": {
+          "traceId": "trace-version-mismatch",
+          "capabilityId": "MM.PR.CreateDraft",
+          "success": false,
+          "prNumber": "",
+          "commitStatus": "none",
+          "returnMessages": [],
+          "durationMs": 1,
+          "errorType": "APPROVAL_VERSION_MISMATCH"
+        }
+      },
+      "expected": {
+        "status": "failure",
+        "errorType": "APPROVAL_VERSION_MISMATCH",
+        "validateCalls": 1,
+        "executeCalls": 1
+      }
+    },
+    {
+      "id": "pr-create-duplicate-submit",
+      "userQuery": "给物料 M001 工厂 1000 建 100 EA 采购申请 交货 2026-08-01 采购组 601",
+      "gateway": {
+        "execute": {
+          "traceId": "trace-duplicate",
+          "capabilityId": "MM.PR.CreateDraft",
+          "success": false,
+          "prNumber": "",
+          "commitStatus": "none",
+          "returnMessages": [],
+          "durationMs": 1,
+          "errorType": "APPROVAL_DUPLICATE"
+        }
+      },
+      "expected": {
+        "status": "failure",
+        "errorType": "APPROVAL_DUPLICATE",
+        "validateCalls": 1,
+        "executeCalls": 1
+      }
+    },
+    {
+      "id": "pr-create-sap-business-error",
+      "userQuery": "给物料 INVALID 工厂 1000 建 100 EA 采购申请 交货 2026-08-01 采购组 601",
+      "gateway": {
+        "execute": {
+          "traceId": "trace-sap-error",
+          "capabilityId": "MM.PR.CreateDraft",
+          "success": false,
+          "prNumber": "",
+          "commitStatus": "rolled_back",
+          "returnMessages": [{"type": "E", "message": "Material not found"}],
+          "durationMs": 80,
+          "errorType": "SAP_BUSINESS_ERROR"
+        }
+      },
+      "expected": {
+        "status": "failure",
+        "errorType": "SAP_BUSINESS_ERROR",
+        "validateCalls": 1,
+        "executeCalls": 1
+      }
+    }
+  ]
+}

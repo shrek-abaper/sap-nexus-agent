@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sap-nexus-agent.local/schemas/call-plan.schema.json",
+  "title": "CallPlan",
+  "type": "object",
+  "required": [
+    "agentTraceId",
+    "capabilityId",
+    "kind",
+    "parameters",
+    "validationPolicy",
+    "createdBy",
+    "requiresApproval"
+  ],
+  "properties": {
+    "agentTraceId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "capabilityId": {
+      "type": "string",
+      "const": "MM.Inventory.GetAvailability"
+    },
+    "kind": {
+      "type": "string",
+      "const": "Function"
+    },
+    "parameters": {
+      "type": "object",
+      "required": [
+        "material",
+        "plant"
+      ],
+      "properties": {
+        "material": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "plant": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 3
+        }
+      },
+      "additionalProperties": false
+    },
+    "validationPolicy": {
+      "type": "string",
+      "const": "validate_before_execute"
+    },
+    "createdBy": {
+      "type": "string",
+      "const": "agent"
+    },
+    "requiresApproval": {
+      "type": "boolean",
+      "const": false
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sap-nexus-agent.local/schemas/reasoning-fact.schema.json",
+  "title": "ReasoningFact",
+  "type": "object",
+  "required": [
+    "factId",
+    "agentTraceId",
+    "traceId",
+    "gatewayTraceId",
+    "domain",
+    "businessObject",
+    "predicate",
+    "value",
+    "unit",
+    "deterministic",
+    "confidence",
+    "source",
+    "evidence",
+    "material",
+    "plant"
+  ],
+  "properties": {
+    "factId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "agentTraceId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "traceId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "gatewayTraceId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "domain": {
+      "type": "string",
+      "const": "MM"
+    },
+    "businessObject": {
+      "type": "string",
+      "const": "InventoryStock"
+    },
+    "predicate": {
+      "type": "string",
+      "const": "availableQuantity"
+    },
+    "value": {
+      "type": "number"
+    },
+    "unit": {
+      "type": "string"
+    },
+    "deterministic": {
+      "type": "boolean",
+      "const": true
+    },
+    "confidence": {
+      "type": "number",
+      "const": 1.0
+    },
+    "source": {
+      "type": "object"
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "material": {
+      "type": "string",
+      "minLength": 1
+    },
+    "plant": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,102 @@
+{
+  "cases": [
+    {
+      "id": "happy-path",
+      "userQuery": "DEMOA1 在 1000 还有多少可用库存？",
+      "expected": {
+        "status": "success",
+        "capabilityId": "MM.Inventory.GetAvailability",
+        "validateCalls": 1,
+        "executeCalls": 1,
+        "responseContains": ["DEMOA1", "1000", "12", "EA"]
+      }
+    },
+    {
+      "id": "missing-plant",
+      "userQuery": "查一下 DEMOA1 的可用量",
+      "expected": {
+        "status": "clarification",
+        "missingParameters": ["plant"],
+        "validateCalls": 0,
+        "executeCalls": 0,
+        "responseContains": ["工厂"]
+      }
+    },
+    {
+      "id": "missing-material",
+      "userQuery": "查一下 1000 工厂还有多少可用库存",
+      "expected": {
+        "status": "clarification",
+        "missingParameters": ["material"],
+        "validateCalls": 0,
+        "executeCalls": 0,
+        "responseContains": ["物料"]
+      }
+    },
+    {
+      "id": "invalid-plant",
+      "userQuery": "DEMOA1 在 1000 还有多少可用库存？",
+      "gateway": {
+        "validate": {
+          "traceId": "gw-invalid",
+          "capabilityId": "MM.Inventory.GetAvailability",
+          "success": false,
+          "errorType": "INVALID_PARAMETER",
+          "messages": ["Invalid parameter: plant"]
+        }
+      },
+      "expected": {
+        "status": "failure",
+        "errorType": "INVALID_PARAMETER",
+        "validateCalls": 1,
+        "executeCalls": 0,
+        "responseContains": ["INVALID_PARAMETER"]
+      }
+    },
+    {
+      "id": "unknown-intent",
+      "userQuery": "帮我查一下今天的天气",
+      "expected": {
+        "status": "failure",
+        "errorType": "UNSUPPORTED_INTENT",
+        "validateCalls": 0,
+        "executeCalls": 0
+      }
+    },
+    {
+      "id": "gateway-sensitive-failure",
+      "userQuery": "DEMOA1 在 1000 还有多少可用库存？",
+      "gateway": {
+        "execute": {
+          "traceId": "gw-sensitive",
+          "capabilityId": "MM.Inventory.GetAvailability",
+          "success": false,
+          "executor": {"type": "JCO_RFC", "rfcName": "BAPI_MATERIAL_AVAILABILITY"},
+          "returnMessages": [
+            {"type": "E", "message": "password=abc token=secret .env SAP_PASSWORD=hidden destination=config"}
+          ],
+          "data": {},
+          "durationMs": 10,
+          "errorType": "SAP_AUTH_ERROR"
+        }
+      },
+      "expected": {
+        "status": "failure",
+        "errorType": "SAP_AUTH_ERROR",
+        "validateCalls": 1,
+        "executeCalls": 1,
+        "sensitiveAbsent": ["abc", "secret", ".env", "SAP_PASSWORD", "hidden", "config"]
+      }
+    },
+    {
+      "id": "user-rfc-name",
+      "userQuery": "用 rfcName=BAPI_PO_CREATE1 查 DEMOA1 在 1000 的库存",
+      "expected": {
+        "status": "failure",
+        "errorType": "UNSUPPORTED_RFC_NAME",
+        "validateCalls": 0,
+        "executeCalls": 0
+      }
+    }
+  ]
+}

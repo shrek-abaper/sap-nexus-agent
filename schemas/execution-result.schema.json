@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sap-nexus-agent.local/schemas/execution-result.schema.json",
+  "title": "SAP Nexus ExecutionResult",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "traceId",
+    "capabilityId",
+    "success",
+    "executor",
+    "returnMessages",
+    "data",
+    "durationMs",
+    "errorType"
+  ],
+  "properties": {
+    "traceId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "capabilityId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "success": {
+      "type": "boolean"
+    },
+    "executor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "rfcName"],
+      "properties": {
+        "type": { "type": "string", "enum": ["JCO_RFC"] },
+        "rfcName": { "type": "string", "minLength": 1 }
+      }
+    },
+    "returnMessages": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/sapReturnMessage" }
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "durationMs": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "errorType": {
+      "type": "string",
+      "enum": [
+        "NONE",
+        "CAPABILITY_NOT_FOUND",
+        "CAPABILITY_DISABLED",
+        "MISSING_PARAMETER",
+        "INVALID_PARAMETER",
+        "APPROVAL_REQUIRED",
+        "APPROVAL_EXPIRED",
+        "APPROVAL_VERSION_MISMATCH",
+        "APPROVAL_DUPLICATE",
+        "SAP_BUSINESS_ERROR",
+        "SAP_COMMIT_ERROR",
+        "SAP_AUTH_ERROR",
+        "SAP_COMMUNICATION_ERROR",
+        "NORMALIZATION_ERROR"
+      ]
+    }
+  },
+  "$defs": {
+    "sapReturnMessage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "message"],
+      "properties": {
+        "type": { "type": "string", "minLength": 1 },
+        "id": { "type": "string" },
+        "number": { "type": "string" },
+        "message": { "type": "string" },
+        "field": { "type": "string" }
+      }
+    }
+  }
+}

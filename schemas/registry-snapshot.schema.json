@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sap-nexus-agent.local/schemas/registry-snapshot.schema.json",
+  "title": "SAP Nexus RegistrySnapshot",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["snapshotVersion", "canonicalizationVersion", "snapshotId", "sources"],
+  "properties": {
+    "snapshotVersion": { "type": "integer", "const": 1 },
+    "canonicalizationVersion": { "type": "integer", "const": 1 },
+    "snapshotId": { "$ref": "#/$defs/sha256" },
+    "sources": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "uniqueItems": true,
+      "prefixItems": [
+        {
+          "allOf": [
+            { "$ref": "#/$defs/source" },
+            { "properties": { "path": { "const": "ontology/capability-relations.yaml" } } }
+          ]
+        },
+        {
+          "allOf": [
+            { "$ref": "#/$defs/source" },
+            { "properties": { "path": { "const": "ontology/fact-types.yaml" } } }
+          ]
+        },
+        {
+          "allOf": [
+            { "$ref": "#/$defs/source" },
+            { "properties": { "path": { "const": "registry/capabilities.yaml" } } }
+          ]
+        },
+        {
+          "allOf": [
+            { "$ref": "#/$defs/source" },
+            { "properties": { "path": { "const": "registry/executor-bindings.yaml" } } }
+          ]
+        }
+      ],
+      "items": false
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "documentVersion", "digest"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "enum": [
+            "ontology/capability-relations.yaml",
+            "ontology/fact-types.yaml",
+            "registry/capabilities.yaml",
+            "registry/executor-bindings.yaml"
+          ]
+        },
+        "documentVersion": { "type": "integer", "minimum": 1 },
+        "digest": { "$ref": "#/$defs/sha256" }
+      }
+    }
+  }
+}

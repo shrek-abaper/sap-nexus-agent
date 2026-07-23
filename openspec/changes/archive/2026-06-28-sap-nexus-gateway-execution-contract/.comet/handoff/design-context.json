@@ -1,0 +1,14 @@
+{
+  "change": "sap-nexus-gateway-execution-contract",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "eb53e8f906bc4810be2046d1232da7537ef1591578bdff2bf2f1be981ecf0ead",
+  "files": [
+    { "path": "openspec/changes/sap-nexus-gateway-execution-contract/proposal.md", "sha256": "25d1db1cef4841f380427e15128c2cf2e7f054a33a21f63de2b029b3c5f8a23c" },
+    { "path": "openspec/changes/sap-nexus-gateway-execution-contract/design.md", "sha256": "55f66b686cab47e779f69471e081c11166e7584d4ee1b7eab119a11d7c2d9fff" },
+    { "path": "openspec/changes/sap-nexus-gateway-execution-contract/tasks.md", "sha256": "7ef4c8a3144426c55153e2c58650410d175fd971baefe94ad068b04a2996f475" },
+    { "path": "openspec/changes/sap-nexus-gateway-execution-contract/specs/gateway-execution-contract/spec.md", "sha256": "b4475d683c886eca517247bdd0dc35309e65b26e0cdd3e6f4db8c211e30285f1" }
+  ]
+}

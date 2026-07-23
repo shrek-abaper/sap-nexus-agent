@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<rdf:RDF
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:sapnexus="https://sap-nexus-agent.local/ontology#">
+
+  <owl:Ontology rdf:about="https://sap-nexus-agent.local/ontology/mm-purchaserequisition">
+    <owl:imports rdf:resource="https://sap-nexus-agent.local/ontology/core"/>
+  </owl:Ontology>
+
+  <owl:Class rdf:about="sapnexus:PurchaseRequisition">
+    <rdfs:subClassOf rdf:resource="sapnexus:BusinessObject"/>
+  </owl:Class>
+  <owl:Class rdf:about="sapnexus:PurchaseRequisitionCreateAction">
+    <rdfs:subClassOf rdf:resource="sapnexus:Action"/>
+  </owl:Class>
+  <owl:Class rdf:about="sapnexus:PrNumber"/>
+  <owl:Class rdf:about="sapnexus:AcctAssignmentCat"/>
+  <owl:Class rdf:about="sapnexus:CostCenter"/>
+  <owl:Class rdf:about="sapnexus:DeliveryDate"/>
+  <owl:Class rdf:about="sapnexus:PurchasingGroup"/>
+
+  <owl:NamedIndividual rdf:about="sapnexus:MM_PR_CreateDraft">
+    <rdf:type rdf:resource="sapnexus:PurchaseRequisitionCreateAction"/>
+    <rdfs:label>MM.PR.CreateDraft</rdfs:label>
+  </owl:NamedIndividual>
+</rdf:RDF>

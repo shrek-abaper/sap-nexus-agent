@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sap-nexus-agent"
+version = "0.1.0"
+description = "Read-only SAP Nexus Agent MVP"
+requires-python = ">=3.12"
+dependencies = [
+    "openai>=1.0.0",
+    "python-dotenv>=1.0.0",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+test = [
+    "jsonschema>=4.0.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]

@@ -1,0 +1,14 @@
+{
+  "change": "sap-nexus-agent-workbench-console",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "70fc54e661b70178a22032e98fcdaa74d3ce36e6dac8a0b9177b68f38e7c44f0",
+  "files": [
+    { "path": "openspec/changes/sap-nexus-agent-workbench-console/proposal.md", "sha256": "cc0f5f6f568580a179db034a631c24bfedb200b58976a7bba51912d735eaf3e0" },
+    { "path": "openspec/changes/sap-nexus-agent-workbench-console/design.md", "sha256": "924a869a0943344f51b6ba88da54a40ee3d2469249046d7b631c21d699b74c56" },
+    { "path": "openspec/changes/sap-nexus-agent-workbench-console/tasks.md", "sha256": "fa5119d38db7a9136bf5a2dfcb0042e626fdfb1734b643f4eca23e3b1c400c09" },
+    { "path": "openspec/changes/sap-nexus-agent-workbench-console/specs/agent-workbench-console/spec.md", "sha256": "2590beed692553261c46715b90d84b4ecc816173b1de6c4df594e9c19f5a30ed" }
+  ]
+}

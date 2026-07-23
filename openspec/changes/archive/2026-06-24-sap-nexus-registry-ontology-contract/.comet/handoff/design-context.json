@@ -1,0 +1,14 @@
+{
+  "change": "sap-nexus-registry-ontology-contract",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "84e5f42be87b99d010277d439c57469bae3efb768b5b6fddf5c4582f6efe9a73",
+  "files": [
+    { "path": "openspec/changes/sap-nexus-registry-ontology-contract/proposal.md", "sha256": "4db0eebe02d7b215a7cf63b16ff0cfde58e00dca5176a2728c1dc1d405a7ce04" },
+    { "path": "openspec/changes/sap-nexus-registry-ontology-contract/design.md", "sha256": "1ed016da50f891af14697bf35e9f12a6802315086b5ea27dd49fbb964e0f656c" },
+    { "path": "openspec/changes/sap-nexus-registry-ontology-contract/tasks.md", "sha256": "4b22cbdcee8637e6f3636121a21c65ebf96a0de80cbacc0b9eea42c193d9b4a0" },
+    { "path": "openspec/changes/sap-nexus-registry-ontology-contract/specs/registry-ontology-contract/spec.md", "sha256": "6f2fbdfc8460ec247a6e3e4f94557097c561f84936dc2945a28b6c4f33a517f7" }
+  ]
+}

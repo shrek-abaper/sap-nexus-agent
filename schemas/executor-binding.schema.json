@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sap-nexus-agent.local/schemas/executor-binding.schema.json",
+  "title": "SAP Nexus Executor Binding Catalog",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "bindings"],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "bindings": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/binding" }
+    }
+  },
+  "$defs": {
+    "binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bindingId", "type", "constraints"],
+      "properties": {
+        "bindingId": { "type": "string", "minLength": 1 },
+        "type": {
+          "type": "string",
+          "enum": ["JCO_RFC", "ODATA", "CDS_ADT", "CDS_ODATA", "REST_JSON"]
+        },
+        "rfcName": { "type": "string", "minLength": 1 },
+        "allowedImports": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "allowedOutputs": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "serviceRef": { "type": "string", "minLength": 1 },
+        "entitySet": { "type": "string", "minLength": 1 },
+        "cdsEntity": { "type": "string", "minLength": 1 },
+        "operation": { "type": "string", "minLength": 1 },
+        "systemRef": { "type": "string", "minLength": 1 },
+        "method": {
+          "type": "string",
+          "enum": ["GET", "POST", "PUT", "PATCH", "DELETE"]
+        },
+        "pathTemplate": { "type": "string", "minLength": 1 },
+        "request": { "type": "object" },
+        "response": { "type": "object" },
+        "filterMapping": {
+          "type": "object",
+          "additionalProperties": { "type": "string", "minLength": 1 }
+        },
+        "topLimit": { "type": "integer", "minimum": 1 },
+        "selectFields": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "auth": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["credentialRef"],
+          "properties": {
+            "type": { "type": "string", "minLength": 1 },
+            "credentialRef": { "type": "string", "minLength": 1 }
+          }
+        },
+        "constraints": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["sideEffect"],
+          "properties": {
+            "sideEffect": { "type": "string", "enum": ["none", "read", "write", "sap_write"] },
+            "timeoutMs": { "type": "integer", "minimum": 1 },
+            "maxRetries": { "type": "integer", "minimum": 0 },
+            "maxRows": { "type": "integer", "minimum": 1 }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "JCO_RFC" } }, "required": ["type"] },
+          "then": { "required": ["rfcName", "allowedImports", "allowedOutputs"] }
+        },
+        {
+          "if": { "properties": { "type": { "const": "ODATA" } }, "required": ["type"] },
+          "then": { "required": ["serviceRef", "entitySet", "method", "filterMapping", "topLimit"] }
+        },
+        {
+          "if": { "properties": { "type": { "const": "CDS_ADT" } }, "required": ["type"] },
+          "then": { "required": ["cdsEntity", "operation"] }
+        },
+        {
+          "if": { "properties": { "type": { "const": "CDS_ODATA" } }, "required": ["type"] },
+          "then": { "required": ["serviceRef", "entitySet", "method"] }
+        },
+        {
+          "if": { "properties": { "type": { "const": "REST_JSON" } }, "required": ["type"] },
+          "then": {
+            "required": ["systemRef", "method", "pathTemplate", "request", "response", "auth"]
+          }
+        }
+      ]
+    }
+  }
+}

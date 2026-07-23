@@ -1,0 +1,49 @@
+planGraphVersion: 1
+planId: plan.material-supply.fixture-001
+goalId: goal.material-supply.fixture-001
+executionMode: READ_ONLY
+snapshotId: sha256:0000000000000000000000000000000000000000000000000000000000000000
+nodes:
+  - nodeId: inventory
+    capabilityId: MM.Inventory.GetAvailability
+    parameterBindings:
+      - parameterName: material
+        source:
+          kind: goalConstraint
+          constraintName: material
+      - parameterName: plant
+        source:
+          kind: goalConstraint
+          constraintName: plant
+    producesFactTypes:
+      - sapnexus:InventoryAvailabilityFact
+    governance:
+      capabilityKind: Function
+      sideEffect: none
+      requiresApproval: false
+      approvalPolicy: not_required
+  - nodeId: purchaseOrders
+    capabilityId: MM.PurchaseOrder.GetList
+    parameterBindings:
+      - parameterName: material
+        source:
+          kind: goalConstraint
+          constraintName: material
+      - parameterName: plant
+        source:
+          kind: goalConstraint
+          constraintName: plant
+    producesFactTypes:
+      - sapnexus:PurchaseOrderSupplyFact
+    governance:
+      capabilityKind: Function
+      sideEffect: none
+      requiresApproval: false
+      approvalPolicy: not_required
+edges: []
+topologicalOrder: [inventory, purchaseOrders]
+goalOutputs:
+  - factTypeId: sapnexus:InventoryAvailabilityFact
+    producerNodeId: inventory
+  - factTypeId: sapnexus:PurchaseOrderSupplyFact
+    producerNodeId: purchaseOrders

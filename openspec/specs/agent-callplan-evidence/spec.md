@@ -1,0 +1,220 @@
+# agent-callplan-evidence Specification
+
+## Purpose
+TBD - created by archiving change sap-nexus-agent-callplan-evidence. Update Purpose after archive.
+## Requirements
+### Requirement: Chinese inventory intent parsing
+The system SHALL parse Chinese inventory availability queries for `MM.Inventory.GetAvailability` into normalized intent parameters without using free-form RFC names. The parser MAY use a real LLM intent adapter before deterministic validation, but the LLM output is advisory and MUST be normalized into the same closed-set intent contract before capability selection.
+
+#### Scenario: Parse complete inventory availability query with LLM adapter
+- **WHEN** hybrid intent mode is enabled and the LLM returns trusted JSON for `DEMOA1 在 1000 还有多少可用库存？`
+- **THEN** the Agent identifies inventory availability intent and extracts `material=DEMOA1` and `plant=1000`
+- **AND** the Agent proceeds through deterministic closed-set capability selection before Gateway validation
+
+#### Scenario: Fall back to rule parser when LLM is unavailable
+- **WHEN** hybrid intent mode is enabled and the LLM client is missing configuration, times out, returns malformed JSON, or cannot be reached
+- **THEN** the Agent falls back to the existing deterministic rule parser
+- **AND** executable rule-parser results still follow the normal CallPlan and Gateway path
+
+#### Scenario: Reject LLM-generated RFC name
+- **WHEN** the LLM returns JSON containing `rfcName` or a raw SAP BAPI/RFC identifier
+- **THEN** the Agent treats the output as untrusted and does not execute from that LLM output
+- **AND** Gateway validate and execute are not called unless a safe fallback parser independently produces a valid closed-set capability request
+
+### Requirement: Missing parameter clarification
+The system MUST clarify missing required inventory parameters before any Gateway validate or execute call, whether missing parameters are detected by rules or by LLM output.
+
+#### Scenario: LLM missing plant is clarified before Gateway call
+- **WHEN** the LLM identifies inventory availability intent but omits `plant`
+- **THEN** the Agent returns a Chinese clarification asking for `plant`
+- **AND** the Agent does not call Gateway validate or execute
+
+### Requirement: Closed-set capability selection
+The system SHALL select capabilities only from the Registry closed set and MUST reject unsupported intent before Gateway execution. The selector SHALL route recognized intents to their registered capability IDs across executor types (for example `inventory_availability` -> `MM.Inventory.GetAvailability` via `JCO_RFC`, `purchase_order_list` -> `MM.PurchaseOrder.GetList` via `ODATA`) without the Agent needing to know the executor type or binding at selection time. LLM-assisted selection MUST be constrained to the same closed set and MUST NOT introduce new executable capability IDs.
+
+#### Scenario: Route inventory intent to inventory capability
+- **WHEN** the rule parser identifies `inventory_availability` intent with required `material` and `plant`
+- **THEN** the Agent selects `capabilityId=MM.Inventory.GetAvailability` and proceeds to CallPlan and Gateway validation
+- **AND** the Agent does not choose an executor type or binding at selection time
+
+#### Scenario: Route purchase order intent to purchase order capability
+- **WHEN** the rule parser identifies `purchase_order_list` intent with at least one filter parameter
+- **THEN** the Agent selects `capabilityId=MM.PurchaseOrder.GetList` and proceeds to CallPlan and Gateway validation
+- **AND** the Agent does not choose an executor type or binding at selection time
+
+#### Scenario: LLM selects registered capability only
+- **WHEN** the LLM returns `capabilityId=MM.Inventory.GetAvailability` or `capabilityId=MM.PurchaseOrder.GetList` with required parameters
+- **THEN** the Agent accepts the candidate only after deterministic validation confirms the closed-set capability
+
+#### Scenario: LLM returns unknown capability
+- **WHEN** the LLM returns an unknown or unsupported `capabilityId`
+- **THEN** the Agent rejects that LLM output for execution and does not call Gateway validate or execute from it
+
+### Requirement: CallPlan before Gateway execution
+The system SHALL create a structured CallPlan before Gateway validation or execution for every executable request.
+
+#### Scenario: Complete request creates CallPlan before validate
+- **WHEN** a complete inventory availability request is executable
+- **THEN** the Agent creates a CallPlan containing `traceId`, `capabilityId=MM.Inventory.GetAvailability`, `kind=Function`, normalized parameters, validation policy, creator, and approval requirement before Gateway validate
+
+#### Scenario: CallPlan is read-only
+- **WHEN** the Agent creates a CallPlan for `MM.Inventory.GetAvailability`
+- **THEN** the CallPlan records `requiresApproval=false` and contains no SAP write action fields
+
+### Requirement: Gateway validate and execute orchestration
+The system SHALL call the Java Gateway capability APIs by `capabilityId` and handle validation or execution failure as structured Agent outcomes.
+
+#### Scenario: Valid request calls Gateway validate then execute
+- **WHEN** Gateway validate succeeds for a complete CallPlan
+- **THEN** the Agent calls Gateway execute for `MM.Inventory.GetAvailability` and parses the returned `ExecutionResult`
+
+#### Scenario: Gateway validation failure stops execution
+- **WHEN** Gateway validate returns `INVALID_PARAMETER` or `MISSING_PARAMETER`
+- **THEN** the Agent returns a structured Chinese failure response and does not call Gateway execute
+
+#### Scenario: Gateway execution failure is reported without secrets
+- **WHEN** Gateway execute returns a failed `ExecutionResult`
+- **THEN** the Agent reports the failure using `errorType` and safe return messages without exposing SAP passwords, destination config, tokens, or `.env` contents
+
+### Requirement: ExecutionResult to ReasoningFact conversion
+The system SHALL convert successful inventory `ExecutionResult` data into deterministic `ReasoningFact` evidence before narration.
+
+#### Scenario: Successful execution creates availability fact
+- **WHEN** Gateway execute returns success with `data.availableQuantity`, `data.material`, `data.plant`, and optional MD04 evidence fields derived from `MRP_IND_LINES`
+- **THEN** the Agent creates a `ReasoningFact` with `predicate=availableQuantity`, `deterministic=true`, `confidence=1.0`, source capability metadata, and evidence fields for the returned quantity and source field
+- **AND** the Chinese narrative uses the normalized `availableQuantity` without exposing raw SAP table contents or credentials
+
+#### Scenario: Failed execution does not create success fact
+- **WHEN** Gateway execute returns `success=false`
+- **THEN** the Agent does not create a deterministic availability fact that claims a successful quantity
+
+### Requirement: Chinese narration from facts only
+
+The system SHALL render Chinese narrative only from fields present in `ReasoningFact` or structured failure outcomes. When the LLM narration path is used, the LLM SHALL be constrained (via prompt and output redaction) to use only the provided fact fields and MUST NOT invent records, values, or fields; when the LLM is unavailable the system SHALL fall back to deterministic template narration grounded on the same fact fields.
+
+#### Scenario: Narrate available quantity from fact
+
+- **WHEN** a `ReasoningFact` contains material, plant, available quantity, and unit
+- **THEN** the Chinese answer includes only those fact values and does not invent additional stock, demand, recommendation, or write-action details
+
+#### Scenario: Narrator rejects missing fact values
+
+- **WHEN** the narrator is asked to output a quantity that is not present in `ReasoningFact`
+- **THEN** the Agent returns or raises a narrative guard failure (or falls back to template) instead of inventing the value
+
+### Requirement: Eval and trace evidence
+The system SHALL provide repeatable fast eval coverage for the read-only Agent MVP and keep generated runtime evidence out of git. Normal verification MUST NOT require live LLM network access or real model credentials.
+
+#### Scenario: Fake LLM eval covers hybrid behavior
+- **WHEN** the Agent test suite runs without live LLM credentials
+- **THEN** fake LLM cases verify happy path, missing params, fallback, unknown capability, malformed JSON, and `rfcName` guard behavior
+
+#### Scenario: Optional live LLM smoke is explicitly gated
+- **WHEN** live LLM smoke tests exist
+- **THEN** they run only when an explicit environment flag is set
+- **AND** they skip by default without printing API keys, full model gateway config, or raw sensitive response content
+
+### Requirement: Purchase order list intent parsing
+The system SHALL parse Chinese purchase order list queries for `MM.PurchaseOrder.GetList` into normalized intent parameters without using free-form RFC names or raw OData endpoints. The parser MAY use the real LLM intent adapter before deterministic validation, but the LLM output is advisory and MUST be normalized into the same closed-set intent contract before capability selection.
+
+#### Scenario: Parse purchase order query with vendor filter
+- **WHEN** the user asks `查供应商 DEMOV1 的采购订单`
+- **THEN** the Agent identifies `purchase_order_list` intent and extracts `vendor=DEMOV1`
+- **AND** the Agent proceeds through deterministic closed-set capability selection before Gateway validation
+
+#### Scenario: Parse purchase order query with multiple filters
+- **WHEN** the user asks `查工厂 1000 物料 MAT001 的采购订单`
+- **THEN** the Agent identifies `purchase_order_list` intent and extracts plant and material parameters
+- **AND** the Agent maps the parameters to the registered `$filter` fields through the capability contract, not by emitting a raw OData `$filter` string
+
+#### Scenario: Clarify missing filter before Gateway call
+- **WHEN** the user asks `帮我看看采购订单` without any of PO number, vendor, plant/purchasing group, or material
+- **THEN** the Agent returns a Chinese clarification asking for at least one filter parameter
+- **AND** the Agent does not call Gateway validate or execute
+
+#### Scenario: Reject raw OData endpoint in user or LLM input
+- **WHEN** the user or LLM output contains a raw OData URL, service path, or `$filter` string
+- **THEN** the Agent treats the input as untrusted and does not execute from it
+- **AND** Gateway validate and execute are not called unless a safe fallback parser independently produces a valid closed-set capability request
+
+### Requirement: List execution result to reasoning facts
+
+The system SHALL convert a successful list-shaped `ExecutionResult` into one or more deterministic `ReasoningFact` entries before narration, with one fact per returned item, and MUST narrate list results only from fields present in those facts. When the LLM narration path is used, the LLM SHALL be constrained to cite only item fields present in the facts and MUST NOT invent additional records or quantities; when the LLM is unavailable the system SHALL fall back to deterministic template narration.
+
+#### Scenario: Successful list execution creates per-item facts
+
+- **WHEN** Gateway execute returns success with a non-empty `purchaseOrders` array for `MM.PurchaseOrder.GetList`
+- **THEN** the Agent creates one `ReasoningFact` per purchase order item with `predicate=purchaseOrderItem`, `deterministic=true`, `confidence=1.0`, source capability metadata, and per-item evidence fields
+- **AND** the Chinese narrative cites only those item fields present in the facts and does not invent additional records
+
+#### Scenario: Empty list execution creates no item facts
+
+- **WHEN** Gateway execute returns success with an empty `purchaseOrders` array for a valid filter
+- **THEN** the Agent does not create per-item facts that claim records exist
+- **AND** the Chinese narrative states that no matching purchase orders were found
+
+#### Scenario: Narrator rejects list item values not present in facts
+
+- **WHEN** the narrator is asked to output a PO number, vendor, or quantity that is not present in any `ReasoningFact`
+- **THEN** the Agent returns or raises a narrative guard failure (or falls back to template) instead of inventing the value
+
+### Requirement: Purchase order ExecutionResult to ReasoningFact conversion with nested items
+
+The system SHALL convert a successful purchase order `ExecutionResult` into one `ReasoningFact` per purchase order item, handling the real OData nested structure where item-level fields (`plant`, `material`, `orderQuantity`, `purchaseOrderUnit`) are nested inside a `header.items[]` sub-array. The system SHALL also remain backward-compatible with the flat shape where all fields sit directly on the purchase order entry.
+
+#### Scenario: Nested OData items produce one fact per item
+
+- **WHEN** a successful purchase order execution returns `purchaseOrders` where each entry has a nested `items` array
+- **THEN** the Agent creates one `ReasoningFact` per item
+- **AND** each fact's evidence carries `purchaseOrder` and `supplier` from the header entry
+- **AND** each fact's evidence carries `plant`, `material`, `orderQuantity`, `purchaseOrderUnit` from the nested item
+- **AND** the Chinese narrative lists each item without a narrative guard failure
+
+#### Scenario: Flat purchase order entries remain supported
+
+- **WHEN** a successful purchase order execution returns `purchaseOrders` where each entry carries all fields directly (no `items` array)
+- **THEN** the Agent creates one `ReasoningFact` per purchase order entry using the entry's own fields
+- **AND** existing flat-shape behavior is preserved
+
+#### Scenario: Empty nested items yield no fact for that purchase order
+
+- **WHEN** a purchase order entry has an empty `items` array
+- **THEN** the Agent creates no `ReasoningFact` for that entry
+- **AND** if all entries have empty items, the narrator returns the no-match message
+
+### Requirement: LLM-grounded flexible narration
+
+The system SHALL render Chinese narrative by grounding a Large Language Model on `ReasoningFact` fields and capability metadata, rather than only fixed string templates. The LLM narration prompt SHALL be derived from the capability's `businessObject`/`capabilityId` metadata so that a newly registered capability gets LLM narration without hardcoding a narration template. The system SHALL constrain the LLM to use only the provided fact fields and MUST NOT allow it to invent records, values, or fields not present in the facts.
+
+#### Scenario: Inventory narration generated by LLM
+
+- **WHEN** a `ReasoningFact` for `MM.Inventory.GetAvailability` carries material, plant, available quantity, and unit
+- **THEN** the LLM generates a natural-language Chinese conclusion grounded on those fact fields
+- **AND** the conclusion does not invent additional stock, demand, recommendation, or write-action details
+- **AND** the conclusion does not expose raw SAP table contents or credentials
+
+#### Scenario: Purchase order list narration generated by LLM
+
+- **WHEN** one or more `ReasoningFact` entries for `MM.PurchaseOrder.GetList` carry per-item evidence
+- **THEN** the LLM generates a natural-language Chinese summary grounded on those fact fields
+- **AND** the summary cites only item fields present in the facts and does not invent additional records or quantities
+
+#### Scenario: Newly registered capability gets LLM narration without template code
+
+- **WHEN** a new capability is registered as `status: active` with a `businessObject` and outputs
+- **AND** no narration-recognition code is changed
+- **THEN** the LLM narration path can narrate that capability's facts using the derived guidance
+- **AND** does not require a hardcoded narration template for the new capability
+
+#### Scenario: LLM narration falls back to template when LLM unavailable
+
+- **WHEN** the LLM is unavailable (missing configuration or connection failure) during narration
+- **THEN** the Agent falls back to deterministic template narration grounded on the fact fields
+- **AND** does not fail the run solely because the LLM is unavailable
+
+#### Scenario: Empty result narration
+
+- **WHEN** narration is requested for an empty fact list (no matching records)
+- **THEN** the narrative states that no matching records were found
+- **AND** does not invoke the LLM to invent records
+

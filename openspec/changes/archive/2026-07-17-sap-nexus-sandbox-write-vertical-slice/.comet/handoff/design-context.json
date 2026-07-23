@@ -1,0 +1,14 @@
+{
+  "change": "sap-nexus-sandbox-write-vertical-slice",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "7ada308e5b95f561aa1b68961b39babbb148c6b49e12735c637c60e40c5ef94f",
+  "files": [
+    { "path": "openspec/changes/sap-nexus-sandbox-write-vertical-slice/proposal.md", "sha256": "9570f7176ec1c98adfff33b251988083b3c5c5569047cc69876c14aed6e74186" },
+    { "path": "openspec/changes/sap-nexus-sandbox-write-vertical-slice/design.md", "sha256": "91aa83976b1646938844e890b9311a83f391e6a05c67494b39915a5e2baaf937" },
+    { "path": "openspec/changes/sap-nexus-sandbox-write-vertical-slice/tasks.md", "sha256": "0be35ea2e5d1607d3c5525638bcb29ff732ca0d89b09d3b34b4e26d020c9e739" },
+    { "path": "openspec/changes/sap-nexus-sandbox-write-vertical-slice/specs/pr-create-action/spec.md", "sha256": "ddd7e3dde705fbdb5c4dfd19395fd7e586dae6ba2953af062f72fef7ff4577f4" }
+  ]
+}
