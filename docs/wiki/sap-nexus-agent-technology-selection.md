@@ -5,20 +5,23 @@
 | 字段 | 内容 |
 |---|---|
 | 文档名称 | `SAP Nexus Agent 技术选型与工程路线决策` |
-| 当前版本 | `v0.2.7` |
+| 当前版本 | `v0.2.9` |
 | 状态 | `Decision Baseline Draft` |
 | 创建日期 | `2026-06-19` |
-| 最近更新 | `2026-07-18` |
+| 最近更新 | `2026-07-24` |
 | 维护目录 | `docs/wiki/` |
 | 文档定位 | 指导 SAP Nexus Agent 工程骨架、技术栈和 AI Native 工程产物组织的技术选型基线 |
 | 关联技术架构 | `docs/wiki/sap-nexus-agent-technical-architecture.md` |
 | 关联实施路线 | `docs/wiki/sap-nexus-agent-implementation-roadmap.md` |
 | 关联智能编排路线 | `docs/wiki/sap-nexus-agent-openharness-semantic-orchestration.md` |
+| 关联 DeerFlow 决策 | `docs/wiki/sap-nexus-agent-deerflow-adoption-analysis.md` |
 
 ## 版本记录
 
 | 版本 | 日期 | 变更摘要 | 决策状态 |
 |---|---|---|---|
+| `v0.2.9` | `2026-07-24` | 区分本地 MVP 与共享/量产运行选型：当前 SSE 为 buffered SSE-format、Run/Approval 为进程内状态；补充可信身份、durable runtime 条件门禁、分层 Store 与真实 streaming 目标；把 OData 双跳限定为已验证实现而非所有 HTTP executor 默认模板；同步 S1 已归档 | 当前技术基线 |
+| `v0.2.8` | `2026-07-23` | 增加 §5.7 DeerFlow 2.1.0 借鉴选型：不引入 `deerflow-harness` 或第二 runtime；S2 适配 progressive capability disclosure，S3 适配 PlanGraph-governed task lifecycle；durable runtime 与 UserPreferenceMemory 保持触发式候选 | 当前技术基线 |
 | `v0.2.7` | `2026-07-18` | 增加 §5.6 OpenHarness 对比后的语义编排选型：OpenHarness 仅作设计参考，不引入 runtime 依赖；Planner 留在现有 Python Agent，关系图采用 YAML + JSON Schema + 内存图，LLM 只生成 GoalSpec/PlanDraft candidate，deterministic PlanCompiler 和现有 Gateway 保持执行权威 | 当前技术基线 |
 | `v0.2.6` | `2026-07-14` | 增加 §5.5 能力关系存储选型（三元组模型 + 文件 + 内存图先行，图数据库为 Phase 8 触发式 Reserved 决策，引擎待 spike）；更新结论先行表 Knowledge Graph 行与 §11 待确认表 | 当前技术基线 |
 | `v0.2.5` | `2026-07-09` | OData executor 选型落地：OData 用 Python（非 Java），因 OData 是纯 HTTP 无 Java SDK 绑定需求（JCo 用 Java 是 `sapjco3.jar` 强制）；Java Gateway 仅薄反代 + Python 微服务做真实 OData 逻辑；`services/` 重组为连接器执行层（`services/gateway/` Java 多模块 + `services/odata-service/` Python） | 已完成 |
@@ -34,10 +37,10 @@
 
 ## 1. 结论先行
 
-可以继续开发，但不应裸写代码。Registry / OWL Contract、Gateway execution、第二条 Read capability 和 sandbox write vertical slice 均已完成；OpenHarness 对比后，当前下一步建议先为语义规划基础创建正式 design：
+可以继续开发，但不应裸写代码。Registry / OWL Contract、Gateway execution、第二条 Read capability、sandbox write vertical slice 和 S1 Semantic Planning Foundation 均已完成实现与验证；当前下一步仍是 S2 Planner Dry-run design：
 
 ```text
-sap-nexus-semantic-planning-foundation
+sap-nexus-planner-dry-run
 ```
 
 推荐默认选型：
@@ -52,16 +55,22 @@ sap-nexus-semantic-planning-foundation
 | Python Agent | `agent/sap_nexus_agent/` package | CLI、Gateway client、CallPlan、Fact、Narrator、Eval 分层 |
 | Frontend Workbench | React + Next.js + TypeScript | 内部 Agent 控制台和本地体验工具 |
 | Frontend Architecture | Modular Monolith | 按 Agent runtime、timeline、artifact、trace、HITL 模块切分 |
-| Runtime Streaming | SSE first, WebSocket later | 先观察执行链路，后续再支持双向审批/协作 |
+| Runtime Streaming | SSE protocol first | 当前实现是完成后一次性返回的 SSE-formatted event body；共享环境目标是增量 SSE + cursor/reconnect/replay，WebSocket 仍只在双向协作证据出现后引入 |
 | Runtime Adapter | Agent Runtime Adapter | 前端不直接调用 SAP / Gateway / raw RFC |
-| Runtime Store | JSONL first | traces、callplans、facts、eval outputs 可回放，后续可迁移 DB |
+| Runtime Store | 按状态职责分层 | 本地 trace/eval 可用 JSONL；Thread/Run、Approval、PlanExecution 和 Evidence 在共享/量产环境必须使用满足各自一致性与保留要求的 durable store |
+| Trusted Identity | Server-owned principal context | principal、tenant、role、data scope 和 ApprovalActor 只能由受信服务端注入；候选可见性与执行授权双重校验 |
 | Eval | YAML cases + Python runner | 能力命中、缺参拦截、事实一致性、叙事守卫 |
 | Formal Workflow | OpenSpec / Comet | feature 变更可追溯、可验证、可归档 |
 | Semantic Planner | 现有 Python Agent 内独立模块 | 复用 Registry、CallPlan、Fact、Eval 和 Trace，不引入第二 Agent runtime |
 | Planner Authority | LLM candidate + deterministic PlanCompiler | LLM 生成 GoalSpec/PlanDraft；编译器负责类型、依赖、绑定、排序和治理校验 |
-| Plan Contract | JSON Schema `GoalSpec` / `PlanGraph` + Registry Snapshot | 多能力计划可校验、可持久、可回放；具体 schema 待正式 design |
+| Plan Contract | JSON Schema `GoalSpec` / `PlanGraph` + Registry Snapshot | S1 schema 与 validation 已落地；S2 设计 PlanDraft/PlanCompiler/dry-run，S3 再设计执行 ledger 与 OutputProjection |
 | Knowledge Graph | Not runtime in MVP | 能力关系用三元组模型 + 文件存储（edge list）+ 内存图；图数据库为 Phase 8 触发式 Reserved 决策，引擎待 ROI spike（RDF store vs Neo4j） |
 | OpenHarness | 设计参考，不增加依赖 | 借鉴 Agent loop、Tool Schema、Permission/Hook、Dry-run、Memory/Resume；拒绝第二运行时和模型自由 SAP Tool Calling |
+| DeerFlow Runtime | 设计参考，不增加依赖 | 不引入 `deerflow-harness`、DeerFlow Gateway、默认 lead agent 或 frontend；避免第二 Agent runtime 和执行权威 |
+| Progressive Capability Disclosure | S2 内适配 | metadata-first `CapabilityCard` -> 小候选集合 -> LLM candidate；deterministic MatchDecision / PlanCompiler 最终裁决 |
+| PlanExecutor Lifecycle | S3 内适配 | 只借鉴 ready-node、并发上限、timeout、cancel、ledger、trace；并行权来自已验证 PlanGraph |
+| Durable Agent Runtime | Conditional production gate | 不阻塞本地 S2；共享 S3、跨重启、长审批、multi-worker / HA 或非 sandbox WRITE 前必须先落持久 Run/Approval、ownership/lease、event cursor 和幂等 continuation |
+| Governed User Memory | Later / Triggered | 身份、tenant、retention、删除和审计契约成熟后再 pilot；不保存业务事实或执行权威 |
 | JCo RFC Executor | Java JCo | 当前已实现，适合 BAPI/RFC |
 | OData Executor | Python 微服务 + Java 薄反代 (HTTP client + CSRF/session/error normalization) | 已落地，Python + Java 双语言；详见 §5.4 |
 | CDS / ADT Executor | ADT REST API + XML parsing + SELECT-only guard | 待 pilot，参考 `sap-adt-cli` |
@@ -280,7 +289,7 @@ Executor type 选型：
 - **OData 是纯 HTTP 协议，无 Java 绑定理由**：OData 调用是标准 HTTP GET + CSRF token + JSON 响应归一。Java 在此场景下没有任何 SDK 级优势，反而 Python 在 HTTP client、JSON 操作、CSRF/session 管理、错误归一方面更轻量且生态成熟。
 - **Java Gateway 保持薄反代角色**：`ODataHttpProxyAdapter`（Java 侧）只做 HTTP 转发到 Python 微服务 + JSON 归一为 `TechnicalExecutionResult` + redaction。它不做 `$filter` 组装、不直连 SAP。这保持 Java Gateway 的 executor-agnostic 定位 -- dispatcher 按 type 路由，每个 adapter 只负责自己 executor 的技术执行。
 - **Agent 单端点保持**：Agent 调 Java Gateway（:8080）只认 `capabilityId`，不感知 executor 类型是 Java 直连还是 Python 微服务。Java dispatcher 自动路由。
-- **未来扩展模式**：纯 HTTP / 无 Java SDK 的 executor（如 `REST_JSON`）可沿用此模式 -- Java 薄反代 + Python 服务做真实逻辑。有 Java SDK 的 executor（如 JCo）则 Java adapter 直接实现。
+- **未来扩展模式不默认复制双跳**：当前 Python OData service + Java thin proxy 是已验证实现，不自动成为 `REST_JSON`、CDS 或其他 HTTP executor 的模板。新增独立服务必须由 SDK、进程级 credential 隔离、独立扩缩容、团队 ownership 或故障域证据驱动；否则优先减少跨服务跳数。
 
 实现位置：
 - Java 薄反代：`services/gateway/odata/`（`ODataHttpProxyAdapter` + `ODataProxyProperties`）
@@ -367,6 +376,35 @@ OpenHarness 式多个 Tool Call 并发不能直接用于组合执行。只有通
 
 详细采纳/拒绝矩阵、领域模型和 S0-S6 路线见 `docs/wiki/sap-nexus-agent-openharness-semantic-orchestration.md`。
 
+### 5.7 DeerFlow 对比后的机制采纳选型
+
+DeerFlow 2.1.0 是成熟度较高的通用 Super Agent Harness，但其默认执行模式仍是模型在可见 Tool 集合中选择下一步。SAP Nexus 不直接选择以下组件作为生产依赖：
+
+- `deerflow-harness` 和默认 lead agent：会形成第二 Agent loop，且 Tool selection 不是 SAP 执行权威。
+- DeerFlow Gateway / frontend：其 thread / run / workspace 协议与当前 `AgentRunEvent`、审批 artifact 和 evidence timeline 不同，整体替换需要高成本 adapter。
+- DeerFlow task / sub-agent executor：缺少 Fact Type、Capability Relation、Registry Snapshot、side effect 和 approval-aware scheduling。
+- DeerMem：默认面向通用用户 / Agent facts，不能保存 SAP 业务事实、approval 上下文或 policy decision；fallback search 也不足以承担企业事实检索。
+
+选择吸收的窄机制：
+
+| 领域 | 采纳机制 | SAP Nexus 权威边界 |
+|---|---|---|
+| 意图 / 候选发现 | Skill / Tool metadata progressive disclosure、deferred search、visibility pre-filter | 只产生 `CapabilityCard` / candidate；`MatchDecision` / `PlanCompiler` 最终裁决 |
+| 能力组合 | concurrency limit、timeout、cancel、task status、durable ledger、trace propagation | S3 `PlanExecutor` 只执行已验证 PlanGraph 的 ready Read nodes |
+| 长对话 | thread / run、checkpoint version gate、context compaction、resumable SSE | Summary 只属于 `ConversationState`；Plan / Approval / Evidence 结构化持久化 |
+| 记忆 | user / agent scope、backend abstraction、token budget、retention / deletion 管理 | 仅 `UserPreferenceMemory`；作为不可信 advisory context，不能改变执行和治理 |
+
+当前技术策略：
+
+```text
+S2 -> progressive candidate discovery + dry-run only
+S3 -> PlanGraph-governed ready-node scheduler
+productization trigger -> evaluate durable thread/run/checkpoint store
+identity + governance trigger -> evaluate UserPreferenceMemory pilot
+```
+
+完整源码证据、决策矩阵、触发条件和 PoC 边界见 `docs/wiki/sap-nexus-agent-deerflow-adoption-analysis.md`。
+
 ---
 
 ## 6. Python Agent 选型
@@ -426,7 +464,7 @@ Python 技术选择：
 | UI runtime | React |
 | Language | TypeScript |
 | Architecture | Modular Monolith |
-| Streaming | SSE first |
+| Streaming | SSE protocol first；当前 buffered response，量产目标为 incremental + reconnect/replay |
 | Future realtime | WebSocket only when bidirectional interaction is needed |
 | Boundary | Agent Runtime Adapter |
 | State | Agent run state machine + Human-in-the-loop state skeleton |
@@ -467,7 +505,7 @@ frontend/
 
 - 前端只能通过 `Agent Runtime Adapter` 启动和观察 Agent run。
 - 前端不直接调用 Java Gateway / OData Gateway / CDS Gateway / REST Gateway，不直接调用 SAP 或外部系统，不暴露任意 RFC、OData、CDS、ADT 或 REST 调用入口。
-- `SSE` 负责第一版执行链路观察；`WebSocket` 留给人工审批、取消、多轮输入等双向场景。
+- 当前 `SSE` 路由只承担本地执行结果的事件格式展示，不视为真实 streaming；共享环境必须支持增量发布、事件序号、reconnect cursor、terminal state 和 replay。
 - Human-in-the-loop 状态机先实现骨架；read-only capability 显示为 `approval_not_required`。
 - 所有 artifact 展示必须走 redaction，不展示 `.env`、SAP password、destination config、`LLM_API_KEY`、token 或 raw live LLM response。
 
@@ -475,7 +513,18 @@ frontend/
 
 ## 7. Runtime Store 选型
 
-MVP 使用 JSONL：
+Store 选型必须按状态职责拆分，不能用“JSONL first”覆盖所有运行状态：
+
+| 状态 / 数据 | 本地 MVP | 共享 / 量产要求 |
+|---|---|---|
+| Trace / Eval artifact | JSONL | trace backend / relational index / object storage，按查询、保留和脱敏要求选择 |
+| `ConversationState` | process memory | durable thread store，可独立压缩和删除 |
+| `PlanExecutionState` | process memory / schema fixture | transactional durable store，绑定 Registry Snapshot 和 node ledger |
+| `EvidenceState` | JSONL / artifact | append-oriented evidence store，保留 lineage、版本和审计引用 |
+| `ApprovalRecord` | `InMemoryApprovalStore` | durable、原子 claim、幂等、可审计并绑定真实 ApprovalActor |
+| Runtime event stream | buffered SSE-format body | ordered incremental stream + cursor/reconnect/replay |
+
+本地 trace / eval 可以继续使用：
 
 ```text
 runtime/traces/YYYYMMDD.jsonl
@@ -491,11 +540,24 @@ runtime/eval_results/YYYYMMDD.jsonl
 - 不引入数据库运维成本。
 - 后续可以迁移到 SQLite / PostgreSQL / Trace Service。
 
+当前文档不因 DeerFlow 使用 SQLite / PostgreSQL / Redis 就预选基础设施。以下任一场景出现时，必须先启动 `sap-nexus-trusted-durable-runtime-foundation` 独立 change，并在进入对应共享/量产范围前完成：
+
+- run 必须跨进程或跨重启恢复。
+- Human Approval 等待时间超过单进程生命周期。
+- multi-worker / HA Workbench 成为部署要求。
+- 断线、并发或事件量已造成运行状态或证据丢失。
+- S3 需要进入共享多用户环境。
+- 任何非 sandbox WRITE 需要通过 Workbench 或 API 暴露。
+
+届时先确定 `ConversationState`、`PlanExecutionState` 和 `EvidenceState` 的版本化 persistence contract，再比较 SQLite / PostgreSQL / stream bridge；不得从基础设施产品反推状态模型。
+
 要求：
 
 - `runtime/` 默认不提交生成内容。
 - 如需提交 fixture，放到明确的 fixtures 目录并写 README。
 - trace 不得包含 SAP 密码、完整敏感 destination、token 或个人敏感数据。
+- 真实 runtime trace 和业务标识默认不得提交 Git；只有脱敏 fixture 可以进入版本库。
+- Durable store 不可用时，执行和 approval continuation fail-closed；ConversationState 的附加体验可以 fail-soft。
 
 ---
 
@@ -587,23 +649,31 @@ sap-nexus-capability-registry-gateway
 | 依赖下载受限 | 使用审批网络或内部镜像；不把依赖手工塞入 repo |
 | Spring Boot 版本 | 默认 Spring Boot 3.x；若 Java 17 不可用再评估 Spring Boot 2.7 临时方案 |
 | Schema validation 库 | 先选生态成熟库；避免自己手写完整 JSON Schema validator |
-| Runtime Store 是否上 DB | MVP 不上；JSONL 验证 replay 需求后再迁移 |
+| Runtime Store 是否上 DB | 本地 S2 不上；共享 S3/长审批/多实例/非 sandbox WRITE 前按状态契约选择 durable store，不用单一 DB 承担所有职责 |
+| 身份认证 / 授权产品 | 本轮不指定产品；先固化 server-owned principal、tenant、role、data scope、ApprovalActor 和双阶段授权契约 |
 | LLM 何时接入 | 已在 Agent phase 接入；默认 `hybrid`，LLM 失败或输出不可信时规则解析兜底 |
 | 能力关系是否上图数据库 | MVP / Pilot 不上；用三元组模型 + 文件 + 内存图；满足 Phase 8 触发条件并通过 ROI spike 后再评估引擎（RDF store vs Neo4j） |
 | OpenHarness 是否作为 runtime 依赖 | 否；只作为 Agent loop、Tool Schema、Permission/Hook、Dry-run 和 Memory/Resume 的设计参考 |
+| DeerFlow 是否作为 runtime 依赖 | 否；只借鉴 progressive discovery、task lifecycle、durable context 和受限 memory 机制 |
+| Durable Runtime Store 何时选型 | 不阻塞本地 S2；共享 S3、长审批、multi-worker / HA 或非 sandbox WRITE 前成为硬门禁 |
+| UserPreferenceMemory 何时试点 | 身份、tenant、retention、查看/更正/删除和审计契约成熟后；不进入 S2/S3 |
 | 首个多能力组合场景 | 已确认“物料库存 + 采购订单供给概览”；先 dry-run，再只读执行，不输出缺货预测或采购数量 |
 
 ---
 
-## 12. 进入语义规划设计前的验收清单
+## 12. 进入 S2 Planner Dry-run 设计前的验收清单
 
-开始 `sap-nexus-semantic-planning-foundation` 正式 design 前确认：
+开始 `sap-nexus-planner-dry-run` 正式 design 前确认：
 
-- 本文档和 `docs/wiki/sap-nexus-agent-openharness-semantic-orchestration.md` 作为技术基线已被接受。
-- 当前 OpenSpec state 已检查，未在文档阶段提前创建 runtime change。
+- 本文档、`docs/wiki/sap-nexus-agent-openharness-semantic-orchestration.md` 和 `docs/wiki/sap-nexus-agent-deerflow-adoption-analysis.md` 作为技术基线已被接受。
+- 当前 OpenSpec state 已检查；S1 已实现、验证并归档到 `openspec/changes/archive/2026-07-19-sap-nexus-semantic-planning-foundation/`。
 - Registry、Gateway、Eval、第二条 Read capability 和 sandbox write vertical slice 已完成并保持现有验证基线。
 - 首个场景固定为“物料库存 + 采购订单供给概览”。
-- S1 只设计/实现 Fact Type、Capability Relation、GoalSpec、PlanGraph、Registry Snapshot 和 deterministic validator，不执行 SAP。
-- Planner Dry-run 与 Read-only Composition Pilot 拆成后续独立 change，不与 S1 混写。
+- S1 Fact Type、Capability Relation、GoalSpec、PlanGraph、Registry Snapshot、immutable graph 和 deterministic validator 已实现并验证。
+- S2 只设计/实现 progressive `CapabilityCard` discovery、GoalSpec/PlanDraft candidate、deterministic PlanCompiler 和 dry-run evidence；不执行 Gateway / SAP。
+- Read-only Composition Pilot 保持为 S3 独立 change，不与 S2 混写。
 - OpenHarness 不成为 runtime 依赖，不新增第二 Agent loop 或第二执行权威。
+- DeerFlow 不成为 runtime 依赖；S2 只借鉴 `CapabilityCard` progressive disclosure，S3 只借鉴 PlanGraph-governed task lifecycle。
+- Summary、Memory、Tool Call 和 sub-agent output 均不是 PlanGraph、Approval 或 Evidence 权威。
+- 本地 S2 不引入 durable store；但共享 S3、长审批或非 sandbox WRITE 前必须完成 trusted identity、durable Run/Approval 和真实增量 SSE 门禁。
 - 不会实现任意 RFC/OData/ADT/REST/SQL 执行入口、自动本体发布、Write composition、KG runtime 或 Graph Registry backend。

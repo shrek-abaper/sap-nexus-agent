@@ -5,20 +5,23 @@
 | 字段 | 内容 |
 |---|---|
 | 文档名称 | `SAP Nexus Agent 实施路线文档` |
-| 当前版本 | `v0.2.29` |
+| 当前版本 | `v0.2.31` |
 | 状态 | `Lifecycle Roadmap Active` |
 | 创建日期 | `2026-06-18` |
-| 最近更新 | `2026-07-19` |
+| 最近更新 | `2026-07-24` |
 | 维护目录 | `docs/wiki/` |
 | 文档定位 | SAP Nexus Agent 从 MVP 到量产交付的全生命周期实施路线 |
 | 关联技术架构 | `docs/wiki/sap-nexus-agent-technical-architecture.md` |
-| 关联知识导入 | `docs/wiki/sap-nexus-agent-mm-mvp-notion.md` |
+| 关联知识导入 | `docs/wiki/archive/sap-nexus-agent-mm-mvp-notion.md` |
 | 关联智能编排路线 | `docs/wiki/sap-nexus-agent-openharness-semantic-orchestration.md` |
+| 关联 DeerFlow 决策 | `docs/wiki/sap-nexus-agent-deerflow-adoption-analysis.md` |
 
 ## 版本记录
 
 | 版本 | 日期 | 变更摘要 | 决策状态 |
 |---|---|---|---|
+| `v0.2.31` | `2026-07-24` | 基于 OpenHarness / DeerFlow 综合复盘重排近期门禁：同步 S1 已归档；新增 P0A source-of-truth / repository hygiene；将 trusted identity、durable Run/Approval、run ownership 和真实增量 SSE 定义为共享 S3、长审批、multi-worker/HA 或非 sandbox WRITE 前的 P0B 条件硬门禁；S3 增加确定性 OutputProjection、freshness 和 incomplete 语义，S2 仍为下一业务 change | 当前实施基线 |
+| `v0.2.30` | `2026-07-23` | 同步 DeerFlow 2.1.0 借鉴决策：S2 增加 progressive `CapabilityCard` discovery，S3 增加 PlanGraph-governed ready-node lifecycle；新增 durable agent runtime 与 governed user memory 触发式候选，不引入 DeerFlow 依赖且不改变当前 S2 优先级 | 当前实施基线 |
 | `v0.2.29` | `2026-07-19` | 补齐 S1 durable verification audit：披露 executor-binding schema 对 authoritative `sap_write` binding 的兼容对齐、focused `2 passed`、full evidence inventory `7/7` / seed `13/13` / PR `9/9` 与 whole-branch runtime boundary；technical architecture 的 `Next Design` lifecycle 标签按 inspect-only 边界保持未改，当前 lifecycle 由 roadmap/runbook/verification report 承载 | S1 evidence correction 完成；Comet verify/archive 待用户确认 |
 | `v0.2.28` | `2026-07-19` | `sap-nexus-semantic-planning-foundation` S1 contracts、immutable graph、四源 Registry Snapshot、GoalSpec/PlanGraph validator 与 combined release gate 已实现并通过 fresh verification；row 18 标记完成，下一推荐转为 row 19 `sap-nexus-planner-dry-run` design；S3 read-only execution、Dynamic Planner 与 Write composition 继续保持 planned/reserved | S1 已验证；Comet verify/archive 待用户确认 |
 | `v0.2.27` | `2026-07-18` | 同步 OpenHarness 对比与语义智能编排路线：确认不引入 OpenHarness runtime；确认“物料库存 + 采购订单供给概览”为首个只读组合场景；新增 Semantic Planning Foundation、Planner Dry-run、Read-only Composition Pilot 三步近期路线，Dynamic Planner 和 Write composition 继续保持 Phase 3+ Reserved | 当前实施基线 |
@@ -237,10 +240,13 @@ GoalSpec candidate
 | 15 | `sap-nexus-cds-adt-gateway-read-pilot` | Reserved | CDS / ADT metadata 与受控 read preview pilot | 不早于近期三项 Next Pilot |
 | 16 | `sap-nexus-rest-json-gateway-read-pilot` | Reserved | REST JSON read-only pilot | 不早于近期三项 Next Pilot |
 | 17 | `sap-nexus-production-governance` | 待启动 | 量产治理、审计回放、监控、发布门禁 | 支持能力发布、eval 回归、trace 查询、故障诊断 |
-| 18 | `sap-nexus-semantic-planning-foundation` | S1 Implemented / Verified; Archive Pending | Fact Type、Capability Relation、GoalSpec、PlanGraph、四源 Registry Snapshot、immutable graph 和 deterministic validator 契约已落地 | focused semantic `287 passed`；executor-binding `sap_write` compatibility `2 passed`；full evidence `550 passed, 1 skipped` + inventory `7/7` + seed `13/13` + PR `9/9`；OpenSpec strict `8 passed, 0 failed`；不执行 LLM Planner、Gateway 或 SAP；verify/archive 待用户确认 |
-| 19 | `sap-nexus-planner-dry-run` | S2 Next Design / Dry-run Only | 自然语言生成 GoalSpec/PlanDraft candidate，并由 deterministic PlanCompiler 输出 dry-run | 展示节点、边、参数来源、缺口和治理；不得执行 Gateway 或 SAP |
-| 20 | `sap-nexus-read-composition-pilot` | S3 Planned after row 19 | 以“物料库存 + 采购订单供给概览”验证只读多能力 PlanGraph 执行 | 两个 active Function 经 Gateway 独立校验/执行，输出有 lineage 的 MaterialSupplySnapshot；当前未实现 |
+| 18 | `sap-nexus-semantic-planning-foundation` | S1 Implemented / Verified / Archived | Fact Type、Capability Relation、GoalSpec、PlanGraph、四源 Registry Snapshot、immutable graph 和 deterministic validator 契约已落地 | focused semantic `287 passed`；full evidence `550 passed, 1 skipped` + inventory `7/7` + seed `13/13` + PR `9/9`；归档 `openspec/changes/archive/2026-07-19-sap-nexus-semantic-planning-foundation/` |
+| 18A | `sap-nexus-source-of-truth-repository-hygiene` | P0A Immediate / Documentation In Progress | 收敛 Wiki、Runbook、README、OpenSpec 状态、仓库迁移路径和 runtime artifact 管理 | S1 状态与路径一致；README 不宣称未落地组件；旧 editable install 路径被修复；真实 runtime trace 不再 tracked；不改变 runtime 行为 |
+| 19 | `sap-nexus-planner-dry-run` | S2 Next Design / Dry-run Only | 自然语言生成 GoalSpec/PlanDraft candidate；用 progressive `CapabilityCard` discovery 收敛小候选集合，再由 deterministic PlanCompiler 输出 dry-run | 展示候选、节点、边、参数来源、缺口和治理；不得执行 Gateway 或 SAP；DeerFlow 只作机制参考 |
+| 20 | `sap-nexus-read-composition-pilot` | S3 Planned after row 19 | 以“物料库存 + 采购订单供给概览”验证只读多能力 PlanGraph 执行，并加入 governed ready-node lifecycle | 两个 active Function 经 Gateway 独立校验/执行；并发只允许无依赖 `sideEffect=none` 节点；确定性 OutputProjection 输出带 freshness、completeness、limitations 和 lineage 的 MaterialSupplySnapshot；当前未实现 |
 | 21 | `sap-nexus-capability-composition-contract` | Dynamic Planner / Write Reserved | 保留通用动态组合、Composite Capability 和 Write composition 边界 | 关系本体、dry-run、read pilot 和规模/需求证据满足后另立 change |
+| 22 | `sap-nexus-trusted-durable-runtime-foundation` | P0B Conditional Gate；不阻塞本地 S2 | 建立 trusted principal / tenant / role / data scope、persistent thread/run、durable approval、ownership/lease、structured checkpoint reference、incremental SSE + reconnect 和幂等 continuation | 共享 S3、跨重启、长审批、multi-worker / HA 或非 sandbox WRITE 前必须完成；不包含 DeerFlow lead agent、自由 Tool execution 或预选数据库 |
+| 23 | `sap-nexus-governed-user-memory-pilot` | Later / Triggered；不属于 S2/S3 | 只保存用户明确确认的语言、单位展示、术语和叙事偏好 | 身份、tenant、retention、查看/更正/删除和审计契约已稳定；不得保存业务事实、approval 或执行权威 |
 
 ---
 
@@ -558,7 +564,7 @@ Natural language input
 | Language | TypeScript |
 | Architecture | Modular Monolith |
 | Runtime bridge | Agent Runtime Adapter |
-| Streaming | SSE first |
+| Streaming | SSE protocol first；当前 buffered SSE-format，共享环境目标为 incremental + reconnect/replay |
 | Future realtime | WebSocket later, only for bidirectional HITL / collaboration |
 | HITL | 状态机骨架先行，read-only capability 显示 `approval_not_required` |
 
@@ -806,18 +812,21 @@ Live blocker 已解除：SAP SICF 重新激活后 PO live smoke 已通过；PO c
 
 ### 近期路线
 
-1. `sap-nexus-semantic-planning-foundation`（S1 已实现 / 已验证）：Fact Type、Capability Relation、GoalSpec、PlanGraph、Registry Snapshot、immutable graph 和 validator；不执行 SAP；Comet verify/archive 待用户确认。
-2. `sap-nexus-planner-dry-run`（S2 下一 design）：LLM 只生成 candidate，deterministic PlanCompiler 输出计划预览；不执行 Gateway 或 SAP。
-3. `sap-nexus-read-composition-pilot`（S3 planned）：首个场景固定为“物料库存 + 采购订单供给概览”，只组合 `MM.Inventory.GetAvailability` 与 `MM.PurchaseOrder.GetList`；当前不执行。
-4. `sap-nexus-recommendation-reasoning`：在组合 Fact 已稳定后评估 `ReasoningFact[] -> RecommendationPlan`，不重复建设第二套推理层。
+1. `sap-nexus-semantic-planning-foundation`（S1 已实现 / 已验证 / 已归档）：Fact Type、Capability Relation、GoalSpec、PlanGraph、Registry Snapshot、immutable graph 和 validator；归档位于 `openspec/changes/archive/2026-07-19-sap-nexus-semantic-planning-foundation/`。
+2. `sap-nexus-source-of-truth-repository-hygiene`（P0A immediate）：同步主文档 / runbook / README / OpenSpec 状态，修复仓库迁移后的旧 editable install 路径，并清理 tracked runtime trace；不改变 runtime 行为。
+3. `sap-nexus-planner-dry-run`（S2 下一业务 design）：用 progressive `CapabilityCard` discovery 生成小候选集合；LLM 只生成 candidate，deterministic PlanCompiler 输出计划预览；不执行 Gateway 或 SAP。
+4. `sap-nexus-trusted-durable-runtime-foundation`（P0B conditional gate）：不阻塞本地 S2；在共享 S3、长审批、multi-worker / HA 或非 sandbox WRITE 前完成 trusted identity、durable Run/Approval、ownership/lease 和真实增量 SSE。
+5. `sap-nexus-read-composition-pilot`（S3 planned）：只组合两个已注册 Read Function；PlanGraph 校验后才允许 ready-node 调度，由确定性 OutputProjection 形成 MaterialSupplySnapshot。
+6. `sap-nexus-recommendation-reasoning`：在组合 Fact 已稳定后评估 `ReasoningFact[] -> RecommendationPlan`，不重复建设第二套推理层。
 
 ### Foundation 完成证据 / Dry-run 启动前置
 
 - sandbox write vertical slice 已完成。
 - 首个只读组合场景已确认。
 - S1 design 已明确 schema、模块、错误模型、Eval 和 S1/S2 边界，且实现通过 fresh verification。
-- S1 verification report 位于 `docs/superpowers/reports/2026-07-19-sap-nexus-semantic-planning-foundation-verify.md`；archive 尚未发生。
+- S1 verification report 位于 `docs/superpowers/reports/2026-07-19-sap-nexus-semantic-planning-foundation-verify.md`；archive 已完成。
 - S2 只允许进入 dry-run design / implementation，不得提前接入 Gateway、SAP 或多能力 runtime execution。
+- S2 可以借鉴 DeerFlow metadata-first、full-schema-later 的 progressive discovery，但 Tool search、Skill activation 或 LLM candidate 不获得执行权。
 
 ### Read-only pilot 前置
 
@@ -825,6 +834,10 @@ Live blocker 已解除：SAP SICF 重新激活后 PO live smoke 已通过；PO c
 - PlanGraph 可绑定 Registry Snapshot，循环依赖、类型不兼容、无来源参数可 fail-closed。
 - Dry-run bad cases 覆盖未知 capability、缺失 Fact、Action 混入 READ_ONLY 计划和 Registry 漂移。
 - 两个原子 Read capability 继续通过各自 Gateway / Eval 基线。
+- `PlanExecutor` 的并发、timeout、cancel 和 ledger 只消费已验证 PlanGraph；不能从同一轮 LLM Tool Calls 推导可执行并行计划。
+- `OutputProjection` 必须确定性声明输入 Fact、输出 schema、`asOf` / freshness、completeness、limitations 和 lineage；Narrator 不直接拼裸节点返回。
+- 节点失败、超时或取消时输出必须标记 `incomplete`，不能叙述为完整供给结论。
+- 本地单用户 S3 PoC 可在明确非生产边界下暂缓 durable runtime；共享 S3 必须先通过 P0B trusted/durable gate。
 
 ### 继续 Reserved
 
@@ -833,6 +846,16 @@ Live blocker 已解除：SAP SICF 重新激活后 PO live smoke 已通过；PO c
 - LLM 自由多能力编排。
 - Agent 自动发布能力、本体或 executor binding。
 - 图数据库运行时。
+- DeerFlow runtime、task/sub-agent graph 或 model-directed memory。
+
+### 条件性平台门禁与后置候选
+
+DeerFlow 对比额外识别出一个条件性平台门禁和一个后置候选；两者均不改变 S2 是下一业务 change：
+
+- `sap-nexus-trusted-durable-runtime-foundation`：本地 S2 不启动；共享 S3、跨重启、长审批、multi-worker / HA 或非 sandbox WRITE 前必须启动并完成。先设计受信 principal、`ConversationState`、`PlanExecutionState`、`EvidenceState`、Approval 和 event cursor 契约，再选择 store / stream bridge。
+- `sap-nexus-governed-user-memory-pilot`：只有企业身份、tenant、retention、查看/更正/删除和审计契约成熟后启动；Memory 仅保存用户偏好，不能保存 SAP 事实、PlanGraph、ApprovalRecord 或权限决策。
+
+P0B 与 Memory 均需独立 OpenSpec / Comet change 和 Eval，不得夹带进 `sap-nexus-planner-dry-run`。
 
 Dynamic Planner 仍需全部满足：
 
@@ -1123,16 +1146,18 @@ capability design
 
 `sap-nexus-capability-registry-gateway`、`sap-nexus-agent-callplan-evidence`、`sap-nexus-agent-llm-intent-adapter`、`sap-nexus-agent-workbench-console`、`sap-nexus-workbench-live-agent-runtime`、`sap-nexus-inventory-md04-stock-req-list`、`sap-nexus-registry-ontology-contract` 和 `sap-nexus-gateway-execution-contract` 均已完成验证并归档。`sap-nexus-eval-harness-seed` 已直接实施完成。`sap-nexus-odata-gateway-read-pilot`（Phase 4D OData Gateway Read Pilot）已提前落地，第二条 SAP read capability（PO，走 OData）由该 change 隐式满足。`sap-nexus-sandbox-write-vertical-slice` 已治理 Purchasing Group 并成功创建、commit sandbox PR `10137471`；verify repair、merged-main 全量验证与 Comet archive 均已完成，归档目录为 `openspec/changes/archive/2026-07-17-sap-nexus-sandbox-write-vertical-slice/`。
 
-OpenHarness 对比、首个组合场景确认和 S1 foundation fresh verification 完成后，当前推荐下一步不是直接实现 Dynamic Planner，也不是继续增加 executor family。下一步是在用户确认 S1 verify/archive closeout 后进入 S2 dry-run design：
+OpenHarness / DeerFlow 对比、首个组合场景确认和 S1 foundation 归档完成后，当前推荐下一步不是直接实现 Dynamic Planner、DeerFlow integration、Memory 或新的 executor family。先完成不改变 runtime 的 P0A source-of-truth / repository hygiene，再进入 S2 dry-run design；P0B trusted durable runtime 不阻塞本地 S2，但在共享 S3、长审批或非 sandbox WRITE 前成为硬门禁：
 
 ```text
-1. sap-nexus-semantic-planning-foundation (S1 implemented / verified; archive pending)
-2. sap-nexus-planner-dry-run (S2 next design; dry-run only)
-3. sap-nexus-read-composition-pilot (S3 planned; read-only execution)
-4. sap-nexus-recommendation-reasoning (与组合 Fact 集成评估)
+1. sap-nexus-semantic-planning-foundation (S1 implemented / verified / archived)
+2. sap-nexus-source-of-truth-repository-hygiene (P0A immediate; no runtime behavior change)
+3. sap-nexus-planner-dry-run (S2 next business design; progressive CapabilityCard discovery + dry-run only)
+4. sap-nexus-trusted-durable-runtime-foundation (P0B before shared S3 / long approval / non-sandbox WRITE)
+5. sap-nexus-read-composition-pilot (S3 planned; PlanGraph-governed execution + deterministic OutputProjection)
+6. sap-nexus-recommendation-reasoning (与组合 Fact 集成评估)
 ```
 
-首个 pilot 场景固定为“物料库存 + 采购订单供给概览”。尽管 row 18/S1 已验证，当前 runtime 在 row 20/S3 独立实现并验证前仍保持单能力 CallPlan；多能力请求继续遵循 `ESCALATE_TO_PLANNER` 的记录与解释边界，不自动编排或执行。详细决策见 `docs/wiki/sap-nexus-agent-openharness-semantic-orchestration.md`。
+首个 pilot 场景固定为“物料库存 + 采购订单供给概览”。尽管 row 18/S1 已验证，当前 runtime 在 row 20/S3 独立实现并验证前仍保持单能力 CallPlan；多能力请求继续遵循 `ESCALATE_TO_PLANNER` 的记录与解释边界，不自动编排或执行。语义规划决策见 `docs/wiki/sap-nexus-agent-openharness-semantic-orchestration.md`，DeerFlow 借鉴边界见 `docs/wiki/sap-nexus-agent-deerflow-adoption-analysis.md`。
 
 Live blocker 已解除：SAP SICF 重新激活后，PO live smoke 已通过；PO capability 当前 `status=active`。Sandbox write live smoke（Task 17）需要本地 `.env` 配置 sandbox / dev SAP client。
 
@@ -1190,5 +1215,8 @@ Live blocker 已解除：SAP SICF 重新激活后，PO live smoke 已通过；PO
 - OWL / Graph Registry：必须先通过 ROI spike；当前不作为 MVP / Pilot 门禁或 runtime 依赖。
 - `sap-nexus-capability-composition-contract`：Dynamic Planner / Write composition 继续 Reserved；近期只推进 foundation、dry-run 和首个只读 pilot。
 - OpenHarness runtime / Plugin runtime：不引入；只借鉴 Agent loop、Tool Schema、Permission/Hook、Dry-run 和 Memory/Resume 机制。
+- DeerFlow runtime / Gateway / frontend / `deerflow-harness`：不引入；S2 只借鉴 progressive discovery，S3 只借鉴 PlanGraph-governed task lifecycle。
+- `sap-nexus-trusted-durable-runtime-foundation`：不阻塞本地 S2；共享 S3、长审批、multi-worker / HA 或非 sandbox WRITE 前必须完成，不属于无条件近期 runtime 扩建。
+- `sap-nexus-governed-user-memory-pilot`：Later / Triggered，不属于 S2/S3；Memory 不保存业务事实或执行权威。
 
-当前下一推荐：`sap-nexus-planner-dry-run`（row 19 / S2，先 design，dry-run only，不执行 Gateway 或 SAP）。S1 change 仍待用户确认 Comet verify/archive，当前不提供 archive 链接。
+当前下一推荐：完成 P0A 文档与仓库卫生收敛后，启动 `sap-nexus-planner-dry-run`（row 19 / S2，先 design，dry-run only，不执行 Gateway 或 SAP）。S1 已归档到 `openspec/changes/archive/2026-07-19-sap-nexus-semantic-planning-foundation/`。

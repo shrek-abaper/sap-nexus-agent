@@ -49,7 +49,7 @@ Read these before implementation:
 AGENTS.md
 docs/wiki/sap-nexus-agent-technical-architecture.md
 docs/wiki/sap-nexus-agent-implementation-roadmap.md
-docs/wiki/sap-nexus-agent-mm-mvp-notion.md
+docs/wiki/archive/sap-nexus-agent-mm-mvp-notion.md
 ```
 
 The two primary lifecycle documents are now:

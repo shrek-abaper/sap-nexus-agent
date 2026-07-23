@@ -5,20 +5,23 @@
 | 字段 | 内容 |
 |---|---|
 | 文档名称 | `SAP Nexus Agent 技术架构文档` |
-| 当前版本 | `v0.2.13` |
+| 当前版本 | `v0.2.15` |
 | 状态 | `Product Architecture Baseline Draft` |
 | 创建日期 | `2026-06-18` |
-| 最近更新 | `2026-07-18` |
+| 最近更新 | `2026-07-24` |
 | 维护目录 | `docs/wiki/` |
 | 文档定位 | SAP Nexus Agent 从 MVP 到量产交付的长期技术架构指导文件 |
 | 关联路线 | `docs/wiki/sap-nexus-agent-implementation-roadmap.md` |
-| 关联知识导入 | `docs/wiki/sap-nexus-agent-mm-mvp-notion.md` |
+| 关联知识导入 | `docs/wiki/archive/sap-nexus-agent-mm-mvp-notion.md` |
 | 关联智能编排路线 | `docs/wiki/sap-nexus-agent-openharness-semantic-orchestration.md` |
+| 关联 DeerFlow 决策 | `docs/wiki/sap-nexus-agent-deerflow-adoption-analysis.md` |
 
 ## 版本记录
 
 | 版本 | 日期 | 变更摘要 | 决策状态 |
 |---|---|---|---|
+| `v0.2.15` | `2026-07-24` | 基于 OpenHarness / DeerFlow 综合复盘补齐可信身份、三层状态、真实流式、durable run / approval 条件门禁与确定性组合输出；同步 S1 已归档事实，明确当前 Workbench SSE 和进程内 Store 仍是本地 MVP，不改变 S2 Planner Dry-run 的下一优先级 | 当前架构基线 |
+| `v0.2.14` | `2026-07-23` | 吸收 DeerFlow 2.1.0 源码对比结论：不引入第二 Agent runtime；把 progressive capability discovery 纳入 S2 设计输入，把受治理 task lifecycle 纳入 S3 PlanExecutor 设计输入；补充 Conversation / PlanExecution / Evidence 三层状态和受限 UserPreferenceMemory 边界 | 当前架构基线 |
 | `v0.2.13` | `2026-07-18` | 吸收 OpenHarness 对比结论：不引入第二 Agent runtime，新增语义规划控制面方向；确认“物料库存 + 采购订单供给概览”为首个只读多能力场景；把组合路线拆为 Semantic Planning Foundation、Planner Dry-run、Read-only Composition Pilot，Dynamic Planner 继续保持 Phase 3+ Reserved | 当前架构基线 |
 | `v0.2.12` | `2026-07-14` | 增加 §5.4 能力组合语义模型（Reserved）、§7.2 fact-type 一等化关系本体前提（Reserved）；更新 §1.1 成熟度表与 §8.2 OWL 职责；明确组合为已设计暂不实现维度，组合前提是先建能力关系本体，多能力请求当前只走 `ESCALATE_TO_PLANNER` | 当前架构基线 |
 | `v0.2.11` | `2026-07-09` | 激活并归档 `MM.PurchaseOrder.GetList` item detail/filter change：SAP SICF 重新激活后 live PO smoke 通过，PO OData read 支持 item detail 查询和 material / plant item-level filtering；Gateway OData 薄反代请求体序列化修正并完成回归验证；归档目录 `openspec/changes/archive/2026-07-09-po-odata-item-detail-filter/` | 已完成 |
@@ -67,14 +70,15 @@
 |---|---|---|
 | `Live` | `JCO_RFC` read path、`MM.Inventory.GetAvailability`、`ODATA` read path（PO 列表）、`MM.PurchaseOrder.GetList`（status=active）、CallPlan、Gateway validate / execute、ExecutionResult、ReasoningFact、TraceSpan、Eval Harness seed cases | 继续作为 MVP live baseline |
 | `Completed Pilot` | sandbox-only write vertical slice | 已完成并归档；保留外部审批、参数快照、反重放和 stateful JCo LUW 基线 |
-| `Next Design` | `sap-nexus-semantic-planning-foundation` | 先设计 Fact Type、Capability Relation、GoalSpec、PlanGraph、Registry Snapshot 和 deterministic PlanCompiler，不执行 SAP |
-| `Planned Pilot` | Planner Dry-run、只读多能力组合“物料库存 + 采购订单供给概览” | Foundation 验证后分 change 实施；只允许 `sideEffect=none` Function |
+| `Completed Foundation` | `sap-nexus-semantic-planning-foundation` | S1 Fact Type、Capability Relation、GoalSpec、PlanGraph、Registry Snapshot、immutable graph 和 deterministic validator 已实现、验证并归档到 `openspec/changes/archive/2026-07-19-sap-nexus-semantic-planning-foundation/` |
+| `Next Design` | `sap-nexus-planner-dry-run` | S2 用 progressive `CapabilityCard` discovery 生成候选，由 deterministic PlanCompiler 输出 dry-run；不执行 Gateway / SAP |
+| `Planned Pilot` | 只读多能力组合“物料库存 + 采购订单供给概览” | S2 验证后分 change 实施；只允许 `sideEffect=none` Function 和 PlanGraph-governed ready-node scheduling |
 | `Reserved` | `CDS_ADT`、`CDS_ODATA`、`REST_JSON`、`SQL_READ`、Phase 3+ retrieval / rerank、Graph Registry、Dynamic Planner、Write composition | 保留边界和安全约束；Dynamic Planner 仍需关系本体、Dry-run、Read pilot 和规模/需求证据 |
 | `Not In Scope` | 任意 RFC / URL / SQL 执行、生产 write action 自动提交、GraphDB / OWL 运行时主链路 | 明确拒绝或另立 change |
 
 近期约束：
 
-- 第二条 live read capability 和 sandbox write pilot 均已完成；下一步优先验证语义规划基础，不继续增加低价值 executor family 预留。
+- 第二条 live read capability、sandbox write pilot 和 S1 semantic planning foundation 均已完成；当前先收敛 P0A 文档/仓库卫生，再进入 S2 Planner Dry-run，不继续增加低价值 executor family 预留。
 - 版本记录和路线图优先体现能力落地、评测回归和 write 纵切，而不是继续增加低成本架构占位。
 - 已有 reserved executor 只保留 fail-closed 边界，不能被解读为当前实现承诺。
 
@@ -252,6 +256,50 @@ Natural Language
 
 完整对比、领域模型、S0-S6 路线和 Eval 指标见 `docs/wiki/sap-nexus-agent-openharness-semantic-orchestration.md`。
 
+### 3.8 DeerFlow 对比后的运行时借鉴边界
+
+DeerFlow 2.1.0 提供了更完整的通用 Agent runtime 工程实现，包括 Tool / Skill 渐进发现、并行 task / sub-agent 生命周期、thread / run / checkpoint、上下文压缩和跨会话记忆。SAP Nexus 只吸收这些机制，不引入 DeerFlow runtime、Gateway、frontend 或 `deerflow-harness` 生产依赖。
+
+借鉴边界：
+
+- S2 可借鉴 metadata-first、full-schema-later 的 progressive capability disclosure，但候选结果只能进入 `GoalSpec` / `PlanDraft`，最终选择仍由 deterministic `MatchDecision` / `PlanCompiler` 决定。
+- S3 可借鉴 ready-node queue、并发上限、timeout、cancel 和 durable ledger，但只有 PlanGraph 已证明互不依赖且 `sideEffect=none` 的 active Function 才可并行。
+- Workbench 产品化可借鉴 durable thread / run、checkpoint compatibility 和 resumable SSE，但这些机制不改变 SAP 执行契约。
+- 用户记忆只能保存受治理的偏好和术语，并作为不可信 advisory context 注入；不得保存 credential、approval 执行上下文、权威业务事实或 policy decision。
+
+以下 DeerFlow 对象均不得成为 SAP Nexus 执行权威：
+
+```text
+model-selected Tool
+task / sub-agent graph
+conversation summary
+long-term memory
+generic LangGraph checkpoint
+```
+
+它们不能替代 `MatchDecision`、`RegistrySnapshot`、`PlanGraph`、`ApprovalRecord`、`ExecutionResult` 或 `ReasoningFact`。完整证据、采纳矩阵和触发式路线见 `docs/wiki/sap-nexus-agent-deerflow-adoption-analysis.md`。
+
+### 3.9 可信身份与执行主体边界
+
+SAP Nexus 不能把浏览器提交的字符串、模型推断的用户角色或通用 Agent thread owner 当作执行主体。进入共享环境、长审批或非 sandbox WRITE 前，运行上下文必须由受信服务端注入并贯穿候选发现、计划、审批、Gateway 和审计：
+
+```text
+AuthenticatedPrincipal
+-> TenantContext
+-> BusinessRole / DataScope
+-> capability visibility + parameter scope
+-> ApprovalActor / separation-of-duty policy
+-> Gateway execution attribution
+```
+
+强制边界：
+
+- `AuthenticatedPrincipal`、tenant、role 和 data scope 只能来自受信身份上下文，不能由 request body、prompt、Memory 或 sub-agent output 提供。
+- capability discovery 必须先做可见性预过滤；Gateway execute 仍需按当前主体和数据范围再次授权，不能把 assembly-time visibility 当作最终授权。
+- `ApprovalRecord.approvedBy` 必须绑定真实主体；`approver="user"` 只属于当前 sandbox MVP，不是量产契约。
+- 发起、审批和执行需要支持 separation-of-duty policy；一个共享 service token 只能证明受信服务来源，不能替代最终审批人的业务权限证明。
+- 身份或授权 provider 不可用时，执行权限 fail-closed；界面只返回不泄漏敏感信息的结构化解释。
+
 ---
 
 ## 4. 八层产品架构
@@ -345,7 +393,23 @@ Adapter 的职责：
 - 聚合 agent trace、gateway trace 和 replay metadata。
 - 屏蔽 Python Agent 内部实现和 Java Gateway executor details。
 
-第一版 streaming 建议采用 **SSE first**。SSE 适合单向观察 Agent run timeline；WebSocket 留到真正需要双向协作时再引入，例如人工审批、取消执行、多轮输入或多人协同。
+第一版传输协议继续采用 **SSE first**，但必须区分协议格式与运行能力：当前 Workbench 是在 Agent 子进程结束后读取进程内事件并一次性返回 SSE-formatted body，不是增量发布、断线续传或 durable stream。目标 SSE runtime 必须支持事件序号、增量发布、reconnect cursor、terminal state 和 replay；WebSocket 只在真正需要双向协作时再引入。
+
+#### 4.2.1 长对话与权威状态分层
+
+Workbench 进入长对话、跨重启恢复或长审批等待前，必须把通用对话上下文与业务执行权威拆开：
+
+| 状态层 | 内容 | 是否可摘要 | 权威性 |
+|---|---|---|---|
+| `ConversationState` | messages、clarification、visible narrative、`ConversationSummary` | 可以 | advisory context |
+| `PlanExecutionState` | `GoalSpec`、`RegistrySnapshot`、`PlanGraph`、node ledger、`ApprovalRecord` 引用 | 不可以 | execution authority |
+| `EvidenceState` | `ExecutionResult`、`ActionResult`、`ReasoningFact`、trace、lineage | 不可以 | evidence / audit authority |
+
+`ConversationState` 的压缩失败只能导致保留原 checkpoint 或关闭压缩，不得破坏 run。恢复计划时必须加载原始 `RegistrySnapshot` 和结构化节点状态，不能依靠 summary 或 Memory 重建；分支、regenerate 或复制 thread 也不能复制有效 approval 的执行权。
+
+未来 `UserPreferenceMemory` 只允许保存用户明确确认的语言、单位展示、业务术语和叙事偏好，并满足 tenant / user / agent 隔离、来源与时间戳、可查看、可更正、可删除和 retention。Memory 不可改变 capability 可见性、required parameter、side effect、approval requirement、PlanGraph 或 Evidence。
+
+Durable Runtime 的启用门槛不是由 DeerFlow、PostgreSQL 或 Redis 等产品反推，而是由运行要求决定：本地 S2 Dry-run 不强制持久化；共享 S3、跨重启恢复、长审批、multi-worker / HA 或任何非 sandbox WRITE 暴露前，必须具备持久 Thread / Run、run ownership / lease、structured checkpoint reference、durable Approval、事件 cursor 和幂等 continuation。Store 与 stream bridge 只在这些契约明确后选型。
 
 ### 4.3 MVP 能力匹配契约
 
@@ -474,7 +538,7 @@ Action 的强制约束：
 
 ### 5.4 能力组合语义模型（Reserved）
 
-能力组合的通用 runtime 和 Dynamic Planner 仍是 `Reserved`，但语义规划基础已经进入 `Next Design`。原子能力（`Skill` / `Function` / `Action`）仍是唯一执行单元；近期先建设 Fact Type、Capability Relation、GoalSpec、PlanGraph 和 Planner Dry-run，再以只读 pilot 验证组合，不直接进入自由 runtime 编排。
+能力组合的通用 runtime 和 Dynamic Planner 仍是 `Reserved`。S1 Semantic Planning Foundation 已实现并验证，S2 Planner Dry-run 是当前 `Next Design`。原子能力（`Skill` / `Function` / `Action`）仍是唯一执行单元；近期先验证 progressive candidate discovery 和 deterministic dry-run，再以只读 pilot 验证 PlanGraph-governed 组合，不直接进入自由 runtime 编排。
 
 组合不是单一概念，而是三种形态各异、支持前提不同的东西：
 
@@ -502,6 +566,31 @@ Action 的强制约束：
 ```
 
 该 pilot 只聚合库存和采购订单 Read facts，不输出缺货预测、采购数量或自动 PR；缺少需求、交期、在途和规则事实时必须显式说明口径边界。
+
+S3 `PlanExecutor` 可以借鉴通用 task runtime 的生命周期机制，但调度权来自已验证 PlanGraph，而不是模型同一轮生成的多个 Tool Call：
+
+```text
+validated PlanGraph
+-> select ready nodes
+-> enforce no dependency edge + sideEffect=none
+-> apply concurrency / timeout / cancellation policy
+-> Gateway validate -> execute per node
+-> ExecutionResult -> ReasoningFact
+-> update node ledger / lineage / trace
+```
+
+两个原子 Fact 不会自动构成 `MaterialSupplySnapshot`。S3 必须引入确定性的 `OutputProjection` / aggregation contract，声明输入 Fact Type、输出 schema、业务时间/freshness、完整性和 lineage：
+
+```text
+ReasoningFact[]
+-> deterministic OutputProjection
+-> MaterialSupplySnapshot { completeness, asOf, facts, lineage, limitations }
+-> Narrator
+```
+
+任一必需节点失败、超时或被取消时，聚合结果必须显式标记 `incomplete`，列出缺失 Fact 和限制；Narrator 不得把部分事实叙述为完整供给结论。跨节点时间口径不一致时必须暴露各自 `asOf`，不得由 LLM 假定同一业务时点。
+
+节点上下文只能包含已绑定参数和允许读取的 upstream Fact；sub-agent、summary 或 Memory 均不能注入未校验参数、technical binding 或 approval token。
 
 事务性预留（组合深水区）：
 
@@ -1293,6 +1382,8 @@ runtime/evals/results/YYYYMMDD.jsonl
 
 量产可迁移到 SQLite / PostgreSQL / trace service，但字段契约不应改变。
 
+JSONL 只适用于本地 trace、eval 和早期 replay。Thread / Run、Approval、PlanExecutionState 与 EvidenceState 具有不同一致性和保留要求，量产时不得继续由同一个进程内 Map 或通用 JSONL 文件承担。所有 runtime trace、真实业务标识和生成型审计文件默认不得进入 Git；仓库只允许脱敏 fixture 和明确评审过的示例。
+
 ---
 
 ## 14. 安全与治理边界
@@ -1304,6 +1395,9 @@ runtime/evals/results/YYYYMMDD.jsonl
 | 非法参数 | 拒绝，返回结构化错误 |
 | READ Function | 不允许 commit / rollback |
 | Action | 必须审批，审批过期或版本不一致则拒绝 |
+| 身份上下文缺失 | 共享环境或非 sandbox WRITE 拒绝；不得用 request-owned user / tenant / role 补齐 |
+| 审批主体不可验证 | 拒绝；service token 不替代真实 ApprovalActor 和业务权限 |
+| Run ownership 不一致 | 拒绝 continuation、cancel、resume 或 approval decision |
 | SAP `RETURN` E/A | 映射为业务错误，不伪装成功 |
 | 通信失败 | 映射为通信错误，可重试策略显式定义 |
 | 权限失败 | 映射为权限错误，不泄漏凭据 |
@@ -1363,6 +1457,9 @@ runtime/evals/results/YYYYMMDD.jsonl
 - 审计查询与 replay 工具。
 - READ / WRITE 权限分离。
 - Human Approval 工作流。
+- 可信 principal / tenant / role / data-scope 传播与职责分离策略。
+- 持久 Thread / Run、run ownership / lease、durable Approval 和幂等 continuation。
+- 支持事件 cursor、断线续传和 replay 的真实增量 SSE runtime。
 - 敏感信息脱敏和最小日志原则。
 - Registry -> OWL / Graph Registry 的可选迁移能力，前提是 OWL/SHACL spike 证明 ROI。
 - 结构化推理与 ML 不确定推理的显式边界。
@@ -1395,5 +1492,9 @@ runtime/evals/results/YYYYMMDD.jsonl
 | 评测 | Eval Harness 必须覆盖 capability 命中、参数补全、业务口径、缺参澄清、unsafe execution 拒绝和 bad case 回归 |
 | 语义规划 | GoalSpec / PlanDraft 只是 candidate；未知能力、错误关系、循环、类型不兼容、无来源参数和 snapshot 漂移必须 fail-closed |
 | 组合事实 | MaterialSupplySnapshot 等组合输出保留节点级 Fact lineage，不把部分事实叙述为完整结论 |
+| 组合投影 | `OutputProjection` 确定性声明输入 Fact、输出 schema、freshness、completeness 和 limitations；Narrator 不直接拼裸节点返回 |
+| 运行状态 | Conversation 可摘要；PlanExecution 和 Evidence 不可摘要重建；共享 S3/长审批/非 sandbox WRITE 使用 durable state |
+| 流式 | SSE 事件按序增量发布并支持 reconnect/replay；一次性拼接 SSE body 不视为量产 streaming |
+| 身份 | principal、tenant、role、data scope 和 ApprovalActor 来自受信上下文，并在发现与执行阶段双重校验 |
 | 安全 | `.env`、密码、敏感 destination 不进入 git、响应或 trace |
 | 演进 | MVP Registry 字段由 JSON Schema / Registry validator 管理；OWL / Graph Registry 迁移必须先通过 ROI spike |

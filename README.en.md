@@ -2,7 +2,7 @@
 
 # SAP Nexus Agent
 
-SAP Nexus Agent is a **capability-ontology-governed SAP access gateway**. It formalizes SAP business capabilities, RFC/BAPI/Table operations, and their parameter constraints through Neo4j-based ontology modeling. The LLM Agent operates strictly within registered capability boundaries — intent parsing and orchestration, never unrestricted tool calling. All data access must pass through the Capability Registry and allowlisted executor bindings. No bare RFC, OData, or SQL calls are permitted.
+SAP Nexus Agent is a **capability-ontology-governed SAP access gateway**. It currently models SAP business capabilities and parameter constraints through a YAML Registry, JSON Schema, Fact Type / Capability Relation catalogs, and an immutable in-process semantic graph. The LLM Agent may propose intent or plan candidates only within registered capability boundaries. All data access must pass through the Capability Registry, deterministic validation, and allowlisted executor bindings. No bare RFC, OData, or SQL calls are permitted.
 
 **Core principle: Capability is the boundary — this is a governed capability gateway, not a generic SAP proxy.**
 
@@ -72,6 +72,14 @@ User Query (natural language)
 | `REST_JSON` | 🔒 Fail-closed | Architecture reserve |
 | `SQL_READ` | 🔒 Fail-closed | Architecture reserve |
 
+### Current Runtime Maturity
+
+- `FactType`, `CapabilityRelation`, `GoalSpec`, `PlanGraph`, and `RegistrySnapshot` contracts are implemented, verified, and archived; the product runtime still executes single-capability `CallPlan`s only.
+- Workbench Runs and Gateway Approvals currently use process-local stores; restart recovery, long approvals, and multi-instance ownership are not production-ready.
+- The current `/stream` route returns buffered SSE-formatted events after completion; it is not incremental or resumable streaming.
+- Trusted principal, tenant, role, data scope, and ApprovalActor propagation are not integrated; WRITE remains sandbox/dev only.
+- Shared S3, long approvals, multi-worker/HA, or non-sandbox WRITE require a separate trusted/durable runtime change first.
+
 ---
 
 ## Registered Capabilities
@@ -131,11 +139,11 @@ cp .env.example .env
 scripts/comet-verify-gateway.sh
 .venv/bin/python scripts/validate-registry-contract.py registry/capabilities.yaml
 .venv/bin/python -m pytest agent/tests/test_registry_contract.py -v
-scripts/verify-agent-callplan-evidence.sh
+PYTHONPATH=agent scripts/verify-agent-callplan-evidence.sh
 openspec validate --all --strict
 ```
 
-Expected: Gateway 79 tests passed, Registry contract valid, Agent regression 109 passed, Eval 13/13 passed.
+Expected: every command exits `0`. The current Agent baseline is `550 passed, 1 skipped`; evals are `7/7 + 13/13 + 9/9`; OpenSpec is `8 passed, 0 failed`. After moving the repository, reinstall the editable local package if it still points to the old checkout; `PYTHONPATH=agent` verifies the current source tree directly.
 
 ### Launch Services
 
@@ -180,14 +188,15 @@ Open `http://127.0.0.1:3000/workbench`.
 
 | Layer | Technology |
 |-------|-----------|
-| Agent | Python (FastAPI) + LLM (OpenAI-compatible) + Rule hybrid |
+| Agent | Python package + OpenAI-compatible LLM + Rule hybrid |
 | Gateway | Java 17 / Spring Boot / Gradle multi-module |
 | SAP Connectivity | SAP JCo 3 (RFC) + SAP OData (HTTP) |
 | Frontend | React / Next.js / TypeScript |
 | Capability Registry | YAML + JSON Schema |
-| Ontology | OWL skeleton (offline) / Neo4j (planned) |
+| Ontology | YAML + JSON Schema + immutable in-memory graph; offline OWL skeleton; graph database Reserved |
 | Orchestration | OpenSpec / Comet lifecycle management |
-| Authentication | ArkCLI (Volc SSO) |
+| Runtime State | Local process Run/Approval state + JSONL traces; shared/production durable runtime requires a separate change |
+| Authentication & Authorization | Not productized; shared environments require server-owned principal / tenant / role / data scope / ApprovalActor |
 
 ---
 
@@ -196,6 +205,8 @@ Open `http://127.0.0.1:3000/workbench`.
 - [Technical Architecture](docs/wiki/sap-nexus-agent-technical-architecture.md)
 - [Implementation Roadmap](docs/wiki/sap-nexus-agent-implementation-roadmap.md)
 - [Technology Selection](docs/wiki/sap-nexus-agent-technology-selection.md)
+- [OpenHarness Comparison](docs/wiki/sap-nexus-agent-openharness-semantic-orchestration.md)
+- [DeerFlow Adoption Decision](docs/wiki/sap-nexus-agent-deerflow-adoption-analysis.md)
 - [Execution Contract](openspec/specs/gateway-execution-contract/spec.md)
 - [Runbooks](docs/runbooks/README.md)
 

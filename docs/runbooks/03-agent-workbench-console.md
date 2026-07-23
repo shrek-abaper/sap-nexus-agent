@@ -239,7 +239,7 @@ openspec validate --all --strict
 - Treat the Workbench as an internal Agent console; first delivery is local, but boundaries should not block production hardening.
 - Treat local-first as a deployment/developer-experience property, not a data simulation policy. Read-only inventory output must come from the controlled Agent/Gateway/SAP path unless a test explicitly injects a fake runner.
 - Keep UI as a Modular Monolith; do not introduce frontend microservices.
-- Prefer SSE first; add WebSocket only when a concrete bidirectional need appears.
+- Prefer the SSE protocol first, but treat the current buffered SSE-format response as local MVP only; shared runtime requires incremental events plus reconnect/replay. Add WebSocket only when a concrete bidirectional need appears.
 
 ## Manual WSL Browser Validation
 

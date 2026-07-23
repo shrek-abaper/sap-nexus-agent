@@ -5,10 +5,10 @@
 | 字段 | 内容 |
 |---|---|
 | 文档名称 | `SAP Nexus Agent OpenHarness 对比与语义智能编排路线` |
-| 当前版本 | `v0.1.0` |
-| 状态 | `Decision Baseline Draft` |
+| 当前版本 | `v0.1.1` |
+| 状态 | `Decision Baseline` |
 | 创建日期 | `2026-07-18` |
-| 最近更新 | `2026-07-18` |
+| 最近更新 | `2026-07-24` |
 | 维护目录 | `docs/wiki/` |
 | 文档定位 | 记录 OpenHarness 对比结论，并定义 SAP Nexus 后续语义规划、只读多能力组合和受治理能力演进路线 |
 | 关联技术架构 | `docs/wiki/sap-nexus-agent-technical-architecture.md` |
@@ -65,13 +65,15 @@ MM.Inventory.GetAvailability
 - OpenHarness 的 `QueryEngine`、Tool Registry、Skill loader、Permission checker、Hook executor、Dry-run 和 Multi-Agent 代码与 README。
 - SAP Nexus 当前 `main` 上的 Registry、CallPlan、Gateway、ReasoningFact、Approval、Eval、OWL skeleton、架构、路线和 runbook。
 
-当前 SAP Nexus runtime 事实：
+当前 SAP Nexus 事实：
 
 - Active capability 共 3 个：`MM.Inventory.GetAvailability`、`MM.PurchaseOrder.GetList`、`MM.PR.CreateDraft`。
 - Capability selector 仍是固定 `intent -> capabilityId` 闭集映射。
 - `CallPlan` 当前只承载单个 `capabilityId`，不是 DAG。
-- `semanticType` / `ontologyIri` 已存在，但关系本体和一等 `factTypeId` 尚未进入 schema/runtime。
-- 当前没有 `ontology/capability-relations.yaml`、`PlanGraph` 或 Dynamic Planner runtime。
+- S1 已发布 `FactType`、`CapabilityRelation`、`GoalSpec`、`PlanGraph` 和四源 `RegistrySnapshot` schema/catalog，并实现 immutable graph、reachability 和 caller-authored PlanGraph deterministic validation。
+- `ontology/capability-relations.yaml` 已存在；首个双 Read pilot 没有 authored dependency edge，因此当前 relation catalog 合法为空，producer edge 由 Registry 派生。
+- S1 已归档到 `openspec/changes/archive/2026-07-19-sap-nexus-semantic-planning-foundation/`，但没有接入 LLM Planner、Gateway、SAP 或多能力 runtime execution。
+- 当前 Workbench Run/Approval 仍是进程内 MVP，SSE 路由是完成后一次性返回的 SSE-formatted body，不是 durable incremental stream。
 
 ---
 
@@ -97,7 +99,7 @@ MM.Inventory.GetAvailability
 
 ## 4. 核心领域模型
 
-语义智能编排需要新增以下一等对象。名称是后续正式 design 的输入，不代表 schema 已实现。
+语义智能编排对象已分阶段落地。S1 对象已进入 schema/catalog 和 validation-only 实现；`PlanDraft`、`PolicyDecision`、`CapabilityGap` 的完整 planner/runtime 形态仍是 S2/S3 design 输入。
 
 | 对象 | 职责 | 是否执行权威 |
 |---|---|---|
@@ -229,6 +231,8 @@ Existing Gateway Family
 
 建议 change：`sap-nexus-semantic-planning-foundation`
 
+状态：已实现、验证并归档到 `openspec/changes/archive/2026-07-19-sap-nexus-semantic-planning-foundation/`。
+
 范围：
 
 - `FactType` 词汇表和 schema。
@@ -251,6 +255,7 @@ Existing Gateway Family
 范围：
 
 - 自然语言到 `GoalSpec` candidate。
+- progressive `CapabilityCard` discovery、governance visibility pre-filter 和有界候选集合。
 - 能力候选发现和 `PlanDraft`。
 - 确定性 `PlanCompiler`。
 - Dry-run 输出节点、边、参数来源、缺失输入、能力缺口、治理和审批点。
@@ -271,8 +276,11 @@ Existing Gateway Family
 - 只允许 `sideEffect=none` 的 active Function。
 - 每个节点继续走现有 Gateway `validate -> execute`。
 - 无依赖 Read 节点可并行；失败状态必须显式。
-- 输出 `MaterialSupplySnapshot`，保留每个 Fact 的 lineage 和 trace。
+- 确定性 `OutputProjection` 输出 `MaterialSupplySnapshot`，声明 `asOf` / freshness、completeness、limitations、每个 Fact 的 lineage 和 trace。
+- 任一必需节点失败、超时或取消时输出 `incomplete`，Narrator 不得声称完整供给结论。
 - 不输出缺货预测或采购数量结论。
+
+共享 S3、长审批、multi-worker / HA 或非 sandbox WRITE 前，另立 trusted/durable runtime change，补齐 server-owned principal / tenant / role / data scope、durable Run/Approval、ownership/lease、event cursor/reconnect/replay 和幂等 continuation。本地 S2 Dry-run 不因此引入数据库。
 
 ### S4：Reasoning / Recommendation Integration
 
@@ -312,13 +320,15 @@ Dynamic Planner 仍只能在已发布关系图内工作；它不能生成任意 
 | Planner implementation | 现有 Python Agent 内独立模块 | 复用当前 Intent、Registry client、CallPlan、Fact 和 Eval，不引入第二运行时 |
 | Fact Type / Relation source | YAML + JSON Schema | 可 review、可 version、与现有 Registry 一致 |
 | Graph query | 进程内只读 DAG/graph | 当前节点数十量级，无图数据库必要 |
-| Plan persistence | JSON/JSONL + Registry Snapshot id | 支持 trace、replay 和早期调试 |
+| Plan persistence | 本地 JSON/JSONL；共享环境 durable store | 本地支持 trace/早期调试；共享 S3 按 PlanExecution/Evidence 一致性契约持久化，不用 summary 恢复 |
 | LLM role | `GoalSpec` / `PlanDraft` candidate | 开放理解，不持有执行权 |
 | Compile / policy | Deterministic Python | 可测、可复现、fail-closed |
 | Execution | 现有 Gateway Family | 不改变 capability/binding 执行权威 |
 | Validation | JSON Schema + Registry validator + Eval Harness | 当前真实质量门禁 |
 | OWL / SHACL | ROI spike 后再引入 | 当前不作为 runtime 依赖或门禁 |
 | OpenHarness | 设计参考，不增加依赖 | 避免双 Agent runtime 和双执行权威 |
+| Identity / authorization | server-owned principal context | principal、tenant、role、data scope 和 ApprovalActor 不由 request、prompt、Memory 或 Tool 提供 |
+| Runtime streaming | SSE protocol first | 当前 buffered SSE-format；共享环境目标是 ordered incremental events + cursor/reconnect/replay |
 
 ---
 
@@ -332,6 +342,9 @@ Dynamic Planner 仍只能在已发布关系图内工作；它不能生成任意 
 - Prompt/LLM Hook 只能提出风险提示，不能替代 deterministic policy。
 - 关系图不可用时不得靠 LLM 猜测依赖；退回已发布 Registry Snapshot 或输出 `CAPABILITY_GAP`。
 - 部分 Read 失败必须标注 incomplete，不得把部分事实叙述为完整业务结论。
+- request-owned user / tenant / role / approval actor 不得成为授权依据；身份或授权 provider 失败时执行 fail-closed。
+- ConversationState 可摘要；PlanExecutionState、Approval 和 Evidence 不得被 summary、Memory 或 generic checkpoint 重建。
+- 当前进程内 Run/Approval 和 buffered SSE 只属于本地 MVP，不是共享 S3 或生产 WRITE 的 readiness evidence。
 - 组合链含 Write 时，未来必须声明 `partialFailurePolicy` 和 `compensationPolicy`，本轮不实现。
 
 ---
@@ -370,11 +383,13 @@ Dynamic Planner 仍只能在已发布关系图内工作；它不能生成任意 
 | 直接采用 OpenHarness runtime | 拒绝 |
 | 新增 OpenHarness 代码依赖 | 拒绝 |
 | 首个场景：物料库存 + 采购订单供给概览 | 已确认 |
-| S1 Semantic Planning Foundation | 下一正式 design 输入 |
-| S2 Planner Dry-run | S1 后设计/实施 |
-| S3 Read-only Composition Pilot | S2 验证后实施 |
+| S1 Semantic Planning Foundation | 已实现 / 已验证 / 已归档 |
+| P0A Source-of-truth / repository hygiene | 当前文档与仓库卫生前置；不改变 runtime |
+| S2 Planner Dry-run | 下一业务 design；dry-run only |
+| Trusted / Durable Runtime | 本地 S2 不要求；共享 S3、长审批、multi-worker/HA 或非 sandbox WRITE 前的条件门禁 |
+| S3 Read-only Composition Pilot | S2 验证后实施；增加 deterministic OutputProjection 和 incomplete/freshness 语义 |
 | 自动本体/能力发布 | 禁止；只允许 draft + human publish |
 | Dynamic Planner | Phase 3+ / Reserved |
 | Write composition | Reserved；保持逐节点审批和事务边界 |
 
-下一步不是直接编码，而是为 `sap-nexus-semantic-planning-foundation` 创建正式 design，明确 S1 的 schema、模块边界、数据流、错误模型和 Eval cases；用户批准 design 后再进入实施计划。
+下一步先完成 P0A source-of-truth / repository hygiene 收敛，再为 `sap-nexus-planner-dry-run` 创建正式 design。S2 只覆盖 progressive CapabilityCard discovery、GoalSpec/PlanDraft candidate、deterministic PlanCompiler 和 dry-run evidence，不调用 Gateway 或 SAP；trusted/durable runtime、S3 execution、Memory、Dynamic Planner 和 Write composition 均保持独立 change。

@@ -2,7 +2,7 @@
 
 # SAP Nexus Agent
 
-SAP Nexus Agent 是一个**基于能力本体建模的 SAP 治理型接入网关**。它通过 Neo4j 对 SAP 业务能力、RFC/BAPI/Table 及其参数约束进行形式化本体建模，LLM Agent 仅在已注册能力的边界内进行意图解析与编排，所有数据访问必须经过能力注册中心 + 白名单执行器绑定，不支持裸 RFC/OData/SQL 调用。
+SAP Nexus Agent 是一个**基于能力本体建模的 SAP 治理型接入网关**。当前以 YAML Registry、JSON Schema、Fact Type / Capability Relation catalog 和不可变进程内语义图建模 SAP 业务能力及参数约束；LLM Agent 仅在已注册能力边界内提出意图或计划候选，所有数据访问必须经过 Capability Registry、确定性校验和白名单执行器绑定，不支持裸 RFC/OData/SQL 调用。
 
 **核心原则：能力即边界 —— 不是通用 SAP 代理，而是受控能力网关。**
 
@@ -72,6 +72,14 @@ SAP Nexus Agent 是一个**基于能力本体建模的 SAP 治理型接入网关
 | `REST_JSON` | 🔒 Fail-closed | 架构预留 |
 | `SQL_READ` | 🔒 Fail-closed | 架构预留 |
 
+### 当前运行成熟度
+
+- `FactType`、`CapabilityRelation`、`GoalSpec`、`PlanGraph` 和 `RegistrySnapshot` 契约已实现、验证并归档；当前产品 runtime 仍只执行单能力 `CallPlan`。
+- Workbench Run 与 Gateway Approval 当前使用进程内 Store；服务重启、长审批和多实例恢复尚未量产化。
+- 当前 `/stream` 返回完成后聚合的 SSE-formatted events，不是增量发布或断线续传。
+- 可信 principal、tenant、role、data scope 和 ApprovalActor 尚未接入；当前 WRITE 仅限 sandbox/dev 验证。
+- 共享 S3、长审批、multi-worker/HA 或非 sandbox WRITE 前，必须先完成 trusted/durable runtime 独立 change。
+
 ---
 
 ## 当前已注册能力
@@ -131,11 +139,11 @@ cp .env.example .env
 scripts/comet-verify-gateway.sh
 .venv/bin/python scripts/validate-registry-contract.py registry/capabilities.yaml
 .venv/bin/python -m pytest agent/tests/test_registry_contract.py -v
-scripts/verify-agent-callplan-evidence.sh
+PYTHONPATH=agent scripts/verify-agent-callplan-evidence.sh
 openspec validate --all --strict
 ```
 
-预期结果：Gateway 79 测试通过、Registry 契约有效、Agent 回归 109 通过、Eval 13/13 通过。
+预期结果：所有命令退出码为 `0`；当前 Agent 基线为 `550 passed, 1 skipped`，Eval 为 `7/7 + 13/13 + 9/9`，OpenSpec 为 `8 passed, 0 failed`。仓库移动后如 editable install 仍指向旧路径，应重新安装本地 package；`PYTHONPATH=agent` 可用于验证当前源码。
 
 ### 启动服务
 
@@ -180,14 +188,15 @@ npm --prefix frontend run dev
 
 | 层 | 技术 |
 |----|------|
-| Agent | Python (FastAPI) + LLM (OpenAI 兼容) + Rule 混合 |
+| Agent | Python package + OpenAI-compatible LLM + Rule 混合 |
 | Gateway | Java 17 / Spring Boot / Gradle 多模块 |
 | SAP 连接 | SAP JCo 3 (RFC) + SAP OData (HTTP) |
 | 前端 | React / Next.js / TypeScript |
 | 能力注册 | YAML + JSON Schema |
-| 本体 | OWL 骨架 (offline) / Neo4j 图模型 (规划中) |
+| 本体 | YAML + JSON Schema + 不可变内存图；OWL 骨架 offline；图数据库 Reserved |
 | 编排 | OpenSpec / Comet 生命周期管理 |
-| 认证 | ArkCLI (Volc SSO) |
+| Runtime State | 本地进程内 Run/Approval + JSONL trace；共享/量产 durable runtime 待独立 change |
+| 认证与授权 | 尚未产品化；共享环境需 server-owned principal / tenant / role / data scope / ApprovalActor |
 
 ---
 
@@ -196,6 +205,8 @@ npm --prefix frontend run dev
 - [技术架构](docs/wiki/sap-nexus-agent-technical-architecture.md)
 - [实施路线图](docs/wiki/sap-nexus-agent-implementation-roadmap.md)
 - [技术选型](docs/wiki/sap-nexus-agent-technology-selection.md)
+- [OpenHarness 对比](docs/wiki/sap-nexus-agent-openharness-semantic-orchestration.md)
+- [DeerFlow 借鉴决策](docs/wiki/sap-nexus-agent-deerflow-adoption-analysis.md)
 - [执行契约](openspec/specs/gateway-execution-contract/spec.md)
 - [运行手册](docs/runbooks/README.md)
 
