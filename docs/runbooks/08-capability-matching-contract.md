@@ -5,31 +5,33 @@
 | Field | Value |
 |---|---|
 | Runbook | `08-capability-matching-contract` |
-| Version | `v0.2.0` |
-| Status | `Deferred / Phase 3+` |
+| Version | `v0.3.0` |
+| Status | `S2-A Next / Phase 3+ Scale-up Deferred` |
 | Created | `2026-06-26` |
-| Updated | `2026-06-28` |
-| Workstream | Deferred matching scale-up; MVP keeps rules + Registry exact lookup and MatchDecision only |
-| Related Change | `sap-nexus-capability-matching-contract` |
-| Current Phase | Deferred until scale thresholds or Eval bad cases justify retrieval / rerank |
+| Updated | `2026-07-24` |
+| Workstream | S2-A baseline semantic decision hardening now; Phase 3+ retrieval / rerank later |
+| Related Change | `sap-nexus-planner-dry-run` (S2-A); `sap-nexus-capability-matching-contract` (Phase 3+ scale-up) |
+| Current Phase | Implement explicit five-state MatchDecision, multi-intent / ambiguity handling, visibility and matcher Eval before S2-B dry-run |
 
 ---
 
 ## 1. Session Goal
 
-This runbook is now deferred. MVP matching does not build a Capability Index, embedding retrieval, LLM rerank, or planner. The current product path is intentionally small:
+This runbook now separates baseline decision correctness from scale-stage retrieval. S2-A does not build a Capability Index, embedding retrieval, LLM rerank, or executable planner, but it must turn the current implicit selector behavior into a deterministic five-state `MatchDecision`:
 
 ```text
 User utterance
--> Rule / keyword / trigger phrase match
--> Registry exact capability lookup
--> Required parameter check
--> Governance filter
+-> Multi-intent / ambiguity detection
+-> Server-owned context + visibility pre-filter
+-> Rule / alias / domain / Registry exact candidate discovery
+-> Required parameter and governance fit
 -> MatchDecision
--> CallPlan
+-> CallPlan / clarification / options / rejection / planner handoff
 ```
 
-This workstream should restart only when capability scale or Eval bad cases prove rules + Registry exact lookup are insufficient.
+Current runtime status: `IntentParseResult -> SelectionResult` supports three active capabilities, missing-parameter clarification and technical-override rejection, but does not implement a first-class five-state `MatchDecision`. The rule parser returns the first matching intent, so a request containing inventory and purchase-order goals can be silently reduced to inventory. S2-A must close this gap before S2-B generates GoalSpec / PlanDraft candidates.
+
+Only the scale-up portion restarts when capability scale or Eval bad cases prove lightweight discovery insufficient.
 
 ---
 
@@ -57,16 +59,20 @@ Expected baseline:
 - The active capability catalog remains small, closed-set, and Registry-owned.
 - MVP matching uses rules + Registry exact lookup; LLM output remains advisory until accepted by deterministic Harness.
 - Gateway continues to accept only `capabilityId` / allowlisted `bindingId` paths, never request-provided technical execution details.
+- Current code does not yet guarantee `SHOW_OPTIONS` or `ESCALATE_TO_PLANNER`; documentation must not present those decisions as implemented runtime behavior before S2-A verification.
 
 ---
 
 ## 3. Proposed Scope
 
-Current MVP scope:
+S2-A baseline scope:
 
-- Keep `MatchDecision` with five decisions: `SELECT`, `CLARIFY`, `SHOW_OPTIONS`, `REJECT`, `ESCALATE_TO_PLANNER`.
-- Use rules, trigger phrases, keywords, existing Registry metadata, required-param checks, and governance fail-closed.
-- Add matching-related seed cases through `08-eval-harness-seed.md` before changing matcher complexity.
+- Implement `MatchDecision` with five decisions: `SELECT`, `CLARIFY`, `SHOW_OPTIONS`, `REJECT`, `ESCALATE_TO_PLANNER`.
+- Detect single-goal, parallel multi-goal, conditional multi-goal and ambiguous-candidate requests before selecting a capability.
+- Use rules, aliases, domain / businessObject, existing Registry metadata, required-param checks, visibility and governance fail-closed.
+- Bind decision evidence to candidate reasons, Registry Snapshot and trace.
+- Add matching-specific Eval cases before S2-B planner generation.
+- Define the safe `CapabilityCard` projection consumed by S2-B.
 
 Deferred until Phase 3+:
 
@@ -101,6 +107,8 @@ Representative output shape:
 ```json
 {
   "decision": "CLARIFY",
+  "registrySnapshotId": "sha256:<snapshot>",
+  "traceId": "match-<id>",
   "domain": "MM.Inventory",
   "candidateCapabilityId": "MM.Inventory.GetAvailability",
   "extractedParameters": {
@@ -119,6 +127,42 @@ Representative output shape:
 }
 ```
 
+Decision rules:
+
+- One uniquely justified capability with complete required inputs -> `SELECT`.
+- One clear capability with missing or ambiguous required inputs -> `CLARIFY`.
+- Two or three same-level candidates remain plausible after deterministic scoring -> `SHOW_OPTIONS`.
+- Multiple business goals or required Facts are detected -> `ESCALATE_TO_PLANNER`.
+- Unknown, invisible, unsafe or technical-override request -> `REJECT`.
+- Multiple goals must never be reduced to the first keyword match.
+
+---
+
+## 4.1 CapabilityCard Projection For S2-B
+
+S2-A publishes the safe projection contract; S2-B implements progressive discovery. Include:
+
+```text
+capabilityId
+capabilityVersion
+domain
+businessObject
+kind
+intentSummary
+aliases
+positiveExamples
+negativeExamples
+inputSemanticTypes
+outputFactTypes
+sideEffect
+requiresApproval
+visibilityScope
+registrySnapshotId
+evalLinkage
+```
+
+Exclude `rfcName`, service URL, entity set, HTTP method/headers, credential reference, raw SQL, binding implementation and technical mapping. Apply visibility before candidate cards enter model context. Local S2 may use a fixed synthetic governed context; shared candidate discovery requires the separate trusted-identity gate.
+
 ---
 
 ## 5. Safety Notes
@@ -128,6 +172,8 @@ Representative output shape:
 - Do not guess required SAP parameters. Missing or ambiguous required inputs must produce `CLARIFY`.
 - Treat write intent as action proposal / approval scope, not direct execution.
 - Treat complex shortage or replenishment requests as `ESCALATE_TO_PLANNER`, not a single inventory read.
+- Do not treat explicit capability selection as permission, approval or publish authority.
+- Do not expose an invisible capability to the model and rely on execution-time rejection.
 
 ---
 
@@ -136,12 +182,16 @@ Representative output shape:
 | Area | Acceptance |
 |---|---|
 | Closed set | Every candidate comes from Registry; Capability Index is deferred |
-| MatchDecision | Five decision types have schema, examples, trace fields, and Eval Harness seed coverage |
+| MatchDecision | Five decision types have schema, examples, candidate reasons, Registry Snapshot, trace fields, and Eval coverage |
+| Current/target boundary | Documentation and traces distinguish current selector behavior from verified S2-A behavior |
+| Multi-intent | Parallel or conditional multi-goal requests produce `ESCALATE_TO_PLANNER`, never first-match `SELECT` |
+| Ambiguity | Multiple plausible same-level candidates produce `SHOW_OPTIONS` |
+| Visibility | Candidate cards are filtered by server-owned governed context before model exposure |
 | Governance | Unsafe, disabled, write, unapproved, or unauthorized candidates fail closed |
 | Parameters | Missing and ambiguous required inputs produce `CLARIFY` |
 | Rejection | Bare RFC / endpoint / technical override requests produce `REJECT` |
 | Planner boundary | Multi-fact goals produce `ESCALATE_TO_PLANNER`; no MVP auto-planning |
-| Eval | Matching evals cover direct hit, synonym hit, missing parameter, ambiguous candidate, unsafe technical request, write intent, and planner escalation |
+| Eval | Matching evals cover direct/synonym hit, missing parameter, multi-intent, ambiguous candidate, capability gap, visibility leakage, unsafe technical request, prompt injection, write intent and planner escalation; false `SELECT` fails regression |
 
 Recommended verification after implementation:
 

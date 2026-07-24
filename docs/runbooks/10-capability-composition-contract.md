@@ -5,13 +5,13 @@
 | Field | Value |
 |---|---|
 | Runbook | `10-capability-composition-contract` |
-| Version | `v0.3.3` |
-| Status | `S1 Archived; S2 Next; Runtime Reserved` |
+| Version | `v0.3.4` |
+| Status | `S1 Archived; S2-A Next; Runtime Reserved` |
 | Created | `2026-07-14` |
 | Updated | `2026-07-24` |
-| Workstream | Archived S1 semantic planning foundation, immediate source-of-truth hygiene, S2 dry-run next, S3 execution gated |
+| Workstream | Archived S1 semantic planning foundation, S2-A semantic decision hardening, S2-B dry-run, S3 execution gated |
 | Related Change | `sap-nexus-semantic-planning-foundation` (archived `2026-07-19`); `sap-nexus-planner-dry-run` (next business design) |
-| Current Phase | P0A documentation/repository hygiene then S2 dry-run; current runtime remains single-capability |
+| Current Phase | P0A documentation/repository hygiene then S2-A MatchDecision hardening and S2-B dry-run; current runtime remains single-capability |
 
 ---
 
@@ -27,7 +27,7 @@ Composition is not a single concept. It has three forms with different semantics
 | Composite Capability | A fixed multi-step flow registered as one `capabilityId` with an internal deterministic DAG | L3 | Same governance / approval / eval / replay as atomic capabilities; no free orchestration |
 | Dynamic Planner | Runtime orchestration of atomic capabilities by intent | L2 | Requires capability relation ontology first; works only inside the ontology dependency graph |
 
-Hard precondition: capability relations (`producesFactType` / `consumesFactType` / `dependsOn` / `precondition`) must be modeled before executable composition. Until the read-only pilot is implemented and verified, multi-capability requests still go through `ESCALATE_TO_PLANNER` (record + explain), never auto-orchestration. The planner orchestrates the published ontology dependency graph, not free LLM tool-calling -- this is consistent with "Harness != LLM + tool calling".
+Hard precondition: capability relations (`producesFactType` / `consumesFactType` / `dependsOn` / `precondition`) must be modeled before executable composition. The target contract requires multi-capability requests to go through `ESCALATE_TO_PLANNER` (record + explain), never auto-orchestration, until the read-only pilot is implemented and verified. Current parser / selector behavior does not yet reliably detect every multi-goal utterance and may choose the first matching intent; S2-A must close that gap. The planner orchestrates the published ontology dependency graph, not free LLM tool-calling -- this is consistent with "Harness != LLM + tool calling".
 
 ---
 
@@ -53,7 +53,7 @@ registry/capabilities.yaml
 Verified S1 baseline:
 
 - Atomic capabilities remain the only runtime execution unit; composition is Reserved.
-- Multi-capability requests currently produce `ESCALATE_TO_PLANNER` (record + explain), never auto-orchestration.
+- The architecture contract requires multi-capability requests to produce `ESCALATE_TO_PLANNER`; current runtime enforcement remains an S2-A deliverable and must not be overstated.
 - Three first-class Fact Types and the Capability Relation contract are published; the authored relation catalog is empty for the first independent two-node pilot.
 - The immutable graph exports exactly three derived producer edges and is never an execution authority.
 - `RegistrySnapshot` deterministically covers the four semantic source files; the fresh verified snapshot is `sha256:bf0ac12a482d719725bf888feb9d3e10e60e583aa91c999a819a49001ce92092`.
@@ -81,7 +81,15 @@ Verified S1 baseline:
 5. Verified referential integrity, cycles, type compatibility, parameter provenance, governance, topology, Goal outputs, and snapshot drift fail closed.
 6. Kept the file edge list + in-memory read-only graph boundary; no LLM, Gateway, SAP, OpenHarness, graph database, or runtime orchestration was added.
 
-### S2: `sap-nexus-planner-dry-run`
+### S2-A: Semantic MatchDecision Hardening
+
+1. Implement the first-class five-state `MatchDecision`: `SELECT`, `CLARIFY`, `SHOW_OPTIONS`, `REJECT`, `ESCALATE_TO_PLANNER`.
+2. Detect multi-intent and ambiguous candidates before single-capability selection; never reduce multiple goals to the first keyword match.
+3. Apply server-owned governed context and capability visibility before candidate cards enter model context.
+4. Bind decision evidence to candidate reasons, Registry Snapshot and trace.
+5. Add matcher Eval for multi-intent, ambiguity, capability gap, parameter grounding, visibility leakage, prompt injection and false `SELECT`.
+
+### S2-B: `sap-nexus-planner-dry-run`
 
 1. Produce a small candidate set through progressive `CapabilityCard` discovery, then generate `GoalSpec` / `PlanDraft` candidates from natural language.
 2. Keep candidate discovery advisory; compile candidates with a deterministic `PlanCompiler`.
@@ -115,7 +123,7 @@ The two nodes may run in parallel only after PlanGraph proves they are independe
 
 - S1 implementation, verification and archive are complete at `openspec/changes/archive/2026-07-19-sap-nexus-semantic-planning-foundation/`.
 - P0A source-of-truth/repository hygiene must close current status, moved-path, stale editable-install and tracked-runtime-artifact drift without changing runtime behavior.
-- S2 may enter design next because S1 schemas and validators passed the local release gate. S2 remains dry-run only and must not call Gateway or SAP.
+- S2 may enter design next because S1 schemas and validators passed the local release gate. S2-A and S2-B remain non-executing and must not call Gateway or SAP.
 - S3 starts only after dry-run bad cases prove fail-closed behavior, both atomic Read capabilities retain their existing regression baselines, and deterministic OutputProjection / incomplete semantics are designed.
 - Shared S3, long approval, multi-worker/HA or non-sandbox WRITE additionally requires trusted principal context, durable Run/Approval, ownership/lease, incremental SSE with cursor/replay and idempotent continuation.
 - Dynamic Planner remains gated by completed S1-S3 plus `active capability > 50` OR `business domains > 3` OR `multi-capability request share > 15%`.
@@ -126,11 +134,11 @@ The two nodes may run in parallel only after PlanGraph proves they are independe
 
 Mandatory rules:
 
-- S1 is archived; P0A hygiene then S2 dry-run design is the open next sequence. Executable composition remains blocked until the S3 stage gates above are met.
+- S1 is archived; P0A hygiene then S2-A decision hardening and S2-B dry-run design is the open next sequence. Executable composition remains blocked until the S3 stage gates above are met.
 - OpenHarness is a design reference only; do not add it as a runtime dependency or second execution authority.
 - DeerFlow is a design reference only; do not add it as a runtime dependency, second Agent loop, or second execution authority.
 - The planner orchestrates the ontology dependency graph only; LLM must not freely orchestrate atomic capabilities.
-- Current multi-capability requests must produce `ESCALATE_TO_PLANNER` (record + explain), not auto-execution, until S3 is implemented and verified.
+- S2-A must make multi-capability requests reliably produce `ESCALATE_TO_PLANNER` (record + explain), not first-match selection or auto-execution; until verified, current runtime must be described as lacking reliable multi-intent escalation.
 - `GoalSpec` / `PlanDraft` are advisory candidates; only deterministic compilation may produce a PlanGraph.
 - `CapabilityCard`, Tool search, Skill activation, summary, Memory and sub-agent output are also advisory; none can grant execution authority.
 - `READ_ONLY` PlanGraph containing an Action must fail closed.
@@ -155,13 +163,14 @@ Mandatory rules:
 | Compiler | Cycle, type mismatch, missing parameter provenance and Registry Snapshot drift fail closed |
 | Dry-run | Shows nodes, edges, parameter sources, gaps, governance and approval barriers without calling SAP |
 | Candidate discovery | S2 exposes bounded `CapabilityCard` candidates without technical binding details; deterministic MatchDecision / PlanCompiler remains authoritative |
+| Baseline decision | S2-A implements five-state `MatchDecision`, multi-intent/ambiguity handling, candidate visibility and decision trace without embedding or executable planning |
 | Pilot | Inventory and PO Read nodes use existing Gateway validation/execution, governed ready-node lifecycle and Fact lineage |
 | Scheduling | S3 enforces dependency, side-effect, concurrency, timeout/cancel, node ledger and trace rules before parallel execution |
 | Output projection | Deterministic `OutputProjection` declares input Facts, output schema, freshness, completeness, limitations and lineage; partial failure remains explicit |
 | Trusted runtime | Shared S3/long approval/non-sandbox WRITE has authenticated ownership, durable Run/Approval, incremental SSE cursor/replay and idempotent continuation |
 | Business boundary | MaterialSupplySnapshot does not claim shortage prediction, purchase quantity or automatic PR |
 | Planner boundary | Dynamic Planner works only inside the published ontology dependency graph; no free LLM orchestration |
-| Escalation | Multi-capability requests produce `ESCALATE_TO_PLANNER` until S3 is implemented and verified |
+| Escalation | S2-A proves multi-capability requests produce `ESCALATE_TO_PLANNER`; false first-match `SELECT` fails regression |
 | Approval | Write steps in composition chains require Human Approval per step |
 | Transactionality | Composition chains with write declare `compensationPolicy` and `partialFailurePolicy` |
 | Trace | `TraceSpan.parentPlanId` / `subSpan` allow full replay by `traceId` |
@@ -198,9 +207,10 @@ openspec validate --all --strict
 1. Re-read the four wiki source-of-truth documents, the S1 verification report, and this runbook.
 2. Check `git status --short` and `openspec list --json`; S1 archive path must remain present and no active change is assumed.
 3. Close P0A source-of-truth and repository-hygiene drift without changing runtime behavior.
-4. Start `sap-nexus-planner-dry-run` and keep it limited to progressive `CapabilityCard` discovery, natural-language GoalSpec/PlanDraft candidates, deterministic PlanCompiler output, validation evidence, and dry-run preview; do not call Gateway or SAP.
-5. Keep S3 Read-only Pilot as a separate follow-up change with PlanGraph-governed lifecycle, deterministic OutputProjection, explicit incomplete/freshness/lineage semantics, Gateway regression, and no-write gates.
-6. Before shared S3, long approval, multi-worker/HA or non-sandbox WRITE, open the separate trusted/durable runtime change; do not select its store inside S2.
-7. Do not start DeerFlow integration or user memory work unless separately evidenced and approved.
+4. Start `sap-nexus-planner-dry-run` with S2-A first: five-state `MatchDecision`, multi-intent/ambiguity, visibility and matcher Eval; do not call Gateway or SAP.
+5. Continue to S2-B only after S2-A passes: progressive `CapabilityCard` discovery, natural-language GoalSpec/PlanDraft candidates, deterministic PlanCompiler output, validation evidence and dry-run preview; still do not call Gateway or SAP.
+6. Keep S3 Read-only Pilot as a separate follow-up change with PlanGraph-governed lifecycle, deterministic OutputProjection, explicit incomplete/freshness/lineage semantics, Gateway regression, and no-write gates.
+7. Before shared S3, long approval, multi-worker/HA or non-sandbox WRITE, open the separate trusted/durable runtime change; do not select its store inside S2.
+8. Do not start DeerFlow integration or user memory work unless separately evidenced and approved.
 
 Do not start S2 from OpenHarness / DeerFlow integration, durable store selection, user memory, graph database selection, Dynamic Planner, read-only execution, or Write composition. Those are not the S2 design workstream.

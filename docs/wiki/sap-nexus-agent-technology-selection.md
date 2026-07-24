@@ -5,7 +5,7 @@
 | 字段 | 内容 |
 |---|---|
 | 文档名称 | `SAP Nexus Agent 技术选型与工程路线决策` |
-| 当前版本 | `v0.2.9` |
+| 当前版本 | `v0.2.10` |
 | 状态 | `Decision Baseline Draft` |
 | 创建日期 | `2026-06-19` |
 | 最近更新 | `2026-07-24` |
@@ -20,6 +20,7 @@
 
 | 版本 | 日期 | 变更摘要 | 决策状态 |
 |---|---|---|---|
+| `v0.2.10` | `2026-07-24` | 显式拆分基础语义 matcher 与 Phase 3+ 规模化检索：S2-A 选择规则/alias/domain + 五态 `MatchDecision` + 多意图/歧义检测和 visibility pre-filter，S2-B 再实现 progressive `CapabilityCard` discovery 与 deterministic PlanCompiler dry-run；embedding、向量库、LLM rerank 和 DeerFlow runtime 继续延后 | 当前技术基线 |
 | `v0.2.9` | `2026-07-24` | 区分本地 MVP 与共享/量产运行选型：当前 SSE 为 buffered SSE-format、Run/Approval 为进程内状态；补充可信身份、durable runtime 条件门禁、分层 Store 与真实 streaming 目标；把 OData 双跳限定为已验证实现而非所有 HTTP executor 默认模板；同步 S1 已归档 | 当前技术基线 |
 | `v0.2.8` | `2026-07-23` | 增加 §5.7 DeerFlow 2.1.0 借鉴选型：不引入 `deerflow-harness` 或第二 runtime；S2 适配 progressive capability disclosure，S3 适配 PlanGraph-governed task lifecycle；durable runtime 与 UserPreferenceMemory 保持触发式候选 | 当前技术基线 |
 | `v0.2.7` | `2026-07-18` | 增加 §5.6 OpenHarness 对比后的语义编排选型：OpenHarness 仅作设计参考，不引入 runtime 依赖；Planner 留在现有 Python Agent，关系图采用 YAML + JSON Schema + 内存图，LLM 只生成 GoalSpec/PlanDraft candidate，deterministic PlanCompiler 和现有 Gateway 保持执行权威 | 当前技术基线 |
@@ -37,7 +38,7 @@
 
 ## 1. 结论先行
 
-可以继续开发，但不应裸写代码。Registry / OWL Contract、Gateway execution、第二条 Read capability、sandbox write vertical slice 和 S1 Semantic Planning Foundation 均已完成实现与验证；当前下一步仍是 S2 Planner Dry-run design：
+可以继续开发，但不应裸写代码。Registry / OWL Contract、Gateway execution、第二条 Read capability、sandbox write vertical slice 和 S1 Semantic Planning Foundation 均已完成实现与验证；当前下一步仍是 `sap-nexus-planner-dry-run` design，但实施顺序显式分为 S2-A Semantic MatchDecision Hardening 和 S2-B Planner Dry-run：
 
 ```text
 sap-nexus-planner-dry-run
@@ -67,7 +68,9 @@ sap-nexus-planner-dry-run
 | Knowledge Graph | Not runtime in MVP | 能力关系用三元组模型 + 文件存储（edge list）+ 内存图；图数据库为 Phase 8 触发式 Reserved 决策，引擎待 ROI spike（RDF store vs Neo4j） |
 | OpenHarness | 设计参考，不增加依赖 | 借鉴 Agent loop、Tool Schema、Permission/Hook、Dry-run、Memory/Resume；拒绝第二运行时和模型自由 SAP Tool Calling |
 | DeerFlow Runtime | 设计参考，不增加依赖 | 不引入 `deerflow-harness`、DeerFlow Gateway、默认 lead agent 或 frontend；避免第二 Agent runtime 和执行权威 |
-| Progressive Capability Disclosure | S2 内适配 | metadata-first `CapabilityCard` -> 小候选集合 -> LLM candidate；deterministic MatchDecision / PlanCompiler 最终裁决 |
+| Baseline Semantic Matcher | S2-A 内补齐 | 规则 + alias + domain/businessObject + deterministic parameter fit；实现五态 `MatchDecision`、多意图检测、`SHOW_OPTIONS` 和 `ESCALATE_TO_PLANNER`，不依赖 embedding |
+| Progressive Capability Disclosure | S2-B 内适配 | metadata-first `CapabilityCard` -> 小候选集合 -> optional LLM candidate；deterministic MatchDecision / PlanCompiler 最终裁决 |
+| Scale-stage Retrieval | Phase 3+ Triggered | 只在规模与 Eval bad case 触发后评估 semantic index、embedding/hybrid retrieval、跨域 router 和 LLM rerank |
 | PlanExecutor Lifecycle | S3 内适配 | 只借鉴 ready-node、并发上限、timeout、cancel、ledger、trace；并行权来自已验证 PlanGraph |
 | Durable Agent Runtime | Conditional production gate | 不阻塞本地 S2；共享 S3、跨重启、长审批、multi-worker / HA 或非 sandbox WRITE 前必须先落持久 Run/Approval、ownership/lease、event cursor 和幂等 continuation |
 | Governed User Memory | Later / Triggered | 身份、tenant、retention、删除和审计契约成熟后再 pilot；不保存业务事实或执行权威 |
@@ -397,13 +400,42 @@ DeerFlow 2.1.0 是成熟度较高的通用 Super Agent Harness，但其默认执
 当前技术策略：
 
 ```text
-S2 -> progressive candidate discovery + dry-run only
+S2-A -> baseline MatchDecision + multi-intent / ambiguity + visibility pre-filter
+S2-B -> progressive candidate discovery + deterministic dry-run only
 S3 -> PlanGraph-governed ready-node scheduler
 productization trigger -> evaluate durable thread/run/checkpoint store
 identity + governance trigger -> evaluate UserPreferenceMemory pilot
 ```
 
 完整源码证据、决策矩阵、触发条件和 PoC 边界见 `docs/wiki/sap-nexus-agent-deerflow-adoption-analysis.md`。
+
+### 5.8 基础语义 matcher 与规模化检索选型
+
+基础决策正确性不能因当前 capability 数量较少而延后，也不能与海量能力检索绑定实施。近期选型固定为：
+
+```text
+rule / trigger phrase
++ aliases
++ domain / businessObject
++ Registry exact lookup
++ deterministic parameter fit
++ multi-intent / ambiguity detection
+-> five-state MatchDecision
+```
+
+S2-A 不引入 Capability Index、向量数据库、embedding 或 LLM rerank。它只把当前隐含在 `SelectionResult` / Agent outcome 中的选择、澄清和拒绝收敛为显式 `MatchDecision`，并补齐 `SHOW_OPTIONS`、`ESCALATE_TO_PLANNER`、候选理由、Registry Snapshot 和 trace。多意图或无法证明唯一选择时必须 fail closed，不能按关键词顺序选择首个 capability。
+
+S2-B 采用 Registry 派生的安全 `CapabilityCard`，先在 server-owned governed context 上执行 visibility pre-filter，再通过 alias / keyword / domain 的轻量 scoring 形成有界候选集合。LLM 仅可在该集合中生成 candidate、解释或澄清问题；technical binding 不进入候选上下文。若需要 DeerFlow 式接口，只允许 advisory `search_capability_cards` / `describe_capability` / `preview_plan`，不得暴露模型可自由执行的 SAP Tool。
+
+Phase 3+ 才评估：
+
+- semantic / capability index；
+- embedding 或 lexical + vector hybrid retrieval；
+- 跨域 router；
+- 小候选集合 LLM rerank；
+- 独立索引存储与重建机制。
+
+触发依据同时包含能力规模、同域相似度、`topKRecall`、`falseSelectRate`、歧义校准、multi-capability 请求比例、候选 prompt token 和 visibility complexity，不能只用 capability 数量判断。
 
 ---
 
@@ -661,7 +693,7 @@ sap-nexus-capability-registry-gateway
 
 ---
 
-## 12. 进入 S2 Planner Dry-run 设计前的验收清单
+## 12. 进入 S2 Semantic Decision / Planner Dry-run 设计前的验收清单
 
 开始 `sap-nexus-planner-dry-run` 正式 design 前确认：
 
@@ -670,10 +702,14 @@ sap-nexus-capability-registry-gateway
 - Registry、Gateway、Eval、第二条 Read capability 和 sandbox write vertical slice 已完成并保持现有验证基线。
 - 首个场景固定为“物料库存 + 采购订单供给概览”。
 - S1 Fact Type、Capability Relation、GoalSpec、PlanGraph、Registry Snapshot、immutable graph 和 deterministic validator 已实现并验证。
-- S2 只设计/实现 progressive `CapabilityCard` discovery、GoalSpec/PlanDraft candidate、deterministic PlanCompiler 和 dry-run evidence；不执行 Gateway / SAP。
+- S2-A 先设计/实现五态 `MatchDecision`、多意图/歧义检测、候选可见性、决策 trace 和 matcher Eval；不引入 embedding / vector DB。
+- S2-B 再设计/实现 progressive `CapabilityCard` discovery、GoalSpec/PlanDraft candidate、deterministic PlanCompiler 和 dry-run evidence；不执行 Gateway / SAP。
+- `CapabilityCard` 只含业务语义、输入输出 Fact、治理和 snapshot 元数据，不含 RFC、URL、credential、raw SQL 或 technical mapping。
+- 并列多能力目标必须进入 `ESCALATE_TO_PLANNER`，相似候选无法安全区分时必须 `SHOW_OPTIONS`，不得静默选择首个命中能力。
+- matcher Eval 至少覆盖多意图、相似能力歧义、capability gap、错误参数补全、visibility leakage 和 prompt injection；`false SELECT` 作为回归失败。
 - Read-only Composition Pilot 保持为 S3 独立 change，不与 S2 混写。
 - OpenHarness 不成为 runtime 依赖，不新增第二 Agent loop 或第二执行权威。
-- DeerFlow 不成为 runtime 依赖；S2 只借鉴 `CapabilityCard` progressive disclosure，S3 只借鉴 PlanGraph-governed task lifecycle。
+- DeerFlow 不成为 runtime 依赖；S2-B 只借鉴 `CapabilityCard` progressive disclosure，S3 只借鉴 PlanGraph-governed task lifecycle。
 - Summary、Memory、Tool Call 和 sub-agent output 均不是 PlanGraph、Approval 或 Evidence 权威。
 - 本地 S2 不引入 durable store；但共享 S3、长审批或非 sandbox WRITE 前必须完成 trusted identity、durable Run/Approval 和真实增量 SSE 门禁。
 - 不会实现任意 RFC/OData/ADT/REST/SQL 执行入口、自动本体发布、Write composition、KG runtime 或 Graph Registry backend。

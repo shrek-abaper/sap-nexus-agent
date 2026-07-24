@@ -5,7 +5,7 @@
 | 字段 | 内容 |
 |---|---|
 | 文档名称 | `SAP Nexus Agent OpenHarness 对比与语义智能编排路线` |
-| 当前版本 | `v0.1.1` |
+| 当前版本 | `v0.1.2` |
 | 状态 | `Decision Baseline` |
 | 创建日期 | `2026-07-18` |
 | 最近更新 | `2026-07-24` |
@@ -248,7 +248,20 @@ Existing Gateway Family
 - 图数据库。
 - Write 组合。
 
-### S2：Planner Dry-run
+### S2-A：Semantic MatchDecision Hardening
+
+建议作为 `sap-nexus-planner-dry-run` 的第一 milestone，不另建执行 runtime。
+
+范围：
+
+- 将当前隐式 selector 行为收敛为五态 `MatchDecision`。
+- 在能力选择前识别 multi-intent 和 ambiguous candidates。
+- 多目标输出 `ESCALATE_TO_PLANNER`，少量同级候选输出 `SHOW_OPTIONS`，不得首命中降级。
+- 在候选进入模型前应用 server-owned governed context 和 visibility pre-filter。
+- 记录候选理由、Registry Snapshot、参数适配和 trace。
+- 增加 matcher-specific Eval；不引入 embedding、向量库、Gateway 或 SAP 执行。
+
+### S2-B：Planner Dry-run
 
 建议 change：`sap-nexus-planner-dry-run`
 
@@ -354,6 +367,10 @@ Dynamic Planner 仍只能在已发布关系图内工作；它不能生成任意 
 | 指标 | 含义 | 第一阶段要求 |
 |---|---|---|
 | `goalInterpretationAccuracy` | GoalSpec 是否准确表达目标事实和约束 | 建立 seed baseline |
+| `multiIntentDetectionRate` | 多目标请求是否进入 Planner 而非首命中单能力 | 建立正反例；false `SELECT` 失败 |
+| `ambiguityCalibration` | 相似候选是否正确 `SHOW_OPTIONS` / `CLARIFY` | 建立 seed baseline |
+| `visibilityLeakageRate` | 不可见 capability 是否进入模型候选或结果 | `0` |
+| `parameterGroundingAccuracy` | 参数值及来源是否有文本/上下文证据 | 建立正反例 |
 | `planGroundingRate` | 节点和边是否全部来自发布 Registry / relation graph | `100%` |
 | `planValidityRate` | PlanGraph 是否通过类型、依赖和治理校验 | 建立正反例 |
 | `capabilityGapAccuracy` | 不可达目标是否正确指出缺失 Fact/能力/关系 | 建立 bad cases |
@@ -365,6 +382,10 @@ Dynamic Planner 仍只能在已发布关系图内工作；它不能生成任意 
 最小 bad case：
 
 - 用户要求提供任意 `rfcName` / OData URL / SQL。
+- 同一句话同时要求库存和采购订单，parser 只选择第一个目标。
+- 两个相似 capability 均合理却直接 `SELECT`。
+- 不可见 capability 在 visibility filter 前进入模型候选。
+- 模型补写用户未提供且上下文无来源的业务参数。
 - Goal 需要未注册 Fact Type。
 - PlanDraft 引用不存在的 capability。
 - PlanGraph 出现循环依赖。
@@ -385,11 +406,12 @@ Dynamic Planner 仍只能在已发布关系图内工作；它不能生成任意 
 | 首个场景：物料库存 + 采购订单供给概览 | 已确认 |
 | S1 Semantic Planning Foundation | 已实现 / 已验证 / 已归档 |
 | P0A Source-of-truth / repository hygiene | 当前文档与仓库卫生前置；不改变 runtime |
-| S2 Planner Dry-run | 下一业务 design；dry-run only |
+| S2-A Semantic MatchDecision Hardening | 下一业务 design 的第一 milestone；五态决策、多意图/歧义、visibility 和 matcher Eval |
+| S2-B Planner Dry-run | 第二 milestone；progressive CapabilityCard + deterministic compiler；dry-run only |
 | Trusted / Durable Runtime | 本地 S2 不要求；共享 S3、长审批、multi-worker/HA 或非 sandbox WRITE 前的条件门禁 |
 | S3 Read-only Composition Pilot | S2 验证后实施；增加 deterministic OutputProjection 和 incomplete/freshness 语义 |
 | 自动本体/能力发布 | 禁止；只允许 draft + human publish |
 | Dynamic Planner | Phase 3+ / Reserved |
 | Write composition | Reserved；保持逐节点审批和事务边界 |
 
-下一步先完成 P0A source-of-truth / repository hygiene 收敛，再为 `sap-nexus-planner-dry-run` 创建正式 design。S2 只覆盖 progressive CapabilityCard discovery、GoalSpec/PlanDraft candidate、deterministic PlanCompiler 和 dry-run evidence，不调用 Gateway 或 SAP；trusted/durable runtime、S3 execution、Memory、Dynamic Planner 和 Write composition 均保持独立 change。
+下一步先完成 P0A source-of-truth / repository hygiene 收敛，再为 `sap-nexus-planner-dry-run` 创建正式 design。S2-A 先补齐五态 MatchDecision、多意图/歧义、visibility 和 matcher Eval；S2-B 再覆盖 progressive CapabilityCard discovery、GoalSpec/PlanDraft candidate、deterministic PlanCompiler 和 dry-run evidence。两者都不调用 Gateway 或 SAP；trusted/durable runtime、S3 execution、Memory、Dynamic Planner 和 Write composition 均保持独立 change。

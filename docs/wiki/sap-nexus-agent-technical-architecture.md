@@ -5,7 +5,7 @@
 | 字段 | 内容 |
 |---|---|
 | 文档名称 | `SAP Nexus Agent 技术架构文档` |
-| 当前版本 | `v0.2.15` |
+| 当前版本 | `v0.2.16` |
 | 状态 | `Product Architecture Baseline Draft` |
 | 创建日期 | `2026-06-18` |
 | 最近更新 | `2026-07-24` |
@@ -20,6 +20,7 @@
 
 | 版本 | 日期 | 变更摘要 | 决策状态 |
 |---|---|---|---|
+| `v0.2.16` | `2026-07-24` | 校准语义识别 Current / Target 边界：当前 runtime 仍是单能力规则/LLM 闭集选择，尚未实现五态 `MatchDecision` 与可靠多意图升级；将 S2 显式拆为 S2-A 基础语义决策加固和 S2-B Planner Dry-run，补充 `CapabilityCard` 安全投影、候选前 visibility filter 与 matcher Eval 门禁；Phase 3+ 继续只承担规模化 retrieval / rerank | 当前架构基线 |
 | `v0.2.15` | `2026-07-24` | 基于 OpenHarness / DeerFlow 综合复盘补齐可信身份、三层状态、真实流式、durable run / approval 条件门禁与确定性组合输出；同步 S1 已归档事实，明确当前 Workbench SSE 和进程内 Store 仍是本地 MVP，不改变 S2 Planner Dry-run 的下一优先级 | 当前架构基线 |
 | `v0.2.14` | `2026-07-23` | 吸收 DeerFlow 2.1.0 源码对比结论：不引入第二 Agent runtime；把 progressive capability discovery 纳入 S2 设计输入，把受治理 task lifecycle 纳入 S3 PlanExecutor 设计输入；补充 Conversation / PlanExecution / Evidence 三层状态和受限 UserPreferenceMemory 边界 | 当前架构基线 |
 | `v0.2.13` | `2026-07-18` | 吸收 OpenHarness 对比结论：不引入第二 Agent runtime，新增语义规划控制面方向；确认“物料库存 + 采购订单供给概览”为首个只读多能力场景；把组合路线拆为 Semantic Planning Foundation、Planner Dry-run、Read-only Composition Pilot，Dynamic Planner 继续保持 Phase 3+ Reserved | 当前架构基线 |
@@ -71,14 +72,14 @@
 | `Live` | `JCO_RFC` read path、`MM.Inventory.GetAvailability`、`ODATA` read path（PO 列表）、`MM.PurchaseOrder.GetList`（status=active）、CallPlan、Gateway validate / execute、ExecutionResult、ReasoningFact、TraceSpan、Eval Harness seed cases | 继续作为 MVP live baseline |
 | `Completed Pilot` | sandbox-only write vertical slice | 已完成并归档；保留外部审批、参数快照、反重放和 stateful JCo LUW 基线 |
 | `Completed Foundation` | `sap-nexus-semantic-planning-foundation` | S1 Fact Type、Capability Relation、GoalSpec、PlanGraph、Registry Snapshot、immutable graph 和 deterministic validator 已实现、验证并归档到 `openspec/changes/archive/2026-07-19-sap-nexus-semantic-planning-foundation/` |
-| `Next Design` | `sap-nexus-planner-dry-run` | S2 用 progressive `CapabilityCard` discovery 生成候选，由 deterministic PlanCompiler 输出 dry-run；不执行 Gateway / SAP |
+| `Next Design` | `sap-nexus-planner-dry-run` | S2-A 先实现五态 `MatchDecision`、多意图/歧义检测和候选可见性边界；S2-B 再用 progressive `CapabilityCard` discovery 生成候选，由 deterministic PlanCompiler 输出 dry-run；两者均不执行 Gateway / SAP |
 | `Planned Pilot` | 只读多能力组合“物料库存 + 采购订单供给概览” | S2 验证后分 change 实施；只允许 `sideEffect=none` Function 和 PlanGraph-governed ready-node scheduling |
 | `Reserved` | `CDS_ADT`、`CDS_ODATA`、`REST_JSON`、`SQL_READ`、Phase 3+ retrieval / rerank、Graph Registry、Dynamic Planner、Write composition | 保留边界和安全约束；Dynamic Planner 仍需关系本体、Dry-run、Read pilot 和规模/需求证据 |
 | `Not In Scope` | 任意 RFC / URL / SQL 执行、生产 write action 自动提交、GraphDB / OWL 运行时主链路 | 明确拒绝或另立 change |
 
 近期约束：
 
-- 第二条 live read capability、sandbox write pilot 和 S1 semantic planning foundation 均已完成；当前先收敛 P0A 文档/仓库卫生，再进入 S2 Planner Dry-run，不继续增加低价值 executor family 预留。
+- 第二条 live read capability、sandbox write pilot 和 S1 semantic planning foundation 均已完成；当前先收敛 P0A 文档/仓库卫生，再进入 S2-A Semantic MatchDecision Hardening 和 S2-B Planner Dry-run，不继续增加低价值 executor family 预留。
 - 版本记录和路线图优先体现能力落地、评测回归和 write 纵切，而不是继续增加低成本架构占位。
 - 已有 reserved executor 只保留 fail-closed 边界，不能被解读为当前实现承诺。
 
@@ -428,6 +429,17 @@ Natural Language
 
 MVP 阶段 `MatchDecision` 仍是能力匹配、Eval Harness 和 CallPlan 的共同边界，但不要求 embedding retrieval、candidate rerank 或多域 planner。
 
+当前状态必须与目标契约分开描述：现有 runtime 的 `IntentParseResult -> SelectionResult -> CallPlan` 已支持三个 active capability 的单能力规则/LLM 闭集选择、缺参澄清和技术覆盖拒绝，但 `SelectionResult` 还不是完整五态 `MatchDecision`，规则 parser 也会按固定顺序返回第一个命中意图。因此当前不能声称多能力请求已经可靠地产生 `ESCALATE_TO_PLANNER`；这是 S2-A 的显式交付，而不是 Phase 3+ 规模化检索能力。
+
+| 能力 | Current | S2-A MatchDecision Hardening | S2-B Planner Dry-run | S3 Read Pilot |
+|---|---|---|---|---|
+| 单能力规则 / LLM 闭集选择 | 已实现 | 保留并纳入统一决策 | 作为候选入口 | 作为原子节点入口 |
+| 五态 `MatchDecision` runtime | 未完整实现 | 实现并记录候选、理由、snapshot 和 trace | 作为 Planner 入口 | 作为执行前决策证据 |
+| 多意图 / 歧义检测 | 未实现；存在首命中降级风险 | 实现 `SHOW_OPTIONS` / `ESCALATE_TO_PLANNER` | 转换为 GoalSpec / PlanDraft candidate | 只执行已编译 PlanGraph |
+| Progressive `CapabilityCard` discovery | 未实现 | 固化安全投影与 visibility contract | 实现有界候选发现 | 消费已选 capability |
+| deterministic `PlanCompiler` | 未实现 | 固化输入边界 | 只产 dry-run PlanGraph | 执行前重新校验 |
+| PlanGraph execution | 未实现 | 不执行 | 不执行 | 仅只读 pilot |
+
 | Decision | MVP 含义 | 下一步 |
 |---|---|---|
 | `SELECT` | 唯一能力明确且 required inputs 满足 | 生成单能力 `CallPlan` |
@@ -443,9 +455,13 @@ MVP 安全边界：
 - 用户或 LLM 不能提供或覆盖 `rfcName`、OData URL、CDS object、ADT path、REST endpoint、HTTP method、headers、`credentialRef`、SQL text 或 JSON mapping。
 - 复杂问题，例如“判断下周是否缺货并给出采购建议”，MVP 可输出 `ESCALATE_TO_PLANNER`，但不得在没有 planner / eval / approval 纵切前自动组合执行多个能力。
 
+S2-A 的 fail-closed 要求：同一句话存在多个业务目标、多个候选均合理或无法证明唯一选择时，不得静默退化为第一个关键词命中的 capability。并列多能力目标必须输出 `ESCALATE_TO_PLANNER`；少量同类候选无法安全区分时输出 `SHOW_OPTIONS`；只有能力明确但参数缺失时输出 `CLARIFY`。
+
 ### 4.4 Phase 3+ 海量能力匹配流水线
 
 只有当能力规模和真实 bad case 证明规则匹配不够用时，才升级到海量能力匹配流水线。
+
+Phase 3+ 只延后规模化检索，不延后 S2-A 的基础决策正确性。alias / exact match、五态 `MatchDecision`、多意图检测、候选 visibility 和 matcher Eval 属于近期闭环；Capability Index、embedding retrieval、跨域 semantic router 和 LLM rerank 才受下列规模阈值约束。
 
 升级阈值：
 
@@ -471,6 +487,53 @@ Natural Language
 ```
 
 Phase 3+ 的每一步仍必须保持 Harness 约束：只召回已注册能力，LLM 只能在小候选集合内 rerank 或生成澄清问题，不能绕过 governance filter、参数校验、Human Approval 或 Eval Harness。
+
+### 4.5 CapabilityCard 安全投影与候选可见性
+
+`CapabilityCard` 是 Registry 的受治理语义投影，不是 executor schema。S2-A 固化投影契约，S2-B 才实现 progressive discovery。最小字段为：
+
+```text
+capabilityId
+capabilityVersion
+domain
+businessObject
+kind
+intentSummary
+aliases
+positiveExamples
+negativeExamples
+inputSemanticTypes
+outputFactTypes
+sideEffect
+requiresApproval
+visibilityScope
+registrySnapshotId
+evalLinkage
+```
+
+以下 technical binding 字段不得进入模型候选上下文：
+
+```text
+rfcName
+serviceUrl
+entitySet
+httpMethod / headers
+credentialRef
+rawSql
+binding implementation / technical mapping
+```
+
+候选发现顺序必须是：
+
+```text
+server-owned governed context
+-> capability visibility pre-filter
+-> bounded CapabilityCard discovery
+-> optional LLM candidate / clarification
+-> deterministic MatchDecision
+```
+
+本地 S2 可以使用固定、可验证的 synthetic governed context；进入共享环境前必须由 P0B 提供可信 principal / tenant / role / data scope。不可见 capability 不得先暴露给模型再依赖执行期拒绝。
 
 ---
 
@@ -538,7 +601,7 @@ Action 的强制约束：
 
 ### 5.4 能力组合语义模型（Reserved）
 
-能力组合的通用 runtime 和 Dynamic Planner 仍是 `Reserved`。S1 Semantic Planning Foundation 已实现并验证，S2 Planner Dry-run 是当前 `Next Design`。原子能力（`Skill` / `Function` / `Action`）仍是唯一执行单元；近期先验证 progressive candidate discovery 和 deterministic dry-run，再以只读 pilot 验证 PlanGraph-governed 组合，不直接进入自由 runtime 编排。
+能力组合的通用 runtime 和 Dynamic Planner 仍是 `Reserved`。S1 Semantic Planning Foundation 已实现并验证，S2-A Semantic MatchDecision Hardening 和 S2-B Planner Dry-run 是当前 `Next Design` 的两个顺序 milestone。原子能力（`Skill` / `Function` / `Action`）仍是唯一执行单元；近期先补齐基础语义决策，再验证 progressive candidate discovery 和 deterministic dry-run，最后以只读 pilot 验证 PlanGraph-governed 组合，不直接进入自由 runtime 编排。
 
 组合不是单一概念，而是三种形态各异、支持前提不同的东西：
 
@@ -548,11 +611,11 @@ Action 的强制约束：
 | Composite Capability | 固定多步流程注册为一个 `capabilityId`，内部确定性 DAG | L3 | 服从同一 governance / approval / eval / replay，不引入自由编排 |
 | Dynamic Planner | 运行时按意图动态编排原子能力 | L2 | 必须先有能力关系本体，仅在本体依赖图内工作 |
 
-本体前提（硬约束）：组合之前必须先建模能力间关系（`producesFactType` / `consumesFactType` / `dependsOn` / `precondition`）。关系本体缺失前，多能力请求只走 `ESCALATE_TO_PLANNER`（记录 + 解释），不触发自动编排。Planner 编排的对象是本体依赖图，不是 LLM 自由发挥——这与"Harness != LLM + tool calling"一致。
+本体前提（硬约束）：组合之前必须先建模能力间关系（`producesFactType` / `consumesFactType` / `dependsOn` / `precondition`）。关系本体缺失前，目标契约要求多能力请求只走 `ESCALATE_TO_PLANNER`（记录 + 解释），不触发自动编排；当前 runtime 尚需在 S2-A 落地可靠的多意图检测和该决策。Planner 编排的对象是本体依赖图，不是 LLM 自由发挥——这与"Harness != LLM + tool calling"一致。
 
 执行边界：
 
-- 当前 runtime 的多能力请求仍落 `ESCALATE_TO_PLANNER`；只有后续 `sap-nexus-read-composition-pilot` 通过独立 design、eval 和 verify 后，才允许执行已批准的只读 PlanGraph。
+- S2-A 完成后，多能力请求必须可靠落到 `ESCALATE_TO_PLANNER`；在此之前不得静默选择首个命中能力。只有后续 `sap-nexus-read-composition-pilot` 通过独立 design、eval 和 verify 后，才允许执行已批准的只读 PlanGraph。
 - `Composite Capability` 若落地，必须作为一个注册 `capabilityId` 出现，内部 DAG 确定、可评测、可回放，并逐步校验每步 governance / sideEffect / approval。
 - 组合链中的 write 步骤仍必须走 Human Approval，不因"整体是 composite"而绕过单步审批。
 
