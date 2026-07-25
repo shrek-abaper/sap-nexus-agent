@@ -54,9 +54,9 @@
 
 ## 9. S2-B handoff 接入与展示
 
-- [ ] 9.1 `ESCALATE_TO_PLANNER` handoff 接入 `PlanCompiler`，产出 dry-run 候选
-- [ ] 9.2 Workbench 前端 dry-run 预览展示（节点/边/参数来源/缺口/治理，折叠式）
-- [ ] 9.3 dry-run cases 进 eval
+- [x] 9.1 `ESCALATE_TO_PLANNER` handoff 接入 `PlanCompiler`，产出 dry-run 候选
+- [x] 9.2 Workbench 前端 dry-run 预览展示（节点/边/参数来源/缺口/治理，折叠式）
+- [x] 9.3 dry-run cases 进 eval
 
 ## 10. 验证与归档准备
 
