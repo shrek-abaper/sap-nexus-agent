@@ -8,7 +8,7 @@ subagent_dispatch: confirmed
 tdd_mode: tdd
 review_mode: standard
 isolation: branch
-verify_mode: null
+verify_mode: full
 auto_transition: true
 base_ref: ed62c96fd9dc6175c1f77eab4b6aebdefba01179
 design_doc: docs/superpowers/specs/2026-07-25-sap-nexus-planner-dry-run-design.md
