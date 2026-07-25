@@ -34,10 +34,10 @@
 
 ## 6. S2-A Workbench 展示
 
-- [ ] 6.1 `run-event-schema.ts` 新增 `MatchDecision` artifact kind（仅展示层，不改 Gateway/SAP 契约）
-- [ ] 6.2 `view-model.ts` 渲染五态决策与候选
-- [ ] 6.3 `AgentConsole.tsx` / `globals.css` 只读展示 `MatchDecision`（含 ESCALATE/SHOW_OPTIONS 的 handoff/候选）
-- [ ] 6.4 前端测试（`summarizeTurn` / `buildChatBubbleState`）回归
+- [x] 6.1 `run-event-schema.ts` 新增 `MatchDecision` artifact kind（仅展示层，不改 Gateway/SAP 契约）
+- [x] 6.2 `view-model.ts` 渲染五态决策与候选
+- [x] 6.3 `AgentConsole.tsx` / `globals.css` 只读展示 `MatchDecision`（含 ESCALATE/SHOW_OPTIONS 的 handoff/候选）
+- [x] 6.4 前端测试（`summarizeTurn` / `buildChatBubbleState`）回归
 
 ## 7. S2-B planner 模块骨架
 
