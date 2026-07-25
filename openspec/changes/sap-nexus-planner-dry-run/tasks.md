@@ -60,7 +60,7 @@
 
 ## 10. 验证与归档准备
 
-- [ ] 10.1 `npm --prefix frontend run verify`（typecheck + test + build）通过
-- [ ] 10.2 `openspec validate --all --strict` 通过
-- [ ] 10.3 `scripts/verify-agent-callplan-evidence.sh` 通过
-- [ ] 10.4 `docs/runbooks/10-capability-composition-contract.md` 更新（S2-A 完成、S2-B 完成、下一推荐）+ README index 同步
+- [x] 10.1 `npm --prefix frontend run verify`（typecheck + test + build）通过
+- [x] 10.2 `openspec validate --all --strict` 通过
+- [x] 10.3 `scripts/verify-agent-callplan-evidence.sh` 通过
+- [x] 10.4 `docs/runbooks/10-capability-composition-contract.md` 更新（S2-A 完成、S2-B 完成、下一推荐）+ README index 同步
