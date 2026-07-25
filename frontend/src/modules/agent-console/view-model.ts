@@ -1,5 +1,5 @@
 import type { AgentRunEvent, AgentRunSnapshot } from "@/runtime/run-event-schema";
-import type { RedactedArtifact } from "@/shared/types/artifacts";
+import type { JsonValue, RedactedArtifact } from "@/shared/types/artifacts";
 import type { ChatTurn } from "./chat-types";
 
 export type WorkbenchResultTone = "idle" | "success" | "clarification" | "failure" | "running";
@@ -24,6 +24,26 @@ export type DetailGroup = {
   artifacts: RedactedArtifact[];
 };
 
+export type MatchDecisionCandidate = {
+  capabilityId: string;
+  parameters: Record<string, string>;
+  missing: string[];
+};
+
+export type MatchDecisionHandoff = {
+  reason: string;
+  matchedIntents: MatchDecisionCandidate[];
+  utterance: string;
+  registrySnapshotId: string;
+};
+
+export type MatchDecisionView = {
+  decisionType: "SELECT" | "CLARIFY" | "REJECT" | "SHOW_OPTIONS" | "ESCALATE_TO_PLANNER";
+  candidates?: MatchDecisionCandidate[];
+  handoff?: MatchDecisionHandoff;
+  rationale: string;
+};
+
 export type WorkbenchViewModel = {
   result: WorkbenchResult;
   reasoningSteps: ReasoningStep[];
@@ -37,6 +57,7 @@ export type WorkbenchViewModel = {
     reasoningFact?: RedactedArtifact;
     narrative?: RedactedArtifact;
     trace?: RedactedArtifact;
+    matchDecision?: RedactedArtifact;
     agentTraceId?: string;
     gatewayTraceId?: string;
   };
@@ -56,7 +77,8 @@ const eventLabels: Record<AgentRunEvent["type"], string> = {
   narrative_created: "生成中文结论",
   trace_linked: "绑定 Trace",
   run_completed: "完成运行",
-  run_failed: "运行失败"
+  run_failed: "运行失败",
+  match_decision_created: "匹配决策"
 };
 
 export function buildWorkbenchViewModel(snapshot: AgentRunSnapshot | null): WorkbenchViewModel {
@@ -98,6 +120,7 @@ function collectArtifacts(events: AgentRunEvent[]): WorkbenchViewModel["artifact
     reasoningFact: artifactByKind("reasoning-fact"),
     narrative: artifactByKind("narrative"),
     trace: artifactByKind("trace"),
+    matchDecision: artifactByKind("match-decision"),
     agentTraceId: events.find((event) => event.agentTraceId)?.agentTraceId,
     gatewayTraceId: events.find((event) => event.gatewayTraceId)?.gatewayTraceId
   };
@@ -221,4 +244,114 @@ export function buildChatBubbleState(turn: ChatTurn): ChatBubbleState {
       ? "正在推理"
       : "输入问题后，我会按 Harness 链路展示意图、能力、CallPlan、Gateway、事实与 Trace。"
   };
+}
+
+/**
+ * S2-A 只读五态决策视图（Design Doc §Workbench 前端）。
+ *
+ * 从 snapshot 中提取 `match-decision` artifact 并构造渲染用的视图模型。
+ * SSE 层只在 SHOW_OPTIONS / ESCALATE_TO_PLANNER 时发射该 artifact
+ * （SELECT / CLARIFY / REJECT 复用现有 capability_selected / narrative_created
+ * / run_failed 路径），但本函数对五种 decisionType 均做防御性解析，
+ * 以便未来 artifact 协议扩展时不破坏渲染。
+ *
+ * 纯函数，无副作用；输入为 null 或 artifact 缺失/畸形时返回 null。
+ */
+export function buildMatchDecisionView(snapshot: AgentRunSnapshot | null): MatchDecisionView | null {
+  if (!snapshot) {
+    return null;
+  }
+  const artifact = snapshot.events.find((event) => event.artifact?.kind === "match-decision")?.artifact;
+  if (!artifact) {
+    return null;
+  }
+  const payload = artifact.payload;
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    return null;
+  }
+  const record = payload as Record<string, JsonValue>;
+  const decisionType = record.decisionType;
+  if (typeof decisionType !== "string") {
+    return null;
+  }
+  if (
+    decisionType !== "SELECT" &&
+    decisionType !== "CLARIFY" &&
+    decisionType !== "REJECT" &&
+    decisionType !== "SHOW_OPTIONS" &&
+    decisionType !== "ESCALATE_TO_PLANNER"
+  ) {
+    return null;
+  }
+  const candidates = parseCandidates(record.candidates);
+  const handoff = parseHandoff(record.handoff);
+  const rationale = typeof record.rationale === "string" ? record.rationale : "";
+
+  const view: MatchDecisionView = {
+    decisionType,
+    rationale
+  };
+  if (candidates) {
+    view.candidates = candidates;
+  }
+  if (handoff) {
+    view.handoff = handoff;
+  }
+  return view;
+}
+
+function parseCandidates(value: JsonValue): MatchDecisionCandidate[] | undefined {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+  const candidates: MatchDecisionCandidate[] = [];
+  for (const entry of value) {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+      continue;
+    }
+    const rec = entry as Record<string, JsonValue>;
+    const capabilityId = typeof rec.capabilityId === "string" ? rec.capabilityId : "";
+    if (!capabilityId) {
+      continue;
+    }
+    const parameters = parseStringRecord(rec.parameters);
+    const missing = parseStringArray(rec.missing);
+    candidates.push({ capabilityId, parameters, missing });
+  }
+  return candidates.length > 0 ? candidates : undefined;
+}
+
+function parseHandoff(value: JsonValue): MatchDecisionHandoff | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return undefined;
+  }
+  const rec = value as Record<string, JsonValue>;
+  const reason = typeof rec.reason === "string" ? rec.reason : "";
+  const utterance = typeof rec.utterance === "string" ? rec.utterance : "";
+  const registrySnapshotId = typeof rec.registrySnapshotId === "string" ? rec.registrySnapshotId : "";
+  const matchedIntents = parseCandidates(rec.matchedIntents) ?? [];
+  if (!reason && !utterance && !registrySnapshotId && matchedIntents.length === 0) {
+    return undefined;
+  }
+  return { reason, matchedIntents, utterance, registrySnapshotId };
+}
+
+function parseStringRecord(value: JsonValue): Record<string, string> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+  const out: Record<string, string> = {};
+  for (const [key, entry] of Object.entries(value as Record<string, JsonValue>)) {
+    if (typeof entry === "string" || typeof entry === "number" || typeof entry === "boolean") {
+      out[key] = String(entry);
+    }
+  }
+  return out;
+}
+
+function parseStringArray(value: JsonValue): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value.filter((entry): entry is string => typeof entry === "string");
 }

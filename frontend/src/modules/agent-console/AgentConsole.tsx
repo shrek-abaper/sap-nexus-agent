@@ -24,7 +24,8 @@ const agentRunEventTypes = [
   "narrative_created",
   "trace_linked",
   "run_completed",
-  "run_failed"
+  "run_failed",
+  "match_decision_created"
 ] satisfies AgentRunEvent["type"][];
 
 const navItems: { id: string; label: string; icon: IconName }[] = [

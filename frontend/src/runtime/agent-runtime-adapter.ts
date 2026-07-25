@@ -46,6 +46,13 @@ type WorkbenchOutcome = {
   errorType?: string | null;
   missingParameters?: string[] | null;
   approvalRecord?: Record<string, unknown> | null;
+  // Advisory field populated by agent workbench_output (Task 3.3):
+  // `{ decisionType, capabilityId?, parameters?, missingParameters?, errorType?,
+  // candidates?, handoff?, rationale }`. The SSE layer only emits a
+  // `match_decision_created` event for SHOW_OPTIONS / ESCALATE_TO_PLANNER;
+  // SELECT / CLARIFY / REJECT reuse the existing event paths (Design Doc D6/Q4
+  // hybrid SSE).
+  matchDecision?: Record<string, unknown> | null;
 };
 
 type AgentRunner = (input: AgentRunnerInput) => Promise<WorkbenchOutcome>;
@@ -328,6 +335,14 @@ function pushTerminalOutcome(
   agentTraceId?: string,
   gatewayTraceId?: string
 ) {
+  // S2-A hybrid SSE (Design Doc §SSE 事件): when outcome carries a
+  // matchDecision of SHOW_OPTIONS or ESCALATE_TO_PLANNER, emit a
+  // dedicated match_decision_created event with a `match-decision` artifact
+  // so the Workbench can render the five-state decision view. SELECT /
+  // CLARIFY / REJECT reuse the existing capability_selected / narrative_created
+  // / run_failed paths and do NOT emit this event.
+  pushMatchDecisionEventIfPresent(events, runId, timestamp, outcome);
+
   if (outcome.responseText) {
     push(events, runId, timestamp, {
       type: "narrative_created",
@@ -357,6 +372,34 @@ function pushTerminalOutcome(
   } else {
     pushFailure(events, runId, timestamp, "intent_parsed", outcome);
   }
+}
+
+function pushMatchDecisionEventIfPresent(
+  events: AgentRunEvent[],
+  runId: string,
+  timestamp: string,
+  outcome: WorkbenchOutcome
+) {
+  const matchDecision = objectOrNull(outcome.matchDecision);
+  if (!matchDecision) {
+    return;
+  }
+  const decisionType = textValue(matchDecision.decisionType);
+  if (decisionType !== "SHOW_OPTIONS" && decisionType !== "ESCALATE_TO_PLANNER") {
+    return;
+  }
+  const candidates = matchDecision.candidates ?? null;
+  const handoff = matchDecision.handoff ?? null;
+  const rationale = textValue(matchDecision.rationale) ?? "";
+  push(events, runId, timestamp, {
+    type: "match_decision_created",
+    state: "match_decided",
+    artifact: redactArtifact({
+      label: "MatchDecision",
+      kind: "match-decision",
+      payload: toJsonValue({ decisionType, candidates, handoff, rationale })
+    })
+  });
 }
 
 function pushFailure(

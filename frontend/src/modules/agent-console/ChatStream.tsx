@@ -5,6 +5,10 @@ import type { ChatTurn, ActiveTurnIndex } from "./chat-types";
 import {
   buildWorkbenchViewModel,
   buildChatBubbleState,
+  buildMatchDecisionView,
+  type MatchDecisionCandidate,
+  type MatchDecisionHandoff,
+  type MatchDecisionView,
   type WorkbenchResultTone,
   type WorkbenchViewModel,
   type ReasoningStep
@@ -22,6 +26,14 @@ const resultToneLabel: Record<WorkbenchResultTone, string> = {
   success: "已完成",
   clarification: "需澄清",
   failure: "运行失败"
+};
+
+const matchDecisionTypeLabel: Record<MatchDecisionView["decisionType"], string> = {
+  SELECT: "已选定能力",
+  CLARIFY: "需补充参数",
+  REJECT: "拒绝执行",
+  SHOW_OPTIONS: "候选能力待选",
+  ESCALATE_TO_PLANNER: "转交规划层"
 };
 
 interface ChatStreamProps {
@@ -99,6 +111,8 @@ export function ChatStream({ turns, activeIndex, onApprovalDecision }: ChatStrea
                   bubble.placeholder
                 )}
               </p>
+
+              {turn.snapshot ? <MatchDecisionPanel snapshot={turn.snapshot} /> : null}
 
               {turn.snapshot && turn.snapshot.hitlState !== "approval_not_required" ? (
                 <HumanApprovalPanel
@@ -194,6 +208,101 @@ function CopyButton({ text }: { text: string }) {
     >
       {copied ? "已复制" : "复制"}
     </button>
+  );
+}
+
+/**
+ * S2-A 匹配决策只读面板（Design Doc §Workbench 前端）。
+ *
+ * 当 turn snapshot 含 `match-decision` artifact（SHOW_OPTIONS /
+ * ESCALATE_TO_PLANNER 时由 SSE 发射）时，在 turn 卡片内折叠展示
+ * 候选能力或转交规划层信息。纯只读，不发起 Gateway/SAP 调用。
+ * SELECT / CLARIFY / REJECT 走现有事件路径，本面板仅在 artifact 存在时渲染。
+ */
+function MatchDecisionPanel({ snapshot }: { snapshot: AgentRunSnapshot }) {
+  const view = buildMatchDecisionView(snapshot);
+  const [open, setOpen] = useState(false);
+  if (!view) {
+    return null;
+  }
+  const label = matchDecisionTypeLabel[view.decisionType];
+  return (
+    <div className="match-decision">
+      <button
+        className="match-decision__summary"
+        onClick={() => setOpen((o) => !o)}
+        type="button"
+        aria-expanded={open}
+      >
+        <span className={`match-decision__arrow ${open ? "is-open" : ""}`}>▸</span>
+        <span>匹配决策 · {label}</span>
+      </button>
+      {open ? (
+        <div className="match-decision__body">
+          {view.rationale ? <p className="match-decision__rationale">{view.rationale}</p> : null}
+          {view.candidates && view.candidates.length > 0 ? (
+            <ul className="match-decision__candidates">
+              {view.candidates.map((candidate: MatchDecisionCandidate) => (
+                <li className="match-decision__candidate" key={candidate.capabilityId}>
+                  <strong>{candidate.capabilityId}</strong>
+                  {Object.keys(candidate.parameters).length > 0 ? (
+                    <span className="match-decision__params">
+                      {Object.entries(candidate.parameters)
+                        .map(([key, value]) => `${key}=${value}`)
+                        .join(", ")}
+                    </span>
+                  ) : null}
+                  {candidate.missing.length > 0 ? (
+                    <span className="match-decision__missing">缺参: {candidate.missing.join(", ")}</span>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          {view.handoff ? <MatchDecisionHandoffBlock handoff={view.handoff} /> : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function MatchDecisionHandoffBlock({ handoff }: { handoff: MatchDecisionHandoff }) {
+  return (
+    <dl className="match-decision__handoff">
+      <div>
+        <dt>转交原因</dt>
+        <dd>{handoff.reason || "—"}</dd>
+      </div>
+      <div>
+        <dt>原 utterance</dt>
+        <dd>{handoff.utterance || "—"}</dd>
+      </div>
+      <div>
+        <dt>注册表快照</dt>
+        <dd>{handoff.registrySnapshotId || "—"}</dd>
+      </div>
+      {handoff.matchedIntents.length > 0 ? (
+        <div>
+          <dt>命中意图</dt>
+          <dd>
+            <ul className="match-decision__candidates">
+              {handoff.matchedIntents.map((intent) => (
+                <li className="match-decision__candidate" key={intent.capabilityId}>
+                  <strong>{intent.capabilityId}</strong>
+                  {Object.keys(intent.parameters).length > 0 ? (
+                    <span className="match-decision__params">
+                      {Object.entries(intent.parameters)
+                        .map(([key, value]) => `${key}=${value}`)
+                        .join(", ")}
+                    </span>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          </dd>
+        </div>
+      ) : null}
+    </dl>
   );
 }
 
