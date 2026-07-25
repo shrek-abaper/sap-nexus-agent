@@ -6,10 +6,10 @@
 |---|---|
 | Runbook | `08-capability-matching-contract` |
 | Version | `v0.3.0` |
-| Status | `S2-A Next / Phase 3+ Scale-up Deferred` |
+| Status | `S2-A Done / Phase 3+ Scale-up Deferred` |
 | Created | `2026-06-26` |
-| Updated | `2026-07-24` |
-| Workstream | S2-A baseline semantic decision hardening now; Phase 3+ retrieval / rerank later |
+| Updated | `2026-07-25` |
+| Workstream | S2-A baseline semantic decision hardening done (archived in sap-nexus-planner-dry-run); Phase 3+ retrieval / rerank later |
 | Related Change | `sap-nexus-planner-dry-run` (S2-A); `sap-nexus-capability-matching-contract` (Phase 3+ scale-up) |
 | Current Phase | Implement explicit five-state MatchDecision, multi-intent / ambiguity handling, visibility and matcher Eval before S2-B dry-run |
 

@@ -5,8 +5,8 @@
 | Field | Value |
 |---|---|
 | Runbook | `10-capability-composition-contract` |
-| Version | `v0.3.7` |
-| Status | `S2-A Done; S2-B Dry-Run Done; S3 Gate Next` |
+| Version | `v0.3.8` |
+| Status | `S2-A/S2-B Archived; S3 Gate Next` |
 | Created | `2026-07-14` |
 | Updated | `2026-07-25` |
 | Last Change | S2-A MatchDecision five-state + S2-B PlanCompiler dry-run complete (2026-07-25): matcher Eval 6/6, dry-run eval 3/3 + 1 pending (covered by unit test), frontend verify 58/58, openspec strict 9/9; P0A hygiene closed; next is S3 read-only composition pilot gated by trusted/durable runtime and deterministic OutputProjection |
