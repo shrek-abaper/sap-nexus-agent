@@ -99,18 +99,18 @@ No branch creation unless user explicitly asks
 
 ## Runbook Index
 
-Runbooks are ordered by a numeric prefix following the implementation roadmap order and status (implemented/archived first, Reserved/Deferred after), not by calendar day. The prefix is stable in normal operation but may be resequenced when it diverges from the roadmap and actual status, with all cross-references updated in the same change. Track session dates in the runbook version table and session closeout sections.
+Runbooks are numbered by workstream creation order, not by roadmap row or calendar day. The numeric prefix is stable and is NOT resequenced when a workstream's status later changes - an Archived runbook may therefore appear after Deferred/Reserved ones (e.g., 11 after 08-10). Cross-reference workstreams by name, not by runbook number. Track session dates and status in the runbook version table and session closeout sections.
 
 | Order | Runbook | Version | Status | Last Updated | Purpose |
 |---|---|---|---|---|---|
 | `01` | `01-capability-registry-gateway.md` | `v0.3.0` | Archived | `2026-06-20` | Completed Gateway/Registry baseline; archived `sap-nexus-capability-registry-gateway` |
 | `02` | `02-agent-callplan-evidence.md` | `v1.0.0` | Archived | `2026-06-20` | Completed Python Agent CallPlan, Gateway client, ReasoningFact, Narrator, and evals |
-| `03` | `03-agent-workbench-console.md` | `v1.0.4` | Archived | `2026-07-14` | Completed internal Agent Workbench Console, live Agent runtime correction, MD04 inventory BAPI correction, and Notion-style chat layout evolution (archived 2026-07-09) |
+| `03` | `03-agent-workbench-console.md` | `v1.0.5` | Archived | `2026-07-25` | Internal Agent Workbench Console baseline, live Agent runtime correction, MD04 inventory BAPI correction, Notion-style chat layout evolution (2026-07-09), Hero copy/visual tweak + JCo native-lib troubleshooting note (2026-07-25) |
 | `04` | `04-registry-ontology-contract.md` | `v0.6.1` | Archived | `2026-06-25` | Completed Registry schema, OWL skeleton, multi-executor binding including `REST_JSON`, capability contract validation, and eval linkage after Workbench Console |
 | `05` | `05-gateway-execution-contract.md` | `v0.2.1` | Archived | `2026-06-28` | Completed and archived unified technical execution request/result, binding dispatcher contract, JCo compatibility, and Gateway redaction / trace consistency |
 | `06` | `06-eval-harness-seed.md` | `v0.2.0` | Implemented | `2026-07-04` | First Eval Harness seed cases and bad case regression contract implemented directly |
 | `07` | `07-odata-gateway-read-pilot.md` | `v0.2.1` | Implemented / Active | `2026-07-09` | OData Gateway Read Pilot plus archived PO item detail/filter activation; live PO smoke passed after SICF reactivation |
-| `08` | `08-capability-matching-contract.md` | `v0.3.0` | S2-A Next / Scale-up Deferred | `2026-07-24` | Baseline five-state MatchDecision, multi-intent/ambiguity, visibility and matcher Eval now; embedding/retrieval/rerank remain Phase 3+ |
+| `08` | `08-capability-matching-contract.md` | `v0.3.0` | S2-A Next / Phase 3+ Scale-up Deferred | `2026-07-24` | Baseline five-state MatchDecision, multi-intent/ambiguity, visibility and matcher Eval now; embedding/retrieval/rerank remain Phase 3+ |
 | `09` | `09-sql-read-executor-contract.md` | `v0.2.0` | Reserved | `2026-06-28` | Reserved `SQL_READ` safety boundary; not a near-term runtime priority before Eval seed, second read, and sandbox write pilot |
 | `10` | `10-capability-composition-contract.md` | `v0.3.5` | S1 Archived; S2-A Next; Runtime Reserved | `2026-07-25` | S1 archived; P0A, S2-A decision hardening and S2-B dry-run are next; shared S3 is gated by trusted/durable runtime and deterministic OutputProjection |
 | `11` | `11-sandbox-write-vertical-slice.md` | `v0.2.26` | Completed / Archived | `2026-07-17` | Sandbox PR `10137471` committed; external approval, Gateway anti-replay/hash/atomic claim, stateful JCo LUW and replay-complete trace verified; main spec `pr-create-action` merged; no additional SAP WRITE |
