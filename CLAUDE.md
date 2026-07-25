@@ -1,1 +1,1 @@
-sap-nexus-agent/AGENTS.md
+AGENTS.md
