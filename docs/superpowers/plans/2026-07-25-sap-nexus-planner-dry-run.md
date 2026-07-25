@@ -131,7 +131,7 @@ scripts/verify-agent-callplan-evidence.sh
 
 **Design Doc 引用:** §"MatchDecision 对象"（`agent/sap_nexus_agent/match_decision.py`，新）。
 
-- [ ] **Step 1.1: 定义 `MatchDecision` dataclass 与五态枚举**
+- [x] **Step 1.1: 定义 `MatchDecision` dataclass 与五态枚举**
 
 在 `agent/sap_nexus_agent/match_decision.py` 实现：
 
@@ -169,7 +169,7 @@ class MatchDecision:
 
 `decision_type` 为五态枚举（`Literal` 类型，非 `Enum`，便于序列化为字符串）。`SELECT` 必须携带 `capability_id` + `parameters`；`CLARIFY` 携带 `missing_parameters`；`REJECT` 携带 `error_type`；`SHOW_OPTIONS` 携带 `candidates`；`ESCALATE_TO_PLANNER` 携带 `handoff`。
 
-- [ ] **Step 1.2: `SelectionResult` 退为窄视图兼容 wrapper**
+- [x] **Step 1.2: `SelectionResult` 退为窄视图兼容 wrapper**
 
 在 `capability_selector.py` 给 `SelectionResult` 增加 `to_selection_result()` 兼容方法（或在 `MatchDecision` 上提供 `to_selection_result() -> SelectionResult | None`）。Design Doc 明确：在 SELECT/CLARIFY/REJECT 三态返回窄视图，SHOW_OPTIONS/ESCALATE 返回 `None`（orchestrator 检查 `decision_type`）。
 
@@ -185,7 +185,7 @@ def to_selection_result(self) -> "SelectionResult | None":
     return None  # SHOW_OPTIONS / ESCALATE_TO_PLANNER
 ```
 
-- [ ] **Step 1.3: 单元测试 - 五态构造与窄视图兼容**
+- [x] **Step 1.3: 单元测试 - 五态构造与窄视图兼容**
 
 `agent/tests/test_match_decision.py` 覆盖：
 - 每态构造 + 字段断言（SELECT 带 capability_id+parameters；ESCALATE 带 handoff 含 4 个 EscalationHandoff 字段）。
@@ -211,7 +211,7 @@ def to_selection_result(self) -> "SelectionResult | None":
 
 **Design Doc 引用:** §"多意图检测（`intent.py` + `llm_intent.py`，改）"，§"错误处理与边界条件"（多意图误判、SHOW_OPTIONS 阈值模糊）。
 
-- [ ] **Step 2.1: 改 `parse_intent` rule 路径 - 扫描全部关键词集合**
+- [x] **Step 2.1: 改 `parse_intent` rule 路径 - 扫描全部关键词集合**
 
 当前 `intent.py:53-89` 是 `inventory -> purchase_order -> pr_create` 顺序首命中。改为：对三个能力关键词集合分别扫描，统计命中数，构造 `matched_intents: list[MatchedIntent]`。
 
@@ -220,7 +220,7 @@ def to_selection_result(self) -> "SelectionResult | None":
 - 单命中：仍走原参数提取（`_build_inventory_result` 等），但把结果同步填入 `matched_intents`（长度 1）。
 - 多命中：`matched_intents` 长度 >1，`intent` / `capability_id` 置 None（让 selector 决策 ESCALATE），参数提取可不填（selector 不消费）。
 
-- [ ] **Step 2.2: 关键词主/弱分级 + 阈值表常量化（SHOW_OPTIONS 触发）**
+- [x] **Step 2.2: 关键词主/弱分级 + 阈值表常量化（SHOW_OPTIONS 触发）**
 
 在 `intent.py` 顶部新增常量阈值表（Design Doc §"多意图检测"）：
 
@@ -241,7 +241,7 @@ PRIMARY_KEYWORD_THRESHOLD = 1.0
 - 命中 >=2 能力但任一能力只有弱关键词命中 -> 关键词歧义（SHOW_OPTIONS）。
 - 单意图含多关键词（如"采购订单"含"订单"）不误判：主关键词优先，弱关键词不单独触发多能力。
 
-- [ ] **Step 2.3: 改 LLM 路径 system prompt - "detect all"**
+- [x] **Step 2.3: 改 LLM 路径 system prompt - "detect all"**
 
 `llm_intent.py:86` 当前 prompt `"Select exactly one capabilityId from the registered closed set below"`。改为：
 
@@ -253,7 +253,7 @@ Detect all matching capabilities from the registered closed set below.
 - Never introduce capabilityIds outside the closed set.
 ```
 
-- [ ] **Step 2.4: 改 `_payload_to_parse_result` 解析多候选**
+- [x] **Step 2.4: 改 `_payload_to_parse_result` 解析多候选**
 
 `llm_intent.py:108` 当前解析单个 `capabilityId`。改为解析 LLM 返回的 `candidates: list` 或 `escalation: {...}` 结构：
 - 单候选 + 齐参 -> `matched_intents=[单条]`。
@@ -263,7 +263,7 @@ Detect all matching capabilities from the registered closed set below.
 
 保持 `_extract_parameters` / `_clarification_for` 现有单候选参数提取逻辑复用于每个候选。
 
-- [ ] **Step 2.5: 单元测试 - 多目标升级、单意图不误判**
+- [x] **Step 2.5: 单元测试 - 多目标升级、单意图不误判**
 
 `agent/tests/test_intent.py` 新增：
 - 多目标 utterance（Design Doc 测试策略 §ESCALATE 案例："DEMOA2 在 5100 的库存，再列出近 30 天未清采购订单"）-> `matched_intents` 长度 2（inventory + purchase_order）。
@@ -292,7 +292,7 @@ Detect all matching capabilities from the registered closed set below.
 
 **Design Doc 引用:** §"selector（`capability_selector.py`，改）"，§"SSE 事件"（SELECT/CLARIFY/REJECT 复用现有路径）。
 
-- [ ] **Step 3.1: `select_capability` 输出 `MatchDecision`（五态决策树）**
+- [x] **Step 3.1: `select_capability` 输出 `MatchDecision`（五态决策树）**
 
 `capability_selector.py:28` 当前签名 `-> SelectionResult`。改为 `-> MatchDecision`，决策树（Design Doc §selector，顺序敏感）：
 
@@ -323,7 +323,7 @@ def select_capability(parse_result: IntentParseResult) -> MatchDecision:
 
 `INTENT_TO_CAPABILITY` 闭集映射保持不变。
 
-- [ ] **Step 3.2: `orchestrator.run_query` 适配 `MatchDecision`**
+- [x] **Step 3.2: `orchestrator.run_query` 适配 `MatchDecision`**
 
 `orchestrator.py:60-149` 当前用 `selected.error_type` / `selected.capability_id` 路由。改为消费 `MatchDecision.decision_type`：
 
@@ -334,7 +334,7 @@ def select_capability(parse_result: IntentParseResult) -> MatchDecision:
 
 `AgentOutcome` 新增字段 `match_decision: MatchDecision | None = None`。`to_selection_result()` 窄视图可选用于过渡期 SELECT/CLARIFY/REJECT 内部复用现有 `_finalize_*` 分支（评估是否直接走 `decision_type` 分支更清晰）。
 
-- [ ] **Step 3.3: `agent-runtime-adapter.ts` / `workbench_output.py` 适配序列化**
+- [x] **Step 3.3: `agent-runtime-adapter.ts` / `workbench_output.py` 适配序列化**
 
 - `workbench_output.py`：`MatchDecision` 序列化为 dict（`decision_type` / `candidates` / `handoff` / `rationale`），供 SSE payload。
 - `agent-runtime-adapter.ts` 的 `buildEventsFromOutcome`：outcome 含 `matchDecision` 字段且 `decision_type in {SHOW_OPTIONS, ESCALATE_TO_PLANNER}` 时，发 `match_decision_created` 事件（Task 6.1 定义事件类型）。SELECT/CLARIFY/REJECT 复用现有 `capability_selected` / `narrative_created`(clarification) / `run_failed` 路径。
@@ -358,7 +358,7 @@ def select_capability(parse_result: IntentParseResult) -> MatchDecision:
 
 **Design Doc 引用:** §"visibility pre-filter（`agent/sap_nexus_agent/visibility.py`，新）"，§"错误处理与边界条件"（写能力误执行）。
 
-- [ ] **Step 4.1: `CapabilityCard` 投影（最小集，供 visibility 消费）**
+- [x] **Step 4.1: `CapabilityCard` 投影（最小集，供 visibility 消费）**
 
 为避免循环依赖，本 Task 先在 `planner/capability_card.py`（或 `visibility.py` 内）定义最小 `CapabilityCard`：
 
@@ -380,7 +380,7 @@ class CapabilityCard:
 
 Task 7.1 会扩展 `inputs` / `InputDescriptor` 等字段，本 Task 只需 visibility 消费的 `governance` 字段。
 
-- [ ] **Step 4.2: `filter_visible` 实现**
+- [x] **Step 4.2: `filter_visible` 实现**
 
 ```python
 def filter_visible(cards: list[CapabilityCard], *, for_execution: bool) -> list[CapabilityCard]:
@@ -396,7 +396,7 @@ def filter_visible(cards: list[CapabilityCard], *, for_execution: bool) -> list[
 
 Design Doc 明确：写能力（`sideEffect=sap_write`）在 dry-run/handoff 可见（标 `requiresApproval`），执行层不可见。
 
-- [ ] **Step 4.3: 单元测试 - 读写能力可见性边界**
+- [x] **Step 4.3: 单元测试 - 读写能力可见性边界**
 
 `agent/tests/test_visibility.py` 覆盖：
 - 读能力（`sideEffect=none` + `internal`）：`for_execution=True` 可见，`for_execution=False` 可见。
@@ -423,7 +423,7 @@ Design Doc 明确：写能力（`sideEffect=sap_write`）在 dry-run/handoff 可
 
 **Design Doc 引用:** §"测试策略" -> "S2-A matcher Eval"，§"风险与缓解"（rule 多意图扫描误判）。
 
-- [ ] **Step 5.1: 五类决策 cases**
+- [x] **Step 5.1: 五类决策 cases**
 
 `evals/matcher_cases.yaml` 覆盖五类（Design Doc §测试策略）：
 
@@ -464,7 +464,7 @@ cases:
       executeCalls: 0
 ```
 
-- [ ] **Step 5.2: `false SELECT` 回归失败项**
+- [x] **Step 5.2: `false SELECT` 回归失败项**
 
 新增一个 case，断言多目标 utterance **不**被静默降级为单 SELECT：
 
@@ -479,11 +479,11 @@ cases:
 
 `eval.py` 评估器：实际 `decisionType=SELECT` 而期望 `ESCALATE_TO_PLANNER` -> 报告 regression failure（明确标注 "false SELECT"）。
 
-- [ ] **Step 5.3: 现有 inventory/PO/PR eval 回归不破坏**
+- [x] **Step 5.3: 现有 inventory/PO/PR eval 回归不破坏**
 
 运行 `evals/inventory_availability_cases.yaml` / `eval_harness_seed_cases.json` / `pr_create_cases.json`，确认 SELECT/CLARIFY/REJECT 路径行为不变。若现有 eval 期望 `status: "success"` 而 `AgentOutcome.status` 字段因 `MatchDecision` 改名（如新增 `match_decision` 字段但 `status` 保持），需保持 `status` 向后兼容（SELECT 仍 `"success"`，CLARIFY 仍 `"clarification"`，REJECT 仍 `"failure"`）。
 
-- [ ] **Step 5.4: matcher Eval 退出标准全过 + 接入 verify 脚本**
+- [x] **Step 5.4: matcher Eval 退出标准全过 + 接入 verify 脚本**
 
 `scripts/verify-agent-callplan-evidence.sh` 新增一行（在现有 eval 之后）：
 
@@ -515,7 +515,7 @@ cases:
 
 **Design Doc 引用:** §"SSE 事件（`run-event-schema.ts`，改）"，§"Workbench 前端（`view-model.ts` / `AgentConsole.tsx` / `globals.css`，改）"。
 
-- [ ] **Step 6.1: `run-event-schema.ts` 新增 `match_decision_created` 事件 + `match-decision` artifact kind**
+- [x] **Step 6.1: `run-event-schema.ts` 新增 `match_decision_created` 事件 + `match-decision` artifact kind**
 
 ```typescript
 export type AgentRunEventType =
@@ -532,7 +532,7 @@ export type AgentRunEventType =
 
 `eventLabels` 映射新增 `match_decision_created: "匹配决策"`。SELECT/CLARIFY/REJECT 不新增事件，复用现有 `capability_selected` / `narrative_created`(clarification) / `run_failed`。
 
-- [ ] **Step 6.2: `view-model.ts` 渲染五态决策 - `buildMatchDecisionView` 纯函数**
+- [x] **Step 6.2: `view-model.ts` 渲染五态决策 - `buildMatchDecisionView` 纯函数**
 
 ```typescript
 export type MatchDecisionView = {
@@ -549,14 +549,14 @@ export function buildMatchDecisionView(snapshot: AgentRunSnapshot | null): Match
 
 纯函数，不产生副作用；`WorkbenchViewModel.artifacts` 新增 `matchDecision?: RedactedArtifact` 字段。
 
-- [ ] **Step 6.3: `AgentConsole.tsx` / `ChatStream.tsx` 只读展示**
+- [x] **Step 6.3: `AgentConsole.tsx` / `ChatStream.tsx` 只读展示**
 
 - `ChatStream.tsx`：SHOW_OPTIONS/ESCALATE turn 内折叠展示 `candidates` / `handoff`（默认折叠，点击展开）。
 - `AgentConsole.tsx`：在 detail panel 渲染 `MatchDecisionView`（只读，无编辑按钮）。
 - `globals.css`：折叠样式（若需要，最小改动）。
 - 纯只读，不发任何 Gateway/SAP 调用；dry-run 预览（S2-B）在 Task 9.2 接入同一折叠组件。
 
-- [ ] **Step 6.4: 前端测试回归**
+- [x] **Step 6.4: 前端测试回归**
 
 `frontend/tests/agent-console/` 新增/更新：
 - `buildMatchDecisionView` 纯函数测试：五态 artifact 输入 -> 正确视图输出。
@@ -588,7 +588,7 @@ export function buildMatchDecisionView(snapshot: AgentRunSnapshot | null): Match
 
 **Design Doc 引用:** §"S2-B 规划层（`agent/sap_nexus_agent/planner/`，新）"，§"CapabilityCard"，§"GoalSpec / PlanDraft"。
 
-- [ ] **Step 7.1: `planner/` 模块 + `CapabilityCard` 完整字段**
+- [x] **Step 7.1: `planner/` 模块 + `CapabilityCard` 完整字段**
 
 `planner/capability_card.py` 扩展 Task 4 的最小集为 Design Doc 完整定义：
 
@@ -613,7 +613,7 @@ class CapabilityCard:
 
 `planner/__init__.py` 公开 `CapabilityCard` / `GoalSpec` / `PlanDraft` / `PlanCompiler` / `DryRunResult`。
 
-- [ ] **Step 7.2: `CapabilityCard` discovery - 从 Registry 闭集 + Snapshot 投影**
+- [x] **Step 7.2: `CapabilityCard` discovery - 从 Registry 闭集 + Snapshot 投影**
 
 ```python
 def discover_cards(snapshot: RegistrySnapshot, sources: SemanticSourceDocuments) -> list[CapabilityCard]:
@@ -626,7 +626,7 @@ def discover_cards(snapshot: RegistrySnapshot, sources: SemanticSourceDocuments)
 
 从 `registry_loader.load_intent_catalog()` 或直接读 `capabilities.yaml` + S1 `load_semantic_sources()` 投影。`producesFactTypes` 明确来自 `outputs.factTypeRef`（Design Doc §Spec Patch 2）。
 
-- [ ] **Step 7.3: `GoalSpec` / `PlanDraft` candidate 生成（复用 S1 schema）**
+- [x] **Step 7.3: `GoalSpec` / `PlanDraft` candidate 生成（复用 S1 schema）**
 
 `planner/goal_spec.py`：复用 S1 `semantic_planning` 的 `GoalSpec v1` schema（`goalType` / `desiredFactTypes` / `executionMode=PLAN_ONLY`）。从 `EscalationHandoff.matched_intents` + `CapabilityCard.produces_fact_types` 构造 `desiredFactTypes`：
 
@@ -656,7 +656,7 @@ def build_goal_spec(handoff: EscalationHandoff, cards: list[CapabilityCard]) -> 
 
 **Design Doc 引用:** §"PlanCompiler（`plan_compiler.py`）"，§"dry-run 输出"，§"错误处理与边界条件"（PlanCompiler 缺口 / S1 validator 失败）。
 
-- [ ] **Step 8.1: deterministic `PlanCompiler` 实现 - `GoalSpec` + Snapshot -> `PlanGraph`**
+- [x] **Step 8.1: deterministic `PlanCompiler` 实现 - `GoalSpec` + Snapshot -> `PlanGraph`**
 
 ```python
 @dataclass(frozen=True)
@@ -684,7 +684,7 @@ def compile_dry_run(goal: GoalSpec, snapshot: RegistrySnapshot) -> DryRunResult:
 
 `_build_plan_graph`：从 `goal.desiredFactTypes` 匹配 `CapabilityCard.produces_fact_types`，构造节点（capability_id + 参数来源 `goalConstraint`/`literal`/`factField`）和边（`data`/`dependency`）。参数来源映射 S1 `PlanGraph v1` 契约。
 
-- [ ] **Step 8.2: 复用 S1 `PlanGraph` validator（不重新实现）**
+- [x] **Step 8.2: 复用 S1 `PlanGraph` validator（不重新实现）**
 
 ```python
 from sap_nexus_agent.semantic_planning.validation import (  # S1 已归档契约
@@ -703,13 +703,13 @@ def compile_dry_run(goal, snapshot):
 
 直接 `import` S1 `semantic_planning.validation`，**不重新实现** validator。若 S1 入口签名需要 `ImmutableSemanticGraph`，通过 `SemanticGraphCompiler().compile(sources)` 构造。Design Doc §风险："S2-B 复用 S1 validator 契约漂移" -> S1 已归档契约锁定，本 Task 测试 import S1 validator 断言。
 
-- [ ] **Step 8.3: dry-run 输出 - `PlanGraph` + `gaps` + `governanceFlags`**
+- [x] **Step 8.3: dry-run 输出 - `PlanGraph` + `gaps` + `governanceFlags`**
 
 - `_compute_gaps(goal, plan_graph)`：`goal.desiredFactType` 无 producer capability -> `Gap(kind="missing_capability")`；节点缺参 -> `Gap(kind="missing_parameter")`。dry-run 输出 incomplete，不报错。
 - `_compute_governance_flags(plan_graph)`：写能力节点 -> `Flag(kind="write_side_effect")`；`requiresApproval=True` -> `Flag(kind="requires_approval")`。
 - `rationale`：决策理由（"dry-run compiled N nodes, M gaps, K flags"）。
 
-- [ ] **Step 8.4: 不调用 Gateway validate/execute 的断言测试**
+- [x] **Step 8.4: 不调用 Gateway validate/execute 的断言测试**
 
 `agent/tests/test_planner_plan_compiler.py`：
 
@@ -748,7 +748,7 @@ def test_plan_compiler_does_not_call_gateway():
 
 **Design Doc 引用:** §"总体数据流"（ESCALATE handoff -> planner -> dry-run 输出 -> Workbench 折叠展示）。
 
-- [ ] **Step 9.1: `ESCALATE_TO_PLANNER` handoff 接入 `PlanCompiler`**
+- [x] **Step 9.1: `ESCALATE_TO_PLANNER` handoff 接入 `PlanCompiler`**
 
 在 `orchestrator.run_query` 的 `ESCALATE_TO_PLANNER` 分支（Task 3.2 已建）内，调用 `PlanCompiler`：
 
@@ -762,7 +762,7 @@ if decision.decision_type == "ESCALATE_TO_PLANNER":
 
 `AgentOutcome` 新增 `dry_run: DryRunResult | None = None`。`workbench_output.py` 序列化 `dry_run`（plan_graph/gaps/flags/rationale）。dry-run **不执行** Gateway/SAP（Task 8.4 已断言）。
 
-- [ ] **Step 9.2: Workbench 前端 dry-run 预览展示（折叠式）**
+- [x] **Step 9.2: Workbench 前端 dry-run 预览展示（折叠式）**
 
 `ChatStream.tsx` 在 ESCALATE turn 内（Task 6.3 的折叠组件）追加 dry-run 预览：
 - 折叠展示 `PlanGraph` 节点（capability_id + 参数来源）、边、`gaps`、`governanceFlags`。
@@ -771,7 +771,7 @@ if decision.decision_type == "ESCALATE_TO_PLANNER":
 
 `view-model.ts` 新增 `buildDryRunView(snapshot)` 纯函数（类似 `buildMatchDecisionView`）。
 
-- [ ] **Step 9.3: dry-run cases 进 eval**
+- [x] **Step 9.3: dry-run cases 进 eval**
 
 `evals/dry_run_cases.yaml`：
 
@@ -817,18 +817,18 @@ cases:
 - Modify: `openspec/changes/sap-nexus-planner-dry-run/specs/semantic-match-decision/spec.md`（Spec Patch 1）
 - Modify: `openspec/changes/sap-nexus-planner-dry-run/specs/planner-dry-run/spec.md`（Spec Patch 2）
 
-- [ ] **Step 10.1: `npm --prefix frontend run verify` 通过**
+- [x] **Step 10.1: `npm --prefix frontend run verify` 通过**
 
 前端 typecheck + test + build 全过（含 Task 6.4 / 9.2 的前端测试）。
 
-- [ ] **Step 10.2: `openspec validate --all --strict` 通过**
+- [x] **Step 10.2: `openspec validate --all --strict` 通过**
 
 含本 change 的 Spec Patch：
 1. `specs/semantic-match-decision/spec.md`：SHOW_OPTIONS 触发条件细化为"utterance 弱匹配多能力关键词集合且无明确主意图（关键词歧义），阈值由 matcher Eval 锚定"（Design Doc §Spec Patch 1）。
 2. `specs/planner-dry-run/spec.md`：`CapabilityCard` 字段明确含 `producesFactTypes`（from `outputs.factTypeRef`），供 PlanCompiler 从 GoalSpec desiredFactType 匹配候选能力（Design Doc §Spec Patch 2）。
 3. `specs/agent-callplan-evidence/spec.md`：无需额外 patch（open 阶段 MODIFIED 已覆盖）。
 
-- [ ] **Step 10.3: `scripts/verify-agent-callplan-evidence.sh` 通过**
+- [x] **Step 10.3: `scripts/verify-agent-callplan-evidence.sh` 通过**
 
 组合门禁全过：
 - `scripts/validate-semantic-planning-contract.py`（S1 契约）
@@ -838,7 +838,7 @@ cases:
 - `evals/dry_run_cases.yaml`（Task 9.3）
 - `openspec validate --all --strict`
 
-- [ ] **Step 10.4: `docs/runbooks/10-capability-composition-contract.md` 更新 + README index 同步**
+- [x] **Step 10.4: `docs/runbooks/10-capability-composition-contract.md` 更新 + README index 同步**
 
 更新 runbook（参考 MEMORY.md 提醒：先读实际当前 version 再 bump，避免版本漂移）：
 - `Version` bump（如 `v0.3.6` -> `v0.3.7` 或按实际当前版本）。
