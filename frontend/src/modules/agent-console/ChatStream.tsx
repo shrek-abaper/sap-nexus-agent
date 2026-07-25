@@ -6,6 +6,12 @@ import {
   buildWorkbenchViewModel,
   buildChatBubbleState,
   buildMatchDecisionView,
+  buildDryRunView,
+  type DryRunGap,
+  type DryRunFlag,
+  type DryRunParameterBinding,
+  type DryRunPlanNode,
+  type DryRunView,
   type MatchDecisionCandidate,
   type MatchDecisionHandoff,
   type MatchDecisionView,
@@ -218,9 +224,14 @@ function CopyButton({ text }: { text: string }) {
  * ESCALATE_TO_PLANNER 时由 SSE 发射）时，在 turn 卡片内折叠展示
  * 候选能力或转交规划层信息。纯只读，不发起 Gateway/SAP 调用。
  * SELECT / CLARIFY / REJECT 走现有事件路径，本面板仅在 artifact 存在时渲染。
+ *
+ * S2-B (Task 9): 当 ESCALATE turn 同时携带 dryRun 时，在 handoff 下方
+ * 追加 dry-run 预览折叠（PlanGraph 节点/参数来源/缺口/治理标记），
+ * 标注"dry-run 预览，不执行 Gateway/SAP"。
  */
 function MatchDecisionPanel({ snapshot }: { snapshot: AgentRunSnapshot }) {
   const view = buildMatchDecisionView(snapshot);
+  const dryRunView = buildDryRunView(snapshot);
   const [open, setOpen] = useState(false);
   if (!view) {
     return null;
@@ -260,6 +271,7 @@ function MatchDecisionPanel({ snapshot }: { snapshot: AgentRunSnapshot }) {
             </ul>
           ) : null}
           {view.handoff ? <MatchDecisionHandoffBlock handoff={view.handoff} /> : null}
+          {dryRunView ? <DryRunPreviewBlock dryRun={dryRunView} /> : null}
         </div>
       ) : null}
     </div>
@@ -303,6 +315,102 @@ function MatchDecisionHandoffBlock({ handoff }: { handoff: MatchDecisionHandoff 
         </div>
       ) : null}
     </dl>
+  );
+}
+
+/**
+ * S2-B dry-run 预览折叠（Design Doc §Workbench 前端 D6 / §dry-run 输出）。
+ *
+ * 在 ESCALATE turn 的 handoff 下方折叠展示 PlanGraph 节点（capabilityId
+ * + 参数来源）、缺口、治理标记。标注"dry-run 预览，不执行 Gateway/SAP"。
+ * 纯只读，无执行按钮。
+ */
+function DryRunPreviewBlock({ dryRun }: { dryRun: DryRunView }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="dry-run-preview">
+      <button
+        className="dry-run-preview__summary"
+        onClick={() => setOpen((o) => !o)}
+        type="button"
+        aria-expanded={open}
+      >
+        <span className={`dry-run-preview__arrow ${open ? "is-open" : ""}`}>▸</span>
+        <span>dry-run 预览 · {dryRun.planGraph.nodes.length} 节点</span>
+        <small className="dry-run-preview__badge">不执行 Gateway/SAP</small>
+      </button>
+      {open ? (
+        <div className="dry-run-preview__body">
+          {dryRun.rationale ? (
+            <p className="dry-run-preview__rationale">{dryRun.rationale}</p>
+          ) : null}
+          <div className="dry-run-preview__plan-graph">
+            <span className="dry-run-preview__section-label">PlanGraph 节点</span>
+            <ul className="dry-run-preview__nodes">
+              {dryRun.planGraph.nodes.map((node: DryRunPlanNode) => (
+                <li className="dry-run-preview__node" key={node.nodeId || node.capabilityId}>
+                  <strong>{node.capabilityId}</strong>
+                  {node.producesFactTypes.length > 0 ? (
+                    <span className="dry-run-preview__fact-types">
+                      产出: {node.producesFactTypes.join(", ")}
+                    </span>
+                  ) : null}
+                  {node.parameterBindings.length > 0 ? (
+                    <ul className="dry-run-preview__bindings">
+                      {node.parameterBindings.map((binding: DryRunParameterBinding) => (
+                        <li className="dry-run-preview__binding" key={binding.parameterName}>
+                          <span className="dry-run-preview__param-name">{binding.parameterName}</span>
+                          <span className="dry-run-preview__source-kind">
+                            来源: {binding.source.kind}
+                            {binding.source.constraintName
+                              ? ` (${binding.source.constraintName})`
+                              : ""}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+            {dryRun.planGraph.topologicalOrder.length > 0 ? (
+              <p className="dry-run-preview__topo">
+                <span className="dry-run-preview__section-label">拓扑序:</span>
+                <span className="dry-run-preview__topo-list">
+                  {dryRun.planGraph.topologicalOrder.join(" -> ")}
+                </span>
+              </p>
+            ) : null}
+          </div>
+          {dryRun.gaps.length > 0 ? (
+            <div className="dry-run-preview__gaps">
+              <span className="dry-run-preview__section-label">缺口</span>
+              <ul className="dry-run-preview__gap-list">
+                {dryRun.gaps.map((gap: DryRunGap, index) => (
+                  <li className="dry-run-preview__gap" key={`${gap.kind}-${index}`}>
+                    <span className="dry-run-preview__gap-kind">{gap.kind}</span>
+                    <span className="dry-run-preview__gap-detail">{gap.detail}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          {dryRun.governanceFlags.length > 0 ? (
+            <div className="dry-run-preview__flags">
+              <span className="dry-run-preview__section-label">治理标记</span>
+              <ul className="dry-run-preview__flag-list">
+                {dryRun.governanceFlags.map((flag: DryRunFlag, index) => (
+                  <li className="dry-run-preview__flag" key={`${flag.kind}-${index}`}>
+                    <span className="dry-run-preview__flag-kind">{flag.kind}</span>
+                    <span className="dry-run-preview__flag-detail">{flag.detail}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
   );
 }
 

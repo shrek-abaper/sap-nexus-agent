@@ -194,6 +194,7 @@ def run_matcher_cases(cases: list[dict[str, Any]]) -> EvalSummary:
             _assert_matcher_decision_type(case_id, decision, expected)
             _assert_matcher_state_fields(case_id, decision, expected)
             _assert_matcher_gateway_calls(case_id, gateway, expected)
+            _assert_matcher_dry_run(case_id, outcome, expected)
         except AssertionError as exc:
             failures.append(str(exc))
         else:
@@ -260,6 +261,81 @@ def _assert_matcher_gateway_calls(
             f"{case_id}: executeCalls mismatch - expected {expected_execute}, "
             f"got {len(gateway.execute_calls)}"
         )
+
+
+def _assert_matcher_dry_run(case_id: str, outcome: Any, expected: dict[str, Any]) -> None:
+    """S2-B dry-run eval assertions (Design Doc §测试策略 -> S2-B dry-run cases).
+
+    Optional ``expected.dryRun`` block asserts on the ``DryRunResult``
+    carried by ESCALATE_TO_PLANNER outcomes. When absent, no dry-run
+    assertion is made (backward compat with matcher_cases.yaml).
+
+    Supported fields:
+    - ``present`` (bool): assert ``outcome.dry_run`` is/not None.
+    - ``nodeCount`` (int): assert ``len(plan_graph["nodes"])`` equals.
+    - ``nodeCapabilities`` (list[str]): assert the set of node capabilityIds
+      matches (order-independent).
+    - ``gapsContain`` (str): assert any gap.kind or gap.detail contains the
+      substring (e.g. ``"missing_capability"``).
+    - ``flagsContain`` (str): assert any flag.kind or flag.detail contains
+      the substring.
+    - ``rationaleNonEmpty`` (bool): assert ``rationale`` is a non-empty str.
+    """
+    dry_run_expected = expected.get("dryRun")
+    if dry_run_expected is None:
+        return
+    dry_run = outcome.dry_run
+    if dry_run_expected.get("present") is False:
+        if dry_run is not None:
+            raise AssertionError(
+                f"{case_id}: dryRun.present=False but outcome.dry_run is not None"
+            )
+        return
+    if dry_run_expected.get("present") is True and dry_run is None:
+        raise AssertionError(
+            f"{case_id}: dryRun.present=True but outcome.dry_run is None"
+        )
+    if dry_run is None:
+        # No further assertions possible; caller did not require present=True.
+        return
+    plan_graph = dry_run.plan_graph
+    if "nodeCount" in dry_run_expected:
+        actual = len(plan_graph.get("nodes", []))
+        if actual != dry_run_expected["nodeCount"]:
+            raise AssertionError(
+                f"{case_id}: dryRun.nodeCount mismatch - expected "
+                f"{dry_run_expected['nodeCount']}, got {actual}"
+            )
+    if "nodeCapabilities" in dry_run_expected:
+        actual = {n.get("capabilityId") for n in plan_graph.get("nodes", [])}
+        expected_set = set(dry_run_expected["nodeCapabilities"])
+        if actual != expected_set:
+            raise AssertionError(
+                f"{case_id}: dryRun.nodeCapabilities mismatch - expected "
+                f"{sorted(expected_set)}, got {sorted(actual)}"
+            )
+    if "gapsContain" in dry_run_expected:
+        needle = dry_run_expected["gapsContain"]
+        if not any(
+            needle in gap.kind or needle in gap.detail for gap in dry_run.gaps
+        ):
+            raise AssertionError(
+                f"{case_id}: dryRun.gapsContain '{needle}' not found in gaps"
+            )
+    if "flagsContain" in dry_run_expected:
+        needle = dry_run_expected["flagsContain"]
+        if not any(
+            needle in flag.kind or needle in flag.detail
+            for flag in dry_run.governance_flags
+        ):
+            raise AssertionError(
+                f"{case_id}: dryRun.flagsContain '{needle}' not found in flags"
+            )
+    if dry_run_expected.get("rationaleNonEmpty"):
+        if not isinstance(dry_run.rationale, str) or not dry_run.rationale:
+            raise AssertionError(
+                f"{case_id}: dryRun.rationaleNonEmpty=True but rationale is empty"
+            )
 
 
 def _assert_case(case: dict[str, Any], outcome: Any, gateway: FakeGatewayClient) -> None:

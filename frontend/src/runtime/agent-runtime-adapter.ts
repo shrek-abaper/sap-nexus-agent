@@ -53,6 +53,11 @@ type WorkbenchOutcome = {
   // SELECT / CLARIFY / REJECT reuse the existing event paths (Design Doc D6/Q4
   // hybrid SSE).
   matchDecision?: Record<string, unknown> | null;
+  // S2-B dry-run result (Task 9). Populated only for ESCALATE_TO_PLANNER
+  // outcomes. Folded into the `match-decision` artifact payload so the
+  // Workbench can render the dry-run preview (PlanGraph nodes/edges/gaps/
+  // governanceFlags) in the same ESCALATE turn without a new event type.
+  dryRun?: Record<string, unknown> | null;
 };
 
 type AgentRunner = (input: AgentRunnerInput) => Promise<WorkbenchOutcome>;
@@ -391,13 +396,25 @@ function pushMatchDecisionEventIfPresent(
   const candidates = matchDecision.candidates ?? null;
   const handoff = matchDecision.handoff ?? null;
   const rationale = textValue(matchDecision.rationale) ?? "";
+  // S2-B (Task 9): fold the DryRunResult into the match-decision artifact
+  // payload when present. Only ESCALATE_TO_PLANNER outcomes carry a dry-run
+  // (the orchestrator wires the handoff into the PlanCompiler). The
+  // Workbench's `buildDryRunView` parses this field to render the dry-run
+  // preview (PlanGraph nodes/edges/gaps/governanceFlags) in the same turn.
+  const dryRun = objectOrNull(outcome.dryRun);
   push(events, runId, timestamp, {
     type: "match_decision_created",
     state: "match_decided",
     artifact: redactArtifact({
       label: "MatchDecision",
       kind: "match-decision",
-      payload: toJsonValue({ decisionType, candidates, handoff, rationale })
+      payload: toJsonValue({
+        decisionType,
+        candidates,
+        handoff,
+        rationale,
+        dryRun
+      })
     })
   });
 }

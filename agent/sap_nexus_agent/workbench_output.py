@@ -43,6 +43,29 @@ def outcome_to_workbench_dict(outcome: AgentOutcome) -> dict[str, object]:
         # SELECT/CLARIFY/REJECT reuse existing event paths but still carry the
         # decision here for uniform rendering.
         "matchDecision": _match_decision_to_dict(outcome.match_decision),
+        # S2-B dry-run result (Task 9). Populated only for ESCALATE_TO_PLANNER
+        # outcomes; the orchestrator wires the handoff into the PlanCompiler
+        # (deterministic, no Gateway/SAP). The frontend folds this into the
+        # match-decision artifact payload so the Workbench can render the
+        # dry-run preview (PlanGraph nodes/edges/gaps/governanceFlags) in the
+        # same ESCALATE turn.
+        "dryRun": _dry_run_to_dict(outcome.dry_run),
+    }
+
+
+def _dry_run_to_dict(dry_run) -> dict[str, object] | None:
+    if dry_run is None:
+        return None
+    return {
+        "planGraph": dry_run.plan_graph,
+        "gaps": [
+            {"kind": gap.kind, "detail": gap.detail} for gap in dry_run.gaps
+        ],
+        "governanceFlags": [
+            {"kind": flag.kind, "detail": flag.detail}
+            for flag in dry_run.governance_flags
+        ],
+        "rationale": dry_run.rationale,
     }
 
 

@@ -1,0 +1,59 @@
+{
+  "cases": [
+    {
+      "id": "multi-goal-dry-run",
+      "userQuery": "DEMOA2 在 5100 的库存，再列出近 30 天未清采购订单",
+      "expected": {
+        "decisionType": "ESCALATE_TO_PLANNER",
+        "validateCalls": 0,
+        "executeCalls": 0,
+        "dryRun": {
+          "nodeCount": 2,
+          "nodeCapabilities": [
+            "MM.Inventory.GetAvailability",
+            "MM.PurchaseOrder.GetList"
+          ]
+        }
+      }
+    },
+    {
+      "id": "dry-run-no-gateway-calls",
+      "userQuery": "DEMOA2 在 5100 的库存，再列出近 30 天未清采购订单",
+      "expected": {
+        "decisionType": "ESCALATE_TO_PLANNER",
+        "validateCalls": 0,
+        "executeCalls": 0,
+        "dryRun": {
+          "present": true
+        }
+      }
+    },
+    {
+      "id": "dry-run-runs-deterministic-planner",
+      "userQuery": "DEMOA2 在 5100 的库存，再列出近 30 天未清采购订单",
+      "expected": {
+        "decisionType": "ESCALATE_TO_PLANNER",
+        "validateCalls": 0,
+        "executeCalls": 0,
+        "dryRun": {
+          "present": true,
+          "rationaleNonEmpty": true
+        }
+      }
+    },
+    {
+      "id": "dry-run-missing-producer",
+      "pending": true,
+      "todo": "无法用真实 registry 构造 missing_capability 场景 - 所有 active capability 均有 produces_fact_types；需扩展 registry 或注入 fake sources 才能覆盖。已在 agent/tests/test_planner_plan_compiler.py 单测中覆盖该分支。",
+      "userQuery": "构造期望缺 producer 的多目标",
+      "expected": {
+        "decisionType": "ESCALATE_TO_PLANNER",
+        "validateCalls": 0,
+        "executeCalls": 0,
+        "dryRun": {
+          "gapsContain": "missing_capability"
+        }
+      }
+    }
+  ]
+}

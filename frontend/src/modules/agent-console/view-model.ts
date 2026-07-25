@@ -44,6 +44,53 @@ export type MatchDecisionView = {
   rationale: string;
 };
 
+// ---- S2-B dry-run preview (Task 9) ----
+
+export type DryRunParameterBinding = {
+  parameterName: string;
+  source: { kind: string; constraintName?: string };
+};
+
+export type DryRunPlanNode = {
+  nodeId: string;
+  capabilityId: string;
+  parameterBindings: DryRunParameterBinding[];
+  producesFactTypes: string[];
+};
+
+export type DryRunGoalOutput = {
+  factTypeId: string;
+  producerNodeId: string;
+};
+
+export type DryRunPlanGraph = {
+  planId: string;
+  goalId: string;
+  executionMode: string;
+  snapshotId?: string;
+  nodes: DryRunPlanNode[];
+  edges: unknown[];
+  topologicalOrder: string[];
+  goalOutputs: DryRunGoalOutput[];
+};
+
+export type DryRunGap = {
+  kind: string;
+  detail: string;
+};
+
+export type DryRunFlag = {
+  kind: string;
+  detail: string;
+};
+
+export type DryRunView = {
+  planGraph: DryRunPlanGraph;
+  gaps: DryRunGap[];
+  governanceFlags: DryRunFlag[];
+  rationale: string;
+};
+
 export type WorkbenchViewModel = {
   result: WorkbenchResult;
   reasoningSteps: ReasoningStep[];
@@ -354,4 +401,179 @@ function parseStringArray(value: JsonValue): string[] {
     return [];
   }
   return value.filter((entry): entry is string => typeof entry === "string");
+}
+
+// ---- S2-B dry-run preview (Task 9) ----
+
+/**
+ * S2-B dry-run 预览视图（Design Doc §Workbench 前端 D6 / §dry-run 输出）。
+ *
+ * 从 snapshot 中提取 `match-decision` artifact 并解析其中的 `dryRun`
+ * 字段（由 SSE adapter 从 outcome.dryRun 折叠进 payload）。返回渲染用的
+ * `DryRunView`，包含 PlanGraph 节点/边/参数来源/缺口/治理标记。
+ *
+ * 纯函数，无副作用；输入为 null、artifact 缺失或 payload 畸形时返回 null。
+ * dry-run 是只读预览，不发起 Gateway/SAP 调用。
+ */
+export function buildDryRunView(snapshot: AgentRunSnapshot | null): DryRunView | null {
+  if (!snapshot) {
+    return null;
+  }
+  const artifact = snapshot.events.find((event) => event.artifact?.kind === "match-decision")?.artifact;
+  if (!artifact) {
+    return null;
+  }
+  const payload = artifact.payload;
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    return null;
+  }
+  const record = payload as Record<string, JsonValue>;
+  const dryRunRaw = record.dryRun;
+  if (!dryRunRaw || typeof dryRunRaw !== "object" || Array.isArray(dryRunRaw)) {
+    return null;
+  }
+  const dryRun = dryRunRaw as Record<string, JsonValue>;
+  const planGraph = parsePlanGraph(dryRun.planGraph);
+  if (!planGraph) {
+    return null;
+  }
+  const gaps = parseGaps(dryRun.gaps);
+  const governanceFlags = parseFlags(dryRun.governanceFlags);
+  const rationale = typeof dryRun.rationale === "string" ? dryRun.rationale : "";
+  return { planGraph, gaps, governanceFlags, rationale };
+}
+
+function parsePlanGraph(value: JsonValue): DryRunPlanGraph | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+  const rec = value as Record<string, JsonValue>;
+  const planId = typeof rec.planId === "string" ? rec.planId : "";
+  const goalId = typeof rec.goalId === "string" ? rec.goalId : "";
+  const executionMode = typeof rec.executionMode === "string" ? rec.executionMode : "";
+  const snapshotId = typeof rec.snapshotId === "string" ? rec.snapshotId : undefined;
+  const nodes = parsePlanNodes(rec.nodes);
+  const edges = Array.isArray(rec.edges) ? rec.edges : [];
+  const topologicalOrder = parseStringArray(rec.topologicalOrder);
+  const goalOutputs = parseGoalOutputs(rec.goalOutputs);
+  if (!planId && !goalId && nodes.length === 0) {
+    return null;
+  }
+  return { planId, goalId, executionMode, snapshotId, nodes, edges, topologicalOrder, goalOutputs };
+}
+
+function parsePlanNodes(value: JsonValue): DryRunPlanNode[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  const nodes: DryRunPlanNode[] = [];
+  for (const entry of value) {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+      continue;
+    }
+    const rec = entry as Record<string, JsonValue>;
+    const nodeId = typeof rec.nodeId === "string" ? rec.nodeId : "";
+    const capabilityId = typeof rec.capabilityId === "string" ? rec.capabilityId : "";
+    if (!nodeId && !capabilityId) {
+      continue;
+    }
+    const parameterBindings = parseParameterBindings(rec.parameterBindings);
+    const producesFactTypes = parseStringArray(rec.producesFactTypes);
+    nodes.push({ nodeId, capabilityId, parameterBindings, producesFactTypes });
+  }
+  return nodes;
+}
+
+function parseParameterBindings(value: JsonValue): DryRunParameterBinding[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  const bindings: DryRunParameterBinding[] = [];
+  for (const entry of value) {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+      continue;
+    }
+    const rec = entry as Record<string, JsonValue>;
+    const parameterName = typeof rec.parameterName === "string" ? rec.parameterName : "";
+    if (!parameterName) {
+      continue;
+    }
+    const sourceRaw = rec.source;
+    const source =
+      sourceRaw && typeof sourceRaw === "object" && !Array.isArray(sourceRaw)
+        ? (sourceRaw as Record<string, JsonValue>)
+        : null;
+    if (!source) {
+      continue;
+    }
+    const kind = typeof source.kind === "string" ? source.kind : "";
+    if (!kind) {
+      continue;
+    }
+    const constraintName =
+      typeof source.constraintName === "string" ? source.constraintName : undefined;
+    bindings.push({ parameterName, source: { kind, constraintName } });
+  }
+  return bindings;
+}
+
+function parseGoalOutputs(value: JsonValue): DryRunGoalOutput[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  const outputs: DryRunGoalOutput[] = [];
+  for (const entry of value) {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+      continue;
+    }
+    const rec = entry as Record<string, JsonValue>;
+    const factTypeId = typeof rec.factTypeId === "string" ? rec.factTypeId : "";
+    const producerNodeId =
+      typeof rec.producerNodeId === "string" ? rec.producerNodeId : "";
+    if (!factTypeId && !producerNodeId) {
+      continue;
+    }
+    outputs.push({ factTypeId, producerNodeId });
+  }
+  return outputs;
+}
+
+function parseGaps(value: JsonValue): DryRunGap[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  const gaps: DryRunGap[] = [];
+  for (const entry of value) {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+      continue;
+    }
+    const rec = entry as Record<string, JsonValue>;
+    const kind = typeof rec.kind === "string" ? rec.kind : "";
+    const detail = typeof rec.detail === "string" ? rec.detail : "";
+    if (!kind && !detail) {
+      continue;
+    }
+    gaps.push({ kind, detail });
+  }
+  return gaps;
+}
+
+function parseFlags(value: JsonValue): DryRunFlag[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  const flags: DryRunFlag[] = [];
+  for (const entry of value) {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+      continue;
+    }
+    const rec = entry as Record<string, JsonValue>;
+    const kind = typeof rec.kind === "string" ? rec.kind : "";
+    const detail = typeof rec.detail === "string" ? rec.detail : "";
+    if (!kind && !detail) {
+      continue;
+    }
+    flags.push({ kind, detail });
+  }
+  return flags;
 }

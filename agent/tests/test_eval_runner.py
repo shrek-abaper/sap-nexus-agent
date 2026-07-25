@@ -222,3 +222,79 @@ def test_matcher_eval_routes_existing_files_through_legacy_path():
         summary = run_eval_file(REPO_ROOT / "evals" / filename)
         assert summary.failed == 0
         assert summary.passed == summary.total
+
+
+# --- S2-B dry-run Eval (Task 9) ---
+
+
+def test_dry_run_eval_file_passes():
+    """dry_run_cases.yaml runs end-to-end through run_query + PlanCompiler
+    and asserts the DryRunResult fields per case."""
+    summary = run_eval_file(REPO_ROOT / "evals" / "dry_run_cases.yaml")
+
+    # 3 active cases + 1 pending (missing-producer scenario cannot be
+    # constructed with the real registry - all active capabilities have
+    # produces_fact_types; covered by test_planner_plan_compiler unit tests).
+    assert summary.total >= 3
+    assert summary.failed == 0
+    assert summary.passed == summary.total
+
+
+def test_dry_run_eval_file_includes_multi_goal_case():
+    """dry_run_cases.yaml must include the multi-goal case asserting
+    nodeCount=2 (inventory + purchase_order) for an ESCALATE utterance."""
+    payload = json.loads(
+        (REPO_ROOT / "evals" / "dry_run_cases.yaml").read_text(encoding="utf-8")
+    )
+    multi_goal = [
+        case for case in payload["cases"] if case.get("id") == "multi-goal-dry-run"
+    ]
+    assert len(multi_goal) == 1
+    case = multi_goal[0]
+    assert case["expected"]["decisionType"] == "ESCALATE_TO_PLANNER"
+    assert case["expected"]["dryRun"]["nodeCount"] == 2
+
+
+def test_dry_run_eval_catches_missing_dry_run_when_expected_present():
+    """If expected.dryRun.present=True but outcome.dry_run is None, the eval
+    must raise AssertionError. Constructs a synthetic case: a SELECT utterance
+    (which produces no dry-run) with present=True."""
+    from sap_nexus_agent.eval import run_matcher_cases
+
+    cases = [
+        {
+            "id": "missing-dry-run-probe",
+            "userQuery": "DEMOA2 在 5100 还有多少可用库存",  # -> SELECT
+            "expected": {
+                "decisionType": "SELECT",
+                "validateCalls": 1,
+                "executeCalls": 1,
+                "dryRun": {"present": True},
+            },
+        }
+    ]
+    with pytest.raises(AssertionError) as exc_info:
+        run_matcher_cases(cases)
+    assert "dryRun.present=True but outcome.dry_run is None" in str(exc_info.value)
+
+
+def test_dry_run_eval_catches_node_count_mismatch():
+    """If expected.dryRun.nodeCount does not match the actual node count, the
+    eval must raise AssertionError."""
+    from sap_nexus_agent.eval import run_matcher_cases
+
+    cases = [
+        {
+            "id": "node-count-mismatch-probe",
+            "userQuery": "DEMOA2 在 5100 的库存，再列出近 30 天未清采购订单",
+            "expected": {
+                "decisionType": "ESCALATE_TO_PLANNER",
+                "validateCalls": 0,
+                "executeCalls": 0,
+                "dryRun": {"nodeCount": 99},
+            },
+        }
+    ]
+    with pytest.raises(AssertionError) as exc_info:
+        run_matcher_cases(cases)
+    assert "dryRun.nodeCount mismatch" in str(exc_info.value)
