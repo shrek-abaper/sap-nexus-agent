@@ -47,10 +47,10 @@
 
 ## 8. S2-B PlanCompiler dry-run
 
-- [ ] 8.1 deterministic `PlanCompiler` 实现：`GoalSpec` + Registry Snapshot -> `PlanGraph`
-- [ ] 8.2 复用 S1 `PlanGraph` validator 校验（provenance / edges / governance / topological order），不重新实现
-- [ ] 8.3 dry-run 输出：`PlanGraph` + `gaps` + `governanceFlags`，可审计
-- [ ] 8.4 `PlanCompiler` 不调用 Gateway validate/execute 的断言测试
+- [x] 8.1 deterministic `PlanCompiler` 实现：`GoalSpec` + Registry Snapshot -> `PlanGraph`
+- [x] 8.2 复用 S1 `PlanGraph` validator 校验（provenance / edges / governance / topological order），不重新实现
+- [x] 8.3 dry-run 输出：`PlanGraph` + `gaps` + `governanceFlags`，可审计
+- [x] 8.4 `PlanCompiler` 不调用 Gateway validate/execute 的断言测试
 
 ## 9. S2-B handoff 接入与展示
 
