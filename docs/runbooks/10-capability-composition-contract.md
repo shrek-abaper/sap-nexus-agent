@@ -11,7 +11,7 @@
 | Updated | `2026-07-25` |
 | Last Change | S2-A MatchDecision five-state + S2-B PlanCompiler dry-run complete (2026-07-25): matcher Eval 6/6, dry-run eval 3/3 + 1 pending (covered by unit test), frontend verify 58/58, openspec strict 9/9; P0A hygiene closed; next is S3 read-only composition pilot gated by trusted/durable runtime and deterministic OutputProjection |
 | Workstream | Archived S1 semantic planning foundation, S2-A semantic decision hardening (done), S2-B dry-run (done), S3 execution gated |
-| Related Change | `sap-nexus-semantic-planning-foundation` (archived `2026-07-19`); `sap-nexus-planner-dry-run` (S2-A + S2-B implemented; pending verify/archive) |
+| Related Change | `sap-nexus-semantic-planning-foundation` (archived `2026-07-19`); `sap-nexus-planner-dry-run` (S2-A + S2-B archived `2026-07-25` at openspec/changes/archive/2026-07-25-sap-nexus-planner-dry-run/) |
 | Current Phase | S2-A MatchDecision hardening and S2-B dry-run complete (2026-07-25); next is S3 read-only composition pilot gated by trusted/durable runtime and deterministic OutputProjection; current runtime remains single-capability |
 
 ---
