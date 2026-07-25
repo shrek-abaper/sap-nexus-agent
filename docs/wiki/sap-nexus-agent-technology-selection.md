@@ -5,10 +5,10 @@
 | 字段 | 内容 |
 |---|---|
 | 文档名称 | `SAP Nexus Agent 技术选型与工程路线决策` |
-| 当前版本 | `v0.2.10` |
+| 当前版本 | `v0.2.11` |
 | 状态 | `Decision Baseline Draft` |
 | 创建日期 | `2026-06-19` |
-| 最近更新 | `2026-07-24` |
+| 最近更新 | `2026-07-25` |
 | 维护目录 | `docs/wiki/` |
 | 文档定位 | 指导 SAP Nexus Agent 工程骨架、技术栈和 AI Native 工程产物组织的技术选型基线 |
 | 关联技术架构 | `docs/wiki/sap-nexus-agent-technical-architecture.md` |
@@ -20,6 +20,7 @@
 
 | 版本 | 日期 | 变更摘要 | 决策状态 |
 |---|---|---|---|
+| `v0.2.11` | `2026-07-25` | 文档收敛：§5.6 OpenHarness 与 §5.7 DeerFlow 机制采纳矩阵压缩为指向权威文档（openharness-semantic-orchestration §3 / deerflow-adoption-analysis §9）的链接，保留技术选型专属边界与 deterministic 权威约束 | 当前技术基线 |
 | `v0.2.10` | `2026-07-24` | 显式拆分基础语义 matcher 与 Phase 3+ 规模化检索：S2-A 选择规则/alias/domain + 五态 `MatchDecision` + 多意图/歧义检测和 visibility pre-filter，S2-B 再实现 progressive `CapabilityCard` discovery 与 deterministic PlanCompiler dry-run；embedding、向量库、LLM rerank 和 DeerFlow runtime 继续延后 | 当前技术基线 |
 | `v0.2.9` | `2026-07-24` | 区分本地 MVP 与共享/量产运行选型：当前 SSE 为 buffered SSE-format、Run/Approval 为进程内状态；补充可信身份、durable runtime 条件门禁、分层 Store 与真实 streaming 目标；把 OData 双跳限定为已验证实现而非所有 HTTP executor 默认模板；同步 S1 已归档 | 当前技术基线 |
 | `v0.2.8` | `2026-07-23` | 增加 §5.7 DeerFlow 2.1.0 借鉴选型：不引入 `deerflow-harness` 或第二 runtime；S2 适配 progressive capability disclosure，S3 适配 PlanGraph-governed task lifecycle；durable runtime 与 UserPreferenceMemory 保持触发式候选 | 当前技术基线 |
@@ -343,15 +344,7 @@ REST JSON 禁止：
 
 对比结论：OpenHarness 是通用 Agent Harness，不是本体规划引擎。SAP Nexus 不引入 OpenHarness runtime、Plugin loader 或 Permission runtime 依赖，只借鉴可迁移机制。
 
-| 机制 | SAP Nexus 选型 |
-|---|---|
-| Agent loop | 在现有 Python Agent 内增加 `observe -> compile/repair -> validate -> execute` 循环 |
-| Tool Schema | 只暴露 planner meta-operations；SAP 执行继续通过 `capabilityId -> Gateway` |
-| On-demand Skill | 按领域加载只读 capability cards / policy guidance，不赋予新执行权 |
-| Permission / Hook | deterministic policy 为权威；LLM Hook 仅 advisory |
-| Dry-run | 建设业务 PlanGraph dry-run，检查节点、边、参数来源、Fact 类型、治理和能力缺口 |
-| Memory / Resume | 持久化 GoalSpec、PlanGraph、节点状态和 Registry Snapshot id，不依赖聊天记忆恢复执行 |
-| Multi-Agent | 后续可做 Planner/Critic/Evaluator 建议角色，不进入 SAP 执行权威 |
+OpenHarness 机制采纳选型（Agent loop、Tool Schema、On-demand Skill、Permission/Hook、Dry-run、Memory/Resume、Multi-Agent）的完整对照矩阵见 `docs/wiki/sap-nexus-agent-openharness-semantic-orchestration.md` §3。技术选型层面只保留不可妥协的边界：SAP 执行继续通过 `capabilityId -> Gateway`，deterministic policy 为权威，LLM Hook 仅 advisory，Tool/Skill/记忆不赋予新执行权。
 
 语义规划近期技术栈：
 
@@ -390,12 +383,7 @@ DeerFlow 2.1.0 是成熟度较高的通用 Super Agent Harness，但其默认执
 
 选择吸收的窄机制：
 
-| 领域 | 采纳机制 | SAP Nexus 权威边界 |
-|---|---|---|
-| 意图 / 候选发现 | Skill / Tool metadata progressive disclosure、deferred search、visibility pre-filter | 只产生 `CapabilityCard` / candidate；`MatchDecision` / `PlanCompiler` 最终裁决 |
-| 能力组合 | concurrency limit、timeout、cancel、task status、durable ledger、trace propagation | S3 `PlanExecutor` 只执行已验证 PlanGraph 的 ready Read nodes |
-| 长对话 | thread / run、checkpoint version gate、context compaction、resumable SSE | Summary 只属于 `ConversationState`；Plan / Approval / Evidence 结构化持久化 |
-| 记忆 | user / agent scope、backend abstraction、token budget、retention / deletion 管理 | 仅 `UserPreferenceMemory`；作为不可信 advisory context，不能改变执行和治理 |
+DeerFlow 机制采纳选型（意图/候选发现、能力组合、长对话、记忆四个领域）的完整决策矩阵见 `docs/wiki/sap-nexus-agent-deerflow-adoption-analysis.md` §9。技术选型层面只保留：候选结果只进入 `CapabilityCard` / `GoalSpec` / `PlanDraft`，最终裁决仍由 deterministic `MatchDecision` / `PlanCompiler`；`Summary` 只属于 `ConversationState`；`UserPreferenceMemory` 作为不可信 advisory context，不得改变执行和治理。
 
 当前技术策略：
 

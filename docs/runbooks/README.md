@@ -37,11 +37,10 @@ docs/wiki/sap-nexus-agent-deerflow-adoption-analysis.md
 docs/wiki/archive/sap-nexus-agent-mm-mvp-notion.md
 ```
 
-Key current scope:
+Key current scope (session-start details; structured maturity overview in the "Architecture Maturity & Current Status" table below):
 
 ```text
 Live capability baseline = 2 READ Functions + 1 sandbox-governed Action
-First capability = MM.Inventory.GetAvailability
 Current inventory BAPI = BAPI_MATERIAL_STOCK_REQ_LIST (MD04 stock/requirements list)
 Gateway = Java JCo Gateway included in first MVP
 Current completed change = sap-nexus-capability-registry-gateway archived
@@ -60,7 +59,6 @@ Current completed change = sap-nexus-sandbox-write-vertical-slice archived at op
 OpenHarness comparison decision = use as design reference only; do not add runtime dependency or free SAP tool-calling
 DeerFlow adoption decision = use as design reference only; do not add deerflow-harness, DeerFlow Gateway/frontend, or a second Agent runtime
 Confirmed first composition scenario = MM.Inventory.GetAvailability + MM.PurchaseOrder.GetList -> MaterialSupplySnapshot
-Current semantic planning foundation = S1 implemented, verified and archived at openspec/changes/archive/2026-07-19-sap-nexus-semantic-planning-foundation/
 Current semantic planning verification = docs/superpowers/reports/2026-07-19-sap-nexus-semantic-planning-foundation-verify.md
 Immediate prerequisite = P0A source-of-truth/repository hygiene; synchronize docs/status/paths, repair stale editable-install path, and stop tracking real runtime traces without changing runtime behavior
 Next recommended design = sap-nexus-planner-dry-run (roadmap row 19; S2-A five-state MatchDecision + multi-intent/ambiguity/visibility/Eval, then S2-B progressive CapabilityCard + deterministic dry-run; no Gateway/SAP execution)
@@ -76,6 +74,26 @@ Current composition runtime = not implemented; architecture requires multi-capab
 Reserved composition scope = Dynamic Planner and Write composition; S3 read-only execution remains planned, not implemented
 No branch creation unless user explicitly asks
 ```
+
+### Architecture Maturity & Current Status
+
+> Moved from `docs/wiki/sap-nexus-agent-technical-architecture.md` §1.1. Architecture retains only the maturity-level definitions and fail-closed boundaries; this table is the structured maturity overview and the single home for current maturity attribution and next-step status, so the baseline does not re-version on every progress change. The "Key current scope" notes below supplement it with archive paths, blockers, sequence and other session-start details not captured in the table.
+
+| 成熟度 | 内容 | 当前处理 |
+|---|---|---|
+| `Live` | `JCO_RFC` read path、`MM.Inventory.GetAvailability`、`ODATA` read path（PO 列表）、`MM.PurchaseOrder.GetList`（status=active）、CallPlan、Gateway validate / execute、ExecutionResult、ReasoningFact、TraceSpan、Eval Harness seed cases | 继续作为 MVP live baseline |
+| `Completed Pilot` | sandbox-only write vertical slice | 已完成并归档；保留外部审批、参数快照、反重放和 stateful JCo LUW 基线 |
+| `Completed Foundation` | `sap-nexus-semantic-planning-foundation` | S1 Fact Type、Capability Relation、GoalSpec、PlanGraph、Registry Snapshot、immutable graph 和 deterministic validator 已实现、验证并归档到 `openspec/changes/archive/2026-07-19-sap-nexus-semantic-planning-foundation/` |
+| `Next Design` | `sap-nexus-planner-dry-run` | S2-A 先实现五态 `MatchDecision`、多意图/歧义检测和候选可见性边界；S2-B 再用 progressive `CapabilityCard` discovery 生成候选，由 deterministic PlanCompiler 输出 dry-run；两者均不执行 Gateway / SAP |
+| `Planned Pilot` | 只读多能力组合“物料库存 + 采购订单供给概览” | S2 验证后分 change 实施；只允许 `sideEffect=none` Function 和 PlanGraph-governed ready-node scheduling |
+| `Reserved` | `CDS_ADT`、`CDS_ODATA`、`REST_JSON`、`SQL_READ`、Phase 3+ retrieval / rerank、Graph Registry、Dynamic Planner、Write composition | 保留边界和安全约束；Dynamic Planner 仍需关系本体、Dry-run、Read pilot 和规模/需求证据 |
+| `Not In Scope` | 任意 RFC / URL / SQL 执行、生产 write action 自动提交、GraphDB / OWL 运行时主链路 | 明确拒绝或另立 change |
+
+近期约束：
+
+- 第二条 live read capability、sandbox write pilot 和 S1 semantic planning foundation 均已完成；当前先收敛 P0A 文档/仓库卫生，再进入 S2-A Semantic MatchDecision Hardening 和 S2-B Planner Dry-run，不继续增加低价值 executor family 预留。
+- 版本记录和路线图优先体现能力落地、评测回归和 write 纵切，而不是继续增加低成本架构占位。
+- 已有 reserved executor 只保留 fail-closed 边界，不能被解读为当前实现承诺。
 
 ---
 
@@ -94,7 +112,7 @@ Runbooks are ordered by a numeric prefix following the implementation roadmap or
 | `07` | `07-odata-gateway-read-pilot.md` | `v0.2.1` | Implemented / Active | `2026-07-09` | OData Gateway Read Pilot plus archived PO item detail/filter activation; live PO smoke passed after SICF reactivation |
 | `08` | `08-capability-matching-contract.md` | `v0.3.0` | S2-A Next / Scale-up Deferred | `2026-07-24` | Baseline five-state MatchDecision, multi-intent/ambiguity, visibility and matcher Eval now; embedding/retrieval/rerank remain Phase 3+ |
 | `09` | `09-sql-read-executor-contract.md` | `v0.2.0` | Reserved | `2026-06-28` | Reserved `SQL_READ` safety boundary; not a near-term runtime priority before Eval seed, second read, and sandbox write pilot |
-| `10` | `10-capability-composition-contract.md` | `v0.3.4` | S1 Archived; S2-A Next; Runtime Reserved | `2026-07-24` | S1 archived; P0A, S2-A decision hardening and S2-B dry-run are next; shared S3 is gated by trusted/durable runtime and deterministic OutputProjection |
+| `10` | `10-capability-composition-contract.md` | `v0.3.5` | S1 Archived; S2-A Next; Runtime Reserved | `2026-07-25` | S1 archived; P0A, S2-A decision hardening and S2-B dry-run are next; shared S3 is gated by trusted/durable runtime and deterministic OutputProjection |
 | `11` | `11-sandbox-write-vertical-slice.md` | `v0.2.26` | Completed / Archived | `2026-07-17` | Sandbox PR `10137471` committed; external approval, Gateway anti-replay/hash/atomic claim, stateful JCo LUW and replay-complete trace verified; main spec `pr-create-action` merged; no additional SAP WRITE |
 
 Versioning rules:

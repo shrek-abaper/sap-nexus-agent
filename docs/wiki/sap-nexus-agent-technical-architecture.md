@@ -5,10 +5,10 @@
 | 字段 | 内容 |
 |---|---|
 | 文档名称 | `SAP Nexus Agent 技术架构文档` |
-| 当前版本 | `v0.2.16` |
+| 当前版本 | `v0.2.17` |
 | 状态 | `Product Architecture Baseline Draft` |
 | 创建日期 | `2026-06-18` |
-| 最近更新 | `2026-07-24` |
+| 最近更新 | `2026-07-25` |
 | 维护目录 | `docs/wiki/` |
 | 文档定位 | SAP Nexus Agent 从 MVP 到量产交付的长期技术架构指导文件 |
 | 关联路线 | `docs/wiki/sap-nexus-agent-implementation-roadmap.md` |
@@ -20,6 +20,7 @@
 
 | 版本 | 日期 | 变更摘要 | 决策状态 |
 |---|---|---|---|
+| `v0.2.17` | `2026-07-25` | 文档收敛：§1.1 成熟度矩阵与近期 next step 下沉到 `docs/runbooks/README.md`；§4.3 Current/S2-A/S2-B/S3 演进矩阵与当前 runtime 状态下沉到 runbook 10/08；§3.7/§3.8 OpenHarness/DeerFlow 重复机制映射压缩为指向权威文档的链接并保留架构不变量；新增 §18 Known Correctness Defects（D-1 多目标静默降级） | 当前架构基线 |
 | `v0.2.16` | `2026-07-24` | 校准语义识别 Current / Target 边界：当前 runtime 仍是单能力规则/LLM 闭集选择，尚未实现五态 `MatchDecision` 与可靠多意图升级；将 S2 显式拆为 S2-A 基础语义决策加固和 S2-B Planner Dry-run，补充 `CapabilityCard` 安全投影、候选前 visibility filter 与 matcher Eval 门禁；Phase 3+ 继续只承担规模化 retrieval / rerank | 当前架构基线 |
 | `v0.2.15` | `2026-07-24` | 基于 OpenHarness / DeerFlow 综合复盘补齐可信身份、三层状态、真实流式、durable run / approval 条件门禁与确定性组合输出；同步 S1 已归档事实，明确当前 Workbench SSE 和进程内 Store 仍是本地 MVP，不改变 S2 Planner Dry-run 的下一优先级 | 当前架构基线 |
 | `v0.2.14` | `2026-07-23` | 吸收 DeerFlow 2.1.0 源码对比结论：不引入第二 Agent runtime；把 progressive capability discovery 纳入 S2 设计输入，把受治理 task lifecycle 纳入 S3 PlanExecutor 设计输入；补充 Conversation / PlanExecution / Evidence 三层状态和受限 UserPreferenceMemory 边界 | 当前架构基线 |
@@ -65,23 +66,9 @@
 
 ### 1.1 架构成熟度与近期范围纪律
 
-架构预留不是零成本。每个 reserved executor family 都是未来实现、评审、评测和运维的隐含契约。因此近期路线必须先验证真实能力增长，再扩展新的 executor 预留。
+架构预留不是零成本。每个 reserved executor family 都是未来实现、评审、评测和运维的隐含契约。已有 reserved executor 只保留 fail-closed 边界，不能被解读为当前实现承诺。
 
-| 成熟度 | 内容 | 当前处理 |
-|---|---|---|
-| `Live` | `JCO_RFC` read path、`MM.Inventory.GetAvailability`、`ODATA` read path（PO 列表）、`MM.PurchaseOrder.GetList`（status=active）、CallPlan、Gateway validate / execute、ExecutionResult、ReasoningFact、TraceSpan、Eval Harness seed cases | 继续作为 MVP live baseline |
-| `Completed Pilot` | sandbox-only write vertical slice | 已完成并归档；保留外部审批、参数快照、反重放和 stateful JCo LUW 基线 |
-| `Completed Foundation` | `sap-nexus-semantic-planning-foundation` | S1 Fact Type、Capability Relation、GoalSpec、PlanGraph、Registry Snapshot、immutable graph 和 deterministic validator 已实现、验证并归档到 `openspec/changes/archive/2026-07-19-sap-nexus-semantic-planning-foundation/` |
-| `Next Design` | `sap-nexus-planner-dry-run` | S2-A 先实现五态 `MatchDecision`、多意图/歧义检测和候选可见性边界；S2-B 再用 progressive `CapabilityCard` discovery 生成候选，由 deterministic PlanCompiler 输出 dry-run；两者均不执行 Gateway / SAP |
-| `Planned Pilot` | 只读多能力组合“物料库存 + 采购订单供给概览” | S2 验证后分 change 实施；只允许 `sideEffect=none` Function 和 PlanGraph-governed ready-node scheduling |
-| `Reserved` | `CDS_ADT`、`CDS_ODATA`、`REST_JSON`、`SQL_READ`、Phase 3+ retrieval / rerank、Graph Registry、Dynamic Planner、Write composition | 保留边界和安全约束；Dynamic Planner 仍需关系本体、Dry-run、Read pilot 和规模/需求证据 |
-| `Not In Scope` | 任意 RFC / URL / SQL 执行、生产 write action 自动提交、GraphDB / OWL 运行时主链路 | 明确拒绝或另立 change |
-
-近期约束：
-
-- 第二条 live read capability、sandbox write pilot 和 S1 semantic planning foundation 均已完成；当前先收敛 P0A 文档/仓库卫生，再进入 S2-A Semantic MatchDecision Hardening 和 S2-B Planner Dry-run，不继续增加低价值 executor family 预留。
-- 版本记录和路线图优先体现能力落地、评测回归和 write 纵切，而不是继续增加低成本架构占位。
-- 已有 reserved executor 只保留 fail-closed 边界，不能被解读为当前实现承诺。
+成熟度等级（`Live` / `Completed Pilot` / `Completed Foundation` / `Next Design` / `Planned Pilot` / `Reserved` / `Not In Scope`）定义架构占位的性质与门禁要求，属于长期基线。各项能力的当前成熟度归属、已实现/未实现标注和近期 next step 不在本文档维护，统一见 `docs/runbooks/README.md` "Architecture Maturity & Current Status" 与 `docs/runbooks/10-capability-composition-contract.md`；阶段生命周期标签由 `docs/wiki/sap-nexus-agent-implementation-roadmap.md` 承载。架构基线只保留 fail-closed 边界、分层职责与长期能力形态，不随进度变化频繁改版。
 
 ---
 
@@ -231,7 +218,7 @@ MVP 不启用 embedding retrieval、LLM rerank 或 planner。即使进入 Phase 
 
 ### 3.7 OpenHarness 对比后的语义规划控制面
 
-OpenHarness 证明了通用 Agent Harness 的若干机制具有复用价值：模型工具循环、结构化 Tool Schema、按需知识加载、权限模式、Pre/Post Hook、Dry-run、任务恢复和可观测事件。SAP Nexus 只吸收这些机制，不引入 OpenHarness runtime 或依赖，也不把每个 SAP executor 暴露为模型可自由调用的 Tool。
+OpenHarness 若干通用 Harness 机制（Agent loop、Tool Schema、按需 Skill、Permission/Hook、Dry-run、Memory/Resume 等）具有复用价值，完整机制对照矩阵见 `docs/wiki/sap-nexus-agent-openharness-semantic-orchestration.md` §3。SAP Nexus 只吸收这些机制，不引入 OpenHarness runtime 或依赖，也不把每个 SAP executor 暴露为模型可自由调用的 Tool。
 
 新增的语义规划控制面位于 Intent Harness 与现有 CallPlan / Gateway 之间：
 
@@ -259,14 +246,7 @@ Natural Language
 
 ### 3.8 DeerFlow 对比后的运行时借鉴边界
 
-DeerFlow 2.1.0 提供了更完整的通用 Agent runtime 工程实现，包括 Tool / Skill 渐进发现、并行 task / sub-agent 生命周期、thread / run / checkpoint、上下文压缩和跨会话记忆。SAP Nexus 只吸收这些机制，不引入 DeerFlow runtime、Gateway、frontend 或 `deerflow-harness` 生产依赖。
-
-借鉴边界：
-
-- S2 可借鉴 metadata-first、full-schema-later 的 progressive capability disclosure，但候选结果只能进入 `GoalSpec` / `PlanDraft`，最终选择仍由 deterministic `MatchDecision` / `PlanCompiler` 决定。
-- S3 可借鉴 ready-node queue、并发上限、timeout、cancel 和 durable ledger，但只有 PlanGraph 已证明互不依赖且 `sideEffect=none` 的 active Function 才可并行。
-- Workbench 产品化可借鉴 durable thread / run、checkpoint compatibility 和 resumable SSE，但这些机制不改变 SAP 执行契约。
-- 用户记忆只能保存受治理的偏好和术语，并作为不可信 advisory context 注入；不得保存 credential、approval 执行上下文、权威业务事实或 policy decision。
+DeerFlow 2.1.0 提供了更完整的通用 Agent runtime 工程实现（Tool / Skill 渐进发现、并行 task / sub-agent 生命周期、thread / run / checkpoint、上下文压缩、跨会话记忆）。SAP Nexus 只吸收这些机制，不引入 DeerFlow runtime、Gateway、frontend 或 `deerflow-harness` 生产依赖。分阶段借鉴边界（S2 progressive disclosure、S3 PlanGraph-governed lifecycle、Workbench durable context、受治理 UserPreferenceMemory）的完整采纳决策矩阵见 `docs/wiki/sap-nexus-agent-deerflow-adoption-analysis.md` §9；本节只保留不可妥协的执行权威边界。
 
 以下 DeerFlow 对象均不得成为 SAP Nexus 执行权威：
 
@@ -429,16 +409,7 @@ Natural Language
 
 MVP 阶段 `MatchDecision` 仍是能力匹配、Eval Harness 和 CallPlan 的共同边界，但不要求 embedding retrieval、candidate rerank 或多域 planner。
 
-当前状态必须与目标契约分开描述：现有 runtime 的 `IntentParseResult -> SelectionResult -> CallPlan` 已支持三个 active capability 的单能力规则/LLM 闭集选择、缺参澄清和技术覆盖拒绝，但 `SelectionResult` 还不是完整五态 `MatchDecision`，规则 parser 也会按固定顺序返回第一个命中意图。因此当前不能声称多能力请求已经可靠地产生 `ESCALATE_TO_PLANNER`；这是 S2-A 的显式交付，而不是 Phase 3+ 规模化检索能力。
-
-| 能力 | Current | S2-A MatchDecision Hardening | S2-B Planner Dry-run | S3 Read Pilot |
-|---|---|---|---|---|
-| 单能力规则 / LLM 闭集选择 | 已实现 | 保留并纳入统一决策 | 作为候选入口 | 作为原子节点入口 |
-| 五态 `MatchDecision` runtime | 未完整实现 | 实现并记录候选、理由、snapshot 和 trace | 作为 Planner 入口 | 作为执行前决策证据 |
-| 多意图 / 歧义检测 | 未实现；存在首命中降级风险 | 实现 `SHOW_OPTIONS` / `ESCALATE_TO_PLANNER` | 转换为 GoalSpec / PlanDraft candidate | 只执行已编译 PlanGraph |
-| Progressive `CapabilityCard` discovery | 未实现 | 固化安全投影与 visibility contract | 实现有界候选发现 | 消费已选 capability |
-| deterministic `PlanCompiler` | 未实现 | 固化输入边界 | 只产 dry-run PlanGraph | 执行前重新校验 |
-| PlanGraph execution | 未实现 | 不执行 | 不执行 | 仅只读 pilot |
+当前 runtime 状态（`SelectionResult` 尚非完整五态 `MatchDecision`、规则 parser 按固定顺序返回首个命中意图、多能力请求尚未可靠产生 `ESCALATE_TO_PLANNER`）与 Current / S2-A / S2-B / S3 能力演进矩阵不在本文档维护，见 `docs/runbooks/08-capability-matching-contract.md` 与 `docs/runbooks/10-capability-composition-contract.md`；架构只保留下述 MVP 契约定义与 fail-closed 边界。
 
 | Decision | MVP 含义 | 下一步 |
 |---|---|---|
@@ -1561,3 +1532,16 @@ JSONL 只适用于本地 trace、eval 和早期 replay。Thread / Run、Approval
 | 身份 | principal、tenant、role、data scope 和 ApprovalActor 来自受信上下文，并在发现与执行阶段双重校验 |
 | 安全 | `.env`、密码、敏感 destination 不进入 git、响应或 trace |
 | 演进 | MVP Registry 字段由 JSON Schema / Registry validator 管理；OWL / Graph Registry 迁移必须先通过 ROI spike |
+
+---
+
+## 18. Known Correctness Defects
+
+本节记录当前 runtime 已知、未修复的正确性缺陷，区别于功能排期。缺陷在对应收敛里程碑验证通过前不得被描述为已解决。
+
+### D-1：多目标 utterance 静默降级为首命中单能力
+
+- **现象**：rule parser 按固定顺序返回首个命中意图；包含多个业务目标（如“物料库存 + 采购订单供给概览”）的请求被静默降级为首个命中的单能力（如仅库存）。
+- **影响**：返回结果在业务上不完整但无任何告警，系统丢弃了一半意图却返回看似正确的答案，污染用户信任；违反“事实先于叙事”与 fail-closed 原则。
+- **当前缓解**：无。
+- **收敛归属**：S2-A 五态 `MatchDecision`——多意图/歧义检测必须将并列多能力目标导向 `ESCALATE_TO_PLANNER`（record + explain），`false SELECT` 作为回归失败项。详见 `docs/runbooks/08-capability-matching-contract.md`。

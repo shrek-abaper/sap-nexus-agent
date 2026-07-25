@@ -5,10 +5,10 @@
 | 字段 | 内容 |
 |---|---|
 | 文档名称 | `SAP Nexus Agent 实施路线文档` |
-| 当前版本 | `v0.2.32` |
+| 当前版本 | `v0.2.33` |
 | 状态 | `Lifecycle Roadmap Active` |
 | 创建日期 | `2026-06-18` |
-| 最近更新 | `2026-07-24` |
+| 最近更新 | `2026-07-25` |
 | 维护目录 | `docs/wiki/` |
 | 文档定位 | SAP Nexus Agent 从 MVP 到量产交付的全生命周期实施路线 |
 | 关联技术架构 | `docs/wiki/sap-nexus-agent-technical-architecture.md` |
@@ -20,6 +20,7 @@
 
 | 版本 | 日期 | 变更摘要 | 决策状态 |
 |---|---|---|---|
+| `v0.2.33` | `2026-07-25` | 文档收敛：row 19 验收条件可判定化（多目标 utterance 必须 `ESCALATE_TO_PLANNER`，false `SELECT` 作为回归失败项）；新增 §18 Known Correctness Defects（D-1）、§19 Stage Gate 评测三件套（P0A/S2-A/S2-B/trusted-durable gate/S3，缺口显式标注）、§20 Open Questions 与已知技术债（S1 verify report 三项债 + Q-1 能力供给规模化） | 当前实施基线 |
 | `v0.2.32` | `2026-07-24` | 校准语义识别实施路线：明确当前 runtime 尚无完整五态 `MatchDecision` 与可靠多意图升级；将 row 19/S2 拆成 S2-A Semantic MatchDecision Hardening 和 S2-B Planner Dry-run，增加 `CapabilityCard` 安全投影、visibility pre-filter 与 matcher Eval 退出标准；row 12 继续只承担 Phase 3+ 规模化 retrieval / rerank | 当前实施基线 |
 | `v0.2.31` | `2026-07-24` | 基于 OpenHarness / DeerFlow 综合复盘重排近期门禁：同步 S1 已归档；新增 P0A source-of-truth / repository hygiene；将 trusted identity、durable Run/Approval、run ownership 和真实增量 SSE 定义为共享 S3、长审批、multi-worker/HA 或非 sandbox WRITE 前的 P0B 条件硬门禁；S3 增加确定性 OutputProjection、freshness 和 incomplete 语义，S2 仍为下一业务 change | 当前实施基线 |
 | `v0.2.30` | `2026-07-23` | 同步 DeerFlow 2.1.0 借鉴决策：S2 增加 progressive `CapabilityCard` discovery，S3 增加 PlanGraph-governed ready-node lifecycle；新增 durable agent runtime 与 governed user memory 触发式候选，不引入 DeerFlow 依赖且不改变当前 S2 优先级 | 当前实施基线 |
@@ -245,7 +246,7 @@ GoalSpec candidate
 | 17 | `sap-nexus-production-governance` | 待启动 | 量产治理、审计回放、监控、发布门禁 | 支持能力发布、eval 回归、trace 查询、故障诊断 |
 | 18 | `sap-nexus-semantic-planning-foundation` | S1 Implemented / Verified / Archived | Fact Type、Capability Relation、GoalSpec、PlanGraph、四源 Registry Snapshot、immutable graph 和 deterministic validator 契约已落地 | focused semantic `287 passed`；full evidence `550 passed, 1 skipped` + inventory `7/7` + seed `13/13` + PR `9/9`；归档 `openspec/changes/archive/2026-07-19-sap-nexus-semantic-planning-foundation/` |
 | 18A | `sap-nexus-source-of-truth-repository-hygiene` | P0A Immediate / Documentation In Progress | 收敛 Wiki、Runbook、README、OpenSpec 状态、仓库迁移路径和 runtime artifact 管理 | S1 状态与路径一致；README 不宣称未落地组件；旧 editable install 路径被修复；真实 runtime trace 不再 tracked；不改变 runtime 行为 |
-| 19 | `sap-nexus-planner-dry-run` | S2 Next Design / Dry-run Only | S2-A 先实现五态 `MatchDecision`、多意图/歧义检测、visibility pre-filter 和 matcher Eval；S2-B 再用 progressive `CapabilityCard` discovery 生成 GoalSpec/PlanDraft candidate，由 deterministic PlanCompiler 输出 dry-run | 多目标不得静默首命中；候选、决策理由、snapshot、节点、边、参数来源、缺口和治理均可审计；不得执行 Gateway 或 SAP；DeerFlow 只作机制参考 |
+| 19 | `sap-nexus-planner-dry-run` | S2 Next Design / Dry-run Only | S2-A 先实现五态 `MatchDecision`、多意图/歧义检测、visibility pre-filter 和 matcher Eval；S2-B 再用 progressive `CapabilityCard` discovery 生成 GoalSpec/PlanDraft candidate，由 deterministic PlanCompiler 输出 dry-run | 多目标 utterance（如「物料库存 + 采购订单供给概览」）必须输出 `ESCALATE_TO_PLANNER`，不得静默首命中单能力，`false SELECT` 作为回归失败项；候选、决策理由、Registry Snapshot、节点、边、参数来源、缺口和治理均可审计；不得执行 Gateway 或 SAP；DeerFlow 只作机制参考 |
 | 20 | `sap-nexus-read-composition-pilot` | S3 Planned after row 19 | 以“物料库存 + 采购订单供给概览”验证只读多能力 PlanGraph 执行，并加入 governed ready-node lifecycle | 两个 active Function 经 Gateway 独立校验/执行；并发只允许无依赖 `sideEffect=none` 节点；确定性 OutputProjection 输出带 freshness、completeness、limitations 和 lineage 的 MaterialSupplySnapshot；当前未实现 |
 | 21 | `sap-nexus-capability-composition-contract` | Dynamic Planner / Write Reserved | 保留通用动态组合、Composite Capability 和 Write composition 边界 | 关系本体、dry-run、read pilot 和规模/需求证据满足后另立 change |
 | 22 | `sap-nexus-trusted-durable-runtime-foundation` | P0B Conditional Gate；不阻塞本地 S2 | 建立 trusted principal / tenant / role / data scope、persistent thread/run、durable approval、ownership/lease、structured checkpoint reference、incremental SSE + reconnect 和幂等 continuation | 共享 S3、跨重启、长审批、multi-worker / HA 或非 sandbox WRITE 前必须完成；不包含 DeerFlow lead agent、自由 Tool execution 或预选数据库 |
@@ -1230,3 +1231,68 @@ Live blocker 已解除：SAP SICF 重新激活后，PO live smoke 已通过；PO
 - `sap-nexus-governed-user-memory-pilot`：Later / Triggered，不属于 S2/S3；Memory 不保存业务事实或执行权威。
 
 当前下一推荐：完成 P0A 文档与仓库卫生收敛后，启动 `sap-nexus-planner-dry-run`（row 19 / S2）：先完成 S2-A 五态 `MatchDecision`、多意图/歧义和 matcher Eval，再进入 S2-B `CapabilityCard` + deterministic PlanCompiler dry-run；两个 milestone 均不执行 Gateway 或 SAP。S1 已归档到 `openspec/changes/archive/2026-07-19-sap-nexus-semantic-planning-foundation/`。
+
+---
+
+## 18. Known Correctness Defects
+
+本节记录当前 runtime 已知、未修复的正确性缺陷，区别于 §4 Roadmap row 的功能排期。缺陷在对应收敛里程碑验证通过前不得被描述为已解决；架构侧定义见 `docs/wiki/sap-nexus-agent-technical-architecture.md` §18。
+
+### D-1：多目标 utterance 静默降级为首命中单能力
+
+- **现象**：rule parser 按固定顺序返回首个命中意图；包含多个业务目标（如“物料库存 + 采购订单供给概览”）的请求被静默降级为首个命中的单能力（如仅库存）。
+- **影响**：返回结果在业务上不完整但无任何告警，系统丢弃了一半意图却返回看似正确的答案，污染用户信任。
+- **当前缓解**：无。
+- **收敛归属**：S2-A 五态 `MatchDecision`（row 19）；多意图/歧义检测必须将并列多能力目标导向 `ESCALATE_TO_PLANNER`（record + explain），`false SELECT` 作为回归失败项。详见 `docs/runbooks/08-capability-matching-contract.md`。
+
+---
+
+## 19. Stage Gate 评测三件套
+
+每个 Stage Gate 固定使用「SLI / 指标 + 典型 bad case + 回归集来源」三件套。三件套不全的阶段显式标注「评测缺口」，不以模糊措辞掩盖。SLI 定义不随实现改动漂移，具体阈值按阶段配置。
+
+### P0A：source-of-truth / repository hygiene
+
+- **SLI / 指标**：评测缺口--P0A 是文档/仓库卫生 change，不产生 runtime 行为，不适用 SLI/eval 回归。Gate 以 `openspec validate --all --strict`、文档校验和 `git diff --name-only` 仅含 `docs/` 为准。
+- **典型 bad case**：评测缺口--无 runtime bad case；以"README 宣称未落地组件""tracked runtime trace""Wiki/runbook 状态与归档不一致""旧 editable install 路径未修复"等文档漂移作为人工 review 项。
+- **回归集来源**：评测缺口--无 eval case；以文档校验脚本与人工 diff review 代替。
+
+### S2-A：Semantic MatchDecision Hardening
+
+- **SLI / 指标**：`multiIntentDetectionRate`（多目标请求进入 `ESCALATE_TO_PLANNER` 而非首命中单能力）、`ambiguityCalibration`、`visibilityLeakageRate`（目标 `0`）、`unsafeExecutionBlockRate`、false `SELECT` rate（目标 `0`）。
+- **典型 bad case**：多目标 utterance 静默首命中单能力（false `SELECT`）；不可见 capability 在 visibility filter 前进入模型候选（visibility leakage）；prompt injection 诱导生成 `rfcName` / URL / SQL 或越权选择（prompt injection）；相似候选无法安全区分却直接 `SELECT`。
+- **回归集来源**：matching-specific Eval cases（`docs/runbooks/08-capability-matching-contract.md` §6）；false `SELECT` 作为回归失败项；bad case 素材见 `docs/wiki/sap-nexus-agent-openharness-semantic-orchestration.md` §9。
+
+### S2-B：Planner Dry-run
+
+- **SLI / 指标**：`goalInterpretationAccuracy`、`planGroundingRate`（节点/边全部来自发布 Registry / relation graph，目标 `100%`）、`planValidityRate`、`capabilityGapAccuracy`。
+- **典型 bad case**：`PlanDraft` 引用不存在 capability；PlanGraph 循环依赖；上游 Fact 类型不满足下游输入；`READ_ONLY` 计划包含 Action；Registry Snapshot 在 dry-run 与 execute 间变化。
+- **回归集来源**：dry-run bad cases（`docs/wiki/sap-nexus-agent-openharness-semantic-orchestration.md` §9 最小 bad case）；caller-authored PlanGraph validation fixtures（S1 已有双 READ 节点 fixtures 扩展）。S2-B 不执行 Gateway / SAP，回归集为 dry-run validation 层。
+
+### Trusted / Durable Runtime Gate（P0B）
+
+- **SLI / 指标**：评测缺口（部分）--候选指标含 durable Run/Approval 一致性、run ownership/lease 冲突率、checkpoint replay 一致性、event cursor 断线续传完整性；具体阈值待 `sap-nexus-trusted-durable-runtime-foundation` 独立 change 设计。
+- **典型 bad case**：跨重启后 pending approval / run 丢失或被错误主体恢复；并发 run 共享 checkpoint / approval context；context compaction 改变 `PlanGraph` / `ApprovalRecord` / `EvidenceState`；断线重连后事件丢失或乱序。
+- **回归集来源**：评测缺口--尚无 dedicated 回归集；需在 `sap-nexus-trusted-durable-runtime-foundation` 独立 change 中建立 durable state contract 测试与 eval。
+
+### S3：Read-only Composition Pilot
+
+- **SLI / 指标**：`factLineageCompleteness`（每个组合结论可追溯到节点与原始证据，目标 `100%`）、`unsafePlanBlockRate`（目标 `100%`）、`writeApprovalBypassRate`（目标 `0`）、partial-failure `incomplete` 标注率；`replanRecoveryRate` 在 S3 后评估。
+- **典型 bad case**：一个 Read 节点失败但 Narrator 试图输出完整供给结论（`incomplete` 未标注）；两个有依赖或副作用的节点被并行执行；`OutputProjection` 把部分事实叙述为完整 `MaterialSupplySnapshot`；跨节点时间口径不一致却假定同一业务时点。
+- **回归集来源**：组合 release-gate fixtures（S1 双 READ 节点 PlanGraph fixtures 扩展）；`docs/wiki/sap-nexus-agent-openharness-semantic-orchestration.md` §9 组合 bad cases；需在 `sap-nexus-read-composition-pilot` 独立 change 中补 `OutputProjection` / lineage eval。
+
+---
+
+## 20. Open Questions 与已知技术债
+
+本节登记跨阶段技术债与未决项，不在本轮 doc-only 收敛中给方案。技术债标注证据出处与处理时机；Open Question 标注触发条件。
+
+### 已知技术债（来源：S1 verify report）
+
+- **T-1 上游 jsonschema 英文诊断未规范化**：S1 契约校验透传上游 `jsonschema` 英文诊断，未规范化为项目自有的确定性消息。处理时机：S2 扩大报告使用面前。证据：`docs/superpowers/reports/2026-07-19-sap-nexus-semantic-planning-foundation-verify.md`。
+- **T-2 非法 UTF-8 源未封装为 `SourceLoadError`**：非法 UTF-8 源解码异常未封装为 `SourceLoadError`；当前路径仍会在发布 graph / snapshot 前 fail closed。处理时机：S2/S3 hardening 前。证据：同上。
+- **T-3 S3 只读执行前需补组合矩阵测试**：S3 只读执行前需补 3+ binding/field 及混合 dependency/precondition matrices；现有 S1 逻辑不依赖固定基数，未发现生产缺陷。处理时机：S3 只读执行前。证据：同上。
+
+### Open Questions
+
+- **Q-1 能力供给规模化**：当前每个新 capability 的建模边际成本高（registry entry + schema + eval + runbook + 可能的 binding），需在 S2/S3 期间并行设计模板化 / 半自动生成路径，否则 S3 组合价值缺少足够能力对来兑现。触发条件：S2-B 候选发现设计时评估"新增能力建模成本"是否成为 S3 pilot 场景扩展的瓶颈。本轮不给方案，登记为 Open Question。

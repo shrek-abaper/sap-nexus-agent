@@ -5,10 +5,11 @@
 | Field | Value |
 |---|---|
 | Runbook | `10-capability-composition-contract` |
-| Version | `v0.3.4` |
+| Version | `v0.3.5` |
 | Status | `S1 Archived; S2-A Next; Runtime Reserved` |
 | Created | `2026-07-14` |
-| Updated | `2026-07-24` |
+| Updated | `2026-07-25` |
+| Last Change | Received the Current/S2-A/S2-B/S3 capability evolution matrix moved from architecture §4.3 (now §3 "Current vs Target Capability Evolution"); architecture retains only the MVP contract definition and fail-closed boundaries |
 | Workstream | Archived S1 semantic planning foundation, S2-A semantic decision hardening, S2-B dry-run, S3 execution gated |
 | Related Change | `sap-nexus-semantic-planning-foundation` (archived `2026-07-19`); `sap-nexus-planner-dry-run` (next business design) |
 | Current Phase | P0A documentation/repository hygiene then S2-A MatchDecision hardening and S2-B dry-run; current runtime remains single-capability |
@@ -71,6 +72,21 @@ Verified S1 baseline:
 ---
 
 ## 3. Staged Scope
+
+### Current vs Target Capability Evolution
+
+> Moved from `docs/wiki/sap-nexus-agent-technical-architecture.md` §4.3. Architecture retains only the MVP contract definition and fail-closed boundaries; this matrix is the single home for current-vs-target status across capability dimensions.
+
+当前状态必须与目标契约分开描述：现有 runtime 的 `IntentParseResult -> SelectionResult -> CallPlan` 已支持三个 active capability 的单能力规则/LLM 闭集选择、缺参澄清和技术覆盖拒绝，但 `SelectionResult` 还不是完整五态 `MatchDecision`，规则 parser 也会按固定顺序返回第一个命中意图。因此当前不能声称多能力请求已经可靠地产生 `ESCALATE_TO_PLANNER`；这是 S2-A 的显式交付，而不是 Phase 3+ 规模化检索能力。
+
+| 能力 | Current | S2-A MatchDecision Hardening | S2-B Planner Dry-run | S3 Read Pilot |
+|---|---|---|---|---|
+| 单能力规则 / LLM 闭集选择 | 已实现 | 保留并纳入统一决策 | 作为候选入口 | 作为原子节点入口 |
+| 五态 `MatchDecision` runtime | 未完整实现 | 实现并记录候选、理由、snapshot 和 trace | 作为 Planner 入口 | 作为执行前决策证据 |
+| 多意图 / 歧义检测 | 未实现；存在首命中降级风险 | 实现 `SHOW_OPTIONS` / `ESCALATE_TO_PLANNER` | 转换为 GoalSpec / PlanDraft candidate | 只执行已编译 PlanGraph |
+| Progressive `CapabilityCard` discovery | 未实现 | 固化安全投影与 visibility contract | 实现有界候选发现 | 消费已选 capability |
+| deterministic `PlanCompiler` | 未实现 | 固化输入边界 | 只产 dry-run PlanGraph | 执行前重新校验 |
+| PlanGraph execution | 未实现 | 不执行 | 不执行 | 仅只读 pilot |
 
 ### S1: `sap-nexus-semantic-planning-foundation` (implemented / verified / archived)
 
