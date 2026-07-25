@@ -1,4 +1,7 @@
+import json
 from pathlib import Path
+
+import pytest
 
 from sap_nexus_agent.eval import FakeGatewayClient, run_eval_file
 
@@ -98,3 +101,200 @@ def test_fake_gateway_execute_signature_matches_gateway_client_protocol():
     # approval_id must default to None for read-path backward compatibility
     fake_approval = fake_params[-1][1]
     assert fake_approval.default is None
+
+
+# --- S2-A matcher Eval (Task 5) ---
+#
+# Design Doc §"测试策略" -> "S2-A matcher Eval": five MatchDecision classes
+# (SELECT / CLARIFY / REJECT / SHOW_OPTIONS / ESCALATE_TO_PLANNER) plus a
+# false-SELECT regression guard (D-1 fix: multi-goal utterance must NOT be
+# silently reduced to SELECT).
+
+
+def test_matcher_eval_file_passes():
+    """matcher_cases.yaml runs end-to-end through run_query + select_capability
+    and asserts the five-state MatchDecision per case."""
+    summary = run_eval_file(REPO_ROOT / "evals" / "matcher_cases.yaml")
+
+    # Five decision classes + false-SELECT regression; SHOW_OPTIONS is pending
+    # (is_ambiguous not yet implemented in intent.py) so active count excludes it.
+    assert summary.total >= 5
+    assert summary.failed == 0
+    assert summary.passed == summary.total
+
+
+def test_matcher_eval_file_covers_five_decision_classes():
+    """matcher_cases.yaml must include at least one case per decision class."""
+    payload = json.loads(
+        (REPO_ROOT / "evals" / "matcher_cases.yaml").read_text(encoding="utf-8")
+    )
+    decision_types = {
+        case["expected"]["decisionType"] for case in payload["cases"]
+    }
+    assert decision_types >= {
+        "SELECT",
+        "CLARIFY",
+        "REJECT",
+        "SHOW_OPTIONS",
+        "ESCALATE_TO_PLANNER",
+    }
+
+
+def test_matcher_eval_file_has_false_select_regression_case():
+    """A dedicated case must assert multi-goal utterance -> ESCALATE_TO_PLANNER
+    (not SELECT). This is the D-1 regression guard."""
+    payload = json.loads(
+        (REPO_ROOT / "evals" / "matcher_cases.yaml").read_text(encoding="utf-8")
+    )
+    regression_cases = [
+        case
+        for case in payload["cases"]
+        if case.get("id") == "false-select-regression"
+    ]
+    assert len(regression_cases) == 1
+    case = regression_cases[0]
+    assert case["expected"]["decisionType"] == "ESCALATE_TO_PLANNER"
+
+
+def test_matcher_eval_catches_false_select_regression():
+    """If a multi-goal utterance is silently reduced to SELECT, the matcher eval
+    must report it as a 'false SELECT' regression failure.
+
+    Constructs a synthetic case: a single-intent utterance (which the parser
+    routes to SELECT) with an ESCALATE_TO_PLANNER expectation. The eval must
+    raise AssertionError with the 'false SELECT' marker so a future regression
+    is unmissable in CI output.
+    """
+    from sap_nexus_agent.eval import run_matcher_cases
+
+    cases = [
+        {
+            "id": "false-select-probe",
+            # Single-intent utterance -> real decision is SELECT.
+            "userQuery": "DEMOA2 在 5100 还有多少可用库存",
+            "expected": {
+                "decisionType": "ESCALATE_TO_PLANNER",
+                "validateCalls": 0,
+                "executeCalls": 0,
+            },
+        }
+    ]
+    with pytest.raises(AssertionError) as exc_info:
+        run_matcher_cases(cases)
+    assert "false SELECT" in str(exc_info.value)
+
+
+def test_matcher_eval_skips_pending_cases():
+    """Cases marked pending=true are skipped (not failed), so SHOW_OPTIONS can
+    stay documented in the eval file while is_ambiguous is unimplemented."""
+    from sap_nexus_agent.eval import run_matcher_cases
+
+    cases = [
+        {
+            "id": "pending-probe",
+            "userQuery": "采购",
+            "pending": True,
+            "todo": "is_ambiguous not yet implemented",
+            "expected": {
+                "decisionType": "SHOW_OPTIONS",
+                "validateCalls": 0,
+                "executeCalls": 0,
+            },
+        }
+    ]
+    summary = run_matcher_cases(cases)
+    assert summary.total == 0  # pending cases excluded from active total
+    assert summary.failed == 0
+    assert summary.passed == 0
+
+
+def test_matcher_eval_routes_existing_files_through_legacy_path():
+    """Auto-dispatch must not break existing eval files: inventory/PO/PR cases
+    (which use expected.status, not expected.decisionType) still route through
+    the legacy assertion path, not the matcher path."""
+    # Existing files have no expected.decisionType; they must continue to pass.
+    for filename in (
+        "inventory_availability_cases.yaml",
+        "eval_harness_seed_cases.json",
+        "pr_create_cases.json",
+        "purchase_order_cases.json",
+    ):
+        summary = run_eval_file(REPO_ROOT / "evals" / filename)
+        assert summary.failed == 0
+        assert summary.passed == summary.total
+
+
+# --- S2-B dry-run Eval (Task 9) ---
+
+
+def test_dry_run_eval_file_passes():
+    """dry_run_cases.yaml runs end-to-end through run_query + PlanCompiler
+    and asserts the DryRunResult fields per case."""
+    summary = run_eval_file(REPO_ROOT / "evals" / "dry_run_cases.yaml")
+
+    # 3 active cases + 1 pending (missing-producer scenario cannot be
+    # constructed with the real registry - all active capabilities have
+    # produces_fact_types; covered by test_planner_plan_compiler unit tests).
+    assert summary.total >= 3
+    assert summary.failed == 0
+    assert summary.passed == summary.total
+
+
+def test_dry_run_eval_file_includes_multi_goal_case():
+    """dry_run_cases.yaml must include the multi-goal case asserting
+    nodeCount=2 (inventory + purchase_order) for an ESCALATE utterance."""
+    payload = json.loads(
+        (REPO_ROOT / "evals" / "dry_run_cases.yaml").read_text(encoding="utf-8")
+    )
+    multi_goal = [
+        case for case in payload["cases"] if case.get("id") == "multi-goal-dry-run"
+    ]
+    assert len(multi_goal) == 1
+    case = multi_goal[0]
+    assert case["expected"]["decisionType"] == "ESCALATE_TO_PLANNER"
+    assert case["expected"]["dryRun"]["nodeCount"] == 2
+
+
+def test_dry_run_eval_catches_missing_dry_run_when_expected_present():
+    """If expected.dryRun.present=True but outcome.dry_run is None, the eval
+    must raise AssertionError. Constructs a synthetic case: a SELECT utterance
+    (which produces no dry-run) with present=True."""
+    from sap_nexus_agent.eval import run_matcher_cases
+
+    cases = [
+        {
+            "id": "missing-dry-run-probe",
+            "userQuery": "DEMOA2 在 5100 还有多少可用库存",  # -> SELECT
+            "expected": {
+                "decisionType": "SELECT",
+                "validateCalls": 1,
+                "executeCalls": 1,
+                "dryRun": {"present": True},
+            },
+        }
+    ]
+    with pytest.raises(AssertionError) as exc_info:
+        run_matcher_cases(cases)
+    assert "dryRun.present=True but outcome.dry_run is None" in str(exc_info.value)
+
+
+def test_dry_run_eval_catches_node_count_mismatch():
+    """If expected.dryRun.nodeCount does not match the actual node count, the
+    eval must raise AssertionError."""
+    from sap_nexus_agent.eval import run_matcher_cases
+
+    cases = [
+        {
+            "id": "node-count-mismatch-probe",
+            "userQuery": "DEMOA2 在 5100 的库存，再列出近 30 天未清采购订单",
+            "expected": {
+                "decisionType": "ESCALATE_TO_PLANNER",
+                "validateCalls": 0,
+                "executeCalls": 0,
+                "dryRun": {"nodeCount": 99},
+            },
+        }
+    ]
+    with pytest.raises(AssertionError) as exc_info:
+        run_matcher_cases(cases)
+    assert "dryRun.nodeCount mismatch" in str(exc_info.value)

@@ -14,7 +14,8 @@ export type AgentRunEventType =
   | "narrative_created"
   | "trace_linked"
   | "run_completed"
-  | "run_failed";
+  | "run_failed"
+  | "match_decision_created";
 
 export type AgentRunState =
   | "idle"
@@ -32,7 +33,8 @@ export type AgentRunState =
   | "narrated"
   | "trace_linked"
   | "completed"
-  | "failed";
+  | "failed"
+  | "match_decided";
 
 export type HumanInTheLoopState =
   | "approval_not_required"

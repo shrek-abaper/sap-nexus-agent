@@ -1,7 +1,7 @@
 from sap_nexus_agent.execution_result import ExecutionResult, ValidationResult
 from sap_nexus_agent.intent import IntentParseResult
 from sap_nexus_agent.llm_intent import parse_with_hybrid
-from sap_nexus_agent.orchestrator import run_inventory_query, run_query
+from sap_nexus_agent.orchestrator import AgentOutcome, run_inventory_query, run_query
 from sap_nexus_agent.registry_loader import load_intent_catalog
 
 
@@ -423,3 +423,433 @@ def test_run_query_inventory_llm_unavailable_falls_back_to_template():
 
     assert outcome.status == "success"
     assert outcome.response_text == "物料 DEMOA1 在工厂 1000 的可用库存为 12 EA。"
+
+
+# ---------------------------------------------------------------------------
+# run_query five-state MatchDecision routing (Plan Task 3)
+#
+# SELECT -> CallPlan + Gateway validate/execute (regression covered above).
+# CLARIFY / REJECT / SHOW_OPTIONS / ESCALATE_TO_PLANNER must return without
+# touching the Gateway. SHOW_OPTIONS/ESCALATE surface as status="match_decision"
+# carrying the MatchDecision for the frontend (SSE event is a later task).
+# ---------------------------------------------------------------------------
+
+import types
+
+from sap_nexus_agent.match_decision import MatchDecision, MatchedIntent
+from sap_nexus_agent.workbench_output import outcome_to_workbench_dict
+
+
+def _inventory_matched(material="DEMOA1", plant="1000", missing=None):
+    return MatchedIntent(
+        capability_id="MM.Inventory.GetAvailability",
+        parameters={"material": material, "plant": plant},
+        missing=missing or [],
+    )
+
+
+def test_run_query_escalate_does_not_call_gateway():
+    """Multi-intent -> ESCALATE_TO_PLANNER: no Gateway validate/execute."""
+    gateway = FakeGatewayClient()
+
+    def adapter(_text):
+        return IntentParseResult(
+            intent=None,
+            parameters={},
+            missing_parameters=[],
+            matched_intents=[
+                _inventory_matched(),
+                MatchedIntent(
+                    capability_id="MM.PurchaseOrder.GetList",
+                    parameters={"vendor": "DEMOV1"},
+                    missing=[],
+                ),
+            ],
+        )
+
+    outcome = run_query("查库存和采购订单", gateway, intent_adapter=adapter)
+
+    assert outcome.status == "match_decision"
+    assert outcome.match_decision is not None
+    assert outcome.match_decision.decision_type == "ESCALATE_TO_PLANNER"
+    assert outcome.match_decision.handoff is not None
+    assert len(outcome.match_decision.handoff.matched_intents) == 2
+    assert gateway.validate_calls == []
+    assert gateway.execute_calls == []
+
+
+def test_run_query_show_options_does_not_call_gateway():
+    """Keyword ambiguity -> SHOW_OPTIONS: no Gateway validate/execute.
+
+    Uses a SimpleNamespace adapter because Task 2 did not add ``is_ambiguous``
+    to IntentParseResult; the selector reads it defensively. A future intent.py
+    enhancement will populate the flag from the keyword-ambiguity threshold.
+    """
+    gateway = FakeGatewayClient()
+
+    def adapter(_text):
+        return types.SimpleNamespace(
+            intent="inventory_availability",
+            parameters={"material": "DEMOA1"},
+            missing_parameters=["plant"],
+            contains_rfc_name=False,
+            contains_odata_override=False,
+            capability_id="MM.Inventory.GetAvailability",
+            clarification="请提供工厂。",
+            matched_intents=[_inventory_matched(missing=["plant"])],
+            is_ambiguous=True,
+        )
+
+    outcome = run_query("查一下采购的库存", gateway, intent_adapter=adapter)
+
+    assert outcome.status == "match_decision"
+    assert outcome.match_decision is not None
+    assert outcome.match_decision.decision_type == "SHOW_OPTIONS"
+    assert outcome.match_decision.candidates is not None
+    assert gateway.validate_calls == []
+    assert gateway.execute_calls == []
+
+
+def test_run_query_unsupported_intent_returns_failure_without_gateway():
+    """No match -> REJECT(UNSUPPORTED_INTENT): failure, no Gateway."""
+    gateway = FakeGatewayClient()
+
+    def adapter(_text):
+        return IntentParseResult(
+            intent=None,
+            parameters={},
+            missing_parameters=[],
+            matched_intents=[],
+        )
+
+    outcome = run_query("今天天气不错", gateway, intent_adapter=adapter)
+
+    assert outcome.status == "failure"
+    assert outcome.error_type == "UNSUPPORTED_INTENT"
+    assert outcome.match_decision is not None
+    assert outcome.match_decision.decision_type == "REJECT"
+    assert gateway.validate_calls == []
+    assert gateway.execute_calls == []
+
+
+def test_run_query_clarify_carries_match_decision():
+    """CLARIFY path surfaces the MatchDecision alongside missing_parameters."""
+    gateway = FakeGatewayClient()
+
+    def adapter(_text):
+        return IntentParseResult(
+            intent="inventory_availability",
+            parameters={"material": "DEMOA1"},
+            missing_parameters=["plant"],
+            clarification="请提供要查询的工厂。",
+            capability_id="MM.Inventory.GetAvailability",
+            matched_intents=[
+                MatchedIntent(
+                    capability_id="MM.Inventory.GetAvailability",
+                    parameters={"material": "DEMOA1"},
+                    missing=["plant"],
+                )
+            ],
+        )
+
+    outcome = run_query("查 DEMOA1 的库存", gateway, intent_adapter=adapter)
+
+    assert outcome.status == "clarification"
+    assert outcome.missing_parameters == ["plant"]
+    assert outcome.match_decision is not None
+    assert outcome.match_decision.decision_type == "CLARIFY"
+    assert gateway.validate_calls == []
+    assert gateway.execute_calls == []
+
+
+def test_run_query_reject_rfc_name_carries_match_decision():
+    """REJECT(UNSUPPORTED_RFC_NAME) path surfaces the MatchDecision."""
+    gateway = FakeGatewayClient()
+
+    def adapter(_text):
+        return IntentParseResult(
+            intent="inventory_availability",
+            parameters={"material": "DEMOA1", "plant": "1000"},
+            missing_parameters=[],
+            contains_rfc_name=True,
+        )
+
+    outcome = run_query("用 rfcName=BAPI_X 查库存", gateway, intent_adapter=adapter)
+
+    assert outcome.status == "failure"
+    assert outcome.error_type == "UNSUPPORTED_RFC_NAME"
+    assert outcome.match_decision is not None
+    assert outcome.match_decision.decision_type == "REJECT"
+    assert gateway.validate_calls == []
+    assert gateway.execute_calls == []
+
+
+def test_workbench_dict_serializes_match_decision_for_escalate():
+    """outcome_to_workbench_dict emits a matchDecision field for ESCALATE."""
+    gateway = FakeGatewayClient()
+
+    def adapter(_text):
+        return IntentParseResult(
+            intent=None,
+            parameters={},
+            missing_parameters=[],
+            matched_intents=[
+                _inventory_matched(),
+                MatchedIntent(
+                    capability_id="MM.PurchaseOrder.GetList",
+                    parameters={"vendor": "DEMOV1"},
+                    missing=[],
+                ),
+            ],
+        )
+
+    outcome = run_query("查库存和采购订单", gateway, intent_adapter=adapter)
+    payload = outcome_to_workbench_dict(outcome)
+
+    assert payload["status"] == "match_decision"
+    assert payload["matchDecision"] is not None
+    assert payload["matchDecision"]["decisionType"] == "ESCALATE_TO_PLANNER"
+    assert payload["matchDecision"]["handoff"] is not None
+    assert len(payload["matchDecision"]["handoff"]["matchedIntents"]) == 2
+    assert gateway.validate_calls == []
+    assert gateway.execute_calls == []
+
+
+def test_workbench_dict_match_decision_none_when_absent():
+    """matchDecision is None for outcomes that bypass the selector (continue_action)."""
+    # An AgentOutcome constructed without match_decision (e.g. approval continue
+    # path) serializes matchDecision as None. SELECT/CLARIFY/REJECT/SHOW_OPTIONS
+    # /ESCALATE outcomes all carry a MatchDecision via run_query.
+    outcome = AgentOutcome(status="rejected", response_text="已拒绝")
+
+    payload = outcome_to_workbench_dict(outcome)
+
+    assert payload["status"] == "rejected"
+    assert payload["matchDecision"] is None
+
+
+def test_workbench_dict_select_path_carries_match_decision():
+    """SELECT outcomes carry a SELECT MatchDecision for uniform rendering."""
+    gateway = FakeGatewayClient()
+
+    def adapter(_text):
+        return IntentParseResult(
+            intent="inventory_availability",
+            parameters={"material": "MAT-9000", "plant": "1000"},
+            missing_parameters=[],
+        )
+
+    outcome = run_inventory_query("查库存", gateway, intent_adapter=adapter)
+    payload = outcome_to_workbench_dict(outcome)
+
+    assert payload["status"] == "success"
+    assert payload["matchDecision"] is not None
+    assert payload["matchDecision"]["decisionType"] == "SELECT"
+    assert payload["matchDecision"]["capabilityId"] == "MM.Inventory.GetAvailability"
+
+
+# ---------------------------------------------------------------------------
+# S2-B handoff wiring (Plan Task 9)
+#
+# Design Doc §"总体数据流": ESCALATE_TO_PLANNER handoff -> planner
+# (CapabilityCard discovery + GoalSpec + PlanCompiler.compile_dry_run) ->
+# DryRunResult attached to AgentOutcome. No Gateway/SAP execution.
+# ---------------------------------------------------------------------------
+
+from pathlib import Path
+
+from sap_nexus_agent.match_decision import EscalationHandoff
+from sap_nexus_agent.planner.plan_compiler import DryRunResult
+from sap_nexus_agent.semantic_planning import (
+    build_registry_snapshot,
+    load_semantic_sources,
+)
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
+def _real_planner_sources():
+    """Load real registry sources + snapshot for dry-run tests."""
+    sources = load_semantic_sources(REPO_ROOT)
+    snapshot = build_registry_snapshot(sources)
+    return snapshot, sources
+
+
+def _multi_intent_parse_result():
+    """Parse result that triggers ESCALATE_TO_PLANNER (inventory + PO)."""
+    return IntentParseResult(
+        intent=None,
+        parameters={},
+        missing_parameters=[],
+        matched_intents=[
+            _inventory_matched(),
+            MatchedIntent(
+                capability_id="MM.PurchaseOrder.GetList",
+                parameters={},
+                missing=[],
+            ),
+        ],
+    )
+
+
+def test_run_query_escalate_compiles_dry_run_from_handoff():
+    """ESCALATE_TO_PLANNER -> orchestrator calls PlanCompiler.compile_dry_run;
+    AgentOutcome carries a DryRunResult with a 2-node PlanGraph (inventory +
+    purchase_order). No Gateway validate/execute."""
+    gateway = FakeGatewayClient()
+    snapshot, sources = _real_planner_sources()
+
+    outcome = run_query(
+        "查库存和采购订单",
+        gateway,
+        intent_adapter=lambda _text: _multi_intent_parse_result(),
+        snapshot=snapshot,
+        sources=sources,
+    )
+
+    assert outcome.status == "match_decision"
+    assert outcome.match_decision is not None
+    assert outcome.match_decision.decision_type == "ESCALATE_TO_PLANNER"
+    assert outcome.dry_run is not None
+    assert isinstance(outcome.dry_run, DryRunResult)
+    nodes = outcome.dry_run.plan_graph["nodes"]
+    assert len(nodes) == 2
+    capability_ids = {n["capabilityId"] for n in nodes}
+    assert capability_ids == {
+        "MM.Inventory.GetAvailability",
+        "MM.PurchaseOrder.GetList",
+    }
+    assert gateway.validate_calls == []
+    assert gateway.execute_calls == []
+
+
+def test_run_query_escalate_dry_run_binds_goal_constraints_from_matched_intents():
+    """Dry-run plan_graph binds identifier inputs via goalConstraint sources
+    derived from handoff.matched_intents parameters (material + plant)."""
+    gateway = FakeGatewayClient()
+    snapshot, sources = _real_planner_sources()
+
+    def adapter(_text):
+        return IntentParseResult(
+            intent=None,
+            parameters={},
+            missing_parameters=[],
+            matched_intents=[
+                MatchedIntent(
+                    capability_id="MM.Inventory.GetAvailability",
+                    parameters={"material": "DEMOA2", "plant": "5100"},
+                    missing=[],
+                ),
+                MatchedIntent(
+                    capability_id="MM.PurchaseOrder.GetList",
+                    parameters={},
+                    missing=[],
+                ),
+            ],
+        )
+
+    outcome = run_query(
+        "DEMOA2 在 5100 的库存，再列出近 30 天未清采购订单",
+        gateway,
+        intent_adapter=adapter,
+        snapshot=snapshot,
+        sources=sources,
+    )
+
+    assert outcome.dry_run is not None
+    inv_nodes = [
+        n
+        for n in outcome.dry_run.plan_graph["nodes"]
+        if n["capabilityId"] == "MM.Inventory.GetAvailability"
+    ]
+    assert inv_nodes, "expected an inventory producer node"
+    bindings = inv_nodes[0]["parameterBindings"]
+    bound_names = {b["parameterName"] for b in bindings}
+    assert {"material", "plant"}.issubset(bound_names)
+    source_kinds = {b["source"]["kind"] for b in bindings}
+    assert source_kinds == {"goalConstraint"}
+
+
+def test_run_query_escalate_dry_run_does_not_call_gateway():
+    """Dry-run path must not call Gateway validate or execute (Design Doc §dry-run 输出)."""
+    gateway = FakeGatewayClient()
+    snapshot, sources = _real_planner_sources()
+
+    outcome = run_query(
+        "查库存和采购订单",
+        gateway,
+        intent_adapter=lambda _text: _multi_intent_parse_result(),
+        snapshot=snapshot,
+        sources=sources,
+    )
+
+    assert outcome.dry_run is not None
+    assert gateway.validate_calls == []
+    assert gateway.execute_calls == []
+
+
+def test_run_query_escalate_dry_run_absent_when_decision_not_escalate():
+    """dry_run is None for non-ESCALATE outcomes (SELECT/CLARIFY/REJECT/SHOW_OPTIONS)."""
+    gateway = FakeGatewayClient()
+
+    def adapter(_text):
+        return IntentParseResult(
+            intent="inventory_availability",
+            parameters={"material": "MAT-9000", "plant": "1000"},
+            missing_parameters=[],
+        )
+
+    outcome = run_query("查库存", gateway, intent_adapter=adapter)
+
+    assert outcome.dry_run is None
+
+
+def test_run_query_escalate_dry_run_loads_default_sources_when_not_injected():
+    """When snapshot/sources are not injected, the orchestrator loads them
+    from the registry (path discovery) so the dry-run still runs."""
+    gateway = FakeGatewayClient()
+
+    outcome = run_query(
+        "查库存和采购订单",
+        gateway,
+        intent_adapter=lambda _text: _multi_intent_parse_result(),
+    )
+
+    assert outcome.status == "match_decision"
+    assert outcome.dry_run is not None
+    assert len(outcome.dry_run.plan_graph["nodes"]) == 2
+
+
+def test_workbench_dict_serializes_dry_run_for_escalate():
+    """outcome_to_workbench_dict emits a dryRun field (camelCase) for ESCALATE
+    outcomes with planGraph / gaps / governanceFlags / rationale."""
+    gateway = FakeGatewayClient()
+    snapshot, sources = _real_planner_sources()
+
+    outcome = run_query(
+        "查库存和采购订单",
+        gateway,
+        intent_adapter=lambda _text: _multi_intent_parse_result(),
+        snapshot=snapshot,
+        sources=sources,
+    )
+    payload = outcome_to_workbench_dict(outcome)
+
+    assert payload["status"] == "match_decision"
+    assert payload["dryRun"] is not None
+    dry_run = payload["dryRun"]
+    assert isinstance(dry_run["planGraph"], dict)
+    assert isinstance(dry_run["gaps"], list)
+    assert isinstance(dry_run["governanceFlags"], list)
+    assert isinstance(dry_run["rationale"], str) and dry_run["rationale"]
+    nodes = dry_run["planGraph"]["nodes"]
+    assert len(nodes) == 2
+
+
+def test_workbench_dict_dry_run_none_when_absent():
+    """dryRun is None for outcomes that do not carry a dry-run (SELECT path)."""
+    outcome = AgentOutcome(status="rejected", response_text="已拒绝")
+
+    payload = outcome_to_workbench_dict(outcome)
+
+    assert payload["dryRun"] is None

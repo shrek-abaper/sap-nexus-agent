@@ -5,14 +5,14 @@
 | Field | Value |
 |---|---|
 | Runbook | `10-capability-composition-contract` |
-| Version | `v0.3.6` |
-| Status | `S1 Archived; S2-A Next; Runtime Reserved` |
+| Version | `v0.3.7` |
+| Status | `S2-A Done; S2-B Dry-Run Done; S3 Gate Next` |
 | Created | `2026-07-14` |
 | Updated | `2026-07-25` |
-| Last Change | P0A source-of-truth/repository hygiene closed (2026-07-25): editable-install finder + .venv shebangs repointed to GitHub_Projects; runtime traces confirmed gitignored; runbook index synced. Next is S2-A `sap-nexus-planner-dry-run` |
-| Workstream | Archived S1 semantic planning foundation, S2-A semantic decision hardening, S2-B dry-run, S3 execution gated |
-| Related Change | `sap-nexus-semantic-planning-foundation` (archived `2026-07-19`); `sap-nexus-planner-dry-run` (next business design) |
-| Current Phase | P0A hygiene closed (2026-07-25); next is S2-A MatchDecision hardening and S2-B dry-run; current runtime remains single-capability |
+| Last Change | S2-A MatchDecision five-state + S2-B PlanCompiler dry-run complete (2026-07-25): matcher Eval 6/6, dry-run eval 3/3 + 1 pending (covered by unit test), frontend verify 58/58, openspec strict 9/9; P0A hygiene closed; next is S3 read-only composition pilot gated by trusted/durable runtime and deterministic OutputProjection |
+| Workstream | Archived S1 semantic planning foundation, S2-A semantic decision hardening (done), S2-B dry-run (done), S3 execution gated |
+| Related Change | `sap-nexus-semantic-planning-foundation` (archived `2026-07-19`); `sap-nexus-planner-dry-run` (S2-A + S2-B implemented; pending verify/archive) |
+| Current Phase | S2-A MatchDecision hardening and S2-B dry-run complete (2026-07-25); next is S3 read-only composition pilot gated by trusted/durable runtime and deterministic OutputProjection; current runtime remains single-capability |
 
 ---
 
@@ -223,10 +223,38 @@ openspec validate --all --strict
 1. Re-read the four wiki source-of-truth documents, the S1 verification report, and this runbook.
 2. Check `git status --short` and `openspec list --json`; S1 archive path must remain present and no active change is assumed.
 3. P0A source-of-truth and repository-hygiene drift is closed (2026-07-25); no action needed.
-4. Start `sap-nexus-planner-dry-run` with S2-A first: five-state `MatchDecision`, multi-intent/ambiguity, visibility and matcher Eval; do not call Gateway or SAP.
-5. Continue to S2-B only after S2-A passes: progressive `CapabilityCard` discovery, natural-language GoalSpec/PlanDraft candidates, deterministic PlanCompiler output, validation evidence and dry-run preview; still do not call Gateway or SAP.
-6. Keep S3 Read-only Pilot as a separate follow-up change with PlanGraph-governed lifecycle, deterministic OutputProjection, explicit incomplete/freshness/lineage semantics, Gateway regression, and no-write gates.
-7. Before shared S3, long approval, multi-worker/HA or non-sandbox WRITE, open the separate trusted/durable runtime change; do not select its store inside S2.
-8. Do not start DeerFlow integration or user memory work unless separately evidenced and approved.
+4. S2-A and S2-B are complete (2026-07-25): five-state `MatchDecision`, multi-intent/ambiguity detection, visibility pre-filter, matcher Eval 6/6, progressive `CapabilityCard` discovery, `GoalSpec`/`PlanDraft` candidates, deterministic `PlanCompiler` dry-run (eval 3/3 + 1 pending covered by unit test); S2 does not call Gateway or SAP.
+5. Start S3 Read-only Pilot as a separate follow-up change with PlanGraph-governed lifecycle, deterministic `OutputProjection`, explicit incomplete/freshness/lineage semantics, Gateway regression, and no-write gates.
+6. Before shared S3, long approval, multi-worker/HA or non-sandbox WRITE, open the separate trusted/durable runtime change; do not select its store inside S2.
+7. Do not start DeerFlow integration or user memory work unless separately evidenced and approved.
 
-Do not start S2 from OpenHarness / DeerFlow integration, durable store selection, user memory, graph database selection, Dynamic Planner, read-only execution, or Write composition. Those are not the S2 design workstream.
+Do not start S3 from OpenHarness / DeerFlow integration, durable store selection, user memory, graph database selection, Dynamic Planner, read-only execution, or Write composition. Those are not the S3 design workstream.
+
+---
+
+## Session Closeout - 2026-07-25
+
+### Completed
+
+- S2-A Semantic MatchDecision Hardening: first-class five-state `MatchDecision` (`SELECT` / `CLARIFY` / `REJECT` / `SHOW_OPTIONS` / `ESCALATE_TO_PLANNER`); multi-intent and ambiguity detection (D-1 fix: rule parser no longer returns first-match on multi-goal utterances); server-owned governed context and capability visibility pre-filter before candidate cards enter model context; decision evidence bound to candidate reasons, Registry Snapshot and trace; matcher Eval covering all five decision classes plus false-`SELECT` regression.
+- S2-B Planner Dry-run: planner module skeleton; progressive `CapabilityCard` discovery projecting `producesFactTypes` from `outputs.factTypeRef`; `GoalSpec` / `PlanDraft` candidate generation from `ESCALATE_TO_PLANNER` handoff; deterministic `PlanCompiler` dry-run producing `PlanGraph` + gaps + governance flags (reuses S1 `semantic-planning-foundation` validator; does not call Gateway or SAP); handoff wiring + dry-run preview in frontend.
+- Spec Patches applied in design phase and verified present this session: `semantic-match-decision` SHOW_OPTIONS keyword-ambiguity scenario (threshold anchored by matcher Eval); `planner-dry-run` `CapabilityCard` `producesFactTypes` field (enables PlanCompiler to match candidates against GoalSpec desired Fact Types).
+- P0A source-of-truth/repository hygiene closed (2026-07-25): editable-install finder + .venv shebangs repointed to GitHub_Projects; runtime traces gitignored; runbook index synced.
+
+### Verified
+
+- Command: `npm --prefix frontend run verify`
+- Result: typecheck clean; 58 tests passed (10 files, including `dry-run-view.test.ts` 11 and `match-decision-view.test.ts` 14); Next.js 15.3.6 production build succeeded (6/6 static pages).
+- Command: `scripts/verify-agent-callplan-evidence.sh`
+- Result: semantic planning contract valid (snapshotId `sha256:bf0ac12a482d719725bf888feb9d3e10e60e583aa91c999a819a49001ce92092`); pytest `701 passed, 1 skipped` (test_llm_live); inventory eval `7/7`; seed eval `13/13`; PR eval `9/9`; matcher eval `6/6`; dry-run eval `3/3` + 1 SKIP (pending `dry-run-missing-producer` - all active capabilities have `produces_fact_types`; branch covered by `agent/tests/test_planner_plan_compiler.py`); `openspec validate --all --strict` `9 passed, 0 failed (9 items)`.
+
+### Blockers
+
+- None. S2-A + S2-B verification gates all pass; no Gateway/SAP execution performed.
+
+### Next Start Here
+
+1. Coordinator runs `comet-guard sap-nexus-planner-dry-run build --apply` and proceeds to the verify phase (`comet-state scale sap-nexus-planner-dry-run` determines verification level).
+2. After verify passes, archive `sap-nexus-planner-dry-run` to `openspec/changes/archive/`.
+3. Open S3 Read-only Composition Pilot as a separate change: PlanGraph-governed ready-node lifecycle, deterministic `OutputProjection` with freshness/completeness/limitations/lineage, Gateway regression for both atomic Read capabilities, no-write gates.
+4. Before shared S3, long approval, multi-worker/HA or non-sandbox WRITE, open the separate trusted/durable runtime change (`sap-nexus-trusted-durable-runtime-foundation`); do not select its store inside S3 read-only pilot design.

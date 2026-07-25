@@ -1,0 +1,16 @@
+{
+  "change": "sap-nexus-planner-dry-run",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "f186eee18238417ad11070d7d8a371fa839242c742d875c9b26b82b8fc306b64",
+  "files": [
+    { "path": "openspec/changes/sap-nexus-planner-dry-run/proposal.md", "sha256": "ae83f2c3a06df3905b1495956931310eeb7b70423b30fbceefaea05f3f7ecad6" },
+    { "path": "openspec/changes/sap-nexus-planner-dry-run/design.md", "sha256": "2b7cb7f7ae0df27c0c4e5aabaf8bab466fdb2999056439b83f05d987f41759b8" },
+    { "path": "openspec/changes/sap-nexus-planner-dry-run/tasks.md", "sha256": "a2403d13f33326669d6e0f034837b7554c15a3c35301591a774624cbfe90b56a" },
+    { "path": "openspec/changes/sap-nexus-planner-dry-run/specs/agent-callplan-evidence/spec.md", "sha256": "640d5b76cf9765bf4f694400004ab6d3e7f4e7306cd55cfd797253a1f8a61b71" },
+    { "path": "openspec/changes/sap-nexus-planner-dry-run/specs/planner-dry-run/spec.md", "sha256": "47d52bc2a4ad0c6fff5ccc81df0ee4f49298dd0aca67cf26dc5c4d3614afc7f7" },
+    { "path": "openspec/changes/sap-nexus-planner-dry-run/specs/semantic-match-decision/spec.md", "sha256": "8386c08b7878909202fec8dc108817ed87be0aa93addaaf9b62c07b7424fbaf3" }
+  ]
+}

@@ -9,6 +9,7 @@ from sap_nexus_agent.intent import (
     parse_intent,
 )
 from sap_nexus_agent.llm_client import LlmUnavailable, OpenAiCompatibleLlmClient
+from sap_nexus_agent.match_decision import MatchedIntent
 from sap_nexus_agent.registry_loader import (
     CapabilityDescriptor,
     InputDescriptor,
@@ -68,6 +69,10 @@ def _requires_safe_fallback(result: IntentParseResult) -> bool:
         return True
     # LLM path fills capability_id; rule path fills intent.
     # Fall back only when neither is set (unsupported / ambiguous).
+    # Multi-intent (matched_intents length > 1) is a real LLM finding, not a
+    # safe-fallback trigger: the selector emits ESCALATE_TO_PLANNER.
+    if len(result.matched_intents) > 1:
+        return False
     return result.capability_id is None and result.intent is None
 
 
@@ -83,11 +88,13 @@ def _messages(text: str, catalog: IntentCatalog) -> list[dict[str, str]]:
             "role": "system",
             "content": (
                 "You extract SAP Nexus read-only query intent as strict JSON. "
-                "Select exactly one capabilityId from the registered closed set below, "
-                "and extract parameters from the user query. "
-                "If none matches, set capabilityId=null. "
+                "Detect all matching capabilities from the registered closed set below. "
+                "- If exactly one capability matches with required parameters, return it as capabilityId. "
+                "- If more than one capability matches, return an escalation with all matched candidates. "
+                "- If ambiguous (weak match across multiple capabilities without a clear primary), return options. "
+                "- Never introduce capabilityIds outside the closed set. "
                 "Never output rfcName or raw SAP BAPI/RFC names. "
-                "Return keys: capabilityId, parameters, missingParameters, clarification.\n\n"
+                "Return keys: capabilityId, candidates, escalation, parameters, missingParameters, clarification.\n\n"
                 f"Registered capabilities:\n{capabilities_desc}"
             ),
         },
@@ -123,6 +130,70 @@ def _payload_to_parse_result(payload: dict[str, object], catalog: IntentCatalog)
             contains_odata_override=contains_odata_override,
         )
 
+    # D-1 fix: multi-candidate path. LLM returns either `candidates: [...]` or
+    # `escalation: {candidates: [...]}` when more than one capability matches.
+    candidates_raw = payload.get("candidates")
+    if candidates_raw is None and isinstance(payload.get("escalation"), dict):
+        candidates_raw = payload["escalation"].get("candidates")
+
+    if isinstance(candidates_raw, list) and candidates_raw:
+        matched_intents: list[MatchedIntent] = []
+        for cand in candidates_raw:
+            if not isinstance(cand, dict):
+                continue
+            cap_id = cand.get("capabilityId")
+            if not isinstance(cap_id, str) or cap_id not in catalog.capability_ids:
+                # Unknown capabilityId dropped (closed-set defense).
+                continue
+            descriptor = catalog.find(cap_id)
+            if descriptor is None:
+                continue
+            raw_parameters = cand.get("parameters") or {}
+            parameters = _extract_parameters(raw_parameters, descriptor)
+            missing = [
+                inp.name
+                for inp in descriptor.inputs
+                if inp.required and inp.name not in parameters
+            ]
+            matched_intents.append(
+                MatchedIntent(
+                    capability_id=cap_id,
+                    parameters=parameters,
+                    missing=missing,
+                )
+            )
+
+        if len(matched_intents) >= 2:
+            # Multi-intent: top-level intent/capability_id None (selector emits
+            # ESCALATE_TO_PLANNER).
+            return IntentParseResult(
+                intent=None,
+                parameters={},
+                missing_parameters=[],
+                contains_rfc_name=False,
+                contains_odata_override=False,
+                matched_intents=matched_intents,
+            )
+
+        if len(matched_intents) == 1:
+            # Single surviving candidate: keep existing single-intent behavior.
+            single = matched_intents[0]
+            clarification = _clarification_for(single.capability_id, single.missing)
+            return IntentParseResult(
+                intent=None,
+                capability_id=single.capability_id,
+                parameters=single.parameters,
+                missing_parameters=single.missing,
+                clarification=clarification,
+                contains_rfc_name=False,
+                contains_odata_override=False,
+                matched_intents=matched_intents,
+            )
+
+        # All candidates unknown -> REJECT path (matched_intents empty).
+        return IntentParseResult(intent=None, parameters={}, missing_parameters=[])
+
+    # Single capabilityId path (existing).
     capability_id = payload.get("capabilityId")
     if not isinstance(capability_id, str) or capability_id not in catalog.capability_ids:
         return IntentParseResult(intent=None, parameters={}, missing_parameters=[])
@@ -145,6 +216,13 @@ def _payload_to_parse_result(payload: dict[str, object], catalog: IntentCatalog)
         clarification=clarification,
         contains_rfc_name=False,
         contains_odata_override=False,
+        matched_intents=[
+            MatchedIntent(
+                capability_id=str(capability_id),
+                parameters=parameters,
+                missing=missing,
+            )
+        ],
     )
 
 

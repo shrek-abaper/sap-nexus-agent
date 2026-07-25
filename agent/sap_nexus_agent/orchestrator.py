@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Callable
 
 from sap_nexus_agent.action_result import ActionResult
@@ -19,16 +20,25 @@ from sap_nexus_agent.execution_result import ExecutionResult
 from sap_nexus_agent.execution_result import ValidationResult
 from sap_nexus_agent.gateway_client import GatewayClientProtocol
 from sap_nexus_agent.intent import IntentParseResult, parse_intent, parse_inventory_intent
+from sap_nexus_agent.match_decision import MatchDecision
 from sap_nexus_agent.narrator import (
     NarrativeGuardError,
     narrate_fact,
     narrate_failure,
     narrate_purchase_order_facts,
 )
+from sap_nexus_agent.planner.handoff import compile_dry_run_from_handoff
+from sap_nexus_agent.planner.plan_compiler import DryRunResult
 from sap_nexus_agent.reasoning_fact import (
     ReasoningFact,
     build_availability_fact,
     build_purchase_order_facts,
+)
+from sap_nexus_agent.semantic_planning import (
+    RegistrySnapshot,
+    SemanticSourceDocuments,
+    build_registry_snapshot,
+    load_semantic_sources,
 )
 
 
@@ -52,9 +62,19 @@ class AgentOutcome:
     error_type: str | None = None
     missing_parameters: list[str] | None = None
     approval_record: ApprovalRecord | None = None
+    # Five-state MatchDecision (S2-A). Populated for every run_query path so
+    # the workbench / SSE layer can surface SELECT/CLARIFY/REJECT/SHOW_OPTIONS
+    # /ESCALATE_TO_PLANNER uniformly. None only for continue_action outcomes
+    # (approval continue flow) which do not re-run the selector.
+    match_decision: MatchDecision | None = None
+    # S2-B dry-run result (Task 9). Populated only for ESCALATE_TO_PLANNER
+    # outcomes - the orchestrator wires the handoff into the PlanCompiler
+    # (deterministic, no Gateway/SAP). None for every other path.
+    dry_run: DryRunResult | None = None
 
 
 IntentAdapter = Callable[[str], IntentParseResult]
+PlannerSourcesLoader = Callable[[], tuple[RegistrySnapshot, SemanticSourceDocuments]]
 
 
 def run_query(
@@ -62,43 +82,74 @@ def run_query(
     gateway: GatewayClientProtocol,
     *,
     intent_adapter: IntentAdapter = parse_intent,
+    snapshot: RegistrySnapshot | None = None,
+    sources: SemanticSourceDocuments | None = None,
+    planner_sources_loader: PlannerSourcesLoader | None = None,
 ) -> AgentOutcome:
-    """Unified entry: parse_intent -> select_capability -> route by capabilityId.
+    """Unified entry: parse_intent -> select_capability -> route by decision_type.
 
     The Agent never senses the executor type (JCO_RFC / ODATA); routing is
-    purely on the registered capabilityId closed set.
+    purely on the registered capabilityId closed set. Non-SELECT decisions
+    (CLARIFY / REJECT / SHOW_OPTIONS / ESCALATE_TO_PLANNER) return without
+    touching the Gateway; only SELECT proceeds to CallPlan -> validate/execute.
+
+    For ESCALATE_TO_PLANNER, the orchestrator wires the handoff into the
+    S2-B PlanCompiler (``planner.handoff.compile_dry_run_from_handoff``)
+    to produce a deterministic ``DryRunResult`` attached to the outcome.
+    The PlanCompiler does not call the Gateway or SAP. ``snapshot`` /
+    ``sources`` may be injected by tests; if absent, the orchestrator
+    loads them from the registry via path discovery (or the injected
+    ``planner_sources_loader``).
     """
     parsed = intent_adapter(text)
-    selected = select_capability(parsed)
+    decision = select_capability(parsed)
 
-    if selected.error_type == "UNSUPPORTED_RFC_NAME":
+    # REJECT (technical override / unsupported intent): no Gateway.
+    if decision.decision_type == "REJECT":
         return AgentOutcome(
             status="failure",
-            message=selected.message,
-            response_text=selected.message,
-            error_type=selected.error_type,
+            message=decision.rationale,
+            response_text=decision.rationale,
+            error_type=decision.error_type,
+            match_decision=decision,
         )
-    if parsed.missing_parameters:
+
+    # CLARIFY (single intent missing required params): no Gateway.
+    if decision.decision_type == "CLARIFY":
         return AgentOutcome(
             status="clarification",
-            message=parsed.clarification,
-            response_text=parsed.clarification,
-            missing_parameters=parsed.missing_parameters,
-        )
-    if selected.capability_id is None:
-        return AgentOutcome(
-            status="failure",
-            message=selected.message,
-            response_text=selected.message,
-            error_type=selected.error_type,
+            message=decision.rationale,
+            response_text=decision.rationale,
+            missing_parameters=decision.missing_parameters,
+            match_decision=decision,
         )
 
-    parameters = dict(parsed.parameters)
-    if selected.capability_id == INVENTORY_CAPABILITY_ID:
+    # SHOW_OPTIONS / ESCALATE_TO_PLANNER: handoff to workbench/planner, no Gateway.
+    if decision.decision_type in ("SHOW_OPTIONS", "ESCALATE_TO_PLANNER"):
+        dry_run = None
+        if decision.decision_type == "ESCALATE_TO_PLANNER" and decision.handoff is not None:
+            dry_run = _compile_dry_run_safely(
+                decision.handoff,
+                snapshot=snapshot,
+                sources=sources,
+                planner_sources_loader=planner_sources_loader,
+            )
+        return AgentOutcome(
+            status="match_decision",
+            message=decision.rationale,
+            response_text=decision.rationale,
+            match_decision=decision,
+            dry_run=dry_run,
+        )
+
+    # SELECT -> CallPlan -> Gateway validate/execute (existing path).
+    capability_id = decision.capability_id
+    parameters = dict(decision.parameters or parsed.parameters)
+    if capability_id == INVENTORY_CAPABILITY_ID:
         parameters.setdefault("unit", "EA")
 
-    kind = "Action" if selected.capability_id in ACTION_CAPABILITY_IDS else "Function"
-    call_plan = create_call_plan(selected.capability_id, parameters, kind=kind)
+    kind = "Action" if capability_id in ACTION_CAPABILITY_IDS else "Function"
+    call_plan = create_call_plan(capability_id, parameters, kind=kind)
     validation = gateway.validate(call_plan.capability_id, call_plan.parameters)
     if not validation.success:
         return AgentOutcome(
@@ -109,6 +160,7 @@ def run_query(
             validation_result=validation,
             gateway_trace_id=validation.trace_id,
             error_type=validation.error_type,
+            match_decision=decision,
         )
 
     is_action = call_plan.kind == "Action"
@@ -126,6 +178,7 @@ def run_query(
             validation_result=validation,
             gateway_trace_id=validation.trace_id,
             approval_record=pending,
+            match_decision=decision,
         )
     execution = gateway.execute(call_plan.capability_id, call_plan.parameters)
     if not execution.success:
@@ -139,11 +192,12 @@ def run_query(
             execution_result=execution,
             gateway_trace_id=execution.trace_id,
             error_type=execution.error_type,
+            match_decision=decision,
         )
 
-    if selected.capability_id == INVENTORY_CAPABILITY_ID:
-        return _finalize_inventory(call_plan, validation, execution)
-    return _finalize_purchase_order(call_plan, validation, execution)
+    if capability_id == INVENTORY_CAPABILITY_ID:
+        return _finalize_inventory(call_plan, validation, execution, decision=decision)
+    return _finalize_purchase_order(call_plan, validation, execution, decision=decision)
 
 
 def run_inventory_query(
@@ -307,6 +361,8 @@ def _finalize_inventory(
     call_plan: CallPlan,
     validation: ValidationResult,
     execution: ExecutionResult,
+    *,
+    decision: MatchDecision | None = None,
 ) -> AgentOutcome:
     fact = build_availability_fact(call_plan.agent_trace_id, execution, call_plan.parameters)
     if fact is None:
@@ -319,6 +375,7 @@ def _finalize_inventory(
             execution_result=execution,
             gateway_trace_id=execution.trace_id,
             error_type="NARRATIVE_GUARD_ERROR",
+            match_decision=decision,
         )
     try:
         response_text = narrate_fact(fact, capability_id="MM.Inventory.GetAvailability")
@@ -333,6 +390,7 @@ def _finalize_inventory(
             fact=fact,
             gateway_trace_id=execution.trace_id,
             error_type="NARRATIVE_GUARD_ERROR",
+            match_decision=decision,
         )
     return AgentOutcome(
         status="success",
@@ -342,6 +400,7 @@ def _finalize_inventory(
         execution_result=execution,
         fact=fact,
         gateway_trace_id=execution.trace_id,
+        match_decision=decision,
     )
 
 
@@ -349,6 +408,8 @@ def _finalize_purchase_order(
     call_plan: CallPlan,
     validation: ValidationResult,
     execution: ExecutionResult,
+    *,
+    decision: MatchDecision | None = None,
 ) -> AgentOutcome:
     facts = build_purchase_order_facts(call_plan.agent_trace_id, execution, call_plan.parameters)
     total_count = execution.data.get("totalCount")
@@ -365,6 +426,7 @@ def _finalize_purchase_order(
             facts=facts,
             gateway_trace_id=execution.trace_id,
             error_type="NARRATIVE_GUARD_ERROR",
+            match_decision=decision,
         )
     return AgentOutcome(
         status="success",
@@ -374,6 +436,7 @@ def _finalize_purchase_order(
         execution_result=execution,
         facts=facts,
         gateway_trace_id=execution.trace_id,
+        match_decision=decision,
     )
 
 
@@ -381,3 +444,55 @@ def _message_text(message: object) -> str:
     if isinstance(message, dict):
         return str(message.get("message") or message.get("MESSAGE") or message)
     return str(message)
+
+
+# ---------------------------------------------------------------------------
+# S2-B handoff wiring helpers (Task 9)
+# ---------------------------------------------------------------------------
+
+
+def _compile_dry_run_safely(
+    handoff,
+    *,
+    snapshot: RegistrySnapshot | None,
+    sources: SemanticSourceDocuments | None,
+    planner_sources_loader: PlannerSourcesLoader | None,
+) -> DryRunResult | None:
+    """Compile a dry-run from the handoff, loading sources if not injected.
+
+    Swallows source-loading errors so an ESCALATE decision never crashes
+    the orchestrator: if the registry cannot be loaded, ``dry_run`` is
+    ``None`` and the match_decision still surfaces to the workbench. The
+    PlanCompiler itself is deterministic and does not call the Gateway.
+    """
+    try:
+        if snapshot is None or sources is None:
+            loader = planner_sources_loader or _default_planner_sources
+            snapshot, sources = loader()
+        return compile_dry_run_from_handoff(handoff, snapshot, sources)
+    except Exception:
+        # Source-loading failure (registry missing, YAML malformed, etc.).
+        # The match_decision still surfaces; the dry-run is omitted.
+        return None
+
+
+def _default_planner_sources() -> tuple[RegistrySnapshot, SemanticSourceDocuments]:
+    """Load registry snapshot + sources via path discovery.
+
+    Mirrors ``registry_loader._resolve_registry_path``: walks up from the
+    ``sap_nexus_agent`` package location looking for ``registry/``.
+    """
+    here = Path(__file__).resolve().parent
+    repo_root: Path | None = None
+    for parent in [here, *here.parents]:
+        if (parent / "registry" / "capabilities.yaml").exists():
+            repo_root = parent
+            break
+    if repo_root is None:
+        # Last-resort cwd fallback; ``load_semantic_sources`` will raise
+        # ``SourceLoadError`` if the files are missing, which the caller
+        # swallows in ``_compile_dry_run_safely``.
+        repo_root = Path.cwd()
+    sources = load_semantic_sources(repo_root)
+    snapshot = build_registry_snapshot(sources)
+    return snapshot, sources

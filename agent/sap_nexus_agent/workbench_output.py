@@ -6,6 +6,7 @@ from sap_nexus_agent.execution_result import ExecutionResult, ValidationResult
 from sap_nexus_agent.gateway_client import GatewayClientProtocol
 from sap_nexus_agent.intent import IntentParseResult
 from sap_nexus_agent.llm_intent import build_intent_adapter
+from sap_nexus_agent.match_decision import EscalationHandoff, MatchDecision, MatchedIntent
 from sap_nexus_agent.orchestrator import AgentOutcome, run_inventory_query
 
 
@@ -37,6 +38,70 @@ def outcome_to_workbench_dict(outcome: AgentOutcome) -> dict[str, object]:
         "errorType": outcome.error_type,
         "missingParameters": list(outcome.missing_parameters or []),
         "approvalRecord": outcome.approval_record.to_dict() if outcome.approval_record else None,
+        # Advisory field for the frontend SSE layer (Task 6.1 emits
+        # match_decision_created for SHOW_OPTIONS / ESCALATE_TO_PLANNER).
+        # SELECT/CLARIFY/REJECT reuse existing event paths but still carry the
+        # decision here for uniform rendering.
+        "matchDecision": _match_decision_to_dict(outcome.match_decision),
+        # S2-B dry-run result (Task 9). Populated only for ESCALATE_TO_PLANNER
+        # outcomes; the orchestrator wires the handoff into the PlanCompiler
+        # (deterministic, no Gateway/SAP). The frontend folds this into the
+        # match-decision artifact payload so the Workbench can render the
+        # dry-run preview (PlanGraph nodes/edges/gaps/governanceFlags) in the
+        # same ESCALATE turn.
+        "dryRun": _dry_run_to_dict(outcome.dry_run),
+    }
+
+
+def _dry_run_to_dict(dry_run) -> dict[str, object] | None:
+    if dry_run is None:
+        return None
+    return {
+        "planGraph": dry_run.plan_graph,
+        "gaps": [
+            {"kind": gap.kind, "detail": gap.detail} for gap in dry_run.gaps
+        ],
+        "governanceFlags": [
+            {"kind": flag.kind, "detail": flag.detail}
+            for flag in dry_run.governance_flags
+        ],
+        "rationale": dry_run.rationale,
+    }
+
+
+def _match_decision_to_dict(decision: MatchDecision | None) -> dict[str, object] | None:
+    if decision is None:
+        return None
+    return {
+        "decisionType": decision.decision_type,
+        "capabilityId": decision.capability_id,
+        "parameters": dict(decision.parameters) if decision.parameters else None,
+        "missingParameters": list(decision.missing_parameters) if decision.missing_parameters else None,
+        "errorType": decision.error_type,
+        "candidates": (
+            [_matched_intent_to_dict(c) for c in decision.candidates]
+            if decision.candidates
+            else None
+        ),
+        "handoff": _handoff_to_dict(decision.handoff) if decision.handoff else None,
+        "rationale": decision.rationale,
+    }
+
+
+def _matched_intent_to_dict(intent: MatchedIntent) -> dict[str, object]:
+    return {
+        "capabilityId": intent.capability_id,
+        "parameters": dict(intent.parameters),
+        "missing": list(intent.missing),
+    }
+
+
+def _handoff_to_dict(handoff: EscalationHandoff) -> dict[str, object]:
+    return {
+        "reason": handoff.reason,
+        "matchedIntents": [_matched_intent_to_dict(mi) for mi in handoff.matched_intents],
+        "utterance": handoff.utterance,
+        "registrySnapshotId": handoff.registry_snapshot_id,
     }
 
 

@@ -61,8 +61,8 @@ DeerFlow adoption decision = use as design reference only; do not add deerflow-h
 Confirmed first composition scenario = MM.Inventory.GetAvailability + MM.PurchaseOrder.GetList -> MaterialSupplySnapshot
 Current semantic planning verification = docs/superpowers/reports/2026-07-19-sap-nexus-semantic-planning-foundation-verify.md
 P0A source-of-truth/repository hygiene = completed (2026-07-25): docs/status/paths synchronized, editable-install finder + .venv shebangs repointed from stale zl-projects to GitHub_Projects, runtime traces gitignored (runtime/* only .gitkeep tracked); no runtime behavior change
-Next recommended design = sap-nexus-planner-dry-run (roadmap row 19; S2-A five-state MatchDecision + multi-intent/ambiguity/visibility/Eval, then S2-B progressive CapabilityCard + deterministic dry-run; no Gateway/SAP execution)
-Planned sequence = archived semantic planning foundation -> [P0A hygiene completed] -> S2-A semantic decision hardening (next) -> S2-B planner dry-run -> conditional trusted/durable runtime gate -> PlanGraph-governed read-only composition pilot -> recommendation integration
+Current completed change = sap-nexus-planner-dry-run (S2-A + S2-B implemented 2026-07-25; pending verify/archive): five-state MatchDecision, multi-intent/ambiguity/visibility, matcher Eval 6/6, progressive CapabilityCard + deterministic PlanCompiler dry-run (3/3 + 1 pending); no Gateway/SAP execution
+Planned sequence = archived semantic planning foundation -> [P0A hygiene completed] -> S2-A semantic decision hardening (done) -> S2-B planner dry-run (done) -> conditional trusted/durable runtime gate -> PlanGraph-governed read-only composition pilot -> recommendation integration
 S3 scheduling input = borrow ready-node/concurrency/timeout/cancel/ledger/trace mechanics only after PlanGraph validation; never infer execution from LLM Tool Calls
 S3 output input = deterministic OutputProjection with freshness, completeness, limitations and Fact lineage; partial failure remains incomplete
 Conditional platform gate = sap-nexus-trusted-durable-runtime-foundation; not required for local S2, required before shared S3, long approval, multi-worker/HA, or non-sandbox WRITE
@@ -70,7 +70,7 @@ Triggered memory candidate = sap-nexus-governed-user-memory-pilot; user preferen
 Live blocker = none for PO OData read; SAP SICF was reactivated and PO live smoke passed
 Deferred Phase 3+ workstream = sap-nexus-capability-matching-contract
 Reserved executor workstream = sap-nexus-sql-read-executor-contract
-Current composition runtime = not implemented; architecture requires multi-capability requests to ESCALATE_TO_PLANNER, but current parser/selector does not yet reliably detect every multi-goal utterance; S2-A closes this gap
+Current composition runtime = not implemented; architecture requires multi-capability requests to ESCALATE_TO_PLANNER, and S2-A now reliably produces ESCALATE_TO_PLANNER on multi-goal utterances (matcher Eval 6/6); S3 read-only composition pilot remains gated
 Reserved composition scope = Dynamic Planner and Write composition; S3 read-only execution remains planned, not implemented
 No branch creation unless user explicitly asks
 ```
@@ -112,7 +112,7 @@ Runbooks are numbered by workstream creation order, not by roadmap row or calend
 | `07` | `07-odata-gateway-read-pilot.md` | `v0.2.1` | Implemented / Active | `2026-07-09` | OData Gateway Read Pilot plus archived PO item detail/filter activation; live PO smoke passed after SICF reactivation |
 | `08` | `08-capability-matching-contract.md` | `v0.3.0` | S2-A Next / Phase 3+ Scale-up Deferred | `2026-07-24` | Baseline five-state MatchDecision, multi-intent/ambiguity, visibility and matcher Eval now; embedding/retrieval/rerank remain Phase 3+ |
 | `09` | `09-sql-read-executor-contract.md` | `v0.2.0` | Reserved | `2026-06-28` | Reserved `SQL_READ` safety boundary; not a near-term runtime priority before Eval seed, second read, and sandbox write pilot |
-| `10` | `10-capability-composition-contract.md` | `v0.3.6` | S1 Archived; S2-A Next; Runtime Reserved | `2026-07-25` | S1 archived; P0A hygiene closed; S2-A decision hardening and S2-B dry-run are next; shared S3 is gated by trusted/durable runtime and deterministic OutputProjection |
+| `10` | `10-capability-composition-contract.md` | `v0.3.7` | S2-A Done; S2-B Dry-Run Done; S3 Gate Next | `2026-07-25` | S1 archived; P0A hygiene closed; S2-A decision hardening and S2-B dry-run complete (matcher Eval 6/6, dry-run eval 3/3 + 1 pending); shared S3 is gated by trusted/durable runtime and deterministic OutputProjection |
 | `11` | `11-sandbox-write-vertical-slice.md` | `v0.2.26` | Completed / Archived | `2026-07-17` | Sandbox PR `10137471` committed; external approval, Gateway anti-replay/hash/atomic claim, stateful JCo LUW and replay-complete trace verified; main spec `pr-create-action` merged; no additional SAP WRITE |
 
 Versioning rules:

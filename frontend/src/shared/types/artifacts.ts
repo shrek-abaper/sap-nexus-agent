@@ -12,6 +12,7 @@ export type RedactedArtifact = {
     | "approval"
     | "reasoning-fact"
     | "narrative"
-    | "trace";
+    | "trace"
+    | "match-decision";
   payload: JsonValue;
 };
