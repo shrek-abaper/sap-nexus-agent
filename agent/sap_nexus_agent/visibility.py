@@ -8,49 +8,33 @@ Filters ``CapabilityCard`` sets by governance (``sideEffect`` /
 Design Doc: docs/superpowers/specs/2026-07-25-sap-nexus-planner-dry-run-design.md
 section "visibility pre-filter".
 
-``CapabilityCard`` is co-located here intentionally. Task 7 migrates it to
-``planner/capability_card.py`` and extends it with ``inputs`` /
-``InputDescriptor``. Keep this module self-contained so the migration is a
-move + re-export.
+``CapabilityCard`` / ``Governance`` were migrated to
+``planner.capability_card`` in Task 7 and are re-exported here for
+backward compatibility. ``filter_visible`` stays in this module because
+its responsibility (execution-layer gating) is orthogonal to the
+planner's responsibility (capability composition).
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Literal
+from sap_nexus_agent.planner.capability_card import (
+    CapabilityCard,
+    Governance,
+    InputDescriptor,
+    SideEffect,
+    DataClassification,
+    Visibility,
+)
 
-SideEffect = Literal["none", "sap_write"]
-DataClassification = Literal["internal", "restricted"]
-Visibility = Literal["VISIBLE_DRY_RUN", "VISIBLE_EXECUTION", "HIDDEN"]
-
-
-@dataclass(frozen=True)
-class Governance:
-    """Capability governance projection consumed by the visibility filter.
-
-    Mirrors the ``governance`` block of ``registry/capabilities.yaml``: only
-    the three fields that drive S3 execution gating are projected here.
-    """
-
-    side_effect: SideEffect
-    requires_approval: bool
-    data_classification: DataClassification
-
-
-@dataclass(frozen=True)
-class CapabilityCard:
-    """Read-only projection of a registry capability for the planner.
-
-    Only the fields the visibility filter needs are defined here. Task 7
-    migrates this dataclass to ``planner/capability_card.py`` and extends it
-    with ``inputs: tuple[InputDescriptor, ...]``.
-    """
-
-    capability_id: str
-    name: str
-    governance: Governance
-    visibility: Visibility = "VISIBLE_DRY_RUN"
-    produces_fact_types: tuple[str, ...] = ()
+__all__ = [
+    "CapabilityCard",
+    "DataClassification",
+    "Governance",
+    "InputDescriptor",
+    "SideEffect",
+    "Visibility",
+    "filter_visible",
+]
 
 
 def filter_visible(
