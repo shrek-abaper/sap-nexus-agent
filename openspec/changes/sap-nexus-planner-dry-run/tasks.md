@@ -14,9 +14,9 @@
 
 ## 3. S2-A selector 输出 MatchDecision
 
-- [ ] 3.1 `select_capability` 输出 `MatchDecision`（SELECT/CLARIFY/REJECT/SHOW_OPTIONS/ESCALATE_TO_PLANNER）
-- [ ] 3.2 `orchestrator.run_query` 适配 `MatchDecision`：SELECT 进 CallPlan，CLARIFY 返回澄清，REJECT 返回拒绝，SHOW_OPTIONS/ESCALATE 返回 handoff（不执行 Gateway）
-- [ ] 3.3 `agent-runtime-adapter.ts` / `workbench_output.py` 适配 `MatchDecision` 序列化
+- [x] 3.1 `select_capability` 输出 `MatchDecision`（SELECT/CLARIFY/REJECT/SHOW_OPTIONS/ESCALATE_TO_PLANNER）
+- [x] 3.2 `orchestrator.run_query` 适配 `MatchDecision`：SELECT 进 CallPlan，CLARIFY 返回澄清，REJECT 返回拒绝，SHOW_OPTIONS/ESCALATE 返回 handoff（不执行 Gateway）
+- [x] 3.3 `agent-runtime-adapter.ts` / `workbench_output.py` 适配 `MatchDecision` 序列化
 
 ## 4. S2-A visibility pre-filter
 
