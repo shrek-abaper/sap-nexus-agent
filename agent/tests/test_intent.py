@@ -230,7 +230,11 @@ def test_selector_rejects_purchase_order_without_filter_as_missing_parameter():
     parsed = parse_intent("帮我看看采购订单")
     selected = select_capability(parsed)
     assert selected.capability_id is None
-    assert selected.error_type == "MISSING_PARAMETER"
+    # select_capability now returns MatchDecision (S2-A): a PO query without
+    # filter is a CLARIFY decision carrying missing_parameters, not a
+    # SelectionResult with error_type="MISSING_PARAMETER".
+    assert selected.decision_type == "CLARIFY"
+    assert selected.missing_parameters == ["filter"]
 
 
 def test_selector_rejects_unknown_intent_as_unsupported():

@@ -19,6 +19,7 @@ from sap_nexus_agent.execution_result import ExecutionResult
 from sap_nexus_agent.execution_result import ValidationResult
 from sap_nexus_agent.gateway_client import GatewayClientProtocol
 from sap_nexus_agent.intent import IntentParseResult, parse_intent, parse_inventory_intent
+from sap_nexus_agent.match_decision import MatchDecision
 from sap_nexus_agent.narrator import (
     NarrativeGuardError,
     narrate_fact,
@@ -52,6 +53,11 @@ class AgentOutcome:
     error_type: str | None = None
     missing_parameters: list[str] | None = None
     approval_record: ApprovalRecord | None = None
+    # Five-state MatchDecision (S2-A). Populated for every run_query path so
+    # the workbench / SSE layer can surface SELECT/CLARIFY/REJECT/SHOW_OPTIONS
+    # /ESCALATE_TO_PLANNER uniformly. None only for continue_action outcomes
+    # (approval continue flow) which do not re-run the selector.
+    match_decision: MatchDecision | None = None
 
 
 IntentAdapter = Callable[[str], IntentParseResult]
@@ -63,42 +69,53 @@ def run_query(
     *,
     intent_adapter: IntentAdapter = parse_intent,
 ) -> AgentOutcome:
-    """Unified entry: parse_intent -> select_capability -> route by capabilityId.
+    """Unified entry: parse_intent -> select_capability -> route by decision_type.
 
     The Agent never senses the executor type (JCO_RFC / ODATA); routing is
-    purely on the registered capabilityId closed set.
+    purely on the registered capabilityId closed set. Non-SELECT decisions
+    (CLARIFY / REJECT / SHOW_OPTIONS / ESCALATE_TO_PLANNER) return without
+    touching the Gateway; only SELECT proceeds to CallPlan -> validate/execute.
     """
     parsed = intent_adapter(text)
-    selected = select_capability(parsed)
+    decision = select_capability(parsed)
 
-    if selected.error_type == "UNSUPPORTED_RFC_NAME":
+    # REJECT (technical override / unsupported intent): no Gateway.
+    if decision.decision_type == "REJECT":
         return AgentOutcome(
             status="failure",
-            message=selected.message,
-            response_text=selected.message,
-            error_type=selected.error_type,
+            message=decision.rationale,
+            response_text=decision.rationale,
+            error_type=decision.error_type,
+            match_decision=decision,
         )
-    if parsed.missing_parameters:
+
+    # CLARIFY (single intent missing required params): no Gateway.
+    if decision.decision_type == "CLARIFY":
         return AgentOutcome(
             status="clarification",
-            message=parsed.clarification,
-            response_text=parsed.clarification,
-            missing_parameters=parsed.missing_parameters,
-        )
-    if selected.capability_id is None:
-        return AgentOutcome(
-            status="failure",
-            message=selected.message,
-            response_text=selected.message,
-            error_type=selected.error_type,
+            message=decision.rationale,
+            response_text=decision.rationale,
+            missing_parameters=decision.missing_parameters,
+            match_decision=decision,
         )
 
-    parameters = dict(parsed.parameters)
-    if selected.capability_id == INVENTORY_CAPABILITY_ID:
+    # SHOW_OPTIONS / ESCALATE_TO_PLANNER: handoff to workbench/planner, no Gateway.
+    if decision.decision_type in ("SHOW_OPTIONS", "ESCALATE_TO_PLANNER"):
+        return AgentOutcome(
+            status="match_decision",
+            message=decision.rationale,
+            response_text=decision.rationale,
+            match_decision=decision,
+        )
+
+    # SELECT -> CallPlan -> Gateway validate/execute (existing path).
+    capability_id = decision.capability_id
+    parameters = dict(decision.parameters or parsed.parameters)
+    if capability_id == INVENTORY_CAPABILITY_ID:
         parameters.setdefault("unit", "EA")
 
-    kind = "Action" if selected.capability_id in ACTION_CAPABILITY_IDS else "Function"
-    call_plan = create_call_plan(selected.capability_id, parameters, kind=kind)
+    kind = "Action" if capability_id in ACTION_CAPABILITY_IDS else "Function"
+    call_plan = create_call_plan(capability_id, parameters, kind=kind)
     validation = gateway.validate(call_plan.capability_id, call_plan.parameters)
     if not validation.success:
         return AgentOutcome(
@@ -109,6 +126,7 @@ def run_query(
             validation_result=validation,
             gateway_trace_id=validation.trace_id,
             error_type=validation.error_type,
+            match_decision=decision,
         )
 
     is_action = call_plan.kind == "Action"
@@ -126,6 +144,7 @@ def run_query(
             validation_result=validation,
             gateway_trace_id=validation.trace_id,
             approval_record=pending,
+            match_decision=decision,
         )
     execution = gateway.execute(call_plan.capability_id, call_plan.parameters)
     if not execution.success:
@@ -139,11 +158,12 @@ def run_query(
             execution_result=execution,
             gateway_trace_id=execution.trace_id,
             error_type=execution.error_type,
+            match_decision=decision,
         )
 
-    if selected.capability_id == INVENTORY_CAPABILITY_ID:
-        return _finalize_inventory(call_plan, validation, execution)
-    return _finalize_purchase_order(call_plan, validation, execution)
+    if capability_id == INVENTORY_CAPABILITY_ID:
+        return _finalize_inventory(call_plan, validation, execution, decision=decision)
+    return _finalize_purchase_order(call_plan, validation, execution, decision=decision)
 
 
 def run_inventory_query(
@@ -307,6 +327,8 @@ def _finalize_inventory(
     call_plan: CallPlan,
     validation: ValidationResult,
     execution: ExecutionResult,
+    *,
+    decision: MatchDecision | None = None,
 ) -> AgentOutcome:
     fact = build_availability_fact(call_plan.agent_trace_id, execution, call_plan.parameters)
     if fact is None:
@@ -319,6 +341,7 @@ def _finalize_inventory(
             execution_result=execution,
             gateway_trace_id=execution.trace_id,
             error_type="NARRATIVE_GUARD_ERROR",
+            match_decision=decision,
         )
     try:
         response_text = narrate_fact(fact, capability_id="MM.Inventory.GetAvailability")
@@ -333,6 +356,7 @@ def _finalize_inventory(
             fact=fact,
             gateway_trace_id=execution.trace_id,
             error_type="NARRATIVE_GUARD_ERROR",
+            match_decision=decision,
         )
     return AgentOutcome(
         status="success",
@@ -342,6 +366,7 @@ def _finalize_inventory(
         execution_result=execution,
         fact=fact,
         gateway_trace_id=execution.trace_id,
+        match_decision=decision,
     )
 
 
@@ -349,6 +374,8 @@ def _finalize_purchase_order(
     call_plan: CallPlan,
     validation: ValidationResult,
     execution: ExecutionResult,
+    *,
+    decision: MatchDecision | None = None,
 ) -> AgentOutcome:
     facts = build_purchase_order_facts(call_plan.agent_trace_id, execution, call_plan.parameters)
     total_count = execution.data.get("totalCount")
@@ -365,6 +392,7 @@ def _finalize_purchase_order(
             facts=facts,
             gateway_trace_id=execution.trace_id,
             error_type="NARRATIVE_GUARD_ERROR",
+            match_decision=decision,
         )
     return AgentOutcome(
         status="success",
@@ -374,6 +402,7 @@ def _finalize_purchase_order(
         execution_result=execution,
         facts=facts,
         gateway_trace_id=execution.trace_id,
+        match_decision=decision,
     )
 
 
