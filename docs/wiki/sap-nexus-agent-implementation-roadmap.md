@@ -5,7 +5,7 @@
 | 字段 | 内容 |
 |---|---|
 | 文档名称 | `SAP Nexus Agent 实施路线文档` |
-| 当前版本 | `v0.2.33` |
+| 当前版本 | `v0.2.34` |
 | 状态 | `Lifecycle Roadmap Active` |
 | 创建日期 | `2026-06-18` |
 | 最近更新 | `2026-07-25` |
@@ -20,7 +20,8 @@
 
 | 版本 | 日期 | 变更摘要 | 决策状态 |
 |---|---|---|---|
-| `v0.2.33` | `2026-07-25` | 文档收敛：row 19 验收条件可判定化（多目标 utterance 必须 `ESCALATE_TO_PLANNER`，false `SELECT` 作为回归失败项）；新增 §18 Known Correctness Defects（D-1）、§19 Stage Gate 评测三件套（P0A/S2-A/S2-B/trusted-durable gate/S3，缺口显式标注）、§20 Open Questions 与已知技术债（S1 verify report 三项债 + Q-1 能力供给规模化） | 当前实施基线 |
+| `v0.2.34` | `2026-07-25` | P0A source-of-truth/repository hygiene 收尾：runbook index 与 11 个 runbook header 状态对齐；editable-install finder 与 .venv shebangs 从 stale `zl-projects` 重指 `GitHub_Projects`；runtime traces 确认 gitignored（`runtime/*` 仅 `.gitkeep` tracked）；row 18A 状态从 `Documentation In Progress` 改为 `Completed`。下一推荐进入 S2-A `sap-nexus-planner-dry-run` | 当前实施基线 |
+| `v0.2.33` | `2026-07-25` | 文档收敛：row 19 验收条件可判定化（多目标 utterance 必须 `ESCALATE_TO_PLANNER`，false `SELECT` 作为回归失败项）；新增 §18 Known Correctness Defects（D-1）、§19 Stage Gate 评测三件套（P0A/S2-A/S2-B/trusted-durable gate/S3，缺口显式标注）、§20 Open Questions 与已知技术债（S1 verify report 三项债 + Q-1 能力供给规模化） | 历史基线 |
 | `v0.2.32` | `2026-07-24` | 校准语义识别实施路线：明确当前 runtime 尚无完整五态 `MatchDecision` 与可靠多意图升级；将 row 19/S2 拆成 S2-A Semantic MatchDecision Hardening 和 S2-B Planner Dry-run，增加 `CapabilityCard` 安全投影、visibility pre-filter 与 matcher Eval 退出标准；row 12 继续只承担 Phase 3+ 规模化 retrieval / rerank | 当前实施基线 |
 | `v0.2.31` | `2026-07-24` | 基于 OpenHarness / DeerFlow 综合复盘重排近期门禁：同步 S1 已归档；新增 P0A source-of-truth / repository hygiene；将 trusted identity、durable Run/Approval、run ownership 和真实增量 SSE 定义为共享 S3、长审批、multi-worker/HA 或非 sandbox WRITE 前的 P0B 条件硬门禁；S3 增加确定性 OutputProjection、freshness 和 incomplete 语义，S2 仍为下一业务 change | 当前实施基线 |
 | `v0.2.30` | `2026-07-23` | 同步 DeerFlow 2.1.0 借鉴决策：S2 增加 progressive `CapabilityCard` discovery，S3 增加 PlanGraph-governed ready-node lifecycle；新增 durable agent runtime 与 governed user memory 触发式候选，不引入 DeerFlow 依赖且不改变当前 S2 优先级 | 当前实施基线 |
@@ -245,7 +246,7 @@ GoalSpec candidate
 | 16 | `sap-nexus-rest-json-gateway-read-pilot` | Reserved | REST JSON read-only pilot | 不早于近期三项 Next Pilot |
 | 17 | `sap-nexus-production-governance` | 待启动 | 量产治理、审计回放、监控、发布门禁 | 支持能力发布、eval 回归、trace 查询、故障诊断 |
 | 18 | `sap-nexus-semantic-planning-foundation` | S1 Implemented / Verified / Archived | Fact Type、Capability Relation、GoalSpec、PlanGraph、四源 Registry Snapshot、immutable graph 和 deterministic validator 契约已落地 | focused semantic `287 passed`；full evidence `550 passed, 1 skipped` + inventory `7/7` + seed `13/13` + PR `9/9`；归档 `openspec/changes/archive/2026-07-19-sap-nexus-semantic-planning-foundation/` |
-| 18A | `sap-nexus-source-of-truth-repository-hygiene` | P0A Immediate / Documentation In Progress | 收敛 Wiki、Runbook、README、OpenSpec 状态、仓库迁移路径和 runtime artifact 管理 | S1 状态与路径一致；README 不宣称未落地组件；旧 editable install 路径被修复；真实 runtime trace 不再 tracked；不改变 runtime 行为 |
+| 18A | `sap-nexus-source-of-truth-repository-hygiene` | P0A Completed (2026-07-25) | 收敛 Wiki、Runbook、README、OpenSpec 状态、仓库迁移路径和 runtime artifact 管理 | S1 状态与路径一致；README 不宣称未落地组件；旧 editable install 路径被修复（finder + .venv shebangs 重指 GitHub_Projects）；真实 runtime trace 不再 tracked（runtime/* gitignored）；不改变 runtime 行为 |
 | 19 | `sap-nexus-planner-dry-run` | S2 Next Design / Dry-run Only | S2-A 先实现五态 `MatchDecision`、多意图/歧义检测、visibility pre-filter 和 matcher Eval；S2-B 再用 progressive `CapabilityCard` discovery 生成 GoalSpec/PlanDraft candidate，由 deterministic PlanCompiler 输出 dry-run | 多目标 utterance（如「物料库存 + 采购订单供给概览」）必须输出 `ESCALATE_TO_PLANNER`，不得静默首命中单能力，`false SELECT` 作为回归失败项；候选、决策理由、Registry Snapshot、节点、边、参数来源、缺口和治理均可审计；不得执行 Gateway 或 SAP；DeerFlow 只作机制参考 |
 | 20 | `sap-nexus-read-composition-pilot` | S3 Planned after row 19 | 以“物料库存 + 采购订单供给概览”验证只读多能力 PlanGraph 执行，并加入 governed ready-node lifecycle | 两个 active Function 经 Gateway 独立校验/执行；并发只允许无依赖 `sideEffect=none` 节点；确定性 OutputProjection 输出带 freshness、completeness、limitations 和 lineage 的 MaterialSupplySnapshot；当前未实现 |
 | 21 | `sap-nexus-capability-composition-contract` | Dynamic Planner / Write Reserved | 保留通用动态组合、Composite Capability 和 Write composition 边界 | 关系本体、dry-run、read pilot 和规模/需求证据满足后另立 change |

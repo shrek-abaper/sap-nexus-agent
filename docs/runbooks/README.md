@@ -60,9 +60,9 @@ OpenHarness comparison decision = use as design reference only; do not add runti
 DeerFlow adoption decision = use as design reference only; do not add deerflow-harness, DeerFlow Gateway/frontend, or a second Agent runtime
 Confirmed first composition scenario = MM.Inventory.GetAvailability + MM.PurchaseOrder.GetList -> MaterialSupplySnapshot
 Current semantic planning verification = docs/superpowers/reports/2026-07-19-sap-nexus-semantic-planning-foundation-verify.md
-Immediate prerequisite = P0A source-of-truth/repository hygiene; synchronize docs/status/paths, repair stale editable-install path, and stop tracking real runtime traces without changing runtime behavior
+P0A source-of-truth/repository hygiene = completed (2026-07-25): docs/status/paths synchronized, editable-install finder + .venv shebangs repointed from stale zl-projects to GitHub_Projects, runtime traces gitignored (runtime/* only .gitkeep tracked); no runtime behavior change
 Next recommended design = sap-nexus-planner-dry-run (roadmap row 19; S2-A five-state MatchDecision + multi-intent/ambiguity/visibility/Eval, then S2-B progressive CapabilityCard + deterministic dry-run; no Gateway/SAP execution)
-Planned sequence = archived semantic planning foundation -> P0A hygiene -> S2-A semantic decision hardening -> S2-B planner dry-run -> conditional trusted/durable runtime gate -> PlanGraph-governed read-only composition pilot -> recommendation integration
+Planned sequence = archived semantic planning foundation -> [P0A hygiene completed] -> S2-A semantic decision hardening (next) -> S2-B planner dry-run -> conditional trusted/durable runtime gate -> PlanGraph-governed read-only composition pilot -> recommendation integration
 S3 scheduling input = borrow ready-node/concurrency/timeout/cancel/ledger/trace mechanics only after PlanGraph validation; never infer execution from LLM Tool Calls
 S3 output input = deterministic OutputProjection with freshness, completeness, limitations and Fact lineage; partial failure remains incomplete
 Conditional platform gate = sap-nexus-trusted-durable-runtime-foundation; not required for local S2, required before shared S3, long approval, multi-worker/HA, or non-sandbox WRITE
@@ -91,7 +91,7 @@ No branch creation unless user explicitly asks
 
 近期约束：
 
-- 第二条 live read capability、sandbox write pilot 和 S1 semantic planning foundation 均已完成；当前先收敛 P0A 文档/仓库卫生，再进入 S2-A Semantic MatchDecision Hardening 和 S2-B Planner Dry-run，不继续增加低价值 executor family 预留。
+- 第二条 live read capability、sandbox write pilot、S1 semantic planning foundation 和 P0A source-of-truth/repository hygiene 均已完成；现在进入 S2-A Semantic MatchDecision Hardening 和 S2-B Planner Dry-run，不继续增加低价值 executor family 预留。
 - 版本记录和路线图优先体现能力落地、评测回归和 write 纵切，而不是继续增加低成本架构占位。
 - 已有 reserved executor 只保留 fail-closed 边界，不能被解读为当前实现承诺。
 
@@ -112,7 +112,7 @@ Runbooks are numbered by workstream creation order, not by roadmap row or calend
 | `07` | `07-odata-gateway-read-pilot.md` | `v0.2.1` | Implemented / Active | `2026-07-09` | OData Gateway Read Pilot plus archived PO item detail/filter activation; live PO smoke passed after SICF reactivation |
 | `08` | `08-capability-matching-contract.md` | `v0.3.0` | S2-A Next / Phase 3+ Scale-up Deferred | `2026-07-24` | Baseline five-state MatchDecision, multi-intent/ambiguity, visibility and matcher Eval now; embedding/retrieval/rerank remain Phase 3+ |
 | `09` | `09-sql-read-executor-contract.md` | `v0.2.0` | Reserved | `2026-06-28` | Reserved `SQL_READ` safety boundary; not a near-term runtime priority before Eval seed, second read, and sandbox write pilot |
-| `10` | `10-capability-composition-contract.md` | `v0.3.5` | S1 Archived; S2-A Next; Runtime Reserved | `2026-07-25` | S1 archived; P0A, S2-A decision hardening and S2-B dry-run are next; shared S3 is gated by trusted/durable runtime and deterministic OutputProjection |
+| `10` | `10-capability-composition-contract.md` | `v0.3.6` | S1 Archived; S2-A Next; Runtime Reserved | `2026-07-25` | S1 archived; P0A hygiene closed; S2-A decision hardening and S2-B dry-run are next; shared S3 is gated by trusted/durable runtime and deterministic OutputProjection |
 | `11` | `11-sandbox-write-vertical-slice.md` | `v0.2.26` | Completed / Archived | `2026-07-17` | Sandbox PR `10137471` committed; external approval, Gateway anti-replay/hash/atomic claim, stateful JCo LUW and replay-complete trace verified; main spec `pr-create-action` merged; no additional SAP WRITE |
 
 Versioning rules:

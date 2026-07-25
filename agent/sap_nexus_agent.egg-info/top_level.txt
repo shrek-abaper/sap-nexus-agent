@@ -1,2 +1,0 @@
-sap_nexus_agent
-tests

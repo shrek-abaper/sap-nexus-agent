@@ -5,14 +5,14 @@
 | Field | Value |
 |---|---|
 | Runbook | `10-capability-composition-contract` |
-| Version | `v0.3.5` |
+| Version | `v0.3.6` |
 | Status | `S1 Archived; S2-A Next; Runtime Reserved` |
 | Created | `2026-07-14` |
 | Updated | `2026-07-25` |
-| Last Change | Received the Current/S2-A/S2-B/S3 capability evolution matrix moved from architecture §4.3 (now §3 "Current vs Target Capability Evolution"); architecture retains only the MVP contract definition and fail-closed boundaries |
+| Last Change | P0A source-of-truth/repository hygiene closed (2026-07-25): editable-install finder + .venv shebangs repointed to GitHub_Projects; runtime traces confirmed gitignored; runbook index synced. Next is S2-A `sap-nexus-planner-dry-run` |
 | Workstream | Archived S1 semantic planning foundation, S2-A semantic decision hardening, S2-B dry-run, S3 execution gated |
 | Related Change | `sap-nexus-semantic-planning-foundation` (archived `2026-07-19`); `sap-nexus-planner-dry-run` (next business design) |
-| Current Phase | P0A documentation/repository hygiene then S2-A MatchDecision hardening and S2-B dry-run; current runtime remains single-capability |
+| Current Phase | P0A hygiene closed (2026-07-25); next is S2-A MatchDecision hardening and S2-B dry-run; current runtime remains single-capability |
 
 ---
 
@@ -138,7 +138,7 @@ The two nodes may run in parallel only after PlanGraph proves they are independe
 ### Stage gates
 
 - S1 implementation, verification and archive are complete at `openspec/changes/archive/2026-07-19-sap-nexus-semantic-planning-foundation/`.
-- P0A source-of-truth/repository hygiene must close current status, moved-path, stale editable-install and tracked-runtime-artifact drift without changing runtime behavior.
+- P0A source-of-truth/repository hygiene closed (2026-07-25): status/path drift, stale editable-install and tracked-runtime-artifact issues resolved without changing runtime behavior.
 - S2 may enter design next because S1 schemas and validators passed the local release gate. S2-A and S2-B remain non-executing and must not call Gateway or SAP.
 - S3 starts only after dry-run bad cases prove fail-closed behavior, both atomic Read capabilities retain their existing regression baselines, and deterministic OutputProjection / incomplete semantics are designed.
 - Shared S3, long approval, multi-worker/HA or non-sandbox WRITE additionally requires trusted principal context, durable Run/Approval, ownership/lease, incremental SSE with cursor/replay and idempotent continuation.
@@ -150,7 +150,7 @@ The two nodes may run in parallel only after PlanGraph proves they are independe
 
 Mandatory rules:
 
-- S1 is archived; P0A hygiene then S2-A decision hardening and S2-B dry-run design is the open next sequence. Executable composition remains blocked until the S3 stage gates above are met.
+- S1 is archived; P0A hygiene is closed (2026-07-25); S2-A decision hardening and S2-B dry-run design is the open next sequence. Executable composition remains blocked until the S3 stage gates above are met.
 - OpenHarness is a design reference only; do not add it as a runtime dependency or second execution authority.
 - DeerFlow is a design reference only; do not add it as a runtime dependency, second Agent loop, or second execution authority.
 - The planner orchestrates the ontology dependency graph only; LLM must not freely orchestrate atomic capabilities.
@@ -222,7 +222,7 @@ openspec validate --all --strict
 
 1. Re-read the four wiki source-of-truth documents, the S1 verification report, and this runbook.
 2. Check `git status --short` and `openspec list --json`; S1 archive path must remain present and no active change is assumed.
-3. Close P0A source-of-truth and repository-hygiene drift without changing runtime behavior.
+3. P0A source-of-truth and repository-hygiene drift is closed (2026-07-25); no action needed.
 4. Start `sap-nexus-planner-dry-run` with S2-A first: five-state `MatchDecision`, multi-intent/ambiguity, visibility and matcher Eval; do not call Gateway or SAP.
 5. Continue to S2-B only after S2-A passes: progressive `CapabilityCard` discovery, natural-language GoalSpec/PlanDraft candidates, deterministic PlanCompiler output, validation evidence and dry-run preview; still do not call Gateway or SAP.
 6. Keep S3 Read-only Pilot as a separate follow-up change with PlanGraph-governed lifecycle, deterministic OutputProjection, explicit incomplete/freshness/lineage semantics, Gateway regression, and no-write gates.
