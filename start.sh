@@ -222,6 +222,12 @@ export SAPNEXUS_REGISTRY_BINDINGS_PATH="${SAPNEXUS_REGISTRY_BINDINGS_PATH:-$ROOT
 export SAPNEXUS_TRACE_PATH="${SAPNEXUS_TRACE_PATH:-$ROOT_DIR/runtime/gateway-jco/traces.jsonl}"
 export SAP_GATEWAY_ODATA_PROXY_URL="${SAP_GATEWAY_ODATA_PROXY_URL:-http://127.0.0.1:$ODATA_SERVICE_PORT}"
 
+# JCo native library (libsapjco3.so) is not on the default java.library.path.
+# Expose it to the Gateway JVM so System.loadLibrary("sapjco3") resolves at execute time.
+# start.sh defaults this to the checked-in native lib; override via env/.env if relocated.
+export SAP_JCO_LIB_PATH="${SAP_JCO_LIB_PATH:-$ROOT_DIR/services/gateway/jco/lib/linux}"
+export JAVA_TOOL_OPTIONS="-Djava.library.path=${SAP_JCO_LIB_PATH}"
+
 trap stop_services INT TERM EXIT
 
 start_service odata-service "$LOG_DIR/odata-service.log" bash -lc "cd '$ROOT_DIR/services/odata-service' && export PYTHONPATH=. && exec '$PYTHON_CMD' -c 'import os; from odata_service.server import run; run(int(os.environ.get(\"ODATA_SERVICE_PORT\", \"$ODATA_SERVICE_PORT\")))'"
