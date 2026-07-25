@@ -26,10 +26,11 @@
 
 ## 5. S2-A matcher Eval
 
-- [ ] 5.1 新增 `evals/` matcher cases 覆盖五类决策（SELECT/CLARIFY/REJECT/SHOW_OPTIONS/ESCALATE_TO_PLANNER）
-- [ ] 5.2 `false SELECT`（多目标静默降级为单 SELECT）作为回归失败项
-- [ ] 5.3 现有 inventory/PO/PR eval 回归不破坏
-- [ ] 5.4 matcher Eval 退出标准全过
+- [x] 5.1 新增 `evals/` matcher cases 覆盖五类决策（SELECT/CLARIFY/REJECT/SHOW_OPTIONS/ESCALATE_TO_PLANNER）
+- [x] 5.2 `false SELECT`（多目标静默降级为单 SELECT）作为回归失败项
+- [x] 5.3 现有 inventory/PO/PR eval 回归不破坏
+- [ ] 5.4 matcher Eval 退出标准全过（SHOW_OPTIONS case pending is_ambiguous，见 5.5）
+- [ ] 5.5 在 `intent.py` 实现 `is_ambiguous` 关键词歧义检测（主/弱关键词阈值表，Design Doc § 错误处理与边界条件）；un-skip matcher SHOW_OPTIONS case；复跑 matcher Eval 5/5 全过
 
 ## 6. S2-A Workbench 展示
 
