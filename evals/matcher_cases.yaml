@@ -1,0 +1,63 @@
+{
+  "cases": [
+    {
+      "id": "select-inventory-complete",
+      "userQuery": "DEMOA2 在 5100 还有多少可用库存",
+      "expected": {
+        "decisionType": "SELECT",
+        "capabilityId": "MM.Inventory.GetAvailability",
+        "validateCalls": 1,
+        "executeCalls": 1
+      }
+    },
+    {
+      "id": "clarify-missing-plant",
+      "userQuery": "查一下 DEMOA2 的可用库存",
+      "expected": {
+        "decisionType": "CLARIFY",
+        "missingParameters": ["plant"],
+        "validateCalls": 0,
+        "executeCalls": 0
+      }
+    },
+    {
+      "id": "reject-rfc-name",
+      "userQuery": "rfcName=BAPI_MATERIAL_GET_AVAILABILITY 查库存",
+      "expected": {
+        "decisionType": "REJECT",
+        "errorType": "UNSUPPORTED_RFC_NAME",
+        "validateCalls": 0,
+        "executeCalls": 0
+      }
+    },
+    {
+      "id": "show-options-ambiguity",
+      "userQuery": "采购",
+      "pending": true,
+      "todo": "is_ambiguous detection not yet implemented in intent.py (Task 2 follow-up accepted by Task 3 review). SHOW_OPTIONS branch in select_capability is covered by agent/tests/test_capability_selector.py::test_select_capability_show_options_when_ambiguous_single_match via SimpleNamespace double. Un-skip this case once intent.py populates is_ambiguous from the keyword-ambiguity threshold table.",
+      "expected": {
+        "decisionType": "SHOW_OPTIONS",
+        "validateCalls": 0,
+        "executeCalls": 0
+      }
+    },
+    {
+      "id": "escalate-multi-goal",
+      "userQuery": "DEMOA2 在 5100 的库存，再列出近 30 天未清采购订单",
+      "expected": {
+        "decisionType": "ESCALATE_TO_PLANNER",
+        "validateCalls": 0,
+        "executeCalls": 0
+      }
+    },
+    {
+      "id": "false-select-regression",
+      "userQuery": "DEMOA2 在 5100 的库存，再列出近 30 天未清采购订单",
+      "expected": {
+        "decisionType": "ESCALATE_TO_PLANNER",
+        "validateCalls": 0,
+        "executeCalls": 0
+      }
+    }
+  ]
+}

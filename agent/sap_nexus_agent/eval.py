@@ -8,6 +8,7 @@ from typing import Any
 
 from sap_nexus_agent.execution_result import ExecutionResult, ValidationResult
 from sap_nexus_agent.intent import parse_intent
+from sap_nexus_agent.match_decision import MatchDecision
 from sap_nexus_agent.orchestrator import continue_action, run_query
 
 
@@ -114,9 +115,17 @@ class FakeGatewayClient:
 
 def run_eval_file(path: Path) -> EvalSummary:
     payload = json.loads(path.read_text(encoding="utf-8"))
-    total = len(payload["cases"])
+    cases = payload["cases"]
+    # S2-A matcher Eval auto-dispatch: cases assert on ``expected.decisionType``
+    # (five-state MatchDecision) rather than ``expected.status`` (legacy
+    # three-state). Routing is decided by the first case so the existing
+    # inventory/PO/PR eval files keep using the legacy assertion path.
+    if cases and "decisionType" in (cases[0].get("expected") or {}):
+        return run_matcher_cases(cases)
+
+    total = len(cases)
     failures: list[str] = []
-    for case in payload["cases"]:
+    for case in cases:
         gateway = FakeGatewayClient(case)
         outcome = run_query(_case_utterance(case), gateway)
         expected = case.get("expected", {})
@@ -135,6 +144,122 @@ def run_eval_file(path: Path) -> EvalSummary:
     if failures:
         raise AssertionError("\n".join(failures))
     return EvalSummary(total=total, passed=total, failed=0)
+
+
+def run_matcher_cases(cases: list[dict[str, Any]]) -> EvalSummary:
+    """S2-A matcher Eval (Design Doc §测试策略 -> S2-A matcher Eval).
+
+    Routes each case through ``run_query`` (parse_intent + select_capability)
+    and asserts ``outcome.match_decision.decision_type`` against
+    ``expected.decisionType`` for the five decision classes:
+
+    - SELECT            -> capabilityId + validateCalls=1 + executeCalls=1
+    - CLARIFY           -> missingParameters + validateCalls=0 + executeCalls=0
+    - REJECT            -> errorType + validateCalls=0 + executeCalls=0
+    - SHOW_OPTIONS      -> pending (is_ambiguous not yet in intent.py)
+    - ESCALATE_TO_PLANNER -> validateCalls=0 + executeCalls=0
+
+    The ``false-select-regression`` case asserts a multi-goal utterance produces
+    ESCALATE_TO_PLANNER (not SELECT); if the parser/selector regresses and
+    returns SELECT, the failure is reported with the ``false SELECT`` marker so
+    it is unmissable in CI output (D-1 fix guard).
+
+    Cases marked ``pending: true`` are skipped (not failed) so SHOW_OPTIONS can
+    stay documented in the eval file while ``is_ambiguous`` remains unimplemented
+    in intent.py (Task 2 follow-up accepted by Task 3 review).
+    """
+    failures: list[str] = []
+    skipped = 0
+    passed = 0
+    for case in cases:
+        case_id = _case_id(case)
+        if case.get("pending"):
+            # SHOW_OPTIONS stays documented but skipped; is_ambiguous is a
+            # Task 2 follow-up. The SHOW_OPTIONS branch in select_capability is
+            # covered by agent/tests/test_capability_selector.py via a
+            # SimpleNamespace double.
+            todo = case.get("todo", "")
+            print(f"SKIP (pending): {case_id}: {todo}", file=sys.stderr)
+            skipped += 1
+            continue
+
+        gateway = FakeGatewayClient(case)
+        outcome = run_query(_case_utterance(case), gateway)
+        expected = case["expected"]
+        decision = outcome.match_decision
+        if decision is None:
+            failures.append(f"{case_id}: outcome.match_decision is None")
+            continue
+        try:
+            _assert_matcher_decision_type(case_id, decision, expected)
+            _assert_matcher_state_fields(case_id, decision, expected)
+            _assert_matcher_gateway_calls(case_id, gateway, expected)
+        except AssertionError as exc:
+            failures.append(str(exc))
+        else:
+            passed += 1
+
+    if failures:
+        raise AssertionError("\n".join(failures))
+    return EvalSummary(total=passed, passed=passed, failed=0)
+
+
+def _assert_matcher_decision_type(
+    case_id: str, decision: MatchDecision, expected: dict[str, Any]
+) -> None:
+    actual = decision.decision_type
+    expected_type = expected["decisionType"]
+    if actual == expected_type:
+        return
+    # False-SELECT regression: multi-goal utterance silently reduced to SELECT
+    # instead of ESCALATE_TO_PLANNER (D-1 fix guard). Called out explicitly so
+    # a regression is unmissable in CI output.
+    if expected_type == "ESCALATE_TO_PLANNER" and actual == "SELECT":
+        raise AssertionError(
+            f"{case_id}: false SELECT regression - expected ESCALATE_TO_PLANNER "
+            f"but got SELECT (multi-goal utterance was silently reduced to a "
+            f"single capability)"
+        )
+    raise AssertionError(
+        f"{case_id}: decisionType mismatch - expected {expected_type}, got {actual}"
+    )
+
+
+def _assert_matcher_state_fields(
+    case_id: str, decision: MatchDecision, expected: dict[str, Any]
+) -> None:
+    if "capabilityId" in expected and decision.capability_id != expected["capabilityId"]:
+        raise AssertionError(
+            f"{case_id}: capabilityId mismatch - expected {expected['capabilityId']}, "
+            f"got {decision.capability_id}"
+        )
+    if "missingParameters" in expected and decision.missing_parameters != expected["missingParameters"]:
+        raise AssertionError(
+            f"{case_id}: missingParameters mismatch - expected {expected['missingParameters']}, "
+            f"got {decision.missing_parameters}"
+        )
+    if "errorType" in expected and decision.error_type != expected["errorType"]:
+        raise AssertionError(
+            f"{case_id}: errorType mismatch - expected {expected['errorType']}, "
+            f"got {decision.error_type}"
+        )
+
+
+def _assert_matcher_gateway_calls(
+    case_id: str, gateway: FakeGatewayClient, expected: dict[str, Any]
+) -> None:
+    expected_validate = expected.get("validateCalls", 0)
+    expected_execute = expected.get("executeCalls", 0)
+    if len(gateway.validate_calls) != expected_validate:
+        raise AssertionError(
+            f"{case_id}: validateCalls mismatch - expected {expected_validate}, "
+            f"got {len(gateway.validate_calls)}"
+        )
+    if len(gateway.execute_calls) != expected_execute:
+        raise AssertionError(
+            f"{case_id}: executeCalls mismatch - expected {expected_execute}, "
+            f"got {len(gateway.execute_calls)}"
+        )
 
 
 def _assert_case(case: dict[str, Any], outcome: Any, gateway: FakeGatewayClient) -> None:
