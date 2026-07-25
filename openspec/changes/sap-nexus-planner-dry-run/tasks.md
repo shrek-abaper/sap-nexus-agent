@@ -6,11 +6,11 @@
 
 ## 2. S2-A 多意图检测（修复 D-1）
 
-- [ ] 2.1 改 `parse_intent` rule 路径：扫描全部能力关键词集合，统计命中数，不再首命中即返回
-- [ ] 2.2 命中 >1 -> `ESCALATE_TO_PLANNER`；单命中走原参数提取逻辑
-- [ ] 2.3 改 LLM 路径 system prompt：从 "Select exactly one" 改为 "detect all matching capabilities；if >1, return escalation"
-- [ ] 2.4 改 `_payload_to_parse_result` 解析多候选并产出升级决策
-- [ ] 2.5 单元测试：多目标 utterance 升级、单意图不误判
+- [x] 2.1 改 `parse_intent` rule 路径：扫描全部能力关键词集合，统计命中数，不再首命中即返回
+- [x] 2.2 命中 >1 -> `ESCALATE_TO_PLANNER`；单命中走原参数提取逻辑
+- [x] 2.3 改 LLM 路径 system prompt：从 "Select exactly one" 改为 "detect all matching capabilities；if >1, return escalation"
+- [x] 2.4 改 `_payload_to_parse_result` 解析多候选并产出升级决策
+- [x] 2.5 单元测试：多目标 utterance 升级、单意图不误判
 
 ## 3. S2-A selector 输出 MatchDecision
 
