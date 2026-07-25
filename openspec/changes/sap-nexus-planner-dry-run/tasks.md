@@ -20,9 +20,9 @@
 
 ## 4. S2-A visibility pre-filter
 
-- [ ] 4.1 `CapabilityCard` 投影：从 `registry_loader` descriptor 生成（`capabilityId` / `inputs` / `governance` / `visibility`）
-- [ ] 4.2 visibility pre-filter：`sideEffect=none` + `dataClassification=internal` 默认可见；写能力 dry-run 可见但不可执行
-- [ ] 4.3 单元测试：读写能力可见性边界
+- [x] 4.1 `CapabilityCard` 投影：从 `registry_loader` descriptor 生成（`capabilityId` / `inputs` / `governance` / `visibility`）
+- [x] 4.2 visibility pre-filter：`sideEffect=none` + `dataClassification=internal` 默认可见；写能力 dry-run 可见但不可执行
+- [x] 4.3 单元测试：读写能力可见性边界
 
 ## 5. S2-A matcher Eval
 
