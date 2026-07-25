@@ -2,6 +2,8 @@
 comet_change: sap-nexus-planner-dry-run
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-07-25-sap-nexus-planner-dry-run
+status: final
 ---
 
 # Design Doc: sap-nexus-planner-dry-run (S2-A + S2-B)
@@ -240,3 +242,4 @@ S2-A（任务组 1-6）先完成并过 matcher Eval + 现有回归 -> S2-B（任
 ## 开放项
 
 无遗留开放项（5 个 Open Questions 已在 brainstorming 全部澄清并落入本设计）。
+

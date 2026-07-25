@@ -2,6 +2,7 @@
 change: sap-nexus-planner-dry-run
 design-doc: docs/superpowers/specs/2026-07-25-sap-nexus-planner-dry-run-design.md
 base-ref: ed62c96fd9dc6175c1f77eab4b6aebdefba01179
+archived-with: 2026-07-25-sap-nexus-planner-dry-run
 ---
 
 # SAP Nexus Planner Dry-Run 实施计划（S2-A + S2-B）
@@ -27,6 +28,7 @@ base-ref: ed62c96fd9dc6175c1f77eab4b6aebdefba01179
 - 不新增外部依赖；前端不新增运行时依赖。
 - 不提交 `.env`、凭据、token、连接串、真实运行 trace 或 SAP 数据。
 
+archived-with: 2026-07-25-sap-nexus-planner-dry-run
 ---
 
 ## File Structure
@@ -77,6 +79,7 @@ base-ref: ed62c96fd9dc6175c1f77eab4b6aebdefba01179
 | `openspec/changes/sap-nexus-planner-dry-run/specs/semantic-match-decision/spec.md` | SHOW_OPTIONS 阈值条件细化（Spec Patch） |
 | `openspec/changes/sap-nexus-planner-dry-run/specs/planner-dry-run/spec.md` | `CapabilityCard.producesFactTypes` 明确（Spec Patch） |
 
+archived-with: 2026-07-25-sap-nexus-planner-dry-run
 ---
 
 ## Verification Commands
@@ -107,12 +110,14 @@ openspec validate --all --strict
 scripts/verify-agent-callplan-evidence.sh
 ```
 
+archived-with: 2026-07-25-sap-nexus-planner-dry-run
 ---
 
 ## 阶段编排
 
 **S2-A（任务组 1-6）** 先完成并过 matcher Eval + 现有回归，再进入 **S2-B（任务组 7-9）**，最后 **验证归档（任务组 10）**。S2-B dry-run 不依赖 Gateway/SAP 可用。
 
+archived-with: 2026-07-25-sap-nexus-planner-dry-run
 ---
 
 # 阶段 S2-A：决策层
@@ -194,6 +199,7 @@ def to_selection_result(self) -> "SelectionResult | None":
 
 **验证:** `pytest agent/tests/test_match_decision.py` 全过。
 
+archived-with: 2026-07-25-sap-nexus-planner-dry-run
 ---
 
 ## Task 2: S2-A 多意图检测（修复 D-1）
@@ -274,6 +280,7 @@ Detect all matching capabilities from the registered closed set below.
 
 **验证:** `pytest agent/tests/test_intent.py` 全过；现有 intent 测试不破坏。
 
+archived-with: 2026-07-25-sap-nexus-planner-dry-run
 ---
 
 ## Task 3: S2-A selector 输出 MatchDecision
@@ -341,6 +348,7 @@ def select_capability(parse_result: IntentParseResult) -> MatchDecision:
 
 **验证:** `pytest agent/tests/test_capability_selector.py agent/tests/test_orchestrator.py agent/tests/test_workbench_output.py` 全过；现有 orchestrator/workbench 测试不破坏（SELECT/CLARIFY/REJECT 路径行为不变）。
 
+archived-with: 2026-07-25-sap-nexus-planner-dry-run
 ---
 
 ## Task 4: S2-A visibility pre-filter
@@ -406,6 +414,7 @@ Design Doc 明确：写能力（`sideEffect=sap_write`）在 dry-run/handoff 可
 
 **验证:** `pytest agent/tests/test_visibility.py` 全过。
 
+archived-with: 2026-07-25-sap-nexus-planner-dry-run
 ---
 
 ## Task 5: S2-A matcher Eval
@@ -495,6 +504,7 @@ cases:
 - `python -m sap_nexus_agent.eval evals/matcher_cases.yaml` 全过（五类决策 + false SELECT 回归）。
 - `scripts/verify-agent-callplan-evidence.sh` 全过（含现有 inventory/PO/PR + S1 contract + pytest + openspec validate）。
 
+archived-with: 2026-07-25-sap-nexus-planner-dry-run
 ---
 
 ## Task 6: S2-A Workbench 展示
@@ -565,6 +575,7 @@ export function buildMatchDecisionView(snapshot: AgentRunSnapshot | null): Match
 
 **验证:** `npm --prefix frontend run verify` 全过。
 
+archived-with: 2026-07-25-sap-nexus-planner-dry-run
 ---
 
 # 阶段 S2-B：规划层
@@ -640,6 +651,7 @@ def build_goal_spec(handoff: EscalationHandoff, cards: list[CapabilityCard]) -> 
 
 **验证:** `pytest agent/tests/test_planner_capability_card.py` 全过；`CapabilityCard.produces_fact_types` 字段断言来自 `outputs.factTypeRef`。
 
+archived-with: 2026-07-25-sap-nexus-planner-dry-run
 ---
 
 ## Task 8: S2-B PlanCompiler dry-run
@@ -730,6 +742,7 @@ def test_plan_compiler_does_not_call_gateway():
 
 **验证:** `pytest agent/tests/test_planner_plan_compiler.py` 全过；mock 断言 Gateway validate/execute 零调用。
 
+archived-with: 2026-07-25-sap-nexus-planner-dry-run
 ---
 
 ## Task 9: S2-B handoff 接入与展示
@@ -803,6 +816,7 @@ cases:
 
 **验证:** `python -m sap_nexus_agent.eval evals/dry_run_cases.yaml` 全过；`npm --prefix frontend run verify` 全过（含 dry-run 预览渲染）。
 
+archived-with: 2026-07-25-sap-nexus-planner-dry-run
 ---
 
 # 阶段 验证与归档准备
@@ -849,6 +863,7 @@ cases:
 
 **验证:** runbook 版本字段与实际 bump 后一致；`openspec validate --all --strict` 仍通过（runbook 不在 openspec 校验范围，但 README index 若引用 change 状态需一致）。
 
+archived-with: 2026-07-25-sap-nexus-planner-dry-run
 ---
 
 ## 交付顺序总结
@@ -870,3 +885,4 @@ cases:
 | 写能力 dry-run 可见误执行 | visibility pre-filter `for_execution=True` 过滤（Task 4.2）；PlanCompiler 不调 Gateway（Task 8.4）；前端标注"不执行"（Task 9.2） |
 | S2-A/S2-B 同 change 范围偏大 | 严格按阶段编排：S2-A 先过 matcher Eval 再 S2-B；每个 Task 验收后打勾 + commit（由协调者按 review_mode 执行） |
 | runbook 版本漂移 | Task 10.4 先读实际当前 version 再 bump（MEMORY.md 提醒） |
+
