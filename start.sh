@@ -24,7 +24,10 @@ Starts the local development services needed for manual Agent testing:
   - Workbench: Next.js Agent Workbench from frontend/
 
 Usage:
-  ./start.sh [--dry-run] [--help]
+  ./start.sh [start] [--dry-run]   Start all dev services (default)
+  ./start.sh stop                  Stop running dev services
+  ./start.sh restart               Stop then start
+  ./start.sh --help
 
 Environment overrides:
   GATEWAY_PORT=8080
@@ -68,8 +71,10 @@ append_no_proxy() {
   printf '%s\n' "$current"
 }
 
+COMMAND=start
 for arg in "$@"; do
   case "$arg" in
+    start|stop|restart) COMMAND=$arg ;;
     --dry-run) DRY_RUN=1 ;;
     --help|-h) usage; exit 0 ;;
     *) fail "Unknown argument: $arg" ;;
@@ -150,15 +155,27 @@ start_service() {
   log "$name pid=$pid"
 }
 
-stop_services() {
-  local status=$?
-  trap - INT TERM EXIT
+# Print PID listening on $1 (port), or empty. Best-effort via ss.
+# Always returns 0 so callers can use it under set -e / pipefail safely.
+port_pid() {
+  local port=$1
+  command -v ss >/dev/null 2>&1 || return 0
+  ss -ltnp 2>/dev/null | grep -E ":$port\b" | grep -oE 'pid=[0-9]+' | head -1 | cut -d= -f2 || true
+}
 
+# Stop all dev services.
+# Layer 1: PID files (kill process group).
+# Layer 2: port fallback - SIGTERM orphans still holding our ports. Catches
+#          children that escaped the setsid group (e.g. gradlew's java
+#          process, or next-server forked under npm).
+# Layer 3: after a grace period, SIGKILL anything still holding a port.
+# Does not exit; the caller (trap or subcommand) decides what to do next.
+stop_all() {
   if [[ -d "$PID_DIR" ]]; then
     for pid_file in "$PID_DIR"/*.pid; do
       [[ -e "$pid_file" ]] || continue
       local pid
-      pid=$(cat "$pid_file")
+      pid=$(cat "$pid_file" 2>/dev/null) || { rm -f "$pid_file"; continue; }
       if kill -0 "$pid" 2>/dev/null; then
         log "Stopping pid=$pid ($(basename "$pid_file" .pid))"
         kill -- "-$pid" 2>/dev/null || kill "$pid" 2>/dev/null || true
@@ -167,6 +184,28 @@ stop_services() {
     done
   fi
 
+  local port pid
+  for port in "$FRONTEND_PORT" "$GATEWAY_PORT" "$ODATA_SERVICE_PORT"; do
+    pid=$(port_pid "$port")
+    [[ -n "$pid" ]] || continue
+    log "Port $port still held by pid=$pid; killing"
+    kill "$pid" 2>/dev/null || true
+  done
+
+  sleep 2
+  for port in "$FRONTEND_PORT" "$GATEWAY_PORT" "$ODATA_SERVICE_PORT"; do
+    pid=$(port_pid "$port")
+    [[ -n "$pid" ]] || continue
+    log "Port $port still held by pid=$pid after SIGTERM; force-killing"
+    kill -9 "$pid" 2>/dev/null || true
+  done
+}
+
+# EXIT/INT/TERM trap: stop then exit, preserving the original status.
+stop_services() {
+  local status=$?
+  trap - INT TERM EXIT
+  stop_all
   wait 2>/dev/null || true
   exit "$status"
 }
@@ -183,6 +222,42 @@ if [[ "$DRY_RUN" == "1" ]]; then
   print_plan "$GRADLE_CMD" "$PYTHON_CMD"
   exit 0
 fi
+
+# --- subcommand dispatch ---
+
+# stop: halt running services and exit. Does not need the launch environment.
+if [[ "$COMMAND" == "stop" ]]; then
+  log "Stopping services (stop subcommand)"
+  stop_all
+  wait 2>/dev/null || true
+  sleep 1
+  still_in_use=0
+  for port in "$FRONTEND_PORT" "$GATEWAY_PORT" "$ODATA_SERVICE_PORT"; do
+    if [[ -n "$(port_pid "$port")" ]]; then
+      log "WARN: port $port still in use after stop"
+      still_in_use=1
+    fi
+  done
+  [[ "$still_in_use" == "0" ]] && log "All services stopped."
+  trap - INT TERM EXIT
+  exit 0
+fi
+
+# restart: stop first, then fall through to the start flow below.
+if [[ "$COMMAND" == "restart" ]]; then
+  log "Restarting: stopping existing services first"
+  stop_all
+  wait 2>/dev/null || true
+  sleep 1
+fi
+
+# start (and restart fallthrough): refuse if ports are already held, so a
+# forgotten previous run does not collide with this one.
+for port in "$FRONTEND_PORT" "$GATEWAY_PORT" "$ODATA_SERVICE_PORT"; do
+  if [[ -n "$(port_pid "$port")" ]]; then
+    fail "Port $port is already in use. Run './start.sh restart' to recycle, or './start.sh stop' first."
+  fi
+done
 
 mkdir -p "$LOG_DIR" "$PID_DIR"
 
