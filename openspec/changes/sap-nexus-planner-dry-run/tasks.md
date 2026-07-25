@@ -41,9 +41,9 @@
 
 ## 7. S2-B planner 模块骨架
 
-- [ ] 7.1 新增 `agent/sap_nexus_agent/planner/` 模块（`CapabilityCard` / `GoalSpec` / `PlanDraft` / `PlanCompiler`）
-- [ ] 7.2 `CapabilityCard` discovery 实现（从 Registry 闭集 + Snapshot 投影）
-- [ ] 7.3 `GoalSpec` / `PlanDraft` candidate 生成（复用 S1 `semantic-planning-foundation` schema）
+- [x] 7.1 新增 `agent/sap_nexus_agent/planner/` 模块（`CapabilityCard` / `GoalSpec` / `PlanDraft` / `PlanCompiler`）
+- [x] 7.2 `CapabilityCard` discovery 实现（从 Registry 闭集 + Snapshot 投影）
+- [x] 7.3 `GoalSpec` / `PlanDraft` candidate 生成（复用 S1 `semantic-planning-foundation` schema）
 
 ## 8. S2-B PlanCompiler dry-run
 
