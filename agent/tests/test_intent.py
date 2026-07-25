@@ -601,3 +601,89 @@ def test_llm_system_prompt_detects_all_capabilities_not_select_exactly_one():
     assert "select exactly one" not in system_prompt.lower()
     # Escalation guidance present.
     assert "escalation" in system_prompt.lower()
+
+
+# --- Task 5.5: is_ambiguous keyword-ambiguity detection (SHOW_OPTIONS trigger) ---
+#
+# Design Doc § 多意图检测 Q2: keyword ambiguity = utterance weakly matches
+# multiple capability keyword sets without a clear primary intent (not multi-
+# intent, which is ESCALATE_TO_PLANNER). Primary/weak keyword tables are module
+# constants in intent.py; threshold: >=2 capabilities weakly matched AND no
+# primary keyword hit anywhere -> is_ambiguous=True.
+
+
+def test_intent_parse_result_is_ambiguous_defaults_to_false():
+    """Backward compat: existing construction without is_ambiguous still works."""
+    result = IntentParseResult(intent=None, parameters={}, missing_parameters=[])
+    assert result.is_ambiguous is False
+
+
+def test_parse_intent_ambiguous_weak_only_po_and_pr_match():
+    """'采购' alone weak-matches PO and PR (no primary) -> is_ambiguous=True.
+
+    Per Design Doc § 多意图检测 Q2: '采购' fuzzy-matches PO query and PR creation.
+    Neither '采购订单' (PO primary) nor '采购申请'/'创建采购' (PR primary) is
+    present, so no clear primary intent exists.
+    """
+    result = parse_intent("采购")
+    assert result.is_ambiguous is True
+
+
+def test_parse_intent_not_ambiguous_when_po_primary_keyword_hit():
+    """PO primary keyword '采购订单' -> clear single intent, not ambiguous."""
+    result = parse_intent("采购订单 4500000001")
+    assert result.is_ambiguous is False
+
+
+def test_parse_intent_not_ambiguous_when_inventory_primary_keyword_hit():
+    """Inventory primary keyword '库存' -> clear single intent, not ambiguous."""
+    result = parse_intent("查库存")
+    assert result.is_ambiguous is False
+
+
+def test_parse_intent_not_ambiguous_when_pr_primary_keyword_hit():
+    """PR primary keyword '采购申请' -> clear single intent, not ambiguous."""
+    result = parse_intent(
+        "采购申请 物料 MAT001 工厂 1000 数量 10 EA 交货日期 2026-08-01 采购组 G01"
+    )
+    assert result.is_ambiguous is False
+
+
+def test_parse_intent_not_ambiguous_when_multi_intent_with_primary_hits():
+    """Multi-intent with primary hits -> is_ambiguous=False.
+
+    Multi-intent (matched_intents > 1) is a clear multi-goal utterance, not
+    keyword ambiguity. ESCALATE_TO_PLANNER takes priority in the selector.
+    """
+    text = "DEMOA2 在 5100 的库存，再列出近 30 天未清采购订单"
+    result = parse_intent(text)
+    assert len(result.matched_intents) == 2
+    assert result.is_ambiguous is False
+
+
+def test_parse_intent_ambiguous_weak_inventory_and_pr():
+    """Weak Inventory ('有没有') + weak PR/PO ('采购') -> is_ambiguous=True."""
+    result = parse_intent("有没有采购")
+    assert result.is_ambiguous is True
+
+
+def test_parse_intent_ambiguous_with_single_existing_match_routes_show_options():
+    """is_ambiguous=True with single existing match -> selector SHOW_OPTIONS.
+
+    '有没有采购' weak-matches Inventory (existing scan finds '有没有') and
+    weak-matches PR/PO ('采购'). The existing scan finds 1 match (Inventory),
+    so matched_intents has 1 entry; is_ambiguous=True -> SHOW_OPTIONS fires
+    (not ESCALATE, since matched_intents length is 1).
+    """
+    parsed = parse_intent("有没有采购")
+    selected = select_capability(parsed)
+    assert selected.decision_type == "SHOW_OPTIONS"
+    assert selected.capability_id is None
+
+
+def test_parse_intent_ambiguous_does_not_affect_single_clear_intent_extraction():
+    """is_ambiguous=False for clear single intent; existing extraction preserved."""
+    result = parse_intent("DEMOA2 在 5100 还有多少可用库存")
+    assert result.is_ambiguous is False
+    assert result.intent == "inventory_availability"
+    assert result.parameters == {"material": "DEMOA2", "plant": "5100"}

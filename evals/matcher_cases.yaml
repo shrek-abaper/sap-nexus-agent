@@ -32,9 +32,7 @@
     },
     {
       "id": "show-options-ambiguity",
-      "userQuery": "采购",
-      "pending": true,
-      "todo": "is_ambiguous detection not yet implemented in intent.py (Task 2 follow-up accepted by Task 3 review). SHOW_OPTIONS branch in select_capability is covered by agent/tests/test_capability_selector.py::test_select_capability_show_options_when_ambiguous_single_match via SimpleNamespace double. Un-skip this case once intent.py populates is_ambiguous from the keyword-ambiguity threshold table.",
+      "userQuery": "有没有采购",
       "expected": {
         "decisionType": "SHOW_OPTIONS",
         "validateCalls": 0,
