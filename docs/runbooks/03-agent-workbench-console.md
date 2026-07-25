@@ -5,10 +5,10 @@
 | Field | Value |
 |---|---|
 | Runbook | `03-agent-workbench-console` |
-| Version | `v1.0.4` |
+| Version | `v1.0.5` |
 | Status | `Archived` |
 | Created | `2026-06-20` |
-| Updated | `2026-07-14` |
+| Updated | `2026-07-25` |
 | Workstream | Internal Agent console, runtime streaming, observability, trace, and human-in-the-loop state skeleton |
 | Related Change | `sap-nexus-agent-workbench-console`; corrections: `sap-nexus-workbench-live-agent-runtime`, `sap-nexus-inventory-md04-stock-req-list`; UI layout evolution: `workbench-notion-chat-layout` |
 | Current Phase | Workbench baseline archived; Notion-style chat layout evolution archived (2026-07-09) |
@@ -251,6 +251,8 @@ Use this after `sap-nexus-workbench-live-agent-runtime` changes are present:
 ./start.sh
 ```
 
+`start.sh` auto-injects `JAVA_TOOL_OPTIONS=-Djava.library.path=$ROOT/services/gateway/jco/lib/linux` so the Gateway JVM can load `libsapjco3.so`. If a read query fails with `库存查询失败（UNKNOWN）：未提供错误明细`, the JCo native lib is not loading — check `runtime/dev-services/logs/gateway.log` for `UnsatisfiedLinkError` and confirm `SAP_JCO_LIB_PATH` / `JAVA_TOOL_OPTIONS`.
+
 2. Open the Workbench from the Windows browser:
 
 ```text
@@ -460,3 +462,40 @@ The `Next Start Here` steps above were the plan at session close on `2026-07-09`
 - `openspec list --json` currently returns no active changes.
 - Next recommended workstream is `sap-nexus-sandbox-write-vertical-slice` (see `docs/runbooks/README.md`), not a continuation of this workstream.
 3. Sync the delta spec into `openspec/specs/agent-workbench-console/spec.md` at archive time.
+
+## Session Closeout - 2026-07-25 (Workbench Hero copy & visual tweak)
+
+Tweak (score 0, execute directly per AGENTS.md routing). Middle-column copy hierarchy and visual style only; no side-nav, agent, gateway, or registry behavior changes.
+
+### Completed
+
+- Task 1 Hero copy hierarchy: H1 -> `用自然语言调用受控 SAP 能力` (no period, single line); subtitle -> `先给结论，再给证据链`; removed the Read/sandbox Action mechanism paragraph (equivalent copy already present in `HumanApprovalPanel`: parameter snapshot dl + `批准并执行` + `Read-only Function，不需要人工审批`); added guard line `未声明的能力不会执行 · 写操作需人工批准` under the input.
+- Task 1 Step 1 SKIPPED: eyebrow stays as static decoration. Capability count (`3 online · 2 read · 1 write`) would need to derive from `registry/capabilities.yaml`, but the frontend has no capability API (only `agent-runs` / `traces` routes). Numbers not hardcoded per the no-fabrication rule. Registry actually contains 3 capabilities (`MM.Inventory.GetAvailability` READ, `MM.PurchaseOrder.GetList` READ, `MM.PR.CreateDraft` ACTION); exposing them to the frontend needs a new `/api/capabilities` route, deferred to keep this a tweak.
+- Task 2 placeholder: `描述你的 SAP 问题，例如：DEMOA2 在工厂 5100 的可用库存`; identifiers share the new `sample-data.ts` constants.
+- Task 3 example cards: one per registered capability - `READ · 库存`, `READ · 采购订单`, `ACTION · 需审批`; label occupies the top row, text left-aligned, identifiers monospace. Card 3 submits via the existing `runAgent` path (no special branch); approval interception depends on backend intent recognition (unchanged).
+- Task 4 visual: added tokens `--accent` `#0F766E` / `--accent-hover`, `--tag-read-bg` / `--tag-read-text`, `--tag-action-color` `#D97706`, `--text-subtle` `#6B7280`; updated `--font-mono` to the standardized stack; `.mono-token` reusable monospace class; H1 30px/600/-0.02em/nowrap, subtitle 14px/`#6B7280`, Hero `padding-top 15vh`, middle column `max-width 720px` (hero + chat-stream + composer), input `min-height 96px` / `radius 12px` / focus accent border / no shadow; topbar `● Read 直连 · Write 需审批` status dots (read accent, write amber); READ tag bg `#F3F4F6` dark-gray text no border, ACTION tag amber border no fill. No SAP blue `#0A6ED1`, no purple gradients.
+- Task 5 SKIPPED: `AgentRunEvent` / `AgentRunSnapshot` carry no intent-count field (`intent_parsed` only carries an artifact); not modifying backend, not guessing intent count. Tracked as TODO.
+
+### Files
+
+- Modified: `frontend/src/modules/agent-console/AgentConsole.tsx`, `frontend/app/globals.css`, `docs/runbooks/03-agent-workbench-console.md`
+- Added: `frontend/src/modules/agent-console/sample-data.ts`
+- Unrelated, pre-existing uncommitted: `frontend/src/shared/ui/Icon.tsx` (from the prior side-nav `plus` icon task; not touched in this tweak)
+
+### Verified
+
+- Command: `npm run typecheck` -> passed (exit 0)
+- Command: `npm run test` -> `8 files, 33 passed`
+- Command: `npm run build` -> `Compiled successfully`, 6 pages generated
+- Command: `git diff --check` -> clean (exit 0)
+- Note: `npm run lint` not available (no eslint config / lint script in `frontend/`); typecheck + test + build matches AGENTS.md §4 `npm run verify`.
+
+### Blockers
+
+- None. Manual browser validation pending local `npm run dev`: H1 single line, three example cards with correct labels/copy, card 3 enters approval interception, identifiers in monospace, no SAP blue or purple.
+
+### Residual Risks
+
+- Card 3 (ACTION) approval interception depends on the backend intent adapter recognizing `为 DEMOA2 创建采购申请草稿` as `MM.PR.CreateDraft`; if the backend does not, it returns clarification/error via the normal path (no bypass, no special branch).
+- H1 `white-space: nowrap` may overflow on extremely narrow viewports (<280px); acceptable for an internal console.
+- Eyebrow remains a static decoration (Task 1 Step 1 skipped); the capability-count status line is a future TODO once a capability API exists.

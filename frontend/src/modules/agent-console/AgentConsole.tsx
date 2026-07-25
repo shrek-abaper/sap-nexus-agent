@@ -8,6 +8,7 @@ import { ChatComposer } from "./ChatComposer";
 import { summarizeTurn } from "./view-model";
 import type { ChatTurn, ActiveTurnIndex } from "./chat-types";
 import { Icon, type IconName } from "@/shared/ui/Icon";
+import { samplePrompts, heroInputPlaceholder } from "./sample-data";
 
 const agentRunEventTypes = [
   "run_started",
@@ -26,25 +27,17 @@ const agentRunEventTypes = [
   "run_failed"
 ] satisfies AgentRunEvent["type"][];
 
-const navItems: { label: string; icon: IconName }[] = [
-  { label: "首页", icon: "home" },
-  { label: "能力本体注册", icon: "functionFilled" },
-  { label: "能力目录", icon: "catalogue" },
-  { label: "Trace 审计", icon: "record" },
-  { label: "Gateway", icon: "route" },
-  { label: "设置", icon: "setting" }
-];
-
-const quickPrompts = [
-  "DEMOA2 在 5100 还有多少可用库存？",
-  "P0001529AC 在 1000 还有多少可用库存？",
-  "查下PO DEMOPO2"
+const navItems: { id: string; label: string; icon: IconName }[] = [
+  { id: "capability-registry", label: "能力本体注册", icon: "functionFilled" },
+  { id: "capability-catalogue", label: "能力目录", icon: "catalogue" },
+  { id: "trace-audit", label: "Trace 审计", icon: "record" },
+  { id: "gateway", label: "Gateway", icon: "route" }
 ];
 
 const nextRunId = (turns: ChatTurn[]) => `run-${turns.length + 1}`;
 
 export function AgentConsole() {
-  const [query, setQuery] = useState("DEMOA1 在 1000 还有多少可用库存？");
+  const [query, setQuery] = useState("");
   const [turns, setTurns] = useState<ChatTurn[]>([]);
   const [activeIndex, setActiveIndex] = useState<ActiveTurnIndex>(null);
 
@@ -177,7 +170,13 @@ export function AgentConsole() {
           <div className="brand-name">SAP Nexus Agent</div>
           <div className="brand-subtitle">Harness Engineering Workbench</div>
         </div>
-        <div className="topbar-module">Governed Read / Write</div>
+        <div className="topbar-module">
+          <span className="topbar-module__dot topbar-module__dot--read" aria-hidden="true" />
+          Read 直连
+          <span className="topbar-module__sep" aria-hidden="true">·</span>
+          <span className="topbar-module__dot topbar-module__dot--write" aria-hidden="true" />
+          Write 需审批
+        </div>
         <div className="topbar-search">
           <Icon name="search" size={16} />
           <span>全局检索 / Trace ID</span>
@@ -186,23 +185,27 @@ export function AgentConsole() {
 
       <div className="workspace">
         <nav className="side-nav" aria-label="Workbench navigation">
-          {navItems.map((item) => (
-            <button
-              className={`side-nav__item ${item.label === "首页" ? "is-active" : "is-disabled"}`}
-              key={item.label}
-              onClick={() => {
-                if (item.label === "首页") {
-                  setTurns([]);
-                  setActiveIndex(null);
-                }
-              }}
-              type="button"
-            >
-              <Icon name={item.icon} size={20} className="side-nav__icon" />
-              <span>{item.label}</span>
-              {item.label !== "首页" ? <em>soon</em> : null}
-            </button>
-          ))}
+          <button
+            className="side-nav__cta"
+            type="button"
+            onClick={() => {
+              setTurns([]);
+              setActiveIndex(null);
+            }}
+          >
+            <Icon name="plus" size={18} className="side-nav__cta-icon" />
+            <span>新对话</span>
+          </button>
+
+          <div className="side-nav__group">
+            {navItems.map((item) => (
+              <button className="side-nav__item is-disabled" key={item.id} type="button" disabled>
+                <Icon name={item.icon} size={20} className="side-nav__icon" />
+                <span>{item.label}</span>
+                <em>soon</em>
+              </button>
+            ))}
+          </div>
 
           <div className="side-nav__section">
             <div className="side-nav__label">Run History</div>
@@ -234,10 +237,13 @@ export function AgentConsole() {
 
           <div className="side-nav__user">
             <div className="avatar">SN</div>
-            <div>
+            <div className="side-nav__user-meta">
               <strong>Agent Operator</strong>
               <span>Internal Console</span>
             </div>
+            <button className="side-nav__user-action" type="button" aria-label="设置" disabled>
+              <Icon name="setting" size={18} />
+            </button>
           </div>
         </nav>
 
@@ -245,10 +251,8 @@ export function AgentConsole() {
           {!hasRun ? (
             <section className="home-hero">
               <p className="eyebrow">智能查询 / 原子能力工作台</p>
-              <h1>用自然语言触发受控 SAP 能力，先看结论，再追溯证据链。</h1>
-              <p>
-                Read capability 直接执行；sandbox Action 必须先展示参数快照并由人工明确批准，才会进入 Gateway。
-              </p>
+              <h1>用自然语言调用受控 SAP 能力</h1>
+              <p className="home-hero__subtitle">先给结论，再给证据链</p>
               <form
                 className="hero-query"
                 onSubmit={(event) => {
@@ -256,17 +260,38 @@ export function AgentConsole() {
                   void runAgent();
                 }}
               >
-                <textarea value={query} onChange={(event) => setQuery(event.target.value)} />
+                <textarea
+                  placeholder={heroInputPlaceholder}
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                />
                 <div className="hero-query__footer">
+                  <span className="hero-query__guard">未声明的能力不会执行 · 写操作需人工批准</span>
                   <button disabled={false} type="submit">
                     发送
                   </button>
                 </div>
               </form>
               <div className="quick-prompts">
-                {quickPrompts.map((prompt) => (
-                  <button key={prompt} onClick={() => setQuery(prompt)} type="button">
-                    {prompt}
+                {samplePrompts.map((prompt) => (
+                  <button
+                    className={`quick-prompt quick-prompt--${prompt.kind}`}
+                    key={prompt.label}
+                    onClick={() => setQuery(prompt.query)}
+                    type="button"
+                  >
+                    <span className="quick-prompt__label">{prompt.label}</span>
+                    <span className="quick-prompt__text">
+                      {prompt.segments.map((segment, index) =>
+                        segment.mono ? (
+                          <span className="mono-token" key={index}>
+                            {segment.text}
+                          </span>
+                        ) : (
+                          <span key={index}>{segment.text}</span>
+                        )
+                      )}
+                    </span>
                   </button>
                 ))}
               </div>
