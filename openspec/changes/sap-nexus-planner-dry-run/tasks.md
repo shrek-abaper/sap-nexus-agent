@@ -1,8 +1,8 @@
 ## 1. S2-A MatchDecision 决策对象
 
-- [ ] 1.1 定义 `MatchDecision` dataclass（`decision_type` / `candidates` / `rationale` / `handoff`），`decision_type` 为五态枚举
-- [ ] 1.2 `SelectionResult` 退为 `MatchDecision` 在 SELECT/CLARIFY/REJECT 三态的窄视图（向后兼容 wrapper）
-- [ ] 1.3 单元测试：五态构造与窄视图兼容
+- [x] 1.1 定义 `MatchDecision` dataclass（`decision_type` / `candidates` / `rationale` / `handoff`），`decision_type` 为五态枚举
+- [x] 1.2 `SelectionResult` 退为 `MatchDecision` 在 SELECT/CLARIFY/REJECT 三态的窄视图（向后兼容 wrapper）
+- [x] 1.3 单元测试：五态构造与窄视图兼容
 
 ## 2. S2-A 多意图检测（修复 D-1）
 
