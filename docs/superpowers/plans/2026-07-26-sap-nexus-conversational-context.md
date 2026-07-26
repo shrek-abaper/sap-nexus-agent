@@ -1126,7 +1126,7 @@ git commit -m "feat(conversation-context): emit lastContext in workbench outcome
 
 **参考实现：** `cli.py:31-53` 的 `--continue-action` 模式（从 stdin 读 JSON payload）。
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # agent/tests/test_cli_context.py
@@ -1197,12 +1197,12 @@ def test_cli_without_context_backward_compatible(capsys, monkeypatch):
     assert captured["context"] is None
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `python -m pytest agent/tests/test_cli_context.py -v`
 Expected: FAIL with `SystemExit`（`--context` 未定义，argparse 报错）
 
-- [ ] **Step 3: Implement --context flag in cli.py**
+- [x] **Step 3: Implement --context flag in cli.py**
 
 在 `agent/sap_nexus_agent/cli.py` 修改（仿 `--continue-action` 模式）：
 
@@ -1271,12 +1271,12 @@ def main(argv: list[str] | None = None) -> int:
     # ... existing output logic unchanged ...
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `python -m pytest agent/tests/test_cli_context.py agent/tests/test_cli_approval.py -v`
 Expected: PASS（新增 3 个 context 测试 + 现有 approval 测试零回归）
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add agent/sap_nexus_agent/cli.py agent/tests/test_cli_context.py

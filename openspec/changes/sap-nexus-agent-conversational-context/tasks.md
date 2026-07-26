@@ -19,8 +19,8 @@
 
 ## 4. Python Agent: CLI 透传
 
-- [ ] 4.1 `cli.py` 增加 `--context` stdin JSON 模式（仿 `--continue-action`），解析 `ConversationContext` 传入 `run_query`
-- [ ] 4.2 `--context` 缺省时 `context=None`，行为不变
+- [x] 4.1 `cli.py` 增加 `--context` stdin JSON 模式（仿 `--continue-action`），解析 `ConversationContext` 传入 `run_query`
+- [x] 4.2 `--context` 缺省时 `context=None`，行为不变
 
 ## 5. Frontend: conversationId 与 sessions Map
 
