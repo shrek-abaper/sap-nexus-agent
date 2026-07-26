@@ -218,7 +218,7 @@ git commit -m "feat(llm-intent): inject last_context data block into _messages"
 - Consumes: Task 1 的 `_messages` 注入 last_context
 - Produces: `parse_with_hybrid` 仅在 `LlmUnavailable` 时调 `parse_intent(text, context=context)`，LLM 有效结果直接返回
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 追加到 `agent/tests/test_llm_intent.py`：
 
@@ -294,12 +294,12 @@ def test_parse_with_hybrid_empty_llm_return_does_not_invoke_rule(monkeypatch):
     assert result.capability_id is None
 ```
 
-- [ ] **Step 2: 运行测试验证失败**
+- [x] **Step 2: 运行测试验证失败**
 
 Run: `cd agent && python -m pytest tests/test_llm_intent.py::test_parse_with_hybrid_empty_llm_return_does_not_invoke_rule -v`
 Expected: FAIL（当前 `parse_with_hybrid` 在 `_requires_safe_fallback` 时调用 `parse_intent`，`rule_calls` 非空）
 
-- [ ] **Step 3: 最小实现**
+- [x] **Step 3: 最小实现**
 
 替换 `parse_with_hybrid`（line 56-74）为：
 
@@ -322,14 +322,14 @@ def parse_with_hybrid(
 
 > 说明：移除 `_requires_safe_fallback` -> rule 回退分支。`_requires_safe_fallback` 函数本身保留（`_parse_llm_only` 等内部仍可能引用），但其调用点删除。
 
-- [ ] **Step 4: 运行测试验证通过**
+- [x] **Step 4: 运行测试验证通过**
 
 Run: `cd agent && python -m pytest tests/test_llm_intent.py::test_parse_with_hybrid_uses_llm_result_directly tests/test_llm_intent.py::test_parse_with_hybrid_falls_back_to_rule_on_llm_unavailable tests/test_llm_intent.py::test_parse_with_hybrid_empty_llm_return_does_not_invoke_rule -v`
 Expected: 3 PASS
 
 > 注：`test_parse_with_hybrid_falls_back_to_rule_on_llm_unavailable` 完整通过依赖 Task 4 的 material 继承；若 Task 4 未完成，该断言可能因 `parameters.get("plant")` 失败。建议本 task 先让前两个测试通过，第三个测试在 Task 4 后回归。如需本 task 独立通过，可临时只断言 `result.capability_id == "MM.Inventory.GetAvailability"`。
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 ```bash
 git add agent/sap_nexus_agent/llm_intent.py agent/tests/test_llm_intent.py
