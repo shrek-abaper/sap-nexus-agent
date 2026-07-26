@@ -31,8 +31,8 @@
 
 ## 6. Frontend: 请求透传 conversationId
 
-- [ ] 6.1 API 路由接受 `conversationId` 字段并传入 `createAgentRun`
-- [ ] 6.2 `AgentConsole` 每次 submit 携带当前 `conversationId`
+- [x] 6.1 API 路由接受 `conversationId` 字段并传入 `createAgentRun`
+- [x] 6.2 `AgentConsole` 每次 submit 携带当前 `conversationId`
 
 ## 7. 测试: 多轮 slot-fill 回归
 

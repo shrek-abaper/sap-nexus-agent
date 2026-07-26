@@ -1579,7 +1579,7 @@ git commit -m "feat(conversation-context): add sessions Map, conversationId pass
 - Consumes: Task 7 `createAgentRun({ query, conversationId })`
 - Produces: `AgentConsole` 维护 `conversationId` state；"新对话"按钮重置 conversationId + turns；每次 `runAgent` 携带当前 conversationId
 
-- [ ] **Step 1: Add conversationId state**
+- [x] **Step 1: Add conversationId state**
 
 在 `frontend/src/modules/agent-console/AgentConsole.tsx:40` 修改：
 
@@ -1594,7 +1594,7 @@ export function AgentConsole() {
   // ...
 ```
 
-- [ ] **Step 2: Wire "新对话" button to reset conversationId**
+- [x] **Step 2: Wire "新对话" button to reset conversationId**
 
 在 `frontend/src/modules/agent-console/AgentConsole.tsx:192` 修改（现有"新对话"按钮 onClick）：
 
@@ -1613,7 +1613,7 @@ export function AgentConsole() {
 </button>
 ```
 
-- [ ] **Step 3: Wire runAgent to send conversationId**
+- [x] **Step 3: Wire runAgent to send conversationId**
 
 在 `frontend/src/modules/agent-console/AgentConsole.tsx:135` 修改（`runAgent` 内 fetch body）：
 
@@ -1625,12 +1625,12 @@ const response = await fetch("/api/agent-runs", {
 });
 ```
 
-- [ ] **Step 4: Run typecheck to verify no type errors**
+- [x] **Step 4: Run typecheck to verify no type errors**
 
 Run: `npm --prefix frontend run typecheck`
 Expected: PASS（无类型错误）
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/modules/agent-console/AgentConsole.tsx
@@ -1648,7 +1648,7 @@ git commit -m "feat(conversation-context): wire conversationId state and new-con
 - Consumes: Task 7 `createAgentRun({ query, conversationId })`
 - Produces: `POST /api/agent-runs` 接受 `{ query, conversationId?, rfcName? }`，透传 conversationId
 
-- [ ] **Step 1: Modify route handler**
+- [x] **Step 1: Modify route handler**
 
 在 `frontend/app/api/agent-runs/route.ts:4` 修改：
 
@@ -1674,12 +1674,12 @@ export async function POST(request: Request) {
 }
 ```
 
-- [ ] **Step 2: Run typecheck and tests**
+- [x] **Step 2: Run typecheck and tests**
 
 Run: `npm --prefix frontend run typecheck && npm --prefix frontend test`
 Expected: PASS
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add frontend/app/api/agent-runs/route.ts
