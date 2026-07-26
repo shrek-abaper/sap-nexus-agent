@@ -6,10 +6,10 @@
 
 ## 2. Python Agent: sticky-CLARIFY 跨轮逻辑
 
-- [ ] 2.1 在 `intent.py` / `llm_intent.py` 实现 sticky-CLARIFY 判定：`context.pending_clarification` 存在且本轮无主关键词时，重跑该 capability 的 extractor 合并参数、重判 missing
-- [ ] 2.2 本轮含主关键词时丢弃 pending，走正常单轮解析
-- [ ] 2.3 rule 路径不调 LLM 即可完成 slot-fill（验证 hybrid 安全兜底契约）
-- [ ] 2.4 CLARIFY 产出时由 orchestrator/workbench_output 回填 `PendingClarification` 到 outcome（供 backend 记录）
+- [x] 2.1 在 `intent.py` / `llm_intent.py` 实现 sticky-CLARIFY 判定：`context.pending_clarification` 存在且本轮无主关键词时，重跑该 capability 的 extractor 合并参数、重判 missing
+- [x] 2.2 本轮含主关键词时丢弃 pending，走正常单轮解析
+- [x] 2.3 rule 路径不调 LLM 即可完成 slot-fill（验证 hybrid 安全兜底契约）
+- [x] 2.4 CLARIFY 产出时由 orchestrator/workbench_output 回填 `PendingClarification` 到 outcome（供 backend 记录）
 
 ## 3. Python Agent: LLM 路径历史注入分离契约
 

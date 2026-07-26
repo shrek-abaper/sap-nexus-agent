@@ -532,7 +532,7 @@ missing = [inp.name for inp in descriptor.inputs if inp.required and inp.name no
 return IntentParseResult(capability_id=cap_id, parameters=merged, missing_parameters=missing, ...)
 ```
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # 追加到 agent/tests/test_conversation_context.py
@@ -625,12 +625,12 @@ def test_sticky_primary_keyword_overrides():
     assert result.capability_id == "MM.PurchaseOrder.GetList"
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `python -m pytest agent/tests/test_conversation_context.py::test_contains_any_primary_keyword_inventory -v`
 Expected: FAIL with `ImportError: cannot import name 'resolve_with_context'`
 
-- [ ] **Step 3: Implement _contains_any_primary_keyword**
+- [x] **Step 3: Implement _contains_any_primary_keyword**
 
 在 `agent/sap_nexus_agent/llm_intent.py` 新增（顶部 import 关键词常量）：
 
@@ -657,7 +657,7 @@ def _contains_any_primary_keyword(text: str) -> bool:
 
 注：`PR_CREATE_PRIMARY_KEYWORDS` 已在 `intent.py` 定义（mirrors `PR_CREATE_KEYWORDS`）。
 
-- [ ] **Step 4: Implement _extract_params_for**
+- [x] **Step 4: Implement _extract_params_for**
 
 在 `agent/sap_nexus_agent/llm_intent.py` 新增（dispatch 到各 capability 的 extractor）：
 
@@ -685,7 +685,7 @@ def _extract_params_for(capability_id: str, text: str) -> dict[str, str]:
     return {}
 ```
 
-- [ ] **Step 5: Implement resolve_with_context**
+- [x] **Step 5: Implement resolve_with_context**
 
 在 `agent/sap_nexus_agent/llm_intent.py` 新增：
 
@@ -730,7 +730,7 @@ def resolve_with_context(
     )
 ```
 
-- [ ] **Step 6: Wire parse_intent to call resolve_with_context when context is provided**
+- [x] **Step 6: Wire parse_intent to call resolve_with_context when context is provided**
 
 在 `agent/sap_nexus_agent/intent.py` 的 `parse_intent` 修改：
 
@@ -752,17 +752,17 @@ def parse_intent(text: str, context: "ConversationContext | None" = None) -> Int
     # ...
 ```
 
-- [ ] **Step 7: Run tests to verify they pass**
+- [x] **Step 7: Run tests to verify they pass**
 
 Run: `python -m pytest agent/tests/test_conversation_context.py -v`
 Expected: PASS（所有 sticky 场景测试 + 单轮回归）
 
-- [ ] **Step 8: Run full test suite for regression**
+- [x] **Step 8: Run full test suite for regression**
 
 Run: `python -m pytest agent/tests/ -v`
 Expected: PASS（现有测试零回归）
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add agent/sap_nexus_agent/llm_intent.py agent/sap_nexus_agent/intent.py \
