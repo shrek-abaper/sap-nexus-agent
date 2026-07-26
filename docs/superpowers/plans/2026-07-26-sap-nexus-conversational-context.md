@@ -957,7 +957,7 @@ git commit -m "feat(conversation-context): inject LLM history with authority/dat
   - SELECT 成功 outcome -> `LastContext(SELECT, decision.parameters, [])`
   - REJECT / SHOW_OPTIONS / ESCALATE / awaiting_approval -> `null`（ awaiting_approval 不回填，因为审批 pending 时拒绝新查询）
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # 追加到 agent/tests/test_workbench_output.py
@@ -1047,12 +1047,12 @@ def test_outcome_awaiting_approval_no_last_context():
     assert payload["lastContext"] is None
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `python -m pytest agent/tests/test_workbench_output.py::test_outcome_clarify_emits_last_context -v`
 Expected: FAIL with `KeyError: 'lastContext'`
 
-- [ ] **Step 3: Implement lastContext derivation in outcome_to_workbench_dict**
+- [x] **Step 3: Implement lastContext derivation in outcome_to_workbench_dict**
 
 在 `agent/sap_nexus_agent/workbench_output.py:27` 修改：
 
@@ -1100,12 +1100,12 @@ def outcome_to_workbench_dict(outcome: AgentOutcome) -> dict[str, object]:
     }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `python -m pytest agent/tests/test_workbench_output.py -v`
 Expected: PASS（新增 4 个 lastContext 测试 + 现有测试）
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add agent/sap_nexus_agent/workbench_output.py agent/tests/test_workbench_output.py
