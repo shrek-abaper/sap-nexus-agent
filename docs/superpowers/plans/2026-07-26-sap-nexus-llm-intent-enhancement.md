@@ -992,7 +992,7 @@ git commit -m "feat(orchestrator): add expand_combinations, AgentOutcome.combina
 - Consumes: Task 6 的 selector SELECT + `parsed.multi_parameters`；Task 7 的 `expand_combinations` / `BATCH_COMBINATION_CAP` / `AgentOutcome.combinations`
 - Produces: 多值非空 -> expand -> 软上限检查 -> `awaiting_batch_confirm`（不执行 Gateway）；超上限 -> CLARIFY
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 追加到 `agent/tests/test_orchestrator.py`：
 
@@ -1070,12 +1070,12 @@ def test_run_query_single_value_still_executes():
     assert len(gateway.execute_calls) == 1
 ```
 
-- [ ] **Step 2: 运行测试验证失败**
+- [x] **Step 2: 运行测试验证失败**
 
 Run: `cd agent && python -m pytest tests/test_orchestrator.py::test_run_query_multi_value_emits_awaiting_batch_confirm -v`
 Expected: FAIL（当前 SELECT 分支直接 create_call_plan -> validate -> execute，不识别 multi_parameters）
 
-- [ ] **Step 3: 最小实现**
+- [x] **Step 3: 最小实现**
 
 修改 `agent/sap_nexus_agent/orchestrator.py` 的 `run_query` SELECT 分支（line 162-169），将：
 
@@ -1126,12 +1126,12 @@ Expected: FAIL（当前 SELECT 分支直接 create_call_plan -> validate -> exec
     call_plan = create_call_plan(capability_id, parameters, kind=kind)
 ```
 
-- [ ] **Step 4: 运行测试验证通过**
+- [x] **Step 4: 运行测试验证通过**
 
 Run: `cd agent && python -m pytest tests/test_orchestrator.py -v`
 Expected: 全部 PASS（含新测试 + 既有回归）
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 ```bash
 git add agent/sap_nexus_agent/orchestrator.py agent/tests/test_orchestrator.py
