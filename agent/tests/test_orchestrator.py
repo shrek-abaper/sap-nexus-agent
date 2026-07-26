@@ -1,7 +1,13 @@
 from sap_nexus_agent.execution_result import ExecutionResult, ValidationResult
 from sap_nexus_agent.intent import IntentParseResult
 from sap_nexus_agent.llm_intent import parse_with_hybrid
-from sap_nexus_agent.orchestrator import AgentOutcome, run_inventory_query, run_query
+from sap_nexus_agent.orchestrator import (
+    AgentOutcome,
+    BATCH_COMBINATION_CAP,
+    expand_combinations,
+    run_inventory_query,
+    run_query,
+)
 from sap_nexus_agent.registry_loader import load_intent_catalog
 
 
@@ -853,3 +859,37 @@ def test_workbench_dict_dry_run_none_when_absent():
     payload = outcome_to_workbench_dict(outcome)
 
     assert payload["dryRun"] is None
+
+
+def test_expand_combinations_single_key():
+    base = {"material": "DEMOA2", "unit": "EA"}
+    multi = {"plant": ["5200", "1000"]}
+    combos = expand_combinations(base, multi)
+    assert combos == [
+        {"material": "DEMOA2", "unit": "EA", "plant": "5200"},
+        {"material": "DEMOA2", "unit": "EA", "plant": "1000"},
+    ]
+
+
+def test_expand_combinations_multi_key_cartesian():
+    base = {"unit": "EA"}
+    multi = {"plant": ["5200", "1000"], "material": ["DEMOA2", "DEMOA4"]}
+    combos = expand_combinations(base, multi)
+    assert len(combos) == 4
+    assert {"plant": "5200", "material": "DEMOA2", "unit": "EA"} in combos
+    assert {"plant": "1000", "material": "DEMOA4", "unit": "EA"} in combos
+
+
+def test_expand_combinations_empty_multi():
+    assert expand_combinations({"material": "DEMOA2"}, {}) == [{"material": "DEMOA2"}]
+
+
+def test_batch_combination_cap_constant():
+    assert BATCH_COMBINATION_CAP == 20
+
+
+def test_agent_outcome_has_combinations_field():
+    outcome = AgentOutcome(status="awaiting_batch_confirm", combinations=[{"plant": "5200"}])
+    assert outcome.combinations == [{"plant": "5200"}]
+    outcome2 = AgentOutcome(status="success")
+    assert outcome2.combinations is None

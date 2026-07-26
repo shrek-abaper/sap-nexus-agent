@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import itertools
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
@@ -47,6 +48,9 @@ INVENTORY_CAPABILITY_ID = "MM.Inventory.GetAvailability"
 PR_CREATE_CAPABILITY_ID = "MM.PR.CreateDraft"
 # Action capabilities require human approval before Gateway execute.
 ACTION_CAPABILITY_IDS = frozenset({PR_CREATE_CAPABILITY_ID})
+# Soft cap for multi-value combination expansion (Design Doc §4.4). Exceeding
+# this emits CLARIFY instead of awaiting_batch_confirm.
+BATCH_COMBINATION_CAP = 20
 
 
 @dataclass(frozen=True)
@@ -72,10 +76,34 @@ class AgentOutcome:
     # outcomes - the orchestrator wires the handoff into the PlanCompiler
     # (deterministic, no Gateway/SAP). None for every other path.
     dry_run: DryRunResult | None = None
+    # Multi-value batch (Design Doc §4.4): combinations awaiting user confirm.
+    # Populated only for status="awaiting_batch_confirm".
+    combinations: list[dict[str, str]] | None = None
 
 
 IntentAdapter = Callable[[str, "ConversationContext | None"], IntentParseResult]
 PlannerSourcesLoader = Callable[[], tuple[RegistrySnapshot, SemanticSourceDocuments]]
+
+
+def expand_combinations(
+    base: dict[str, str],
+    multi: dict[str, list[str]],
+) -> list[dict[str, str]]:
+    """Cartesian product of multi-valued parameters over a base dict.
+
+    Generic over parameter names (Design Doc §4.4). Single key -> N combos;
+    multi key -> Cartesian product. Empty ``multi`` -> single ``base`` combo.
+    """
+    if not multi:
+        return [dict(base)]
+    keys = list(multi.keys())
+    value_lists = [multi[k] for k in keys]
+    combos: list[dict[str, str]] = []
+    for values in itertools.product(*value_lists):
+        combo = dict(base)
+        combo.update(dict(zip(keys, values)))
+        combos.append(combo)
+    return combos
 
 
 def run_query(
