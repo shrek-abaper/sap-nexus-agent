@@ -5,7 +5,7 @@
 | 字段 | 内容 |
 |---|---|
 | 文档名称 | `SAP Nexus Agent 实施路线文档` |
-| 当前版本 | `v0.2.35` |
+| 当前版本 | `v0.2.36` |
 | 状态 | `Lifecycle Roadmap Active` |
 | 创建日期 | `2026-06-18` |
 | 最近更新 | `2026-07-25` |
@@ -20,6 +20,7 @@
 
 | 版本 | 日期 | 变更摘要 | 决策状态 |
 |---|---|---|---|
+| `v0.2.36` | `2026-07-25` | 新增 row 19A `sap-nexus-agent-conversational-context`（即时多轮对话）：定位为 S2 之后的轻量能力加固，先于 P0B、不阻塞 P0B、不改变 runtime 架构；仅覆盖 CLARIFY 跨轮 slot-fill，ESCALATE/SHOW_OPTIONS 跨轮与持久化为非目标；同步技术架构 §4.2.2 定义 `ConversationState` 轻量实例与权威/不可信分离注入契约 | 当前实施基线 |
 | `v0.2.35` | `2026-07-25` | `sap-nexus-planner-dry-run` S2-A + S2-B 实施完成并归档：五态 `MatchDecision` + 多意图/歧义检测（修复 D-1）+ visibility pre-filter + matcher Eval 6/6 + progressive `CapabilityCard` + deterministic `PlanCompiler` dry-run（3/3 + 1 pending）；不执行 Gateway/SAP；row 19 标记 Implemented/Archived；主 spec 合并 `agent-callplan-evidence`（MODIFIED）+ `semantic-match-decision`/`planner-dry-run`（ADDED）。下一推荐 P0B `sap-nexus-trusted-durable-runtime-foundation`（S3 前硬门禁） | 当前实施基线 |
 | `v0.2.34` | `2026-07-25` | P0A source-of-truth/repository hygiene 收尾：runbook index 与 11 个 runbook header 状态对齐；editable-install finder 与 .venv shebangs 从 stale `zl-projects` 重指 `GitHub_Projects`；runtime traces 确认 gitignored（`runtime/*` 仅 `.gitkeep` tracked）；row 18A 状态从 `Documentation In Progress` 改为 `Completed`。下一推荐进入 S2-A `sap-nexus-planner-dry-run` | 历史基线 |
 | `v0.2.33` | `2026-07-25` | 文档收敛：row 19 验收条件可判定化（多目标 utterance 必须 `ESCALATE_TO_PLANNER`，false `SELECT` 作为回归失败项）；新增 §18 Known Correctness Defects（D-1）、§19 Stage Gate 评测三件套（P0A/S2-A/S2-B/trusted-durable gate/S3，缺口显式标注）、§20 Open Questions 与已知技术债（S1 verify report 三项债 + Q-1 能力供给规模化） | 历史基线 |
@@ -249,9 +250,10 @@ GoalSpec candidate
 | 18 | `sap-nexus-semantic-planning-foundation` | S1 Implemented / Verified / Archived | Fact Type、Capability Relation、GoalSpec、PlanGraph、四源 Registry Snapshot、immutable graph 和 deterministic validator 契约已落地 | focused semantic `287 passed`；full evidence `550 passed, 1 skipped` + inventory `7/7` + seed `13/13` + PR `9/9`；归档 `openspec/changes/archive/2026-07-19-sap-nexus-semantic-planning-foundation/` |
 | 18A | `sap-nexus-source-of-truth-repository-hygiene` | P0A Completed (2026-07-25) | 收敛 Wiki、Runbook、README、OpenSpec 状态、仓库迁移路径和 runtime artifact 管理 | S1 状态与路径一致；README 不宣称未落地组件；旧 editable install 路径被修复（finder + .venv shebangs 重指 GitHub_Projects）；真实 runtime trace 不再 tracked（runtime/* gitignored）；不改变 runtime 行为 |
 | 19 | `sap-nexus-planner-dry-run` | S2 Implemented / Verified / Archived (2026-07-25) | S2-A 先实现五态 `MatchDecision`、多意图/歧义检测、visibility pre-filter 和 matcher Eval；S2-B 再用 progressive `CapabilityCard` discovery 生成 GoalSpec/PlanDraft candidate，由 deterministic PlanCompiler 输出 dry-run | 多目标 utterance（如「物料库存 + 采购订单供给概览」）必须输出 `ESCALATE_TO_PLANNER`，不得静默首命中单能力，`false SELECT` 作为回归失败项；候选、决策理由、Registry Snapshot、节点、边、参数来源、缺口和治理均可审计；不得执行 Gateway 或 SAP；DeerFlow 只作机制参考 |
+| 19A | `sap-nexus-agent-conversational-context` | 待启动；先于 P0B，不阻塞 P0B | 补齐即时多轮对话：session 内 CLARIFY 跨轮 slot-fill（sticky-CLARIFY）、`ConversationState` 轻量实例、历史重注入的权威/不可信分离契约、`IntentAdapter` 签名扩展接受 `ConversationContext`、前端 `conversationId` + CLI 透传 | 修复"第二轮补参数被 REJECT(UNSUPPORTED_INTENT)"缺口；状态仅放 backend 进程内 Map，不引入持久化/跨重启/multi-worker；v1 仅 CLARIFY，ESCALATE/SHOW_OPTIONS 跨轮为非目标；接口对齐 §4.2.1 三层分层为 P0B 预留；详见技术架构 §4.2.2 |
 | 20 | `sap-nexus-read-composition-pilot` | S3 Planned after row 19 | 以“物料库存 + 采购订单供给概览”验证只读多能力 PlanGraph 执行，并加入 governed ready-node lifecycle | 两个 active Function 经 Gateway 独立校验/执行；并发只允许无依赖 `sideEffect=none` 节点；确定性 OutputProjection 输出带 freshness、completeness、limitations 和 lineage 的 MaterialSupplySnapshot；当前未实现 |
 | 21 | `sap-nexus-capability-composition-contract` | Dynamic Planner / Write Reserved | 保留通用动态组合、Composite Capability 和 Write composition 边界 | 关系本体、dry-run、read pilot 和规模/需求证据满足后另立 change |
-| 22 | `sap-nexus-trusted-durable-runtime-foundation` | P0B Conditional Gate；不阻塞本地 S2 | 建立 trusted principal / tenant / role / data scope、persistent thread/run、durable approval、ownership/lease、structured checkpoint reference、incremental SSE + reconnect 和幂等 continuation | 共享 S3、跨重启、长审批、multi-worker / HA 或非 sandbox WRITE 前必须完成；不包含 DeerFlow lead agent、自由 Tool execution 或预选数据库 |
+| 22 | `sap-nexus-trusted-durable-runtime-foundation` | P0B Conditional Gate；不阻塞本地 S2 | 建立 trusted principal / tenant / role / data scope、persistent thread/run、durable approval、ownership/lease、structured checkpoint reference、incremental SSE + reconnect 和幂等 continuation | 共享 S3、跨重启、长审批、multi-worker / HA 或非 sandbox WRITE 前必须完成；不包含 DeerFlow lead agent、自由 Tool execution 或预选数据库；row 19A 已先于 P0B 落地 `ConversationState` 轻量实例（进程内、非持久化），P0B 接手时替换为 durable store 并挂载压缩/分离注入 middleware |
 | 23 | `sap-nexus-governed-user-memory-pilot` | Later / Triggered；不属于 S2/S3 | 只保存用户明确确认的语言、单位展示、术语和叙事偏好 | 身份、tenant、retention、查看/更正/删除和审计契约已稳定；不得保存业务事实、approval 或执行权威 |
 
 ---

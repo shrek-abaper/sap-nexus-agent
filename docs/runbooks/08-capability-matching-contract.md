@@ -5,7 +5,7 @@
 | Field | Value |
 |---|---|
 | Runbook | `08-capability-matching-contract` |
-| Version | `v0.3.0` |
+| Version | `v0.3.1` |
 | Status | `S2-A Done / Phase 3+ Scale-up Deferred` |
 | Created | `2026-06-26` |
 | Updated | `2026-07-25` |
@@ -135,6 +135,25 @@ Decision rules:
 - Multiple business goals or required Facts are detected -> `ESCALATE_TO_PLANNER`.
 - Unknown, invisible, unsafe or technical-override request -> `REJECT`.
 - Multiple goals must never be reduced to the first keyword match.
+
+### 4.1.1 CLARIFY Cross-Turn Continuation (Multi-Turn Slot-Filling)
+
+The five-state `MatchDecision` is single-turn by default: each utterance is parsed independently. This produces a multi-turn gap when a user answers a `CLARIFY` with bare parameters (e.g. turn 1 "你能查库存吗" -> `CLARIFY` missing [material, plant]; turn 2 "DEMOA2 1000" matches no capability keyword and falls to `REJECT(UNSUPPORTED_INTENT)`). This subsection defines the cross-turn continuation contract for the lightweight multi-turn instance introduced in technical-architecture §4.2.2.
+
+**PendingClarification state (advisory, in-memory):** when a turn resolves to `CLARIFY`, the backend records `PendingClarification { capability_id, parameters, missing_parameters, clarification_text }` under `sessions: Map<conversationId, SessionState>`. This is `ConversationState` (advisory context), not execution authority; it does not interact with `CallPlan` / `ApprovalRecord` lifecycle.
+
+**Sticky-CLARIFY resolution:** when the next utterance arrives and the session has a pending CLARIFY:
+
+- If the utterance contains **no primary keyword** of any registered capability, treat it as a slot-fill answer for the pending `capability_id`. Re-run that capability's parameter extractor on the new utterance, merge into the pending `parameters`, and re-evaluate `missing_parameters`. If complete -> `SELECT`; if still missing -> `CLARIFY` again with the reduced missing set.
+- If the utterance contains a primary keyword, treat it as a new turn: discard the pending CLARIFY and run the normal single-turn pipeline.
+
+This mechanism is the mandatory baseline for both rule and LLM paths (the rule path must work without any LLM call, preserving the hybrid safe-fallback contract).
+
+**IntentAdapter signature:** `Callable[[str], IntentParseResult]` extends to `Callable[[str, ConversationContext | None], IntentParseResult]`, where `ConversationContext` carries `pending_clarification` and optional `history`. Default `None` preserves all existing single-turn tests unchanged.
+
+**History re-injection (LLM path only):** when the LLM path consumes `history`, it MUST apply the authority/untrusted-data separation contract from §4.2.2 (static authority rules as `SystemMessage`; historical text as a hidden `<durable_context_data>` `HumanMessage` marked as data). The rule path does not call the LLM and is unaffected.
+
+**v1 scope and non-goals:** v1 covers `CLARIFY` cross-turn slot-fill only. Cross-turn `ESCALATE_TO_PLANNER` disambiguation, `SHOW_OPTIONS` selection, coexistence of approval-pending with CLARIFY-pending, cross-restart persistence, and long-conversation compaction are explicit non-goals (P0B or independent change). The `ConversationState` interface is aligned with the §4.2.1 three-layer stratification so P0B can swap the in-memory Map for a durable store without restructuring the advisory layer.
 
 ---
 
