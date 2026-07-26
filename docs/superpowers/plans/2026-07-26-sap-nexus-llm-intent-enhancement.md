@@ -56,7 +56,7 @@ base-ref: c63daea9719b8668127a9b3a4890c4f95d350e00
 - Consumes: `ConversationContext.last_context: LastContext | None`（已存在，字段 `capability_id`/`parameters`/`missing_parameters`/`decision_type`）
 - Produces: `_messages` 在 `context.last_context` 非空时多返回一个 `<durable_context_data>` user 块；新增 `_format_last_context_block(lc) -> dict[str, str]`
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 追加到 `agent/tests/test_llm_intent.py`：
 
@@ -113,12 +113,12 @@ def test_format_last_context_block_structure():
     assert "CLARIFY" in block["content"]
 ```
 
-- [ ] **Step 2: 运行测试验证失败**
+- [x] **Step 2: 运行测试验证失败**
 
 Run: `cd agent && python -m pytest tests/test_llm_intent.py::test_messages_injects_last_context_block -v`
 Expected: FAIL with `ImportError: cannot import name '_format_last_context_block'`
 
-- [ ] **Step 3: 最小实现**
+- [x] **Step 3: 最小实现**
 
 在 `agent/sap_nexus_agent/llm_intent.py` 的 `_AUTHORITY_CONTRACT` 定义之后（约 line 117）、`_format_history` 之前，新增：
 
@@ -194,12 +194,12 @@ def _messages(
     return [authority, *blocks, base_system, base_user]
 ```
 
-- [ ] **Step 4: 运行测试验证通过**
+- [x] **Step 4: 运行测试验证通过**
 
 Run: `cd agent && python -m pytest tests/test_llm_intent.py::test_messages_injects_last_context_block tests/test_llm_intent.py::test_messages_without_context_returns_baseline tests/test_llm_intent.py::test_format_last_context_block_structure -v`
 Expected: 3 PASS
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 ```bash
 git add agent/sap_nexus_agent/llm_intent.py agent/tests/test_llm_intent.py

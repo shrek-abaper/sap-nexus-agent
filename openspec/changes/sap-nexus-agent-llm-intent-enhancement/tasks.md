@@ -1,7 +1,7 @@
 ## 1. _messages 加入 last_context
 
-- [ ] 1.1 `_messages` 拼入 `last_context`（capability+parameters+decision_type），权威/不可信分离（`_AUTHORITY_CONTRACT` + `<durable_context_data>` 包裹 last_context）
-- [ ] 1.2 LLM prompt 含上轮 capability+parameters，稳定理解指代
+- [x] 1.1 `_messages` 拼入 `last_context`（capability+parameters+decision_type），权威/不可信分离（`_AUTHORITY_CONTRACT` + `<durable_context_data>` 包裹 last_context）
+- [x] 1.2 LLM prompt 含上轮 capability+parameters，稳定理解指代
 - [ ] 1.3 测试：LLM 理解"这个物料"指代（含 last_context 时 SELECT 继承 material）
 
 ## 2. LLM 为主，rule 仅连接失败兜底 + 空返回 CLARIFY
