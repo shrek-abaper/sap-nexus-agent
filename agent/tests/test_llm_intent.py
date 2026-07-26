@@ -6,6 +6,7 @@ from sap_nexus_agent.conversation_context import ConversationContext, LastContex
 from sap_nexus_agent.intent import IntentParseResult
 from sap_nexus_agent.llm_client import LlmSettings, LlmUnavailable, load_llm_settings
 from sap_nexus_agent.llm_intent import (
+    _format_last_context_block,
     _messages,
     _payload_to_parse_result,
     build_intent_adapter,
@@ -484,10 +485,14 @@ def test_messages_with_history_injects_authority_and_data_block():
     # 第一条：权威契约 system
     assert messages[0]["role"] == "system"
     assert "data" in messages[0]["content"].lower() or "数据" in messages[0]["content"]
-    # 第二条：历史数据 human，包裹在 durable_context_data 标签
+    # 第二条：last_context 数据块 human，包裹在 durable_context_data 标签
     assert messages[1]["role"] == "user"
     assert "<durable_context_data>" in messages[1]["content"]
-    assert "查库存 DEMOA2" in messages[1]["content"]
+    assert "DEMOA2" in messages[1]["content"]
+    # 第三条：历史数据 human，包裹在 durable_context_data 标签
+    assert messages[2]["role"] == "user"
+    assert "<durable_context_data>" in messages[2]["content"]
+    assert "查库存 DEMOA2" in messages[2]["content"]
     # 末尾仍是当前轮 user
     assert messages[-1] == {"role": "user", "content": "1000"}
 
@@ -519,3 +524,53 @@ def test_payload_to_parse_result_rejects_injected_capability_id():
     result = _payload_to_parse_result(malicious_payload, catalog)
     assert result.capability_id is None
     assert result.parameters == {}
+
+
+# --- Task 1 (D1): last_context data block injection into _messages ---
+
+
+def test_messages_injects_last_context_block():
+    catalog = load_intent_catalog()
+    ctx = ConversationContext(
+        last_context=LastContext(
+            capability_id="MM.Inventory.GetAvailability",
+            parameters={"material": "DEMOA2", "plant": "5100"},
+            missing_parameters=[],
+            decision_type="SELECT",
+        ),
+        history=None,
+    )
+    msgs = _messages("这个物料在1000的库存", catalog, context=ctx)
+
+    # authority + last_context block + base_system + base_user
+    assert len(msgs) == 4
+    assert msgs[0]["role"] == "system"
+    assert "<durable_context_data>" in msgs[1]["content"]
+    assert "DEMOA2" in msgs[1]["content"]
+    assert "MM.Inventory.GetAvailability" in msgs[1]["content"]
+    assert "SELECT" in msgs[1]["content"]
+    assert msgs[2]["role"] == "system"
+    assert msgs[3]["role"] == "user"
+
+
+def test_messages_without_context_returns_baseline():
+    catalog = load_intent_catalog()
+    msgs = _messages("DEMOA2 在 5100 的库存", catalog, context=None)
+    assert msgs == [msgs[0], msgs[-1]]
+    assert msgs[0]["role"] == "system"
+    assert msgs[-1]["role"] == "user"
+
+
+def test_format_last_context_block_structure():
+    lc = LastContext(
+        capability_id="MM.Inventory.GetAvailability",
+        parameters={"material": "DEMOA2"},
+        missing_parameters=["plant"],
+        decision_type="CLARIFY",
+    )
+    block = _format_last_context_block(lc)
+    assert block["role"] == "user"
+    assert "<durable_context_data>" in block["content"]
+    assert "MM.Inventory.GetAvailability" in block["content"]
+    assert "DEMOA2" in block["content"]
+    assert "CLARIFY" in block["content"]

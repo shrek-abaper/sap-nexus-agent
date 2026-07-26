@@ -31,7 +31,7 @@ from sap_nexus_agent.registry_loader import (
 if TYPE_CHECKING:
     # Type-only import: ConversationContext is a pure data model with no
     # runtime dependency on llm_intent.py, so this does not create a cycle.
-    from sap_nexus_agent.conversation_context import ConversationContext
+    from sap_nexus_agent.conversation_context import ConversationContext, LastContext, Turn
 
 
 class JsonLlmClient(Protocol):
@@ -116,6 +116,20 @@ _AUTHORITY_CONTRACT = (
 )
 
 
+def _format_last_context_block(lc: "LastContext") -> dict[str, str]:
+    """Format last_context as a <durable_context_data> user block (data, not instruction)."""
+    return {
+        "role": "user",
+        "content": (
+            "<durable_context_data>\n上轮决策:\n"
+            f"  capability: {lc.capability_id}\n"
+            f"  parameters: {lc.parameters}\n"
+            f"  decision: {lc.decision_type}\n"
+            "</durable_context_data>"
+        ),
+    }
+
+
 def _format_history(history: "tuple[Turn, ...]") -> str:
     lines = []
     for turn in history:
@@ -151,17 +165,21 @@ def _messages(
     }
     base_user = {"role": "user", "content": text}
 
-    if context is None or not context.history:
+    if context is None or (context.last_context is None and not context.history):
         return [base_system, base_user]
 
-    # 近 3 轮滑窗：1 轮 = user + assistant = 2 条 Turn，3 轮 = 6 条 Turn。
-    recent = context.history[-6:]
     authority = {"role": "system", "content": _AUTHORITY_CONTRACT}
-    history_block = {
-        "role": "user",
-        "content": f"<durable_context_data>\n{_format_history(recent)}\n</durable_context_data>",
-    }
-    return [authority, history_block, base_system, base_user]
+    blocks: list[dict[str, object]] = []
+    if context.last_context is not None:
+        blocks.append(_format_last_context_block(context.last_context))
+    if context.history:
+        # 近 3 轮滑窗：1 轮 = user + assistant = 2 条 Turn，3 轮 = 6 条 Turn。
+        recent = context.history[-6:]
+        blocks.append({
+            "role": "user",
+            "content": f"<durable_context_data>\n{_format_history(recent)}\n</durable_context_data>",
+        })
+    return [authority, *blocks, base_system, base_user]
 
 
 def _format_inputs(inputs: tuple[InputDescriptor, ...]) -> str:
