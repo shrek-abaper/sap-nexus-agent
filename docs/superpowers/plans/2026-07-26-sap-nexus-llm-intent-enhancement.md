@@ -872,7 +872,7 @@ git commit -m "feat(selector): treat multi_parameters as satisfying required inp
 - Consumes: Task 5 的 `IntentParseResult.multi_parameters`
 - Produces: `expand_combinations(base, multi) -> list[dict[str, str]]`（笛卡尔积）；`AgentOutcome.combinations: list[dict[str, str]] | None`；`BATCH_COMBINATION_CAP = 20`
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 追加到 `agent/tests/test_orchestrator.py`：
 
@@ -914,12 +914,12 @@ def test_agent_outcome_has_combinations_field():
     assert outcome2.combinations is None
 ```
 
-- [ ] **Step 2: 运行测试验证失败**
+- [x] **Step 2: 运行测试验证失败**
 
 Run: `cd agent && python -m pytest tests/test_orchestrator.py::test_expand_combinations_single_key tests/test_orchestrator.py::test_batch_combination_cap_constant -v`
 Expected: FAIL with `ImportError: cannot import name 'expand_combinations'`
 
-- [ ] **Step 3: 最小实现**
+- [x] **Step 3: 最小实现**
 
 在 `agent/sap_nexus_agent/orchestrator.py` 顶部 import 区（line 1-43 之后）新增：
 
@@ -968,12 +968,12 @@ def expand_combinations(
     return combos
 ```
 
-- [ ] **Step 4: 运行测试验证通过**
+- [x] **Step 4: 运行测试验证通过**
 
 Run: `cd agent && python -m pytest tests/test_orchestrator.py -v`
 Expected: 全部 PASS（含新测试 + 既有回归）
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 ```bash
 git add agent/sap_nexus_agent/orchestrator.py agent/tests/test_orchestrator.py
