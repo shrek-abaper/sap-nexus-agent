@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createAgentRun } from "@/runtime/agent-runtime-adapter";
+import { createAgentRun } from "../../../src/runtime/agent-runtime-adapter";
 
 export async function POST(request: Request) {
   const payload = await request.json();
@@ -7,7 +7,8 @@ export async function POST(request: Request) {
   try {
     const result = await createAgentRun({
       query: String(payload.query ?? ""),
-      rfcName: payload.rfcName ? String(payload.rfcName) : undefined
+      rfcName: payload.rfcName ? String(payload.rfcName) : undefined,
+      conversationId: payload.conversationId ? String(payload.conversationId) : undefined
     });
     return NextResponse.json(result);
   } catch (error) {

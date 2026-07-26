@@ -7,6 +7,7 @@ import { ChatStream } from "./ChatStream";
 import { ChatComposer } from "./ChatComposer";
 import { summarizeTurn } from "./view-model";
 import type { ChatTurn, ActiveTurnIndex } from "./chat-types";
+import { createConversationId } from "./conversation-id";
 import { Icon, type IconName } from "@/shared/ui/Icon";
 import { samplePrompts, heroInputPlaceholder } from "./sample-data";
 
@@ -41,6 +42,7 @@ export function AgentConsole() {
   const [query, setQuery] = useState("");
   const [turns, setTurns] = useState<ChatTurn[]>([]);
   const [activeIndex, setActiveIndex] = useState<ActiveTurnIndex>(null);
+  const [conversationId, setConversationId] = useState<string>(createConversationId);
 
   const hasRun = turns.length > 0;
 
@@ -135,7 +137,7 @@ export function AgentConsole() {
       const response = await fetch("/api/agent-runs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: trimmed })
+        body: JSON.stringify({ query: trimmed, conversationId })
       });
       if (!response.ok) {
         const errorBody = (await response.json().catch(() => null)) as { message?: string } | null;
@@ -192,6 +194,7 @@ export function AgentConsole() {
             onClick={() => {
               setTurns([]);
               setActiveIndex(null);
+              setConversationId(createConversationId());
             }}
           >
             <Icon name="plus" size={18} className="side-nav__cta-icon" />
