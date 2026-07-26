@@ -2,6 +2,8 @@ import io
 import json
 from unittest.mock import patch
 
+import pytest
+
 from sap_nexus_agent.cli import main
 
 
@@ -47,6 +49,31 @@ def test_cli_context_invalid_json_returns_failure(capsys, monkeypatch):
     assert exit_code == 2
     out = json.loads(capsys.readouterr().out)
     assert out["errorType"] == "INVALID_CONTEXT_PAYLOAD"
+
+
+def test_cli_context_non_dict_json_returns_invalid_payload(capsys, monkeypatch):
+    """Valid JSON that is not a dict (list/string/number) -> INVALID_CONTEXT_PAYLOAD, not AttributeError traceback."""
+    fake_stdin = io.StringIO(json.dumps([1, 2, 3]))
+    monkeypatch.setattr("sys.stdin", fake_stdin)
+    monkeypatch.setattr("sap_nexus_agent.cli.GatewayClient", lambda url: object())
+    exit_code = main(["1000", "--context", "--json"])
+    assert exit_code == 2
+    out = json.loads(capsys.readouterr().out)
+    assert out["errorType"] == "INVALID_CONTEXT_PAYLOAD"
+
+
+def test_cli_context_without_query_returns_error(capsys, monkeypatch):
+    """--context without a positional query must exit with an error, not crash in parse_intent."""
+    context_payload = {"lastContext": None, "history": None}
+    fake_stdin = io.StringIO(json.dumps(context_payload))
+    monkeypatch.setattr("sys.stdin", fake_stdin)
+    monkeypatch.setattr("sap_nexus_agent.cli.GatewayClient", lambda url: object())
+    with pytest.raises(SystemExit) as exc_info:
+        main(["--context", "--gateway-url", "http://localhost:8080"])
+    # argparse error() exits with status 2
+    assert exc_info.value.code == 2
+    err = capsys.readouterr().err
+    assert "query is required" in err
 
 
 def test_cli_without_context_backward_compatible(capsys, monkeypatch):

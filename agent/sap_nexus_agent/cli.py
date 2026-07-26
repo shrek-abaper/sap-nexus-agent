@@ -59,10 +59,12 @@ def main(argv: list[str] | None = None) -> int:
         return 0 if outcome.status in {"success", "rejected"} else 1
 
     if args.context:
+        if not args.query:
+            parser.error("query is required unless --continue-action is used")
         try:
             payload = json.load(sys.stdin)
             context = ConversationContext.from_dict(payload)
-        except (json.JSONDecodeError, KeyError, TypeError, ValueError):
+        except (json.JSONDecodeError, KeyError, TypeError, ValueError, AttributeError):
             if args.json:
                 print(json.dumps({
                     "status": "failure",
@@ -85,7 +87,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0 if outcome.status in {"success", "clarification", "awaiting_approval"} else 1
 
     if not args.query:
-        parser.error("query is required unless --continue-action or --context is used")
+        parser.error("query is required unless --continue-action is used")
 
     catalog = load_intent_catalog()
     intent_adapter = build_intent_adapter(args.intent_mode, catalog)
