@@ -422,6 +422,43 @@ describe("agent runtime adapter", () => {
     expect(runner).toHaveBeenCalledTimes(1);
   });
 
+  it("allows new query on same conversation after pending approval is decided", async () => {
+    // Concern 1: decideAgentRunApproval (approve/reject) must clear the Q2
+    // pending-approval block so the next query on the same conversation is
+    // not rejected. The run record is the source of truth: once
+    // record.decision is set, the conversation may accept new input.
+    const pendingOutcome = {
+      status: "awaiting_approval",
+      responseText: "等待审批",
+      callPlan: { capabilityId: "MM.PR.CreateDraft", kind: "Action", parameters: { material: "X" } },
+      validationResult: { success: true, traceId: "t1", capabilityId: "MM.PR.CreateDraft" },
+      approvalRecord: { approvalId: "a1", capabilityId: "MM.PR.CreateDraft", status: "pending" },
+      lastContext: null
+    };
+    const runner = vi
+      .fn()
+      .mockResolvedValueOnce(pendingOutcome)
+      .mockResolvedValueOnce({
+        status: "success",
+        responseText: "采购申请已创建。",
+        callPlan: pendingOutcome.callPlan,
+        executionResult: { traceId: "t2", capabilityId: "MM.PR.CreateDraft", success: true },
+        approvalRecord: { ...pendingOutcome.approvalRecord, status: "executed" },
+        lastContext: null
+      })
+      .mockResolvedValueOnce({ status: "success", responseText: "完成", lastContext: null });
+    setAgentRunnerForTests(runner);
+
+    const run1 = await createAgentRun({ query: "建PR 物料X", conversationId: "conv-decided" });
+    await decideAgentRunApproval(run1.runId, "approve");
+
+    // After approval is decided, a new query on the same conversation must
+    // NOT be rejected by Q2 and must invoke the runner.
+    const run2 = await createAgentRun({ query: "再查一个", conversationId: "conv-decided" });
+    expect(run2.runId).not.toBe(run1.runId);
+    expect(runner).toHaveBeenCalledTimes(3);
+  });
+
   it("clears session lastContext when outcome returns null lastContext", async () => {
     const runner = vi.fn(async (_input: any) => {
       const count = runner.mock.calls.length;
@@ -454,7 +491,10 @@ describe("agent runtime adapter", () => {
     expect(runner.mock.calls[2][0].context).toBeUndefined();
   });
 
-  it("caps conversation history to last 3 entries in context", async () => {
+  it("caps conversation history to last 6 entries (3 turns) in context", async () => {
+    // Concern 3: Python llm_intent.py uses `context.history[-6:]` (近 3 轮 =
+    // 6 条 Turn). Frontend buildContext must align to slice(-6) so both
+    // sides feed the LLM the same window.
     const runner = vi.fn(async (_input: any) => ({
       status: "clarification",
       responseText: "请补充。",
@@ -471,11 +511,16 @@ describe("agent runtime adapter", () => {
       await createAgentRun({ query: `q${i}`, conversationId: "conv-hist" });
     }
 
+    // 5th run's context is built from session history after 4 completed runs
+    // (8 entries). slice(-6) yields the last 3 turns = [q1, asst, q2, asst, q3, asst].
     const lastCall = runner.mock.calls[4][0];
-    expect(lastCall.context.history).toHaveLength(3);
+    expect(lastCall.context.history).toHaveLength(6);
     expect(
       lastCall.context.history.map((t: { role: string; content: string }) => ({ role: t.role, content: t.content }))
     ).toEqual([
+      { role: "user", content: "q1" },
+      { role: "assistant", content: "请补充。" },
+      { role: "user", content: "q2" },
       { role: "assistant", content: "请补充。" },
       { role: "user", content: "q3" },
       { role: "assistant", content: "请补充。" }

@@ -28,7 +28,6 @@ type ConversationContext = {
 type SessionState = {
   lastContext: LastContext | null;
   lastRunId: string | null;
-  lastRunStatus: string | null;
   history: Turn[];
 };
 
@@ -117,7 +116,7 @@ export function resetAgentSessionsForTests() {
 function getSession(conversationId: string): SessionState {
   let session = sessions.get(conversationId);
   if (!session) {
-    session = { lastContext: null, lastRunId: null, lastRunStatus: null, history: [] };
+    session = { lastContext: null, lastRunId: null, history: [] };
     sessions.set(conversationId, session);
   }
   return session;
@@ -125,7 +124,9 @@ function getSession(conversationId: string): SessionState {
 
 function buildContext(session: SessionState): ConversationContext | undefined {
   if (!session.lastContext) return undefined;
-  const recent = session.history.slice(-3);
+  // Align with Python llm_intent.py `context.history[-6:]`: 近 3 轮 =
+  // user+assistant = 6 条 Turn (Concern 3).
+  const recent = session.history.slice(-6);
   return {
     lastContext: session.lastContext,
     history: recent.length > 0 ? recent : null
@@ -139,11 +140,19 @@ export async function createAgentRun(input: CreateAgentRunInput): Promise<{ runI
 
   // Q2: reject new queries on a conversation that still has a pending write
   // approval. The user must approve or reject the prior Action before the
-  // conversation can accept new input.
+  // conversation can accept new input. Source of truth is the run record:
+  // a run is still pending only while it holds a pendingOutcome that has not
+  // yet been decided (record.decision unset). This avoids depending on a
+  // separately-synced status field that decideAgentRunApproval never clears
+  // (Concern 1).
   if (input.conversationId) {
     const session = getSession(input.conversationId);
-    if (session.lastRunStatus === "awaiting_approval") {
-      throw new Error("当前对话有待审批的写操作，请先处理审批后再发起新查询。");
+    const lastRunId = session.lastRunId;
+    if (lastRunId) {
+      const lastRun = runs.get(lastRunId);
+      if (lastRun?.pendingOutcome && !lastRun.decision) {
+        throw new Error("当前对话有待审批的写操作，请先处理审批后再发起新查询。");
+      }
     }
   }
 
@@ -171,7 +180,6 @@ export async function createAgentRun(input: CreateAgentRunInput): Promise<{ runI
     if (input.conversationId) {
       const session = getSession(input.conversationId);
       session.lastRunId = runId;
-      session.lastRunStatus = outcome.status;
       session.history.push({ role: "user", content: query });
       if (outcome.responseText) {
         session.history.push({ role: "assistant", content: outcome.responseText });
