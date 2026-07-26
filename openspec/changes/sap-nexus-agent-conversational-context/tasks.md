@@ -1,8 +1,8 @@
 ## 1. Python Agent: ConversationContext 与签名扩展
 
 - [x] 1.1 定义 `ConversationContext` dataclass（`pending_clarification: PendingClarification | None`, `history: list[Turn] | None`）和 `PendingClarification` dataclass（`capability_id, parameters, missing_parameters, clarification_text`），放在 `agent/sap_nexus_agent/conversation_context.py`
-- [ ] 1.2 扩展 `IntentAdapter` 类型为 `Callable[[str, ConversationContext | None], IntentParseResult]`；`parse_intent` / `parse_with_hybrid` / `parse_with_llm` 增加可选 `context` 参数（默认 `None`），`None` 时行为不变
-- [ ] 1.3 `run_query` / `run_inventory_query` / `run_workbench_query` 增加 `context` 参数并透传给 `intent_adapter`
+- [x] 1.2 扩展 `IntentAdapter` 类型为 `Callable[[str, ConversationContext | None], IntentParseResult]`；`parse_intent` / `parse_with_hybrid` / `parse_with_llm` 增加可选 `context` 参数（默认 `None`），`None` 时行为不变
+- [x] 1.3 `run_query` / `run_inventory_query` / `run_workbench_query` 增加 `context` 参数并透传给 `intent_adapter`
 
 ## 2. Python Agent: sticky-CLARIFY 跨轮逻辑
 

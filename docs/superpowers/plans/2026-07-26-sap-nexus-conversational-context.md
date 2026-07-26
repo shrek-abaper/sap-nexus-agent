@@ -246,7 +246,7 @@ git commit -m "feat(conversation-context): add LastContext/Turn/ConversationCont
   - `run_query(text, gateway, *, intent_adapter=parse_intent, context=None, ...)` 透传 `context` 给 `intent_adapter`
   - `run_inventory_query(text, gateway, *, intent_adapter=parse_inventory_intent, context=None)`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # 追加到 agent/tests/test_conversation_context.py
@@ -324,12 +324,12 @@ def test_run_query_context_none_backward_compatible(monkeypatch):
     assert outcome.status in {"success", "clarification"}
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `python -m pytest agent/tests/test_conversation_context.py::test_parse_intent_context_passed_but_ignored_in_task2 -v`
 Expected: FAIL with `TypeError: parse_intent() got an unexpected keyword argument 'context'`
 
-- [ ] **Step 3: Extend parse_intent signature**
+- [x] **Step 3: Extend parse_intent signature**
 
 在 `agent/sap_nexus_agent/intent.py:98` 修改：
 
@@ -352,7 +352,7 @@ if TYPE_CHECKING:
     from sap_nexus_agent.conversation_context import ConversationContext
 ```
 
-- [ ] **Step 4: Extend parse_with_llm / parse_with_hybrid / build_intent_adapter / _parse_llm_only**
+- [x] **Step 4: Extend parse_with_llm / parse_with_hybrid / build_intent_adapter / _parse_llm_only**
 
 在 `agent/sap_nexus_agent/llm_intent.py` 修改：
 
@@ -422,7 +422,7 @@ if TYPE_CHECKING:
 
 注意：`_messages(text, catalog, context=context)` 在 Task 4 实现 history 注入；Task 2 阶段 `_messages` 暂不改（仅多接一个 `context=None` 参数但忽略它）。
 
-- [ ] **Step 5: Extend _messages signature (临时忽略 context)**
+- [x] **Step 5: Extend _messages signature (临时忽略 context)**
 
 在 `agent/sap_nexus_agent/llm_intent.py:79` 修改（Task 4 会填充实际逻辑）：
 
@@ -441,7 +441,7 @@ def _messages(
     ]
 ```
 
-- [ ] **Step 6: Extend IntentAdapter type alias + run_query / run_inventory_query**
+- [x] **Step 6: Extend IntentAdapter type alias + run_query / run_inventory_query**
 
 在 `agent/sap_nexus_agent/orchestrator.py:76` 修改：
 
@@ -468,7 +468,7 @@ def run_query(
 
 `run_inventory_query` 同理增加 `context: ConversationContext | None = None` 并透传。
 
-- [ ] **Step 7: Extend workbench_output IntentAdapter + run_workbench_query**
+- [x] **Step 7: Extend workbench_output IntentAdapter + run_workbench_query**
 
 在 `agent/sap_nexus_agent/workbench_output.py:13,16` 修改：
 
@@ -492,12 +492,12 @@ def run_workbench_query(
     )
 ```
 
-- [ ] **Step 8: Run all existing tests to verify no regression**
+- [x] **Step 8: Run all existing tests to verify no regression**
 
 Run: `python -m pytest agent/tests/ -v`
 Expected: PASS（所有现有测试 + 新增 3 个单轮回归测试）
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add agent/sap_nexus_agent/intent.py agent/sap_nexus_agent/llm_intent.py \
