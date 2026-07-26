@@ -8,6 +8,28 @@ import type { JsonValue } from "../shared/types/artifacts";
 type CreateAgentRunInput = {
   query: string;
   rfcName?: string;
+  conversationId?: string;
+};
+
+type LastContext = {
+  capabilityId: string;
+  parameters: Record<string, string>;
+  missingParameters: string[];
+  decisionType: "CLARIFY" | "SELECT";
+};
+
+type Turn = { role: "user" | "assistant"; content: string };
+
+type ConversationContext = {
+  lastContext: LastContext | null;
+  history: Turn[] | null;
+};
+
+type SessionState = {
+  lastContext: LastContext | null;
+  lastRunId: string | null;
+  lastRunStatus: string | null;
+  history: Turn[];
 };
 
 type AgentRunRecord = {
@@ -32,6 +54,7 @@ type AgentRunnerInput = {
   gatewayUrl: string;
   intentMode: string;
   continuation?: ApprovalContinuation;
+  context?: ConversationContext;
 };
 
 type WorkbenchOutcome = {
@@ -58,16 +81,25 @@ type WorkbenchOutcome = {
   // Workbench can render the dry-run preview (PlanGraph nodes/edges/gaps/
   // governanceFlags) in the same ESCALATE turn without a new event type.
   dryRun?: Record<string, unknown> | null;
+  // Conversational context backfilled by Python outcome_to_workbench_dict
+  // (Task 5). Non-null after CLARIFY/SELECT; null after REJECT/ESCALATE or
+  // when no capability decision was made. The adapter uses this to update
+  // SessionState.lastContext for multi-turn continuity.
+  lastContext?: LastContext | null;
 };
 
 type AgentRunner = (input: AgentRunnerInput) => Promise<WorkbenchOutcome>;
 
 const globalRunStore = globalThis as typeof globalThis & {
   __SAP_NEXUS_AGENT_RUNS__?: Map<string, AgentRunRecord>;
+  __SAP_NEXUS_AGENT_SESSIONS__?: Map<string, SessionState>;
 };
 
 // Next route handlers can load this module in separate bundles; keep runs process-wide.
 const runs = (globalRunStore.__SAP_NEXUS_AGENT_RUNS__ ??= new Map<string, AgentRunRecord>());
+// Conversational sessions keyed by conversationId; parallel to `runs` so a run
+// can carry forward the prior turn's lastContext + recent history (Task 7).
+const sessions = (globalRunStore.__SAP_NEXUS_AGENT_SESSIONS__ ??= new Map<string, SessionState>());
 let runnerForTests: AgentRunner | null = null;
 
 export function setAgentRunnerForTests(runner: AgentRunner | null) {
@@ -78,9 +110,41 @@ export function resetAgentRunsForTests() {
   runs.clear();
 }
 
+export function resetAgentSessionsForTests() {
+  sessions.clear();
+}
+
+function getSession(conversationId: string): SessionState {
+  let session = sessions.get(conversationId);
+  if (!session) {
+    session = { lastContext: null, lastRunId: null, lastRunStatus: null, history: [] };
+    sessions.set(conversationId, session);
+  }
+  return session;
+}
+
+function buildContext(session: SessionState): ConversationContext | undefined {
+  if (!session.lastContext) return undefined;
+  const recent = session.history.slice(-3);
+  return {
+    lastContext: session.lastContext,
+    history: recent.length > 0 ? recent : null
+  };
+}
+
 export async function createAgentRun(input: CreateAgentRunInput): Promise<{ runId: string }> {
   if (input.rfcName) {
     throw new Error("Raw RFC execution is not allowed");
+  }
+
+  // Q2: reject new queries on a conversation that still has a pending write
+  // approval. The user must approve or reject the prior Action before the
+  // conversation can accept new input.
+  if (input.conversationId) {
+    const session = getSession(input.conversationId);
+    if (session.lastRunStatus === "awaiting_approval") {
+      throw new Error("当前对话有待审批的写操作，请先处理审批后再发起新查询。");
+    }
   }
 
   const runId = `run-${crypto.randomUUID()}`;
@@ -95,10 +159,24 @@ export async function createAgentRun(input: CreateAgentRunInput): Promise<{ runI
 
   try {
     const runner = runnerForTests ?? runLocalPythonAgent;
-    const outcome = await runner({ query, gatewayUrl: gatewayUrl(), intentMode: intentMode() });
+    const context = input.conversationId ? buildContext(getSession(input.conversationId)) : undefined;
+    const outcome = await runner({ query, gatewayUrl: gatewayUrl(), intentMode: intentMode(), context });
     record.events = buildEventsFromOutcome(runId, query, outcome, timestamp);
     if (outcome.status === "awaiting_approval") {
       record.pendingOutcome = outcome;
+    }
+
+    // Backfill session: CLARIFY/SELECT update lastContext; REJECT/ESCALATE and
+    // awaiting_approval outcomes carry null lastContext and clear it.
+    if (input.conversationId) {
+      const session = getSession(input.conversationId);
+      session.lastRunId = runId;
+      session.lastRunStatus = outcome.status;
+      session.history.push({ role: "user", content: query });
+      if (outcome.responseText) {
+        session.history.push({ role: "assistant", content: outcome.responseText });
+      }
+      session.lastContext = outcome.lastContext ?? null;
     }
   } catch (error) {
     record.events = buildRuntimeFailureEvents(runId, timestamp, error);
@@ -554,37 +632,50 @@ function push(
 async function runLocalPythonAgent(input: AgentRunnerInput): Promise<WorkbenchOutcome> {
   const repoRoot = repoRootPath();
   const python = pythonExecutable(repoRoot);
-  const args = input.continuation
-    ? [
-        "-m",
-        "sap_nexus_agent.cli",
-        "--continue-action",
-        "--gateway-url",
-        input.gatewayUrl,
-        "--json"
-      ]
-    : [
-        "-m",
-        "sap_nexus_agent.cli",
-        input.query,
-        "--gateway-url",
-        input.gatewayUrl,
-        "--intent-mode",
-        input.intentMode,
-        "--json"
-      ];
+  let args: string[];
+  let stdinPayload: string | undefined;
+
+  if (input.continuation) {
+    args = [
+      "-m",
+      "sap_nexus_agent.cli",
+      "--continue-action",
+      "--gateway-url",
+      input.gatewayUrl,
+      "--json"
+    ];
+    stdinPayload = JSON.stringify(input.continuation);
+  } else if (input.context) {
+    args = [
+      "-m",
+      "sap_nexus_agent.cli",
+      input.query,
+      "--context",
+      "--gateway-url",
+      input.gatewayUrl,
+      "--intent-mode",
+      input.intentMode,
+      "--json"
+    ];
+    stdinPayload = JSON.stringify(input.context);
+  } else {
+    args = [
+      "-m",
+      "sap_nexus_agent.cli",
+      input.query,
+      "--gateway-url",
+      input.gatewayUrl,
+      "--intent-mode",
+      input.intentMode,
+      "--json"
+    ];
+  }
   const env = {
     ...process.env,
     PYTHONPATH: [path.join(repoRoot, "agent"), process.env.PYTHONPATH].filter(Boolean).join(path.delimiter)
   };
 
-  const { stdout } = await spawnAndCapture(
-    python,
-    args,
-    repoRoot,
-    env,
-    input.continuation ? JSON.stringify(input.continuation) : undefined
-  );
+  const { stdout } = await spawnAndCapture(python, args, repoRoot, env, stdinPayload);
   try {
     return JSON.parse(stdout.trim()) as WorkbenchOutcome;
   } catch {

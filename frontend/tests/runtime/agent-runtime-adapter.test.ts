@@ -4,17 +4,20 @@ import {
   decideAgentRunApproval,
   getAgentRunEvents,
   resetAgentRunsForTests,
+  resetAgentSessionsForTests,
   setAgentRunnerForTests
 } from "../../src/runtime/agent-runtime-adapter";
 
 describe("agent runtime adapter", () => {
   beforeEach(() => {
     resetAgentRunsForTests();
+    resetAgentSessionsForTests();
   });
 
   afterEach(() => {
     setAgentRunnerForTests(null);
     resetAgentRunsForTests();
+    resetAgentSessionsForTests();
   });
 
   it("creates a read-only run from live runner output instead of deterministic fake events", async () => {
@@ -340,6 +343,7 @@ describe("agent runtime adapter", () => {
   it("keeps run events readable after route modules are loaded separately", async () => {
     const firstModule = await import("../../src/runtime/agent-runtime-adapter");
     firstModule.resetAgentRunsForTests();
+    firstModule.resetAgentSessionsForTests();
     firstModule.setAgentRunnerForTests(
       vi.fn(async () => ({
         status: "clarification",
@@ -360,6 +364,148 @@ describe("agent runtime adapter", () => {
       "run_completed"
     ]);
     secondModule.resetAgentRunsForTests();
+    secondModule.resetAgentSessionsForTests();
     secondModule.setAgentRunnerForTests(null);
+  });
+
+  it("passes conversation context to runner when conversationId is provided", async () => {
+    const runner = vi.fn(async (_input: any) => ({
+      status: "clarification",
+      responseText: "请提供工厂。",
+      missingParameters: ["plant"],
+      matchDecision: {
+        decisionType: "CLARIFY",
+        capabilityId: "MM.Inventory.GetAvailability",
+        parameters: { material: "DEMOA2" },
+        missingParameters: ["plant"]
+      },
+      lastContext: {
+        capabilityId: "MM.Inventory.GetAvailability",
+        parameters: { material: "DEMOA2" },
+        missingParameters: ["plant"],
+        decisionType: "CLARIFY" as const
+      }
+    }));
+    setAgentRunnerForTests(runner);
+
+    // First run: fresh session, no prior lastContext -> context undefined
+    await createAgentRun({ query: "查库存 DEMOA2", conversationId: "conv-1" });
+    // Second run: same conversationId, should inherit lastContext from first outcome
+    await createAgentRun({ query: "1000", conversationId: "conv-1" });
+
+    expect(runner.mock.calls[0][0].context).toBeUndefined();
+    const secondCall = runner.mock.calls[1][0];
+    expect(secondCall.context).toBeDefined();
+    expect(secondCall.context.lastContext.capabilityId).toBe("MM.Inventory.GetAvailability");
+    expect(secondCall.context.lastContext.decisionType).toBe("CLARIFY");
+    expect(secondCall.context.lastContext.missingParameters).toEqual(["plant"]);
+    expect(secondCall.context.lastContext.parameters).toEqual({ material: "DEMOA2" });
+  });
+
+  it("rejects new query when approval is pending on the same conversation", async () => {
+    const runner = vi.fn(async () => ({
+      status: "awaiting_approval",
+      responseText: "等待审批",
+      callPlan: { capabilityId: "MM.PR.CreateDraft", kind: "Action", parameters: {} },
+      validationResult: { success: true, traceId: "t", capabilityId: "MM.PR.CreateDraft" },
+      approvalRecord: { approvalId: "a1", capabilityId: "MM.PR.CreateDraft", status: "pending" },
+      matchDecision: { decisionType: "SELECT", capabilityId: "MM.PR.CreateDraft" },
+      lastContext: null
+    }));
+    setAgentRunnerForTests(runner);
+
+    await createAgentRun({ query: "建PR 物料X", conversationId: "conv-2" });
+    // Second call same conversationId: approval pending, must reject without invoking runner
+    await expect(
+      createAgentRun({ query: "再查一个", conversationId: "conv-2" })
+    ).rejects.toThrow(/审批/);
+    expect(runner).toHaveBeenCalledTimes(1);
+  });
+
+  it("clears session lastContext when outcome returns null lastContext", async () => {
+    const runner = vi.fn(async (_input: any) => {
+      const count = runner.mock.calls.length;
+      if (count === 1) {
+        return {
+          status: "clarification",
+          responseText: "请提供工厂。",
+          lastContext: {
+            capabilityId: "MM.Inventory.GetAvailability",
+            parameters: { material: "X" },
+            missingParameters: ["plant"],
+            decisionType: "CLARIFY" as const
+          }
+        };
+      }
+      if (count === 2) {
+        return { status: "failure", responseText: "无匹配能力。", lastContext: null };
+      }
+      return { status: "success", responseText: "完成", lastContext: null };
+    });
+    setAgentRunnerForTests(runner);
+
+    await createAgentRun({ query: "查库存", conversationId: "conv-clear" });
+    await createAgentRun({ query: "再查", conversationId: "conv-clear" });
+    await createAgentRun({ query: "第三次", conversationId: "conv-clear" });
+
+    // Second call inherited lastContext from first run
+    expect(runner.mock.calls[1][0].context?.lastContext?.capabilityId).toBe("MM.Inventory.GetAvailability");
+    // Third call: second run returned null lastContext, session cleared -> no context
+    expect(runner.mock.calls[2][0].context).toBeUndefined();
+  });
+
+  it("caps conversation history to last 3 entries in context", async () => {
+    const runner = vi.fn(async (_input: any) => ({
+      status: "clarification",
+      responseText: "请补充。",
+      lastContext: {
+        capabilityId: "C",
+        parameters: {},
+        missingParameters: ["x"],
+        decisionType: "CLARIFY" as const
+      }
+    }));
+    setAgentRunnerForTests(runner);
+
+    for (let i = 0; i < 5; i++) {
+      await createAgentRun({ query: `q${i}`, conversationId: "conv-hist" });
+    }
+
+    const lastCall = runner.mock.calls[4][0];
+    expect(lastCall.context.history).toHaveLength(3);
+    expect(
+      lastCall.context.history.map((t: { role: string; content: string }) => ({ role: t.role, content: t.content }))
+    ).toEqual([
+      { role: "assistant", content: "请补充。" },
+      { role: "user", content: "q3" },
+      { role: "assistant", content: "请补充。" }
+    ]);
+  });
+
+  it("resetAgentSessionsForTests clears session state", async () => {
+    const runner = vi.fn(async (_input: any) => ({
+      status: "clarification",
+      responseText: "请补充。",
+      lastContext: {
+        capabilityId: "C",
+        parameters: {},
+        missingParameters: ["x"],
+        decisionType: "CLARIFY" as const
+      }
+    }));
+    setAgentRunnerForTests(runner);
+    await createAgentRun({ query: "q0", conversationId: "conv-reset" });
+    resetAgentSessionsForTests();
+    await createAgentRun({ query: "q1", conversationId: "conv-reset" });
+
+    expect(runner.mock.calls[1][0].context).toBeUndefined();
+  });
+
+  it("does not pass context when conversationId is absent", async () => {
+    const runner = vi.fn(async (_input: any) => ({ status: "success", responseText: "done" }));
+    setAgentRunnerForTests(runner);
+    await createAgentRun({ query: "查库存" });
+
+    expect(runner.mock.calls[0][0].context).toBeUndefined();
   });
 });
