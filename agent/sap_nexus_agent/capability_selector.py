@@ -127,7 +127,17 @@ def select_capability(parse_result: IntentParseResult) -> MatchDecision:
             rationale="single capability matched with complete parameters",
         )
 
-    # 6. No match -> REJECT(UNSUPPORTED_INTENT).
+    # 6. No match -> REJECT(UNSUPPORTED_INTENT). LLM 路径空返回带 clarification 时发 CLARIFY
+    #    (rule 路径空返回无 clarification，仍走 REJECT)。
+    if parse_result.clarification and not parse_result.capability_id:
+        return MatchDecision(
+            decision_type="CLARIFY",
+            capability_id=None,
+            parameters={},
+            missing_parameters=[],
+            rationale=parse_result.clarification,
+        )
+
     return MatchDecision(
         decision_type="REJECT",
         error_type="UNSUPPORTED_INTENT",

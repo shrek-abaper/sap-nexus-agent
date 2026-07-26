@@ -310,3 +310,67 @@ def test_select_capability_always_returns_match_decision():
     for parsed in cases:
         decision = select_capability(parsed)
         assert isinstance(decision, MatchDecision), f"expected MatchDecision, got {type(decision)}"
+
+
+# ---------------------------------------------------------------------------
+# Task 3 (Q3): LLM empty return with clarification -> CLARIFY (not REJECT)
+# ---------------------------------------------------------------------------
+
+
+def test_select_emits_clarify_when_llm_clarification_present():
+    """LLM path empty return carries clarification -> CLARIFY (not REJECT)."""
+    parse_result = IntentParseResult(
+        intent=None,
+        parameters={},
+        missing_parameters=[],
+        clarification="无法识别查询意图，请明确物料、工厂等信息",
+        capability_id=None,
+    )
+    decision = select_capability(parse_result)
+    assert decision.decision_type == "CLARIFY"
+    assert decision.rationale == "无法识别查询意图，请明确物料、工厂等信息"
+
+
+def test_select_emits_reject_when_no_clarification():
+    """Rule path empty return has no clarification -> still REJECT (not CLARIFY)."""
+    parse_result = IntentParseResult(
+        intent=None,
+        parameters={},
+        missing_parameters=[],
+        clarification=None,
+        capability_id=None,
+    )
+    decision = select_capability(parse_result)
+    assert decision.decision_type == "REJECT"
+    assert decision.error_type == "UNSUPPORTED_INTENT"
+
+
+def test_select_emits_reject_when_rfc_name_flag_present_even_with_clarification():
+    """rfcName/OData flag path is REJECT at step 1 (technical override),
+    even if clarification were set (it isn't, but defensive test)."""
+    parse_result = IntentParseResult(
+        intent=None,
+        parameters={},
+        missing_parameters=[],
+        clarification="some clarification",
+        capability_id=None,
+        contains_rfc_name=True,
+    )
+    decision = select_capability(parse_result)
+    assert decision.decision_type == "REJECT"
+    assert decision.error_type == "UNSUPPORTED_RFC_NAME"
+
+
+def test_select_emits_reject_when_odata_flag_present():
+    """OData override flag -> REJECT at step 1 (technical override), not CLARIFY."""
+    parse_result = IntentParseResult(
+        intent=None,
+        parameters={},
+        missing_parameters=[],
+        clarification="some clarification",
+        capability_id=None,
+        contains_odata_override=True,
+    )
+    decision = select_capability(parse_result)
+    assert decision.decision_type == "REJECT"
+    assert decision.error_type == "UNSUPPORTED_RFC_NAME"

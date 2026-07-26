@@ -650,3 +650,69 @@ def test_parse_with_hybrid_empty_llm_return_does_not_invoke_rule(monkeypatch):
     assert client.call_count == 1
     assert rule_calls == []  # rule 未被调用
     assert result.capability_id is None
+
+
+# --- Task 3 (Q3): LLM empty return fills generic clarification -> CLARIFY ---
+
+
+def test_payload_empty_capabilityId_fills_clarification():
+    catalog = load_intent_catalog()
+    result = _payload_to_parse_result({"capabilityId": None, "parameters": {}}, catalog)
+    assert result.capability_id is None
+    assert result.clarification is not None
+    assert "物料" in result.clarification or "工厂" in result.clarification or "明确" in result.clarification
+
+
+def test_payload_unknown_capability_fills_clarification():
+    catalog = load_intent_catalog()
+    result = _payload_to_parse_result({"capabilityId": "MM.Bogus.Capability"}, catalog)
+    assert result.capability_id is None
+    assert result.clarification is not None
+
+
+def test_payload_all_candidates_unknown_fills_clarification():
+    catalog = load_intent_catalog()
+    payload = {"candidates": [{"capabilityId": "MM.Bogus.A"}, {"capabilityId": "MM.Bogus.B"}]}
+    result = _payload_to_parse_result(payload, catalog)
+    assert result.capability_id is None
+    assert result.clarification is not None
+
+
+def test_payload_descriptor_none_fills_clarification():
+    """Defensive path: capability_id in capability_ids but catalog.find returns None.
+
+    Constructs a synthetic catalog where ``capability_ids`` advertises a
+    capability that ``capabilities`` does not contain, so ``find()`` returns
+    None. This is the third empty-return path in ``_payload_to_parse_result``.
+    """
+    from sap_nexus_agent.registry_loader import IntentCatalog
+
+    synthetic = IntentCatalog(
+        capabilities=(),
+        capability_ids=frozenset({"MM.Bogus.Orphan"}),
+    )
+    result = _payload_to_parse_result({"capabilityId": "MM.Bogus.Orphan"}, synthetic)
+    assert result.capability_id is None
+    assert result.clarification is not None
+
+
+def test_payload_rfc_name_path_has_no_clarification():
+    """rfcName flag path is a REJECT case (selector step 1), must NOT get clarification."""
+    catalog = load_intent_catalog()
+    result = _payload_to_parse_result(
+        {"capabilityId": "MM.Inventory.GetAvailability", "rfcName": "BAPI_X"}, catalog
+    )
+    assert result.capability_id is None
+    assert result.clarification is None
+    assert result.contains_rfc_name is True
+
+
+def test_payload_odata_override_path_has_no_clarification():
+    """OData flag path is a REJECT case (selector step 1), must NOT get clarification."""
+    catalog = load_intent_catalog()
+    result = _payload_to_parse_result(
+        {"capabilityId": "MM.Inventory.GetAvailability", "endpoint": "/sap/opu/odata"}, catalog
+    )
+    assert result.capability_id is None
+    assert result.clarification is None
+    assert result.contains_odata_override is True
