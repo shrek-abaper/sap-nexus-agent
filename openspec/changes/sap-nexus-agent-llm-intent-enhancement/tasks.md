@@ -8,8 +8,8 @@
 
 - [x] 2.1 `parse_with_hybrid` 调整：LLM 返回结果直接用（移除 `_requires_safe_fallback` -> rule 回退）
 - [x] 2.2 rule 仅 `LlmUnavailable`（连接失败）时兜底，走 `parse_intent(text, context=context)`（继承 last_context，D3）
-- [ ] 2.3 LLM 空返回（无 capability）填充 generic clarification；`select_capability` 第 6 步 REJECT 前增加 clarification 判断 -> CLARIFY（rule 路径空返回仍 REJECT）
-- [ ] 2.4 测试：LLM 为主 + 空返回 CLARIFY + rule 仅连接失败兜底（mock 验证空返回时 rule 未调用）
+- [x] 2.3 LLM 空返回（无 capability）填充 generic clarification；`select_capability` 第 6 步 REJECT 前增加 clarification 判断 -> CLARIFY（rule 路径空返回仍 REJECT）
+- [x] 2.4 测试：LLM 为主 + 空返回 CLARIFY + rule 仅连接失败兜底（mock 验证空返回时 rule 未调用）
 
 ## 3. resolve_with_context 含主关键词继承 material
 

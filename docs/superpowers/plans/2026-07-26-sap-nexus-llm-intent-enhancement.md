@@ -349,7 +349,7 @@ git commit -m "feat(llm-intent): LLM as primary, rule fallback only on LlmUnavai
 - Consumes: Task 2 的 `parse_with_hybrid`（LLM 空返回直接用）
 - Produces: LLM 路径空返回的 `IntentParseResult.clarification` 非 None；`select_capability` 第 6 步前判断 `clarification and not capability_id` -> CLARIFY
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 追加到 `agent/tests/test_llm_intent.py`：
 
@@ -414,12 +414,12 @@ def test_select_emits_reject_when_no_clarification():
     assert decision.error_type == "UNSUPPORTED_INTENT"
 ```
 
-- [ ] **Step 2: 运行测试验证失败**
+- [x] **Step 2: 运行测试验证失败**
 
 Run: `cd agent && python -m pytest tests/test_llm_intent.py::test_payload_empty_capabilityId_fills_clarification tests/test_capability_selector.py::test_select_emits_clarify_when_llm_clarification_present -v`
 Expected: FAIL（当前空返回 `clarification=None`，selector 走 REJECT）
 
-- [ ] **Step 3: 最小实现**
+- [x] **Step 3: 最小实现**
 
 在 `agent/sap_nexus_agent/llm_intent.py` 顶部常量区新增：
 
@@ -467,12 +467,12 @@ return IntentParseResult(
     )
 ```
 
-- [ ] **Step 4: 运行测试验证通过**
+- [x] **Step 4: 运行测试验证通过**
 
 Run: `cd agent && python -m pytest tests/test_llm_intent.py tests/test_capability_selector.py -v`
 Expected: 全部 PASS（含新测试 + 既有回归）
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 ```bash
 git add agent/sap_nexus_agent/llm_intent.py agent/sap_nexus_agent/capability_selector.py agent/tests/test_llm_intent.py agent/tests/test_capability_selector.py
