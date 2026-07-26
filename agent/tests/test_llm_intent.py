@@ -2,9 +2,16 @@ import json
 
 import pytest
 
+from sap_nexus_agent.conversation_context import ConversationContext, LastContext, Turn
 from sap_nexus_agent.intent import IntentParseResult
 from sap_nexus_agent.llm_client import LlmSettings, LlmUnavailable, load_llm_settings
-from sap_nexus_agent.llm_intent import build_intent_adapter, parse_with_hybrid, parse_with_llm
+from sap_nexus_agent.llm_intent import (
+    _messages,
+    _payload_to_parse_result,
+    build_intent_adapter,
+    parse_with_hybrid,
+    parse_with_llm,
+)
 from sap_nexus_agent.registry_loader import load_intent_catalog
 
 
@@ -445,5 +452,70 @@ def test_parse_with_llm_rejects_all_capability_ids_when_catalog_empty():
 
     result = parse_with_llm("查库存", client, empty_catalog)
 
+    assert result.capability_id is None
+    assert result.parameters == {}
+
+
+# --- Task 4: LLM path history injection with authority/data separation ---
+
+
+def test_messages_no_context_returns_base_pair():
+    catalog = load_intent_catalog(repo_root=".")
+    messages = _messages("查库存", catalog, context=None)
+    assert messages[0]["role"] == "system"
+    assert messages[-1] == {"role": "user", "content": "查库存"}
+
+
+def test_messages_with_history_injects_authority_and_data_block():
+    catalog = load_intent_catalog(repo_root=".")
+    ctx = ConversationContext(
+        last_context=LastContext(
+            capability_id="MM.Inventory.GetAvailability",
+            parameters={"material": "DEMOA2"},
+            missing_parameters=["plant"],
+            decision_type="CLARIFY",
+        ),
+        history=(
+            Turn(role="user", content="查库存 DEMOA2"),
+            Turn(role="assistant", content="请提供工厂。"),
+        ),
+    )
+    messages = _messages("1000", catalog, context=ctx)
+    # 第一条：权威契约 system
+    assert messages[0]["role"] == "system"
+    assert "data" in messages[0]["content"].lower() or "数据" in messages[0]["content"]
+    # 第二条：历史数据 human，包裹在 durable_context_data 标签
+    assert messages[1]["role"] == "user"
+    assert "<durable_context_data>" in messages[1]["content"]
+    assert "查库存 DEMOA2" in messages[1]["content"]
+    # 末尾仍是当前轮 user
+    assert messages[-1] == {"role": "user", "content": "1000"}
+
+
+def test_messages_history_window_caps_at_three_turns():
+    catalog = load_intent_catalog(repo_root=".")
+    ctx = ConversationContext(
+        last_context=None,
+        history=tuple(
+            Turn(role="user" if i % 2 == 0 else "assistant", content=f"turn{i}")
+            for i in range(10)
+        ),
+    )
+    messages = _messages("current", catalog, context=ctx)
+    history_block = messages[1]["content"]
+    # 近 3 轮 = 6 条 messages；turn0~turn3 被丢弃，turn4~turn9 保留 6 条
+    assert "turn4" in history_block
+    assert "turn9" in history_block
+    assert "turn0" not in history_block
+
+
+def test_payload_to_parse_result_rejects_injected_capability_id():
+    """即使历史注入诱导 LLM 返回非注册 capabilityId，closed-set 仍 reject。"""
+    catalog = load_intent_catalog(repo_root=".")
+    malicious_payload = {
+        "capabilityId": "EVIL.CAPABILITY",  # 非注册
+        "parameters": {"material": "X"},
+    }
+    result = _payload_to_parse_result(malicious_payload, catalog)
     assert result.capability_id is None
     assert result.parameters == {}
