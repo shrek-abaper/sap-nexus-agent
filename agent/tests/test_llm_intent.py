@@ -716,3 +716,50 @@ def test_payload_odata_override_path_has_no_clarification():
     assert result.capability_id is None
     assert result.clarification is None
     assert result.contains_odata_override is True
+
+
+# --- Task 5: multi_parameters field + LLM multiParameters parsing ---
+
+
+def test_payload_parses_multi_parameters():
+    catalog = load_intent_catalog()
+    payload = {
+        "capabilityId": "MM.Inventory.GetAvailability",
+        "parameters": {},
+        "multiParameters": {"plant": ["5200", "1000"], "material": ["DEMOA2", "DEMOA4"]},
+    }
+    result = _payload_to_parse_result(payload, catalog)
+    assert result.capability_id == "MM.Inventory.GetAvailability"
+    assert result.multi_parameters == {
+        "plant": ["5200", "1000"],
+        "material": ["DEMOA2", "DEMOA4"],
+    }
+
+
+def test_payload_multi_parameters_defaults_empty():
+    catalog = load_intent_catalog()
+    payload = {
+        "capabilityId": "MM.Inventory.GetAvailability",
+        "parameters": {"material": "DEMOA2", "plant": "5100"},
+    }
+    result = _payload_to_parse_result(payload, catalog)
+    assert result.multi_parameters == {}
+
+
+def test_payload_multi_parameters_ignores_non_list_values():
+    catalog = load_intent_catalog()
+    payload = {
+        "capabilityId": "MM.Inventory.GetAvailability",
+        "parameters": {},
+        "multiParameters": {"plant": "5200"},
+    }
+    result = _payload_to_parse_result(payload, catalog)
+    assert result.multi_parameters == {}
+
+
+def test_messages_base_system_contains_multi_value_guidance():
+    catalog = load_intent_catalog()
+    msgs = _messages("DEMOA2 和 DEMOA4 在 5200、1000 的库存", catalog, context=None)
+    system_content = msgs[0]["content"]
+    assert "multiParameters" in system_content
+    assert "数组" in system_content or "array" in system_content.lower()

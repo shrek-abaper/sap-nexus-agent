@@ -161,7 +161,10 @@ def _messages(
             "- If ambiguous (weak match across multiple capabilities without a clear primary), return options. "
             "- Never introduce capabilityIds outside the closed set. "
             "Never output rfcName or raw SAP BAPI/RFC names. "
-            "Return keys: capabilityId, candidates, escalation, parameters, missingParameters, clarification.\n\n"
+            "- If the user mentions multiple values for a parameter (e.g. multiple plants or materials), "
+            "put that parameter in the multiParameters object as a string array, not in parameters. "
+            "Single-valued parameters remain in parameters. "
+            "Return keys: capabilityId, candidates, escalation, parameters, multiParameters, missingParameters, clarification.\n\n"
             f"Registered capabilities:\n{capabilities_desc}"
         ),
     }
@@ -212,6 +215,16 @@ def _payload_to_parse_result(payload: dict[str, object], catalog: IntentCatalog)
             contains_odata_override=contains_odata_override,
         )
 
+    # Task 5: parse multiParameters (Design Doc §4.2). Any parameter can carry
+    # multiple values. Non-list values are dropped (defense). Closed-set defense
+    # for capabilityId is unchanged.
+    raw_multi = payload.get("multiParameters") or {}
+    multi_parameters: dict[str, list[str]] = {
+        str(k): [str(v) for v in vals]
+        for k, vals in raw_multi.items()
+        if isinstance(vals, list)
+    }
+
     # D-1 fix: multi-candidate path. LLM returns either `candidates: [...]` or
     # `escalation: {candidates: [...]}` when more than one capability matches.
     candidates_raw = payload.get("candidates")
@@ -255,6 +268,7 @@ def _payload_to_parse_result(payload: dict[str, object], catalog: IntentCatalog)
                 contains_rfc_name=False,
                 contains_odata_override=False,
                 matched_intents=matched_intents,
+                multi_parameters=multi_parameters,
             )
 
         if len(matched_intents) == 1:
@@ -270,6 +284,7 @@ def _payload_to_parse_result(payload: dict[str, object], catalog: IntentCatalog)
                 contains_rfc_name=False,
                 contains_odata_override=False,
                 matched_intents=matched_intents,
+                multi_parameters=multi_parameters,
             )
 
         # All candidates unknown -> REJECT path (matched_intents empty).
@@ -279,6 +294,7 @@ def _payload_to_parse_result(payload: dict[str, object], catalog: IntentCatalog)
             parameters={},
             missing_parameters=[],
             clarification=_LLM_EMPTY_CLARIFICATION,
+            multi_parameters=multi_parameters,
         )
 
     # Single capabilityId path (existing).
@@ -290,6 +306,7 @@ def _payload_to_parse_result(payload: dict[str, object], catalog: IntentCatalog)
             parameters={},
             missing_parameters=[],
             clarification=_LLM_EMPTY_CLARIFICATION,
+            multi_parameters=multi_parameters,
         )
 
     descriptor = catalog.find(str(capability_id))
@@ -300,6 +317,7 @@ def _payload_to_parse_result(payload: dict[str, object], catalog: IntentCatalog)
             parameters={},
             missing_parameters=[],
             clarification=_LLM_EMPTY_CLARIFICATION,
+            multi_parameters=multi_parameters,
         )
 
     raw_parameters = payload.get("parameters") or {}
@@ -323,6 +341,7 @@ def _payload_to_parse_result(payload: dict[str, object], catalog: IntentCatalog)
                 missing=missing,
             )
         ],
+        multi_parameters=multi_parameters,
     )
 
 

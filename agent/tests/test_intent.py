@@ -733,3 +733,12 @@ def test_rule_fallback_no_inherit_without_last_context():
     ctx = ConversationContext(last_context=None, history=None)
     result = parse_intent("查下这个物料在1000的库存", context=ctx)
     assert result.capability_id is None or result.missing_parameters == ["material"]
+
+
+# --- Task 5: IntentParseResult.multi_parameters field ---
+
+
+def test_intent_parse_result_has_multi_parameters_field():
+    from sap_nexus_agent.intent import IntentParseResult
+    result = IntentParseResult(intent=None, parameters={}, missing_parameters=[])
+    assert result.multi_parameters == {}

@@ -97,6 +97,10 @@ class IntentParseResult:
     # SHOW_OPTIONS when is_ambiguous=True and matched_intents is non-empty
     # (length 1; length >1 triggers ESCALATE first per decision-tree order).
     is_ambiguous: bool = False
+    # Multi-value parameters (Design Doc §4.2): any parameter can carry multiple
+    # values. Orthogonal to ``parameters`` (single-valued). Default empty for
+    # backward compatibility.
+    multi_parameters: dict[str, list[str]] = field(default_factory=dict)
 
 
 def parse_intent(
