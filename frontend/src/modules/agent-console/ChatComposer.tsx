@@ -48,7 +48,7 @@ export function ChatComposer({ value, onChange, onSubmit, isRunning }: ChatCompo
           <Icon name="send" size={16} />
         </button>
       </div>
-      <p className="chat-composer__hint">每轮为独立查询，Agent 不跨轮记忆上下文。</p>
+      <p className="chat-composer__hint">Agent 记住本轮对话上下文，可连续追问补参数。</p>
     </form>
   );
 }
