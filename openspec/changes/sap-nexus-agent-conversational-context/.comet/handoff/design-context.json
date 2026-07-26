@@ -1,0 +1,15 @@
+{
+  "change": "sap-nexus-agent-conversational-context",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "594a082ebc04d06de237641e08c8549900c8e748e9cfd281b406d24d454e10e0",
+  "files": [
+    { "path": "openspec/changes/sap-nexus-agent-conversational-context/proposal.md", "sha256": "9ba496ed79c472a0fb18b323c8aba1f96c5ad3e129c1a906b1fa8eb1cda5d132" },
+    { "path": "openspec/changes/sap-nexus-agent-conversational-context/design.md", "sha256": "e77ddf50bb62fe12c757c554b029b58ea1cf2d6ec9dbdb0b16ea809fc1a083f0" },
+    { "path": "openspec/changes/sap-nexus-agent-conversational-context/tasks.md", "sha256": "b27d55a7491858c62660760477060f400810a74de9086fa242aa4ad11dd4091c" },
+    { "path": "openspec/changes/sap-nexus-agent-conversational-context/specs/agent-callplan-evidence/spec.md", "sha256": "88daf6103a6cde48b9fd57f1316a3f98add3f129f25f1d60387c3f3f88eadf1b" },
+    { "path": "openspec/changes/sap-nexus-agent-conversational-context/specs/conversational-context/spec.md", "sha256": "df4181448dd009f508274fa7e9133d4e2e135ef9d034534585606b21a6870b12" }
+  ]
+}
