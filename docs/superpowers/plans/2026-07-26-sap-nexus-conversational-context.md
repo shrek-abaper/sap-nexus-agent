@@ -72,7 +72,7 @@ base-ref: 133f026c52f6d55ec6ed9345395d5b6336fef156
   - `ConversationContext(last_context: LastContext | None, history: tuple[Turn, ...] | None)`
   - 三者均提供 `to_dict()` / `from_dict()` 用于 JSON 透传
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # agent/tests/test_conversation_context.py
@@ -138,12 +138,12 @@ def test_conversation_context_empty_round_trip():
     assert ConversationContext.from_dict(payload) == ctx
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `python -m pytest agent/tests/test_conversation_context.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'sap_nexus_agent.conversation_context'`
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 ```python
 # agent/sap_nexus_agent/conversation_context.py
@@ -214,12 +214,12 @@ class ConversationContext:
         return cls(last_context=last_context, history=history)
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `python -m pytest agent/tests/test_conversation_context.py -v`
 Expected: PASS (5 tests)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add agent/sap_nexus_agent/conversation_context.py agent/tests/test_conversation_context.py
