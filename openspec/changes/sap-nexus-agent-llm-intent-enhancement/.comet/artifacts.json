@@ -1,0 +1,6 @@
+{
+  "openspec_proposal": "openspec/changes/sap-nexus-agent-llm-intent-enhancement/proposal.md",
+  "openspec_design": "openspec/changes/sap-nexus-agent-llm-intent-enhancement/design.md",
+  "openspec_tasks": "openspec/changes/sap-nexus-agent-llm-intent-enhancement/tasks.md",
+  "openspec_delta_spec": "openspec/changes/sap-nexus-agent-llm-intent-enhancement/specs/agent-callplan-evidence/spec.md"
+}
