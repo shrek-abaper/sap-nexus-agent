@@ -86,17 +86,16 @@ class _FakeGateway:
 def test_parse_intent_context_none_unchanged():
     """context=None 时 parse_intent 行为与单轮完全一致（回归测试）。
 
-    Note: brief 原文断言 ``result.capability_id == "MM.Inventory.GetAvailability"``
-    与 ``result.parameters["plant"] == "1000"`` 与现有 ``parse_intent`` 行为不符
-    （single-intent 路径顶层 ``capability_id`` 保持 None，仅 ``matched_intents[0].capability_id``
-    被填充；``"库存 DEMOA2 1000"`` 不匹配工厂提取模式，plant 进入 missing）。
-    此处改为断言实际行为，保持"context=None 行为不变"的回归意图。
+    Note: single-intent 路径顶层 ``capability_id`` 保持 None，仅
+    ``matched_intents[0].capability_id`` 被填充。修复B（_extract_plant 裸匹配
+    增强）后，``"库存 DEMOA2 1000"`` 中的 ``1000`` 被提取为 plant（4字符
+    裸工厂号），不再进入 missing。
     """
     result = parse_intent("库存 DEMOA2 1000")
     assert result.intent == "inventory_availability"
     assert result.parameters["material"] == "DEMOA2"
-    assert "plant" not in result.parameters
-    assert result.missing_parameters == ["plant"]
+    assert result.parameters["plant"] == "1000"
+    assert result.missing_parameters == []
     assert result.capability_id is None
     assert result.matched_intents[0].capability_id == "MM.Inventory.GetAvailability"
 

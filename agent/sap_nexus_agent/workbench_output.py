@@ -83,7 +83,10 @@ def _last_context_from_outcome(outcome: AgentOutcome) -> dict[str, object] | Non
             decision_type="CLARIFY",
         )
         return ctx.to_dict()
-    if decision.decision_type == "SELECT" and outcome.status == "success":
+    # Q1 follow-up: retain lastContext even when execute fails (e.g. SAP
+    # RETURN type E) so the user can sticky-retry or swap params. The
+    # decision (capability_id + parameters) is settled before execute.
+    if decision.decision_type == "SELECT":
         ctx = LastContext(
             capability_id=decision.capability_id,
             parameters=dict(decision.parameters or {}),

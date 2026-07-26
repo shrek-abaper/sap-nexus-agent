@@ -386,6 +386,13 @@ def _extract_plant(text: str) -> str | None:
         token = match.group(1) or match.group(2)
         if len(token) <= 4:
             return token
+    # Fallback: bare plant code (e.g. "5200呢", "F201呢", "在工厂 5100").
+    # Lookbehind/lookahead on non-digits avoids matching inside long
+    # material numbers like DEMOA2. Material requires len>4 and unit
+    # is 2 chars, so a 4-char plant code never collides with them.
+    bare = re.search(r"(?<!\d)([A-Z]\d{3}|\d{4})(?!\d)", text)
+    if bare:
+        return bare.group(1)
     return None
 
 
