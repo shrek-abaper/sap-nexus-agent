@@ -1300,7 +1300,7 @@ git commit -m "feat(conversation-context): add CLI --context stdin JSON mode for
   - `createAgentRun` 在 `conversationId` 存在时：取 session -> 检测 `lastRunId` 是否 awaiting_approval（Q2 拒绝）-> 组 `ConversationContext` 经 CLI stdin 传入 -> outcome 回填 session
   - `runLocalPythonAgent` 在 `context` 非空时用 `--context` 模式 spawn
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```typescript
 // 追加到 frontend/tests/runtime/agent-runtime-adapter.test.ts
@@ -1366,12 +1366,12 @@ it("rejects new query when approval is pending on the same conversation", async 
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npm --prefix frontend test -- tests/runtime/agent-runtime-adapter.test.ts`
 Expected: FAIL（`conversationId` 不在 `CreateAgentRunInput`，`context` 不在 `AgentRunnerInput`）
 
-- [ ] **Step 3: Extend agent-runtime-adapter.ts**
+- [x] **Step 3: Extend agent-runtime-adapter.ts**
 
 在 `frontend/src/runtime/agent-runtime-adapter.ts` 修改：
 
@@ -1491,7 +1491,7 @@ export async function createAgentRun(input: CreateAgentRunInput): Promise<{ runI
 }
 ```
 
-- [ ] **Step 4: Extend runLocalPythonAgent to pass --context via stdin**
+- [x] **Step 4: Extend runLocalPythonAgent to pass --context via stdin**
 
 在 `frontend/src/runtime/agent-runtime-adapter.ts:554` 修改：
 
@@ -1537,7 +1537,7 @@ async function runLocalPythonAgent(input: AgentRunnerInput): Promise<WorkbenchOu
 }
 ```
 
-- [ ] **Step 5: Add lastContext to WorkbenchOutcome type**
+- [x] **Step 5: Add lastContext to WorkbenchOutcome type**
 
 在 `frontend/src/runtime/agent-runtime-adapter.ts:37` 的 `WorkbenchOutcome` 类型新增：
 
@@ -1555,12 +1555,12 @@ type WorkbenchOutcome = {
 };
 ```
 
-- [ ] **Step 6: Run tests to verify they pass**
+- [x] **Step 6: Run tests to verify they pass**
 
 Run: `npm --prefix frontend test -- tests/runtime/agent-runtime-adapter.test.ts`
 Expected: PASS（新增 sessions/conversationId/审批 pending 测试 + 现有测试）
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add frontend/src/runtime/agent-runtime-adapter.ts frontend/tests/runtime/agent-runtime-adapter.test.ts

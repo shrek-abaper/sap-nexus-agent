@@ -24,10 +24,10 @@
 
 ## 5. Frontend: conversationId 与 sessions Map
 
-- [ ] 5.1 `agent-runtime-adapter.ts` 新增 `sessions: Map<conversationId, SessionState>`（旁挂 `runs`），`SessionState` 持 `pending_clarification`
-- [ ] 5.2 `createAgentRun` 接受 `conversationId`，取 session.pending 组 `ConversationContext` 经 CLI stdin 传入
-- [ ] 5.3 outcome 含 CLARIFY 时回填 `PendingClarification` 到 session；SELECT/REJECT/ESCALATE 时清除
-- [ ] 5.4 `AgentConsole.tsx` "新对话"按钮接线：生成新 `conversationId` 并重置 UI
+- [x] 5.1 `agent-runtime-adapter.ts` 新增 `sessions: Map<conversationId, SessionState>`（旁挂 `runs`），`SessionState` 持 `pending_clarification`
+- [x] 5.2 `createAgentRun` 接受 `conversationId`，取 session.pending 组 `ConversationContext` 经 CLI stdin 传入
+- [x] 5.3 outcome 含 CLARIFY 时回填 `PendingClarification` 到 session；SELECT/REJECT/ESCALATE 时清除
+- [x] 5.4 `AgentConsole.tsx` "新对话"按钮接线：生成新 `conversationId` 并重置 UI
 
 ## 6. Frontend: 请求透传 conversationId
 
