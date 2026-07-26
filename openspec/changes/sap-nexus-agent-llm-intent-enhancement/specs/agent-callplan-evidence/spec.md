@@ -7,6 +7,8 @@ The rule parser and LLM parser SHALL detect multiple intents in a single utteran
 
 The `IntentAdapter` signature SHALL be `Callable[[str, ConversationContext | None], IntentParseResult]` with `ConversationContext` defaulting to `None`. The LLM path (`parse_with_hybrid`) SHALL be the primary intent recognizer: `_messages` MUST inject `last_context` (capability+parameters) so the LLM has complete context to resolve anaphora ("这个物料" -> prior material). The LLM result SHALL be used directly (empty/error results no longer fall back to rule); the rule path SHALL only run when the LLM is unavailable (connection failure). When the rule path runs as fallback, it SHALL inherit `last_context` material: if the utterance contains a primary keyword but the extractor cannot extract material and `last_context` has material, the adapter SHALL inherit the prior material (anaphora scenario).
 
+When the LLM is available but returns no capabilityId (empty/ambiguous result, not a connection failure), the adapter SHALL populate a generic clarification and the selector SHALL emit `CLARIFY` (not `REJECT`); the rule path's empty return (no clarification) still maps to `REJECT`. The `IntentParseResult` SHALL carry a `multi_parameters: dict[str, list[str]]` field (default empty) for multi-valued parameters. When the user mentions multiple values for any parameter, the LLM SHALL return them in a `multiParameters` JSON array (not in `parameters`); single-valued parameters remain in `parameters`. The selector SHALL treat a required parameter as satisfied if it is present in `parameters` OR `multi_parameters`, so a multi-valued required parameter does not trigger `CLARIFY`.
+
 #### Scenario: Route single inventory intent to SELECT
 - **WHEN** the parser identifies a single `inventory_availability` intent with required `material` and `plant`
 - **THEN** the Agent emits `MatchDecision.decision_type=SELECT` for `capabilityId=MM.Inventory.GetAvailability` and proceeds to CallPlan and Gateway validation
@@ -33,18 +35,39 @@ The `IntentAdapter` signature SHALL be `Callable[[str, ConversationContext | Non
 - **AND** `last_context` has material
 - **THEN** the adapter inherits the prior material and proceeds to SELECT or CLARIFY
 
+#### Scenario: LLM empty return emits CLARIFY
+- **WHEN** the LLM is available but returns no capabilityId (empty/ambiguous result)
+- **THEN** the adapter populates a generic clarification
+- **AND** the selector emits `MatchDecision.decision_type=CLARIFY` (not REJECT)
+
+#### Scenario: Multi-value parameter emits SELECT with multi_parameters
+- **WHEN** the LLM returns `multi_parameters={"plant":["5200","1000"]}` for a single matched capability
+- **AND** all required parameters are satisfied across `parameters` and `multi_parameters`
+- **THEN** the selector emits `MatchDecision.decision_type=SELECT` (multi_parameters carried on IntentParseResult)
+- **AND** does NOT emit CLARIFY for the multi-valued parameter
+
 ## ADDED Requirements
 
-### Requirement: Multi-plant query split
-The orchestrator SHALL support multi-plant inventory queries. When the LLM identifies multiple plants in a single utterance (e.g. "5200、1000的库存分别是多少"), the orchestrator SHALL split into multiple single-plant execute calls (one per plant) and aggregate the results. The capability contract (single plant) SHALL NOT change. Partial failures (one plant fails) SHALL be surfaced as partial results with the failed plant annotated.
+### Requirement: Multi-value query split
+The orchestrator SHALL support multi-value inventory queries where any parameter (e.g. `plant`, `material`) has multiple values. When the LLM identifies multiple values for one or more parameters in a single utterance (e.g. "DEMOA2 和 DEMOA4 在 5200、1000 的库存"), the orchestrator SHALL expand the Cartesian product of the multi-valued parameters (via `multi_parameters`) into a combination list and return `AgentOutcome.status="awaiting_batch_confirm"` with the combinations. The orchestrator SHALL NOT execute Gateway calls until the user confirms. Upon confirmation, `continue_batch` SHALL execute single-value execute calls per combination (the single-plant/single-material capability contract SHALL NOT change) and aggregate the results. Partial failures (one combination fails) SHALL be surfaced as partial results with the failed combination annotated. A soft combination cap (default 20) SHALL emit CLARIFY when exceeded, instead of `awaiting_batch_confirm`.
 
-#### Scenario: Multi-plant query splits and aggregates
-- **WHEN** the user asks "这个物料在5200、1000的库存分别是多少" (same conversation, last_context has material)
-- **THEN** the LLM identifies plants [5200, 1000]
-- **AND** the orchestrator executes MM.Inventory.GetAvailability twice (plant=5200, plant=1000)
-- **AND** aggregates results into a single narrative: "5200: 176 EA; 1000: 0 EA"
+#### Scenario: Multi-value query emits awaiting_batch_confirm
+- **WHEN** the user asks "DEMOA2 和 DEMOA4 在 5200、1000 的库存分别是多少" (same conversation)
+- **THEN** the LLM returns `multi_parameters={plant:[5200,1000], material:[DEMOA2,DEMOA4]}`
+- **AND** the orchestrator expands 4 combinations (2×2 Cartesian product)
+- **AND** returns `awaiting_batch_confirm` with the 4 combinations and does NOT call Gateway validate or execute
 
-#### Scenario: Multi-plant partial failure
-- **WHEN** one plant execute fails (SAP error) in a multi-plant query
-- **THEN** the orchestrator returns partial results with the failed plant annotated
-- **AND** does not fail the entire query
+#### Scenario: Confirmed multi-value batch executes and aggregates
+- **WHEN** the user confirms the batch from a prior `awaiting_batch_confirm` outcome
+- **THEN** `continue_batch` executes MM.Inventory.GetAvailability once per combination
+- **AND** aggregates results into a single narrative: "5200: 176 EA; 1000: 0 EA" (single material) or a per-material narrative (multi material)
+
+#### Scenario: Multi-value partial failure
+- **WHEN** one combination execute fails (SAP error) in a confirmed batch
+- **THEN** `continue_batch` returns partial results with the failed combination annotated
+- **AND** does not fail the entire batch
+
+#### Scenario: Multi-value combination cap
+- **WHEN** the expanded combinations exceed the soft cap (default 20)
+- **THEN** the orchestrator emits CLARIFY "组合数过多，请缩小范围" instead of `awaiting_batch_confirm`
+- **AND** does NOT execute any Gateway call
