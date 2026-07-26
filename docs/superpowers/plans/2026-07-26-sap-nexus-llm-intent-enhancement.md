@@ -764,7 +764,7 @@ git commit -m "feat(intent): add multi_parameters field, parse multiParameters, 
 - Consumes: Task 5 的 `IntentParseResult.multi_parameters`
 - Produces: required 参数在 `parameters` 或 `multi_parameters` 即算齐全 -> SELECT；`MatchDecision.parameters` 仍只含单值 `parameters`
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 追加到 `agent/tests/test_capability_selector.py`：
 
@@ -800,12 +800,12 @@ def test_select_clarify_when_multi_parameters_partial():
 
 > 注：上述测试假设 inventory descriptor 的 required inputs 含 `material` + `plant`。若实际 descriptor 有差异，按实际 required 字段调整。可在测试前用 `load_intent_catalog().find("MM.Inventory.GetAvailability").inputs` 确认。
 
-- [ ] **Step 2: 运行测试验证失败**
+- [x] **Step 2: 运行测试验证失败**
 
 Run: `cd agent && python -m pytest tests/test_capability_selector.py::test_select_satisfied_by_multi_parameters -v`
 Expected: FAIL（当前 missing 判定只看 `parameters`，`material`/`plant` 在 `multi_parameters` 时算 missing -> CLARIFY）
 
-- [ ] **Step 3: 最小实现**
+- [x] **Step 3: 最小实现**
 
 修改 `agent/sap_nexus_agent/capability_selector.py` 第 4 步 missing 判定（line 106-118），在 `if parse_result.missing_parameters:` 之前，把 missing 计算改为同时考虑 `multi_parameters`。
 
@@ -847,12 +847,12 @@ Expected: FAIL（当前 missing 判定只看 `parameters`，`material`/`plant` �
 
 > 说明：lazy `load_intent_catalog()` 每次调用有 IO 开销但保证闭集一致；与现有 `INTENT_TO_CAPABILITY` fallback 链保持一致。SELECT 分支（第 5 步）`parameters=dict(parse_result.parameters)` 不变（不含 multi_parameters，orchestrator 从 `parsed.multi_parameters` 读）。
 
-- [ ] **Step 4: 运行测试验证通过**
+- [x] **Step 4: 运行测试验证通过**
 
 Run: `cd agent && python -m pytest tests/test_capability_selector.py -v`
 Expected: 全部 PASS（含新测试 + 既有回归）
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 ```bash
 git add agent/sap_nexus_agent/capability_selector.py agent/tests/test_capability_selector.py
