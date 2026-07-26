@@ -20,8 +20,8 @@
 
 ## 4. 多值参数 + 确认 + 批量 + 软上限
 
-- [ ] 4.1 `IntentParseResult` 新增 `multi_parameters: dict[str, list[str]]`（默认 {}），正交于 `parameters`
-- [ ] 4.2 LLM JSON 解析 `multiParameters`（`_payload_to_parse_result`）；`_messages` base_system 通用多值指引（不枚举参数名）
+- [x] 4.1 `IntentParseResult` 新增 `multi_parameters: dict[str, list[str]]`（默认 {}），正交于 `parameters`
+- [x] 4.2 LLM JSON 解析 `multiParameters`（`_payload_to_parse_result`）；`_messages` base_system 通用多值指引（不枚举参数名）
 - [ ] 4.3 `select_capability`：required 参数在 `parameters` 或 `multi_parameters` 即算齐全；5 态不变
 - [ ] 4.4 `expand_combinations(base, multi)` 笛卡尔积（单 key -> N，多 key -> 笛卡尔）
 - [ ] 4.5 `run_query` SELECT 分支：`parsed.multi_parameters` 非空 -> 展开 combinations -> 软上限检查 -> `AgentOutcome(status="awaiting_batch_confirm", combinations=...)`（不执行）

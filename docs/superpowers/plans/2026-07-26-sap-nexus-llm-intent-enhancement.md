@@ -614,7 +614,7 @@ git commit -m "feat(intent): rule fallback inherits last_context material on pri
 - Consumes: 无
 - Produces: `IntentParseResult.multi_parameters: dict[str, list[str]]`（默认 `{}`）；`_payload_to_parse_result` 填充 `multi_parameters`；base_system 含通用多值指引
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 追加到 `agent/tests/test_llm_intent.py`：
 
@@ -672,12 +672,12 @@ def test_intent_parse_result_has_multi_parameters_field():
     assert result.multi_parameters == {}
 ```
 
-- [ ] **Step 2: 运行测试验证失败**
+- [x] **Step 2: 运行测试验证失败**
 
 Run: `cd agent && python -m pytest tests/test_llm_intent.py::test_payload_parses_multi_parameters tests/test_intent.py::test_intent_parse_result_has_multi_parameters_field -v`
 Expected: FAIL（`IntentParseResult` 无 `multi_parameters` 字段；`_payload_to_parse_result` 未解析 `multiParameters`）
 
-- [ ] **Step 3: 最小实现**
+- [x] **Step 3: 最小实现**
 
 修改 `agent/sap_nexus_agent/intent.py` 的 `IntentParseResult`（line 79-99），在 `is_ambiguous` 字段后追加：
 
@@ -740,12 +740,12 @@ Expected: FAIL（`IntentParseResult` 无 `multi_parameters` 字段；`_payload_t
 
 > 注意：rfcName/OData 注入拒绝路径（line 187-193）不携带 multi_parameters（保持空），因为它返回 `IntentParseResult(intent=None, parameters={}, missing_parameters=[], contains_rfc_name=..., contains_odata_override=...)`，默认 `multi_parameters={}` 即可，无需显式传。
 
-- [ ] **Step 4: 运行测试验证通过**
+- [x] **Step 4: 运行测试验证通过**
 
 Run: `cd agent && python -m pytest tests/test_llm_intent.py tests/test_intent.py -v`
 Expected: 全部 PASS
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 ```bash
 git add agent/sap_nexus_agent/intent.py agent/sap_nexus_agent/llm_intent.py agent/tests/test_llm_intent.py agent/tests/test_intent.py
