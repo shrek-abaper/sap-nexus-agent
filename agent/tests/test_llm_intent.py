@@ -158,7 +158,8 @@ def test_hybrid_falls_back_to_rule_parser_when_llm_json_is_malformed():
     assert result.parameters == {"material": "DEMOA1", "plant": "1000"}
 
 
-def test_hybrid_falls_back_to_rule_parser_when_llm_outputs_rfc_name():
+def test_hybrid_returns_llm_result_directly_when_llm_outputs_rfc_name():
+    """D2: rfcName LLM result returned directly (flag preserved), rule NOT invoked."""
     catalog = load_intent_catalog()
     client = FakeLlmClient(
         {
@@ -170,9 +171,12 @@ def test_hybrid_falls_back_to_rule_parser_when_llm_outputs_rfc_name():
 
     result = parse_with_hybrid("DEMOA1 在 1000 还有多少可用库存？", client, catalog=catalog)
 
-    assert result.intent == "inventory_availability"
-    assert result.parameters == {"material": "DEMOA1", "plant": "1000"}
-    assert result.contains_rfc_name is False
+    # LLM result returned directly: intent None (rule not called), flag preserved
+    # for the selector/orchestrator to REJECT. No rule re-parse.
+    assert result.intent is None
+    assert result.capability_id is None
+    assert result.parameters == {}
+    assert result.contains_rfc_name is True
 
 
 def test_llm_mode_unavailable_returns_structured_unsupported_result(monkeypatch):
@@ -253,7 +257,8 @@ def test_parse_with_llm_clean_payload_does_not_set_override_flag():
     assert result.contains_odata_override is False
 
 
-def test_hybrid_falls_back_to_rule_parser_when_llm_outputs_odata_override():
+def test_hybrid_returns_llm_result_directly_when_llm_outputs_odata_override():
+    """D2: OData-override LLM result returned directly (flag preserved), rule NOT invoked."""
     catalog = load_intent_catalog()
     client = FakeLlmClient(
         {
@@ -268,10 +273,12 @@ def test_hybrid_falls_back_to_rule_parser_when_llm_outputs_odata_override():
 
     result = parse_with_hybrid("DEMOA1 在 1000 还有多少可用库存？", client, catalog=catalog)
 
-    # Rule parser re-parses the clean user text -> no override, correct params.
-    assert result.intent == "inventory_availability"
-    assert result.parameters == {"material": "DEMOA1", "plant": "1000"}
-    assert result.contains_odata_override is False
+    # LLM result returned directly: intent None (rule not called), flag preserved
+    # for the selector/orchestrator to REJECT. No rule re-parse.
+    assert result.intent is None
+    assert result.capability_id is None
+    assert result.parameters == {}
+    assert result.contains_odata_override is True
 
 
 # --- capability_id priority in select_capability ---
@@ -574,3 +581,72 @@ def test_format_last_context_block_structure():
     assert "MM.Inventory.GetAvailability" in block["content"]
     assert "DEMOA2" in block["content"]
     assert "CLARIFY" in block["content"]
+
+
+# --- Task 2 (D2): LLM as primary in parse_with_hybrid, rule only on LlmUnavailable ---
+
+
+class _StubJsonClient:
+    """Stub JsonLlmClient returning a preset payload."""
+    def __init__(self, payload):
+        self._payload = payload
+        self.call_count = 0
+
+    def chat_json(self, messages, **kwargs):
+        self.call_count += 1
+        return self._payload
+
+
+class _RaisingJsonClient:
+    """Stub JsonLlmClient that always raises LlmUnavailable."""
+    def chat_json(self, messages, **kwargs):
+        raise LlmUnavailable("connection refused")
+
+
+def test_parse_with_hybrid_uses_llm_result_directly():
+    payload = {
+        "capabilityId": "MM.Inventory.GetAvailability",
+        "parameters": {"material": "DEMOA2", "plant": "1000"},
+    }
+    client = _StubJsonClient(payload)
+    result = parse_with_hybrid("DEMOA2 在 1000 的库存", client=client)
+    assert result.capability_id == "MM.Inventory.GetAvailability"
+    assert result.parameters == {"material": "DEMOA2", "plant": "1000"}
+    assert client.call_count == 1
+
+
+def test_parse_with_hybrid_falls_back_to_rule_on_llm_unavailable():
+    ctx = ConversationContext(
+        last_context=LastContext(
+            capability_id="MM.Inventory.GetAvailability",
+            parameters={"material": "DEMOA2"},
+            missing_parameters=[],
+            decision_type="SELECT",
+        ),
+        history=None,
+    )
+    # No primary keyword in text -> resolve_with_context inherits last_context
+    # capability_id and merges plant extracted from "1000" (brief intent: 继承).
+    result = parse_with_hybrid("1000", client=_RaisingJsonClient(), context=ctx)
+    # rule 兜底应走 parse_intent(text, context=context) -> resolve_with_context（Task 4 实现继承）
+    assert result.capability_id == "MM.Inventory.GetAvailability"
+    assert result.parameters.get("plant") == "1000"
+
+
+def test_parse_with_hybrid_empty_llm_return_does_not_invoke_rule(monkeypatch):
+    """LLM 空返回时不再回退 rule（D2）；clarification 由 Task 3 填充。"""
+    rule_calls = []
+    original_parse_intent = __import__("sap_nexus_agent.intent", fromlist=["parse_intent"]).parse_intent
+
+    def spy_parse_intent(text, context=None):
+        rule_calls.append(text)
+        return original_parse_intent(text, context=context)
+
+    monkeypatch.setattr("sap_nexus_agent.llm_intent.parse_intent", spy_parse_intent)
+
+    payload = {"capabilityId": None, "parameters": {}}
+    client = _StubJsonClient(payload)
+    result = parse_with_hybrid("完全不匹配的无关文本", client=client)
+    assert client.call_count == 1
+    assert rule_calls == []  # rule 未被调用
+    assert result.capability_id is None

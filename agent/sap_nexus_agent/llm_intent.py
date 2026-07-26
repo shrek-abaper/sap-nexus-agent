@@ -64,10 +64,7 @@ def parse_with_hybrid(
         catalog = load_intent_catalog()
     try:
         llm_client = client or OpenAiCompatibleLlmClient()
-        result = parse_with_llm(text, llm_client, catalog, context=context)
-        if _requires_safe_fallback(result):
-            return parse_intent(text, context=context)
-        return result
+        return parse_with_llm(text, llm_client, catalog, context=context)
     except LlmUnavailable:
         return parse_intent(text, context=context)
 
