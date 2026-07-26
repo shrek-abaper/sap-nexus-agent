@@ -8,13 +8,13 @@ subagent_dispatch: confirmed
 tdd_mode: tdd
 review_mode: standard
 isolation: branch
-verify_mode: null
+verify_mode: full
 auto_transition: true
 base_ref: b3b12ece1cd99902a65e58d6be341cbc30911c31
 design_doc: docs/superpowers/specs/2026-07-26-sap-nexus-conversational-context-design.md
 plan: docs/superpowers/plans/2026-07-26-sap-nexus-conversational-context.md
 verify_result: pending
-verification_report: null
+verification_report: docs/superpowers/reports/2026-07-26-sap-nexus-agent-conversational-context-verify.md
 branch_status: pending
 created_at: 2026-07-26
 verified_at: null
