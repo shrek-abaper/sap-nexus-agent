@@ -364,3 +364,257 @@ def test_sticky_odata_override_rejects_instead_of_slot_fill():
     assert result.contains_odata_override is True
     assert result.intent is None
     assert result.matched_intents == []
+
+
+# ---------------------------------------------------------------------------
+# Task 10: Python end-to-end multi-turn scenario tests
+#
+# Covers Design Doc §6 test matrix:
+#   - Core:    turn1 CLARIFY -> turn2 SELECT -> execute (run_workbench_query x2)
+#   - Edge 1:  turn2 primary keyword -> new turn overrides pending CLARIFY
+#   - Edge 2:  turn2 partial fill -> CLARIFY missing shrinks to [plant]
+#   - Edge 3:  new conversation (context=None) resets to single-turn
+#   - Edge 4:  LLM history injection with malicious capabilityId/rfcName ->
+#              closed-set rejection at intent layer
+#   - Edge 5:  Q1 SELECT follow-up "换一个" inherits inventory + plant
+#   - Edge 6:  Q2 approval pending does not backfill lastContext
+#
+# Brief notes (verbatim values that differ from the task-10-brief Step 1
+# snippet, both explicitly permitted by the brief's "重要提示"):
+#   1. ``parse_intent`` single-intent path leaves the top-level
+#      ``capability_id`` None (only ``matched_intents[0].capability_id`` is
+#      populated); assertions use ``matched_intents[0]`` or the catalog id.
+#   2. The plant extractor requires a ``在 <code>`` prefix or ``<code> 工厂``
+#      suffix; bare ``1000`` does not match. The follow-up utterance uses
+#      ``在 1000`` so the plant is parsed and SELECT can fire.
+# ---------------------------------------------------------------------------
+
+
+def _fake_gateway_validate_ok(cap_id, params):
+    """Return a successful validation result for any capability."""
+    from unittest.mock import MagicMock
+
+    return MagicMock(
+        success=True, trace_id="t", capability_id=cap_id,
+        error_type="NONE", messages=[],
+    )
+
+
+def _fake_gateway_execute_inventory(cap_id, params, **kwargs):
+    from unittest.mock import MagicMock
+
+    return MagicMock(
+        success=True, trace_id="t", capability_id=cap_id, error_type="NONE",
+        executor={"type": "JCO_RFC"}, return_messages=[],
+        data={
+            "material": params.get("material", ""),
+            "plant": params.get("plant", ""),
+            "availableQuantity": 7,
+            "unit": "EA",
+        },
+        duration_ms=1,
+    )
+
+
+def test_core_scenario_clarify_then_select():
+    """Core: turn1 '查库存' -> CLARIFY; turn2 'DEMOA2 在 1000' -> SELECT -> success.
+
+    End-to-end multi-turn: run_workbench_query twice with context hand-off,
+    mock gateway (no real SAP). Verifies LastContext round-trips through the
+    workbench payload and the second turn merges params + clears missing.
+    """
+    from unittest.mock import MagicMock
+
+    from sap_nexus_agent.workbench_output import run_workbench_query
+
+    gateway = MagicMock()
+    gateway.validate.side_effect = _fake_gateway_validate_ok
+    gateway.execute.side_effect = _fake_gateway_execute_inventory
+
+    # turn1: only "查库存" -> missing [material, plant] -> CLARIFY.
+    outcome1 = run_workbench_query("查库存", gateway, intent_mode="rule")
+    assert outcome1["status"] == "clarification"
+    assert outcome1["lastContext"]["decisionType"] == "CLARIFY"
+    assert outcome1["lastContext"]["capabilityId"] == "MM.Inventory.GetAvailability"
+    assert outcome1["lastContext"]["missingParameters"] == ["material", "plant"]
+    last_ctx_1 = outcome1["lastContext"]
+
+    # turn2: supply both params (plant via "在 1000" so the extractor matches).
+    # Sticky continuation inherits inventory capability and merges params.
+    ctx2 = ConversationContext(
+        last_context=LastContext(
+            capability_id=last_ctx_1["capabilityId"],
+            parameters=last_ctx_1["parameters"],
+            missing_parameters=last_ctx_1["missingParameters"],
+            decision_type="CLARIFY",
+        ),
+        history=None,
+    )
+    outcome2 = run_workbench_query(
+        "DEMOA2 在 1000", gateway, intent_mode="rule", context=ctx2,
+    )
+    assert outcome2["status"] == "success"
+    assert outcome2["lastContext"]["decisionType"] == "SELECT"
+    assert outcome2["lastContext"]["capabilityId"] == "MM.Inventory.GetAvailability"
+    assert outcome2["lastContext"]["parameters"]["material"] == "DEMOA2"
+    assert outcome2["lastContext"]["parameters"]["plant"] == "1000"
+    assert outcome2["lastContext"]["missingParameters"] == []
+
+
+def test_boundary_3_new_conversation_resets():
+    """Edge 3: new conversation = context=None -> single-turn path.
+
+    A fresh conversation passes context=None, so parse_intent ignores any
+    prior turn and runs the single-turn rule path. With both params supplied
+    (plant via "在 1000"), SELECT fires with no missing parameters.
+    """
+    result = parse_intent("查库存 DEMOA2 在 1000", context=None)
+    assert result.intent == "inventory_availability"
+    # Single-intent path: top-level capability_id is None (Task 2 concern 1);
+    # the capability id lives on matched_intents[0].
+    assert result.capability_id is None
+    assert result.matched_intents[0].capability_id == "MM.Inventory.GetAvailability"
+    assert result.parameters["material"] == "DEMOA2"
+    assert result.parameters["plant"] == "1000"
+    assert result.missing_parameters == []
+
+
+def test_boundary_4_llm_history_injection_rejected():
+    """Edge 4: LLM history with malicious capabilityId/rfcName -> closed-set reject.
+
+    The LLM payload adapter (_payload_to_parse_result) is the last line of
+    defense for the LLM path: it must reject payloads that name a capability
+    outside the registry's closed set, and payloads that smuggle a rfcName
+    override (Design Doc 边界4). Both forms return an empty IntentParseResult
+    so the selector REJECTs without reaching the gateway.
+    """
+    from sap_nexus_agent.llm_intent import _payload_to_parse_result
+
+    catalog = _catalog()
+
+    # (a) Unknown capabilityId -> closed-set defense drops it.
+    malicious_cap = {"capabilityId": "EVIL.CAPABILITY", "parameters": {}}
+    result_cap = _payload_to_parse_result(malicious_cap, catalog)
+    assert result_cap.capability_id is None
+    assert result_cap.matched_intents == []
+    assert result_cap.intent is None
+
+    # (b) rfcName key injection -> defense-in-depth rejects at intent layer.
+    malicious_rfc = {
+        "capabilityId": "MM.Inventory.GetAvailability",
+        "rfcName": "BAPI_EVIL",
+        "parameters": {"material": "DEMOA2"},
+    }
+    result_rfc = _payload_to_parse_result(malicious_rfc, catalog)
+    assert result_rfc.contains_rfc_name is True
+    assert result_rfc.capability_id is None
+    assert result_rfc.matched_intents == []
+    assert result_rfc.intent is None
+
+
+def test_boundary_1_primary_keyword_overrides():
+    """Edge 1: turn2 contains a primary keyword -> new turn overrides pending.
+
+    A pending CLARIFY for inventory is discarded when the follow-up utterance
+    contains a different capability's primary keyword ("采购订单"). The sticky
+    path delegates to single-turn parse_intent, which matches the PO capability
+    instead of inheriting inventory.
+    """
+    from sap_nexus_agent.llm_intent import resolve_with_context
+
+    catalog = _catalog()
+    ctx = ConversationContext(
+        last_context=LastContext(
+            capability_id="MM.Inventory.GetAvailability",
+            parameters={"material": "DEMOA2"},
+            missing_parameters=["plant"],
+            decision_type="CLARIFY",
+        ),
+        history=None,
+    )
+    result = resolve_with_context("采购订单 4500000001", ctx, catalog)
+    # New turn via parse_intent: top-level capability_id is None (single-intent
+    # path, Task 2 concern 1); the PO capability id lives on matched_intents[0].
+    assert result.capability_id is None
+    assert result.matched_intents[0].capability_id == "MM.PurchaseOrder.GetList"
+
+
+def test_boundary_2_partial_fill_shrinks_missing():
+    """Edge 2: turn2 supplies only material -> missing shrinks to [plant].
+
+    Starting from a CLARIFY missing both [material, plant], a follow-up that
+    fills material (but not plant) produces a CLARIFY with missing shrunk to
+    [plant] only. The inherited capability is retained.
+    """
+    from sap_nexus_agent.llm_intent import resolve_with_context
+
+    catalog = _catalog()
+    ctx = ConversationContext(
+        last_context=LastContext(
+            capability_id="MM.Inventory.GetAvailability",
+            parameters={},
+            missing_parameters=["material", "plant"],
+            decision_type="CLARIFY",
+        ),
+        history=None,
+    )
+    result = resolve_with_context("DEMOA2", ctx, catalog)
+    # resolve_with_context inherits capability_id from last_context.
+    assert result.capability_id == "MM.Inventory.GetAvailability"
+    assert result.parameters["material"] == "DEMOA2"
+    assert "plant" not in result.parameters
+    assert result.missing_parameters == ["plant"]
+
+
+def test_boundary_5_q1_select_followup_inherits():
+    """Edge 5 (Q1): SELECT follow-up "换一个 DEMOA4" inherits inventory + plant.
+
+    After a successful SELECT with material+plant, a follow-up asking to swap
+    the material inherits the capability and the unmentioned plant parameter;
+    only the material is overridden. Missing stays empty -> SELECT fires.
+    """
+    from sap_nexus_agent.llm_intent import resolve_with_context
+
+    catalog = _catalog()
+    ctx = ConversationContext(
+        last_context=LastContext(
+            capability_id="MM.Inventory.GetAvailability",
+            parameters={"material": "DEMOA2", "plant": "1000"},
+            missing_parameters=[],
+            decision_type="SELECT",
+        ),
+        history=None,
+    )
+    result = resolve_with_context("换一个 DEMOA4", ctx, catalog)
+    assert result.capability_id == "MM.Inventory.GetAvailability"
+    # New parameter overrides old; unmentioned parameter is retained.
+    assert result.parameters["material"] == "DEMOA4"
+    assert result.parameters["plant"] == "1000"
+    assert result.missing_parameters == []
+
+
+def test_boundary_6_q2_approval_pending_no_last_context():
+    """Edge 6 (Q2): awaiting_approval outcome does not backfill lastContext.
+
+    While approval is pending, the workbench must not emit a LastContext that
+    would let a new query slot-fill off the pending action. The
+    awaiting_approval status short-circuits _last_context_from_outcome to None
+    so the session has no sticky continuation handle.
+    """
+    from sap_nexus_agent.match_decision import MatchDecision
+    from sap_nexus_agent.orchestrator import AgentOutcome
+    from sap_nexus_agent.workbench_output import outcome_to_workbench_dict
+
+    decision = MatchDecision(
+        decision_type="SELECT",
+        capability_id="MM.PR.CreateDraft",
+        parameters={"material": "X", "plant": "1000"},
+        missing_parameters=[],
+        error_type=None,
+        candidates=None,
+        handoff=None,
+        rationale="",
+    )
+    outcome = AgentOutcome(status="awaiting_approval", match_decision=decision)
+    payload = outcome_to_workbench_dict(outcome)
+    assert payload["lastContext"] is None

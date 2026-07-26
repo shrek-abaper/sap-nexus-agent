@@ -193,7 +193,10 @@ def test_select_capability_clarify_when_missing_parameters():
 
     assert decision.decision_type == "CLARIFY"
     assert decision.missing_parameters == ["plant"]
-    assert decision.capability_id is None
+    # Task 10: CLARIFY carries capability_id + parameters so the workbench
+    # LastContext preserves them for sticky continuation in the next turn.
+    assert decision.capability_id == "MM.Inventory.GetAvailability"
+    assert decision.parameters == {"material": "DEMOA1"}
     assert "工厂" in decision.rationale
 
 
@@ -216,7 +219,8 @@ def test_clarify_takes_precedence_over_select():
     decision = select_capability(parsed)
 
     assert decision.decision_type == "CLARIFY"
-    assert decision.capability_id is None
+    # Task 10: CLARIFY carries capability_id for sticky continuation.
+    assert decision.capability_id == "MM.Inventory.GetAvailability"
 
 
 # ---------------------------------------------------------------------------

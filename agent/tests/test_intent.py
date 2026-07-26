@@ -229,7 +229,9 @@ def test_selector_routes_purchase_order_to_get_list():
 def test_selector_rejects_purchase_order_without_filter_as_missing_parameter():
     parsed = parse_intent("帮我看看采购订单")
     selected = select_capability(parsed)
-    assert selected.capability_id is None
+    # Task 10: CLARIFY carries capability_id for sticky continuation, so a PO
+    # query without filter retains the PO capability id on the MatchDecision.
+    assert selected.capability_id == "MM.PurchaseOrder.GetList"
     # select_capability now returns MatchDecision (S2-A): a PO query without
     # filter is a CLARIFY decision carrying missing_parameters, not a
     # SelectionResult with error_type="MISSING_PARAMETER".

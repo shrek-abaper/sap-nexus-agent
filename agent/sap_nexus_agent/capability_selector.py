@@ -95,9 +95,24 @@ def select_capability(parse_result: IntentParseResult) -> MatchDecision:
         )
 
     # 4. Single intent missing required parameters -> CLARIFY.
+    #
+    # Task 10: CLARIFY now carries ``capability_id`` + ``parameters`` so the
+    # workbench LastContext (used by sticky continuation in turn N+1) preserves
+    # the matched capability and any partial params the user already supplied.
+    # Without this, ``resolve_with_context`` in the next turn sees
+    # ``capability_id=None`` -> catalog miss -> single-turn fallback -> REJECT,
+    # breaking the core multi-turn flow. The capability id is derived with the
+    # same fallback chain as the SELECT branch below.
     if parse_result.missing_parameters:
+        clarify_cap_id = parse_result.capability_id
+        if not clarify_cap_id and parse_result.matched_intents:
+            clarify_cap_id = parse_result.matched_intents[0].capability_id
+        if not clarify_cap_id:
+            clarify_cap_id = INTENT_TO_CAPABILITY.get(parse_result.intent)
         return MatchDecision(
             decision_type="CLARIFY",
+            capability_id=clarify_cap_id,
+            parameters=dict(parse_result.parameters),
             missing_parameters=list(parse_result.missing_parameters),
             rationale=parse_result.clarification or "请补充缺失的参数",
         )
