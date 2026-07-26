@@ -113,12 +113,22 @@ def parse_intent(
 
     Task 2: ``context`` parameter is accepted for signature compatibility with
     the conversational adapter contract. When ``None`` (default) behavior is
-    identical to the single-turn path (backward compatible). When non-``None``,
-    the context is currently ignored - sticky-CLARIFY continuation is
-    implemented in Task 3, history injection in Task 4.
+    identical to the single-turn path (backward compatible).
+
+    Task 3: when ``context`` is non-``None`` and carries a ``last_context``,
+    the call is routed to ``llm_intent.resolve_with_context`` for sticky
+    continuation (inherit ``last_context.capability_id`` and merge params).
+    History injection is implemented in Task 4.
     """
-    # Task 2: signature extension only; behavior unchanged.
-    # sticky continuation (context-aware) is implemented in Task 3.
+    # Task 3: sticky continuation. When context carries a last_context, delegate
+    # to resolve_with_context (lazy import avoids a circular dependency: llm_intent
+    # imports parse_intent from this module at module level).
+    if context is not None and context.last_context is not None:
+        from sap_nexus_agent.llm_intent import resolve_with_context
+        from sap_nexus_agent.registry_loader import load_intent_catalog
+
+        return resolve_with_context(text, context, load_intent_catalog())
+
     normalized = text.strip()
     contains_rfc_name = _detect_rfc_name(normalized)
     contains_odata_override = _detect_odata_override(normalized)

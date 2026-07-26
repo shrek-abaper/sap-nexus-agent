@@ -4,12 +4,21 @@ import json
 from typing import TYPE_CHECKING, Protocol
 
 from sap_nexus_agent.intent import (
+    INVENTORY_PRIMARY_KEYWORDS,
     IntentParseResult,
+    PR_CREATE_PRIMARY_KEYWORDS,
+    PURCHASE_ORDER_PRIMARY_KEYWORDS,
+    _PURCHASE_ORDER_CAPABILITY_ID,
+    _build_inventory_result,
+    _build_purchase_order_result,
     _detect_odata_override,
+    _INVENTORY_CAPABILITY_ID,
+    _PR_CREATE_CAPABILITY_ID,
     parse_intent,
 )
 from sap_nexus_agent.llm_client import LlmUnavailable, OpenAiCompatibleLlmClient
 from sap_nexus_agent.match_decision import MatchedIntent
+from sap_nexus_agent.pr_intent import parse_pr_create_intent
 from sap_nexus_agent.registry_loader import (
     CapabilityDescriptor,
     InputDescriptor,
@@ -305,3 +314,101 @@ _ALIASES = {
 
 def _parameter_key(key: str) -> str | None:
     return _ALIASES.get(key.strip())
+
+
+# ---------------------------------------------------------------------------
+# Task 3: sticky continuation (conversational context)
+# ---------------------------------------------------------------------------
+
+_PRIMARY_KEYWORD_SETS = (
+    INVENTORY_PRIMARY_KEYWORDS,
+    PURCHASE_ORDER_PRIMARY_KEYWORDS,
+    PR_CREATE_PRIMARY_KEYWORDS,
+)
+
+
+def _contains_any_primary_keyword(text: str) -> bool:
+    """Return True if text contains any registered capability's primary keyword.
+
+    Primary keywords are the unambiguous capability signals (e.g. ``库存``,
+    ``采购订单``, ``采购申请``). Weak-only matches (``有没有``, ``采购``) do not
+    count as a new-turn trigger, so a follow-up that merely adds a weak keyword
+    still inherits the prior capability via sticky continuation.
+    """
+    return any(any(kw in text for kw in keyword_set) for keyword_set in _PRIMARY_KEYWORD_SETS)
+
+
+def _extract_params_for(capability_id: str, text: str) -> dict[str, str]:
+    """Re-run the capability-specific extractor and return its parameters.
+
+    Dispatches to the same per-capability builder used by the single-turn rule
+    path so sticky continuation stays consistent with fresh parsing. Only the
+    ``parameters`` dict is returned; missing/clarification are recomputed by the
+    caller against the catalog descriptor (the merged result may satisfy inputs
+    the extractor alone would have flagged missing).
+    """
+    if capability_id == _INVENTORY_CAPABILITY_ID:
+        return _build_inventory_result(text, False, False).parameters
+    if capability_id == _PURCHASE_ORDER_CAPABILITY_ID:
+        return _build_purchase_order_result(text, False, False).parameters
+    if capability_id == _PR_CREATE_CAPABILITY_ID:
+        return parse_pr_create_intent(text).parameters
+    return {}
+
+
+def resolve_with_context(
+    text: str,
+    context: "ConversationContext | None",
+    catalog: IntentCatalog,
+) -> IntentParseResult:
+    """Sticky continuation: inherit last_context.capability_id, merge params.
+
+    Algorithm (Design Doc §4.3):
+
+    1. No context / no last_context -> single-turn ``parse_intent``.
+    2. Utterance contains any primary keyword -> new turn (single-turn
+       ``parse_intent``); the prior ``last_context`` is discarded.
+    3. Otherwise inherit ``last_context.capability_id``, re-run that
+       capability's extractor on the new utterance, and merge params
+       (new overrides old, unprovided retained). Q1=overlay: SELECT
+       follow-ups inherit the same way as CLARIFY follow-ups, using
+       ``last_context.parameters`` as the merge base.
+    4. Recompute missing required inputs against the catalog descriptor.
+    5. If the inherited ``capability_id`` is no longer registered, fall back
+       to single-turn (defensive degradation).
+
+    The rule path completes without an LLM call; ``parse_with_hybrid`` relies on
+    this for its safe fallback.
+    """
+    if context is None or context.last_context is None:
+        return parse_intent(text)
+
+    # New turn if utterance contains any primary keyword.
+    if _contains_any_primary_keyword(text):
+        return parse_intent(text)
+
+    cap_id = context.last_context.capability_id
+    descriptor = catalog.find(cap_id)
+    if descriptor is None:
+        # Capability no longer registered: fall back to single-turn.
+        return parse_intent(text)
+
+    extracted = _extract_params_for(cap_id, text)
+    merged = {**context.last_context.parameters, **extracted}
+    missing = [
+        inp.name for inp in descriptor.inputs if inp.required and inp.name not in merged
+    ]
+
+    clarification = _clarification_for(cap_id, missing)
+    return IntentParseResult(
+        intent=None,
+        capability_id=cap_id,
+        parameters=merged,
+        missing_parameters=missing,
+        clarification=clarification,
+        contains_rfc_name=False,
+        contains_odata_override=False,
+        matched_intents=[
+            MatchedIntent(capability_id=cap_id, parameters=merged, missing=list(missing))
+        ],
+    )

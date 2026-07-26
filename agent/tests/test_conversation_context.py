@@ -154,3 +154,168 @@ def test_run_query_context_none_backward_compatible(monkeypatch):
     gateway = _FakeGateway(validate_result=VResult(), execute_result=EResult())
     outcome = run_query("库存 DEMOA2 1000", gateway, context=None)
     assert outcome.status in {"success", "clarification"}
+
+
+# ---------------------------------------------------------------------------
+# Task 3: sticky continuation algorithm
+# ---------------------------------------------------------------------------
+
+
+def _catalog():
+    """Load the real intent catalog from registry/capabilities.yaml.
+
+    Uses the file-location resolver (no ``repo_root``) so the catalog is found
+    regardless of pytest's cwd; this matches how production code
+    (``parse_intent`` wiring, ``build_intent_adapter``) loads the catalog.
+    """
+    from sap_nexus_agent.registry_loader import load_intent_catalog
+
+    return load_intent_catalog()
+
+
+def test_contains_any_primary_keyword_inventory():
+    """Primary keyword detection: inventory & PO keywords hit; pure params miss."""
+    from sap_nexus_agent.llm_intent import _contains_any_primary_keyword
+
+    assert _contains_any_primary_keyword("查一下库存") is True
+    assert _contains_any_primary_keyword("采购订单列表") is True
+    assert _contains_any_primary_keyword("DEMOA2 1000") is False  # 纯参数，无主关键词
+
+
+def test_sticky_clarify_fills_plant():
+    """turn1 CLARIFY 缺 plant；turn2 补 plant -> missing 缩减为 []。
+
+    Note: ``_extract_plant`` requires a ``在 <code>`` prefix or ``<code> 工厂``
+    suffix (existing extractor behavior; bare ``1000`` returns None). The
+    follow-up utterance uses ``在 1000`` - a natural response to the CLARIFY
+    prompt ``请提供要查询的工厂`` - so the extractor can parse the plant.
+    """
+    from sap_nexus_agent.llm_intent import resolve_with_context
+
+    catalog = _catalog()
+    ctx = ConversationContext(
+        last_context=LastContext(
+            capability_id="MM.Inventory.GetAvailability",
+            parameters={"material": "DEMOA2"},
+            missing_parameters=["plant"],
+            decision_type="CLARIFY",
+        ),
+        history=None,
+    )
+    result = resolve_with_context("在 1000", ctx, catalog)
+    assert result.capability_id == "MM.Inventory.GetAvailability"
+    assert result.parameters["material"] == "DEMOA2"
+    assert result.parameters["plant"] == "1000"
+    assert result.missing_parameters == []
+
+
+def test_sticky_clarify_partial_still_missing():
+    """turn2 补了一个参数但仍缺另一个 -> CLARIFY 缩减。"""
+    from sap_nexus_agent.llm_intent import resolve_with_context
+
+    catalog = _catalog()
+    ctx = ConversationContext(
+        last_context=LastContext(
+            capability_id="MM.Inventory.GetAvailability",
+            parameters={},
+            missing_parameters=["material", "plant"],
+            decision_type="CLARIFY",
+        ),
+        history=None,
+    )
+    result = resolve_with_context("DEMOA2", ctx, catalog)
+    assert result.capability_id == "MM.Inventory.GetAvailability"
+    assert result.parameters["material"] == "DEMOA2"
+    assert "plant" not in result.parameters
+    assert result.missing_parameters == ["plant"]
+
+
+def test_sticky_select_inherits_capability_q1():
+    """Q1=覆盖：SELECT 后追问'换一个 DEMOA4' 继承 inventory + plant。"""
+    from sap_nexus_agent.llm_intent import resolve_with_context
+
+    catalog = _catalog()
+    ctx = ConversationContext(
+        last_context=LastContext(
+            capability_id="MM.Inventory.GetAvailability",
+            parameters={"material": "DEMOA2", "plant": "1000"},
+            missing_parameters=[],
+            decision_type="SELECT",
+        ),
+        history=None,
+    )
+    result = resolve_with_context("换一个 DEMOA4", ctx, catalog)
+    assert result.capability_id == "MM.Inventory.GetAvailability"
+    # 新参数覆盖旧，未提供保留
+    assert result.parameters["material"] == "DEMOA4"
+    assert result.parameters["plant"] == "1000"
+    assert result.missing_parameters == []
+
+
+def test_sticky_primary_keyword_overrides():
+    """turn2 含主关键词 -> 新轮覆盖 last_context。
+
+    Note (Task 2 concern 1): parse_intent single-intent 路径不设顶层
+    ``capability_id`` (值为 None)，仅 ``matched_intents[0].capability_id`` 有值。
+    故断言 ``matched_intents[0].capability_id`` 而非顶层。
+    """
+    from sap_nexus_agent.llm_intent import resolve_with_context
+
+    catalog = _catalog()
+    ctx = ConversationContext(
+        last_context=LastContext(
+            capability_id="MM.Inventory.GetAvailability",
+            parameters={"material": "DEMOA2"},
+            missing_parameters=["plant"],
+            decision_type="CLARIFY",
+        ),
+        history=None,
+    )
+    result = resolve_with_context("采购订单 4500000001", ctx, catalog)
+    # 主关键词触发新轮，走 parse_intent，不继承 inventory
+    assert result.capability_id is None
+    assert result.matched_intents[0].capability_id == "MM.PurchaseOrder.GetList"
+
+
+def test_sticky_none_context_falls_back_to_single_turn():
+    """context=None -> resolve_with_context 退化为单轮 parse_intent。"""
+    from sap_nexus_agent.llm_intent import resolve_with_context
+
+    catalog = _catalog()
+    result = resolve_with_context("库存 DEMOA2 1000", None, catalog)
+    # 单轮路径：顶层 capability_id 为 None (Task 2 concern 1)
+    assert result.intent == "inventory_availability"
+    assert result.matched_intents[0].capability_id == "MM.Inventory.GetAvailability"
+
+
+def test_sticky_none_last_context_falls_back_to_single_turn():
+    """last_context=None -> 退化为单轮 parse_intent。"""
+    from sap_nexus_agent.llm_intent import resolve_with_context
+
+    catalog = _catalog()
+    ctx = ConversationContext(last_context=None, history=None)
+    result = resolve_with_context("库存 DEMOA2 1000", ctx, catalog)
+    assert result.intent == "inventory_availability"
+    assert result.matched_intents[0].capability_id == "MM.Inventory.GetAvailability"
+
+
+def test_sticky_unknown_capability_falls_back_to_single_turn():
+    """last_context.capability_id 不在 catalog -> 退化为单轮（防御降级）。"""
+    from sap_nexus_agent.llm_intent import resolve_with_context
+
+    catalog = _catalog()
+    ctx = ConversationContext(
+        last_context=LastContext(
+            capability_id="MM.Nonexistent.Capability",
+            parameters={"material": "DEMOA2"},
+            missing_parameters=[],
+            decision_type="SELECT",
+        ),
+        history=None,
+    )
+    # 文本不含主关键词，但 capability_id 未注册 -> 应降级为单轮
+    result = resolve_with_context("DEMOA2 1000", ctx, catalog)
+    # 单轮路径：inventory 匹配 (含 "库存"? 否。但文本无主关键词 -> 单轮 parse_intent 返回 unknown)
+    # 实际：parse_intent("DEMOA2 1000") 无任何主关键词 -> unknown intent
+    assert result.intent is None
+    assert result.matched_intents == []
