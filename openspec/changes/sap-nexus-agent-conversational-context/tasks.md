@@ -13,9 +13,9 @@
 
 ## 3. Python Agent: LLM 路径历史注入分离契约
 
-- [ ] 3.1 `_messages` 在 `context.history` 非空时拼入历史：静态权威契约作 `SystemMessage`，历史文本作隐藏 `<durable_context_data>` `HumanMessage`（标记 data）
-- [ ] 3.2 验证 `_payload_to_parse_result` 的 closed-set 校验仍 reject 任何非注册 capabilityId（即便 LLM 被注入）
-- [ ] 3.3 rule 路径确认不拼历史（无 LLM 调用）
+- [x] 3.1 `_messages` 在 `context.history` 非空时拼入历史：静态权威契约作 `SystemMessage`，历史文本作隐藏 `<durable_context_data>` `HumanMessage`（标记 data）
+- [x] 3.2 验证 `_payload_to_parse_result` 的 closed-set 校验仍 reject 任何非注册 capabilityId（即便 LLM 被注入）
+- [x] 3.3 rule 路径确认不拼历史（无 LLM 调用）
 
 ## 4. Python Agent: CLI 透传
 

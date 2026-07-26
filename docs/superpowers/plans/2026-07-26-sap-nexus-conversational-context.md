@@ -787,7 +787,7 @@ git commit -m "feat(conversation-context): implement sticky continuation algorit
 - 历史作隐藏 `<durable_context_data>` HumanMessage 包裹近3轮
 - closed-set 校验（`_payload_to_parse_result`）仍 reject 任何非注册 capabilityId
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # 追加到 agent/tests/test_llm_intent.py
@@ -846,12 +846,12 @@ def test_messages_history_window_caps_at_three_turns():
     assert "turn0" not in history_block
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `python -m pytest agent/tests/test_llm_intent.py::test_messages_with_history_injects_authority_and_data_block -v`
 Expected: FAIL（`_messages` 当前忽略 context，不注入历史）
 
-- [ ] **Step 3: Implement history injection in _messages**
+- [x] **Step 3: Implement history injection in _messages**
 
 在 `agent/sap_nexus_agent/llm_intent.py:79` 修改：
 
@@ -911,12 +911,12 @@ def _messages(
     return [authority, history_block, base_system, base_user]
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `python -m pytest agent/tests/test_llm_intent.py -v`
 Expected: PASS（新增 3 个历史注入测试 + 现有 LLM 测试）
 
-- [ ] **Step 5: Verify closed-set defense still rejects injected capabilityId**
+- [x] **Step 5: Verify closed-set defense still rejects injected capabilityId**
 
 ```python
 # 追加到 agent/tests/test_llm_intent.py
@@ -935,7 +935,7 @@ def test_payload_to_parse_result_rejects_injected_capability_id():
 Run: `python -m pytest agent/tests/test_llm_intent.py::test_payload_to_parse_result_rejects_injected_capability_id -v`
 Expected: PASS（`_payload_to_parse_result` 已有 closed-set 校验，无需改动）
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add agent/sap_nexus_agent/llm_intent.py agent/tests/test_llm_intent.py
