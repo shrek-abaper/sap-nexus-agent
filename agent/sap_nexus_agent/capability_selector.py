@@ -103,7 +103,40 @@ def select_capability(parse_result: IntentParseResult) -> MatchDecision:
     # ``capability_id=None`` -> catalog miss -> single-turn fallback -> REJECT,
     # breaking the core multi-turn flow. The capability id is derived with the
     # same fallback chain as the SELECT branch below.
+    #
+    # Task 6: ``multi_parameters`` (Design Doc §4.3) also counts as provided.
+    # The parser pre-computes ``missing_parameters`` from ``parameters`` only;
+    # the selector adjusts here so a required param in ``multi_parameters`` no
+    # longer triggers CLARIFY. Two paths:
+    #   - parser's missing non-empty (rule path): drop entries now satisfied by
+    #     ``multi_parameters``. Preserves parser business logic the descriptor
+    #     cannot express (e.g., PO's synthetic "filter" required-at-least-one).
+    #   - parser's missing empty (LLM path that set capability_id +
+    #     multi_parameters only): recompute from the descriptor to catch
+    #     required inputs the parser never checked.
+    # ``getattr`` defensive read mirrors the ``is_ambiguous`` pattern: Task 5
+    # added ``multi_parameters`` to IntentParseResult, but older test doubles
+    # (SimpleNamespace) may not set it.
+    multi_parameters = getattr(parse_result, "multi_parameters", {}) or {}
+    provided_keys = set(parse_result.parameters.keys()) | set(multi_parameters.keys())
     if parse_result.missing_parameters:
+        missing = [m for m in parse_result.missing_parameters if m not in provided_keys]
+    else:
+        missing = []
+        capability_id_for_missing = parse_result.capability_id
+        if not capability_id_for_missing and parse_result.matched_intents:
+            capability_id_for_missing = parse_result.matched_intents[0].capability_id
+        if capability_id_for_missing:
+            # Lazy import to get descriptor inputs (avoids module-level registry IO).
+            from sap_nexus_agent.registry_loader import load_intent_catalog
+            descriptor = load_intent_catalog().find(capability_id_for_missing)
+            if descriptor is not None:
+                missing = [
+                    inp.name
+                    for inp in descriptor.inputs
+                    if inp.required and inp.name not in provided_keys
+                ]
+    if missing:
         clarify_cap_id = parse_result.capability_id
         if not clarify_cap_id and parse_result.matched_intents:
             clarify_cap_id = parse_result.matched_intents[0].capability_id
@@ -113,7 +146,7 @@ def select_capability(parse_result: IntentParseResult) -> MatchDecision:
             decision_type="CLARIFY",
             capability_id=clarify_cap_id,
             parameters=dict(parse_result.parameters),
-            missing_parameters=list(parse_result.missing_parameters),
+            missing_parameters=missing,
             rationale=parse_result.clarification or "请补充缺失的参数",
         )
 

@@ -374,3 +374,61 @@ def test_select_emits_reject_when_odata_flag_present():
     decision = select_capability(parse_result)
     assert decision.decision_type == "REJECT"
     assert decision.error_type == "UNSUPPORTED_RFC_NAME"
+
+
+# ---------------------------------------------------------------------------
+# Task 6: multi_parameters satisfies required inputs (Design Doc §4.3)
+# ---------------------------------------------------------------------------
+
+
+def test_select_satisfied_by_multi_parameters():
+    """Required params in multi_parameters count as provided -> SELECT (not CLARIFY).
+
+    Design Doc §4.3: a required parameter is satisfied if present in
+    ``parameters`` OR ``multi_parameters``. ``MatchDecision.parameters`` still
+    carries only single-value ``parameters`` (multi_parameters is read from
+    ``parsed`` directly by the orchestrator in Task 8).
+    """
+    parse_result = IntentParseResult(
+        intent=None,
+        parameters={},
+        missing_parameters=[],
+        capability_id="MM.Inventory.GetAvailability",
+        multi_parameters={"plant": ["5200", "1000"], "material": ["DEMOA2"]},
+    )
+    decision = select_capability(parse_result)
+    assert decision.decision_type == "SELECT"
+    assert decision.capability_id == "MM.Inventory.GetAvailability"
+    assert decision.parameters == {}  # multi_parameters 不进 MatchDecision.parameters
+    assert decision.missing_parameters is None or decision.missing_parameters == []
+
+
+def test_select_clarify_when_multi_parameters_partial():
+    """multi_parameters 只覆盖部分 required -> 仍 CLARIFY。"""
+    parse_result = IntentParseResult(
+        intent=None,
+        parameters={},
+        missing_parameters=[],
+        capability_id="MM.Inventory.GetAvailability",
+        multi_parameters={"plant": ["5200"]},  # material 缺失
+    )
+    decision = select_capability(parse_result)
+    assert decision.decision_type == "CLARIFY"
+    assert "material" in (decision.missing_parameters or [])
+
+
+def test_select_parameters_excludes_multi_parameters():
+    """MatchDecision.parameters carries only single-value parameters;
+    multi_parameters never leaks into MatchDecision.parameters even when
+    both are present and together satisfy all required inputs."""
+    parse_result = IntentParseResult(
+        intent=None,
+        parameters={"material": "DEMOA2"},
+        missing_parameters=[],
+        capability_id="MM.Inventory.GetAvailability",
+        multi_parameters={"plant": ["5200", "1000"]},
+    )
+    decision = select_capability(parse_result)
+    assert decision.decision_type == "SELECT"
+    assert decision.parameters == {"material": "DEMOA2"}
+    assert "plant" not in decision.parameters
