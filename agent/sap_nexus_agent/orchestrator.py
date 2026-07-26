@@ -193,6 +193,29 @@ def run_query(
     if capability_id == INVENTORY_CAPABILITY_ID:
         parameters.setdefault("unit", "EA")
 
+    # Multi-value detection (Design Doc §4.4): expand combinations and await
+    # user confirmation before any Gateway call.
+    if parsed.multi_parameters:
+        combinations = expand_combinations(parameters, parsed.multi_parameters)
+        if len(combinations) > BATCH_COMBINATION_CAP:
+            return AgentOutcome(
+                status="clarification",
+                response_text=f"组合数 {len(combinations)} 过多，请缩小范围（如减少物料或工厂）。",
+                match_decision=decision,
+            )
+        kind = "Action" if capability_id in ACTION_CAPABILITY_IDS else "Function"
+        call_plan = create_call_plan(capability_id, parameters, kind=kind)
+        combos_desc = "; ".join(
+            f"material={c.get('material')}, plant={c.get('plant')}" for c in combinations
+        )
+        return AgentOutcome(
+            status="awaiting_batch_confirm",
+            response_text=f"将查询 {len(combinations)} 个组合：{combos_desc}，请确认。",
+            call_plan=call_plan,
+            combinations=combinations,
+            match_decision=decision,
+        )
+
     kind = "Action" if capability_id in ACTION_CAPABILITY_IDS else "Function"
     call_plan = create_call_plan(capability_id, parameters, kind=kind)
     validation = gateway.validate(call_plan.capability_id, call_plan.parameters)

@@ -893,3 +893,79 @@ def test_agent_outcome_has_combinations_field():
     assert outcome.combinations == [{"plant": "5200"}]
     outcome2 = AgentOutcome(status="success")
     assert outcome2.combinations is None
+
+
+# ---------------------------------------------------------------------------
+# run_query SELECT multi-value detection (Plan Task 8)
+#
+# Design Doc §4.4: when parsed.multi_parameters is non-empty, expand
+# combinations BEFORE create_call_plan/validate/execute. Cap > BATCH_COMBINATION_CAP
+# -> CLARIFY; otherwise -> awaiting_batch_confirm (no Gateway call).
+# ---------------------------------------------------------------------------
+
+
+def _multi_value_adapter(multi_parameters):
+    """Stub adapter returning a preset multi_parameters IntentParseResult."""
+    def _adapter(text, context=None):
+        return IntentParseResult(
+            intent=None,
+            parameters={"unit": "EA"},
+            missing_parameters=[],
+            capability_id="MM.Inventory.GetAvailability",
+            matched_intents=[MatchedIntent(
+                capability_id="MM.Inventory.GetAvailability",
+                parameters={"unit": "EA"},
+                missing=[],
+            )],
+            multi_parameters=multi_parameters,
+        )
+    return _adapter
+
+
+def test_run_query_multi_value_emits_awaiting_batch_confirm():
+    gateway = FakeGatewayClient()
+    adapter = _multi_value_adapter({"plant": ["5200", "1000"], "material": ["DEMOA2", "DEMOA4"]})
+    outcome = run_query("DEMOA2 和 DEMOA4 在 5200、1000 的库存", gateway, intent_adapter=adapter)
+    assert outcome.status == "awaiting_batch_confirm"
+    assert outcome.combinations is not None
+    assert len(outcome.combinations) == 4
+    assert gateway.validate_calls == []
+    assert gateway.execute_calls == []
+    assert outcome.call_plan is not None
+    assert outcome.call_plan.capability_id == "MM.Inventory.GetAvailability"
+
+
+def test_run_query_multi_value_over_cap_emits_clarify():
+    gateway = FakeGatewayClient()
+    # 21 个 plant 组合 > cap 20
+    plants = [f"P{i:03d}" for i in range(21)]
+    adapter = _multi_value_adapter({"plant": plants, "material": ["DEMOA2"]})
+    outcome = run_query("查 DEMOA2 在多个工厂的库存", gateway, intent_adapter=adapter)
+    assert outcome.status == "clarification"
+    assert "组合数" in (outcome.response_text or "")
+    assert outcome.combinations is None
+    assert gateway.validate_calls == []
+    assert gateway.execute_calls == []
+
+
+def test_run_query_single_value_still_executes():
+    """单值回归：multi_parameters 空 -> 走原 execute 路径。"""
+    gateway = FakeGatewayClient()
+    # 单值 adapter 把 material/plant 放 parameters
+    def _single_adapter(text, context=None):
+        return IntentParseResult(
+            intent=None,
+            parameters={"material": "DEMOA2", "plant": "5100", "unit": "EA"},
+            missing_parameters=[],
+            capability_id="MM.Inventory.GetAvailability",
+            matched_intents=[MatchedIntent(
+                capability_id="MM.Inventory.GetAvailability",
+                parameters={"material": "DEMOA2", "plant": "5100", "unit": "EA"},
+                missing=[],
+            )],
+            multi_parameters={},
+        )
+    outcome = run_query("DEMOA2 在 5100 的库存", gateway, intent_adapter=_single_adapter)
+    assert outcome.status == "success"
+    assert outcome.fact is not None
+    assert len(gateway.execute_calls) == 1
