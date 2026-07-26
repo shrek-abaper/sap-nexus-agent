@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Callable
 
-from sap_nexus_agent.conversation_context import ConversationContext
+from sap_nexus_agent.conversation_context import ConversationContext, LastContext
 from sap_nexus_agent.execution_result import ExecutionResult, ValidationResult
 from sap_nexus_agent.gateway_client import GatewayClientProtocol
 from sap_nexus_agent.intent import IntentParseResult
@@ -54,7 +54,44 @@ def outcome_to_workbench_dict(outcome: AgentOutcome) -> dict[str, object]:
         # dry-run preview (PlanGraph nodes/edges/gaps/governanceFlags) in the
         # same ESCALATE turn.
         "dryRun": _dry_run_to_dict(outcome.dry_run),
+        # Conversational context (Task 5): LastContext for the next turn,
+        # derived from the outcome's match_decision. The backend records this
+        # on the session so the next utterance can continue slot-fill (CLARIFY)
+        # or follow up (SELECT). None clears the session (REJECT / SHOW_OPTIONS
+        # / ESCALATE / awaiting_approval).
+        "lastContext": _last_context_from_outcome(outcome),
     }
+
+
+def _last_context_from_outcome(outcome: AgentOutcome) -> dict[str, object] | None:
+    """Derive LastContext for the next turn from the outcome's match_decision.
+
+    CLARIFY -> LastContext(CLARIFY, params, missing) for slot-fill.
+    SELECT success -> LastContext(SELECT, params, []) for Q1 follow-up.
+    REJECT / SHOW_OPTIONS / ESCALATE / awaiting_approval -> None (clear session).
+    """
+    if outcome.status == "awaiting_approval":
+        return None  # Q2: approval pending rejects new queries, no last_context.
+    decision = outcome.match_decision
+    if decision is None:
+        return None
+    if decision.decision_type == "CLARIFY":
+        ctx = LastContext(
+            capability_id=decision.capability_id,
+            parameters=dict(decision.parameters or {}),
+            missing_parameters=list(decision.missing_parameters or []),
+            decision_type="CLARIFY",
+        )
+        return ctx.to_dict()
+    if decision.decision_type == "SELECT" and outcome.status == "success":
+        ctx = LastContext(
+            capability_id=decision.capability_id,
+            parameters=dict(decision.parameters or {}),
+            missing_parameters=[],
+            decision_type="SELECT",
+        )
+        return ctx.to_dict()
+    return None
 
 
 def _dry_run_to_dict(dry_run) -> dict[str, object] | None:

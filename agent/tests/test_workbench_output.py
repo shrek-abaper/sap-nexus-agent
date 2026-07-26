@@ -1,6 +1,7 @@
 from sap_nexus_agent.approval import create_approval_record
 from sap_nexus_agent.execution_result import ExecutionResult, ValidationResult
 from sap_nexus_agent.intent import IntentParseResult
+from sap_nexus_agent.match_decision import MatchDecision
 from sap_nexus_agent.orchestrator import AgentOutcome
 from sap_nexus_agent.reasoning_fact import ReasoningFact
 from sap_nexus_agent.workbench_output import outcome_to_workbench_dict, run_workbench_query
@@ -122,3 +123,84 @@ def test_workbench_output_serializes_pending_approval_record():
     payload = outcome_to_workbench_dict(outcome)
 
     assert payload["approvalRecord"] == approval.to_dict()
+
+
+def test_outcome_clarify_emits_last_context():
+    decision = MatchDecision(
+        decision_type="CLARIFY",
+        capability_id="MM.Inventory.GetAvailability",
+        parameters={"material": "DEMOA2"},
+        missing_parameters=["plant"],
+        error_type=None,
+        candidates=None,
+        handoff=None,
+        rationale="缺 plant",
+    )
+    outcome = AgentOutcome(
+        status="clarification",
+        message="请提供工厂",
+        response_text="请提供工厂",
+        missing_parameters=["plant"],
+        match_decision=decision,
+    )
+    payload = outcome_to_workbench_dict(outcome)
+    assert payload["lastContext"] == {
+        "capabilityId": "MM.Inventory.GetAvailability",
+        "parameters": {"material": "DEMOA2"},
+        "missingParameters": ["plant"],
+        "decisionType": "CLARIFY",
+    }
+
+
+def test_outcome_select_success_emits_last_context():
+    decision = MatchDecision(
+        decision_type="SELECT",
+        capability_id="MM.Inventory.GetAvailability",
+        parameters={"material": "DEMOA2", "plant": "1000"},
+        missing_parameters=[],
+        error_type=None,
+        candidates=None,
+        handoff=None,
+        rationale="",
+    )
+    outcome = AgentOutcome(
+        status="success",
+        response_text="库存 7 EA",
+        match_decision=decision,
+    )
+    payload = outcome_to_workbench_dict(outcome)
+    assert payload["lastContext"]["decisionType"] == "SELECT"
+    assert payload["lastContext"]["missingParameters"] == []
+
+
+def test_outcome_reject_no_last_context():
+    decision = MatchDecision(
+        decision_type="REJECT",
+        capability_id=None,
+        parameters=None,
+        missing_parameters=None,
+        error_type="UNSUPPORTED_INTENT",
+        candidates=None,
+        handoff=None,
+        rationale="unsupported",
+    )
+    outcome = AgentOutcome(status="failure", match_decision=decision)
+    payload = outcome_to_workbench_dict(outcome)
+    assert payload["lastContext"] is None
+
+
+def test_outcome_awaiting_approval_no_last_context():
+    """审批 pending 不回填 lastContext（Q2：审批 pending 拒绝新查询）。"""
+    decision = MatchDecision(
+        decision_type="SELECT",
+        capability_id="MM.PR.CreateDraft",
+        parameters={"material": "X", "plant": "1000"},
+        missing_parameters=[],
+        error_type=None,
+        candidates=None,
+        handoff=None,
+        rationale="",
+    )
+    outcome = AgentOutcome(status="awaiting_approval", match_decision=decision)
+    payload = outcome_to_workbench_dict(outcome)
+    assert payload["lastContext"] is None
