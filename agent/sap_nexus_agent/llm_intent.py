@@ -445,9 +445,38 @@ def resolve_with_context(
     if context is None or context.last_context is None:
         return parse_intent(text)
 
-    # New turn if utterance contains any primary keyword.
+    # New turn if utterance contains any primary keyword. Rule fallback path
+    # (D3): if the extractor cannot extract material but last_context has one,
+    # inherit it so anaphora ("这个物料") still resolves under rule fallback.
+    # Guard: only inherit when this turn matched the SAME capability as
+    # last_context (single-intent match) -- a primary-keyword switch (e.g.
+    # inventory -> PO) is a true new turn and must not pull in the prior
+    # capability's material. When inheriting, also surface
+    # last_context.capability_id and drop "material" from missing so the
+    # selector can fire SELECT (otherwise the stale missing flag would route
+    # to CLARIFY).
     if _contains_any_primary_keyword(text):
-        return parse_intent(text)
+        parsed = parse_intent(text)
+        if (
+            "material" not in parsed.parameters
+            and context.last_context.parameters.get("material")
+            and len(parsed.matched_intents) == 1
+            and parsed.matched_intents[0].capability_id
+            == context.last_context.capability_id
+        ):
+            from dataclasses import replace
+
+            new_params = dict(parsed.parameters)
+            new_params["material"] = context.last_context.parameters["material"]
+            new_missing = [m for m in parsed.missing_parameters if m != "material"]
+            parsed = replace(
+                parsed,
+                parameters=new_params,
+                missing_parameters=new_missing,
+                clarification=None if not new_missing else parsed.clarification,
+                capability_id=context.last_context.capability_id,
+            )
+        return parsed
 
     cap_id = context.last_context.capability_id
     descriptor = catalog.find(cap_id)

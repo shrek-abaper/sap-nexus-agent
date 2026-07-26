@@ -3,6 +3,7 @@ import json
 import pytest
 
 from sap_nexus_agent.capability_selector import select_capability
+from sap_nexus_agent.conversation_context import ConversationContext, LastContext
 from sap_nexus_agent.intent import IntentParseResult, parse_inventory_intent, parse_intent
 from sap_nexus_agent.llm_client import LlmUnavailable
 from sap_nexus_agent.llm_intent import parse_with_llm
@@ -689,3 +690,46 @@ def test_parse_intent_ambiguous_does_not_affect_single_clear_intent_extraction()
     assert result.is_ambiguous is False
     assert result.intent == "inventory_availability"
     assert result.parameters == {"material": "DEMOA2", "plant": "5100"}
+
+
+# --- Rule fallback inherits last_context material on primary keyword (Task 4 / D3) ---
+
+
+def test_rule_fallback_inherits_material_on_primary_keyword():
+    """LLM 不可用 rule 兜底：主关键词 + 提取不到 material + last_context 有 -> 继承。"""
+    ctx = ConversationContext(
+        last_context=LastContext(
+            capability_id="MM.Inventory.GetAvailability",
+            parameters={"material": "DEMOA2", "plant": "5100"},
+            missing_parameters=[],
+            decision_type="SELECT",
+        ),
+        history=None,
+    )
+    result = parse_intent("查下这个物料在1000的库存", context=ctx)
+    assert result.capability_id == "MM.Inventory.GetAvailability"
+    assert result.parameters.get("material") == "DEMOA2"
+    assert result.parameters.get("plant") == "1000"
+
+
+def test_rule_fallback_does_not_inherit_when_new_material_present():
+    """有新物料时不继承 last_context material。"""
+    ctx = ConversationContext(
+        last_context=LastContext(
+            capability_id="MM.Inventory.GetAvailability",
+            parameters={"material": "DEMOA2", "plant": "5100"},
+            missing_parameters=[],
+            decision_type="SELECT",
+        ),
+        history=None,
+    )
+    result = parse_intent("查 DEMOA4 在 1000 的库存", context=ctx)
+    assert result.parameters.get("material") == "DEMOA4"
+    assert result.parameters.get("plant") == "1000"
+
+
+def test_rule_fallback_no_inherit_without_last_context():
+    """无 last_context 时主关键词分支正常走单轮（不继承）。"""
+    ctx = ConversationContext(last_context=None, history=None)
+    result = parse_intent("查下这个物料在1000的库存", context=ctx)
+    assert result.capability_id is None or result.missing_parameters == ["material"]
