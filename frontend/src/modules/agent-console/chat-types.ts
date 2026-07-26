@@ -22,3 +22,12 @@ export type ChatTurn = {
  * 切换 Run History 时只读展示对应轮，底部 composer 仍发起新轮（追加到末尾）。
  */
 export type ActiveTurnIndex = number | null;
+
+/**
+ * 一个 Session = 一个 conversationId 下的所有轮次。
+ * Session History 按 session 维度展示，同 session 多轮只显示一条。
+ */
+export type Session = {
+  conversationId: string;
+  turns: ChatTurn[];
+};

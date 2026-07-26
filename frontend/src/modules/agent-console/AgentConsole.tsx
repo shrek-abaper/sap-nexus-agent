@@ -5,8 +5,8 @@ import type { AgentRunEvent, AgentRunSnapshot } from "@/runtime/run-event-schema
 import { applyRunEvent, createInitialSnapshot } from "@/runtime/run-state-machine";
 import { ChatStream } from "./ChatStream";
 import { ChatComposer } from "./ChatComposer";
-import { summarizeTurn } from "./view-model";
-import type { ChatTurn, ActiveTurnIndex } from "./chat-types";
+import { summarizeSession } from "./view-model";
+import type { ChatTurn, ActiveTurnIndex, Session } from "./chat-types";
 import { createConversationId } from "./conversation-id";
 import { Icon, type IconName } from "@/shared/ui/Icon";
 import { samplePrompts, heroInputPlaceholder } from "./sample-data";
@@ -43,6 +43,17 @@ export function AgentConsole() {
   const [turns, setTurns] = useState<ChatTurn[]>([]);
   const [activeIndex, setActiveIndex] = useState<ActiveTurnIndex>(null);
   const [conversationId, setConversationId] = useState<string>(createConversationId);
+  const [sessions, setSessions] = useState<Session[]>([]);
+
+  function switchToSession(session: Session) {
+    if (turns.length > 0) {
+      setSessions((prev) => [...prev, { conversationId, turns }]);
+    }
+    setSessions((prev) => prev.filter((s) => s.conversationId !== session.conversationId));
+    setTurns(session.turns);
+    setConversationId(session.conversationId);
+    setActiveIndex(null);
+  }
 
   const hasRun = turns.length > 0;
 
@@ -192,6 +203,9 @@ export function AgentConsole() {
             className="side-nav__cta"
             type="button"
             onClick={() => {
+              if (turns.length > 0) {
+                setSessions((prev) => [...prev, { conversationId, turns }]);
+              }
               setTurns([]);
               setActiveIndex(null);
               setConversationId(createConversationId());
@@ -212,30 +226,35 @@ export function AgentConsole() {
           </div>
 
           <div className="side-nav__section">
-            <div className="side-nav__label">Run History</div>
-            {turns.length === 0 ? (
+            <div className="side-nav__label">Session History</div>
+            {turns.length === 0 && sessions.length === 0 ? (
               <button className="history-item is-active" type="button">
                 <span>暂无对话</span>
                 <small>等待运行</small>
               </button>
             ) : (
-              turns
-                .map((turn, index) => ({ turn, index }))
-                .reverse()
-                .map(({ turn, index }) => {
-                  const summary = summarizeTurn(turn);
+              <>
+                {turns.length > 0 && (
+                  <button className="history-item is-active" type="button">
+                    <span>{summarizeSession({ conversationId, turns }).label}</span>
+                    <small>{summarizeSession({ conversationId, turns }).state}</small>
+                  </button>
+                )}
+                {sessions.slice().reverse().map((session) => {
+                  const summary = summarizeSession(session);
                   return (
                     <button
-                      className={`history-item ${activeIndex === index ? "is-active" : ""}`}
-                      key={turn.runId}
-                      onClick={() => setActiveIndex(index)}
+                      className="history-item"
+                      key={session.conversationId}
+                      onClick={() => switchToSession(session)}
                       type="button"
                     >
                       <span>{summary.label}</span>
                       <small>{summary.state}</small>
                     </button>
                   );
-                })
+                })}
+              </>
             )}
           </div>
 

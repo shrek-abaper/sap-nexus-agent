@@ -1,6 +1,6 @@
 import type { AgentRunEvent, AgentRunSnapshot } from "@/runtime/run-event-schema";
 import type { JsonValue, RedactedArtifact } from "@/shared/types/artifacts";
-import type { ChatTurn } from "./chat-types";
+import type { ChatTurn, Session } from "./chat-types";
 
 export type WorkbenchResultTone = "idle" | "success" | "clarification" | "failure" | "running";
 
@@ -267,6 +267,21 @@ export function summarizeTurn(turn: ChatTurn): { label: string; state: string } 
     label: label || "新对话",
     state: turn.error ? "失败" : turn.snapshot?.state ?? (turn.isRunning ? "running" : "等待运行")
   };
+}
+
+/**
+ * 供 Session History 使用：session 首轮 query 截断 + 末轮 state。
+ */
+export function summarizeSession(session: Session): { label: string; state: string } {
+  const firstTurn = session.turns[0];
+  const label = firstTurn
+    ? (firstTurn.query.trim().length > 20 ? `${firstTurn.query.trim().slice(0, 20)}…` : firstTurn.query.trim())
+    : "新对话";
+  const lastTurn = session.turns[session.turns.length - 1];
+  const state = lastTurn
+    ? (lastTurn.error ? "失败" : lastTurn.snapshot?.state ?? (lastTurn.isRunning ? "running" : "完成"))
+    : "等待运行";
+  return { label: label || "新对话", state };
 }
 
 /**
