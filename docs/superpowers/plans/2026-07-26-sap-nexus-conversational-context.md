@@ -1710,7 +1710,7 @@ git commit -m "feat(conversation-context): pass conversationId through /api/agen
 | 边界6（Q2） | 审批 pending + 新查询 -> 拒绝提示（Python 侧验证 outcome 不回填 lastContext） |
 | 单轮回归 | `context=None` 全部现有测试零改动 |
 
-- [ ] **Step 1: Write core scenario test**
+- [x] **Step 1: Write core scenario test**
 
 ```python
 # 追加到 agent/tests/test_conversation_context.py
@@ -1841,17 +1841,17 @@ def test_boundary_6_q2_approval_pending_no_last_context():
     assert payload["lastContext"] is None
 ```
 
-- [ ] **Step 2: Run all scenario tests**
+- [x] **Step 2: Run all scenario tests**
 
 Run: `python -m pytest agent/tests/test_conversation_context.py -v`
 Expected: PASS（核心 + 边界1-6 全部通过）
 
-- [ ] **Step 3: Run full Python test suite for single-turn regression**
+- [x] **Step 3: Run full Python test suite for single-turn regression**
 
 Run: `python -m pytest agent/tests/ -v`
 Expected: PASS（所有现有测试零回归，验证 `context=None` 向后兼容）
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add agent/tests/test_conversation_context.py

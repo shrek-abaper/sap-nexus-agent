@@ -36,13 +36,13 @@
 
 ## 7. 测试: 多轮 slot-fill 回归
 
-- [ ] 7.1 Python Agent 单测：核心场景（turn1 CLARIFY -> turn2 slot-fill -> SELECT）
-- [ ] 7.2 边界 1：turn2 含主关键词 -> 新轮覆盖 pending
-- [ ] 7.3 边界 2：turn2 只补一个参数 -> CLARIFY 缩减 missing
-- [ ] 7.4 边界 3：新对话按钮 -> session 重置
-- [ ] 7.5 边界 4：LLM 路径历史含恶意指令 -> closed-set 拦截
-- [ ] 7.6 现有单轮测试 `context=None` 零回归验证
-- [ ] 7.7 Frontend 测试：`agent-runtime-adapter` sessions Map + conversationId 透传
+- [x] 7.1 Python Agent 单测：核心场景（turn1 CLARIFY -> turn2 slot-fill -> SELECT）
+- [x] 7.2 边界 1：turn2 含主关键词 -> 新轮覆盖 pending
+- [x] 7.3 边界 2：turn2 只补一个参数 -> CLARIFY 缩减 missing
+- [x] 7.4 边界 3：新对话按钮 -> session 重置
+- [x] 7.5 边界 4：LLM 路径历史含恶意指令 -> closed-set 拦截
+- [x] 7.6 现有单轮测试 `context=None` 零回归验证
+- [x] 7.7 Frontend 测试：`agent-runtime-adapter` sessions Map + conversationId 透传
 
 ## 8. 验证
 
