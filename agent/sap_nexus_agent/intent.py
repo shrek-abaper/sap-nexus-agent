@@ -39,7 +39,7 @@ PR_CREATE_PRIMARY_KEYWORDS = (
 )
 PR_CREATE_WEAK_KEYWORDS = ("采购",)
 PLANT_PATTERN = re.compile(r"(?:在\s*([A-Z]\d{3}|\d{4}))|(?:([A-Z]\d{3}|\d{4})\s*工厂)")
-TOKEN_PATTERN = re.compile(r"\b[A-Z0-9][A-Z0-9-]{1,39}\b")
+TOKEN_PATTERN = re.compile(r"(?<![A-Za-z0-9-])[A-Z0-9][A-Z0-9-]{1,39}(?![A-Za-z0-9-])")
 
 # PO keyword detection: Chinese substrings are safe; bare "PO" must be isolated
 # from ASCII letters so words like "IMPORT" / "POSITION" do not false-positive.

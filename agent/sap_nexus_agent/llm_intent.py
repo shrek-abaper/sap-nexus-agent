@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from typing import TYPE_CHECKING, Protocol
 
 from sap_nexus_agent.intent import (
@@ -8,6 +9,7 @@ from sap_nexus_agent.intent import (
     IntentParseResult,
     PR_CREATE_PRIMARY_KEYWORDS,
     PURCHASE_ORDER_PRIMARY_KEYWORDS,
+    _INVENTORY_CAPABILITY_ID,
     _PURCHASE_ORDER_CAPABILITY_ID,
     _build_inventory_result,
     _build_purchase_order_result,
@@ -420,6 +422,18 @@ def resolve_with_context(
     missing = [
         inp.name for inp in descriptor.inputs if inp.required and inp.name not in merged
     ]
+
+    # 修复2: 疑似物料 CLARIFY。本轮没提取到 material 但上轮有, 且用户输入含疑似
+    # 物料 token (len>=5 字母数字串, 排除 plant/unit 的 4 字符), 说明物料解析可能
+    # 失败 (如小写物料)。CLARIFY 追问而非用旧物料查询, 避免错误物料。
+    if (
+        cap_id == _INVENTORY_CAPABILITY_ID
+        and "material" not in extracted
+        and "material" in (context.last_context.parameters or {})
+        and re.search(r"[A-Za-z0-9][A-Za-z0-9-]{4,}", text)
+    ):
+        merged = {k: v for k, v in merged.items() if k != "material"}
+        missing = ["material"] + [m for m in missing if m != "material"]
 
     clarification = _clarification_for(cap_id, missing)
     return IntentParseResult(
