@@ -46,7 +46,7 @@
 
 ## 8. 验证
 
-- [ ] 8.1 `openspec validate --all --strict` 通过
-- [ ] 8.2 `npm --prefix frontend run verify` 通过（frontend 改动）
-- [ ] 8.3 `scripts/verify-agent-callplan-evidence.sh` 通过
-- [ ] 8.4 手动端到端：start.sh 起服务，workbench 实测"查库存"->"DEMOA2 1000"连续对话成功
+- [x] 8.1 `openspec validate --all --strict` 通过
+- [x] 8.2 `npm --prefix frontend run verify` 通过（frontend 改动）
+- [x] 8.3 `scripts/verify-agent-callplan-evidence.sh` 通过
+- [x] 8.4 手动端到端：start.sh 起服务，workbench 实测"查库存"->"DEMOA2 1000"连续对话成功

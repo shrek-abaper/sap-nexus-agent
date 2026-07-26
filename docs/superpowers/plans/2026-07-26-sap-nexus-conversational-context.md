@@ -1871,27 +1871,27 @@ git commit -m "test(conversation-context): cover core + boundary 1-6 + single-tu
 - `scripts/verify-agent-callplan-evidence.sh`
 - 手动端到端：start.sh 起服务，workbench 实测连续对话
 
-- [ ] **Step 1: openspec validate**
+- [x] **Step 1: openspec validate**
 
 Run: `openspec validate --all --strict`
 Expected: PASS（所有 spec 合法）
 
-- [ ] **Step 2: openspec list**
+- [x] **Step 2: openspec list**
 
 Run: `openspec list --json`
 Expected: 输出 JSON，`sap-nexus-agent-conversational-context` 列在其中
 
-- [ ] **Step 3: Frontend verify (typecheck + test + build)**
+- [x] **Step 3: Frontend verify (typecheck + test + build)**
 
 Run: `npm --prefix frontend run verify`
 Expected: PASS（typecheck 无错误，vitest 全过，next build 成功）
 
-- [ ] **Step 4: verify-agent-callplan-evidence.sh**
+- [x] **Step 4: verify-agent-callplan-evidence.sh**
 
 Run: `scripts/verify-agent-callplan-evidence.sh`
 Expected: PASS（pytest + evals + openspec validate 全过）
 
-- [ ] **Step 5: 手动端到端验证**
+- [x] **Step 5: 手动端到端验证**
 
 启动服务：
 ```bash
@@ -1907,12 +1907,12 @@ Expected: PASS（pytest + evals + openspec validate 全过）
 
 Expected: 全部场景符合预期
 
-- [ ] **Step 6: git status final check**
+- [x] **Step 6: git status final check**
 
 Run: `git status --short`
 Expected: 工作区干净（所有改动已 commit）
 
-- [ ] **Step 7: Commit verification record (if any doc updates)**
+- [x] **Step 7: Commit verification record (if any doc updates)**
 
 如 runbook / roadmap 需更新（按 CLAUDE.md §3 Comet Closeout）：
 ```bash
