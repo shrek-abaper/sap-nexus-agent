@@ -57,6 +57,21 @@ Task 8+9: complete (commit a4a8d78, review: implementer self-review + coordinato
 - C1 (scope expansion): 合理 (route 丢弃 conversationId 致透传链断裂, 必须修)
 - C2 (observation): AgentConsole 组件交互测试受限于无 jsdom/RTL, 可测部分已 TDD 覆盖, Task 11 E2E 兜底
 
+Task 10: complete (commit c72b754, review: implementer self-review + coordinator verify, 737 passed)
+- Python 端到端多轮场景测试: 核心 + 边界 1-6 + 单轮回归 (25 tests)
+- **修复真实 bug**: select_capability CLARIFY 分支未携带 capability_id/parameters -> LastContext.capabilityId=null -> sticky 第2轮中断. 修复: capability_id 推导 (parse_result.capability_id -> matched_intents[0] -> INTENT_TO_CAPABILITY[intent]) + 携带 parameters
+- 更新 3 个旧测试 (CLARIFY capability_id 旧契约 -> 新契约)
+- 前一次 implementer 因配额耗尽中断, retry 接续完成
+
+Task 11: complete (verify all green + e2e)
+- 8.1 openspec validate --all --strict: 11 passed
+- 8.2 npm --prefix frontend run verify: typecheck + test + build 全绿
+- 8.3 scripts/verify-agent-callplan-evidence.sh: 11 passed
+- 8.4 e2e: start.sh restart + curl /api/agent-runs
+  - turn1 "你能查库存吗" -> CLARIFY (narrative "请提供要查询的物料编号和工厂")
+  - turn2 "DEMOA2 在 1000" (同 conversationId) -> SELECT (capability_selected MM.Inventory.GetAvailability -> callplan -> gateway_validate)
+  - **用户报的 bug 已修复**: turn2 sticky slot-fill SELECT 而非 REJECT
+
 Task 10: complete (Python 端到端多轮场景测试)
 - 核心: turn1 CLARIFY -> turn2 SELECT -> 执行 (run_workbench_query x2, mock gateway)
 - 边界1-6 全覆盖 (Design Doc §6 矩阵)
