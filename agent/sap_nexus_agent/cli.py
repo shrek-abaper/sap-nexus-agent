@@ -6,6 +6,7 @@ import sys
 
 from sap_nexus_agent.approval import ApprovalRecord
 from sap_nexus_agent.call_plan import CallPlan
+from sap_nexus_agent.conversation_context import ConversationContext
 from sap_nexus_agent.execution_result import ValidationResult
 from sap_nexus_agent.gateway_client import GatewayClient
 from sap_nexus_agent.llm_intent import build_intent_adapter
@@ -24,6 +25,11 @@ def main(argv: list[str] | None = None) -> int:
         "--continue-action",
         action="store_true",
         help="Read a server-owned approval continuation payload from stdin",
+    )
+    parser.add_argument(
+        "--context",
+        action="store_true",
+        help="Read a ConversationContext JSON payload from stdin for multi-turn continuation",
     )
     args = parser.parse_args(argv)
 
@@ -52,8 +58,34 @@ def main(argv: list[str] | None = None) -> int:
             print(outcome.response_text or outcome.message or "未生成响应。")
         return 0 if outcome.status in {"success", "rejected"} else 1
 
+    if args.context:
+        try:
+            payload = json.load(sys.stdin)
+            context = ConversationContext.from_dict(payload)
+        except (json.JSONDecodeError, KeyError, TypeError, ValueError):
+            if args.json:
+                print(json.dumps({
+                    "status": "failure",
+                    "errorType": "INVALID_CONTEXT_PAYLOAD",
+                    "message": "Invalid conversation context payload.",
+                }))
+            return 2
+        catalog = load_intent_catalog()
+        intent_adapter = build_intent_adapter(args.intent_mode, catalog)
+        outcome = run_query(
+            args.query,
+            gateway,
+            intent_adapter=intent_adapter,
+            context=context,
+        )
+        if args.json:
+            print(json.dumps(outcome_to_workbench_dict(outcome), ensure_ascii=False))
+        else:
+            print(outcome.response_text or outcome.message or "未生成响应。")
+        return 0 if outcome.status in {"success", "clarification", "awaiting_approval"} else 1
+
     if not args.query:
-        parser.error("query is required unless --continue-action is used")
+        parser.error("query is required unless --continue-action or --context is used")
 
     catalog = load_intent_catalog()
     intent_adapter = build_intent_adapter(args.intent_mode, catalog)
