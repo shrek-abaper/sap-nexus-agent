@@ -120,21 +120,17 @@ def parse_intent(
     continuation (inherit ``last_context.capability_id`` and merge params).
     History injection is implemented in Task 4.
     """
-    # Task 3: sticky continuation. When context carries a last_context, delegate
-    # to resolve_with_context (lazy import avoids a circular dependency: llm_intent
-    # imports parse_intent from this module at module level).
-    if context is not None and context.last_context is not None:
-        from sap_nexus_agent.llm_intent import resolve_with_context
-        from sap_nexus_agent.registry_loader import load_intent_catalog
-
-        return resolve_with_context(text, context, load_intent_catalog())
-
     normalized = text.strip()
     contains_rfc_name = _detect_rfc_name(normalized)
     contains_odata_override = _detect_odata_override(normalized)
 
-    # Technical override (rfcName / OData) takes priority over multi-intent
-    # collection: rejection path, matched_intents stays empty.
+    # Technical override (rfcName / OData) takes priority over sticky
+    # continuation and multi-intent collection (defense-in-depth, Design Doc
+    # 边界4): rejection path, matched_intents stays empty. Task 3 concern 1:
+    # catch this BEFORE sticky routing so a turn containing rfcName/OData
+    # override does not slot-fill via last_context. The selector REJECTs on
+    # contains_rfc_name/contains_odata_override without relying on the
+    # gateway double-layer.
     if contains_rfc_name or contains_odata_override:
         return IntentParseResult(
             intent=None,
@@ -143,6 +139,15 @@ def parse_intent(
             contains_rfc_name=contains_rfc_name,
             contains_odata_override=contains_odata_override,
         )
+
+    # Task 3: sticky continuation. When context carries a last_context, delegate
+    # to resolve_with_context (lazy import avoids a circular dependency: llm_intent
+    # imports parse_intent from this module at module level).
+    if context is not None and context.last_context is not None:
+        from sap_nexus_agent.llm_intent import resolve_with_context
+        from sap_nexus_agent.registry_loader import load_intent_catalog
+
+        return resolve_with_context(text, context, load_intent_catalog())
 
     # Keyword ambiguity detection (Design Doc § 多意图检测 Q2). Computed before
     # the existing keyword scan so it is available on every return path below.
