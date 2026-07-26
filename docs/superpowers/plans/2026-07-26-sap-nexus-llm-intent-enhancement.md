@@ -491,7 +491,7 @@ git commit -m "feat(intent): LLM empty return emits CLARIFY instead of REJECT"
 - Consumes: `ConversationContext.last_context.parameters`（已存在）
 - Produces: rule 兜底时，主关键词 + 提取不到 material + last_context 有 material -> 继承 material
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 追加到 `agent/tests/test_intent.py`：
 
@@ -540,12 +540,12 @@ def test_rule_fallback_no_inherit_without_last_context():
     assert result.capability_id is None or result.missing_parameters == ["material"]
 ```
 
-- [ ] **Step 2: 运行测试验证失败**
+- [x] **Step 2: 运行测试验证失败**
 
 Run: `cd agent && python -m pytest tests/test_intent.py::test_rule_fallback_inherits_material_on_primary_keyword -v`
 Expected: FAIL（当前主关键词分支 `return parse_intent(text)` 丢弃 context，`material` 缺失）
 
-- [ ] **Step 3: 最小实现**
+- [x] **Step 3: 最小实现**
 
 修改 `agent/sap_nexus_agent/llm_intent.py` 的 `resolve_with_context`（line 410-412），将：
 
@@ -589,12 +589,12 @@ Expected: FAIL（当前主关键词分支 `return parse_intent(text)` 丢弃 con
 
 推荐用 `dataclasses.replace` 版本（严格不可变）。
 
-- [ ] **Step 4: 运行测试验证通过**
+- [x] **Step 4: 运行测试验证通过**
 
 Run: `cd agent && python -m pytest tests/test_intent.py -v`
 Expected: 全部 PASS（含新测试 + 既有回归）
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 ```bash
 git add agent/sap_nexus_agent/llm_intent.py agent/tests/test_intent.py

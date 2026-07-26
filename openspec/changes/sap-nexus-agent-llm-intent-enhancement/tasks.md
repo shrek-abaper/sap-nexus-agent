@@ -13,10 +13,10 @@
 
 ## 3. resolve_with_context 含主关键词继承 material
 
-- [ ] 3.1 含主关键词时，提取不到 material 但 `last_context` 有 material -> 继承（指代场景）
-- [ ] 3.2 "查下这个物料在1000的库存" -> 继承 DEMOA2 + plant=1000 -> SELECT
-- [ ] 3.3 "查 DEMOA4 的库存"（新物料）-> 不继承（有新 material）
-- [ ] 3.4 测试：指代场景 + 新物料场景
+- [x] 3.1 含主关键词时，提取不到 material 但 `last_context` 有 material -> 继承（指代场景）
+- [x] 3.2 "查下这个物料在1000的库存" -> 继承 DEMOA2 + plant=1000 -> SELECT
+- [x] 3.3 "查 DEMOA4 的库存"（新物料）-> 不继承（有新 material）
+- [x] 3.4 测试：指代场景 + 新物料场景
 
 ## 4. 多值参数 + 确认 + 批量 + 软上限
 
