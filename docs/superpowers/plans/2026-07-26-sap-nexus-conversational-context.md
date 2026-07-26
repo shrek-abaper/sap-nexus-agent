@@ -2,6 +2,7 @@
 change: sap-nexus-agent-conversational-context
 design-doc: docs/superpowers/specs/2026-07-26-sap-nexus-conversational-context-design.md
 base-ref: 133f026c52f6d55ec6ed9345395d5b6336fef156
+archived-with: 2026-07-26-sap-nexus-agent-conversational-context
 ---
 
 # sap-nexus-agent-conversational-context 实施计划
@@ -56,6 +57,7 @@ base-ref: 133f026c52f6d55ec6ed9345395d5b6336fef156
 | `agent/tests/test_cli_context.py` | CLI --context 模式测试 | Create |
 | `frontend/tests/runtime/agent-runtime-adapter.test.ts` | sessions Map + conversationId 透传 + 审批 pending 拒绝测试 | Modify |
 
+archived-with: 2026-07-26-sap-nexus-agent-conversational-context
 ---
 
 ### Task 1: ConversationContext 数据模型
@@ -226,6 +228,7 @@ git add agent/sap_nexus_agent/conversation_context.py agent/tests/test_conversat
 git commit -m "feat(conversation-context): add LastContext/Turn/ConversationContext data model"
 ```
 
+archived-with: 2026-07-26-sap-nexus-agent-conversational-context
 ---
 
 ### Task 2: IntentAdapter 签名扩展 + 单轮回归
@@ -506,6 +509,7 @@ git add agent/sap_nexus_agent/intent.py agent/sap_nexus_agent/llm_intent.py \
 git commit -m "feat(conversation-context): extend IntentAdapter signature with optional context"
 ```
 
+archived-with: 2026-07-26-sap-nexus-agent-conversational-context
 ---
 
 ### Task 3: sticky 延续判定算法
@@ -770,6 +774,7 @@ git add agent/sap_nexus_agent/llm_intent.py agent/sap_nexus_agent/intent.py \
 git commit -m "feat(conversation-context): implement sticky continuation algorithm (Q1=overlay)"
 ```
 
+archived-with: 2026-07-26-sap-nexus-agent-conversational-context
 ---
 
 ### Task 4: LLM 路径历史注入分离契约
@@ -942,6 +947,7 @@ git add agent/sap_nexus_agent/llm_intent.py agent/tests/test_llm_intent.py
 git commit -m "feat(conversation-context): inject LLM history with authority/data separation (D9)"
 ```
 
+archived-with: 2026-07-26-sap-nexus-agent-conversational-context
 ---
 
 ### Task 5: orchestrator/workbench_output 透传 context + outcome lastContext 回填
@@ -1112,6 +1118,7 @@ git add agent/sap_nexus_agent/workbench_output.py agent/tests/test_workbench_out
 git commit -m "feat(conversation-context): emit lastContext in workbench outcome for session backfill"
 ```
 
+archived-with: 2026-07-26-sap-nexus-agent-conversational-context
 ---
 
 ### Task 6: CLI --context stdin JSON 模式
@@ -1283,6 +1290,7 @@ git add agent/sap_nexus_agent/cli.py agent/tests/test_cli_context.py
 git commit -m "feat(conversation-context): add CLI --context stdin JSON mode for multi-turn"
 ```
 
+archived-with: 2026-07-26-sap-nexus-agent-conversational-context
 ---
 
 ### Task 7: Frontend agent-runtime-adapter sessions Map + context 透传 + 审批 pending 拒绝
@@ -1567,6 +1575,7 @@ git add frontend/src/runtime/agent-runtime-adapter.ts frontend/tests/runtime/age
 git commit -m "feat(conversation-context): add sessions Map, conversationId passthrough, approval-pending reject"
 ```
 
+archived-with: 2026-07-26-sap-nexus-agent-conversational-context
 ---
 
 ### Task 8: Frontend AgentConsole conversationId + "新对话"按钮接线
@@ -1637,6 +1646,7 @@ git add frontend/src/modules/agent-console/AgentConsole.tsx
 git commit -m "feat(conversation-context): wire conversationId state and new-conversation button"
 ```
 
+archived-with: 2026-07-26-sap-nexus-agent-conversational-context
 ---
 
 ### Task 9: Frontend API 路由透传 conversationId
@@ -1686,6 +1696,7 @@ git add frontend/app/api/agent-runs/route.ts
 git commit -m "feat(conversation-context): pass conversationId through /api/agent-runs route"
 ```
 
+archived-with: 2026-07-26-sap-nexus-agent-conversational-context
 ---
 
 ### Task 10: Python 端到端多轮场景测试
@@ -1858,6 +1869,7 @@ git add agent/tests/test_conversation_context.py
 git commit -m "test(conversation-context): cover core + boundary 1-6 + single-turn regression"
 ```
 
+archived-with: 2026-07-26-sap-nexus-agent-conversational-context
 ---
 
 ### Task 11: 验证（openspec / npm verify / verify-agent-callplan-evidence / 手动端到端）
@@ -1920,6 +1932,7 @@ git add docs/runbooks/README.md docs/wiki/sap-nexus-agent-implementation-roadmap
 git commit -m "docs(conversation-context): update runbook and roadmap status"
 ```
 
+archived-with: 2026-07-26-sap-nexus-agent-conversational-context
 ---
 
 ## Self-Review
@@ -1952,6 +1965,7 @@ git commit -m "docs(conversation-context): update runbook and roadmap status"
 - `run_query(text, gateway, *, intent_adapter=parse_intent, context=None, ...)` 在 Task 2 定义，Task 6 CLI 调用一致
 - `createAgentRun({ query, conversationId })` 在 Task 7 定义，Task 8 / Task 9 调用一致
 
+archived-with: 2026-07-26-sap-nexus-agent-conversational-context
 ---
 
 ## Execution Handoff
@@ -1962,3 +1976,4 @@ Plan complete and saved to `docs/superpowers/plans/2026-07-26-sap-nexus-conversa
 2. **Inline Execution** - Execute tasks in this session using executing-plans, batch execution with checkpoints
 
 Which approach?
+

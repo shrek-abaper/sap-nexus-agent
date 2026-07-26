@@ -2,6 +2,8 @@
 comet_change: sap-nexus-agent-conversational-context
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-07-26-sap-nexus-agent-conversational-context
+status: final
 ---
 
 # Design Doc: sap-nexus-agent-conversational-context（即时多轮对话）
@@ -196,3 +198,4 @@ brainstorming 确认 Q1=覆盖 扩展了 v1 范围，需回写 delta spec：
 - `specs/agent-callplan-evidence/spec.md`：将 `PendingClarification` 表述统一为 `LastContext`（MODIFY 相关 Requirement 的 scenario 描述）
 
 Spec Patch 仅补充验收场景与统一术语，不改变 delta spec 结构或范围。
+
