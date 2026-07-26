@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
 from sap_nexus_agent.intent import (
     IntentParseResult,
@@ -17,31 +17,48 @@ from sap_nexus_agent.registry_loader import (
     load_intent_catalog,
 )
 
+if TYPE_CHECKING:
+    # Type-only import: ConversationContext is a pure data model with no
+    # runtime dependency on llm_intent.py, so this does not create a cycle.
+    from sap_nexus_agent.conversation_context import ConversationContext
+
 
 class JsonLlmClient(Protocol):
     def chat_json(self, messages: list[dict[str, str]], *, temperature: float = 0.0, max_tokens: int = 400) -> dict[str, object]:
         ...
 
 
-def parse_with_llm(text: str, client: JsonLlmClient, catalog: IntentCatalog) -> IntentParseResult:
+def parse_with_llm(
+    text: str,
+    client: JsonLlmClient,
+    catalog: IntentCatalog,
+    *,
+    context: "ConversationContext | None" = None,
+) -> IntentParseResult:
     try:
-        payload = client.chat_json(_messages(text, catalog), temperature=0.0, max_tokens=400)
+        payload = client.chat_json(_messages(text, catalog, context=context), temperature=0.0, max_tokens=400)
     except (LlmUnavailable, json.JSONDecodeError, ValueError, TypeError):
         raise LlmUnavailable("LLM intent parsing unavailable")
     return _payload_to_parse_result(payload, catalog)
 
 
-def parse_with_hybrid(text: str, client: JsonLlmClient | None = None, *, catalog: IntentCatalog | None = None) -> IntentParseResult:
+def parse_with_hybrid(
+    text: str,
+    client: JsonLlmClient | None = None,
+    *,
+    catalog: IntentCatalog | None = None,
+    context: "ConversationContext | None" = None,
+) -> IntentParseResult:
     if catalog is None:
         catalog = load_intent_catalog()
     try:
         llm_client = client or OpenAiCompatibleLlmClient()
-        result = parse_with_llm(text, llm_client, catalog)
+        result = parse_with_llm(text, llm_client, catalog, context=context)
         if _requires_safe_fallback(result):
-            return parse_intent(text)
+            return parse_intent(text, context=context)
         return result
     except LlmUnavailable:
-        return parse_intent(text)
+        return parse_intent(text, context=context)
 
 
 def build_intent_adapter(mode: str, catalog: IntentCatalog | None = None):
@@ -51,15 +68,20 @@ def build_intent_adapter(mode: str, catalog: IntentCatalog | None = None):
     if normalized == "rule":
         return parse_intent
     if normalized == "llm":
-        return lambda text: _parse_llm_only(text, catalog)
+        return lambda text, context=None: _parse_llm_only(text, catalog, context=context)
     if normalized == "hybrid":
-        return lambda text: parse_with_hybrid(text, catalog=catalog)
+        return lambda text, context=None: parse_with_hybrid(text, catalog=catalog, context=context)
     raise ValueError(f"Unsupported intent mode: {mode}")
 
 
-def _parse_llm_only(text: str, catalog: IntentCatalog) -> IntentParseResult:
+def _parse_llm_only(
+    text: str,
+    catalog: IntentCatalog,
+    *,
+    context: "ConversationContext | None" = None,
+) -> IntentParseResult:
     try:
-        return parse_with_llm(text, OpenAiCompatibleLlmClient(), catalog)
+        return parse_with_llm(text, OpenAiCompatibleLlmClient(), catalog, context=context)
     except LlmUnavailable:
         return IntentParseResult(intent=None, parameters={}, missing_parameters=[])
 
@@ -76,7 +98,14 @@ def _requires_safe_fallback(result: IntentParseResult) -> bool:
     return result.capability_id is None and result.intent is None
 
 
-def _messages(text: str, catalog: IntentCatalog) -> list[dict[str, str]]:
+def _messages(
+    text: str,
+    catalog: IntentCatalog,
+    *,
+    context: "ConversationContext | None" = None,
+) -> list[dict[str, str]]:
+    # Task 2: signature extension only; behavior unchanged.
+    # History injection from ``context`` is implemented in Task 4.
     capabilities_desc = "\n".join(
         f"- capabilityId: {c.capability_id}\n"
         f"  description: {c.description}\n"

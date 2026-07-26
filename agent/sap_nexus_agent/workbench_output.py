@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Callable
 
+from sap_nexus_agent.conversation_context import ConversationContext
 from sap_nexus_agent.execution_result import ExecutionResult, ValidationResult
 from sap_nexus_agent.gateway_client import GatewayClientProtocol
 from sap_nexus_agent.intent import IntentParseResult
@@ -10,7 +11,7 @@ from sap_nexus_agent.match_decision import EscalationHandoff, MatchDecision, Mat
 from sap_nexus_agent.orchestrator import AgentOutcome, run_inventory_query
 
 
-IntentAdapter = Callable[[str], IntentParseResult]
+IntentAdapter = Callable[[str, "ConversationContext | None"], IntentParseResult]
 
 
 def run_workbench_query(
@@ -19,9 +20,12 @@ def run_workbench_query(
     *,
     intent_mode: str = "hybrid",
     intent_adapter: IntentAdapter | None = None,
+    context: ConversationContext | None = None,
 ) -> dict[str, object]:
     adapter = intent_adapter or build_intent_adapter(intent_mode)
-    return outcome_to_workbench_dict(run_inventory_query(text, gateway, intent_adapter=adapter))
+    return outcome_to_workbench_dict(
+        run_inventory_query(text, gateway, intent_adapter=adapter, context=context)
+    )
 
 
 def outcome_to_workbench_dict(outcome: AgentOutcome) -> dict[str, object]:

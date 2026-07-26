@@ -9,6 +9,10 @@ if TYPE_CHECKING:
     # (intent -> match_decision -> capability_selector -> intent).
     # MatchedIntent is imported lazily inside parse_intent / parse_inventory_intent.
     from sap_nexus_agent.match_decision import MatchedIntent
+    # Type-only import for the conversational context parameter (Task 2).
+    # Avoids a circular import at runtime; ConversationContext is a pure
+    # data model with no runtime dependency on intent.py.
+    from sap_nexus_agent.conversation_context import ConversationContext
 
 
 INVENTORY_KEYWORDS = ("库存", "可用量", "可用库存", "还有多少", "有没有")
@@ -95,7 +99,10 @@ class IntentParseResult:
     is_ambiguous: bool = False
 
 
-def parse_intent(text: str) -> IntentParseResult:
+def parse_intent(
+    text: str,
+    context: "ConversationContext | None" = None,
+) -> IntentParseResult:
     """Unified intent entry: scan ALL capability keyword sets, collect matched_intents.
 
     D-1 fix: previously this returned the first-matched intent in fixed order
@@ -103,7 +110,15 @@ def parse_intent(text: str) -> IntentParseResult:
     capabilities mentioned in the same utterance. Now it scans every keyword
     set independently and surfaces every match via ``matched_intents``; the
     selector (Task 3) decides ESCALATE_TO_PLANNER when length > 1.
+
+    Task 2: ``context`` parameter is accepted for signature compatibility with
+    the conversational adapter contract. When ``None`` (default) behavior is
+    identical to the single-turn path (backward compatible). When non-``None``,
+    the context is currently ignored - sticky-CLARIFY continuation is
+    implemented in Task 3, history injection in Task 4.
     """
+    # Task 2: signature extension only; behavior unchanged.
+    # sticky continuation (context-aware) is implemented in Task 3.
     normalized = text.strip()
     contains_rfc_name = _detect_rfc_name(normalized)
     contains_odata_override = _detect_odata_override(normalized)
@@ -203,8 +218,16 @@ def parse_intent(text: str) -> IntentParseResult:
     )
 
 
-def parse_inventory_intent(text: str) -> IntentParseResult:
-    """Backward-compatible inventory-only parser (does not route to PO)."""
+def parse_inventory_intent(
+    text: str,
+    context: "ConversationContext | None" = None,
+) -> IntentParseResult:
+    """Backward-compatible inventory-only parser (does not route to PO).
+
+    Task 2: ``context`` parameter is accepted for signature compatibility
+    (this parser is the default adapter for ``run_inventory_query``). The
+    context is currently ignored; sticky continuation arrives in Task 3.
+    """
     from sap_nexus_agent.match_decision import MatchedIntent
 
     normalized = text.strip()

@@ -16,6 +16,7 @@ from sap_nexus_agent.approval import (
 )
 from sap_nexus_agent.call_plan import CallPlan, create_call_plan
 from sap_nexus_agent.capability_selector import select_capability
+from sap_nexus_agent.conversation_context import ConversationContext
 from sap_nexus_agent.execution_result import ExecutionResult
 from sap_nexus_agent.execution_result import ValidationResult
 from sap_nexus_agent.gateway_client import GatewayClientProtocol
@@ -73,7 +74,7 @@ class AgentOutcome:
     dry_run: DryRunResult | None = None
 
 
-IntentAdapter = Callable[[str], IntentParseResult]
+IntentAdapter = Callable[[str, "ConversationContext | None"], IntentParseResult]
 PlannerSourcesLoader = Callable[[], tuple[RegistrySnapshot, SemanticSourceDocuments]]
 
 
@@ -82,6 +83,7 @@ def run_query(
     gateway: GatewayClientProtocol,
     *,
     intent_adapter: IntentAdapter = parse_intent,
+    context: ConversationContext | None = None,
     snapshot: RegistrySnapshot | None = None,
     sources: SemanticSourceDocuments | None = None,
     planner_sources_loader: PlannerSourcesLoader | None = None,
@@ -100,8 +102,23 @@ def run_query(
     ``sources`` may be injected by tests; if absent, the orchestrator
     loads them from the registry via path discovery (or the injected
     ``planner_sources_loader``).
+
+    Task 2: ``context`` is forwarded to ``intent_adapter``. When ``None``
+    (default) the call is identical to the single-turn path (backward
+    compatible): the adapter is invoked with just ``text`` so existing
+    single-arg adapters (e.g. test stubs) keep working unchanged. When
+    non-``None``, ``context`` is passed through. Sticky-CLARIFY continuation
+    (Task 3) and history injection (Task 4) consume the same parameter
+    downstream.
     """
-    parsed = intent_adapter(text)
+    # Backward-compat dispatch: when context is None, call the adapter with
+    # the original single-arg signature so existing 1-arg adapters (and the
+    # default ``parse_intent``) are byte-for-byte unchanged. Only forward
+    # ``context`` when it is actually provided.
+    if context is None:
+        parsed = intent_adapter(text)
+    else:
+        parsed = intent_adapter(text, context)
     decision = select_capability(parsed)
 
     # REJECT (technical override / unsupported intent): no Gateway.
@@ -205,9 +222,13 @@ def run_inventory_query(
     gateway: GatewayClientProtocol,
     *,
     intent_adapter: IntentAdapter = parse_inventory_intent,
+    context: ConversationContext | None = None,
 ) -> AgentOutcome:
-    """Backward-compatible inventory-only entry (delegates to run_query)."""
-    return run_query(text, gateway, intent_adapter=intent_adapter)
+    """Backward-compatible inventory-only entry (delegates to run_query).
+
+    Task 2: ``context`` is forwarded to ``run_query`` -> ``intent_adapter``.
+    """
+    return run_query(text, gateway, intent_adapter=intent_adapter, context=context)
 
 
 def continue_action(
