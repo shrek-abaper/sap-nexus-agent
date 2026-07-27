@@ -204,3 +204,43 @@ def test_outcome_awaiting_approval_no_last_context():
     outcome = AgentOutcome(status="awaiting_approval", match_decision=decision)
     payload = outcome_to_workbench_dict(outcome)
     assert payload["lastContext"] is None
+
+
+def test_awaiting_batch_confirm_serializes_combinations():
+    from sap_nexus_agent.call_plan import create_call_plan
+
+    call_plan = create_call_plan(
+        "MM.Inventory.GetAvailability",
+        {"material": "DEMOA2", "plant": "5200"},
+        kind="Function",
+    )
+    outcome = AgentOutcome(
+        status="awaiting_batch_confirm",
+        response_text="将查询 2 个组合，请确认。",
+        call_plan=call_plan,
+        combinations=[
+            {"material": "DEMOA2", "plant": "5200"},
+            {"material": "DEMOA2", "plant": "1000"},
+        ],
+    )
+
+    result = outcome_to_workbench_dict(outcome)
+
+    assert result["status"] == "awaiting_batch_confirm"
+    assert result["combinations"] == [
+        {"material": "DEMOA2", "plant": "5200"},
+        {"material": "DEMOA2", "plant": "1000"},
+    ]
+    assert result["callPlan"] is not None
+    assert result["callPlan"]["capabilityId"] == "MM.Inventory.GetAvailability"
+
+
+def test_non_batch_outcome_combinations_is_none():
+    outcome = AgentOutcome(
+        status="success",
+        response_text="库存为 100 EA",
+    )
+
+    result = outcome_to_workbench_dict(outcome)
+
+    assert result["combinations"] is None

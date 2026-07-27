@@ -42,6 +42,11 @@ def outcome_to_workbench_dict(outcome: AgentOutcome) -> dict[str, object]:
         "errorType": outcome.error_type,
         "missingParameters": list(outcome.missing_parameters or []),
         "approvalRecord": outcome.approval_record.to_dict() if outcome.approval_record else None,
+        # Multi-value batch (Design Doc §4.1): combinations awaiting user
+        # confirm. Populated only for status="awaiting_batch_confirm"; None
+        # for every other path. The frontend holds these in pendingOutcome
+        # and returns them via BatchContinuation -> continue_batch.
+        "combinations": [dict(c) for c in outcome.combinations] if outcome.combinations else None,
         # Advisory field for the frontend SSE layer (Task 6.1 emits
         # match_decision_created for SHOW_OPTIONS / ESCALATE_TO_PLANNER).
         # SELECT/CLARIFY/REJECT reuse existing event paths but still carry the
