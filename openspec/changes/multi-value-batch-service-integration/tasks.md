@@ -14,9 +14,9 @@
 
 ## 3. CLI --continue-batch
 
-- [ ] 3.1 `cli.py` 新增 `--continue-batch` 标志（类比 `--continue-action`）
-- [ ] 3.2 解析 callPlan + combinations JSON -> 调 `continue_batch(call_plan, combinations, gateway)`
-- [ ] 3.3 测试：--continue-batch 调 continue_batch 返回批量结果
+- [x] 3.1 `cli.py` 新增 `--continue-batch` 标志（类比 `--continue-action`）
+- [x] 3.2 解析 callPlan + combinations JSON -> 调 `continue_batch(call_plan, combinations, gateway)`
+- [x] 3.3 测试：--continue-batch 调 continue_batch 返回批量结果
 
 ## 4. API route / SSE batch continuation
 
