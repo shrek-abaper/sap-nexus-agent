@@ -33,6 +33,6 @@
 
 ## 5. 验证
 
-- [ ] 5.1 `openspec validate --all --strict` 通过
-- [ ] 5.2 pytest 回归（指代 + 多值批量 + LLM 不可用兜底 + 空返回 CLARIFY + 软上限）
+- [x] 5.1 `openspec validate --all --strict` 通过
+- [x] 5.2 pytest 回归（指代 + 多值批量 + LLM 不可用兜底 + 空返回 CLARIFY + 软上限）
 - [ ] 5.3 e2e（3 轮）：第1轮 "DEMOA2 在 5100..." -> SELECT；第2轮 "这个物料在5200、1000的库存分别是多少" -> awaiting_batch_confirm；第3轮 确认 -> 批量返回 "5200: 176 EA; 1000: 0 EA"

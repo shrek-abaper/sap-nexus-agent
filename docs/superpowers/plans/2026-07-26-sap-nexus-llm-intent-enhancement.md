@@ -1578,12 +1578,12 @@ git commit -m "feat(orchestrator): add continue_batch for confirmed multi-value 
 - Consumes: Task 1-10 全部
 - Produces: 验证报告（openspec strict 通过 + pytest 全绿）
 
-- [ ] **Step 1: 运行 openspec validate**
+- [x] **Step 1: 运行 openspec validate**
 
 Run: `openspec list --json && openspec validate --all --strict`
 Expected: `sap-nexus-agent-llm-intent-enhancement` 列出；validate 全部 PASS（无 schema 错误）
 
-- [ ] **Step 2: 运行 pytest 全量回归**
+- [x] **Step 2: 运行 pytest 全量回归**
 
 Run: `cd agent && python -m pytest tests/ -v`
 Expected: 全部 PASS。重点检查：
@@ -1595,17 +1595,17 @@ Expected: 全部 PASS。重点检查：
 - LLM 不可用兜底（Task 2/4）：`test_parse_with_hybrid_falls_back_to_rule_on_llm_unavailable`
 - 软上限（Task 8）：`test_run_query_multi_value_over_cap_emits_clarify`
 
-- [ ] **Step 3: 运行 conversation_context 回归**
+- [x] **Step 3: 运行 conversation_context 回归**
 
 Run: `cd agent && python -m pytest tests/test_conversation_context.py -v`
 Expected: PASS（LastContext round-trip 不变；本 change 不改 conversation_context.py）
 
-- [ ] **Step 4: 运行 verify-agent-callplan-evidence 脚本**
+- [x] **Step 4: 运行 verify-agent-callplan-evidence 脚本**
 
 Run: `scripts/verify-agent-callplan-evidence.sh`
 Expected: PASS（callplan 证据链完整）
 
-- [ ] **Step 5: 提交（如有修复）**
+- [x] **Step 5: 提交（如有修复）**
 
 若回归发现遗漏，按 systematic-debugging skill 修复后提交：
 
