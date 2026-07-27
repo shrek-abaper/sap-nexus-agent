@@ -195,8 +195,12 @@ def run_query(
         parameters.setdefault("unit", "EA")
 
     # Multi-value detection (Design Doc §4.4): expand combinations and await
-    # user confirmation before any Gateway call.
-    if parsed.multi_parameters:
+    # user confirmation before any Gateway call. READ-only: Action capabilities
+    # must NOT take this path - they require an ApprovalRecord (single-action
+    # approval). Action batch is a non-goal (Design Doc §2); an Action with
+    # multi_parameters falls through to the awaiting_approval path below using
+    # base parameters.
+    if parsed.multi_parameters and capability_id not in ACTION_CAPABILITY_IDS:
         combinations = expand_combinations(parameters, parsed.multi_parameters)
         if len(combinations) > BATCH_COMBINATION_CAP:
             return AgentOutcome(
@@ -283,6 +287,16 @@ def continue_batch(
     READ-only: no approval flow (analogous to continue_action but without
     ApprovalRecord).
     """
+    # Defense-in-depth: continue_batch must never execute a WRITE capability.
+    # Action capabilities require an ApprovalRecord + gateway.approve; the
+    # batch path bypasses both (Design Doc §2 Non-Goal). The run_query guard
+    # already prevents Action from reaching awaiting_batch_confirm; this assert
+    # protects against direct misuse of continue_batch with an Action call_plan.
+    if call_plan.capability_id in ACTION_CAPABILITY_IDS:
+        raise ValueError(
+            f"continue_batch is READ-only; capability {call_plan.capability_id} "
+            "is an Action requiring human approval"
+        )
     facts: list[ReasoningFact] = []
     failures: list[dict] = []
     for combo in combinations:

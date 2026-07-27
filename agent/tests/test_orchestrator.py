@@ -1157,3 +1157,87 @@ def test_e2e_three_turn_multi_value_batch():
     assert "176" in outcome3.response_text
     assert "1000" in outcome3.response_text
     assert "0" in outcome3.response_text
+
+
+# ---------------------------------------------------------------------------
+# I-1 fix: WRITE capability must not bypass ApprovalRecord via batch path.
+#
+# Action capabilities (e.g. MM.PR.CreateDraft) with multi_parameters must
+# fall through to the single-action awaiting_approval path (ApprovalRecord +
+# gateway.approve), NOT awaiting_batch_confirm. continue_batch is READ-only
+# (Design Doc §2 Non-Goal) and must raise ValueError if handed an Action
+# call_plan (defense-in-depth).
+# ---------------------------------------------------------------------------
+
+import pytest
+
+_ACTION_BASE_PARAMS = {
+    "material": "DEMOA2",
+    "quantity": "10",
+    "unit": "EA",
+    "delivery_date": "2026-08-01",
+    "purchasing_group": "001",
+}
+
+
+def _action_multi_value_adapter(multi_parameters):
+    """Stub adapter returning an Action capability (MM.PR.CreateDraft) with
+    multi_parameters. Base parameters cover all required descriptor inputs so
+    the selector emits SELECT (not CLARIFY)."""
+    def _adapter(text, context=None):
+        return IntentParseResult(
+            intent=None,
+            parameters=dict(_ACTION_BASE_PARAMS),
+            missing_parameters=[],
+            capability_id="MM.PR.CreateDraft",
+            matched_intents=[MatchedIntent(
+                capability_id="MM.PR.CreateDraft",
+                parameters=dict(_ACTION_BASE_PARAMS),
+                missing=[],
+            )],
+            multi_parameters=multi_parameters,
+        )
+    return _adapter
+
+
+def test_run_query_action_multi_parameters_routes_to_awaiting_approval():
+    """Action capability with multi_parameters -> awaiting_approval, NOT
+    awaiting_batch_confirm. The batch path is READ-only; Action batch is a
+    non-goal (Design Doc §2). Base parameters are used for single-action
+    approval."""
+    gateway = FakeGatewayClient(validation=ValidationResult(
+        trace_id="gw-validate-pr",
+        capability_id="MM.PR.CreateDraft",
+        success=True,
+        error_type="NONE",
+        messages=[],
+    ))
+    adapter = _action_multi_value_adapter({"plant": ["5200", "1000"]})
+
+    outcome = run_query(
+        "为 DEMOA2 在 5200、1000 各建一个采购申请",
+        gateway,
+        intent_adapter=adapter,
+    )
+
+    assert outcome.status == "awaiting_approval"
+    assert outcome.approval_record is not None
+    assert outcome.combinations is None
+    assert len(gateway.validate_calls) == 1
+    assert gateway.validate_calls[0][0] == "MM.PR.CreateDraft"
+    assert gateway.execute_calls == []
+
+
+def test_continue_batch_raises_for_action_capability():
+    """continue_batch must never execute a WRITE capability (defense-in-depth).
+    Action capabilities require an ApprovalRecord; the batch path is READ-only
+    (Design Doc §2 Non-Goal)."""
+    call_plan = create_call_plan(
+        "MM.PR.CreateDraft",
+        dict(_ACTION_BASE_PARAMS),
+        kind="Action",
+    )
+    gw = _BatchFakeGateway({})
+
+    with pytest.raises(ValueError):
+        continue_batch(call_plan, [dict(_ACTION_BASE_PARAMS, plant="5200")], gw)
