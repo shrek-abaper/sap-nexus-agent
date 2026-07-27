@@ -3,5 +3,6 @@
   "openspec_design": "openspec/changes/multi-value-batch-service-integration/design.md",
   "openspec_tasks": "openspec/changes/multi-value-batch-service-integration/tasks.md",
   "handoff_context": "openspec/changes/multi-value-batch-service-integration/.comet/handoff/design-context.json",
-  "handoff_markdown": "openspec/changes/multi-value-batch-service-integration/.comet/handoff/design-context.md"
+  "handoff_markdown": "openspec/changes/multi-value-batch-service-integration/.comet/handoff/design-context.md",
+  "archive_directory": "openspec/changes/archive/2026-07-27-multi-value-batch-service-integration"
 }

@@ -259,6 +259,8 @@ The orchestrator SHALL support multi-value inventory queries where any parameter
 
 The workbench SHALL clear the session `last_context` (emit `None`) for an `awaiting_batch_confirm` outcome, so the LLM does not re-emit `multi_parameters` from the prior SELECT's material on the user's confirmation reply (which would loop back to `awaiting_batch_confirm`).
 
+The workbench SHALL serialize the `combinations` and `callPlan` for an `awaiting_batch_confirm` outcome so the frontend can hold them pending user confirmation. Upon user confirmation, the service layer SHALL route a `BatchContinuation` (carrying `callPlan` + `combinations`) to `continue_batch`; this is analogous to the `continue_action` approval flow where the frontend holds `approvalRecord` and returns an `ApprovalContinuation`. `continue_batch` is READ-only (Action capabilities MUST NOT enter this path).
+
 #### Scenario: Multi-value query emits awaiting_batch_confirm
 - **WHEN** the user asks "DEMOA2 和 DEMOA4 在 5200、1000的库存分别是多少" (same conversation)
 - **THEN** the LLM returns `multi_parameters={plant:[5200,1000], material:[DEMOA2,DEMOA4]}`
@@ -285,4 +287,15 @@ The workbench SHALL clear the session `last_context` (emit `None`) for an `await
 - **THEN** the workbench emits `lastContext=None` for that turn
 - **AND** the next turn's intent adapter receives no `last_context`
 - **AND** the LLM does not re-emit `multi_parameters` from the prior material on the user's "确认" reply (no dead loop)
+
+#### Scenario: awaiting_batch_confirm serializes combinations to workbench
+- **WHEN** the orchestrator returns an `awaiting_batch_confirm` outcome with combinations
+- **THEN** the workbench dict includes the `combinations` array and `callPlan`
+- **AND** the frontend holds them in `pendingOutcome` pending user confirmation
+
+#### Scenario: continue_batch service entry executes confirmed batch
+- **WHEN** the user confirms the batch (frontend button or CLI `--continue-batch`)
+- **THEN** the service layer routes a `BatchContinuation` (callPlan + combinations) to `continue_batch`
+- **AND** `continue_batch` executes each combination and aggregates results
+- **AND** returns the batch narrative to the user
 

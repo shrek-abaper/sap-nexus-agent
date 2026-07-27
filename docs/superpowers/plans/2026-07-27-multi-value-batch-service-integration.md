@@ -2,6 +2,7 @@
 change: multi-value-batch-service-integration
 design-doc: docs/superpowers/specs/2026-07-27-multi-value-batch-service-integration-design.md
 base-ref: c5a7e72fa746c39112573c5399d5c19c7b2cbad2
+archived-with: 2026-07-27-multi-value-batch-service-integration
 ---
 
 # 多值批量确认服务层集成 Implementation Plan
@@ -23,6 +24,7 @@ base-ref: c5a7e72fa746c39112573c5399d5c19c7b2cbad2
 - 不改 orchestrator/selector/narrator 核心逻辑；不改 capability 契约；不改 Action 审批流。
 - 每个任务完成后：`tasks.md` 勾选 → git commit（不得积攒）。
 
+archived-with: 2026-07-27-multi-value-batch-service-integration
 ---
 
 ## File Structure
@@ -39,6 +41,7 @@ base-ref: c5a7e72fa746c39112573c5399d5c19c7b2cbad2
 | `frontend/tests/runtime/agent-runtime-adapter.test.ts` | BatchContinuation 路由 + pendingOutcome 测试 | Modify (追加) |
 | `frontend/tests/runtime/batch-route.test.ts` | batch route 端到端测试 | Create |
 
+archived-with: 2026-07-27-multi-value-batch-service-integration
 ---
 
 ### Task 1: workbench 序列化 combinations
@@ -131,6 +134,7 @@ git add agent/sap_nexus_agent/workbench_output.py agent/tests/test_workbench_out
 git commit -m "feat(workbench): serialize combinations for awaiting_batch_confirm outcome"
 ```
 
+archived-with: 2026-07-27-multi-value-batch-service-integration
 ---
 
 ### Task 2: 前端 BatchContinuation + pendingOutcome + runner 分派 + SSE 事件
@@ -455,6 +459,7 @@ git add frontend/src/runtime/run-event-schema.ts frontend/src/runtime/agent-runt
 git commit -m "feat(runtime): BatchContinuation + confirmAgentRunBatch + awaiting_batch_confirm SSE"
 ```
 
+archived-with: 2026-07-27-multi-value-batch-service-integration
 ---
 
 ### Task 3: CLI --continue-batch
@@ -633,6 +638,7 @@ git add agent/sap_nexus_agent/cli.py agent/tests/test_cli_batch.py
 git commit -m "feat(cli): add --continue-batch flag for confirmed multi-value batch"
 ```
 
+archived-with: 2026-07-27-multi-value-batch-service-integration
 ---
 
 ### Task 4: API batch route / SSE
@@ -801,6 +807,7 @@ git add frontend/app/api/agent-runs/[runId]/batch/route.ts frontend/tests/runtim
 git commit -m "feat(api): add POST /api/agent-runs/[runId]/batch confirmation route"
 ```
 
+archived-with: 2026-07-27-multi-value-batch-service-integration
 ---
 
 ### Task 5: 端到端验证
@@ -855,6 +862,7 @@ git add openspec/changes/multi-value-batch-service-integration/tasks.md
 git commit -m "chore(llm-intent): check off all tasks for multi-value-batch-service-integration"
 ```
 
+archived-with: 2026-07-27-multi-value-batch-service-integration
 ---
 
 ## Self-Review
@@ -872,3 +880,4 @@ git commit -m "chore(llm-intent): check off all tasks for multi-value-batch-serv
 - `confirmAgentRunBatch` 在 Task 2 export、Task 4 import 调用，签名一致。
 - `AgentRunState` `"awaiting_batch_confirm"` 在 run-event-schema（Task 2 Step 1）、buildEventsFromOutcome（Step 8）、测试断言（Step 2）一致。
 - `AgentRunEventType` `"batch_confirm_requested"` 同上。
+

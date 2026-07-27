@@ -2,6 +2,8 @@
 comet_change: multi-value-batch-service-integration
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-07-27-multi-value-batch-service-integration
+status: final
 ---
 
 # 多值批量确认服务层集成 Design Doc
@@ -89,3 +91,4 @@ delta spec MODIFIED "Multi-value query split"：
 - 服务端 BatchRecord（若未来需服务端状态/审计）。
 - WRITE 批量审批语义（若未来扩展）。
 - combinations 分页（若组合数大）。
+
