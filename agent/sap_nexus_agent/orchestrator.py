@@ -27,6 +27,7 @@ from sap_nexus_agent.narrator import (
     NarrativeGuardError,
     narrate_fact,
     narrate_failure,
+    narrate_inventory_facts,
     narrate_purchase_order_facts,
 )
 from sap_nexus_agent.planner.handoff import compile_dry_run_from_handoff
@@ -266,6 +267,60 @@ def run_query(
     if capability_id == INVENTORY_CAPABILITY_ID:
         return _finalize_inventory(call_plan, validation, execution, decision=decision)
     return _finalize_purchase_order(call_plan, validation, execution, decision=decision)
+
+
+def continue_batch(
+    call_plan: CallPlan,
+    combinations: list[dict[str, str]],
+    gateway: GatewayClientProtocol,
+    *,
+    decision: MatchDecision | None = None,
+) -> AgentOutcome:
+    """Execute a confirmed multi-value batch (Design Doc §4.4).
+
+    Per combination: validate -> execute -> build_availability_fact.
+    Partial failures are annotated, not global. All-failed -> failure outcome.
+    READ-only: no approval flow (analogous to continue_action but without
+    ApprovalRecord).
+    """
+    facts: list[ReasoningFact] = []
+    failures: list[dict] = []
+    for combo in combinations:
+        validation = gateway.validate(call_plan.capability_id, combo)
+        if not validation.success:
+            failures.append({"parameters": combo, "error": validation.error_type})
+            continue
+        execution = gateway.execute(call_plan.capability_id, combo)
+        if not execution.success:
+            failures.append({"parameters": combo, "error": execution.error_type})
+            continue
+        fact = build_availability_fact(call_plan.agent_trace_id, execution, combo)
+        if fact is not None:
+            facts.append(fact)
+
+    if not facts and failures:
+        return AgentOutcome(
+            status="failure",
+            message="全部组合查询失败",
+            response_text=narrate_failure(failures[0]["error"], []),
+            call_plan=call_plan,
+            error_type=failures[0]["error"],
+            facts=[],
+            match_decision=decision,
+        )
+
+    try:
+        response_text = narrate_inventory_facts(facts, failures=failures)
+    except NarrativeGuardError:
+        response_text = "批量查询完成，但部分结果缺少可叙事字段。"
+
+    return AgentOutcome(
+        status="success",
+        response_text=response_text,
+        call_plan=call_plan,
+        facts=facts,
+        match_decision=decision,
+    )
 
 
 def run_inventory_query(

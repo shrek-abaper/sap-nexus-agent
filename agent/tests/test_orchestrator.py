@@ -969,3 +969,93 @@ def test_run_query_single_value_still_executes():
     assert outcome.status == "success"
     assert outcome.fact is not None
     assert len(gateway.execute_calls) == 1
+
+
+# ---------------------------------------------------------------------------
+# Design Doc §4.4: continue_batch - per-combination validate+execute+build_fact
+# with partial-failure aggregation. Invoked by workbench after user confirms an
+# awaiting_batch_confirm outcome (NOT via run_query). READ-only inventory path.
+# ---------------------------------------------------------------------------
+
+from sap_nexus_agent.call_plan import create_call_plan
+from sap_nexus_agent.execution_result import ExecutionResult, ValidationResult
+from sap_nexus_agent.orchestrator import continue_batch
+
+
+class _BatchFakeGateway:
+    """Gateway stub: validate always ok; execute returns preset result per (material, plant)."""
+    def __init__(self, exec_map):
+        self._exec_map = exec_map
+        self.validate_calls = []
+        self.execute_calls = []
+
+    def validate(self, capability_id, parameters):
+        self.validate_calls.append((capability_id, parameters))
+        return ValidationResult(
+            trace_id="gw-v", capability_id=capability_id, success=True,
+            error_type="NONE", messages=[],
+        )
+
+    def execute(self, capability_id, parameters, approval_id=None):
+        self.execute_calls.append((capability_id, parameters))
+        key = (parameters.get("material"), parameters.get("plant"))
+        return self._exec_map.get(key, ExecutionResult(
+            trace_id="gw-x", capability_id=capability_id, success=False,
+            executor={"type": "JCO_RFC"}, return_messages=[],
+            data={}, duration_ms=0, error_type="SAP_ERROR",
+        ))
+
+
+def _exec_ok(material, plant, qty):
+    return ExecutionResult(
+        trace_id=f"gw-{material}-{plant}", capability_id="MM.Inventory.GetAvailability",
+        success=True, executor={"type": "JCO_RFC", "rfcName": "BAPI_MATERIAL_AVAILABILITY"},
+        return_messages=[], data={"availableQuantity": qty, "unit": "EA"},
+        duration_ms=5, error_type="NONE",
+    )
+
+
+def test_continue_batch_all_success():
+    call_plan = create_call_plan("MM.Inventory.GetAvailability", {"unit": "EA"})
+    combos = [
+        {"material": "DEMOA2", "plant": "5200", "unit": "EA"},
+        {"material": "DEMOA2", "plant": "1000", "unit": "EA"},
+    ]
+    gw = _BatchFakeGateway({
+        ("DEMOA2", "5200"): _exec_ok("DEMOA2", "5200", 176),
+        ("DEMOA2", "1000"): _exec_ok("DEMOA2", "1000", 0),
+    })
+    outcome = continue_batch(call_plan, combos, gw)
+    assert outcome.status == "success"
+    assert outcome.facts is not None
+    assert len(outcome.facts) == 2
+    assert len(gw.execute_calls) == 2
+    assert "5200" in outcome.response_text and "176" in outcome.response_text
+
+
+def test_continue_batch_partial_failure():
+    call_plan = create_call_plan("MM.Inventory.GetAvailability", {"unit": "EA"})
+    combos = [
+        {"material": "DEMOA2", "plant": "5200", "unit": "EA"},
+        {"material": "DEMOA2", "plant": "1000", "unit": "EA"},
+    ]
+    gw = _BatchFakeGateway({
+        ("DEMOA2", "5200"): _exec_ok("DEMOA2", "5200", 176),
+        # 1000 缺失 -> default failure
+    })
+    outcome = continue_batch(call_plan, combos, gw)
+    assert outcome.status == "success"  # 部分失败不全局失败
+    assert outcome.facts is not None
+    assert len(outcome.facts) == 1
+    assert "1000" in outcome.response_text  # 失败工厂被标注
+
+
+def test_continue_batch_all_failure():
+    call_plan = create_call_plan("MM.Inventory.GetAvailability", {"unit": "EA"})
+    combos = [
+        {"material": "DEMOA2", "plant": "5200", "unit": "EA"},
+    ]
+    gw = _BatchFakeGateway({})  # 全部 default failure
+    outcome = continue_batch(call_plan, combos, gw)
+    assert outcome.status == "failure"
+    assert outcome.facts == []
