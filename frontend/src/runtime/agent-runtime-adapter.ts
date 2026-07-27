@@ -42,17 +42,24 @@ type AgentRunRecord = {
 export type ApprovalDecision = "approve" | "reject";
 
 type ApprovalContinuation = {
+  type?: "approval";
   decision: ApprovalDecision;
   callPlan: Record<string, unknown>;
   validationResult: Record<string, unknown>;
   approvalRecord: Record<string, unknown>;
 };
 
+type BatchContinuation = {
+  type: "batch";
+  callPlan: Record<string, unknown>;
+  combinations: Record<string, string>[];
+};
+
 type AgentRunnerInput = {
   query: string;
   gatewayUrl: string;
   intentMode: string;
-  continuation?: ApprovalContinuation;
+  continuation?: ApprovalContinuation | BatchContinuation;
   context?: ConversationContext;
 };
 
@@ -68,6 +75,10 @@ type WorkbenchOutcome = {
   errorType?: string | null;
   missingParameters?: string[] | null;
   approvalRecord?: Record<string, unknown> | null;
+  // Multi-value batch (Design Doc §4.2): combinations awaiting user confirm.
+  // Populated only for status="awaiting_batch_confirm". The adapter holds
+  // these in pendingOutcome and returns them via BatchContinuation.
+  combinations?: Record<string, string>[] | null;
   // Advisory field populated by agent workbench_output (Task 3.3):
   // `{ decisionType, capabilityId?, parameters?, missingParameters?, errorType?,
   // candidates?, handoff?, rationale }`. The SSE layer only emits a
@@ -171,7 +182,7 @@ export async function createAgentRun(input: CreateAgentRunInput): Promise<{ runI
     const context = input.conversationId ? buildContext(getSession(input.conversationId)) : undefined;
     const outcome = await runner({ query, gatewayUrl: gatewayUrl(), intentMode: intentMode(), context });
     record.events = buildEventsFromOutcome(runId, query, outcome, timestamp);
-    if (outcome.status === "awaiting_approval") {
+    if (outcome.status === "awaiting_approval" || outcome.status === "awaiting_batch_confirm") {
       record.pendingOutcome = outcome;
     }
 
@@ -231,6 +242,39 @@ export async function decideAgentRunApproval(runId: string, decision: ApprovalDe
       continuation: { decision, callPlan, validationResult, approvalRecord }
     });
     appendApprovalEvents(record, outcome, new Date().toISOString());
+  } catch (error) {
+    appendRuntimeFailure(record, error, new Date().toISOString());
+  }
+}
+
+export async function confirmAgentRunBatch(runId: string): Promise<void> {
+  const record = runs.get(runId);
+  if (!record) {
+    throw new Error("Agent run not found");
+  }
+  if (!record.pendingOutcome) {
+    throw new Error("Agent run is not awaiting batch confirmation");
+  }
+  if (record.decision) {
+    throw new Error("Agent run was already decided");
+  }
+
+  const callPlan = objectOrNull(record.pendingOutcome.callPlan);
+  const combinations = record.pendingOutcome.combinations ?? null;
+  if (!callPlan || !combinations) {
+    throw new Error("Agent run batch context is incomplete");
+  }
+
+  record.decision = "approve";
+  const runner = runnerForTests ?? runLocalPythonAgent;
+  try {
+    const outcome = await runner({
+      query: record.query,
+      gatewayUrl: gatewayUrl(),
+      intentMode: intentMode(),
+      continuation: { type: "batch", callPlan, combinations }
+    });
+    appendBatchEvents(record, outcome, new Date().toISOString());
   } catch (error) {
     appendRuntimeFailure(record, error, new Date().toISOString());
   }
@@ -345,6 +389,24 @@ function buildEventsFromOutcome(
             label: "ApprovalRecord",
             kind: "approval",
             payload: toJsonValue(approvalRecord)
+          })
+        : undefined
+    });
+    return events;
+  }
+
+  if (outcome.status === "awaiting_batch_confirm") {
+    const combinations = outcome.combinations ?? null;
+    push(events, runId, timestamp, {
+      type: "batch_confirm_requested",
+      state: "awaiting_batch_confirm",
+      capabilityId,
+      agentTraceId,
+      artifact: combinations
+        ? redactArtifact({
+            label: "BatchCombinations",
+            kind: "callplan",
+            payload: toJsonValue({ combinations, callPlan })
           })
         : undefined
     });
@@ -604,6 +666,36 @@ function appendApprovalEvents(record: AgentRunRecord, outcome: WorkbenchOutcome,
   }
 }
 
+function appendBatchEvents(record: AgentRunRecord, outcome: WorkbenchOutcome, timestamp: string) {
+  const callPlan = objectOrNull(outcome.callPlan) ?? objectOrNull(record.pendingOutcome?.callPlan);
+  const capabilityId = textValue(callPlan?.capabilityId);
+  const agentTraceId = textValue(callPlan?.agentTraceId);
+  const gatewayTraceId = textValue(outcome.gatewayTraceId);
+
+  if (outcome.responseText) {
+    push(record.events, record.runId, timestamp, {
+      type: "narrative_created",
+      state: "narrated",
+      artifact: redactArtifact({
+        label: "Chinese Narrative",
+        kind: "narrative",
+        payload: toJsonValue({ text: outcome.responseText })
+      })
+    });
+  }
+  if (outcome.status === "success") {
+    push(record.events, record.runId, timestamp, {
+      type: "run_completed",
+      state: "completed",
+      capabilityId,
+      agentTraceId,
+      gatewayTraceId
+    });
+  } else {
+    pushFailure(record.events, record.runId, timestamp, "executing", outcome);
+  }
+}
+
 function appendRuntimeFailure(record: AgentRunRecord, error: unknown, timestamp: string) {
   const safeMessage = error instanceof Error ? error.message : "Agent runtime failed";
   push(record.events, record.runId, timestamp, {
@@ -644,10 +736,11 @@ async function runLocalPythonAgent(input: AgentRunnerInput): Promise<WorkbenchOu
   let stdinPayload: string | undefined;
 
   if (input.continuation) {
+    const isBatch = input.continuation.type === "batch";
     args = [
       "-m",
       "sap_nexus_agent.cli",
-      "--continue-action",
+      isBatch ? "--continue-batch" : "--continue-action",
       "--gateway-url",
       input.gatewayUrl,
       "--json"

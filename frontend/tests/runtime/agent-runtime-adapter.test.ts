@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createAgentRun,
+  confirmAgentRunBatch,
   decideAgentRunApproval,
   getAgentRunEvents,
   resetAgentRunsForTests,
@@ -552,5 +553,73 @@ describe("agent runtime adapter", () => {
     await createAgentRun({ query: "查库存" });
 
     expect(runner.mock.calls[0][0].context).toBeUndefined();
+  });
+
+  it("holds an awaiting_batch_confirm outcome pending user confirmation", async () => {
+    const pendingOutcome = {
+      status: "awaiting_batch_confirm",
+      responseText: "将查询 2 个组合，请确认。",
+      callPlan: {
+        agentTraceId: "agent-batch",
+        capabilityId: "MM.Inventory.GetAvailability",
+        kind: "Function",
+        parameters: { material: "DEMOA2", plant: "5200" },
+        validationPolicy: "validate_before_execute",
+        createdBy: "agent",
+        requiresApproval: false
+      },
+      combinations: [
+        { material: "DEMOA2", plant: "5200" },
+        { material: "DEMOA2", plant: "1000" }
+      ]
+    };
+    const runner = vi.fn().mockResolvedValueOnce(pendingOutcome);
+    setAgentRunnerForTests(runner);
+
+    const run = await createAgentRun({ query: "DEMOA2 在 5200 和 1000 的库存" });
+
+    const events = await getAgentRunEvents(run.runId);
+    expect(events.some((e) => e.state === "awaiting_batch_confirm")).toBe(true);
+    expect(events.some((e) => e.type === "batch_confirm_requested")).toBe(true);
+  });
+
+  it("routes a BatchContinuation to continue_batch exactly once after confirmation", async () => {
+    const pendingOutcome = {
+      status: "awaiting_batch_confirm",
+      callPlan: {
+        agentTraceId: "agent-batch",
+        capabilityId: "MM.Inventory.GetAvailability",
+        kind: "Function",
+        parameters: { material: "DEMOA2", plant: "5200" },
+        validationPolicy: "validate_before_execute",
+        createdBy: "agent",
+        requiresApproval: false
+      },
+      combinations: [
+        { material: "DEMOA2", plant: "5200" },
+        { material: "DEMOA2", plant: "1000" }
+      ]
+    };
+    const runner = vi
+      .fn()
+      .mockResolvedValueOnce(pendingOutcome)
+      .mockResolvedValueOnce({
+        status: "success",
+        responseText: "物料 DEMOA2：在工厂 5200 为 176 EA；在工厂 1000 为 0 EA。"
+      });
+    setAgentRunnerForTests(runner);
+
+    const run = await createAgentRun({ query: "DEMOA2 在 5200 和 1000 的库存" });
+    await confirmAgentRunBatch(run.runId);
+
+    expect(runner).toHaveBeenCalledTimes(2);
+    const batchCall = runner.mock.calls[1][0];
+    expect(batchCall.continuation).toEqual({
+      type: "batch",
+      callPlan: pendingOutcome.callPlan,
+      combinations: pendingOutcome.combinations
+    });
+    const events = await getAgentRunEvents(run.runId);
+    expect(events.some((e) => e.type === "run_completed")).toBe(true);
   });
 });

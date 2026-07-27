@@ -15,7 +15,8 @@ export type AgentRunEventType =
   | "trace_linked"
   | "run_completed"
   | "run_failed"
-  | "match_decision_created";
+  | "match_decision_created"
+  | "batch_confirm_requested";
 
 export type AgentRunState =
   | "idle"
@@ -26,6 +27,7 @@ export type AgentRunState =
   | "callplan_created"
   | "approval_checked"
   | "awaiting_approval"
+  | "awaiting_batch_confirm"
   | "rejected"
   | "validating"
   | "executing"
