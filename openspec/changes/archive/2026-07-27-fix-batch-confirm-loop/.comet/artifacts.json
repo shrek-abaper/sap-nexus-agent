@@ -1,5 +1,6 @@
 {
   "openspec_proposal": "openspec/changes/fix-batch-confirm-loop/proposal.md",
   "openspec_design": "openspec/changes/fix-batch-confirm-loop/design.md",
-  "openspec_tasks": "openspec/changes/fix-batch-confirm-loop/tasks.md"
+  "openspec_tasks": "openspec/changes/fix-batch-confirm-loop/tasks.md",
+  "archive_directory": "openspec/changes/archive/2026-07-27-fix-batch-confirm-loop"
 }
