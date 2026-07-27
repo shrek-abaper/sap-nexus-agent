@@ -124,7 +124,7 @@ Expected: PASS（2 passed）
 Run: `cd agent && python -m pytest tests/test_workbench_output.py -v`
 Expected: PASS（全部既有测试 + 2 新测试通过，无回归）
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add agent/sap_nexus_agent/workbench_output.py agent/tests/test_workbench_output.py
@@ -151,7 +151,7 @@ git commit -m "feat(workbench): serialize combinations for awaiting_batch_confir
   - export `confirmAgentRunBatch(runId: string): Promise<void>`
   - `AgentRunState` 新增 `"awaiting_batch_confirm"`；`AgentRunEventType` 新增 `"batch_confirm_requested"`
 
-- [ ] **Step 1: 扩展 run-event-schema.ts（加 state + event type）**
+- [x] **Step 1: 扩展 run-event-schema.ts（加 state + event type）**
 
 在 `frontend/src/runtime/run-event-schema.ts` 中：
 
@@ -169,7 +169,7 @@ git commit -m "feat(workbench): serialize combinations for awaiting_batch_confir
   | "awaiting_batch_confirm"
 ```
 
-- [ ] **Step 2: 写失败测试——awaiting_batch_confirm pendingOutcome 持有 + confirmAgentRunBatch 分派**
+- [x] **Step 2: 写失败测试——awaiting_batch_confirm pendingOutcome 持有 + confirmAgentRunBatch 分派**
 
 追加到 `frontend/tests/runtime/agent-runtime-adapter.test.ts` 末尾（类比现有 approval continuation 测试，line 172-241）：
 
@@ -255,12 +255,12 @@ import {
 } from "../../src/runtime/agent-runtime-adapter";
 ```
 
-- [ ] **Step 3: 运行测试验证失败**
+- [x] **Step 3: 运行测试验证失败**
 
 Run: `npm --prefix frontend test -- --run tests/runtime/agent-runtime-adapter.test.ts`
 Expected: FAIL — `confirmAgentRunBatch is not a function` / `batch_confirm_requested` 事件未发出 / 类型错误
 
-- [ ] **Step 4: 扩展类型定义——WorkbenchOutcome.combinations + BatchContinuation + 联合 continuation**
+- [x] **Step 4: 扩展类型定义——WorkbenchOutcome.combinations + BatchContinuation + 联合 continuation**
 
 在 `frontend/src/runtime/agent-runtime-adapter.ts` 中：
 
@@ -308,7 +308,7 @@ type AgentRunnerInput = {
   combinations?: Record<string, string>[] | null;
 ```
 
-- [ ] **Step 5: 实现——createAgentRun 持有 awaiting_batch_confirm pendingOutcome**
+- [x] **Step 5: 实现——createAgentRun 持有 awaiting_batch_confirm pendingOutcome**
 
 在 `createAgentRun`（line 174-176）扩展 pendingOutcome 持有条件：
 
@@ -318,7 +318,7 @@ type AgentRunnerInput = {
     }
 ```
 
-- [ ] **Step 6: 实现——新增 confirmAgentRunBatch（类比 decideAgentRunApproval）**
+- [x] **Step 6: 实现——新增 confirmAgentRunBatch（类比 decideAgentRunApproval）**
 
 在 `decideAgentRunApproval` 函数（line 205-237）之后新增：
 
@@ -359,7 +359,7 @@ export async function confirmAgentRunBatch(runId: string): Promise<void> {
 
 说明：复用 `record.decision = "approve"` 标记"已处理"，使 `createAgentRun` 的 Q2 pending 阻塞检查（line 153 `!lastRun.decision`）对 batch 同样生效——batch pending 时阻塞新查询，确认后解除。
 
-- [ ] **Step 7: 实现——runner 分派 BatchContinuation 到 --continue-batch**
+- [x] **Step 7: 实现——runner 分派 BatchContinuation 到 --continue-batch**
 
 在 `runLocalPythonAgent`（line 646-655）中，将 `if (input.continuation)` 分支改为按 `type` 分派：
 
@@ -378,7 +378,7 @@ export async function confirmAgentRunBatch(runId: string): Promise<void> {
   } else if (input.context) {
 ```
 
-- [ ] **Step 8: 实现——buildEventsFromOutcome 发 awaiting_batch_confirm 事件**
+- [x] **Step 8: 实现——buildEventsFromOutcome 发 awaiting_batch_confirm 事件**
 
 在 `buildEventsFromOutcome` 中，`awaiting_approval` 分支（line 332-352）之后、`if (execution)` 之前插入 batch 分支：
 
@@ -402,7 +402,7 @@ export async function confirmAgentRunBatch(runId: string): Promise<void> {
   }
 ```
 
-- [ ] **Step 9: 实现——新增 appendBatchEvents（类比 appendApprovalEvents）**
+- [x] **Step 9: 实现——新增 appendBatchEvents（类比 appendApprovalEvents）**
 
 在 `appendApprovalEvents` 函数（line 526-605）之后新增：
 
@@ -438,17 +438,17 @@ function appendBatchEvents(record: AgentRunRecord, outcome: WorkbenchOutcome, ti
 }
 ```
 
-- [ ] **Step 10: 运行测试验证通过**
+- [x] **Step 10: 运行测试验证通过**
 
 Run: `npm --prefix frontend test -- --run tests/runtime/agent-runtime-adapter.test.ts`
 Expected: PASS（新增 2 个 batch 测试 + 全部既有 approval 测试通过）
 
-- [ ] **Step 11: 前端全量验证（typecheck + test + lint）**
+- [x] **Step 11: 前端全量验证（typecheck + test + lint）**
 
 Run: `npm --prefix frontend run verify`
 Expected: PASS（无 type error，无回归）
 
-- [ ] **Step 12: Commit**
+- [x] **Step 12: Commit**
 
 ```bash
 git add frontend/src/runtime/run-event-schema.ts frontend/src/runtime/agent-runtime-adapter.ts frontend/tests/runtime/agent-runtime-adapter.test.ts
@@ -467,7 +467,7 @@ git commit -m "feat(runtime): BatchContinuation + confirmAgentRunBatch + awaitin
 - Consumes: `continue_batch(call_plan, combinations, gateway, *, decision=None)`（orchestrator.py:276，已实现）、`CallPlan.from_dict`（call_plan.py:18，已存在）
 - Produces: `python -m sap_nexus_agent.cli --continue-batch --json`，stdin 读取 `{callPlan, combinations}` JSON，stdout 输出 workbench dict
 
-- [ ] **Step 1: 写失败测试——--continue-batch 调 continue_batch 返回批量结果**
+- [x] **Step 1: 写失败测试——--continue-batch 调 continue_batch 返回批量结果**
 
 创建 `agent/tests/test_cli_batch.py`（类比 `agent/tests/test_cli_approval.py`）：
 
@@ -565,12 +565,12 @@ def test_cli_rejects_missing_batch_payload(monkeypatch):
     assert result != 0
 ```
 
-- [ ] **Step 2: 运行测试验证失败**
+- [x] **Step 2: 运行测试验证失败**
 
 Run: `cd agent && python -m pytest tests/test_cli_batch.py -v`
 Expected: FAIL — `SystemExit: 2` / `unrecognized arguments: --continue-batch`（argparse 尚未注册）
 
-- [ ] **Step 3: 实现——cli.py 加 --continue-batch**
+- [x] **Step 3: 实现——cli.py 加 --continue-batch**
 
 在 `agent/sap_nexus_agent/cli.py` 中：
 
@@ -616,17 +616,17 @@ from sap_nexus_agent.orchestrator import continue_action, continue_batch, run_qu
         return 0 if outcome.status == "success" else 1
 ```
 
-- [ ] **Step 4: 运行测试验证通过**
+- [x] **Step 4: 运行测试验证通过**
 
 Run: `cd agent && python -m pytest tests/test_cli_batch.py -v`
 Expected: PASS（2 passed）
 
-- [ ] **Step 5: 回归现有 CLI 测试**
+- [x] **Step 5: 回归现有 CLI 测试**
 
 Run: `cd agent && python -m pytest tests/test_cli_approval.py tests/test_cli_context.py -v`
 Expected: PASS（无回归；`--continue-action` 与 `--context` 路径不受影响）
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add agent/sap_nexus_agent/cli.py agent/tests/test_cli_batch.py
@@ -646,7 +646,7 @@ git commit -m "feat(cli): add --continue-batch flag for confirmed multi-value ba
 - Consumes: `confirmAgentRunBatch(runId: string): Promise<void>`（Task 2 产出，已 export）
 - Produces: `POST /api/agent-runs/[runId]/batch`，body 为空对象 `{}`（batch 无 decision，仅确认），调 `confirmAgentRunBatch`，返回 `{ runId }`
 
-- [ ] **Step 1: 写失败测试——batch route 端到端**
+- [x] **Step 1: 写失败测试——batch route 端到端**
 
 创建 `frontend/tests/runtime/batch-route.test.ts`（类比 `frontend/tests/runtime/approval-route.test.ts`）：
 
@@ -736,12 +736,12 @@ describe("agent run batch route", () => {
 });
 ```
 
-- [ ] **Step 2: 运行测试验证失败**
+- [x] **Step 2: 运行测试验证失败**
 
 Run: `npm --prefix frontend test -- --run tests/runtime/batch-route.test.ts`
 Expected: FAIL — 模块 `../../app/api/agent-runs/[runId]/batch/route` 不存在
 
-- [ ] **Step 3: 实现——创建 batch route handler**
+- [x] **Step 3: 实现——创建 batch route handler**
 
 创建 `frontend/app/api/agent-runs/[runId]/batch/route.ts`（类比 `approval/route.ts`，但 body 为空、调 `confirmAgentRunBatch`）：
 
@@ -784,17 +784,17 @@ function invalidRequest(message: string) {
 }
 ```
 
-- [ ] **Step 4: 运行测试验证通过**
+- [x] **Step 4: 运行测试验证通过**
 
 Run: `npm --prefix frontend test -- --run tests/runtime/batch-route.test.ts`
 Expected: PASS（3 passed）
 
-- [ ] **Step 5: 前端全量验证**
+- [x] **Step 5: 前端全量验证**
 
 Run: `npm --prefix frontend run verify`
 Expected: PASS（typecheck + 全部测试 + lint 无回归）
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add frontend/app/api/agent-runs/[runId]/batch/route.ts frontend/tests/runtime/batch-route.test.ts
@@ -812,27 +812,27 @@ git commit -m "feat(api): add POST /api/agent-runs/[runId]/batch confirmation ro
 - Consumes: Task 1-4 全部产出
 - Produces: 所有验证命令通过 + `tasks.md` 全部勾选 + openspec 校验通过
 
-- [ ] **Step 1: openspec 校验**
+- [x] **Step 1: openspec 校验**
 
 Run: `openspec validate --all --strict`
 Expected: PASS（delta spec 的 2 个新 Scenario 合规）
 
-- [ ] **Step 2: Python 回归**
+- [x] **Step 2: Python 回归**
 
 Run: `cd agent && python -m pytest tests/test_workbench_output.py tests/test_cli_batch.py tests/test_cli_approval.py tests/test_cli_context.py tests/test_orchestrator.py tests/test_conversation_context.py -v`
 Expected: PASS（workbench 序列化 + cli batch + cli approval + cli context + orchestrator continue_batch + conversation_context awaiting_batch_confirm lastContext=None 全部通过）
 
-- [ ] **Step 3: 前端回归**
+- [x] **Step 3: 前端回归**
 
 Run: `npm --prefix frontend run verify`
 Expected: PASS（agent-runtime-adapter batch 测试 + batch-route 测试 + 全部既有测试通过）
 
-- [ ] **Step 4: callplan evidence 验证**
+- [x] **Step 4: callplan evidence 验证**
 
 Run: `scripts/verify-agent-callplan-evidence.sh`
 Expected: PASS
 
-- [ ] **Step 5: e2e 链路确认（手动串联各层测试证据）**
+- [x] **Step 5: e2e 链路确认（手动串联各层测试证据）**
 
 逐项确认端到端链路各环节已被自动化测试覆盖（无需新写测试，汇总已有证据）：
 
@@ -846,7 +846,7 @@ Expected: PASS
 
 确认：以上 5 项测试全部 PASS 即等价于 e2e 链路打通（Python 序列化 → 前端持有 → runner 分派 → CLI/API 确认 → continue_batch 聚合）。
 
-- [ ] **Step 6: 勾选 tasks.md 并 commit**
+- [x] **Step 6: 勾选 tasks.md 并 commit**
 
 将 `openspec/changes/multi-value-batch-service-integration/tasks.md` 中 §1-§5 所有未勾选项勾选，然后：
 
