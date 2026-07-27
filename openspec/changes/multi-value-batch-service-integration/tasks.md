@@ -6,11 +6,11 @@
 
 ## 2. 前端 agent-runtime-adapter BatchContinuation
 
-- [ ] 2.1 `WorkbenchOutcome` 增加 `combinations` 字段
-- [ ] 2.2 新增 `BatchContinuation` 类型（callPlan + combinations）
-- [ ] 2.3 `awaiting_batch_confirm` -> pendingOutcome 持有 combinations
-- [ ] 2.4 用户确认 -> BatchContinuation 回传 -> 调用 continue_batch（类比 ApprovalContinuation -> continue_action）
-- [ ] 2.5 测试：awaiting_batch_confirm pendingOutcome 持有；确认 -> continue_batch 调用
+- [x] 2.1 `WorkbenchOutcome` 增加 `combinations` 字段
+- [x] 2.2 新增 `BatchContinuation` 类型（callPlan + combinations）
+- [x] 2.3 `awaiting_batch_confirm` -> pendingOutcome 持有 combinations
+- [x] 2.4 用户确认 -> BatchContinuation 回传 -> 调用 continue_batch（类比 ApprovalContinuation -> continue_action）
+- [x] 2.5 测试：awaiting_batch_confirm pendingOutcome 持有；确认 -> continue_batch 调用
 
 ## 3. CLI --continue-batch
 
