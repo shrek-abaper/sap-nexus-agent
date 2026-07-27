@@ -27,7 +27,7 @@
 - [x] 4.5 `run_query` SELECT 分支：`parsed.multi_parameters` 非空 -> 展开 combinations -> 软上限检查 -> `AgentOutcome(status="awaiting_batch_confirm", combinations=...)`（不执行）
 - [x] 4.6 `AgentOutcome` 新增 `combinations: list[dict[str,str]] | None`；常量 `BATCH_COMBINATION_CAP=20`
 - [ ] 4.7 `continue_batch(call_plan, combinations, gateway)`：逐组合 validate+execute，成功建 fact，失败记 failure；部分失败不全局失败
-- [ ] 4.8 `narrate_inventory_facts(facts, failures)`：LLM 主 + 模板兜底（多物料含 material，部分失败标注）
+- [x] 4.8 `narrate_inventory_facts(facts, failures)`：LLM 主 + 模板兜底（多物料含 material，部分失败标注）
 - [x] 4.9 软上限：超 `BATCH_COMBINATION_CAP` -> CLARIFY "组合数过多，请缩小范围"
 - [ ] 4.10 测试：多值->awaiting_batch_confirm（不执行）；expand 单 key/多 key；continue_batch 全成功/部分失败/全失败；软上限 CLARIFY；单值回归
 

@@ -1150,7 +1150,7 @@ git commit -m "feat(orchestrator): multi-value SELECT emits awaiting_batch_confi
 - Consumes: `ReasoningFact`（已存在，含 material/plant/value/unit）
 - Produces: `narrate_inventory_facts(facts, *, failures=None, client=None) -> str`；LLM 不可用 -> 模板兜底；空 facts + 无 failures -> "无匹配记录。"
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 追加到 `agent/tests/test_reasoning_narrator.py`：
 
@@ -1245,12 +1245,12 @@ def test_narrate_inventory_facts_guard_on_missing_fields():
         pass
 ```
 
-- [ ] **Step 2: 运行测试验证失败**
+- [x] **Step 2: 运行测试验证失败**
 
 Run: `cd agent && python -m pytest tests/test_reasoning_narrator.py::test_narrate_inventory_facts_empty -v`
 Expected: FAIL with `ImportError: cannot import name 'narrate_inventory_facts'`
 
-- [ ] **Step 3: 最小实现**
+- [x] **Step 3: 最小实现**
 
 在 `agent/sap_nexus_agent/narrator.py` 的 `narrate_purchase_order_facts` 之后（约 line 224 之后）新增：
 
@@ -1365,12 +1365,12 @@ def narrate_inventory_facts(
 
 > 说明：`narration_guidance` / `_SYSTEM_CONSTRAINT` / `OpenAiCompatibleLlmClient` / `redact_sensitive` / `LlmUnavailable` 均已在 narrator.py 现有 import 中。`NarrativeGuardError` 已定义在文件顶部。
 
-- [ ] **Step 4: 运行测试验证通过**
+- [x] **Step 4: 运行测试验证通过**
 
 Run: `cd agent && python -m pytest tests/test_reasoning_narrator.py -v`
 Expected: 全部 PASS（含新测试 + 既有回归）
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 ```bash
 git add agent/sap_nexus_agent/narrator.py agent/tests/test_reasoning_narrator.py
