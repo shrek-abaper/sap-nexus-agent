@@ -1059,3 +1059,101 @@ def test_continue_batch_all_failure():
     outcome = continue_batch(call_plan, combos, gw)
     assert outcome.status == "failure"
     assert outcome.facts == []
+
+
+# ---------------------------------------------------------------------------
+# Design Doc §3.2 e2e 3-turn multi-value batch flow (Plan Task 12)
+#
+# Turn 1: single-value SELECT -> success -> last_context
+# Turn 2: same conversation, multi-value plant -> awaiting_batch_confirm (no Gateway)
+# Turn 3: user confirms -> continue_batch -> success + 2 facts + aggregated narrative
+# ---------------------------------------------------------------------------
+
+from sap_nexus_agent.conversation_context import ConversationContext, LastContext
+
+
+def test_e2e_three_turn_multi_value_batch():
+    """Design Doc §3.2 / tasks.md 5.3 e2e 3 轮。
+
+    Turn 1: "DEMOA2 在 5100 的库存" -> SELECT -> success -> last_context
+    Turn 2: "这个物料在5200、1000的库存分别是多少" -> awaiting_batch_confirm
+    Turn 3: 用户确认 -> continue_batch -> 批量结果
+    """
+
+    # --- Turn 1: 单值 SELECT ---
+    def turn1_adapter(text, context=None):
+        return IntentParseResult(
+            intent=None,
+            parameters={"material": "DEMOA2", "plant": "5100", "unit": "EA"},
+            missing_parameters=[],
+            capability_id="MM.Inventory.GetAvailability",
+            matched_intents=[MatchedIntent(
+                capability_id="MM.Inventory.GetAvailability",
+                parameters={"material": "DEMOA2", "plant": "5100", "unit": "EA"},
+                missing=[],
+            )],
+            multi_parameters={},
+        )
+
+    gw1 = FakeGatewayClient(execution=ExecutionResult(
+        trace_id="gw-t1", capability_id="MM.Inventory.GetAvailability",
+        success=True, executor={"type": "JCO_RFC", "rfcName": "BAPI_MATERIAL_AVAILABILITY"},
+        return_messages=[],
+        data={"availableQuantity": 200, "unit": "EA", "material": "DEMOA2", "plant": "5100"},
+        duration_ms=5, error_type="NONE",
+    ))
+    outcome1 = run_query("DEMOA2 在 5100 的库存", gw1, intent_adapter=turn1_adapter)
+    assert outcome1.status == "success"
+    assert outcome1.fact is not None
+    assert outcome1.fact.material == "DEMOA2"
+    # 构造 last_context（workbench 层职责，此处模拟）
+    last_context = LastContext(
+        capability_id="MM.Inventory.GetAvailability",
+        parameters={"material": "DEMOA2", "plant": "5100"},
+        missing_parameters=[],
+        decision_type="SELECT",
+    )
+
+    # --- Turn 2: 多值 awaiting_batch_confirm ---
+    def turn2_adapter(text, context=None):
+        # 模拟 LLM 解析"这个物料"=last_context material + 多 plant
+        return IntentParseResult(
+            intent=None,
+            parameters={"material": "DEMOA2", "unit": "EA"},
+            missing_parameters=[],
+            capability_id="MM.Inventory.GetAvailability",
+            matched_intents=[MatchedIntent(
+                capability_id="MM.Inventory.GetAvailability",
+                parameters={"material": "DEMOA2", "unit": "EA"},
+                missing=[],
+            )],
+            multi_parameters={"plant": ["5200", "1000"]},
+        )
+
+    gw2 = FakeGatewayClient()  # Turn 2 不应触达 Gateway
+    ctx2 = ConversationContext(last_context=last_context, history=None)
+    outcome2 = run_query(
+        "这个物料在5200、1000的库存分别是多少", gw2,
+        intent_adapter=turn2_adapter, context=ctx2,
+    )
+    assert outcome2.status == "awaiting_batch_confirm"
+    assert outcome2.combinations is not None
+    assert len(outcome2.combinations) == 2
+    assert gw2.validate_calls == []
+    assert gw2.execute_calls == []
+    assert outcome2.call_plan is not None
+
+    # --- Turn 3: 用户确认 -> continue_batch ---
+    gw3 = _BatchFakeGateway({
+        ("DEMOA2", "5200"): _exec_ok("DEMOA2", "5200", 176),
+        ("DEMOA2", "1000"): _exec_ok("DEMOA2", "1000", 0),
+    })
+    outcome3 = continue_batch(outcome2.call_plan, outcome2.combinations, gw3)
+    assert outcome3.status == "success"
+    assert outcome3.facts is not None
+    assert len(outcome3.facts) == 2
+    # 聚合 narrative 含两个工厂结果
+    assert "5200" in outcome3.response_text
+    assert "176" in outcome3.response_text
+    assert "1000" in outcome3.response_text
+    assert "0" in outcome3.response_text
