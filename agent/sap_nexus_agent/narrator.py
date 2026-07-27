@@ -221,3 +221,111 @@ def _assert_po_evidence_complete(facts: list[ReasoningFact]) -> None:
             raise NarrativeGuardError(
                 f"ReasoningFact missing evidence fields for PO narration: {', '.join(missing)}"
             )
+
+
+# ---------------------------------------------------------------------------
+# Inventory batch narrative (multi-value aggregation, Design Doc §4.5)
+# ---------------------------------------------------------------------------
+
+
+def _assert_inventory_fields(facts: list[ReasoningFact]) -> None:
+    """Reject incomplete facts before narration, regardless of LLM availability."""
+    for fact in facts:
+        missing = [
+            name
+            for name, value in {
+                "material": fact.material,
+                "plant": fact.plant,
+                "value": fact.value,
+                "unit": fact.unit,
+            }.items()
+            if value is None or value == ""
+        ]
+        if missing:
+            raise NarrativeGuardError(
+                f"ReasoningFact missing fields for inventory narration: {', '.join(missing)}"
+            )
+
+
+def _build_inventory_batch_messages(
+    facts: list[ReasoningFact],
+    failures: list[dict] | None,
+) -> list[dict[str, str]]:
+    guidance = narration_guidance("MM.Inventory.GetAvailability")
+    lines: list[str] = []
+    for fact in facts:
+        lines.append(
+            f"物料: {fact.material}，工厂: {fact.plant}，"
+            f"可用库存: {fact.value} {fact.unit}"
+        )
+    if failures:
+        for fail in failures:
+            params = fail.get("parameters", {})
+            lines.append(
+                f"查询失败: 物料 {params.get('material', '')}，"
+                f"工厂 {params.get('plant', '')}，错误: {fail.get('error', '')}"
+            )
+    user_content = "\n".join(lines)
+    return [
+        {"role": "system", "content": _SYSTEM_CONSTRAINT},
+        {"role": "system", "content": guidance},
+        {"role": "user", "content": user_content},
+    ]
+
+
+def _template_inventory_batch(
+    facts: list[ReasoningFact],
+    failures: list[dict] | None,
+) -> str:
+    """Deterministic template fallback for batch inventory narration."""
+    materials = {fact.material for fact in facts}
+    lines: list[str] = []
+    if len(materials) <= 1:
+        # 单物料：对齐 spec "5200: 176 EA; 1000: 0 EA"
+        material = next(iter(materials), None)
+        if material:
+            lines.append(f"物料 {material}：")
+        plant_lines = [
+            f"在工厂 {fact.plant} 为 {fact.value} {fact.unit}" for fact in facts
+        ]
+        lines.append("；".join(plant_lines) + "。")
+    else:
+        # 多物料：每条含 material
+        for fact in facts:
+            lines.append(
+                f"物料 {fact.material} 在工厂 {fact.plant} 为 {fact.value} {fact.unit}；"
+            )
+        lines[-1] = lines[-1].rstrip("；") + "。"
+    if failures:
+        for fail in failures:
+            params = fail.get("parameters", {})
+            lines.append(f"工厂 {params.get('plant', '')} 查询失败。")
+    return "".join(lines) if len(materials) <= 1 else "\n".join(lines)
+
+
+def narrate_inventory_facts(
+    facts: list[ReasoningFact],
+    *,
+    failures: list[dict] | None = None,
+    client=None,
+) -> str:
+    """Grounded narrative for a list of inventory facts (multi-value aggregation).
+
+    - Empty facts + no failures -> "无匹配记录。" (no LLM call).
+    - Non-empty: LLM main path (chat_text + redact_sensitive).
+    - LlmUnavailable -> template fallback (guard raises on missing fields).
+    - Partial failures appended as annotations.
+    """
+    if not facts and not failures:
+        return "无匹配记录。"
+
+    _assert_inventory_fields(facts)
+
+    try:
+        llm_client = client or OpenAiCompatibleLlmClient()
+        text = llm_client.chat_text(
+            _build_inventory_batch_messages(facts, failures), temperature=0.0, max_tokens=400
+        )
+        return redact_sensitive(text.strip())
+    except LlmUnavailable:
+        return _template_inventory_batch(facts, failures)

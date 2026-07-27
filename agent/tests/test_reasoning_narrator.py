@@ -654,3 +654,96 @@ def test_narrate_po_facts_incomplete_evidence_raises_guard_with_llm_unavailable(
 
     with pytest.raises(NarrativeGuardError):
         narrate_purchase_order_facts([fact], client=fake)
+
+
+# ---------------------------------------------------------------------------
+# narrate_inventory_facts: multi-value batch aggregation (Task 9)
+# ---------------------------------------------------------------------------
+
+from sap_nexus_agent.narrator import narrate_inventory_facts
+
+
+def _inv_fact(material, plant, value, unit="EA"):
+    return ReasoningFact(
+        fact_id=f"fact-{material}-{plant}",
+        agent_trace_id="trace-1",
+        trace_id="trace-1",
+        gateway_trace_id="gw-1",
+        domain="MM",
+        business_object="InventoryStock",
+        predicate="availableQuantity",
+        value=value,
+        unit=unit,
+        deterministic=True,
+        confidence=1.0,
+        source={"capabilityId": "MM.Inventory.GetAvailability"},
+        evidence=[{"field": "availableQuantity", "value": value}],
+        material=material,
+        plant=plant,
+    )
+
+
+class _StubTextClient:
+    def __init__(self, text):
+        self._text = text
+
+    def chat_text(self, messages, **kwargs):
+        return self._text
+
+
+class _RaisingTextClient:
+    def chat_text(self, messages, **kwargs):
+        from sap_nexus_agent.llm_client import LlmUnavailable
+        raise LlmUnavailable("down")
+
+
+def test_narrate_inventory_facts_empty():
+    assert narrate_inventory_facts([]) == "无匹配记录。"
+
+
+def test_narrate_inventory_facts_llm_main():
+    facts = [_inv_fact("DEMOA2", "5200", 176), _inv_fact("DEMOA2", "1000", 0)]
+    text = narrate_inventory_facts(facts, client=_StubTextClient("5200: 176 EA; 1000: 0 EA"))
+    assert "5200" in text and "176" in text
+    assert "1000" in text and "0" in text
+
+
+def test_narrate_inventory_facts_template_fallback_single_material():
+    facts = [_inv_fact("DEMOA2", "5200", 176), _inv_fact("DEMOA2", "1000", 0)]
+    text = narrate_inventory_facts(facts, client=_RaisingTextClient())
+    # 单物料模板："在工厂 5200 为 176 EA；在工厂 1000 为 0 EA"
+    assert "5200" in text and "176" in text
+    assert "1000" in text and "0" in text
+    assert "DEMOA2" in text
+
+
+def test_narrate_inventory_facts_template_fallback_multi_material():
+    facts = [_inv_fact("DEMOA2", "5200", 176), _inv_fact("DEMOA4", "1000", 5)]
+    text = narrate_inventory_facts(facts, client=_RaisingTextClient())
+    assert "DEMOA2" in text
+    assert "DEMOA4" in text
+    assert "5200" in text and "176" in text
+    assert "1000" in text and "5" in text
+
+
+def test_narrate_inventory_facts_partial_failure():
+    facts = [_inv_fact("DEMOA2", "5200", 176)]
+    failures = [{"parameters": {"material": "DEMOA2", "plant": "1000"}, "error": "SAP_ERROR"}]
+    text = narrate_inventory_facts(facts, failures=failures, client=_RaisingTextClient())
+    assert "5200" in text
+    assert "1000" in text  # 失败工厂被标注
+    assert "失败" in text
+
+
+def test_narrate_inventory_facts_guard_on_missing_fields():
+    bad = ReasoningFact(
+        fact_id="bad", agent_trace_id="t", trace_id="t", gateway_trace_id="g",
+        domain="MM", business_object="InventoryStock", predicate="availableQuantity",
+        value=None, unit=None, deterministic=True, confidence=1.0,
+        source={}, evidence=[], material=None, plant=None,
+    )
+    try:
+        narrate_inventory_facts([bad], client=_RaisingTextClient())
+        assert False, "expected NarrativeGuardError"
+    except NarrativeGuardError:
+        pass
