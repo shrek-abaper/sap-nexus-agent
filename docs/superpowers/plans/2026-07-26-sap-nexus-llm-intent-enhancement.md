@@ -1627,7 +1627,7 @@ git commit -m "test: regression fixes for llm-intent-enhancement"
 - Consumes: Task 1-10 全部
 - Produces: 3 轮端到端测试，覆盖 Design Doc §3.2 流程
 
-- [ ] **Step 1: 写 e2e 测试**
+- [x] **Step 1: 写 e2e 测试**
 
 追加到 `agent/tests/test_orchestrator.py`：
 
@@ -1722,22 +1722,22 @@ def test_e2e_three_turn_multi_value_batch():
     assert "0" in outcome3.response_text
 ```
 
-- [ ] **Step 2: 运行测试验证失败**
+- [x] **Step 2: 运行测试验证失败**
 
 Run: `cd agent && python -m pytest tests/test_orchestrator.py::test_e2e_three_turn_multi_value_batch -v`
 Expected: 若 Task 1-10 全部完成，应 PASS。若失败，按 systematic-debugging 定位（常见：`_BatchFakeGateway` / `_exec_ok` helper 未在本文件定义 -- 确保已由 Task 10 测试引入）。
 
-- [ ] **Step 3: 验证通过**
+- [x] **Step 3: 验证通过**
 
 Run: `cd agent && python -m pytest tests/test_orchestrator.py::test_e2e_three_turn_multi_value_batch -v`
 Expected: PASS
 
-- [ ] **Step 4: 运行全量回归确认无副作用**
+- [x] **Step 4: 运行全量回归确认无副作用**
 
 Run: `cd agent && python -m pytest tests/ -v`
 Expected: 全部 PASS
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 ```bash
 git add agent/tests/test_orchestrator.py

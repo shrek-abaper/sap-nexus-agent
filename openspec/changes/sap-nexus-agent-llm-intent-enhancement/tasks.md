@@ -2,7 +2,7 @@
 
 - [x] 1.1 `_messages` 拼入 `last_context`（capability+parameters+decision_type），权威/不可信分离（`_AUTHORITY_CONTRACT` + `<durable_context_data>` 包裹 last_context）
 - [x] 1.2 LLM prompt 含上轮 capability+parameters，稳定理解指代
-- [ ] 1.3 测试：LLM 理解"这个物料"指代（含 last_context 时 SELECT 继承 material）
+- [x] 1.3 测试：LLM 理解"这个物料"指代（含 last_context 时 SELECT 继承 material）
 
 ## 2. LLM 为主，rule 仅连接失败兜底 + 空返回 CLARIFY
 
@@ -35,4 +35,4 @@
 
 - [x] 5.1 `openspec validate --all --strict` 通过
 - [x] 5.2 pytest 回归（指代 + 多值批量 + LLM 不可用兜底 + 空返回 CLARIFY + 软上限）
-- [ ] 5.3 e2e（3 轮）：第1轮 "DEMOA2 在 5100..." -> SELECT；第2轮 "这个物料在5200、1000的库存分别是多少" -> awaiting_batch_confirm；第3轮 确认 -> 批量返回 "5200: 176 EA; 1000: 0 EA"
+- [x] 5.3 e2e（3 轮）：第1轮 "DEMOA2 在 5100..." -> SELECT；第2轮 "这个物料在5200、1000的库存分别是多少" -> awaiting_batch_confirm；第3轮 确认 -> 批量返回 "5200: 176 EA; 1000: 0 EA"
