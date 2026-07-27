@@ -125,7 +125,8 @@ const eventLabels: Record<AgentRunEvent["type"], string> = {
   trace_linked: "绑定 Trace",
   run_completed: "完成运行",
   run_failed: "运行失败",
-  match_decision_created: "匹配决策"
+  match_decision_created: "匹配决策",
+  batch_confirm_requested: "批量确认请求"
 };
 
 export function buildWorkbenchViewModel(snapshot: AgentRunSnapshot | null): WorkbenchViewModel {
