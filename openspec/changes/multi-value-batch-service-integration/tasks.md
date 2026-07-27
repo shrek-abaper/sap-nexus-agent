@@ -20,9 +20,9 @@
 
 ## 4. API route / SSE batch continuation
 
-- [ ] 4.1 API route：batch continuation 端点（类比 approval continuation，design 阶段定复用 vs 新端点）
-- [ ] 4.2 SSE：`awaiting_batch_confirm` 状态事件（AgentRunState + 事件类型，类比 awaiting_approval）
-- [ ] 4.3 测试：API batch continuation 端到端
+- [x] 4.1 API route：batch continuation 端点（类比 approval continuation，design 阶段定复用 vs 新端点）
+- [x] 4.2 SSE：`awaiting_batch_confirm` 状态事件（AgentRunState + 事件类型，类比 awaiting_approval）
+- [x] 4.3 测试：API batch continuation 端到端
 
 ## 5. 验证
 
