@@ -10,7 +10,7 @@ from sap_nexus_agent.conversation_context import ConversationContext
 from sap_nexus_agent.execution_result import ValidationResult
 from sap_nexus_agent.gateway_client import GatewayClient
 from sap_nexus_agent.llm_intent import build_intent_adapter
-from sap_nexus_agent.orchestrator import continue_action, run_query
+from sap_nexus_agent.orchestrator import continue_action, continue_batch, run_query
 from sap_nexus_agent.registry_loader import load_intent_catalog
 from sap_nexus_agent.workbench_output import outcome_to_workbench_dict
 
@@ -25,6 +25,11 @@ def main(argv: list[str] | None = None) -> int:
         "--continue-action",
         action="store_true",
         help="Read a server-owned approval continuation payload from stdin",
+    )
+    parser.add_argument(
+        "--continue-batch",
+        action="store_true",
+        help="Read a batch continuation payload (callPlan + combinations) from stdin",
     )
     parser.add_argument(
         "--context",
@@ -57,6 +62,28 @@ def main(argv: list[str] | None = None) -> int:
         else:
             print(outcome.response_text or outcome.message or "未生成响应。")
         return 0 if outcome.status in {"success", "rejected"} else 1
+
+    if args.continue_batch:
+        try:
+            payload = json.load(sys.stdin)
+            outcome = continue_batch(
+                CallPlan.from_dict(dict(payload["callPlan"])),
+                [dict(c) for c in payload["combinations"]],
+                gateway,
+            )
+        except (json.JSONDecodeError, KeyError, TypeError, ValueError):
+            if args.json:
+                print(json.dumps({
+                    "status": "failure",
+                    "errorType": "INVALID_BATCH_PAYLOAD",
+                    "message": "Invalid batch continuation payload.",
+                }))
+            return 2
+        if args.json:
+            print(json.dumps(outcome_to_workbench_dict(outcome), ensure_ascii=False))
+        else:
+            print(outcome.response_text or outcome.message or "未生成响应。")
+        return 0 if outcome.status == "success" else 1
 
     if args.context:
         if not args.query:
