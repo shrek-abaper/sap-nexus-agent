@@ -1,8 +1,8 @@
 ## 1. workbench 序列化 combinations
 
-- [ ] 1.1 `outcome_to_workbench_dict` 序列化 `combinations`（类比 approvalRecord，line 44）
-- [ ] 1.2 测试：awaiting_batch_confirm outcome -> workbench dict 含 combinations + callPlan
-- [ ] 1.3 测试：非 awaiting_batch_confirm outcome -> combinations=None
+- [x] 1.1 `outcome_to_workbench_dict` 序列化 `combinations`（类比 approvalRecord，line 44）
+- [x] 1.2 测试：awaiting_batch_confirm outcome -> workbench dict 含 combinations + callPlan
+- [x] 1.3 测试：非 awaiting_batch_confirm outcome -> combinations=None
 
 ## 2. 前端 agent-runtime-adapter BatchContinuation
 

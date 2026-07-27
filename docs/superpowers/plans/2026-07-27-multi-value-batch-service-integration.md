@@ -51,7 +51,7 @@ base-ref: c5a7e72fa746c39112573c5399d5c19c7b2cbad2
 - Consumes: `AgentOutcome.combinations: list[dict[str, str]] | None`（orchestrator.py:82，已存在）
 - Produces: workbench dict 新增 `"combinations": list[dict[str,str]] | None` 键，供前端 `WorkbenchOutcome.combinations` 消费
 
-- [ ] **Step 1: 写失败测试——awaiting_batch_confirm 序列化 combinations**
+- [x] **Step 1: 写失败测试——awaiting_batch_confirm 序列化 combinations**
 
 追加到 `agent/tests/test_workbench_output.py` 末尾：
 
@@ -96,12 +96,12 @@ def test_non_batch_outcome_combinations_is_none():
     assert result["combinations"] is None
 ```
 
-- [ ] **Step 2: 运行测试验证失败**
+- [x] **Step 2: 运行测试验证失败**
 
 Run: `cd agent && python -m pytest tests/test_workbench_output.py::test_awaiting_batch_confirm_serializes_combinations tests/test_workbench_output.py::test_non_batch_outcome_combinations_is_none -v`
 Expected: FAIL — `KeyError: 'combinations'`（序列化尚未加该键）
 
-- [ ] **Step 3: 实现——outcome_to_workbench_dict 序列化 combinations**
+- [x] **Step 3: 实现——outcome_to_workbench_dict 序列化 combinations**
 
 在 `agent/sap_nexus_agent/workbench_output.py` 的 `outcome_to_workbench_dict` 中，`approvalRecord` 行（line 44）之后插入一行（类比 `approvalRecord` 的 `to_dict() if ... else None` 模式）：
 
@@ -114,12 +114,12 @@ Expected: FAIL — `KeyError: 'combinations'`（序列化尚未加该键）
         "combinations": [dict(c) for c in outcome.combinations] if outcome.combinations else None,
 ```
 
-- [ ] **Step 4: 运行测试验证通过**
+- [x] **Step 4: 运行测试验证通过**
 
 Run: `cd agent && python -m pytest tests/test_workbench_output.py::test_awaiting_batch_confirm_serializes_combinations tests/test_workbench_output.py::test_non_batch_outcome_combinations_is_none -v`
 Expected: PASS（2 passed）
 
-- [ ] **Step 5: 回归现有 workbench_output 测试**
+- [x] **Step 5: 回归现有 workbench_output 测试**
 
 Run: `cd agent && python -m pytest tests/test_workbench_output.py -v`
 Expected: PASS（全部既有测试 + 2 新测试通过，无回归）
