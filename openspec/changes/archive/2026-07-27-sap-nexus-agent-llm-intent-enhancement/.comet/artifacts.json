@@ -4,5 +4,6 @@
   "openspec_tasks": "openspec/changes/sap-nexus-agent-llm-intent-enhancement/tasks.md",
   "openspec_delta_spec": "openspec/changes/sap-nexus-agent-llm-intent-enhancement/specs/agent-callplan-evidence/spec.md",
   "handoff_context": "openspec/changes/sap-nexus-agent-llm-intent-enhancement/.comet/handoff/design-context.json",
-  "handoff_markdown": "openspec/changes/sap-nexus-agent-llm-intent-enhancement/.comet/handoff/design-context.md"
+  "handoff_markdown": "openspec/changes/sap-nexus-agent-llm-intent-enhancement/.comet/handoff/design-context.md",
+  "archive_directory": "openspec/changes/archive/2026-07-27-sap-nexus-agent-llm-intent-enhancement"
 }

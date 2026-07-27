@@ -2,6 +2,8 @@
 comet_change: sap-nexus-agent-llm-intent-enhancement
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-07-27-sap-nexus-agent-llm-intent-enhancement
+status: final
 ---
 
 # LLM 意图识别增强 + 多值批量查询 Design Doc
@@ -388,3 +390,4 @@ def narrate_inventory_facts(
 - **组合分页/流式**：`expand_combinations` / `narrate_inventory_facts` 不硬编码组合数，预留分页扩展。
 - **WRITE 批量**：`continue_batch` 仅 READ；WRITE 批量须单独设计审批语义（每组合审批 or 批量审批）。
 - **软上限可配置**：`BATCH_COMBINATION_CAP` 常量，后续可改配置项。
+

@@ -2,6 +2,7 @@
 change: sap-nexus-agent-llm-intent-enhancement
 design-doc: docs/superpowers/specs/2026-07-26-sap-nexus-llm-intent-enhancement-design.md
 base-ref: c63daea9719b8668127a9b3a4890c4f95d350e00
+archived-with: 2026-07-27-sap-nexus-agent-llm-intent-enhancement
 ---
 
 # LLM 意图识别增强 + 多值批量查询 实施计划
@@ -25,6 +26,7 @@ base-ref: c63daea9719b8668127a9b3a4890c4f95d350e00
 - 代码/标识符/路径/commit message 用英文；计划说明用中文。
 - base-ref: `c63daea9719b8668127a9b3a4890c4f95d350e00`。
 
+archived-with: 2026-07-27-sap-nexus-agent-llm-intent-enhancement
 ---
 
 ## 文件结构
@@ -44,6 +46,7 @@ base-ref: c63daea9719b8668127a9b3a4890c4f95d350e00
 | `agent/tests/test_reasoning_narrator.py` | `narrate_inventory_facts` 单测 | Task 9 |
 | `agent/tests/test_conversation_context.py` | LastContext round-trip 回归 | Task 11 |
 
+archived-with: 2026-07-27-sap-nexus-agent-llm-intent-enhancement
 ---
 
 ## Task 1: `_messages` 注入 `last_context` data 块
@@ -206,6 +209,7 @@ git add agent/sap_nexus_agent/llm_intent.py agent/tests/test_llm_intent.py
 git commit -m "feat(llm-intent): inject last_context data block into _messages"
 ```
 
+archived-with: 2026-07-27-sap-nexus-agent-llm-intent-enhancement
 ---
 
 ## Task 2: `parse_with_hybrid` LLM 为主，rule 仅 `LlmUnavailable` 兜底
@@ -336,6 +340,7 @@ git add agent/sap_nexus_agent/llm_intent.py agent/tests/test_llm_intent.py
 git commit -m "feat(llm-intent): LLM as primary, rule fallback only on LlmUnavailable"
 ```
 
+archived-with: 2026-07-27-sap-nexus-agent-llm-intent-enhancement
 ---
 
 ## Task 3: LLM 空返回填充 generic clarification，selector 发 CLARIFY
@@ -479,6 +484,7 @@ git add agent/sap_nexus_agent/llm_intent.py agent/sap_nexus_agent/capability_sel
 git commit -m "feat(intent): LLM empty return emits CLARIFY instead of REJECT"
 ```
 
+archived-with: 2026-07-27-sap-nexus-agent-llm-intent-enhancement
 ---
 
 ## Task 4: `resolve_with_context` 主关键词分支继承 `last_context` material
@@ -601,6 +607,7 @@ git add agent/sap_nexus_agent/llm_intent.py agent/tests/test_intent.py
 git commit -m "feat(intent): rule fallback inherits last_context material on primary keyword"
 ```
 
+archived-with: 2026-07-27-sap-nexus-agent-llm-intent-enhancement
 ---
 
 ## Task 5: `IntentParseResult.multi_parameters` + LLM 解析 `multiParameters` + base_system 多值指引
@@ -752,6 +759,7 @@ git add agent/sap_nexus_agent/intent.py agent/sap_nexus_agent/llm_intent.py agen
 git commit -m "feat(intent): add multi_parameters field, parse multiParameters, base_system guidance"
 ```
 
+archived-with: 2026-07-27-sap-nexus-agent-llm-intent-enhancement
 ---
 
 ## Task 6: `select_capability` 视 `multi_parameters` 满足 required 参数
@@ -859,6 +867,7 @@ git add agent/sap_nexus_agent/capability_selector.py agent/tests/test_capability
 git commit -m "feat(selector): treat multi_parameters as satisfying required inputs"
 ```
 
+archived-with: 2026-07-27-sap-nexus-agent-llm-intent-enhancement
 ---
 
 ## Task 7: `expand_combinations` + `AgentOutcome.combinations` + `BATCH_COMBINATION_CAP`
@@ -980,6 +989,7 @@ git add agent/sap_nexus_agent/orchestrator.py agent/tests/test_orchestrator.py
 git commit -m "feat(orchestrator): add expand_combinations, AgentOutcome.combinations, BATCH_COMBINATION_CAP"
 ```
 
+archived-with: 2026-07-27-sap-nexus-agent-llm-intent-enhancement
 ---
 
 ## Task 8: `run_query` SELECT 分支多值检测 -> `awaiting_batch_confirm` / 软上限 CLARIFY
@@ -1138,6 +1148,7 @@ git add agent/sap_nexus_agent/orchestrator.py agent/tests/test_orchestrator.py
 git commit -m "feat(orchestrator): multi-value SELECT emits awaiting_batch_confirm, cap emits CLARIFY"
 ```
 
+archived-with: 2026-07-27-sap-nexus-agent-llm-intent-enhancement
 ---
 
 ## Task 9: `narrate_inventory_facts`（LLM 主 + 模板兜底 + guard）
@@ -1377,6 +1388,7 @@ git add agent/sap_nexus_agent/narrator.py agent/tests/test_reasoning_narrator.py
 git commit -m "feat(narrator): add narrate_inventory_facts with LLM main + template fallback"
 ```
 
+archived-with: 2026-07-27-sap-nexus-agent-llm-intent-enhancement
 ---
 
 ## Task 10: `continue_batch` 逐组合 validate+execute + 部分失败聚合
@@ -1567,6 +1579,7 @@ git add agent/sap_nexus_agent/orchestrator.py agent/tests/test_orchestrator.py
 git commit -m "feat(orchestrator): add continue_batch for confirmed multi-value execution"
 ```
 
+archived-with: 2026-07-27-sap-nexus-agent-llm-intent-enhancement
 ---
 
 ## Task 11: `openspec validate` + pytest 回归
@@ -1616,6 +1629,7 @@ git commit -m "test: regression fixes for llm-intent-enhancement"
 
 若无修复，本 task 无 commit。
 
+archived-with: 2026-07-27-sap-nexus-agent-llm-intent-enhancement
 ---
 
 ## Task 12: e2e 3 轮（SELECT -> awaiting_batch_confirm -> 批量聚合）
@@ -1744,6 +1758,7 @@ git add agent/tests/test_orchestrator.py
 git commit -m "test(orchestrator): e2e 3-turn multi-value batch (SELECT -> awaiting_batch_confirm -> continue_batch)"
 ```
 
+archived-with: 2026-07-27-sap-nexus-agent-llm-intent-enhancement
 ---
 
 ## Self-Review 清单
@@ -1777,6 +1792,7 @@ git commit -m "test(orchestrator): e2e 3-turn multi-value batch (SELECT -> await
 
 **无 placeholder**：所有 step 含完整代码 / 完整命令 / 预期输出。
 
+archived-with: 2026-07-27-sap-nexus-agent-llm-intent-enhancement
 ---
 
 ## 执行交接
@@ -1791,3 +1807,4 @@ git commit -m "test(orchestrator): e2e 3-turn multi-value batch (SELECT -> await
 
 > 若选 Subagent-Driven：REQUIRED SUB-SKILL: `superpowers:subagent-driven-development`，每 task 一个 fresh subagent + 两阶段审查。
 > 若选 Inline：REQUIRED SUB-SKILL: `superpowers:executing-plans`，批量执行 + 检查点。
+
