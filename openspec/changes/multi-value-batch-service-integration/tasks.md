@@ -26,8 +26,8 @@
 
 ## 5. 验证
 
-- [ ] 5.1 `openspec validate --all --strict` 通过
-- [ ] 5.2 pytest 回归（workbench_output + cli + orchestrator）
-- [ ] 5.3 `npm --prefix frontend run verify`（frontend 改动）
-- [ ] 5.4 `scripts/verify-agent-callplan-evidence.sh` 通过
-- [ ] 5.5 e2e：Turn N 多值 -> awaiting_batch_confirm + combinations 序列化；Turn N+1 确认 -> continue_batch -> 批量聚合结果
+- [x] 5.1 `openspec validate --all --strict` 通过
+- [x] 5.2 pytest 回归（workbench_output + cli + orchestrator）
+- [x] 5.3 `npm --prefix frontend run verify`（frontend 改动）
+- [x] 5.4 `scripts/verify-agent-callplan-evidence.sh` 通过
+- [x] 5.5 e2e：Turn N 多值 -> awaiting_batch_confirm + combinations 序列化；Turn N+1 确认 -> continue_batch -> 批量聚合结果
