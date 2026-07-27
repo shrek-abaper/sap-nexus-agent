@@ -1,0 +1,14 @@
+{
+  "change": "multi-value-batch-service-integration",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "2331e0f45888ab2cc703c3f5d320a31156a411031b99d47054f7b0954bd93d06",
+  "files": [
+    { "path": "openspec/changes/multi-value-batch-service-integration/proposal.md", "sha256": "85e7dbc8745d21c91222d8990059ac5e89763b9badc29502674c3370ff87410c" },
+    { "path": "openspec/changes/multi-value-batch-service-integration/design.md", "sha256": "c793a4315b8c2c48d13591700f0b9812e12cf79cfe2089fa474d8d22d3fcac33" },
+    { "path": "openspec/changes/multi-value-batch-service-integration/tasks.md", "sha256": "e5fd630c5121cd99097488f9c156dde6cf4dbbb61db36c390fb9d28961270f24" },
+    { "path": "openspec/changes/multi-value-batch-service-integration/specs/agent-callplan-evidence/spec.md", "sha256": "4222bbbb4e8d7fdce5fffaf974170767ddaeaaf1730469d708b596363d3be6c1" }
+  ]
+}
