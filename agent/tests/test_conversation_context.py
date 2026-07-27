@@ -617,3 +617,36 @@ def test_boundary_6_q2_approval_pending_no_last_context():
     outcome = AgentOutcome(status="awaiting_approval", match_decision=decision)
     payload = outcome_to_workbench_dict(outcome)
     assert payload["lastContext"] is None
+
+
+def test_awaiting_batch_confirm_no_last_context():
+    """awaiting_batch_confirm outcome does not backfill lastContext.
+
+    While batch confirmation is pending, the workbench must not emit a
+    LastContext (the prior SELECT decision's material) that would let the
+    LLM re-emit multi_parameters on the user's "确认" reply - that caused a
+    dead loop (awaiting_batch_confirm -> "确认" -> re-emit -> awaiting_batch_confirm).
+    Short-circuit to None like awaiting_approval so the next turn has no
+    sticky continuation handle.
+    """
+    from sap_nexus_agent.match_decision import MatchDecision
+    from sap_nexus_agent.orchestrator import AgentOutcome
+    from sap_nexus_agent.workbench_output import outcome_to_workbench_dict
+
+    decision = MatchDecision(
+        decision_type="SELECT",
+        capability_id="MM.Inventory.GetAvailability",
+        parameters={"material": "DEMOA2", "unit": "EA"},
+        missing_parameters=[],
+        error_type=None,
+        candidates=None,
+        handoff=None,
+        rationale="",
+    )
+    outcome = AgentOutcome(
+        status="awaiting_batch_confirm",
+        match_decision=decision,
+        combinations=[{"material": "DEMOA2", "plant": "5200"}],
+    )
+    payload = outcome_to_workbench_dict(outcome)
+    assert payload["lastContext"] is None

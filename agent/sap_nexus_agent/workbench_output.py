@@ -68,10 +68,17 @@ def _last_context_from_outcome(outcome: AgentOutcome) -> dict[str, object] | Non
 
     CLARIFY -> LastContext(CLARIFY, params, missing) for slot-fill.
     SELECT success -> LastContext(SELECT, params, []) for Q1 follow-up.
-    REJECT / SHOW_OPTIONS / ESCALATE / awaiting_approval -> None (clear session).
+    REJECT / SHOW_OPTIONS / ESCALATE / awaiting_approval / awaiting_batch_confirm
+    -> None (clear session).
     """
     if outcome.status == "awaiting_approval":
         return None  # Q2: approval pending rejects new queries, no last_context.
+    if outcome.status == "awaiting_batch_confirm":
+        # Batch pending: clear session so the LLM does not re-emit
+        # multi_parameters from the prior SELECT's material on the user's
+        # "确认" reply (caused a dead loop: awaiting_batch_confirm -> "确认"
+        # -> re-emit multi_parameters -> awaiting_batch_confirm).
+        return None
     decision = outcome.match_decision
     if decision is None:
         return None
