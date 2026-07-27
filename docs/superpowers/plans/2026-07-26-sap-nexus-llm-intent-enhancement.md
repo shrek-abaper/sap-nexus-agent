@@ -1390,7 +1390,7 @@ git commit -m "feat(narrator): add narrate_inventory_facts with LLM main + templ
 - Consumes: Task 7 的 `AgentOutcome.combinations`；Task 9 的 `narrate_inventory_facts`；`build_availability_fact`（已存在）；`create_call_plan` / `narrate_failure`（已存在）
 - Produces: `continue_batch(call_plan, combinations, gateway, *, decision=None) -> AgentOutcome`；逐组合 validate+execute+build_availability_fact；部分失败不全局失败；全失败 -> failure outcome
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 追加到 `agent/tests/test_orchestrator.py`：
 
@@ -1479,12 +1479,12 @@ def test_continue_batch_all_failure():
     assert outcome.facts == []
 ```
 
-- [ ] **Step 2: 运行测试验证失败**
+- [x] **Step 2: 运行测试验证失败**
 
 Run: `cd agent && python -m pytest tests/test_orchestrator.py::test_continue_batch_all_success -v`
 Expected: FAIL with `ImportError: cannot import name 'continue_batch'`
 
-- [ ] **Step 3: 最小实现**
+- [x] **Step 3: 最小实现**
 
 在 `agent/sap_nexus_agent/orchestrator.py` 顶部 narrator import（line 25-30）追加 `narrate_inventory_facts`：
 
@@ -1555,12 +1555,12 @@ def continue_batch(
     )
 ```
 
-- [ ] **Step 4: 运行测试验证通过**
+- [x] **Step 4: 运行测试验证通过**
 
 Run: `cd agent && python -m pytest tests/test_orchestrator.py -v`
 Expected: 全部 PASS（含新测试 + 既有回归）
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 ```bash
 git add agent/sap_nexus_agent/orchestrator.py agent/tests/test_orchestrator.py
