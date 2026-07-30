@@ -287,6 +287,12 @@ export function AgentConsole() {
                   placeholder={heroInputPlaceholder}
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && !event.shiftKey) {
+                      event.preventDefault();
+                      void runAgent();
+                    }
+                  }}
                 />
                 <div className="hero-query__footer">
                   <span className="hero-query__guard">未声明的能力不会执行 · 写操作需人工批准</span>
