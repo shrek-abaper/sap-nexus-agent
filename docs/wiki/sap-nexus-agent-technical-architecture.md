@@ -5,10 +5,10 @@
 | 字段 | 内容 |
 |---|---|
 | 文档名称 | `SAP Nexus Agent 技术架构文档` |
-| 当前版本 | `v0.2.18` |
+| 当前版本 | `v0.2.20` |
 | 状态 | `Product Architecture Baseline Draft` |
 | 创建日期 | `2026-06-18` |
-| 最近更新 | `2026-07-25` |
+| 最近更新 | `2026-08-01` |
 | 维护目录 | `docs/wiki/` |
 | 文档定位 | SAP Nexus Agent 从 MVP 到量产交付的长期技术架构指导文件 |
 | 关联路线 | `docs/wiki/sap-nexus-agent-implementation-roadmap.md` |
@@ -20,6 +20,8 @@
 
 | 版本 | 日期 | 变更摘要 | 决策状态 |
 |---|---|---|---|
+| `v0.2.20` | `2026-08-01` | 澄清意图识别与能力匹配的主次契约：§4.3 与 L2 表明确意图识别（`IntentParseResult`）以 LLM 为主路径（`hybrid` 默认，LLM 优先，仅 `LlmUnavailable` 回退规则，对齐 spec `conversational-context`）；能力匹配 / 选择（`MatchDecision`）仍以 deterministic 规则 + Registry 为权威，LLM 不替代 governance 判断 | 当前架构基线 |
+| `v0.2.19` | `2026-08-01` | 新增 §4.2.3 多值参数批量查询（READ-only v1）：登记 `multi_parameters` 拆分 -> `expand_combinations` 笛卡尔积 -> `awaiting_batch_confirm`（不执行）-> `continue_batch` 逐组合执行 -> `narrate_inventory_facts` 聚合的 orchestrator 层批量协调契约；定义 `BATCH_COMBINATION_CAP=20` 软上限、v1 READ-only 边界（Action 落 `awaiting_approval`）、combinations 进程内非持久化（P0B 替换）、`fix-batch-confirm-loop` 死循环修复；同步 `multi-value-batch-service-integration` + `sap-nexus-agent-llm-intent-enhancement` + `fix-batch-confirm-loop` 已归档事实 | 当前架构基线 |
 | `v0.2.18` | `2026-07-25` | 新增 §4.2.2 即时多轮与会话上下文：把 `ConversationState` 的轻量实例（`PendingClarification`）从 P0B durable runtime 中独立出来，定义 sticky-CLARIFY 跨轮延续机制、历史重注入的权威/不可信分离契约（借鉴 DeerFlow `DurableContextMiddleware`）和 `IntentAdapter` 签名扩展方向；明确即时多轮先于 P0B、不引入持久化、不改变 runtime 架构 | 当前架构基线 |
 | `v0.2.17` | `2026-07-25` | 文档收敛：§1.1 成熟度矩阵与近期 next step 下沉到 `docs/runbooks/README.md`；§4.3 Current/S2-A/S2-B/S3 演进矩阵与当前 runtime 状态下沉到 runbook 10/08；§3.7/§3.8 OpenHarness/DeerFlow 重复机制映射压缩为指向权威文档的链接并保留架构不变量；新增 §18 Known Correctness Defects（D-1 多目标静默降级） | 当前架构基线 |
 | `v0.2.16` | `2026-07-24` | 校准语义识别 Current / Target 边界：当前 runtime 仍是单能力规则/LLM 闭集选择，尚未实现五态 `MatchDecision` 与可靠多意图升级；将 S2 显式拆为 S2-A 基础语义决策加固和 S2-B Planner Dry-run，补充 `CapabilityCard` 安全投影、候选前 visibility filter 与 matcher Eval 门禁；Phase 3+ 继续只承担规模化 retrieval / rerank | 当前架构基线 |
@@ -289,7 +291,7 @@ AuthenticatedPrincipal
 | 层 | 名称 | 核心职责 | MVP 形态 | 量产形态 |
 |---|---|---|---|---|
 | L1 | User Interaction Layer | 接收自然语言、输出澄清、事实、建议和审批请求；展示执行链路、审计和人审状态 | CLI / API / local Workbench | Internal Agent Workbench / API / ChatOps / Workflow |
-| L2 | Intent Harness / Capability Matching | 意图归一、Registry 精确匹配、governance filter、参数适配、MatchDecision | 规则匹配 + Registry 精确查找 + required-param 校验 | GoalSpec、候选召回、关系图发现、PlanDraft、R1 澄清 |
+| L2 | Intent Harness / Capability Matching | 意图归一、Registry 精确匹配、governance filter、参数适配、MatchDecision | LLM 意图识别（hybrid，LLM 为主 + 规则兜底）+ 规则匹配 + Registry 精确查找 + required-param 校验 | GoalSpec、候选召回、关系图发现、PlanDraft、R1 澄清 |
 | L3 | Capability Registry / Lightweight Ontology Layer | 注册能力、字段语义、治理属性、SAP 映射 | YAML/JSON | Fact Type、Capability Relation、OWL / Graph Registry / Registry Service |
 | L4 | CallPlan / PlanGraph Harness | 生成执行计划，执行前可审查和回放 | 单能力 CallPlan JSON schema | deterministic PlanCompiler、PlanGraph、Registry Snapshot、持久化计划、审批绑定 |
 | L5 | Gateway Harness | 封装 JCo，按 `capabilityId` 调用 SAP | Java JCo Gateway | HA Gateway、连接池、限流、监控 |
@@ -422,9 +424,39 @@ Durable Runtime 的启用门槛不是由 DeerFlow、PostgreSQL 或 Redis 等产�
 
 **与 P0B 的边界**：v1 的 `ConversationState` 接口须对齐 §4.2.1 三层分层，使 P0B 接手时能将进程内 Map 替换为 durable store，并挂载 DeerFlow 式 `SummarizationMiddleware` / `DurableContextMiddleware`，无需重构 advisory 层契约。v1 不提前实现 Thread / Run / Checkpoint 的完整形态。
 
+#### 4.2.3 多值参数批量查询（READ-only v1）
+
+§4.2.2 的即时多轮上下文解决了 CLARIFY 跨轮 slot-fill。在它之上，用户单轮内表达多值参数（如“查 DEMOA2 和 DEMOA3 在 1000 的库存”）需要批量协调。本节定义多值批量查询的轻量契约，v1 仅 READ-only，先于 P0B 落地，不引入持久化、不改变 runtime 架构。
+
+**状态定位**：`awaiting_batch_confirm` outcome 属 orchestrator 层批量协调，是 `ConversationState`（advisory context）的扩展，**不是执行权威**。逐组合执行仍走现有单能力 `SELECT -> CallPlan -> Gateway validate / execute` 路径，不引入第二套执行权威或绕过 capability 闭集。
+
+**机制**：
+
+```text
+单轮多值参数识别
+-> multi_parameters 拆分
+-> expand_combinations 笛卡尔积（N 个原子参数组合）
+-> awaiting_batch_confirm（携带 combinations，不执行任何 Gateway 调用）
+-> 用户确认（前端 / CLI 展示组合清单）
+-> continue_batch（逐组合 SELECT -> CallPlan -> Gateway execute）
+-> narrate_inventory_facts 聚合 N 个 ExecutionResult 为单一叙事
+```
+
+`awaiting_batch_confirm` 必须先返回组合清单等待用户确认，不得静默批量执行；这是为了避免误批量触发 SAP 调用。
+
+**安全边界**：
+
+- `BATCH_COMBINATION_CAP=20` 软上限：超限直接拒绝，防止笛卡尔积爆炸。
+- v1 READ-only：Action（`sideEffect=sap_write`）落 `awaiting_approval`，不进入 `continue_batch`；WRITE 批量审批语义为 future，须单独设计 per-combo approval snapshot / hash / atomic claim，不得复用 READ 批量路径。
+- combinations 进程内承载，与 §4.2.2 session Map 同生命周期，不跨重启持久化（P0B 接手时替换为 durable store）。
+
+**已知修复**：`awaiting_batch_confirm` 与 `last_context` 存在死循环--用户确认后 LLM 拿过时 material 重新发出 `multi_parameters`，无限循环。`fix-batch-confirm-loop` 通过在 `awaiting_batch_confirm` 早返回清空 session `last_context` 修复，并补回归测试。
+
+**与 P0B 的边界**：batch v1 不引入持久化、跨重启或 multi-worker 共享；服务端 BatchRecord 审计、combinations 分页 / 流式、per-combo `gateway_execute` SSE 事件为 future。共享批量执行或 WRITE 批量须先过 P0B trusted / durable gate。
+
 ### 4.3 MVP 能力匹配契约
 
-MVP 不建设海量能力匹配栈。能力数量处于个位数或十几个时，匹配层只采用规则匹配、Registry 精确查找、required-param 校验和治理 fail-closed。LLM 可以辅助理解自然语言，但不能替代 Registry、schema 和 governance 判断。
+MVP 不建设海量能力匹配栈。能力数量处于个位数或十几个时，**意图识别**（`IntentParseResult`）以 LLM 为主路径（`hybrid` 默认：LLM 优先，仅 `LlmUnavailable` 时回退规则，见 spec `conversational-context`）；**能力匹配 / 选择**（`MatchDecision`）仍以 deterministic 规则匹配、Registry 精确查找、required-param 校验和治理 fail-closed 为权威，LLM 不替代 Registry、schema 和 governance 判断。
 
 MVP 流水线：
 

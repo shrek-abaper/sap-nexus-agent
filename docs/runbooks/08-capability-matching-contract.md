@@ -155,6 +155,8 @@ This mechanism is the mandatory baseline for both rule and LLM paths (the rule p
 
 **v1 scope and non-goals:** v1 covers `CLARIFY` cross-turn slot-fill only. Cross-turn `ESCALATE_TO_PLANNER` disambiguation, `SHOW_OPTIONS` selection, coexistence of approval-pending with CLARIFY-pending, cross-restart persistence, and long-conversation compaction are explicit non-goals (P0B or independent change). The `ConversationState` interface is aligned with the §4.2.1 three-layer stratification so P0B can swap the in-memory Map for a durable store without restructuring the advisory layer.
 
+**Multi-value batch query (cross-reference):** the `awaiting_batch_confirm` / `continue_batch` workflow (multi-parameter split, per-combination execution, READ-only v1) built on this session layer is documented in `docs/runbooks/12-conversational-context-and-multi-value-batch.md`; the architecture contract lives in technical-architecture §4.2.3.
+
 ---
 
 ## 4.1 CapabilityCard Projection For S2-B
