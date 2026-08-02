@@ -8,7 +8,7 @@ subagent_dispatch: confirmed
 tdd_mode: tdd
 review_mode: standard
 isolation: branch
-verify_mode: null
+verify_mode: full
 auto_transition: true
 base_ref: e2735ab018029a4f6f1f4328815704f058e7bb45
 design_doc: docs/superpowers/specs/2026-08-02-durable-state-foundation-design.md
