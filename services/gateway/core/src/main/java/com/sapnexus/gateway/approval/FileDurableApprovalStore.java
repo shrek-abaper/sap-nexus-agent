@@ -16,6 +16,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import jakarta.annotation.PostConstruct;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,6 +72,14 @@ public class FileDurableApprovalStore implements DurableApprovalStore {
         } catch (IOException e) {
             throw new IllegalStateException("Failed to create durable store directories", e);
         }
+    }
+
+    @PostConstruct
+    private void initRecovery() {
+        List<ApprovalRecord> records = recoverAll();
+        log.info("Recovered {} approval record(s) on startup", records.size());
+        reconcile();
+        log.info("Reconcile completed on startup");
     }
 
     // --- ApprovalStore contract (real: save, find; stubs: claim, markExecuted) ---
