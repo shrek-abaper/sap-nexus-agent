@@ -1879,7 +1879,7 @@ git commit -m "feat(durable): add idempotent continuation with three-part idempo
 ---
 
 ## Task 9: 三层状态分层持久化约束
-- [ ] Task 9: 三层状态分层持久化约束
+- [x] Task 9: 三层状态分层持久化约束
 
 **对应 tasks.md：** 7.1 / 7.2（三层分层 + 仅 ConversationState 可压缩）
 
