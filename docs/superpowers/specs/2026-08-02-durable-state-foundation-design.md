@@ -2,6 +2,8 @@
 comet_change: sap-nexus-durable-state-foundation
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-08-02-sap-nexus-durable-state-foundation
+status: final
 ---
 
 # Design: Durable State Foundation (P0B 项1)
@@ -203,3 +205,4 @@ key schema：`${runId}:${continuationType}:${sha256(canonicalJson(params))}`
 | Store-agnostic durable interface | §1 接口契约 |
 | Three-layer state stratification | §6 三层分层 |
 | (conversational-context) Conversation session state durable + Process restart preserves sessions | §2 sessions + §恢复流程 |
+

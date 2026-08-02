@@ -2,6 +2,7 @@
 change: sap-nexus-durable-state-foundation
 design-doc: docs/superpowers/specs/2026-08-02-durable-state-foundation-design.md
 base-ref: 0f25c065c667c87392c4fc43fb1da19e50375e85
+archived-with: 2026-08-02-sap-nexus-durable-state-foundation
 ---
 
 # Durable State Foundation 实施计划
@@ -66,6 +67,7 @@ base-ref: 0f25c065c667c87392c4fc43fb1da19e50375e85
 
 任务依赖排序：接口契约 -> canonicalJson -> ConversationStore -> RunStore 核心 -> 替换 Map -> lease -> checkpoint -> idempotency -> 三层分层 -> 综合测试。
 
+archived-with: 2026-08-02-sap-nexus-durable-state-foundation
 ---
 
 ## Task 1: Store-agnostic 接口契约 + 共享类型提取
@@ -245,6 +247,7 @@ git add frontend/src/runtime/durable/types.ts frontend/vitest.config.ts frontend
 git commit -m "feat(durable): define store-agnostic interfaces and extract shared runtime types"
 ```
 
+archived-with: 2026-08-02-sap-nexus-durable-state-foundation
 ---
 
 ## Task 2: canonicalJson + sha256 工具
@@ -355,6 +358,7 @@ git add frontend/src/runtime/durable/canonical-json.ts frontend/src/runtime/dura
 git commit -m "feat(durable): add canonicalJson and sha256Hex for idempotency hashing"
 ```
 
+archived-with: 2026-08-02-sap-nexus-durable-state-foundation
 ---
 
 ## Task 3: DurableConversationStore JSON 参考实现
@@ -510,6 +514,7 @@ git add frontend/src/runtime/durable/jsonl-conversation-store.ts frontend/src/ru
 git commit -m "feat(durable): implement DurableConversationStore JSON reference impl"
 ```
 
+archived-with: 2026-08-02-sap-nexus-durable-state-foundation
 ---
 
 ## Task 4: DurableRunStore JSONL 核心实现
@@ -787,6 +792,7 @@ git add frontend/src/runtime/durable/jsonl-run-store.ts frontend/src/runtime/dur
 git commit -m "feat(durable): implement DurableRunStore JSONL core with replay recovery"
 ```
 
+archived-with: 2026-08-02-sap-nexus-durable-state-foundation
 ---
 
 ## Task 5: 替换进程内 Map 为 durable store
@@ -1240,6 +1246,7 @@ git add frontend/src/runtime/agent-runtime-adapter.ts frontend/src/runtime/agent
 git commit -m "feat(durable): replace in-process Maps with durable stores in agent-runtime-adapter"
 ```
 
+archived-with: 2026-08-02-sap-nexus-durable-state-foundation
 ---
 
 ## Task 6: Run ownership / lease
@@ -1495,6 +1502,7 @@ git add frontend/src/runtime/durable/types.ts frontend/src/runtime/durable/jsonl
 git commit -m "feat(durable): add run ownership lease with activity-driven renew and fail-closed takeover"
 ```
 
+archived-with: 2026-08-02-sap-nexus-durable-state-foundation
 ---
 
 ## Task 7: Structured checkpoint reference
@@ -1640,6 +1648,7 @@ git add frontend/src/runtime/durable/types.ts frontend/src/runtime/durable/jsonl
 git commit -m "feat(durable): persist structured checkpoint reference with replay recovery"
 ```
 
+archived-with: 2026-08-02-sap-nexus-durable-state-foundation
 ---
 
 ## Task 8: 幂等 continuation
@@ -1876,6 +1885,7 @@ git add frontend/src/runtime/durable/idempotency.ts frontend/src/runtime/durable
 git commit -m "feat(durable): add idempotent continuation with three-part idempotency key"
 ```
 
+archived-with: 2026-08-02-sap-nexus-durable-state-foundation
 ---
 
 ## Task 9: 三层状态分层持久化约束
@@ -1974,6 +1984,7 @@ git add frontend/src/runtime/durable/three-layer-stratification.test.ts
 git commit -m "test(durable): assert three-layer state stratification and append-only authority layers"
 ```
 
+archived-with: 2026-08-02-sap-nexus-durable-state-foundation
 ---
 
 ## Task 10: 综合测试与验证
@@ -2111,6 +2122,7 @@ git add frontend/src/runtime/durable/durable-foundation.integration.test.ts
 git commit -m "test(durable): add cross-restart, multi-worker, checkpoint replay, idempotent integration tests"
 ```
 
+archived-with: 2026-08-02-sap-nexus-durable-state-foundation
 ---
 
 ## 验收清单（对齐 tasks.md §8）
@@ -2140,3 +2152,4 @@ git commit -m "test(durable): add cross-restart, multi-worker, checkpoint replay
 - 单 worker durable（本 change）；multi-worker 生产实现（文件锁/Postgres）留后续，接口已预留（Task 6 lease）。
 - adapter 当前无外部调用者（route handlers 未接入），Task 5 迁移低风险；`setDurableStoresForTests` 保证测试隔离。
 - `buildBatchEvents` 需 implementer 参照 `buildApprovalEvents` 的 `base + events.length + 1` sequence 模式补全（plan 给出模式，避免冗余重复整段）。
+
