@@ -591,7 +591,7 @@ git commit -m "feat(approval): file-backed save/find with tmp+rename atomic writ
 
 ### Task 3: claimForExecution (atomic approved->executing + lease binding)
 
-- [ ] Task 3: claimForExecution (atomic approved->executing + lease binding)
+- [x] Task 3: claimForExecution (atomic approved->executing + lease binding)
 
 **Files:**
 - Modify: `services/gateway/core/src/main/java/com/sapnexus/gateway/approval/FileDurableApprovalStore.java` (replace `claimForExecution` stub; add `withStatus`, `writeLease`, `readLease` helpers)
@@ -601,7 +601,7 @@ git commit -m "feat(approval): file-backed save/find with tmp+rename atomic writ
 - Consumes: `withFileLock`, `atomicWrite`, `approvalFile`, `leaseFile` helpers (Task 2); `ApprovalRecordCodec.toJson/fromJson` (Task 1).
 - Produces: `claimForExecution` real impl — atomically transitions `approved -> executing`, writes lease file `{workerId, expiresAt=now+ttlMs}`, returns `Optional.of(executingRecord)`. Non-`approved` or missing approval returns `Optional.empty()` (idempotent). New private helpers `withStatus`, `writeLease`, `readLease` are reused by Tasks 4-6.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append these methods to `FileDurableApprovalStoreTest.java` (inside the class, after `persistsAcrossRestart`):
 
@@ -675,12 +675,12 @@ Append these methods to `FileDurableApprovalStoreTest.java` (inside the class, a
     }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd services/gateway && ./gradlew :core:test --tests "com.sapnexus.gateway.approval.FileDurableApprovalStoreTest"`
 Expected: FAIL — `claimTransitionsApprovedToExecuting` fails (stub returns empty); `claimCreatesLeaseFileWithWorkerAndExpiry` fails (no lease file).
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 In `FileDurableApprovalStore.java`, replace the `claimForExecution` stub with:
 
@@ -738,12 +738,12 @@ Add these private helpers (after `atomicWrite`, before `stripeLock`):
     }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `cd services/gateway && ./gradlew :core:test --tests "com.sapnexus.gateway.approval.FileDurableApprovalStoreTest"`
 Expected: PASS (9 tests, including the 5 new ones).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/gateway/core/src/main/java/com/sapnexus/gateway/approval/FileDurableApprovalStore.java \

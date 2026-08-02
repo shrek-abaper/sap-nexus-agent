@@ -19,7 +19,7 @@
 ## 4. cross-worker anti-replay
 
 - [ ] 4.1 实现 claim/lease 原子性（durable store 提供等价 `ConcurrentMap.compute` 的跨 worker 原子原语，如 CAS / 行锁）
-- [ ] 4.2 `claimForExecution` 幂等：已 `executing` / `executed` 的 approval 重复 claim 返回空
+- [x] 4.2 `claimForExecution` 幂等：已 `executing` / `executed` 的 approval 重复 claim 返回空
 - [ ] 4.3 lease 过期后允许带审计的重新 claim（worker 崩溃后 lease 过期可被其他 worker 接管）
 
 ## 5. JSONL 审计保留
