@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -267,5 +268,98 @@ class FileDurableApprovalStoreTest {
         LeaseInfo lease = ApprovalRecordCodec.leaseFromJson(
                 java.nio.file.Files.readString(tempDir.resolve("leases").resolve("appr-l8.json")));
         assertEquals("worker-A", lease.workerId());
+    }
+
+    @Test
+    void recoverAllLoadsAllRecords() {
+        FileDurableApprovalStore store = new FileDurableApprovalStore(tempDir, "worker-test", 60_000L);
+        store.save(sampleRecord("appr-r1", "approved"));
+        store.save(sampleRecord("appr-r2", "executed"));
+
+        FileDurableApprovalStore restarted = new FileDurableApprovalStore(tempDir, "worker-test", 60_000L);
+        List<ApprovalRecord> recovered = restarted.recoverAll();
+
+        assertEquals(2, recovered.size());
+        assertTrue(recovered.stream().anyMatch(r -> "appr-r1".equals(r.approvalId())));
+        assertTrue(recovered.stream().anyMatch(r -> "appr-r2".equals(r.approvalId())));
+    }
+
+    @Test
+    void recoverAllEmptyDirReturnsEmpty() {
+        FileDurableApprovalStore store = new FileDurableApprovalStore(tempDir, "worker-test", 60_000L);
+        assertTrue(store.recoverAll().isEmpty());
+    }
+
+    @Test
+    void recoveredExpiredApprovalStillExpired() {
+        FileDurableApprovalStore store = new FileDurableApprovalStore(tempDir, "worker-test", 60_000L);
+        ApprovalRecord expired = new ApprovalRecord(
+                "appr-exp", "MM.PR.CreateDraft", "sha256:abc",
+                Map.of("material", "M001"), "user@example.com",
+                Instant.parse("2026-08-02T10:00:00Z"),
+                Instant.parse("2026-08-02T10:00:01Z"),
+                "approved"
+        );
+        store.save(expired);
+
+        FileDurableApprovalStore restarted = new FileDurableApprovalStore(tempDir, "worker-test", 60_000L);
+        ApprovalRecord recovered = restarted.find("appr-exp").orElseThrow();
+
+        assertTrue(recovered.isExpired(Instant.now()));
+        assertEquals("approved", recovered.status());
+    }
+
+    @Test
+    void reconcileDeletesOrphanLease() throws Exception {
+        FileDurableApprovalStore store = new FileDurableApprovalStore(tempDir, "worker-test", 60_000L);
+        // write an orphan lease (no matching approval file)
+        java.nio.file.Path orphanLease = tempDir.resolve("leases").resolve("appr-orphan.json");
+        java.nio.file.Files.writeString(orphanLease,
+                ApprovalRecordCodec.toJson(new LeaseInfo("worker-X", Instant.now().plusSeconds(60))));
+
+        store.reconcile();
+
+        assertFalse(java.nio.file.Files.exists(orphanLease));
+    }
+
+    @Test
+    void reconcileCleansLeaseForExecutedRecord() {
+        FileDurableApprovalStore store = new FileDurableApprovalStore(tempDir, "worker-test", 60_000L);
+        store.save(sampleRecord("appr-ex-l", "approved"));
+        store.claimForExecution("appr-ex-l");
+        store.markExecuted("appr-ex-l");
+        // simulate residual lease by writing one back
+        store.claimLease("appr-ex-l", "worker-test", 60_000L);
+
+        store.reconcile();
+
+        assertFalse(java.nio.file.Files.exists(tempDir.resolve("leases").resolve("appr-ex-l.json")));
+        assertEquals("executed", store.find("appr-ex-l").orElseThrow().status());
+    }
+
+    @Test
+    void reconcileCleansLeaseForApprovedRecord() {
+        FileDurableApprovalStore store = new FileDurableApprovalStore(tempDir, "worker-test", 60_000L);
+        store.save(sampleRecord("appr-ap-l", "approved"));
+        store.claimLease("appr-ap-l", "worker-test", 60_000L);
+
+        store.reconcile();
+
+        assertFalse(java.nio.file.Files.exists(tempDir.resolve("leases").resolve("appr-ap-l.json")));
+        assertEquals("approved", store.find("appr-ap-l").orElseThrow().status());
+    }
+
+    @Test
+    void reconcileLeavesExecutingWithoutLeaseAsIsFailClosed() {
+        FileDurableApprovalStore store = new FileDurableApprovalStore(tempDir, "worker-test", 60_000L);
+        store.save(sampleRecord("appr-exec-nol", "approved"));
+        store.claimForExecution("appr-exec-nol");
+        // simulate crash: delete the lease but leave record as executing
+        store.releaseLease("appr-exec-nol", "worker-test");
+
+        store.reconcile();
+
+        // fail-closed: record stays executing, not auto-recovered to approved
+        assertEquals("executing", store.find("appr-exec-nol").orElseThrow().status());
     }
 }

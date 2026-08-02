@@ -137,13 +137,63 @@ public class FileDurableApprovalStore implements DurableApprovalStore {
 
     @Override
     public List<ApprovalRecord> recoverAll() {
-        // Stub - implemented in Task 6.
-        return List.of();
+        java.util.List<ApprovalRecord> records = new java.util.ArrayList<>();
+        try (Stream<Path> files = Files.list(approvalsDir)) {
+            files.filter(p -> p.getFileName().toString().endsWith(".json"))
+                 .forEach(p -> {
+                     try {
+                         records.add(ApprovalRecordCodec.fromJson(Files.readString(p)));
+                     } catch (IOException e) {
+                         throw new IllegalStateException("Failed to recover " + p, e);
+                     }
+                 });
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to scan approvals dir", e);
+        }
+        return records;
     }
 
     @Override
     public void reconcile() {
-        // Stub - implemented in Task 6.
+        try (Stream<Path> approvalFiles = Files.list(approvalsDir)) {
+            approvalFiles.filter(p -> p.getFileName().toString().endsWith(".json"))
+                .forEach(p -> {
+                    String approvalId = stripSuffix(p.getFileName().toString(), ".json");
+                    try {
+                        ApprovalRecord record = ApprovalRecordCodec.fromJson(Files.readString(p));
+                        Optional<LeaseInfo> lease = readLease(approvalId);
+                        if (lease.isPresent()) {
+                            if ("executed".equals(record.status()) || "rejected".equals(record.status())
+                                    || "approved".equals(record.status()) || "pending".equals(record.status())) {
+                                log.warn("Reconcile: cleaning residual lease for {} (status={})", approvalId, record.status());
+                                deleteLease(approvalId);
+                            }
+                        }
+                        // executing + no lease: fail-closed (leave as executing, no auto-recovery)
+                    } catch (IOException e) {
+                        throw new IllegalStateException("Reconcile failed for " + approvalId, e);
+                    }
+                });
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to scan approvals dir for reconcile", e);
+        }
+        // orphan leases: lease file with no matching approval file
+        try (Stream<Path> leaseFiles = Files.list(leasesDir)) {
+            leaseFiles.filter(p -> p.getFileName().toString().endsWith(".json"))
+                .forEach(p -> {
+                    String approvalId = stripSuffix(p.getFileName().toString(), ".json");
+                    if (!Files.exists(approvalFile(approvalId))) {
+                        try {
+                            log.warn("Reconcile: deleting orphan lease for {}", approvalId);
+                            deleteLease(approvalId);
+                        } catch (IOException e) {
+                            throw new IllegalStateException("Failed to delete orphan lease " + approvalId, e);
+                        }
+                    }
+                });
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to scan leases dir for reconcile", e);
+        }
     }
 
     @Override
@@ -258,6 +308,10 @@ public class FileDurableApprovalStore implements DurableApprovalStore {
 
     private void deleteLease(String approvalId) throws IOException {
         Files.deleteIfExists(leaseFile(approvalId));
+    }
+
+    private static String stripSuffix(String value, String suffix) {
+        return value.endsWith(suffix) ? value.substring(0, value.length() - suffix.length()) : value;
     }
 
     private ReentrantLock stripeLock(String approvalId) {
