@@ -63,4 +63,72 @@ class FileDurableApprovalStoreTest {
         assertEquals("approved", found.get().status());
         assertEquals("appr-restart", found.get().approvalId());
     }
+
+    @Test
+    void claimTransitionsApprovedToExecuting() {
+        FileDurableApprovalStore store = new FileDurableApprovalStore(tempDir, "worker-test", 60_000L);
+        store.save(sampleRecord("appr-claim", "approved"));
+
+        Optional<ApprovalRecord> claimed = store.claimForExecution("appr-claim");
+
+        assertTrue(claimed.isPresent());
+        assertEquals("executing", claimed.get().status());
+        assertEquals("executing", store.find("appr-claim").orElseThrow().status());
+    }
+
+    @Test
+    void claimNonApprovedReturnsEmpty() {
+        FileDurableApprovalStore store = new FileDurableApprovalStore(tempDir, "worker-test", 60_000L);
+        store.save(sampleRecord("appr-pending", "pending"));
+
+        assertTrue(store.claimForExecution("appr-pending").isEmpty());
+        assertEquals("pending", store.find("appr-pending").orElseThrow().status());
+    }
+
+    @Test
+    void claimIsIdempotent() {
+        FileDurableApprovalStore store = new FileDurableApprovalStore(tempDir, "worker-test", 60_000L);
+        store.save(sampleRecord("appr-idem", "approved"));
+
+        assertTrue(store.claimForExecution("appr-idem").isPresent());
+        assertTrue(store.claimForExecution("appr-idem").isEmpty());
+    }
+
+    @Test
+    void claimCreatesLeaseFileWithWorkerAndExpiry() throws Exception {
+        FileDurableApprovalStore store = new FileDurableApprovalStore(tempDir, "worker-test", 60_000L);
+        store.save(sampleRecord("appr-lease", "approved"));
+        store.claimForExecution("appr-lease");
+
+        java.nio.file.Path leaseFile = tempDir.resolve("leases").resolve("appr-lease.json");
+        assertTrue(java.nio.file.Files.exists(leaseFile));
+        LeaseInfo lease = ApprovalRecordCodec.leaseFromJson(java.nio.file.Files.readString(leaseFile));
+        assertEquals("worker-test", lease.workerId());
+        assertTrue(lease.expiresAt().isAfter(Instant.now()));
+    }
+
+    @Test
+    void concurrentClaimsHaveExactlyOneWinner() throws Exception {
+        FileDurableApprovalStore store = new FileDurableApprovalStore(tempDir, "worker-test", 60_000L);
+        store.save(sampleRecord("appr-race", "approved"));
+        var executor = java.util.concurrent.Executors.newFixedThreadPool(8);
+        try {
+            var claims = java.util.stream.IntStream.range(0, 20)
+                    .mapToObj(ignored -> (java.util.concurrent.Callable<Boolean>) () ->
+                            store.claimForExecution("appr-race").isPresent())
+                    .toList();
+            long winners = executor.invokeAll(claims).stream()
+                    .filter(future -> {
+                        try {
+                            return future.get();
+                        } catch (Exception exception) {
+                            throw new AssertionError(exception);
+                        }
+                    })
+                    .count();
+            assertEquals(1, winners);
+        } finally {
+            executor.shutdownNow();
+        }
+    }
 }

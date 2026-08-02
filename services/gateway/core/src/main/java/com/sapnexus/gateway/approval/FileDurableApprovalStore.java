@@ -91,8 +91,24 @@ public class FileDurableApprovalStore implements DurableApprovalStore {
 
     @Override
     public Optional<ApprovalRecord> claimForExecution(String approvalId) {
-        // Stub - implemented in Task 3.
-        return Optional.empty();
+        return withFileLock(approvalId, () -> {
+            Path file = approvalFile(approvalId);
+            if (!Files.exists(file)) {
+                return Optional.<ApprovalRecord>empty();
+            }
+            try {
+                ApprovalRecord existing = ApprovalRecordCodec.fromJson(Files.readString(file));
+                if (!"approved".equals(existing.status())) {
+                    return Optional.empty();
+                }
+                ApprovalRecord executing = withStatus(existing, "executing");
+                atomicWrite(file, ApprovalRecordCodec.toJson(executing));
+                writeLease(approvalId, workerId, leaseTtlMs);
+                return Optional.of(executing);
+            } catch (IOException e) {
+                throw new IllegalStateException("Failed to claim approval " + approvalId, e);
+            }
+        });
     }
 
     @Override
@@ -154,6 +170,32 @@ public class FileDurableApprovalStore implements DurableApprovalStore {
         Path tmp = target.resolveSibling(target.getFileName() + ".tmp");
         Files.writeString(tmp, content);
         Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+    }
+
+    private ApprovalRecord withStatus(ApprovalRecord existing, String status) {
+        return new ApprovalRecord(
+                existing.approvalId(),
+                existing.capabilityId(),
+                existing.parameterSnapshotHash(),
+                existing.parameters(),
+                existing.approver(),
+                existing.approvedAt(),
+                existing.expiresAt(),
+                status
+        );
+    }
+
+    private void writeLease(String approvalId, String workerId, long ttlMs) throws IOException {
+        LeaseInfo lease = new LeaseInfo(workerId, Instant.now().plusMillis(ttlMs));
+        atomicWrite(leaseFile(approvalId), ApprovalRecordCodec.toJson(lease));
+    }
+
+    private Optional<LeaseInfo> readLease(String approvalId) throws IOException {
+        Path file = leaseFile(approvalId);
+        if (!Files.exists(file)) {
+            return Optional.empty();
+        }
+        return Optional.of(ApprovalRecordCodec.leaseFromJson(Files.readString(file)));
     }
 
     private ReentrantLock stripeLock(String approvalId) {
