@@ -358,7 +358,7 @@ git commit -m "feat(durable): add canonicalJson and sha256Hex for idempotency ha
 ---
 
 ## Task 3: DurableConversationStore JSON 参考实现
-- [ ] Task 3: DurableConversationStore JSON 参考实现
+- [x] Task 3: DurableConversationStore JSON 参考实现
 
 **对应 tasks.md：** 2.3（conversation store 本地实现）
 

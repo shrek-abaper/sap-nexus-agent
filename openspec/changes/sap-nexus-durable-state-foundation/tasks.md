@@ -9,7 +9,7 @@
 
 - [ ] 2.1 comet-design 阶段选型本地 store（候选：SQLite / file-based）
 - [ ] 2.2 实现 `DurableRunStore` 本地参考实现
-- [ ] 2.3 实现 `DurableConversationStore` 本地参考实现
+- [x] 2.3 实现 `DurableConversationStore` 本地参考实现
 
 ## 3. 替换进程内 Map
 
