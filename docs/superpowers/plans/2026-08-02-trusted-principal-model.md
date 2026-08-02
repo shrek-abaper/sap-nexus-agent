@@ -147,7 +147,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ---
 
 ### Task 2: PrincipalInjector 接口 + LocalPlaceholderPrincipalInjector + 测试钩子
-- [ ] Task 2: PrincipalInjector 接口 + LocalPlaceholderPrincipalInjector + 测试钩子
+- [x] Task 2: PrincipalInjector 接口 + LocalPlaceholderPrincipalInjector + 测试钩子
 
 **Files:**
 - Create: `frontend/src/runtime/principal/principal-injector.ts`
