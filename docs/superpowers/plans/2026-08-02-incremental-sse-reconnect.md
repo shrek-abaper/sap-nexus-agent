@@ -756,7 +756,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ---
 
 ## Task 3: Continuation 路径后台执行
-- [ ] Task 3: Continuation 路径后台执行
+- [x] Task 3: Continuation 路径后台执行
 
 **Design Doc:** §1.3（decideAgentRunApproval / confirmAgentRunBatch 后台执行）
 

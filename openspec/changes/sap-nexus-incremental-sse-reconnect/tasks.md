@@ -20,7 +20,7 @@
 
 - [ ] 4.1 `run_completed` / `run_failed` 事件发出后关闭 SSE stream
 - [ ] 4.2 terminal 之后的重连：补发 terminal 事件后立即关闭 stream，cursor 不再产生新事件
-- [ ] 4.3 验证 approval/batch continuation 路径下的 terminal 收敛（awaiting_approval 后续 approve/reject 仍能正确进入 terminal）
+- [x] 4.3 验证 approval/batch continuation 路径下的 terminal 收敛（awaiting_approval 后续 approve/reject 仍能正确进入 terminal）
 
 ## 5. 背压流控
 
