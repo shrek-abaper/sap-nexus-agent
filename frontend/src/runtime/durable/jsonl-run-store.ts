@@ -17,20 +17,80 @@ import type {
   AgentRunRecord,
   ApprovalDecision,
   DurableRunStore,
+  LeaseOutcome,
   RunJsonlLine,
   WorkbenchOutcome
 } from "./types";
 
 export class JsonlRunStore implements DurableRunStore {
   private readonly runsDir: string;
+  private readonly leasesDir: string;
 
-  constructor(private readonly dataDir: string) {
+  constructor(
+    private readonly dataDir: string,
+    private readonly workerId: string = `worker-${process.pid}`,
+    private readonly defaultTtlMs: number = 60_000
+  ) {
     this.runsDir = path.join(dataDir, "runs");
+    this.leasesDir = path.join(dataDir, "leases");
     mkdirSync(this.runsDir, { recursive: true });
+    mkdirSync(this.leasesDir, { recursive: true });
   }
 
   private runFile(runId: string): string {
     return path.join(this.runsDir, `${runId}.jsonl`);
+  }
+
+  // --- lease persistence (leases/<runId>.json, tmp+rename atomic) ---
+
+  private leaseFile(runId: string): string {
+    return path.join(this.leasesDir, `${runId}.json`);
+  }
+
+  private writeLease(runId: string, workerId: string, ttlMs: number): void {
+    const file = this.leaseFile(runId);
+    const tmp = `${file}.tmp`;
+    writeFileSync(tmp, JSON.stringify({ workerId, expiresAt: Date.now() + ttlMs }), "utf8");
+    renameSync(tmp, file);
+  }
+
+  private readLease(runId: string): { workerId: string; expiresAt: number } | null {
+    const file = this.leaseFile(runId);
+    if (!existsSync(file)) return null;
+    return JSON.parse(readFileSync(file, "utf8"));
+  }
+
+  async loadLeaseExpiry(runId: string): Promise<number | null> {
+    return this.readLease(runId)?.expiresAt ?? null;
+  }
+
+  async claim(runId: string, workerId: string, ttlMs: number): Promise<LeaseOutcome> {
+    const existing = this.readLease(runId);
+    const now = Date.now();
+    if (existing && existing.expiresAt > now && existing.workerId !== workerId) {
+      return { status: "rejected", holder: existing.workerId, expiresAt: new Date(existing.expiresAt).toISOString() };
+    }
+    if (existing && existing.expiresAt <= now && existing.workerId !== workerId) {
+      this.writeLease(runId, workerId, ttlMs);
+      return { status: "force-claimed", previousHolder: existing.workerId };
+    }
+    this.writeLease(runId, workerId, ttlMs);
+    return { status: "claimed" };
+  }
+
+  async release(runId: string, workerId: string): Promise<void> {
+    const existing = this.readLease(runId);
+    if (existing && existing.workerId === workerId) {
+      unlinkSync(this.leaseFile(runId));
+    }
+  }
+
+  async renew(runId: string, workerId: string, ttlMs: number): Promise<void> {
+    const existing = this.readLease(runId);
+    if (existing && existing.workerId === workerId) {
+      this.writeLease(runId, workerId, ttlMs);
+    }
+    // no-op if lease absent or held by another worker
   }
 
   // append + fsync per line (checkpoint decision A: every event is durable)
@@ -109,6 +169,7 @@ export class JsonlRunStore implements DurableRunStore {
 
   async appendEvent(runId: string, event: AgentRunEvent): Promise<void> {
     this.appendLine(runId, { kind: "event", ...event });
+    await this.renew(runId, this.workerId, this.defaultTtlMs);
   }
 
   async appendPendingOutcome(runId: string, outcome: WorkbenchOutcome): Promise<void> {

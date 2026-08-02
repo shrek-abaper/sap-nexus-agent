@@ -92,7 +92,9 @@ export interface DurableRunStore {
   appendPendingOutcome(runId: string, outcome: WorkbenchOutcome): Promise<void>;
   appendDecision(runId: string, decision: ApprovalDecision): Promise<void>;
   clearAll(): Promise<void>;
-  // Task 6 追加: claim / release / renew
+  claim(runId: string, workerId: string, ttlMs: number): Promise<LeaseOutcome>;
+  release(runId: string, workerId: string): Promise<void>;
+  renew(runId: string, workerId: string, ttlMs: number): Promise<void>;
   // Task 7 追加: appendCheckpointRef / loadCheckpointRef
   // Task 8 追加: markExecuted / lookupExecuted
 }

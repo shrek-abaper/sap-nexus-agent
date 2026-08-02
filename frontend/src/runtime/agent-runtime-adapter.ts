@@ -53,8 +53,9 @@ type AgentRunner = (input: AgentRunnerInput) => Promise<WorkbenchOutcome>;
 
 const workbenchDataDir = process.env.WORKBENCH_DATA_DIR ?? path.join(process.cwd(), ".workbench-data");
 const durableDataDir = path.join(workbenchDataDir, "durable");
+const workerId = process.env.WORKER_ID ?? `worker-${process.pid}`;
 
-let runStore: DurableRunStore = new JsonlRunStore(durableDataDir);
+let runStore: DurableRunStore = new JsonlRunStore(durableDataDir, workerId);
 let conversationStore: DurableConversationStore = new JsonlConversationStore(durableDataDir);
 let runnerForTests: AgentRunner | null = null;
 
@@ -120,6 +121,7 @@ export async function createAgentRun(input: CreateAgentRunInput): Promise<{ runI
     events: [{ runId, sequence: 1, timestamp, type: "run_started", state: "running" }]
   };
   await runStore.save(runId, record);
+  await runStore.claim(runId, workerId, 60_000);
 
   try {
     const runner = runnerForTests ?? runLocalPythonAgent;
@@ -133,6 +135,7 @@ export async function createAgentRun(input: CreateAgentRunInput): Promise<{ runI
     if (outcome.status === "awaiting_approval" || outcome.status === "awaiting_batch_confirm") {
       record.pendingOutcome = outcome;
       await runStore.appendPendingOutcome(runId, outcome);
+      await runStore.release(runId, workerId);
     }
 
     if (input.conversationId) {
@@ -145,12 +148,15 @@ export async function createAgentRun(input: CreateAgentRunInput): Promise<{ runI
       session.lastContext = outcome.lastContext ?? null;
       await conversationStore.save(input.conversationId, session);
     }
+    // success/completed terminal state: run no longer needs the lease
+    await runStore.release(runId, workerId);
   } catch (error) {
     const failEvents = buildRuntimeFailureEvents(runId, timestamp, error);
     for (const event of failEvents.slice(1)) {
       await runStore.appendEvent(runId, event);
     }
     record.events = failEvents;
+    await runStore.release(runId, workerId);
   }
 
   return { runId };
@@ -180,6 +186,11 @@ export async function decideAgentRunApproval(runId: string, decision: ApprovalDe
     throw new Error("Agent run approval context is incomplete");
   }
 
+  const lease = await runStore.claim(runId, workerId, 60_000);
+  if (lease.status === "rejected") {
+    throw new Error(`Agent run is held by another worker (${lease.holder}); takeover rejected (fail-closed).`);
+  }
+  // lease.status === "claimed" | "force-claimed" -> proceed (audited)
   await runStore.appendDecision(runId, decision);
   const runner = runnerForTests ?? runLocalPythonAgent;
   try {
@@ -193,11 +204,15 @@ export async function decideAgentRunApproval(runId: string, decision: ApprovalDe
     for (const event of newEvents) {
       await runStore.appendEvent(runId, event);
     }
+    if (outcome.status === "awaiting_approval" || outcome.status === "awaiting_batch_confirm") {
+      await runStore.release(runId, workerId);
+    }
   } catch (error) {
     const failEvents = buildRuntimeFailureEventsTail(record.runId, record.events.length, new Date().toISOString(), error);
     for (const event of failEvents) {
       await runStore.appendEvent(runId, event);
     }
+    await runStore.release(runId, workerId);
   }
 }
 
@@ -219,6 +234,11 @@ export async function confirmAgentRunBatch(runId: string): Promise<void> {
     throw new Error("Agent run batch context is incomplete");
   }
 
+  const lease = await runStore.claim(runId, workerId, 60_000);
+  if (lease.status === "rejected") {
+    throw new Error(`Agent run is held by another worker (${lease.holder}); takeover rejected (fail-closed).`);
+  }
+  // lease.status === "claimed" | "force-claimed" -> proceed (audited)
   await runStore.appendDecision(runId, "approve");
   const runner = runnerForTests ?? runLocalPythonAgent;
   try {
@@ -232,11 +252,15 @@ export async function confirmAgentRunBatch(runId: string): Promise<void> {
     for (const event of newEvents) {
       await runStore.appendEvent(runId, event);
     }
+    if (outcome.status === "awaiting_approval" || outcome.status === "awaiting_batch_confirm") {
+      await runStore.release(runId, workerId);
+    }
   } catch (error) {
     const failEvents = buildRuntimeFailureEventsTail(record.runId, record.events.length, new Date().toISOString(), error);
     for (const event of failEvents) {
       await runStore.appendEvent(runId, event);
     }
+    await runStore.release(runId, workerId);
   }
 }
 
