@@ -1977,7 +1977,7 @@ git commit -m "test(durable): assert three-layer state stratification and append
 ---
 
 ## Task 10: 综合测试与验证
-- [ ] Task 10: 综合测试与验证
+- [x] Task 10: 综合测试与验证
 
 **对应 tasks.md：** 8.1 / 8.2 / 8.3 / 8.4 / 8.5 / 8.6 / 8.7（cross-restart / multi-worker / checkpoint replay / 幂等 / spec 回归 / openspec / npm verify）
 

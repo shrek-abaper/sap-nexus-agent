@@ -42,10 +42,10 @@
 
 ## 8. 测试与验证
 
-- [ ] 8.1 cross-restart 恢复测试（pending / awaiting_approval / awaiting_batch_confirm run 重启后可继续）
-- [ ] 8.2 multi-worker 共享 + ownership/lease fail-closed 测试
-- [ ] 8.3 checkpoint replay 一致性测试
-- [ ] 8.4 幂等 continuation 测试
-- [ ] 8.5 `conversational-context` spec 回归（process-local -> durable 语义变更）
-- [ ] 8.6 `openspec validate --all --strict` 通过
-- [ ] 8.7 `npm --prefix frontend run verify` + agent pytest 回归通过
+- [x] 8.1 cross-restart 恢复测试（pending / awaiting_approval / awaiting_batch_confirm run 重启后可继续）
+- [x] 8.2 multi-worker 共享 + ownership/lease fail-closed 测试
+- [x] 8.3 checkpoint replay 一致性测试
+- [x] 8.4 幂等 continuation 测试
+- [x] 8.5 `conversational-context` spec 回归（process-local -> durable 语义变更）
+- [x] 8.6 `openspec validate --all --strict` 通过
+- [x] 8.7 `npm --prefix frontend run verify` + agent pytest 回归通过
