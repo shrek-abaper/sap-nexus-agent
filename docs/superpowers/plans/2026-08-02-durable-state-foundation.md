@@ -1643,7 +1643,7 @@ git commit -m "feat(durable): persist structured checkpoint reference with repla
 ---
 
 ## Task 8: 幂等 continuation
-- [ ] Task 8: 幂等 continuation
+- [x] Task 8: 幂等 continuation
 
 **对应 tasks.md：** 6.1 / 6.2（idempotency key + 重复不执行）
 

@@ -32,8 +32,8 @@
 
 ## 6. 幂等 continuation
 
-- [ ] 6.1 approval / batch continuation 请求带 idempotency key
-- [ ] 6.2 重复 key 返回已记录结果，不重复执行
+- [x] 6.1 approval / batch continuation 请求带 idempotency key
+- [x] 6.2 重复 key 返回已记录结果，不重复执行
 
 ## 7. 三层状态分层持久化
 
