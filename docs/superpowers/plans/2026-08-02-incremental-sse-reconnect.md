@@ -919,7 +919,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ---
 
 ## Task 4: Stream route cursor + 轮询 + terminal 收敛 + 背压
-- [ ] Task 4: Stream route cursor + 轮询 + terminal 收敛 + 背压
+- [x] Task 4: Stream route cursor + 轮询 + terminal 收敛 + 背压
 
 **Design Doc:** §1.4（stream route 轮询 live stream）、§2（cursor = sequence）、§3（reconnect replay）、§4.1-§4.3（terminal 收敛）、§5（背压策略）
 
