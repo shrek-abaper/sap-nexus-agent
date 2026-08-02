@@ -1201,7 +1201,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ---
 
 ## Task 5: 客户端 reconnect
-- [ ] Task 5: 客户端 reconnect
+- [x] Task 5: 客户端 reconnect
 
 **Design Doc:** §6（客户端 reconnect — last sequence + onerror ?cursor=N 重连）
 
