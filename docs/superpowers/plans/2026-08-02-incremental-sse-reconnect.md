@@ -576,7 +576,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ---
 
 ## Task 2: createAgentRun 后台执行
-- [ ] Task 2: createAgentRun 后台执行
+- [x] Task 2: createAgentRun 后台执行
 
 **Design Doc:** §1.1（createAgentRun 立即返回 runId + 后台执行 runner）
 
