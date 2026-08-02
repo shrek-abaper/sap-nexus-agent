@@ -83,7 +83,7 @@ base-ref: 0f25c065c667c87392c4fc43fb1da19e50375e85
 **Interfaces:**
 - Produces: `DurableRunStore`（核心方法，后续 task 扩展）、`DurableConversationStore`、`LeaseOutcome`、`CheckpointRef`、`ContinuationType`、`RunJsonlLine`、`IdempotencyRecord`、`AgentRunRecord`、`SessionState`、`WorkbenchOutcome`、`ApprovalDecision`、`LastContext`、`Turn`、`ConversationContext`。
 
-- [ ] **Step 1: 创建 `frontend/src/runtime/durable/types.ts`**
+- [x] **Step 1: 创建 `frontend/src/runtime/durable/types.ts`**
 
 ```ts
 import type { AgentRunEvent, AgentRunState } from "../run-event-schema";
@@ -195,7 +195,7 @@ export interface DurableConversationStore {
 
 > 说明：`run_meta` 行存 `{ runId, query }`，恢复时重建 `AgentRunRecord.query`（event 行不含 query）。`DurableRunStore` 接口在 Task 6/7/8 追加 lease/checkpoint/idempotency 方法，最终对齐 Design Doc §1 完整接口。
 
-- [ ] **Step 2: 创建 `frontend/vitest.config.ts`**
+- [x] **Step 2: 创建 `frontend/vitest.config.ts`**
 
 ```ts
 import { defineConfig } from "vitest/config";
@@ -208,7 +208,7 @@ export default defineConfig({
 });
 ```
 
-- [ ] **Step 3: 修改 `agent-runtime-adapter.ts` 提取类型**
+- [x] **Step 3: 修改 `agent-runtime-adapter.ts` 提取类型**
 
 删除 adapter 顶部以下类型定义（`LastContext` / `Turn` / `ConversationContext` / `SessionState` / `AgentRunRecord` / `ApprovalDecision` / `ApprovalContinuation` / `BatchContinuation` / `AgentRunnerInput` / `WorkbenchOutcome` / `AgentRunner`），替换为从 `./durable/types` import。保留 `ApprovalContinuation` / `BatchContinuation` / `AgentRunnerInput` / `AgentRunner` 在 adapter（它们是 adapter 私有调用契约，不被 store 共享）。
 
@@ -230,7 +230,7 @@ export type { ApprovalDecision } from "./durable/types";
 
 删除 adapter 中 `type LastContext = {...}` / `type Turn = ...` / `type ConversationContext = ...` / `type SessionState = ...` / `type AgentRunRecord = ...` / `export type ApprovalDecision = ...` / `type WorkbenchOutcome = ...` 这些块。保留 `ApprovalContinuation` / `BatchContinuation` / `AgentRunnerInput` / `AgentRunner` / `CreateAgentRunInput` 定义原位不动。
 
-- [ ] **Step 4: 验证 typecheck + build**
+- [x] **Step 4: 验证 typecheck + build**
 
 Run: `npm --prefix frontend run typecheck`
 Expected: PASS（0 errors）
@@ -238,7 +238,7 @@ Expected: PASS（0 errors）
 Run: `npm --prefix frontend run build`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/runtime/durable/types.ts frontend/vitest.config.ts frontend/src/runtime/agent-runtime-adapter.ts
@@ -261,7 +261,7 @@ git commit -m "feat(durable): define store-agnostic interfaces and extract share
 **Interfaces:**
 - Produces: `canonicalJson(value: unknown): string`、`sha256Hex(input: string): string`。
 
-- [ ] **Step 1: 写失败测试 `canonical-json.test.ts`**
+- [x] **Step 1: 写失败测试 `canonical-json.test.ts`**
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -306,12 +306,12 @@ describe("sha256Hex", () => {
 });
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run: `npm --prefix frontend run test -- src/runtime/durable/canonical-json.test.ts`
 Expected: FAIL（模块不存在）
 
-- [ ] **Step 3: 实现 `canonical-json.ts`**
+- [x] **Step 3: 实现 `canonical-json.ts`**
 
 ```ts
 import { createHash } from "node:crypto";
@@ -343,12 +343,12 @@ export function sha256Hex(input: string): string {
 }
 ```
 
-- [ ] **Step 4: 运行测试确认通过**
+- [x] **Step 4: 运行测试确认通过**
 
 Run: `npm --prefix frontend run test -- src/runtime/durable/canonical-json.test.ts`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/runtime/durable/canonical-json.ts frontend/src/runtime/durable/canonical-json.test.ts
@@ -372,7 +372,7 @@ git commit -m "feat(durable): add canonicalJson and sha256Hex for idempotency ha
 - Consumes: `DurableConversationStore` / `SessionState` from `./types`
 - Produces: `JsonlConversationStore` class（构造接收 `dataDir: string`）
 
-- [ ] **Step 1: 写失败测试 `jsonl-conversation-store.test.ts`**
+- [x] **Step 1: 写失败测试 `jsonl-conversation-store.test.ts`**
 
 ```ts
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -435,12 +435,12 @@ describe("JsonlConversationStore", () => {
 });
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run: `npm --prefix frontend run test -- src/runtime/durable/jsonl-conversation-store.test.ts`
 Expected: FAIL（模块不存在）
 
-- [ ] **Step 3: 实现 `jsonl-conversation-store.ts`**
+- [x] **Step 3: 实现 `jsonl-conversation-store.ts`**
 
 ```ts
 import {
@@ -498,12 +498,12 @@ export class JsonlConversationStore implements DurableConversationStore {
 }
 ```
 
-- [ ] **Step 4: 运行测试确认通过**
+- [x] **Step 4: 运行测试确认通过**
 
 Run: `npm --prefix frontend run test -- src/runtime/durable/jsonl-conversation-store.test.ts`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/runtime/durable/jsonl-conversation-store.ts frontend/src/runtime/durable/jsonl-conversation-store.test.ts
@@ -527,7 +527,7 @@ git commit -m "feat(durable): implement DurableConversationStore JSON reference 
 - Consumes: `DurableRunStore` / `AgentRunRecord` / `AgentRunEvent` / `RunJsonlLine` / `WorkbenchOutcome` / `ApprovalDecision` from `./types`
 - Produces: `JsonlRunStore` class（构造接收 `dataDir: string`）。Task 6/7/8 在此类追加 lease/checkpoint/idempotency 方法。
 
-- [ ] **Step 1: 写失败测试 `jsonl-run-store.test.ts`**
+- [x] **Step 1: 写失败测试 `jsonl-run-store.test.ts`**
 
 ```ts
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -613,12 +613,12 @@ describe("JsonlRunStore core", () => {
 });
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run: `npm --prefix frontend run test -- src/runtime/durable/jsonl-run-store.test.ts`
 Expected: FAIL（模块不存在）
 
-- [ ] **Step 3: 实现 `jsonl-run-store.ts`（核心方法）**
+- [x] **Step 3: 实现 `jsonl-run-store.ts`（核心方法）**
 
 ```ts
 import {
@@ -770,17 +770,17 @@ export class JsonlRunStore implements DurableRunStore {
 
 > 说明：`replay` 按 JSONL 行序重放，取最新 `pending_outcome`/`decision`，events 按 sequence 排序。`checkpoint_ref` 行在 `replay` 中被忽略（由 Task 7 的 `loadCheckpointRef` 单独消费）。`save` 用 tmp+rename+fsync 保证初始化原子性。`appendEvent` 每次 open+write+fsync+close，满足"每事件 append + fsync = checkpoint"。
 
-- [ ] **Step 4: 运行测试确认通过**
+- [x] **Step 4: 运行测试确认通过**
 
 Run: `npm --prefix frontend run test -- src/runtime/durable/jsonl-run-store.test.ts`
 Expected: PASS
 
-- [ ] **Step 5: typecheck 全量**
+- [x] **Step 5: typecheck 全量**
 
 Run: `npm --prefix frontend run typecheck`
 Expected: PASS
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add frontend/src/runtime/durable/jsonl-run-store.ts frontend/src/runtime/durable/jsonl-run-store.test.ts
@@ -812,7 +812,7 @@ git commit -m "feat(durable): implement DurableRunStore JSONL core with replay r
 - `resetAgentRunsForTests` -> `runStore.clearAll()`；`resetAgentSessionsForTests` -> `conversationStore.clearAll()`。
 - helper 重构：`appendApprovalEvents` / `appendBatchEvents` / `appendRuntimeFailure` 改为**返回新 events 数组**（不直接 mutate record），由调用方 `appendEvent` 逐个持久化。
 
-- [ ] **Step 1: 写失败测试 `agent-runtime-adapter.test.ts`**
+- [x] **Step 1: 写失败测试 `agent-runtime-adapter.test.ts`**
 
 ```ts
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -922,12 +922,12 @@ describe("agent-runtime-adapter durable integration", () => {
 });
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run: `npm --prefix frontend run test -- src/runtime/agent-runtime-adapter.test.ts`
 Expected: FAIL（`setDurableStoresForTests` 不存在 / 仍用 Map）
 
-- [ ] **Step 3: 修改 `agent-runtime-adapter.ts` -- store 实例与测试钩子**
+- [x] **Step 3: 修改 `agent-runtime-adapter.ts` -- store 实例与测试钩子**
 
 替换模块级 `runs` / `sessions` Map 声明（现有 `const runs = ...` / `const sessions = ...` 两行 + `globalRunStore` 块）为：
 
@@ -963,7 +963,7 @@ export function resetAgentSessionsForTests() {
 
 删除 `globalRunStore` 块和 `__SAP_NEXUS_AGENT_RUNS__` / `__SAP_NEXUS_AGENT_SESSIONS__` 声明。删除原 `resetAgentRunsForTests` / `resetAgentSessionsForTests`（用上面的替换）。
 
-- [ ] **Step 4: 修改 `getSession` 用 conversationStore**
+- [x] **Step 4: 修改 `getSession` 用 conversationStore**
 
 替换 `getSession` 函数为：
 
@@ -977,7 +977,7 @@ async function getSession(conversationId: string): Promise<SessionState> {
 }
 ```
 
-- [ ] **Step 5: 修改 `createAgentRun` 迁移 Q2 门禁 + store 持久化**
+- [x] **Step 5: 修改 `createAgentRun` 迁移 Q2 门禁 + store 持久化**
 
 替换整个 `createAgentRun` 函数体为：
 
@@ -1045,7 +1045,7 @@ export async function createAgentRun(input: CreateAgentRunInput): Promise<{ runI
 }
 ```
 
-- [ ] **Step 6: 修改 `getAgentRunEvents` 用 store**
+- [x] **Step 6: 修改 `getAgentRunEvents` 用 store**
 
 ```ts
 export async function getAgentRunEvents(runId: string): Promise<AgentRunEvent[]> {
@@ -1054,7 +1054,7 @@ export async function getAgentRunEvents(runId: string): Promise<AgentRunEvent[]>
 }
 ```
 
-- [ ] **Step 7: 修改 `decideAgentRunApproval` 用 store + appendEvent**
+- [x] **Step 7: 修改 `decideAgentRunApproval` 用 store + appendEvent**
 
 ```ts
 export async function decideAgentRunApproval(runId: string, decision: ApprovalDecision): Promise<void> {
@@ -1098,7 +1098,7 @@ export async function decideAgentRunApproval(runId: string, decision: ApprovalDe
 }
 ```
 
-- [ ] **Step 8: 修改 `confirmAgentRunBatch` 用 store + appendEvent**
+- [x] **Step 8: 修改 `confirmAgentRunBatch` 用 store + appendEvent**
 
 ```ts
 export async function confirmAgentRunBatch(runId: string): Promise<void> {
@@ -1141,7 +1141,7 @@ export async function confirmAgentRunBatch(runId: string): Promise<void> {
 }
 ```
 
-- [ ] **Step 9: 重构 event builder 为返回数组**
+- [x] **Step 9: 重构 event builder 为返回数组**
 
 把 `appendApprovalEvents` / `appendBatchEvents` / `appendRuntimeFailure` 重构为返回 `AgentRunEvent[]`（基于 `record.events.length` 计算 sequence，不 mutate record）。新增 `buildRuntimeFailureEventsTail`（只返回失败 event，不含 run_started，用于 continuation）。
 
@@ -1223,17 +1223,17 @@ function buildRuntimeFailureEventsTail(runId: string, baseSequence: number, time
 
 `buildBatchEvents` 参照 `buildApprovalEvents` 模式（用 `record.events.length` 为 base），逻辑保持与原 `appendBatchEvents` 一致（narrative + run_completed/run_failed）。
 
-- [ ] **Step 10: 运行测试确认通过**
+- [x] **Step 10: 运行测试确认通过**
 
 Run: `npm --prefix frontend run test -- src/runtime/agent-runtime-adapter.test.ts`
 Expected: PASS
 
-- [ ] **Step 11: typecheck + build**
+- [x] **Step 11: typecheck + build**
 
 Run: `npm --prefix frontend run typecheck && npm --prefix frontend run build`
 Expected: PASS
 
-- [ ] **Step 12: Commit**
+- [x] **Step 12: Commit**
 
 ```bash
 git add frontend/src/runtime/agent-runtime-adapter.ts frontend/src/runtime/agent-runtime-adapter.test.ts
@@ -1258,7 +1258,7 @@ git commit -m "feat(durable): replace in-process Maps with durable stores in age
 **Interfaces:**
 - Extends `DurableRunStore` with: `claim(runId: string, workerId: string, ttlMs: number): Promise<LeaseOutcome>`、`release(runId: string, workerId: string): Promise<void>`、`renew(runId: string, workerId: string, ttlMs: number): Promise<void>`
 
-- [ ] **Step 1: 写失败测试 `lease.test.ts`**
+- [x] **Step 1: 写失败测试 `lease.test.ts`**
 
 ```ts
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -1334,12 +1334,12 @@ describe("lease", () => {
 });
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run: `npm --prefix frontend run test -- src/runtime/durable/lease.test.ts`
 Expected: FAIL（claim 不存在 / 构造签名不匹配）
 
-- [ ] **Step 3: 扩展 `types.ts` 接口追加 lease 方法**
+- [x] **Step 3: 扩展 `types.ts` 接口追加 lease 方法**
 
 在 `DurableRunStore` interface 的 `clearAll()` 之后加入：
 
@@ -1349,7 +1349,7 @@ Expected: FAIL（claim 不存在 / 构造签名不匹配）
   renew(runId: string, workerId: string, ttlMs: number): Promise<void>;
 ```
 
-- [ ] **Step 4: 在 `jsonl-run-store.ts` 实现 lease**
+- [x] **Step 4: 在 `jsonl-run-store.ts` 实现 lease**
 
 构造函数改为接收 `workerId` + `defaultTtlMs`，新增 `leasesDir`：
 
@@ -1436,7 +1436,7 @@ export class JsonlRunStore implements DurableRunStore {
 import type { ..., LeaseOutcome, ... } from "./types";
 ```
 
-- [ ] **Step 5: 修改 adapter 构造 store 传 workerId + continuation 集成 claim/release**
+- [x] **Step 5: 修改 adapter 构造 store 传 workerId + continuation 集成 claim/release**
 
 adapter 模块级 store 构造改为：
 
@@ -1478,17 +1478,17 @@ let runStore: DurableRunStore = new JsonlRunStore(durableDataDir, workerId);
 
 > 说明：单 worker 场景 claim 总是成功（无并发），lease 主要为 multi-worker 预留 + 崩溃恢复（过期 lease 可被 force-claim）。`appendEvent` 自动续期保证长 continuation 期间 lease 不过期。
 
-- [ ] **Step 6: 运行测试确认通过**
+- [x] **Step 6: 运行测试确认通过**
 
 Run: `npm --prefix frontend run test -- src/runtime/durable/lease.test.ts src/runtime/agent-runtime-adapter.test.ts`
 Expected: PASS
 
-- [ ] **Step 7: typecheck + build**
+- [x] **Step 7: typecheck + build**
 
 Run: `npm --prefix frontend run typecheck && npm --prefix frontend run build`
 Expected: PASS
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add frontend/src/runtime/durable/types.ts frontend/src/runtime/durable/jsonl-run-store.ts frontend/src/runtime/durable/lease.test.ts frontend/src/runtime/agent-runtime-adapter.ts
@@ -1514,7 +1514,7 @@ git commit -m "feat(durable): add run ownership lease with activity-driven renew
 **Interfaces:**
 - Extends `DurableRunStore` with: `appendCheckpointRef(runId: string, ref: CheckpointRef): Promise<void>`、`loadCheckpointRef(runId: string): Promise<CheckpointRef | null>`
 
-- [ ] **Step 1: 写失败测试 `checkpoint.test.ts`**
+- [x] **Step 1: 写失败测试 `checkpoint.test.ts`**
 
 ```ts
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -1578,12 +1578,12 @@ describe("checkpoint ref", () => {
 });
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run: `npm --prefix frontend run test -- src/runtime/durable/checkpoint.test.ts`
 Expected: FAIL（方法不存在）
 
-- [ ] **Step 3: 扩展 `types.ts` 接口追加 checkpoint 方法**
+- [x] **Step 3: 扩展 `types.ts` 接口追加 checkpoint 方法**
 
 在 `DurableRunStore` interface 的 `renew(...)` 之后加入：
 
@@ -1592,7 +1592,7 @@ Expected: FAIL（方法不存在）
   loadCheckpointRef(runId: string): Promise<CheckpointRef | null>;
 ```
 
-- [ ] **Step 4: 在 `jsonl-run-store.ts` 实现 checkpoint**
+- [x] **Step 4: 在 `jsonl-run-store.ts` 实现 checkpoint**
 
 import 块追加 `CheckpointRef`。在类中追加方法；`replay` 已忽略 `checkpoint_ref` 行（Task 4），新增独立的 `loadCheckpointRef` 扫描取最新：
 
@@ -1623,17 +1623,17 @@ import 块追加 `CheckpointRef`。在类中追加方法；`replay` 已忽略 `c
 
 > 说明：`checkpoint_ref` 是 `PlanExecutionState`（authority，不可压缩）的载体，与 `AgentRunRecord`（event stream = `EvidenceState`，authority，不可压缩）分离存储但同在 run JSONL。`ConversationState`（advisory，可压缩）在 `sessions/<conversationId>.json`，其 `save` 用 tmp+rename 原子覆写--若写失败（如磁盘满），tmp 文件被弃用、原文件不破坏（压缩失败保留原 checkpoint，对齐 D5）。
 
-- [ ] **Step 5: 运行测试确认通过**
+- [x] **Step 5: 运行测试确认通过**
 
 Run: `npm --prefix frontend run test -- src/runtime/durable/checkpoint.test.ts`
 Expected: PASS
 
-- [ ] **Step 6: typecheck + build**
+- [x] **Step 6: typecheck + build**
 
 Run: `npm --prefix frontend run typecheck && npm --prefix frontend run build`
 Expected: PASS
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add frontend/src/runtime/durable/types.ts frontend/src/runtime/durable/jsonl-run-store.ts frontend/src/runtime/durable/checkpoint.test.ts
@@ -1661,7 +1661,7 @@ git commit -m "feat(durable): persist structured checkpoint reference with repla
 - Produces: `idempotencyKey(runId: string, continuationType: ContinuationType, params: Record<string, unknown>): string`
 - Extends `DurableRunStore` with: `markExecuted(key: string, result: WorkbenchOutcome): Promise<void>`、`lookupExecuted(key: string): Promise<WorkbenchOutcome | null>`
 
-- [ ] **Step 1: 写失败测试 `idempotency.test.ts`**
+- [x] **Step 1: 写失败测试 `idempotency.test.ts`**
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -1694,7 +1694,7 @@ describe("idempotencyKey", () => {
 });
 ```
 
-- [ ] **Step 2: 写失败测试 `idempotent-continuation.test.ts`（store 层 markExecuted/lookupExecuted）**
+- [x] **Step 2: 写失败测试 `idempotent-continuation.test.ts`（store 层 markExecuted/lookupExecuted）**
 
 ```ts
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -1725,12 +1725,12 @@ describe("idempotent execution store", () => {
 });
 ```
 
-- [ ] **Step 3: 运行测试确认失败**
+- [x] **Step 3: 运行测试确认失败**
 
 Run: `npm --prefix frontend run test -- src/runtime/durable/idempotency.test.ts src/runtime/durable/idempotent-continuation.test.ts`
 Expected: FAIL（模块/方法不存在）
 
-- [ ] **Step 4: 实现 `idempotency.ts`**
+- [x] **Step 4: 实现 `idempotency.ts`**
 
 ```ts
 import { canonicalJson, sha256Hex } from "./canonical-json";
@@ -1745,7 +1745,7 @@ export function idempotencyKey(
 }
 ```
 
-- [ ] **Step 5: 扩展 `types.ts` 接口追加 idempotency 方法**
+- [x] **Step 5: 扩展 `types.ts` 接口追加 idempotency 方法**
 
 在 `DurableRunStore` interface 的 `loadCheckpointRef(...)` 之后加入：
 
@@ -1754,7 +1754,7 @@ export function idempotencyKey(
   lookupExecuted(key: string): Promise<WorkbenchOutcome | null>;
 ```
 
-- [ ] **Step 6: 在 `jsonl-run-store.ts` 实现 idempotency**
+- [x] **Step 6: 在 `jsonl-run-store.ts` 实现 idempotency**
 
 构造函数新增 `idempotencyDir`：
 
@@ -1789,7 +1789,7 @@ export function idempotencyKey(
 
 import 块追加 `IdempotencyRecord`（可选，用于类型）和确保 `WorkbenchOutcome` 已 import。
 
-- [ ] **Step 7: 集成 idempotency 到 adapter continuation**
+- [x] **Step 7: 集成 idempotency 到 adapter continuation**
 
 在 adapter 顶部 import：
 
@@ -1836,7 +1836,7 @@ import { canonicalJson } from "./durable/canonical-json";
 
 `confirmAgentRunBatch` 同理：`continuationType = "batch_confirm"`，`params = { combinations }`，`idemKey = idempotencyKey(runId, "batch_confirm", { combinations })`，执行后 `markExecuted`。
 
-- [ ] **Step 8: 追加 adapter 幂等回归测试**
+- [x] **Step 8: 追加 adapter 幂等回归测试**
 
 在 `agent-runtime-adapter.test.ts` 追加：
 
@@ -1859,17 +1859,17 @@ import { canonicalJson } from "./durable/canonical-json";
 
 > 注意：第二次 `decideAgentRunApproval` 在 `lookupExecuted` 命中后直接 return，不调用 runner，故 `calls === 1`。但第二次调用前 `record.decision` 已存在会触发 "already decided" 错误--需调整：idempotency 检查应在 "already decided" 校验**之前**，或在 duplicate 命中时 return 而不抛。把 idempotency `lookupExecuted` 块移到 `if (record.decision) throw` 之前，命中则直接 return（不抛 already decided）。按 Step 7 描述，idempotency 检查在"校验之后、claim 之前"指的是 pendingOutcome 校验之后；为支持重复请求幂等返回，应把 idempotency 检查放在所有校验之前（紧跟 load record）。调整 Step 7：idempotency 块放在 `if (!record) throw` 之后、`if (!record.pendingOutcome) throw` 之前。
 
-- [ ] **Step 9: 运行测试确认通过**
+- [x] **Step 9: 运行测试确认通过**
 
 Run: `npm --prefix frontend run test -- src/runtime/durable/idempotency.test.ts src/runtime/durable/idempotent-continuation.test.ts src/runtime/agent-runtime-adapter.test.ts`
 Expected: PASS
 
-- [ ] **Step 10: typecheck + build**
+- [x] **Step 10: typecheck + build**
 
 Run: `npm --prefix frontend run typecheck && npm --prefix frontend run build`
 Expected: PASS
 
-- [ ] **Step 11: Commit**
+- [x] **Step 11: Commit**
 
 ```bash
 git add frontend/src/runtime/durable/idempotency.ts frontend/src/runtime/durable/idempotency.test.ts frontend/src/runtime/durable/idempotent-continuation.test.ts frontend/src/runtime/durable/types.ts frontend/src/runtime/durable/jsonl-run-store.ts frontend/src/runtime/agent-runtime-adapter.ts frontend/src/runtime/agent-runtime-adapter.test.ts
@@ -1893,7 +1893,7 @@ git commit -m "feat(durable): add idempotent continuation with three-part idempo
 - `PlanExecutionState` + `EvidenceState` 不可压缩 = `JsonlRunStore` 的 run JSONL 是 append-only（`appendEvent` / `appendCheckpointRef` 只追加，`save` 仅初始化覆写空文件）。无 delete/truncate 接口。
 - 约束测试：覆写 session 不影响 run JSONL；run JSONL append 不丢失历史行；session 压缩失败（写失败）不破坏现有 session 文件。
 
-- [ ] **Step 1: 写测试 `three-layer-stratification.test.ts`**
+- [x] **Step 1: 写测试 `three-layer-stratification.test.ts`**
 
 ```ts
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -1957,17 +1957,17 @@ describe("three-layer state stratification (§4.2.1)", () => {
 });
 ```
 
-- [ ] **Step 2: 运行测试确认通过**
+- [x] **Step 2: 运行测试确认通过**
 
 Run: `npm --prefix frontend run test -- src/runtime/durable/three-layer-stratification.test.ts`
 Expected: PASS（实现已在 Task 3/4/7 完成，本任务固化约束）
 
-- [ ] **Step 3: typecheck**
+- [x] **Step 3: typecheck**
 
 Run: `npm --prefix frontend run typecheck`
 Expected: PASS
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add frontend/src/runtime/durable/three-layer-stratification.test.ts
@@ -1993,7 +1993,7 @@ git commit -m "test(durable): assert three-layer state stratification and append
 - 幂等 continuation：重复 approve 请求只执行一次。
 - conversational-context spec 回归：session 跨重启恢复 lastContext + history。
 
-- [ ] **Step 1: 写集成测试 `durable-foundation.integration.test.ts`**
+- [x] **Step 1: 写集成测试 `durable-foundation.integration.test.ts`**
 
 ```ts
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -2084,27 +2084,27 @@ describe("durable foundation integration", () => {
 });
 ```
 
-- [ ] **Step 2: 运行全部 durable 测试**
+- [x] **Step 2: 运行全部 durable 测试**
 
 Run: `npm --prefix frontend run test -- src/runtime/durable`
 Expected: PASS（全部 durable 模块测试）
 
-- [ ] **Step 3: 运行全量 verify**
+- [x] **Step 3: 运行全量 verify**
 
 Run: `npm --prefix frontend run verify`
 Expected: typecheck + vitest + build 全部 PASS
 
-- [ ] **Step 4: openspec validate**
+- [x] **Step 4: openspec validate**
 
 Run: `openspec validate --all --strict`
 Expected: PASS
 
-- [ ] **Step 5: agent 侧回归（如有 pytest）**
+- [x] **Step 5: agent 侧回归（如有 pytest）**
 
 Run: `scripts/verify-agent-callplan-evidence.sh`
 Expected: PASS（本 change 不触 agent Python 侧，确认无回归）
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add frontend/src/runtime/durable/durable-foundation.integration.test.ts
@@ -2115,13 +2115,13 @@ git commit -m "test(durable): add cross-restart, multi-worker, checkpoint replay
 
 ## 验收清单（对齐 tasks.md §8）
 
-- [ ] 8.1 cross-restart 恢复测试（Task 10 Step 1 第 1 个 it）
-- [ ] 8.2 multi-worker 共享 + lease fail-closed 测试（Task 6 lease.test.ts + Task 10 第 2 个 it）
-- [ ] 8.3 checkpoint replay 一致性测试（Task 7 checkpoint.test.ts + Task 10 第 3 个 it）
-- [ ] 8.4 幂等 continuation 测试（Task 8 idempotent-continuation.test.ts + adapter 幂等回归 + Task 10 第 4 个 it）
-- [ ] 8.5 conversational-context spec 回归（Task 10 第 5 个 it + Task 3 conversation store 测试）
-- [ ] 8.6 `openspec validate --all --strict` 通过（Task 10 Step 4）
-- [ ] 8.7 `npm --prefix frontend run verify` 通过（Task 10 Step 3）
+- [x] 8.1 cross-restart 恢复测试（Task 10 Step 1 第 1 个 it）
+- [x] 8.2 multi-worker 共享 + lease fail-closed 测试（Task 6 lease.test.ts + Task 10 第 2 个 it）
+- [x] 8.3 checkpoint replay 一致性测试（Task 7 checkpoint.test.ts + Task 10 第 3 个 it）
+- [x] 8.4 幂等 continuation 测试（Task 8 idempotent-continuation.test.ts + adapter 幂等回归 + Task 10 第 4 个 it）
+- [x] 8.5 conversational-context spec 回归（Task 10 第 5 个 it + Task 3 conversation store 测试）
+- [x] 8.6 `openspec validate --all --strict` 通过（Task 10 Step 4）
+- [x] 8.7 `npm --prefix frontend run verify` 通过（Task 10 Step 3）
 
 ## Self-Review
 
