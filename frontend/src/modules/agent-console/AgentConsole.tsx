@@ -10,6 +10,7 @@ import type { ChatTurn, ActiveTurnIndex, Session } from "./chat-types";
 import { createConversationId } from "./conversation-id";
 import { Icon, type IconName } from "@/shared/ui/Icon";
 import { samplePrompts, heroInputPlaceholder } from "./sample-data";
+import { buildStreamUrl, lastEventSequence, RECONNECT_DELAY } from "./stream-helpers";
 
 const agentRunEventTypes = [
   "run_started",
@@ -60,16 +61,19 @@ export function AgentConsole() {
   function streamAgentRun(
     localRunId: string,
     serverRunId: string,
-    initialSnapshot: AgentRunSnapshot
+    initialSnapshot: AgentRunSnapshot,
+    cursor = 0
   ) {
     let nextSnapshot = initialSnapshot;
+    let lastSequence = cursor;
     let intentionallyClosed = false;
-    const stream = new EventSource(`/api/agent-runs/${serverRunId}/stream`);
+    const stream = new EventSource(buildStreamUrl(serverRunId, cursor));
     const handleRunEvent = (message: MessageEvent<string>) => {
       const event = JSON.parse(message.data) as AgentRunEvent;
       if (nextSnapshot.events.some((existing) => existing.sequence === event.sequence)) {
         return;
       }
+      lastSequence = event.sequence;
       nextSnapshot = applyRunEvent(nextSnapshot, event);
       setTurns((prev) =>
         prev.map((turn) => (turn.runId === localRunId ? { ...turn, snapshot: nextSnapshot } : turn))
@@ -91,13 +95,10 @@ export function AgentConsole() {
       if (intentionallyClosed) {
         return;
       }
-      setTurns((prev) =>
-        prev.map((turn) =>
-          turn.runId === localRunId
-            ? { ...turn, isRunning: false, error: "连接中断，未能获取完整运行结果" }
-            : turn
-        )
-      );
+      // §6.1: reconnect with cursor to resume from last received event
+      setTimeout(() => {
+        streamAgentRun(localRunId, serverRunId, nextSnapshot, lastSequence);
+      }, RECONNECT_DELAY);
     };
   }
 
@@ -121,7 +122,8 @@ export function AgentConsole() {
         const body = (await response.json().catch(() => null)) as { message?: string } | null;
         throw new Error(body?.message ?? `审批请求失败（HTTP ${response.status}）`);
       }
-      streamAgentRun(target.runId, serverRunId, target.snapshot);
+      const cursor = lastEventSequence(target.snapshot.events);
+      streamAgentRun(target.runId, serverRunId, target.snapshot, cursor);
     } catch (error) {
       const message = error instanceof Error ? error.message : "审批请求失败";
       setTurns((prev) =>
