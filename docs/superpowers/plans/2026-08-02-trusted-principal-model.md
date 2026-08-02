@@ -537,7 +537,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ---
 
 ### Task 4: createAgentRun + getSession principal 绑定 + POST /api/agent-runs 注入（principalId 升级 required）
-- [ ] Task 4: createAgentRun + getSession principal 绑定 + POST /api/agent-runs 注入（principalId 升级 required）
+- [x] Task 4: createAgentRun + getSession principal 绑定 + POST /api/agent-runs 注入（principalId 升级 required）
 
 > 本任务将 AgentRunRecord.principalId 从可选升级为 required，同时更新所有构造点。CreateAgentRunInput 加 principal，createAgentRun 写入 principalId，getSession 加 principalId 参数（首次创建写入、后续校验归属）。POST /api/agent-runs route 入口注入 principal。
 
