@@ -3,6 +3,8 @@ comet_change: sap-nexus-incremental-sse-reconnect
 role: technical-design
 canonical_spec: openspec
 status: final
+archived-with: 2026-08-02-sap-nexus-incremental-sse-reconnect
+status: final
 ---
 
 # Design: Incremental SSE with Cursor Reconnect (P0B 项4)
@@ -433,3 +435,4 @@ function streamAgentRun(localRunId, serverRunId, initialSnapshot, cursor = 0) {
 | (client reconnect) | §6 客户端 reconnect（AgentConsole.tsx last sequence + `?cursor=N`） |
 | (backpressure no-loss) | §5 背压策略（Node stream 背压 + cursor 重连兜底） |
 | (early-exit branch handling) | §7 buildEventsFromOutcome 早退分支处理 |
+

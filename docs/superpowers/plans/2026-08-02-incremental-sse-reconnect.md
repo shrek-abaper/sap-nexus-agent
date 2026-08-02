@@ -2,6 +2,7 @@
 change: sap-nexus-incremental-sse-reconnect
 design-doc: docs/superpowers/specs/2026-08-02-incremental-sse-reconnect-design.md
 base-ref: a7ac4d1ca69cc05f1bec1c3bc48efc7e323d039d
+archived-with: 2026-08-02-sap-nexus-incremental-sse-reconnect
 ---
 
 # Incremental SSE with Cursor Reconnect Implementation Plan
@@ -25,6 +26,7 @@ base-ref: a7ac4d1ca69cc05f1bec1c3bc48efc7e323d039d
 - 测试用 vitest（`environment: "node"`，`include: ["src/**/*.test.ts"]`）；`npm --prefix frontend run verify` = typecheck + test + build。
 - `sequence` 是单调递增整数，由 emitter 内部计数器分配，语义为事件在 run 内的序号。
 
+archived-with: 2026-08-02-sap-nexus-incremental-sse-reconnect
 ---
 
 ## File Structure
@@ -39,6 +41,7 @@ base-ref: a7ac4d1ca69cc05f1bec1c3bc48efc7e323d039d
 | `frontend/src/modules/agent-console/stream-helpers.test.ts` | stream helpers 单元测试 | Create |
 | `frontend/src/modules/agent-console/AgentConsole.tsx` | 客户端 `streamAgentRun` reconnect + `decideApproval` cursor 传递 | Modify |
 
+archived-with: 2026-08-02-sap-nexus-incremental-sse-reconnect
 ---
 
 ## Task 1: Emitter 转换 + rejection terminal 修复
@@ -573,6 +576,7 @@ git commit -m "refactor: convert event builders to emitter pattern + add run_fai
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
+archived-with: 2026-08-02-sap-nexus-incremental-sse-reconnect
 ---
 
 ## Task 2: createAgentRun 后台执行
@@ -753,6 +757,7 @@ git commit -m "feat: createAgentRun returns runId immediately with background ru
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
+archived-with: 2026-08-02-sap-nexus-incremental-sse-reconnect
 ---
 
 ## Task 3: Continuation 路径后台执行
@@ -916,6 +921,7 @@ git commit -m "feat: decideAgentRunApproval/confirmAgentRunBatch return immediat
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
+archived-with: 2026-08-02-sap-nexus-incremental-sse-reconnect
 ---
 
 ## Task 4: Stream route cursor + 轮询 + terminal 收敛 + 背压
@@ -1198,6 +1204,7 @@ git commit -m "feat: stream route with polling, cursor replay, terminal close, b
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
+archived-with: 2026-08-02-sap-nexus-incremental-sse-reconnect
 ---
 
 ## Task 5: 客户端 reconnect
@@ -1363,6 +1370,7 @@ git commit -m "feat: client reconnect with cursor in AgentConsole
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
+archived-with: 2026-08-02-sap-nexus-incremental-sse-reconnect
 ---
 
 ## Task 6: 回归验证 + openspec validate
@@ -1404,6 +1412,7 @@ git add -A && git commit -m "test: adapt fixtures for incremental SSE regression
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
+archived-with: 2026-08-02-sap-nexus-incremental-sse-reconnect
 ---
 
 ## Self-Review Checklist
@@ -1420,3 +1429,4 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 **项1 依赖：** appendEvent + load + sequence，不向 DurableRunStore 添加新接口 -> 确认，所有 task 仅消费现有接口
 
 **不触边界：** Gateway / trusted principal / durable approval store / WebSocket -> 确认，无相关修改
+

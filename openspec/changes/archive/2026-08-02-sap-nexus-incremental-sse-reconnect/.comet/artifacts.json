@@ -4,5 +4,6 @@
   "openspec_tasks": "openspec/changes/sap-nexus-incremental-sse-reconnect/tasks.md",
   "openspec_delta_spec": "openspec/changes/sap-nexus-incremental-sse-reconnect/specs/sse-cursor-reconnect/spec.md",
   "handoff_context": "openspec/changes/sap-nexus-incremental-sse-reconnect/.comet/handoff/design-context.json",
-  "handoff_markdown": "openspec/changes/sap-nexus-incremental-sse-reconnect/.comet/handoff/design-context.md"
+  "handoff_markdown": "openspec/changes/sap-nexus-incremental-sse-reconnect/.comet/handoff/design-context.md",
+  "archive_directory": "openspec/changes/archive/2026-08-02-sap-nexus-incremental-sse-reconnect"
 }
