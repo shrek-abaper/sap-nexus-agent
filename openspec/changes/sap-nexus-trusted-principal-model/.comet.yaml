@@ -22,8 +22,8 @@ archived: false
 direct_override: null
 build_command: null
 verify_command: null
-handoff_context: null
-handoff_hash: null
+handoff_context: openspec/changes/sap-nexus-trusted-principal-model/.comet/handoff/design-context.json
+handoff_hash: d4aa67f59a71e26b79dbeba8e47763c5453da9a3e377c986253c7373a7db983c
 classic_profile: full
 classic_migration: 1
 run_id: b2849f49-2d4e-4a96-bc11-06af13ba0a2c

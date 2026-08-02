@@ -1,0 +1,14 @@
+{
+  "change": "sap-nexus-trusted-principal-model",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "d4aa67f59a71e26b79dbeba8e47763c5453da9a3e377c986253c7373a7db983c",
+  "files": [
+    { "path": "openspec/changes/sap-nexus-trusted-principal-model/proposal.md", "sha256": "d9850431dab57277b5be6300df41e865e7db396a47fdfb23ebdb417e6a4f901e" },
+    { "path": "openspec/changes/sap-nexus-trusted-principal-model/design.md", "sha256": "0a9c350baf900f97b10dbf7fda43939bf063a25cfdfec700e50114ad9bb0fbfd" },
+    { "path": "openspec/changes/sap-nexus-trusted-principal-model/tasks.md", "sha256": "ce57f39e2c1b1ac762ffa91ee630979b784fe2dddd546f3d17b01f6bcf9ab349" },
+    { "path": "openspec/changes/sap-nexus-trusted-principal-model/specs/trusted-principal-scope/spec.md", "sha256": "2f2d0a21cd7fefe6bfa670da0ce33e6ed52293574a76d705c444a3c45d009ca5" }
+  ]
+}

@@ -22,8 +22,8 @@ archived: false
 direct_override: null
 build_command: null
 verify_command: null
-handoff_context: null
-handoff_hash: null
+handoff_context: openspec/changes/sap-nexus-durable-approval-store/.comet/handoff/design-context.json
+handoff_hash: 21347cc49ac46635dce387ef1f2a10b63f41e1bf2c2d8c6a4199f81c315a2dda
 classic_profile: full
 classic_migration: 1
 run_id: 94da4322-5af8-4cea-b5b4-1af111605746

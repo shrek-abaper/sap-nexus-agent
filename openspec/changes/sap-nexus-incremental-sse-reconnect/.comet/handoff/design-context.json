@@ -1,0 +1,14 @@
+{
+  "change": "sap-nexus-incremental-sse-reconnect",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "bb4af331d528ab0d08212d0c0135c8428713d2033502101826ef8448ee2cf0d5",
+  "files": [
+    { "path": "openspec/changes/sap-nexus-incremental-sse-reconnect/proposal.md", "sha256": "3b1d6be59a2efdebf0a434f5bb103e989727162c752b0c046092d6678e07653a" },
+    { "path": "openspec/changes/sap-nexus-incremental-sse-reconnect/design.md", "sha256": "5114ea115128ee44f68a17d2a518e477ccaed22a16a73bb99c5a0b27c98fa768" },
+    { "path": "openspec/changes/sap-nexus-incremental-sse-reconnect/tasks.md", "sha256": "8a173a63d412fc1bb2a827bd3b09e0f898a03c2e87b05860d648440f475ac58c" },
+    { "path": "openspec/changes/sap-nexus-incremental-sse-reconnect/specs/sse-cursor-reconnect/spec.md", "sha256": "ca2be7ac141230e1bb1e3d0bbde399e8b570728d203719433756d53a44baf5a7" }
+  ]
+}

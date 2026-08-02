@@ -22,8 +22,8 @@ archived: false
 direct_override: null
 build_command: null
 verify_command: null
-handoff_context: null
-handoff_hash: null
+handoff_context: openspec/changes/sap-nexus-incremental-sse-reconnect/.comet/handoff/design-context.json
+handoff_hash: bb4af331d528ab0d08212d0c0135c8428713d2033502101826ef8448ee2cf0d5
 classic_profile: full
 classic_migration: 1
 run_id: 0ea802ed-76db-4ff6-ac8b-3a0d90c31ed7

@@ -1,0 +1,14 @@
+{
+  "change": "sap-nexus-durable-approval-store",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "21347cc49ac46635dce387ef1f2a10b63f41e1bf2c2d8c6a4199f81c315a2dda",
+  "files": [
+    { "path": "openspec/changes/sap-nexus-durable-approval-store/proposal.md", "sha256": "8f706acf76946720889a1433c3a96d4358865ad5d21196045ee43250d1ac392b" },
+    { "path": "openspec/changes/sap-nexus-durable-approval-store/design.md", "sha256": "9e266fd552f3d848dbb94f38cc81eff5e7b3bc8db808230144ddc42bf5a3578e" },
+    { "path": "openspec/changes/sap-nexus-durable-approval-store/tasks.md", "sha256": "ed0d27818f544a070cb5bb1f2c4217d015ee3fef102a79d29d268d582fbf8c88" },
+    { "path": "openspec/changes/sap-nexus-durable-approval-store/specs/durable-approval-store/spec.md", "sha256": "297e04225ae7851b34a5cb77a37e25aa0eeeb20d852a943839810c5e2995c7c6" }
+  ]
+}
