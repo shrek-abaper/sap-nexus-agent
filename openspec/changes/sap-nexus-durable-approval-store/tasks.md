@@ -1,8 +1,8 @@
 ## 1. DurableApprovalStore 接口契约
 
-- [ ] 1.1 扩展 `ApprovalStore` 接口，定义 `DurableApprovalStore` durable 语义（保留 `save` / `find` / `claimForExecution` / `markExecuted` 四方法契约，增加 cross-restart 恢复、cross-worker claim/lease 语义）
-- [ ] 1.2 定义 `ApprovalRecord` 序列化与反序列化契约（持久化到 durable store，字段：`approvalId` / `capabilityId` / `parameterSnapshotHash` / `parameters` / `approver` / `approvedAt` / `expiresAt` / `status`）
-- [ ] 1.3 定义 claim/lease 数据结构（`workerId` + lease TTL + 续期），对齐项 1 store 无关接口
+- [x] 1.1 扩展 `ApprovalStore` 接口，定义 `DurableApprovalStore` durable 语义（保留 `save` / `find` / `claimForExecution` / `markExecuted` 四方法契约，增加 cross-restart 恢复、cross-worker claim/lease 语义）
+- [x] 1.2 定义 `ApprovalRecord` 序列化与反序列化契约（持久化到 durable store，字段：`approvalId` / `capabilityId` / `parameterSnapshotHash` / `parameters` / `approver` / `approvedAt` / `expiresAt` / `status`）
+- [x] 1.3 定义 claim/lease 数据结构（`workerId` + lease TTL + 续期），对齐项 1 store 无关接口
 
 ## 2. 替换 InMemoryApprovalStore
 

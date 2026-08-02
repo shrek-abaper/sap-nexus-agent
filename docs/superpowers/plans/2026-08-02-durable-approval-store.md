@@ -52,7 +52,7 @@ Helper methods inside `FileDurableApprovalStore` (private, introduced incrementa
 
 ### Task 1: LeaseOutcome + LeaseInfo + DurableApprovalStore interface + ApprovalRecordCodec
 
-- [ ] Task 1: LeaseOutcome + LeaseInfo + DurableApprovalStore interface + ApprovalRecordCodec
+- [x] Task 1: LeaseOutcome + LeaseInfo + DurableApprovalStore interface + ApprovalRecordCodec
 
 **Files:**
 - Create: `services/gateway/core/src/main/java/com/sapnexus/gateway/approval/LeaseOutcome.java`
@@ -65,7 +65,7 @@ Helper methods inside `FileDurableApprovalStore` (private, introduced incrementa
 - Consumes: `ApprovalStore` (existing, 4 methods), `ApprovalRecord` (existing Java record, 8 fields).
 - Produces: `LeaseOutcome` (sealed interface, 3 records), `LeaseInfo` (record), `DurableApprovalStore` (interface), `ApprovalRecordCodec` (static JSON helpers). Later tasks implement `DurableApprovalStore` in `FileDurableApprovalStore`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `ApprovalRecordCodecTest.java`:
 
@@ -126,12 +126,12 @@ class ApprovalRecordCodecTest {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd services/gateway && ./gradlew :core:test --tests "com.sapnexus.gateway.approval.ApprovalRecordCodecTest"`
 Expected: COMPILE FAILURE — `LeaseOutcome`, `LeaseInfo`, `DurableApprovalStore`, `ApprovalRecordCodec` do not exist.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 Create `LeaseOutcome.java`:
 
@@ -273,12 +273,12 @@ final class ApprovalRecordCodec {
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `cd services/gateway && ./gradlew :core:test --tests "com.sapnexus.gateway.approval.ApprovalRecordCodecTest"`
 Expected: PASS (3 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/gateway/core/src/main/java/com/sapnexus/gateway/approval/LeaseOutcome.java \
