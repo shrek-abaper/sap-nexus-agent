@@ -18,7 +18,7 @@ verification_report: docs/superpowers/reports/2026-08-02-sap-nexus-durable-appro
 branch_status: handled
 created_at: 2026-08-02
 verified_at: 2026-08-02
-archived: false
+archived: true
 direct_override: null
 build_command: services/gateway/gradlew -p services/gateway :core:build
 verify_command: services/gateway/gradlew -p services/gateway :core:test

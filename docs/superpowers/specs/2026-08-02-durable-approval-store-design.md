@@ -2,6 +2,8 @@
 comet_change: sap-nexus-durable-approval-store
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-08-02-sap-nexus-durable-approval-store
+status: final
 ---
 
 # Design: Durable Approval Store (P0B 项3)
@@ -413,3 +415,4 @@ SQLite 实现用 `BEGIN TRANSACTION` ... `COMMIT` 替代文件锁，原子性由
 - **design doc**：`ApprovalGuard.check`（do-not-modify）执行 4 不变量（presence / TTL / snapshot-hash / duplicate-submit），执行流程 `find` -> `guard.check` -> `claimForExecution` -> `dispatch` -> `markExecuted`。TTL 由 `ApprovalGuard.check` 校验 `isExpired(now)`，过期返回 `APPROVAL_EXPIRED`，**先于** `claimForExecution`。
 - **实现**：store 的 `claimForExecution`（Task 3）仅校验 `status=="approved"`，不检查 expiry（设计分层：store=持久化原语，Guard=安全不变量）。过期 approval 在 `ApprovalGuard.check` 被拒，不会到达 `claimForExecution`。
 - **结论**：以 design doc 分层为准。delta spec 将 TTL 拒绝归于 `claimForExecution` 不精确；系统级「过期 approval 不可 execute」由 `ApprovalGuard` 保证（已实现、do-not-modify）。
+

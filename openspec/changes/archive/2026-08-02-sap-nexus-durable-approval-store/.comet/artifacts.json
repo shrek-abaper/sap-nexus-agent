@@ -4,5 +4,6 @@
   "openspec_tasks": "openspec/changes/sap-nexus-durable-approval-store/tasks.md",
   "openspec_delta_spec": "openspec/changes/sap-nexus-durable-approval-store/specs/durable-approval-store/spec.md",
   "handoff_context": "openspec/changes/sap-nexus-durable-approval-store/.comet/handoff/design-context.json",
-  "handoff_markdown": "openspec/changes/sap-nexus-durable-approval-store/.comet/handoff/design-context.md"
+  "handoff_markdown": "openspec/changes/sap-nexus-durable-approval-store/.comet/handoff/design-context.md",
+  "archive_directory": "openspec/changes/archive/2026-08-02-sap-nexus-durable-approval-store"
 }

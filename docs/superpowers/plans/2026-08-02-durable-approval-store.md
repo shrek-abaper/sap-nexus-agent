@@ -2,6 +2,7 @@
 change: sap-nexus-durable-approval-store
 design-doc: docs/superpowers/specs/2026-08-02-durable-approval-store-design.md
 base-ref: a7ac4d1ca69cc05f1bec1c3bc48efc7e323d039d
+archived-with: 2026-08-02-sap-nexus-durable-approval-store
 ---
 
 # Durable Approval Store Implementation Plan
@@ -48,6 +49,7 @@ Helper methods inside `FileDurableApprovalStore` (private, introduced incrementa
 - `writeLease(String, String, long)` / `readLease(String)` — lease file I/O (Task 3)
 - `deleteLease(String)` — `Files.deleteIfExists` on lease file (Task 4)
 
+archived-with: 2026-08-02-sap-nexus-durable-approval-store
 ---
 
 ### Task 1: LeaseOutcome + LeaseInfo + DurableApprovalStore interface + ApprovalRecordCodec
@@ -289,6 +291,7 @@ git add services/gateway/core/src/main/java/com/sapnexus/gateway/approval/LeaseO
 git commit -m "feat(approval): add DurableApprovalStore interface, LeaseOutcome, LeaseInfo, Jackson codec"
 ```
 
+archived-with: 2026-08-02-sap-nexus-durable-approval-store
 ---
 
 ### Task 2: FileDurableApprovalStore save/find (atomic tmp+rename, striped locks)
@@ -587,6 +590,7 @@ git add services/gateway/core/src/main/java/com/sapnexus/gateway/approval/FileDu
 git commit -m "feat(approval): file-backed save/find with tmp+rename atomic writes and striped locks"
 ```
 
+archived-with: 2026-08-02-sap-nexus-durable-approval-store
 ---
 
 ### Task 3: claimForExecution (atomic approved->executing + lease binding)
@@ -751,6 +755,7 @@ git add services/gateway/core/src/main/java/com/sapnexus/gateway/approval/FileDu
 git commit -m "feat(approval): atomic claimForExecution with lease binding and concurrent-claim safety"
 ```
 
+archived-with: 2026-08-02-sap-nexus-durable-approval-store
 ---
 
 ### Task 4: markExecuted (atomic executing->executed + lease release)
@@ -874,6 +879,7 @@ git add services/gateway/core/src/main/java/com/sapnexus/gateway/approval/FileDu
 git commit -m "feat(approval): atomic markExecuted with lease release"
 ```
 
+archived-with: 2026-08-02-sap-nexus-durable-approval-store
 ---
 
 ### Task 5: claimLease / releaseLease / renewLease (LeaseOutcome three states)
@@ -1068,6 +1074,7 @@ git add services/gateway/core/src/main/java/com/sapnexus/gateway/approval/FileDu
 git commit -m "feat(approval): lease management with three-state LeaseOutcome (claimed/rejected/force-claimed)"
 ```
 
+archived-with: 2026-08-02-sap-nexus-durable-approval-store
 ---
 
 ### Task 6: recoverAll + reconcile (cross-restart recovery + internal consistency)
@@ -1278,6 +1285,7 @@ git add services/gateway/core/src/main/java/com/sapnexus/gateway/approval/FileDu
 git commit -m "feat(approval): recoverAll and reconcile with fail-closed drift handling"
 ```
 
+archived-with: 2026-08-02-sap-nexus-durable-approval-store
 ---
 
 ### Task 7: Spring wiring (@Primary) + full verification
@@ -1354,6 +1362,7 @@ git add services/gateway/core/src/main/java/com/sapnexus/gateway/approval/FileDu
 git commit -m "feat(approval): wire FileDurableApprovalStore as @Primary production ApprovalStore"
 ```
 
+archived-with: 2026-08-02-sap-nexus-durable-approval-store
 ---
 
 ## Spec Coverage Map
@@ -1377,3 +1386,4 @@ git commit -m "feat(approval): wire FileDurableApprovalStore as @Primary product
 | tasks.md 7.6 openspec validate pass | Task 7 Step 5 |
 
 **Note on tasks.md 3.3 / 5.2:** those items say "恢复时以 JSONL 审计为准对账", but Design D4 (corrected) supersedes: recovery uses durable store internal consistency only, no cross-service JSONL read. This plan follows D4 (canonical). JSONL trace remains the audit source but is not in the Gateway recovery path.
+
