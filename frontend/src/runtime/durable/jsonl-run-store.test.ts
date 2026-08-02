@@ -1,0 +1,82 @@
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { JsonlRunStore } from "./jsonl-run-store";
+import type { AgentRunEvent } from "../run-event-schema";
+import type { AgentRunRecord, WorkbenchOutcome } from "./types";
+
+function event(runId: string, sequence: number, type: AgentRunEvent["type"], state: AgentRunEvent["state"]): AgentRunEvent {
+  return { runId, sequence, timestamp: "2026-08-02T00:00:00Z", type, state };
+}
+
+function record(runId: string, query: string, events: AgentRunEvent[]): AgentRunRecord {
+  return { runId, query, events };
+}
+
+describe("JsonlRunStore core", () => {
+  let dir: string;
+  beforeEach(() => { dir = mkdtempSync(path.join(tmpdir(), "run-")); });
+  afterEach(() => { rmSync(dir, { recursive: true, force: true }); });
+
+  it("returns null when run does not exist", async () => {
+    const store = new JsonlRunStore(dir);
+    expect(await store.load("run-x")).toBeNull();
+  });
+
+  it("saves and loads a run with full event stream", async () => {
+    const store = new JsonlRunStore(dir);
+    const events = [event("run-1", 1, "run_started", "running"), event("run-1", 2, "run_completed", "completed")];
+    await store.save("run-1", record("run-1", "query text", events));
+    const loaded = await store.load("run-1");
+    expect(loaded).toEqual(record("run-1", "query text", events));
+  });
+
+  it("appendEvent adds events incrementally and persists via fsync", async () => {
+    const store = new JsonlRunStore(dir);
+    await store.save("run-1", record("run-1", "q", [event("run-1", 1, "run_started", "running")]));
+    await store.appendEvent("run-1", event("run-1", 2, "intent_parsed", "intent_parsed"));
+    const loaded = await store.load("run-1");
+    expect(loaded?.events.map((e) => e.sequence)).toEqual([1, 2]);
+  });
+
+  it("recovers full record across store instances (cross-restart replay)", async () => {
+    const store = new JsonlRunStore(dir);
+    const events = [event("run-1", 1, "run_started", "running"), event("run-1", 2, "run_completed", "completed")];
+    await store.save("run-1", record("run-1", "q", [events[0]]));
+    await store.appendEvent("run-1", events[1]);
+    const outcome: WorkbenchOutcome = { status: "awaiting_approval" };
+    await store.appendPendingOutcome("run-1", outcome);
+    await store.appendDecision("run-1", "approve");
+
+    const reopened = new JsonlRunStore(dir);
+    const loaded = await reopened.load("run-1");
+    expect(loaded?.query).toBe("q");
+    expect(loaded?.events).toEqual(events);
+    expect(loaded?.pendingOutcome).toEqual(outcome);
+    expect(loaded?.decision).toBe("approve");
+  });
+
+  it("appendPendingOutcome keeps the latest value", async () => {
+    const store = new JsonlRunStore(dir);
+    await store.save("run-1", record("run-1", "q", [event("run-1", 1, "run_started", "running")]));
+    await store.appendPendingOutcome("run-1", { status: "awaiting_approval" });
+    await store.appendPendingOutcome("run-1", { status: "awaiting_batch_confirm" });
+    expect((await store.load("run-1"))?.pendingOutcome?.status).toBe("awaiting_batch_confirm");
+  });
+
+  it("list returns all runs, optionally filtered by last state", async () => {
+    const store = new JsonlRunStore(dir);
+    await store.save("run-1", record("run-1", "q", [event("run-1", 1, "run_started", "running"), event("run-1", 2, "approval_state_changed", "awaiting_approval")]));
+    await store.save("run-2", record("run-2", "q", [event("run-2", 1, "run_started", "running"), event("run-2", 2, "run_completed", "completed")]));
+    expect((await store.list()).length).toBe(2);
+    expect((await store.list({ state: "awaiting_approval" })).map((r) => r.runId)).toEqual(["run-1"]);
+  });
+
+  it("clearAll removes all runs", async () => {
+    const store = new JsonlRunStore(dir);
+    await store.save("run-1", record("run-1", "q", [event("run-1", 1, "run_started", "running")]));
+    await store.clearAll();
+    expect(await store.load("run-1")).toBeNull();
+  });
+});
