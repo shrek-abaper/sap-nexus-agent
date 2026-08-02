@@ -12,8 +12,8 @@
 
 ## 3. cross-restart approval 恢复
 
-- [ ] 3.1 重启时从 durable store 恢复 `pending` / `approved` / `executing` 状态 approval，可继续 approve / claim / execute
-- [ ] 3.2 `executed` / `rejected` 终态恢复后只读（仅审计查询，不可再迁移）
+- [x] 3.1 重启时从 durable store 恢复 `pending` / `approved` / `executing` 状态 approval，可继续 approve / claim / execute
+- [x] 3.2 `executed` / `rejected` 终态恢复后只读（仅审计查询，不可再迁移）
 - [ ] 3.3 恢复时以 JSONL 审计为准对账，durable store 漂移 fail-closed
 
 ## 4. cross-worker anti-replay
@@ -24,14 +24,14 @@
 
 ## 5. JSONL 审计保留
 
-- [ ] 5.1 JSONL trace 保留为 authoritative 审计源，durable store swap 不动 JSONL 审计语义
+- [x] 5.1 JSONL trace 保留为 authoritative 审计源，durable store swap 不动 JSONL 审计语义
 - [ ] 5.2 durable store 作为 operational index（save / find / claimForExecution / markExecuted），崩溃恢复以 JSONL 为准
 
 ## 6. Approval TTL 跨重启校验
 
-- [ ] 6.1 恢复时重新校验 `expiresAt`（`ApprovalRecord.isExpired(Instant)`）
+- [x] 6.1 恢复时重新校验 `expiresAt`（`ApprovalRecord.isExpired(Instant)`）
 - [ ] 6.2 `claimForExecution` 拒绝过期 approval（返回空），过期 approval 保持恢复态供审计
-- [ ] 6.3 TTL 基准时间（`approvedAt` 固定 vs 恢复时刻重置）按 comet-design 决策实现
+- [x] 6.3 TTL 基准时间（`approvedAt` 固定 vs 恢复时刻重置）按 comet-design 决策实现
 
 ## 7. 测试与验证
 

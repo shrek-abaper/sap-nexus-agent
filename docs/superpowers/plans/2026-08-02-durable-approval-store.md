@@ -1072,7 +1072,7 @@ git commit -m "feat(approval): lease management with three-state LeaseOutcome (c
 
 ### Task 6: recoverAll + reconcile (cross-restart recovery + internal consistency)
 
-- [ ] Task 6: recoverAll + reconcile (cross-restart recovery + internal consistency)
+- [x] Task 6: recoverAll + reconcile (cross-restart recovery + internal consistency)
 
 **Files:**
 - Modify: `services/gateway/core/src/main/java/com/sapnexus/gateway/approval/FileDurableApprovalStore.java` (replace `recoverAll` and `reconcile` stubs; add `stripSuffix` helper)
@@ -1082,7 +1082,7 @@ git commit -m "feat(approval): lease management with three-state LeaseOutcome (c
 - Consumes: `ApprovalRecordCodec`, `approvalFile`, `leaseFile`, `readLease`, `deleteLease`, `safeName` helpers (Tasks 1-4).
 - Produces: `recoverAll` (scan `approvals/`, deserialize all records) and `reconcile` (internal consistency: clean orphan/residual leases; leave `executing`+no-lease fail-closed). Recovery uses the durable store only — does NOT read agent JSONL (Design D4). TTL is validated via persisted `expiresAt` (Design §3 — `approvedAt` fixed baseline).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append these methods to `FileDurableApprovalStoreTest.java`. Add `import java.util.List;` to the test file imports.
 
@@ -1181,12 +1181,12 @@ Append these methods to `FileDurableApprovalStoreTest.java`. Add `import java.ut
     }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd services/gateway && ./gradlew :core:test --tests "com.sapnexus.gateway.approval.FileDurableApprovalStoreTest"`
 Expected: FAIL — `recoverAllLoadsAllRecords` fails (stub returns empty list); reconcile stubs are no-ops so lease-cleanup tests fail.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 In `FileDurableApprovalStore.java`, replace the `recoverAll` stub with:
 
@@ -1265,12 +1265,12 @@ Add this private helper (after `deleteLease`):
     }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `cd services/gateway && ./gradlew :core:test --tests "com.sapnexus.gateway.approval.FileDurableApprovalStoreTest"`
 Expected: PASS (28 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/gateway/core/src/main/java/com/sapnexus/gateway/approval/FileDurableApprovalStore.java \
