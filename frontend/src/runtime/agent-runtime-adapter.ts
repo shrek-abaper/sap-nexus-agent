@@ -173,14 +173,22 @@ export async function createAgentRun(input: CreateAgentRunInput): Promise<{ runI
   return { runId };
 }
 
-export async function getAgentRunEvents(runId: string): Promise<AgentRunEvent[]> {
+export async function getAgentRunEvents(
+  runId: string,
+  principal: TrustedPrincipal
+): Promise<AgentRunEvent[]> {
   const run = await runStore.load(runId);
-  return run ? run.events : [];
+  if (!run || run.principalId !== principal.principalId) return [];
+  return run.events;
 }
 
-export async function decideAgentRunApproval(runId: string, decision: ApprovalDecision): Promise<void> {
+export async function decideAgentRunApproval(
+  runId: string,
+  decision: ApprovalDecision,
+  principal: TrustedPrincipal
+): Promise<void> {
   const record = await runStore.load(runId);
-  if (!record) {
+  if (!record || record.principalId !== principal.principalId) {
     throw new Error("Agent run not found");
   }
 
@@ -241,9 +249,12 @@ export async function decideAgentRunApproval(runId: string, decision: ApprovalDe
   }
 }
 
-export async function confirmAgentRunBatch(runId: string): Promise<void> {
+export async function confirmAgentRunBatch(
+  runId: string,
+  principal: TrustedPrincipal
+): Promise<void> {
   const record = await runStore.load(runId);
-  if (!record) {
+  if (!record || record.principalId !== principal.principalId) {
     throw new Error("Agent run not found");
   }
 

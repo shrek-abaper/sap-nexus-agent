@@ -3,6 +3,7 @@ import {
   decideAgentRunApproval,
   type ApprovalDecision
 } from "../../../../../src/runtime/agent-runtime-adapter";
+import { injectPrincipal } from "../../../../../src/runtime/principal/principal-injector";
 
 export async function POST(
   request: Request,
@@ -23,9 +24,10 @@ export async function POST(
     return invalidRequest("Only decision=approve|reject is accepted.");
   }
 
+  const principal = injectPrincipal(request);
   const { runId } = await params;
   try {
-    await decideAgentRunApproval(runId, body.decision);
+    await decideAgentRunApproval(runId, body.decision, principal);
     return NextResponse.json({ runId });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Approval request failed";

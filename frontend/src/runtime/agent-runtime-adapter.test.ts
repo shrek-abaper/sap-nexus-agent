@@ -51,13 +51,13 @@ describe("agent-runtime-adapter durable integration", () => {
 
   it("createAgentRun persists events to durable store", async () => {
     const { runId } = await createAgentRun({ query: "查询库存", principal: PLACEHOLDER_PRINCIPAL });
-    const events = await getAgentRunEvents(runId);
+    const events = await getAgentRunEvents(runId, PLACEHOLDER_PRINCIPAL);
     expect(events.length).toBeGreaterThan(0);
     expect(events[0].type).toBe("run_started");
   });
 
   it("getAgentRunEvents returns [] for unknown run", async () => {
-    expect(await getAgentRunEvents("run-missing")).toEqual([]);
+    expect(await getAgentRunEvents("run-missing", PLACEHOLDER_PRINCIPAL)).toEqual([]);
   });
 
   it("pending approval run recovers across store reset (cross-restart)", async () => {
@@ -66,7 +66,7 @@ describe("agent-runtime-adapter durable integration", () => {
     const reopenedRun = new JsonlRunStore(dir);
     const reopenedConv = new JsonlConversationStore(dir);
     setDurableStoresForTests(reopenedRun, reopenedConv);
-    const events = await getAgentRunEvents(runId);
+    const events = await getAgentRunEvents(runId, PLACEHOLDER_PRINCIPAL);
     expect(events.some((e) => e.state === "awaiting_approval")).toBe(true);
   });
 
@@ -86,15 +86,15 @@ describe("agent-runtime-adapter durable integration", () => {
     const runs = await runStore.list({ state: "awaiting_approval" });
     const target = runs[runs.length - 1];
     setAgentRunnerForTests(async () => ({ status: "success", responseText: "已执行", approvalRecord: { id: "apr-1", status: "executed" } } as WorkbenchOutcome));
-    await decideAgentRunApproval(target.runId, "approve");
-    const events = await getAgentRunEvents(target.runId);
+    await decideAgentRunApproval(target.runId, "approve", PLACEHOLDER_PRINCIPAL);
+    const events = await getAgentRunEvents(target.runId, PLACEHOLDER_PRINCIPAL);
     expect(events.some((e) => e.hitlState === "approved")).toBe(true);
   });
 
   it("resetAgentRunsForTests clears durable runs", async () => {
     const { runId } = await createAgentRun({ query: "查询库存", principal: PLACEHOLDER_PRINCIPAL });
     resetAgentRunsForTests();
-    expect(await getAgentRunEvents(runId)).toEqual([]);
+    expect(await getAgentRunEvents(runId, PLACEHOLDER_PRINCIPAL)).toEqual([]);
   });
 
   it("resetAgentSessionsForTests clears durable sessions", async () => {
@@ -115,8 +115,8 @@ describe("agent-runtime-adapter durable integration", () => {
       return awaitingOutcome("run-x");
     });
     const { runId } = await createAgentRun({ query: "查询库存", conversationId: "c-idem", principal: PLACEHOLDER_PRINCIPAL });
-    await decideAgentRunApproval(runId, "approve");
-    await decideAgentRunApproval(runId, "approve"); // duplicate
+    await decideAgentRunApproval(runId, "approve", PLACEHOLDER_PRINCIPAL);
+    await decideAgentRunApproval(runId, "approve", PLACEHOLDER_PRINCIPAL); // duplicate
     expect(calls).toBe(1);
   });
 
@@ -135,14 +135,14 @@ describe("agent-runtime-adapter durable integration", () => {
       return batchOutcome;
     });
     const { runId } = await createAgentRun({ query: "批量查询", conversationId: "c-batch-idem", principal: PLACEHOLDER_PRINCIPAL });
-    await confirmAgentRunBatch(runId);
-    await confirmAgentRunBatch(runId); // duplicate
+    await confirmAgentRunBatch(runId, PLACEHOLDER_PRINCIPAL);
+    await confirmAgentRunBatch(runId, PLACEHOLDER_PRINCIPAL); // duplicate
     expect(calls).toBe(1);
   });
 
   it("createAgentRun binds principalId to the run record", async () => {
     const { runId } = await createAgentRun({ query: "查询库存", principal: PLACEHOLDER_PRINCIPAL });
-    const events = await getAgentRunEvents(runId);
+    const events = await getAgentRunEvents(runId, PLACEHOLDER_PRINCIPAL);
     expect(events.length).toBeGreaterThan(0);
     const runs = await runStore.list({ principalId: "local-user-0001" });
     expect(runs.some((r) => r.runId === runId)).toBe(true);
@@ -167,5 +167,44 @@ describe("agent-runtime-adapter durable integration", () => {
     await expect(
       createAgentRun({ query: "越权", conversationId: "c-x", principal: attacker })
     ).rejects.toThrow(/does not belong/);
+  });
+
+  it("getAgentRunEvents returns [] for cross-principal access (fail-closed)", async () => {
+    const { runId } = await createAgentRun({ query: "查询库存", principal: PLACEHOLDER_PRINCIPAL });
+    const attacker: TrustedPrincipal = {
+      principalId: "attacker-003",
+      role: "operator",
+      dataScope: { tenantId: "evil" }
+    };
+    expect(await getAgentRunEvents(runId, attacker)).toEqual([]);
+    // same principal still sees events
+    expect((await getAgentRunEvents(runId, PLACEHOLDER_PRINCIPAL)).length).toBeGreaterThan(0);
+  });
+
+  it("decideAgentRunApproval throws not-found for cross-principal access", async () => {
+    setAgentRunnerForTests(async () => awaitingOutcome("run-1"));
+    const { runId } = await createAgentRun({ query: "查询库存", principal: PLACEHOLDER_PRINCIPAL });
+    const attacker: TrustedPrincipal = {
+      principalId: "attacker-004",
+      role: "operator",
+      dataScope: { tenantId: "evil" }
+    };
+    await expect(decideAgentRunApproval(runId, "reject", attacker)).rejects.toThrow(/not found/);
+  });
+
+  it("confirmAgentRunBatch throws not-found for cross-principal access", async () => {
+    setAgentRunnerForTests(async () => ({
+      status: "awaiting_batch_confirm",
+      callPlan: { capabilityId: "cap-1", kind: "Action" },
+      combinations: [{ plant: "P1" }],
+      responseText: "待确认"
+    } as WorkbenchOutcome));
+    const { runId } = await createAgentRun({ query: "批量查询", principal: PLACEHOLDER_PRINCIPAL });
+    const attacker: TrustedPrincipal = {
+      principalId: "attacker-005",
+      role: "operator",
+      dataScope: { tenantId: "evil" }
+    };
+    await expect(confirmAgentRunBatch(runId, attacker)).rejects.toThrow(/not found/);
   });
 });

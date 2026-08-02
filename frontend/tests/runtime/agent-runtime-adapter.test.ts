@@ -74,7 +74,7 @@ describe("agent runtime adapter", () => {
     setAgentRunnerForTests(runner);
 
     const run = await createAgentRun({ query: "MAT-LIVE 在 1000 还有多少可用库存？", principal: PLACEHOLDER_PRINCIPAL });
-    const events = await getAgentRunEvents(run.runId);
+    const events = await getAgentRunEvents(run.runId, PLACEHOLDER_PRINCIPAL);
 
     expect(runner).toHaveBeenCalledWith({
       query: "MAT-LIVE 在 1000 还有多少可用库存？",
@@ -161,7 +161,7 @@ describe("agent runtime adapter", () => {
     setAgentRunnerForTests(runner);
 
     const run = await createAgentRun({ query: "创建采购申请", principal: PLACEHOLDER_PRINCIPAL });
-    const events = await getAgentRunEvents(run.runId);
+    const events = await getAgentRunEvents(run.runId, PLACEHOLDER_PRINCIPAL);
 
     expect(events.some((event) => event.type === "gateway_execute_started")).toBe(false);
     expect(events.some((event) => event.type === "run_failed")).toBe(false);
@@ -224,7 +224,7 @@ describe("agent runtime adapter", () => {
     setAgentRunnerForTests(runner);
 
     const run = await createAgentRun({ query: "创建采购申请", principal: PLACEHOLDER_PRINCIPAL });
-    await decideAgentRunApproval(run.runId, "approve");
+    await decideAgentRunApproval(run.runId, "approve", PLACEHOLDER_PRINCIPAL);
 
     expect(runner).toHaveBeenNthCalledWith(2, {
       query: "创建采购申请",
@@ -237,11 +237,11 @@ describe("agent runtime adapter", () => {
         approvalRecord: pendingOutcome.approvalRecord
       }
     });
-    const events = await getAgentRunEvents(run.runId);
+    const events = await getAgentRunEvents(run.runId, PLACEHOLDER_PRINCIPAL);
     expect(events.some((event) => event.type === "gateway_execute_completed")).toBe(true);
     expect(events.at(-1)?.state).toBe("completed");
 
-    await expect(decideAgentRunApproval(run.runId, "approve")).rejects.toThrow("already decided");
+    await expect(decideAgentRunApproval(run.runId, "approve", PLACEHOLDER_PRINCIPAL)).rejects.toThrow("already decided");
     expect(runner).toHaveBeenCalledTimes(2);
   });
 
@@ -288,8 +288,8 @@ describe("agent runtime adapter", () => {
     setAgentRunnerForTests(runner);
 
     const run = await createAgentRun({ query: "创建采购申请", principal: PLACEHOLDER_PRINCIPAL });
-    await decideAgentRunApproval(run.runId, "reject");
-    const events = await getAgentRunEvents(run.runId);
+    await decideAgentRunApproval(run.runId, "reject", PLACEHOLDER_PRINCIPAL);
+    const events = await getAgentRunEvents(run.runId, PLACEHOLDER_PRINCIPAL);
 
     expect(events.some((event) => event.type === "gateway_execute_started")).toBe(false);
     expect(events.at(-1)?.hitlState).toBe("rejected");
@@ -336,8 +336,8 @@ describe("agent runtime adapter", () => {
     setAgentRunnerForTests(runner);
 
     const run = await createAgentRun({ query: "创建采购申请", principal: PLACEHOLDER_PRINCIPAL });
-    await decideAgentRunApproval(run.runId, "approve");
-    const events = await getAgentRunEvents(run.runId);
+    await decideAgentRunApproval(run.runId, "approve", PLACEHOLDER_PRINCIPAL);
+    const events = await getAgentRunEvents(run.runId, PLACEHOLDER_PRINCIPAL);
 
     expect(events.some((event) => event.hitlState === "approved")).toBe(false);
     expect(events.at(-1)?.type).toBe("run_failed");
@@ -358,7 +358,7 @@ describe("agent runtime adapter", () => {
 
     vi.resetModules();
     const secondModule = await import("../../src/runtime/agent-runtime-adapter");
-    const events = await secondModule.getAgentRunEvents(run.runId);
+    const events = await secondModule.getAgentRunEvents(run.runId, PLACEHOLDER_PRINCIPAL);
 
     expect(events.map((event) => event.type)).toEqual([
       "run_started",
@@ -453,7 +453,7 @@ describe("agent runtime adapter", () => {
     setAgentRunnerForTests(runner);
 
     const run1 = await createAgentRun({ query: "建PR 物料X", conversationId: "conv-decided", principal: PLACEHOLDER_PRINCIPAL });
-    await decideAgentRunApproval(run1.runId, "approve");
+    await decideAgentRunApproval(run1.runId, "approve", PLACEHOLDER_PRINCIPAL);
 
     // After approval is decided, a new query on the same conversation must
     // NOT be rejected by Q2 and must invoke the runner.
@@ -580,7 +580,7 @@ describe("agent runtime adapter", () => {
 
     const run = await createAgentRun({ query: "DEMOA2 在 5200 和 1000 的库存", principal: PLACEHOLDER_PRINCIPAL });
 
-    const events = await getAgentRunEvents(run.runId);
+    const events = await getAgentRunEvents(run.runId, PLACEHOLDER_PRINCIPAL);
     expect(events.some((e) => e.state === "awaiting_batch_confirm")).toBe(true);
     expect(events.some((e) => e.type === "batch_confirm_requested")).toBe(true);
   });
@@ -612,7 +612,7 @@ describe("agent runtime adapter", () => {
     setAgentRunnerForTests(runner);
 
     const run = await createAgentRun({ query: "DEMOA2 在 5200 和 1000 的库存", principal: PLACEHOLDER_PRINCIPAL });
-    await confirmAgentRunBatch(run.runId);
+    await confirmAgentRunBatch(run.runId, PLACEHOLDER_PRINCIPAL);
 
     expect(runner).toHaveBeenCalledTimes(2);
     const batchCall = runner.mock.calls[1][0];
@@ -621,7 +621,7 @@ describe("agent runtime adapter", () => {
       callPlan: pendingOutcome.callPlan,
       combinations: pendingOutcome.combinations
     });
-    const events = await getAgentRunEvents(run.runId);
+    const events = await getAgentRunEvents(run.runId, PLACEHOLDER_PRINCIPAL);
     expect(events.some((e) => e.type === "run_completed")).toBe(true);
   });
 });

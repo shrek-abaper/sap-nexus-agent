@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { confirmAgentRunBatch } from "../../../../../src/runtime/agent-runtime-adapter";
+import { injectPrincipal } from "../../../../../src/runtime/principal/principal-injector";
 
 export async function POST(
   request: Request,
@@ -15,9 +16,10 @@ export async function POST(
     return invalidRequest("Batch confirmation accepts an empty JSON object only.");
   }
 
+  const principal = injectPrincipal(request);
   const { runId } = await params;
   try {
-    await confirmAgentRunBatch(runId);
+    await confirmAgentRunBatch(runId, principal);
     return NextResponse.json({ runId });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Batch confirmation failed";
