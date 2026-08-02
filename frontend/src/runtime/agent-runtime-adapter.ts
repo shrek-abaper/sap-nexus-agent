@@ -234,8 +234,21 @@ export async function decideAgentRunApproval(
   }
   // lease.status === "claimed" | "force-claimed" -> proceed (audited)
   await runStore.appendDecision(runId, decision);
-  const runner = runnerForTests ?? runLocalPythonAgent;
+  // §1.3: fire-and-forget background execution; return immediately
+  void executeApprovalInBackground(runId, record, decision, callPlan, validationResult, approvalRecord, idemKey);
+}
+
+async function executeApprovalInBackground(
+  runId: string,
+  record: AgentRunRecord,
+  decision: ApprovalDecision,
+  callPlan: Record<string, unknown>,
+  validationResult: Record<string, unknown>,
+  approvalRecord: Record<string, unknown>,
+  idemKey: string
+): Promise<void> {
   try {
+    const runner = runnerForTests ?? runLocalPythonAgent;
     const outcome = await runner({
       query: record.query,
       gatewayUrl: gatewayUrl(),
@@ -249,7 +262,9 @@ export async function decideAgentRunApproval(
       await runStore.release(runId, workerId);
     }
   } catch (error) {
-    const failEvents = buildRuntimeFailureEventsTail(record.runId, record.events.length, new Date().toISOString(), error);
+    const currentRecord = await runStore.load(runId);
+    const baseSeq = currentRecord?.events.length ?? record.events.length;
+    const failEvents = buildRuntimeFailureEventsTail(runId, baseSeq, new Date().toISOString(), error);
     for (const event of failEvents) {
       await runStore.appendEvent(runId, event);
     }
@@ -295,8 +310,19 @@ export async function confirmAgentRunBatch(
   }
   // lease.status === "claimed" | "force-claimed" -> proceed (audited)
   await runStore.appendDecision(runId, "approve");
-  const runner = runnerForTests ?? runLocalPythonAgent;
+  // §1.3: fire-and-forget background execution; return immediately
+  void executeBatchInBackground(runId, record, callPlan, combinations, idemKey);
+}
+
+async function executeBatchInBackground(
+  runId: string,
+  record: AgentRunRecord,
+  callPlan: Record<string, unknown>,
+  combinations: Record<string, string>[],
+  idemKey: string
+): Promise<void> {
   try {
+    const runner = runnerForTests ?? runLocalPythonAgent;
     const outcome = await runner({
       query: record.query,
       gatewayUrl: gatewayUrl(),
@@ -310,7 +336,9 @@ export async function confirmAgentRunBatch(
       await runStore.release(runId, workerId);
     }
   } catch (error) {
-    const failEvents = buildRuntimeFailureEventsTail(record.runId, record.events.length, new Date().toISOString(), error);
+    const currentRecord = await runStore.load(runId);
+    const baseSeq = currentRecord?.events.length ?? record.events.length;
+    const failEvents = buildRuntimeFailureEventsTail(runId, baseSeq, new Date().toISOString(), error);
     for (const event of failEvents) {
       await runStore.appendEvent(runId, event);
     }

@@ -29,11 +29,11 @@ function awaitingOutcome(runId: string): WorkbenchOutcome {
   };
 }
 
-async function waitForRunSettled(runId: string, timeoutMs = 5000): Promise<AgentRunEvent[]> {
+async function waitForRunSettled(runId: string, timeoutMs = 5000, minEventCount = 0): Promise<AgentRunEvent[]> {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
     const events = await getAgentRunEvents(runId, PLACEHOLDER_PRINCIPAL);
-    if (events.length > 0) {
+    if (events.length > minEventCount) {
       const last = events[events.length - 1];
       if (last.type === "run_completed" || last.type === "run_failed" ||
           last.state === "awaiting_approval" || last.state === "awaiting_batch_confirm" ||
@@ -107,8 +107,9 @@ describe("agent-runtime-adapter durable integration", () => {
     const runs = await runStore.list({ state: "awaiting_approval" });
     const target = runs[runs.length - 1];
     setAgentRunnerForTests(async () => ({ status: "success", responseText: "已执行", approvalRecord: { id: "apr-1", status: "executed" } } as WorkbenchOutcome));
+    const eventsBeforeApprove = await getAgentRunEvents(target.runId, PLACEHOLDER_PRINCIPAL);
     await decideAgentRunApproval(target.runId, "approve", PLACEHOLDER_PRINCIPAL);
-    await waitForRunSettled(target.runId);
+    await waitForRunSettled(target.runId, 5000, eventsBeforeApprove.length);
     const events = await getAgentRunEvents(target.runId, PLACEHOLDER_PRINCIPAL);
     expect(events.some((e) => e.hitlState === "approved")).toBe(true);
   });
@@ -140,8 +141,9 @@ describe("agent-runtime-adapter durable integration", () => {
     });
     const { runId } = await createAgentRun({ query: "查询库存", conversationId: "c-idem", principal: PLACEHOLDER_PRINCIPAL });
     await waitForRunSettled(runId);
+    const eventsBeforeApprove = await getAgentRunEvents(runId, PLACEHOLDER_PRINCIPAL);
     await decideAgentRunApproval(runId, "approve", PLACEHOLDER_PRINCIPAL);
-    await waitForRunSettled(runId);
+    await waitForRunSettled(runId, 5000, eventsBeforeApprove.length);
     await decideAgentRunApproval(runId, "approve", PLACEHOLDER_PRINCIPAL); // duplicate
     expect(calls).toBe(1);
   });
@@ -162,8 +164,9 @@ describe("agent-runtime-adapter durable integration", () => {
     });
     const { runId } = await createAgentRun({ query: "批量查询", conversationId: "c-batch-idem", principal: PLACEHOLDER_PRINCIPAL });
     await waitForRunSettled(runId);
+    const eventsBeforeConfirm = await getAgentRunEvents(runId, PLACEHOLDER_PRINCIPAL);
     await confirmAgentRunBatch(runId, PLACEHOLDER_PRINCIPAL);
-    await waitForRunSettled(runId);
+    await waitForRunSettled(runId, 5000, eventsBeforeConfirm.length);
     await confirmAgentRunBatch(runId, PLACEHOLDER_PRINCIPAL); // duplicate
     expect(calls).toBe(1);
   });
@@ -258,7 +261,10 @@ describe("agent-runtime-adapter durable integration", () => {
     setAgentRunnerForTests(runner);
     const { runId } = await createAgentRun({ query: "创建采购申请", conversationId: "c-reject", principal: PLACEHOLDER_PRINCIPAL });
     await waitForRunSettled(runId);
+    const eventsBefore = await getAgentRunEvents(runId, PLACEHOLDER_PRINCIPAL);
     await decideAgentRunApproval(runId, "reject", PLACEHOLDER_PRINCIPAL);
+    // §1.3: continuation now runs in background; wait for rejection events
+    await waitForRunSettled(runId, 5000, eventsBefore.length);
     const events = await getAgentRunEvents(runId, PLACEHOLDER_PRINCIPAL);
     const lastEvent = events[events.length - 1];
     expect(lastEvent.type).toBe("run_failed");
@@ -280,6 +286,27 @@ describe("agent-runtime-adapter durable integration", () => {
     expect(runnerResolved).toBe(false);
     // after waiting, more events appear
     const settled = await waitForRunSettled(runId);
+    expect(settled.some((e) => e.type === "run_completed")).toBe(true);
+  });
+
+  it("decideAgentRunApproval returns before continuation runner completes", async () => {
+    let continuationResolved = false;
+    setAgentRunnerForTests(async (input: any) => {
+      if (input.continuation) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        continuationResolved = true;
+        return { status: "success", responseText: "已执行", approvalRecord: { id: "apr-1", status: "executed" } } as WorkbenchOutcome;
+      }
+      return awaitingOutcome("run-1");
+    });
+    const { runId } = await createAgentRun({ query: "查询库存", conversationId: "c-async-approval", principal: PLACEHOLDER_PRINCIPAL });
+    await waitForRunSettled(runId);
+    expect(continuationResolved).toBe(false);
+    const eventsBefore = await getAgentRunEvents(runId, PLACEHOLDER_PRINCIPAL);
+    await decideAgentRunApproval(runId, "approve", PLACEHOLDER_PRINCIPAL);
+    // decideAgentRunApproval returns immediately; continuation not yet done
+    expect(continuationResolved).toBe(false);
+    const settled = await waitForRunSettled(runId, 5000, eventsBefore.length);
     expect(settled.some((e) => e.type === "run_completed")).toBe(true);
   });
 });
