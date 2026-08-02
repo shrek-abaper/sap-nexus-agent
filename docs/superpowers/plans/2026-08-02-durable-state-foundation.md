@@ -1243,7 +1243,7 @@ git commit -m "feat(durable): replace in-process Maps with durable stores in age
 ---
 
 ## Task 6: Run ownership / lease
-- [ ] Task 6: Run ownership / lease
+- [x] Task 6: Run ownership / lease
 
 **对应 tasks.md：** 4.1 / 4.2 / 4.3（lease + fail-closed + 强制接管）
 

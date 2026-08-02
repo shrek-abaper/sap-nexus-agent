@@ -19,9 +19,9 @@
 
 ## 4. Run ownership / lease
 
-- [ ] 4.1 实现 run ownership lease（`workerId` + TTL + 续期）
-- [ ] 4.2 lease 持有期间其他 worker 接管 fail-closed
-- [ ] 4.3 lease 过期后带审计的强制接管
+- [x] 4.1 实现 run ownership lease（`workerId` + TTL + 续期）
+- [x] 4.2 lease 持有期间其他 worker 接管 fail-closed
+- [x] 4.3 lease 过期后带审计的强制接管
 
 ## 5. Structured checkpoint + 恢复
 
