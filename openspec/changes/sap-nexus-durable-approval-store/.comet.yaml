@@ -1,6 +1,6 @@
 workflow: full
 language: zh-CN
-phase: build
+phase: verify
 context_compression: off
 build_mode: subagent-driven-development
 build_pause: null
@@ -8,7 +8,7 @@ subagent_dispatch: confirmed
 tdd_mode: tdd
 review_mode: standard
 isolation: branch
-verify_mode: null
+verify_mode: full
 auto_transition: true
 base_ref: e2735ab018029a4f6f1f4328815704f058e7bb45
 design_doc: docs/superpowers/specs/2026-08-02-durable-approval-store-design.md
@@ -20,8 +20,8 @@ created_at: 2026-08-02
 verified_at: null
 archived: false
 direct_override: null
-build_command: cd services/gateway && ./gradlew :core:build
-verify_command: cd services/gateway && ./gradlew :core:test
+build_command: services/gateway/gradlew -p services/gateway :core:build
+verify_command: services/gateway/gradlew -p services/gateway :core:test
 handoff_context: openspec/changes/sap-nexus-durable-approval-store/.comet/handoff/design-context.json
 handoff_hash: 21347cc49ac46635dce387ef1f2a10b63f41e1bf2c2d8c6a4199f81c315a2dda
 classic_profile: full
