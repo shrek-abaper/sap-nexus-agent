@@ -1,0 +1,6 @@
+{
+  "openspec_proposal": "openspec/changes/sap-nexus-durable-state-foundation/proposal.md",
+  "openspec_design": "openspec/changes/sap-nexus-durable-state-foundation/design.md",
+  "openspec_tasks": "openspec/changes/sap-nexus-durable-state-foundation/tasks.md",
+  "openspec_delta_spec": "openspec/changes/sap-nexus-durable-state-foundation/specs/conversational-context/spec.md"
+}
