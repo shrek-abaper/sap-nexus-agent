@@ -248,7 +248,7 @@ git commit -m "feat(durable): define store-agnostic interfaces and extract share
 ---
 
 ## Task 2: canonicalJson + sha256 工具
-- [ ] Task 2: canonicalJson + sha256 工具
+- [x] Task 2: canonicalJson + sha256 工具
 
 **对应 tasks.md：** 1.4（idempotency key schema 依赖的稳定序列化）
 
