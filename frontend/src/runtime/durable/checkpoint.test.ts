@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { mkdtempSync, rmSync } from "node:fs";
+import { appendFileSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { JsonlRunStore } from "./jsonl-run-store";
@@ -56,5 +56,19 @@ describe("checkpoint ref", () => {
     // AgentRunRecord does NOT carry checkpointRef (authority layer is separate from event stream)
     expect((record as unknown as { checkpointRef?: unknown }).checkpointRef).toBeUndefined();
     expect(await store.loadCheckpointRef("run-1")).not.toBeNull();
+  });
+
+  it("skips corrupt lines and returns latest valid checkpoint_ref (fail-closed)", async () => {
+    const store = new JsonlRunStore(dir);
+    await store.save("run-1", seed("run-1"));
+    const file = path.join(dir, "runs", "run-1.jsonl");
+    // corrupt line before the valid checkpoint_ref
+    appendFileSync(file, "{INVALID JSON\n");
+    const ref: CheckpointRef = { registrySnapshotId: "snap-1", nodeState: { a: "ok" } };
+    await store.appendCheckpointRef("run-1", ref);
+    // corrupt line after the valid checkpoint_ref
+    appendFileSync(file, "{ALSO BROKEN\n");
+    const loaded = await store.loadCheckpointRef("run-1");
+    expect(loaded).toEqual(ref);
   });
 });
