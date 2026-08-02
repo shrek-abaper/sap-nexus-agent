@@ -102,4 +102,39 @@ describe("agent-runtime-adapter durable integration", () => {
     setAgentRunnerForTests(async () => ({ status: "success", responseText: "ok" } as WorkbenchOutcome));
     await expect(createAgentRun({ query: "新查询", conversationId: "c1" })).resolves.toBeDefined();
   });
+
+  it("duplicate approve continuation is idempotent (executes once)", async () => {
+    let calls = 0;
+    setAgentRunnerForTests(async (input) => {
+      if (input.continuation) {
+        calls++;
+        return { status: "success", responseText: "已执行", approvalRecord: { id: "apr-1", status: "executed" } } as WorkbenchOutcome;
+      }
+      return awaitingOutcome("run-x");
+    });
+    const { runId } = await createAgentRun({ query: "查询库存", conversationId: "c-idem" });
+    await decideAgentRunApproval(runId, "approve");
+    await decideAgentRunApproval(runId, "approve"); // duplicate
+    expect(calls).toBe(1);
+  });
+
+  it("duplicate batch confirm continuation is idempotent (executes once)", async () => {
+    let calls = 0;
+    const batchOutcome: WorkbenchOutcome = {
+      status: "awaiting_batch_confirm",
+      callPlan: { capabilityId: "cap-1", kind: "Function", agentTraceId: "t" },
+      combinations: [{ k: "v1" }, { k: "v2" }]
+    };
+    setAgentRunnerForTests(async (input) => {
+      if (input.continuation) {
+        calls++;
+        return { status: "success", responseText: "批处理完成" } as WorkbenchOutcome;
+      }
+      return batchOutcome;
+    });
+    const { runId } = await createAgentRun({ query: "批量查询", conversationId: "c-batch-idem" });
+    await confirmAgentRunBatch(runId);
+    await confirmAgentRunBatch(runId); // duplicate
+    expect(calls).toBe(1);
+  });
 });

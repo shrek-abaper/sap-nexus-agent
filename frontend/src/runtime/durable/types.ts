@@ -97,7 +97,8 @@ export interface DurableRunStore {
   renew(runId: string, workerId: string, ttlMs: number): Promise<void>;
   appendCheckpointRef(runId: string, ref: CheckpointRef): Promise<void>;
   loadCheckpointRef(runId: string): Promise<CheckpointRef | null>;
-  // Task 8 追加: markExecuted / lookupExecuted
+  markExecuted(key: string, result: WorkbenchOutcome): Promise<void>;
+  lookupExecuted(key: string): Promise<WorkbenchOutcome | null>;
 }
 
 export interface DurableConversationStore {

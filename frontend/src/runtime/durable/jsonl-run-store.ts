@@ -26,6 +26,7 @@ import type {
 export class JsonlRunStore implements DurableRunStore {
   private readonly runsDir: string;
   private readonly leasesDir: string;
+  private readonly idempotencyDir: string;
 
   constructor(
     private readonly dataDir: string,
@@ -34,8 +35,10 @@ export class JsonlRunStore implements DurableRunStore {
   ) {
     this.runsDir = path.join(dataDir, "runs");
     this.leasesDir = path.join(dataDir, "leases");
+    this.idempotencyDir = path.join(dataDir, "idempotency");
     mkdirSync(this.runsDir, { recursive: true });
     mkdirSync(this.leasesDir, { recursive: true });
+    mkdirSync(this.idempotencyDir, { recursive: true });
   }
 
   private runFile(runId: string): string {
@@ -202,6 +205,27 @@ export class JsonlRunStore implements DurableRunStore {
       }
     }
     return latest;
+  }
+
+  // --- idempotency persistence (idempotency/<safekey>.json, tmp+rename atomic) ---
+
+  private idempotencyFile(key: string): string {
+    const safe = key.replace(/[^a-zA-Z0-9_-]/g, "_");
+    return path.join(this.idempotencyDir, `${safe}.json`);
+  }
+
+  async markExecuted(key: string, result: WorkbenchOutcome): Promise<void> {
+    const file = this.idempotencyFile(key);
+    const tmp = `${file}.tmp`;
+    writeFileSync(tmp, JSON.stringify({ result, executedAt: new Date().toISOString() }), "utf8");
+    renameSync(tmp, file);
+  }
+
+  async lookupExecuted(key: string): Promise<WorkbenchOutcome | null> {
+    const file = this.idempotencyFile(key);
+    if (!existsSync(file)) return null;
+    const record = JSON.parse(readFileSync(file, "utf8")) as { result: WorkbenchOutcome; executedAt: string };
+    return record.result;
   }
 
   async list(filter?: { state?: AgentRunState }): Promise<AgentRunRecord[]> {

@@ -15,6 +15,9 @@ import type {
 } from "./durable/types";
 import { JsonlConversationStore } from "./durable/jsonl-conversation-store";
 import { JsonlRunStore } from "./durable/jsonl-run-store";
+import { canonicalJson, sha256Hex } from "./durable/canonical-json";
+import { idempotencyKey } from "./durable/idempotency";
+import type { ContinuationType } from "./durable/types";
 
 export type { ApprovalDecision } from "./durable/types";
 
@@ -172,6 +175,19 @@ export async function decideAgentRunApproval(runId: string, decision: ApprovalDe
   if (!record) {
     throw new Error("Agent run not found");
   }
+
+  // idempotency: a retried continuation returns the already-recorded result
+  // without re-executing. Checked before the pendingOutcome/decision guards so
+  // a duplicate request is a no-op rather than an "already decided" error.
+  const continuationType: ContinuationType = decision === "approve" ? "approval_approve" : "approval_reject";
+  const approvalRecordForIdem = objectOrNull(record.pendingOutcome?.approvalRecord);
+  const approvalRecordId =
+    textValue(approvalRecordForIdem?.id) ?? sha256Hex(canonicalJson(approvalRecordForIdem)).slice(0, 16);
+  const idemKey = idempotencyKey(runId, continuationType, { decision, approvalRecordId });
+  if (await runStore.lookupExecuted(idemKey)) {
+    return;
+  }
+
   if (!record.pendingOutcome) {
     throw new Error("Agent run is not awaiting approval");
   }
@@ -204,6 +220,7 @@ export async function decideAgentRunApproval(runId: string, decision: ApprovalDe
     for (const event of newEvents) {
       await runStore.appendEvent(runId, event);
     }
+    await runStore.markExecuted(idemKey, outcome);
     if (outcome.status === "awaiting_approval" || outcome.status === "awaiting_batch_confirm") {
       await runStore.release(runId, workerId);
     }
@@ -221,6 +238,17 @@ export async function confirmAgentRunBatch(runId: string): Promise<void> {
   if (!record) {
     throw new Error("Agent run not found");
   }
+
+  // idempotency: a retried batch confirmation returns the already-recorded
+  // result without re-executing. Checked before the guards so a duplicate
+  // request is a no-op rather than an "already decided" error.
+  const idemKey = idempotencyKey(runId, "batch_confirm", {
+    combinations: record.pendingOutcome?.combinations ?? []
+  });
+  if (await runStore.lookupExecuted(idemKey)) {
+    return;
+  }
+
   if (!record.pendingOutcome) {
     throw new Error("Agent run is not awaiting batch confirmation");
   }
@@ -252,6 +280,7 @@ export async function confirmAgentRunBatch(runId: string): Promise<void> {
     for (const event of newEvents) {
       await runStore.appendEvent(runId, event);
     }
+    await runStore.markExecuted(idemKey, outcome);
     if (outcome.status === "awaiting_approval" || outcome.status === "awaiting_batch_confirm") {
       await runStore.release(runId, workerId);
     }
