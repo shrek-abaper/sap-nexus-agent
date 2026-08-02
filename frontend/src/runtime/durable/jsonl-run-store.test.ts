@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { mkdtempSync, rmSync } from "node:fs";
+import { appendFileSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { JsonlRunStore } from "./jsonl-run-store";
@@ -78,5 +78,17 @@ describe("JsonlRunStore core", () => {
     await store.save("run-1", record("run-1", "q", [event("run-1", 1, "run_started", "running")]));
     await store.clearAll();
     expect(await store.load("run-1")).toBeNull();
+  });
+
+  it("replay skips corrupt lines and recovers valid record (fail-closed, consistent with loadCheckpointRef)", async () => {
+    const store = new JsonlRunStore(dir);
+    const events = [event("run-1", 1, "run_started", "running"), event("run-1", 2, "run_completed", "completed")];
+    await store.save("run-1", record("run-1", "query text", events));
+    // simulate a partially-written (corrupt) line appended by a crash mid-write
+    appendFileSync(path.join(dir, "runs", "run-1.jsonl"), "not valid json\n", "utf8");
+    const loaded = await store.load("run-1");
+    expect(loaded?.runId).toBe("run-1");
+    expect(loaded?.query).toBe("query text");
+    expect(loaded?.events).toEqual(events);
   });
 });

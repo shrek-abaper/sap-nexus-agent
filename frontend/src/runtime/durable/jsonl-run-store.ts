@@ -143,7 +143,13 @@ export class JsonlRunStore implements DurableRunStore {
     let decision: ApprovalDecision | undefined;
     for (const raw of content.split("\n")) {
       if (!raw.trim()) continue;
-      const line = JSON.parse(raw) as RunJsonlLine;
+      let line: RunJsonlLine;
+      try {
+        line = JSON.parse(raw) as RunJsonlLine;
+      } catch {
+        // corrupt line: skip (fail-closed, consistent with loadCheckpointRef)
+        continue;
+      }
       switch (line.kind) {
         case "run_meta":
           query = line.query;

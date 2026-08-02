@@ -68,11 +68,6 @@ export type ContinuationType =
   | "approval_reject"
   | "batch_confirm";
 
-export type IdempotencyRecord = {
-  result: WorkbenchOutcome;
-  executedAt: string;
-};
-
 // --- JSONL line types (run event log, discriminated by `kind`) ---
 
 export type RunJsonlLine =
