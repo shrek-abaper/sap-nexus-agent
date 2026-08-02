@@ -1059,7 +1059,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ---
 
 ### Task 6: openspec MODIFIED spec patch + 验证回归
-- [ ] Task 6: openspec MODIFIED spec patch + 验证回归
+- [x] Task 6: openspec MODIFIED spec patch + 验证回归
 
 > 本任务创建 durable-run-state 的 MODIFIED spec patch（加 principalId 绑定语义与 list/load 过滤参数），运行 openspec validate 与 frontend verify 回归。
 
