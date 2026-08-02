@@ -56,7 +56,7 @@ base-ref: a7ac4d1ca69cc05f1bec1c3bc48efc7e323d039d
 ---
 
 ### Task 1: TrustedPrincipal 数据模型 + PLACEHOLDER_PRINCIPAL
-- [ ] Task 1: TrustedPrincipal 数据模型 + PLACEHOLDER_PRINCIPAL
+- [x] Task 1: TrustedPrincipal 数据模型 + PLACEHOLDER_PRINCIPAL
 
 **Files:**
 - Create: `frontend/src/runtime/principal/types.ts`
