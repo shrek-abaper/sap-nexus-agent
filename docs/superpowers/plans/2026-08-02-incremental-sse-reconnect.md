@@ -42,7 +42,7 @@ base-ref: a7ac4d1ca69cc05f1bec1c3bc48efc7e323d039d
 ---
 
 ## Task 1: Emitter 转换 + rejection terminal 修复
-- [ ] Task 1: Emitter 转换 + rejection terminal 修复
+- [x] Task 1: Emitter 转换 + rejection terminal 修复
 
 **Design Doc:** §1.2（emitter 模式）、§4.4（rejection 追加 `run_failed`）、§7（早退分支事件发射）
 

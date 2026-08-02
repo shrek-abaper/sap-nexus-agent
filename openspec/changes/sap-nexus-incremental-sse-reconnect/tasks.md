@@ -7,7 +7,7 @@
 ## 2. Incremental 发布
 
 - [ ] 2.1 改造 `createAgentRun`：移除 await runner 完成后一次性 `buildEventsFromOutcome` 的 buffered 路径，改为事件产生即推送到 SSE stream
-- [ ] 2.2 将 `buildEventsFromOutcome` 拆分为增量事件发射器，每个事件产生时立即写入 stream 并分配递增 `sequence`
+- [x] 2.2 将 `buildEventsFromOutcome` 拆分为增量事件发射器，每个事件产生时立即写入 stream 并分配递增 `sequence`
 - [ ] 2.3 确保 `run_started` 事件在 run 开始时立即推送（不等后续事件）
 
 ## 3. Reconnect replay
