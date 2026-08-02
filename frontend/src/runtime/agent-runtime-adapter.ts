@@ -136,40 +136,51 @@ export async function createAgentRun(input: CreateAgentRunInput): Promise<{ runI
   await runStore.save(runId, record);
   await runStore.claim(runId, workerId, 60_000);
 
+  // §1.1: fire-and-forget background execution; return runId immediately
+  void executeRunnerInBackground(runId, query, input.conversationId, timestamp, input.principal.principalId);
+
+  return { runId };
+}
+
+async function executeRunnerInBackground(
+  runId: string,
+  query: string,
+  conversationId: string | undefined,
+  timestamp: string,
+  principalId: string
+): Promise<void> {
   try {
     const runner = runnerForTests ?? runLocalPythonAgent;
-    const context = input.conversationId ? buildContext(await getSession(input.conversationId, input.principal.principalId)) : undefined;
+    const context = conversationId ? buildContext(await getSession(conversationId, principalId)) : undefined;
     const outcome = await runner({ query, gatewayUrl: gatewayUrl(), intentMode: intentMode(), context });
     await emitEventsFromOutcome(runId, query, outcome, timestamp,
       (event) => runStore.appendEvent(runId, event), 2);
+
     if (outcome.status === "awaiting_approval" || outcome.status === "awaiting_batch_confirm") {
-      record.pendingOutcome = outcome;
       await runStore.appendPendingOutcome(runId, outcome);
-      await runStore.release(runId, workerId);
     }
 
-    if (input.conversationId) {
-      const session = await getSession(input.conversationId, input.principal.principalId);
+    if (conversationId) {
+      const session = await getSession(conversationId, principalId);
       session.lastRunId = runId;
       session.history.push({ role: "user", content: query });
       if (outcome.responseText) {
         session.history.push({ role: "assistant", content: outcome.responseText });
       }
       session.lastContext = outcome.lastContext ?? null;
-      await conversationStore.save(input.conversationId, session);
+      await conversationStore.save(conversationId, session);
     }
-    // success/completed terminal state: run no longer needs the lease
+
     await runStore.release(runId, workerId);
   } catch (error) {
-    const failEvents = buildRuntimeFailureEvents(runId, timestamp, error);
-    for (const event of failEvents.slice(1)) {
+    const currentRecord = await runStore.load(runId);
+    const baseSeq = currentRecord?.events.length ?? 1;
+    const failEvents = buildRuntimeFailureEventsTail(runId, baseSeq, new Date().toISOString(), error);
+    for (const event of failEvents) {
       await runStore.appendEvent(runId, event);
     }
-    record.events = failEvents;
     await runStore.release(runId, workerId);
   }
-
-  return { runId };
 }
 
 export async function getAgentRunEvents(
@@ -681,21 +692,6 @@ function buildRuntimeFailureEventsTail(runId: string, baseSequence: number, time
   const safeMessage = error instanceof Error ? error.message : "Agent runtime failed";
   return [{ runId, sequence: baseSequence + 1, timestamp, type: "run_failed", state: "failed",
     error: { errorType: "AGENT_RUNTIME_ERROR", message: safeMessage, stage: "running" } }];
-}
-
-function buildRuntimeFailureEvents(runId: string, timestamp: string, error: unknown): AgentRunEvent[] {
-  const safeMessage = error instanceof Error ? error.message : "Agent runtime failed";
-  return [
-    { runId, sequence: 1, timestamp, type: "run_started", state: "running" },
-    {
-      runId,
-      sequence: 2,
-      timestamp,
-      type: "run_failed",
-      state: "failed",
-      error: { errorType: "AGENT_RUNTIME_ERROR", message: safeMessage, stage: "running" }
-    }
-  ];
 }
 
 async function runLocalPythonAgent(input: AgentRunnerInput): Promise<WorkbenchOutcome> {

@@ -17,6 +17,7 @@ import { JsonlRunStore } from "./durable/jsonl-run-store";
 import type { WorkbenchOutcome } from "./durable/types";
 import { PLACEHOLDER_PRINCIPAL } from "./principal/types";
 import type { TrustedPrincipal } from "./principal/types";
+import type { AgentRunEvent } from "./run-event-schema";
 
 function awaitingOutcome(runId: string): WorkbenchOutcome {
   return {
@@ -26,6 +27,23 @@ function awaitingOutcome(runId: string): WorkbenchOutcome {
     approvalRecord: { id: "apr-1", status: "pending" },
     responseText: "待审批"
   };
+}
+
+async function waitForRunSettled(runId: string, timeoutMs = 5000): Promise<AgentRunEvent[]> {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    const events = await getAgentRunEvents(runId, PLACEHOLDER_PRINCIPAL);
+    if (events.length > 0) {
+      const last = events[events.length - 1];
+      if (last.type === "run_completed" || last.type === "run_failed" ||
+          last.state === "awaiting_approval" || last.state === "awaiting_batch_confirm" ||
+          last.state === "rejected") {
+        return events;
+      }
+    }
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  throw new Error(`Run ${runId} did not settle within ${timeoutMs}ms`);
 }
 
 describe("agent-runtime-adapter durable integration", () => {
@@ -62,6 +80,7 @@ describe("agent-runtime-adapter durable integration", () => {
 
   it("pending approval run recovers across store reset (cross-restart)", async () => {
     const { runId } = await createAgentRun({ query: "查询库存", conversationId: "c1", principal: PLACEHOLDER_PRINCIPAL });
+    await waitForRunSettled(runId);
     // simulate restart: rebind store to same dir
     const reopenedRun = new JsonlRunStore(dir);
     const reopenedConv = new JsonlConversationStore(dir);
@@ -71,7 +90,8 @@ describe("agent-runtime-adapter durable integration", () => {
   });
 
   it("Q2 gate rejects new query while prior approval pending", async () => {
-    await createAgentRun({ query: "查询库存", conversationId: "c1", principal: PLACEHOLDER_PRINCIPAL });
+    const { runId } = await createAgentRun({ query: "查询库存", conversationId: "c1", principal: PLACEHOLDER_PRINCIPAL });
+    await waitForRunSettled(runId);
     await expect(createAgentRun({ query: "再次查询", conversationId: "c1", principal: PLACEHOLDER_PRINCIPAL }))
       .rejects.toThrow(/有待审批/);
   });
@@ -81,24 +101,28 @@ describe("agent-runtime-adapter durable integration", () => {
     const { runId } = await createAgentRun({ query: "查询库存", principal: PLACEHOLDER_PRINCIPAL });
     // re-arm runner to awaiting for the initial run
     setAgentRunnerForTests(async () => awaitingOutcome(runId));
-    await createAgentRun({ query: "查询库存", conversationId: "c2", principal: PLACEHOLDER_PRINCIPAL }).catch(() => {});
+    const { runId: awaitingRunId } = await createAgentRun({ query: "查询库存", conversationId: "c2", principal: PLACEHOLDER_PRINCIPAL });
+    await waitForRunSettled(awaitingRunId);
     // pick the awaiting run created above
     const runs = await runStore.list({ state: "awaiting_approval" });
     const target = runs[runs.length - 1];
     setAgentRunnerForTests(async () => ({ status: "success", responseText: "已执行", approvalRecord: { id: "apr-1", status: "executed" } } as WorkbenchOutcome));
     await decideAgentRunApproval(target.runId, "approve", PLACEHOLDER_PRINCIPAL);
+    await waitForRunSettled(target.runId);
     const events = await getAgentRunEvents(target.runId, PLACEHOLDER_PRINCIPAL);
     expect(events.some((e) => e.hitlState === "approved")).toBe(true);
   });
 
   it("resetAgentRunsForTests clears durable runs", async () => {
     const { runId } = await createAgentRun({ query: "查询库存", principal: PLACEHOLDER_PRINCIPAL });
+    await waitForRunSettled(runId);
     resetAgentRunsForTests();
     expect(await getAgentRunEvents(runId, PLACEHOLDER_PRINCIPAL)).toEqual([]);
   });
 
   it("resetAgentSessionsForTests clears durable sessions", async () => {
-    await createAgentRun({ query: "查询库存", conversationId: "c1", principal: PLACEHOLDER_PRINCIPAL });
+    const { runId } = await createAgentRun({ query: "查询库存", conversationId: "c1", principal: PLACEHOLDER_PRINCIPAL });
+    await waitForRunSettled(runId);
     resetAgentSessionsForTests();
     // after reset, Q2 gate no longer sees the prior pending run via session
     setAgentRunnerForTests(async () => ({ status: "success", responseText: "ok" } as WorkbenchOutcome));
@@ -115,7 +139,9 @@ describe("agent-runtime-adapter durable integration", () => {
       return awaitingOutcome("run-x");
     });
     const { runId } = await createAgentRun({ query: "查询库存", conversationId: "c-idem", principal: PLACEHOLDER_PRINCIPAL });
+    await waitForRunSettled(runId);
     await decideAgentRunApproval(runId, "approve", PLACEHOLDER_PRINCIPAL);
+    await waitForRunSettled(runId);
     await decideAgentRunApproval(runId, "approve", PLACEHOLDER_PRINCIPAL); // duplicate
     expect(calls).toBe(1);
   });
@@ -135,7 +161,9 @@ describe("agent-runtime-adapter durable integration", () => {
       return batchOutcome;
     });
     const { runId } = await createAgentRun({ query: "批量查询", conversationId: "c-batch-idem", principal: PLACEHOLDER_PRINCIPAL });
+    await waitForRunSettled(runId);
     await confirmAgentRunBatch(runId, PLACEHOLDER_PRINCIPAL);
+    await waitForRunSettled(runId);
     await confirmAgentRunBatch(runId, PLACEHOLDER_PRINCIPAL); // duplicate
     expect(calls).toBe(1);
   });
@@ -229,10 +257,29 @@ describe("agent-runtime-adapter durable integration", () => {
     });
     setAgentRunnerForTests(runner);
     const { runId } = await createAgentRun({ query: "创建采购申请", conversationId: "c-reject", principal: PLACEHOLDER_PRINCIPAL });
+    await waitForRunSettled(runId);
     await decideAgentRunApproval(runId, "reject", PLACEHOLDER_PRINCIPAL);
     const events = await getAgentRunEvents(runId, PLACEHOLDER_PRINCIPAL);
     const lastEvent = events[events.length - 1];
     expect(lastEvent.type).toBe("run_failed");
     expect(lastEvent.error?.errorType).toBe("APPROVAL_REJECTED");
+  });
+
+  it("createAgentRun returns runId before runner produces non-started events", async () => {
+    let runnerResolved = false;
+    setAgentRunnerForTests(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      runnerResolved = true;
+      return { status: "success", responseText: "完成", callPlan: { capabilityId: "cap-test", kind: "Function" } } as WorkbenchOutcome;
+    });
+    const { runId } = await createAgentRun({ query: "查询库存", principal: PLACEHOLDER_PRINCIPAL });
+    // run_started (sequence=1) is already persisted before return
+    const events = await getAgentRunEvents(runId, PLACEHOLDER_PRINCIPAL);
+    expect(events.length).toBe(1);
+    expect(events[0].type).toBe("run_started");
+    expect(runnerResolved).toBe(false);
+    // after waiting, more events appear
+    const settled = await waitForRunSettled(runId);
+    expect(settled.some((e) => e.type === "run_completed")).toBe(true);
   });
 });
