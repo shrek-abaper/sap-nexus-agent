@@ -776,7 +776,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ---
 
 ### Task 5: cross-principal 隔离 + 3 个 route handler 注入（approval/batch/stream）
-- [ ] Task 5: cross-principal 隔离 + 3 个 route handler 注入（approval/batch/stream）
+- [x] Task 5: cross-principal 隔离 + 3 个 route handler 注入（approval/batch/stream）
 
 > 本任务为 `decideAgentRunApproval` / `confirmAgentRunBatch` / `getAgentRunEvents` 加 `principal` 参数，load 后校验归属（fail-closed）。同时为 3 个 route handler 入口注入 principal。本任务完成后全部 4 个 route handler 都实现 server-owned 注入。
 
