@@ -755,7 +755,7 @@ git commit -m "feat(approval): atomic claimForExecution with lease binding and c
 
 ### Task 4: markExecuted (atomic executing->executed + lease release)
 
-- [ ] Task 4: markExecuted (atomic executing->executed + lease release)
+- [x] Task 4: markExecuted (atomic executing->executed + lease release)
 
 **Files:**
 - Modify: `services/gateway/core/src/main/java/com/sapnexus/gateway/approval/FileDurableApprovalStore.java` (replace `markExecuted` stub; add `deleteLease` helper)
@@ -765,7 +765,7 @@ git commit -m "feat(approval): atomic claimForExecution with lease binding and c
 - Consumes: `withFileLock`, `atomicWrite`, `approvalFile`, `leaseFile`, `withStatus` helpers (Tasks 2-3).
 - Produces: `markExecuted` real impl — atomically transitions `executing -> executed`, deletes the lease file. Non-`executing` or missing approval is a no-op (idempotent). New private helper `deleteLease` is reused by Tasks 5-6.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append these methods to `FileDurableApprovalStoreTest.java`:
 
@@ -820,12 +820,12 @@ Append these methods to `FileDurableApprovalStoreTest.java`:
     }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd services/gateway && ./gradlew :core:test --tests "com.sapnexus.gateway.approval.FileDurableApprovalStoreTest"`
 Expected: FAIL — `markExecutedTransitionsToExecutedAndReleasesLease` fails (stub is no-op; status stays "executing"; lease file not deleted).
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 In `FileDurableApprovalStore.java`, replace the `markExecuted` stub with:
 
@@ -861,12 +861,12 @@ Add this private helper (after `readLease`):
     }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `cd services/gateway && ./gradlew :core:test --tests "com.sapnexus.gateway.approval.FileDurableApprovalStoreTest"`
 Expected: PASS (13 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/gateway/core/src/main/java/com/sapnexus/gateway/approval/FileDurableApprovalStore.java \

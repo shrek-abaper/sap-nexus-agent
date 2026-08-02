@@ -6,7 +6,7 @@
 
 ## 2. 替换 InMemoryApprovalStore
 
-- [ ] 2.1 实现 `DurableApprovalStore`（`save` / `find` / `claimForExecution` / `markExecuted`），复用项 1（`durable-state-foundation`）store 无关接口
+- [x] 2.1 实现 `DurableApprovalStore`（`save` / `find` / `claimForExecution` / `markExecuted`），复用项 1（`durable-state-foundation`）store 无关接口
 - [ ] 2.2 将 `@Component` 绑定从 `InMemoryApprovalStore` 切换到 `DurableApprovalStore`（`ApprovalGuard` 消费 `ApprovalStore` 契约不变）
 - [ ] 2.3 移除 `InMemoryApprovalStore` 进程级 `ConcurrentMap` 实现（或保留为测试桩，按 comet-design 决策）
 
