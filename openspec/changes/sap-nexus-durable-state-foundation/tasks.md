@@ -13,8 +13,8 @@
 
 ## 3. 替换进程内 Map
 
-- [ ] 3.1 替换 `agent-runtime-adapter.ts` 的 `runs Map`（`globalThis.__SAP_NEXUS_AGENT_RUNS__`）为 `DurableRunStore`
-- [ ] 3.2 替换 `sessions Map`（`globalThis.__SAP_NEXUS_AGENT_SESSIONS__`）为 `DurableConversationStore`
+- [x] 3.1 替换 `agent-runtime-adapter.ts` 的 `runs Map`（`globalThis.__SAP_NEXUS_AGENT_RUNS__`）为 `DurableRunStore`
+- [x] 3.2 替换 `sessions Map`（`globalThis.__SAP_NEXUS_AGENT_SESSIONS__`）为 `DurableConversationStore`
 - [x] 3.3 `AgentRunRecord` / `SessionState` 序列化与反序列化
 
 ## 4. Run ownership / lease

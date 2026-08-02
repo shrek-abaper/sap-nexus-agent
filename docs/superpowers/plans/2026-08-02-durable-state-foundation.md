@@ -790,7 +790,7 @@ git commit -m "feat(durable): implement DurableRunStore JSONL core with replay r
 ---
 
 ## Task 5: 替换进程内 Map 为 durable store
-- [ ] Task 5: 替换进程内 Map 为 durable store
+- [x] Task 5: 替换进程内 Map 为 durable store
 
 **对应 tasks.md：** 3.1 / 3.2 / 3.3（替换 runs/sessions Map + 序列化）
 
