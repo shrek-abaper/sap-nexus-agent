@@ -42,6 +42,7 @@ base-ref: a7ac4d1ca69cc05f1bec1c3bc48efc7e323d039d
 ---
 
 ## Task 1: Emitter 转换 + rejection terminal 修复
+- [ ] Task 1: Emitter 转换 + rejection terminal 修复
 
 **Design Doc:** §1.2（emitter 模式）、§4.4（rejection 追加 `run_failed`）、§7（早退分支事件发射）
 
@@ -575,6 +576,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ---
 
 ## Task 2: createAgentRun 后台执行
+- [ ] Task 2: createAgentRun 后台执行
 
 **Design Doc:** §1.1（createAgentRun 立即返回 runId + 后台执行 runner）
 
@@ -754,6 +756,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ---
 
 ## Task 3: Continuation 路径后台执行
+- [ ] Task 3: Continuation 路径后台执行
 
 **Design Doc:** §1.3（decideAgentRunApproval / confirmAgentRunBatch 后台执行）
 
@@ -916,6 +919,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ---
 
 ## Task 4: Stream route cursor + 轮询 + terminal 收敛 + 背压
+- [ ] Task 4: Stream route cursor + 轮询 + terminal 收敛 + 背压
 
 **Design Doc:** §1.4（stream route 轮询 live stream）、§2（cursor = sequence）、§3（reconnect replay）、§4.1-§4.3（terminal 收敛）、§5（背压策略）
 
@@ -1197,6 +1201,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ---
 
 ## Task 5: 客户端 reconnect
+- [ ] Task 5: 客户端 reconnect
 
 **Design Doc:** §6（客户端 reconnect — last sequence + onerror ?cursor=N 重连）
 
@@ -1361,6 +1366,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ---
 
 ## Task 6: 回归验证 + openspec validate
+- [ ] Task 6: 回归验证 + openspec validate
 
 **Design Doc:** §6 测试验证
 

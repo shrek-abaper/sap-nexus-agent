@@ -1,3 +1,9 @@
+---
+change: sap-nexus-trusted-principal-model
+design-doc: docs/superpowers/specs/2026-08-02-trusted-principal-model-design.md
+base-ref: a7ac4d1ca69cc05f1bec1c3bc48efc7e323d039d
+---
+
 # Trusted Principal Model Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
@@ -50,6 +56,7 @@ base-ref: a7ac4d1ca69cc05f1bec1c3bc48efc7e323d039d
 ---
 
 ### Task 1: TrustedPrincipal 数据模型 + PLACEHOLDER_PRINCIPAL
+- [ ] Task 1: TrustedPrincipal 数据模型 + PLACEHOLDER_PRINCIPAL
 
 **Files:**
 - Create: `frontend/src/runtime/principal/types.ts`
@@ -140,6 +147,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ---
 
 ### Task 2: PrincipalInjector 接口 + LocalPlaceholderPrincipalInjector + 测试钩子
+- [ ] Task 2: PrincipalInjector 接口 + LocalPlaceholderPrincipalInjector + 测试钩子
 
 **Files:**
 - Create: `frontend/src/runtime/principal/principal-injector.ts`
@@ -262,6 +270,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ---
 
 ### Task 3: durable types principalId（可选）+ JsonlRunStore 持久化/回填/过滤 + JsonlConversationStore 持久化/回填/归属过滤
+- [ ] Task 3: durable types principalId（可选）+ JsonlRunStore 持久化/回填/过滤 + JsonlConversationStore 持久化/回填/归属过滤
 
 > 本任务在 types.ts 中将 principalId 加为**可选**字段（向后兼容，build 保持 green）。Task 4 再将 AgentRunRecord.principalId 升级为 required。
 
@@ -528,6 +537,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ---
 
 ### Task 4: createAgentRun + getSession principal 绑定 + POST /api/agent-runs 注入（principalId 升级 required）
+- [ ] Task 4: createAgentRun + getSession principal 绑定 + POST /api/agent-runs 注入（principalId 升级 required）
 
 > 本任务将 AgentRunRecord.principalId 从可选升级为 required，同时更新所有构造点。CreateAgentRunInput 加 principal，createAgentRun 写入 principalId，getSession 加 principalId 参数（首次创建写入、后续校验归属）。POST /api/agent-runs route 入口注入 principal。
 
@@ -766,6 +776,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ---
 
 ### Task 5: cross-principal 隔离 + 3 个 route handler 注入（approval/batch/stream）
+- [ ] Task 5: cross-principal 隔离 + 3 个 route handler 注入（approval/batch/stream）
 
 > 本任务为 `decideAgentRunApproval` / `confirmAgentRunBatch` / `getAgentRunEvents` 加 `principal` 参数，load 后校验归属（fail-closed）。同时为 3 个 route handler 入口注入 principal。本任务完成后全部 4 个 route handler 都实现 server-owned 注入。
 
@@ -1048,6 +1059,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ---
 
 ### Task 6: openspec MODIFIED spec patch + 验证回归
+- [ ] Task 6: openspec MODIFIED spec patch + 验证回归
 
 > 本任务创建 durable-run-state 的 MODIFIED spec patch（加 principalId 绑定语义与 list/load 过滤参数），运行 openspec validate 与 frontend verify 回归。
 
