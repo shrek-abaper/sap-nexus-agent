@@ -8,14 +8,14 @@
 ## 2. 本地参考实现（store 选型在 comet-design 阶段决定）
 
 - [ ] 2.1 comet-design 阶段选型本地 store（候选：SQLite / file-based）
-- [ ] 2.2 实现 `DurableRunStore` 本地参考实现
+- [x] 2.2 实现 `DurableRunStore` 本地参考实现
 - [x] 2.3 实现 `DurableConversationStore` 本地参考实现
 
 ## 3. 替换进程内 Map
 
 - [ ] 3.1 替换 `agent-runtime-adapter.ts` 的 `runs Map`（`globalThis.__SAP_NEXUS_AGENT_RUNS__`）为 `DurableRunStore`
 - [ ] 3.2 替换 `sessions Map`（`globalThis.__SAP_NEXUS_AGENT_SESSIONS__`）为 `DurableConversationStore`
-- [ ] 3.3 `AgentRunRecord` / `SessionState` 序列化与反序列化
+- [x] 3.3 `AgentRunRecord` / `SessionState` 序列化与反序列化
 
 ## 4. Run ownership / lease
 

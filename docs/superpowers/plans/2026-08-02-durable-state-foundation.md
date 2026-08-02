@@ -513,7 +513,7 @@ git commit -m "feat(durable): implement DurableConversationStore JSON reference 
 ---
 
 ## Task 4: DurableRunStore JSONL 核心实现
-- [ ] Task 4: DurableRunStore JSONL 核心实现
+- [x] Task 4: DurableRunStore JSONL 核心实现
 
 **对应 tasks.md：** 2.2（run store 本地实现）+ 3.3（序列化与反序列化）
 
