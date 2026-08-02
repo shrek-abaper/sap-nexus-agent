@@ -395,3 +395,21 @@ SQLite 实现用 `BEGIN TRANSACTION` ... `COMMIT` 替代文件锁，原子性由
 | Cross-worker anti-replay | §4 claim/lease per-approval |
 | JSONL audit retained as authoritative | §5 跨重启恢复（durable store 内部一致性校验，JSONL 为审计源） |
 | Approval TTL re-validation across restart | §3 TTL 基准（approvedAt 固定，isExpired 墙钟校验） |
+
+## Implementation Divergence（verify 阶段记录）
+
+> 本节由 verify 阶段 Check 6（delta spec vs design doc 一致性校验）追加，记录 delta spec 文本与 design doc 决策的两处偏差。实现均以 design doc 为准（正确），delta spec 文本为早期草案遗留，未同步 D4 修正与 ApprovalGuard 分层决策。用户于 verify 阶段选择 Option A（偏差记录）处理。
+
+### 偏差 1：JSONL 恢复对账
+
+- **delta spec**（`specs/durable-approval-store/spec.md` "JSONL audit retained as authoritative" Requirement）：「On recovery, the durable store SHALL be reconciled against the JSONL audit; drift SHALL fail closed.」
+- **design doc D4（修正）**：「durable store 为权威操作索引，JSONL trace 为审计源 | 不跨服务读 agent JSONL；恢复以 durable store 内部一致性校验为准，漂移 fail-closed」
+- **实现**：`FileDurableApprovalStore.reconcile()`（Task 6）仅校验 durable store 内部一致性（lease <-> record status + orphan/residual lease 清理），**不读 agent JSONL**（D4）。漂移 fail-closed（executing+无 lease 不自动恢复）。
+- **结论**：以 D4 为准。delta spec「reconciled against the JSONL audit」文本被 D4 取代。
+
+### 偏差 2：TTL 拒绝层归属
+
+- **delta spec**（"Approval TTL re-validation across restart" Requirement + "Expired approval rejected after restart" Scenario）：「`claimForExecution` SHALL reject an approval whose `expiresAt` is in the past」/「THEN `claimForExecution` rejects the expired approval (returns empty)」
+- **design doc**：`ApprovalGuard.check`（do-not-modify）执行 4 不变量（presence / TTL / snapshot-hash / duplicate-submit），执行流程 `find` -> `guard.check` -> `claimForExecution` -> `dispatch` -> `markExecuted`。TTL 由 `ApprovalGuard.check` 校验 `isExpired(now)`，过期返回 `APPROVAL_EXPIRED`，**先于** `claimForExecution`。
+- **实现**：store 的 `claimForExecution`（Task 3）仅校验 `status=="approved"`，不检查 expiry（设计分层：store=持久化原语，Guard=安全不变量）。过期 approval 在 `ApprovalGuard.check` 被拒，不会到达 `claimForExecution`。
+- **结论**：以 design doc 分层为准。delta spec 将 TTL 拒绝归于 `claimForExecution` 不精确；系统级「过期 approval 不可 execute」由 `ApprovalGuard` 保证（已实现、do-not-modify）。
