@@ -2,6 +2,18 @@ import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import type { AgentRunEvent, AgentRunState } from "./run-event-schema";
+import type {
+  AgentRunRecord,
+  ApprovalDecision,
+  ConversationContext,
+  LastContext,
+  SessionState,
+  Turn,
+  WorkbenchOutcome
+} from "./durable/types";
+
+export type { ApprovalDecision } from "./durable/types";
+
 import { redactArtifact } from "./redaction";
 import type { JsonValue } from "../shared/types/artifacts";
 
@@ -10,36 +22,6 @@ type CreateAgentRunInput = {
   rfcName?: string;
   conversationId?: string;
 };
-
-type LastContext = {
-  capabilityId: string;
-  parameters: Record<string, string>;
-  missingParameters: string[];
-  decisionType: "CLARIFY" | "SELECT";
-};
-
-type Turn = { role: "user" | "assistant"; content: string };
-
-type ConversationContext = {
-  lastContext: LastContext | null;
-  history: Turn[] | null;
-};
-
-type SessionState = {
-  lastContext: LastContext | null;
-  lastRunId: string | null;
-  history: Turn[];
-};
-
-type AgentRunRecord = {
-  runId: string;
-  query: string;
-  events: AgentRunEvent[];
-  pendingOutcome?: WorkbenchOutcome;
-  decision?: ApprovalDecision;
-};
-
-export type ApprovalDecision = "approve" | "reject";
 
 type ApprovalContinuation = {
   type?: "approval";
@@ -61,41 +43,6 @@ type AgentRunnerInput = {
   intentMode: string;
   continuation?: ApprovalContinuation | BatchContinuation;
   context?: ConversationContext;
-};
-
-type WorkbenchOutcome = {
-  status: string;
-  message?: string | null;
-  responseText?: string | null;
-  callPlan?: Record<string, unknown> | null;
-  validationResult?: Record<string, unknown> | null;
-  executionResult?: Record<string, unknown> | null;
-  fact?: Record<string, unknown> | null;
-  gatewayTraceId?: string | null;
-  errorType?: string | null;
-  missingParameters?: string[] | null;
-  approvalRecord?: Record<string, unknown> | null;
-  // Multi-value batch (Design Doc §4.2): combinations awaiting user confirm.
-  // Populated only for status="awaiting_batch_confirm". The adapter holds
-  // these in pendingOutcome and returns them via BatchContinuation.
-  combinations?: Record<string, string>[] | null;
-  // Advisory field populated by agent workbench_output (Task 3.3):
-  // `{ decisionType, capabilityId?, parameters?, missingParameters?, errorType?,
-  // candidates?, handoff?, rationale }`. The SSE layer only emits a
-  // `match_decision_created` event for SHOW_OPTIONS / ESCALATE_TO_PLANNER;
-  // SELECT / CLARIFY / REJECT reuse the existing event paths (Design Doc D6/Q4
-  // hybrid SSE).
-  matchDecision?: Record<string, unknown> | null;
-  // S2-B dry-run result (Task 9). Populated only for ESCALATE_TO_PLANNER
-  // outcomes. Folded into the `match-decision` artifact payload so the
-  // Workbench can render the dry-run preview (PlanGraph nodes/edges/gaps/
-  // governanceFlags) in the same ESCALATE turn without a new event type.
-  dryRun?: Record<string, unknown> | null;
-  // Conversational context backfilled by Python outcome_to_workbench_dict
-  // (Task 5). Non-null after CLARIFY/SELECT; null after REJECT/ESCALATE or
-  // when no capability decision was made. The adapter uses this to update
-  // SessionState.lastContext for multi-turn continuity.
-  lastContext?: LastContext | null;
 };
 
 type AgentRunner = (input: AgentRunnerInput) => Promise<WorkbenchOutcome>;
