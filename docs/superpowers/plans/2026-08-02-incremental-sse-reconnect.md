@@ -58,7 +58,7 @@ base-ref: a7ac4d1ca69cc05f1bec1c3bc48efc7e323d039d
 - Produces: `emitBatchEvents(record, outcome, timestamp, emit)` — async，同上
 - Produces: `AsyncPush = (event: Omit<AgentRunEvent, "runId" | "sequence" | "timestamp">) => Promise<void>` — 内部类型
 
-- [ ] **Step 1: Write the failing test — rejection emits run_failed terminal event**
+- [x] **Step 1: Write the failing test — rejection emits run_failed terminal event**
 
 在 `frontend/src/runtime/agent-runtime-adapter.test.ts` 的 `describe` 块末尾追加：
 
@@ -92,12 +92,12 @@ it("rejection emits run_failed terminal event after approval_state_changed", asy
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd frontend && npx vitest run src/runtime/agent-runtime-adapter.test.ts -t "rejection emits run_failed"`
 Expected: FAIL — last event type is `approval_state_changed` (not `run_failed`)
 
-- [ ] **Step 3: Replace event builder functions with emitter versions**
+- [x] **Step 3: Replace event builder functions with emitter versions**
 
 在 `frontend/src/runtime/agent-runtime-adapter.ts` 中：
 
@@ -500,7 +500,7 @@ async function emitBatchEvents(
 // function push(events: AgentRunEvent[], runId: string, timestamp: string, event: Omit<AgentRunEvent, "runId" | "sequence" | "timestamp">) { ... }
 ```
 
-- [ ] **Step 4: Update callers to use emitter functions**
+- [x] **Step 4: Update callers to use emitter functions**
 
 在 `createAgentRun` 的 `try` 块中，将：
 
@@ -551,17 +551,17 @@ async function emitBatchEvents(
       (event) => runStore.appendEvent(runId, event));
 ```
 
-- [ ] **Step 5: Run rejection test to verify it passes**
+- [x] **Step 5: Run rejection test to verify it passes**
 
 Run: `cd frontend && npx vitest run src/runtime/agent-runtime-adapter.test.ts -t "rejection emits run_failed"`
 Expected: PASS
 
-- [ ] **Step 6: Run all adapter tests to verify no regression**
+- [x] **Step 6: Run all adapter tests to verify no regression**
 
 Run: `cd frontend && npx vitest run src/runtime/agent-runtime-adapter.test.ts`
 Expected: PASS — all existing tests pass (行为不变，rejection 多一个事件但不影响现有断言)
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add frontend/src/runtime/agent-runtime-adapter.ts frontend/src/runtime/agent-runtime-adapter.test.ts
@@ -590,7 +590,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 - Consumes: `emitEventsFromOutcome` from Task 1
 - Produces: `executeRunnerInBackground(runId, query, conversationId, timestamp)` — async，fire-and-forget；调用方用 `void` 启动
 
-- [ ] **Step 1: Add waitForRunSettled test helper**
+- [x] **Step 1: Add waitForRunSettled test helper**
 
 在 `frontend/src/runtime/agent-runtime-adapter.test.ts` 的 `describe` 块之前添加：
 
@@ -619,7 +619,7 @@ async function waitForRunSettled(runId: string, timeoutMs = 5000): Promise<Agent
 import type { AgentRunEvent } from "./run-event-schema";
 ```
 
-- [ ] **Step 2: Write failing test — createAgentRun returns before runner completes**
+- [x] **Step 2: Write failing test — createAgentRun returns before runner completes**
 
 在 `describe` 块末尾追加：
 
@@ -643,12 +643,12 @@ it("createAgentRun returns runId before runner produces non-started events", asy
 });
 ```
 
-- [ ] **Step 3: Run test to verify it fails**
+- [x] **Step 3: Run test to verify it fails**
 
 Run: `cd frontend && npx vitest run src/runtime/agent-runtime-adapter.test.ts -t "returns runId before runner"`
 Expected: FAIL — `createAgentRun` currently awaits runner; `events.length` is > 1 and `runnerResolved` is true
 
-- [ ] **Step 4: Extract executeRunnerInBackground and make createAgentRun return immediately**
+- [x] **Step 4: Extract executeRunnerInBackground and make createAgentRun return immediately**
 
 在 `frontend/src/runtime/agent-runtime-adapter.ts` 中：
 
@@ -712,12 +712,12 @@ async function executeRunnerInBackground(
 // function buildRuntimeFailureEvents(runId: string, timestamp: string, error: unknown): AgentRunEvent[] { ... }
 ```
 
-- [ ] **Step 5: Run the new test to verify it passes**
+- [x] **Step 5: Run the new test to verify it passes**
 
 Run: `cd frontend && npx vitest run src/runtime/agent-runtime-adapter.test.ts -t "returns runId before runner"`
 Expected: PASS
 
-- [ ] **Step 6: Adapt existing tests for async background**
+- [x] **Step 6: Adapt existing tests for async background**
 
 在 `frontend/src/runtime/agent-runtime-adapter.test.ts` 中，修改以下测试：
 
@@ -735,12 +735,12 @@ Expected: PASS
 
 7. `"duplicate batch confirm continuation is idempotent (executes once)"` — 在 `confirmAgentRunBatch` 之后加 `await waitForRunSettled(runId);`
 
-- [ ] **Step 7: Run all adapter tests**
+- [x] **Step 7: Run all adapter tests**
 
 Run: `cd frontend && npx vitest run src/runtime/agent-runtime-adapter.test.ts`
 Expected: PASS — all tests pass
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add frontend/src/runtime/agent-runtime-adapter.ts frontend/src/runtime/agent-runtime-adapter.test.ts
@@ -771,7 +771,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 - Produces: `executeApprovalInBackground(runId, record, decision, callPlan, validationResult, approvalRecord, idemKey)` — async fire-and-forget
 - Produces: `executeBatchInBackground(runId, record, callPlan, combinations, idemKey)` — async fire-and-forget
 
-- [ ] **Step 1: Write failing test — decideAgentRunApproval returns before runner completes**
+- [x] **Step 1: Write failing test — decideAgentRunApproval returns before runner completes**
 
 在 `frontend/src/runtime/agent-runtime-adapter.test.ts` 的 `describe` 块末尾追加：
 
@@ -797,12 +797,12 @@ it("decideAgentRunApproval returns before continuation runner completes", async 
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd frontend && npx vitest run src/runtime/agent-runtime-adapter.test.ts -t "returns before continuation runner"`
 Expected: FAIL — `decideAgentRunApproval` currently awaits runner; `continuationResolved` is true
 
-- [ ] **Step 3: Extract background functions and make continuation paths return immediately**
+- [x] **Step 3: Extract background functions and make continuation paths return immediately**
 
 在 `frontend/src/runtime/agent-runtime-adapter.ts` 中：
 
@@ -894,17 +894,17 @@ async function executeBatchInBackground(
   void executeBatchInBackground(runId, record, callPlan, combinations, idemKey);
 ```
 
-- [ ] **Step 4: Run the new test to verify it passes**
+- [x] **Step 4: Run the new test to verify it passes**
 
 Run: `cd frontend && npx vitest run src/runtime/agent-runtime-adapter.test.ts -t "returns before continuation runner"`
 Expected: PASS
 
-- [ ] **Step 5: Run all adapter tests**
+- [x] **Step 5: Run all adapter tests**
 
 Run: `cd frontend && npx vitest run src/runtime/agent-runtime-adapter.test.ts`
 Expected: PASS
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add frontend/src/runtime/agent-runtime-adapter.ts frontend/src/runtime/agent-runtime-adapter.test.ts
@@ -933,7 +933,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 - Consumes: `getAgentRunEvents(runId)` from `agent-runtime-adapter`（返回 `AgentRunEvent[]`，按 sequence 升序）
 - Produces: `GET(request, { params })` — 返回 `Response` with `ReadableStream` body；`?cursor=N` 过滤 `sequence > N`
 
-- [ ] **Step 1: Create stream route test file with terminal replay test**
+- [x] **Step 1: Create stream route test file with terminal replay test**
 
 创建 `frontend/src/runtime/stream-route.test.ts`：
 
@@ -1083,12 +1083,12 @@ describe("stream route", () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `cd frontend && npx vitest run src/runtime/stream-route.test.ts`
 Expected: FAIL — current route returns buffered string, not a stream; no cursor parsing
 
-- [ ] **Step 3: Rewrite stream route as polling ReadableStream**
+- [x] **Step 3: Rewrite stream route as polling ReadableStream**
 
 将 `frontend/app/api/agent-runs/[runId]/stream/route.ts` 全文替换为：
 
@@ -1179,12 +1179,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ runI
 }
 ```
 
-- [ ] **Step 4: Run stream route tests to verify they pass**
+- [x] **Step 4: Run stream route tests to verify they pass**
 
 Run: `cd frontend && npx vitest run src/runtime/stream-route.test.ts`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/app/api/agent-runs/[runId]/stream/route.ts frontend/src/runtime/stream-route.test.ts
@@ -1217,7 +1217,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 - Produces: `lastEventSequence(events)` — 返回 events 中最大 sequence，空数组返回 0
 - Produces: `RECONNECT_DELAY` = 500
 
-- [ ] **Step 1: Create stream-helpers test file**
+- [x] **Step 1: Create stream-helpers test file**
 
 创建 `frontend/src/modules/agent-console/stream-helpers.test.ts`：
 
@@ -1251,12 +1251,12 @@ describe("stream helpers", () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd frontend && npx vitest run src/modules/agent-console/stream-helpers.test.ts`
 Expected: FAIL — module not found
 
-- [ ] **Step 3: Create stream-helpers module**
+- [x] **Step 3: Create stream-helpers module**
 
 创建 `frontend/src/modules/agent-console/stream-helpers.ts`：
 
@@ -1274,12 +1274,12 @@ export function lastEventSequence(events: AgentRunEvent[]): number {
 }
 ```
 
-- [ ] **Step 4: Run helper tests to verify they pass**
+- [x] **Step 4: Run helper tests to verify they pass**
 
 Run: `cd frontend && npx vitest run src/modules/agent-console/stream-helpers.test.ts`
 Expected: PASS
 
-- [ ] **Step 5: Update AgentConsole.tsx streamAgentRun with cursor and reconnect**
+- [x] **Step 5: Update AgentConsole.tsx streamAgentRun with cursor and reconnect**
 
 在 `frontend/src/modules/agent-console/AgentConsole.tsx` 中：
 
@@ -1344,12 +1344,12 @@ import { buildStreamUrl, lastEventSequence, RECONNECT_DELAY } from "./stream-hel
       streamAgentRun(target.runId, serverRunId, target.snapshot, cursor);
 ```
 
-- [ ] **Step 6: Run all tests + typecheck**
+- [x] **Step 6: Run all tests + typecheck**
 
 Run: `cd frontend && npx vitest run && npm run typecheck`
 Expected: PASS — all tests pass, typecheck succeeds
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add frontend/src/modules/agent-console/stream-helpers.ts \
@@ -1374,27 +1374,27 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 
 **Files:** 无修改
 
-- [ ] **Step 1: Run full verify**
+- [x] **Step 1: Run full verify**
 
 Run: `cd frontend && npm run verify`
 Expected: typecheck PASS, test PASS, build PASS
 
-- [ ] **Step 2: Run openspec validate**
+- [x] **Step 2: Run openspec validate**
 
 Run: `openspec validate --all --strict`
 Expected: PASS
 
-- [ ] **Step 3: Run openspec list**
+- [x] **Step 3: Run openspec list**
 
 Run: `cd . && openspec list --json`
 Expected: JSON output without errors
 
-- [ ] **Step 4: Run callplan evidence script**
+- [x] **Step 4: Run callplan evidence script**
 
 Run: `cd . && scripts/verify-agent-callplan-evidence.sh`
 Expected: PASS
 
-- [ ] **Step 5: Commit if any test fixtures were adjusted**
+- [x] **Step 5: Commit if any test fixtures were adjusted**
 
 ```bash
 git status --short
