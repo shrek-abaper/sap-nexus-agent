@@ -29,9 +29,9 @@
 
 ## 6. 测试验证
 
-- [ ] 6.1 增量发布单元测试：`run_started` 后客户端立即收到事件，不等 `run_completed`
+- [x] 6.1 增量发布单元测试：`run_started` 后客户端立即收到事件，不等 `run_completed`
 - [x] 6.2 reconnect replay 测试：断线后带 cursor 重连收到全部缺失事件且顺序正确
 - [x] 6.3 terminal state 测试：terminal 事件送达后 stream 关闭，后续重连补发 terminal 即关闭
-- [ ] 6.4 回归测试：现有 buffered SSE 测试适配增量路径，不破坏 approval/batch continuation 流程
-- [ ] 6.5 `npm --prefix frontend run verify` 通过
-- [ ] 6.6 `openspec validate --all --strict` 通过
+- [x] 6.4 回归测试：现有 buffered SSE 测试适配增量路径，不破坏 approval/batch continuation 流程
+- [x] 6.5 `npm --prefix frontend run verify` 通过
+- [x] 6.6 `openspec validate --all --strict` 通过

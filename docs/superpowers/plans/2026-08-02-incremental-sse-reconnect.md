@@ -1366,7 +1366,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ---
 
 ## Task 6: 回归验证 + openspec validate
-- [ ] Task 6: 回归验证 + openspec validate
+- [x] Task 6: 回归验证 + openspec validate
 
 **Design Doc:** §6 测试验证
 
