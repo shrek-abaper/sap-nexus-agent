@@ -7,7 +7,7 @@
 ## 2. Durable state 绑定 principal
 
 - [x] 2.1 durable Run 记录绑定 `principalId`（创建时写入，不可变）
-- [ ] 2.2 durable Approval 记录绑定 `principalId`（与 run 归属一致）
+- ~2.2 durable Approval 记录绑定 `principalId`（与 run 归属一致）~ — **推迟至拆分项 3（durable-approval-store），本 change 不实现**
 - [x] 2.3 durable ConversationState（Sessions）记录绑定 `principalId`
 - [x] 2.4 与拆分项 1 durable store 接口对接（项 1 归档后 build 阶段集成）
 
@@ -21,7 +21,7 @@
 
 - [x] 4.1 durable store 查询按 `principalId` 强制过滤
 - [x] 4.2 principal A 访问 principal B 的 run/approval/session fail-closed
-- [ ] 4.3 durable store 索引 `principalId`（隔离性能）
+- ~4.3 durable store 索引 `principalId`（隔离性能）~ — **v1 内存过滤无需索引，推迟至生产硬化**
 
 ## 5. 本地占位 principal
 

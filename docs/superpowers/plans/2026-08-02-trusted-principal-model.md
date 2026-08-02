@@ -6,7 +6,7 @@ base-ref: a7ac4d1ca69cc05f1bec1c3bc48efc7e323d039d
 
 # Trusted Principal Model Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** 建立 TrustedPrincipal 数据模型与 PrincipalInjector 接口，将 principalId 绑定到 durable state（Run/Session），实现 cross-principal fail-closed 隔离与 4 个 route handler 的 server-owned 注入。
 
@@ -65,7 +65,7 @@ base-ref: a7ac4d1ca69cc05f1bec1c3bc48efc7e323d039d
 **Interfaces:**
 - Produces: `TrustedPrincipal`（`{ principalId: string; role: PrincipalRole; dataScope: DataScope }`）、`PrincipalRole`（`"admin" | "operator" | "viewer"`）、`DataScope`（`{ tenantId: string }`）、`PLACEHOLDER_PRINCIPAL`（`TrustedPrincipal`，principalId=`"local-user-0001"`）
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `frontend/src/runtime/principal/types.test.ts`:
 
@@ -96,12 +96,12 @@ describe("TrustedPrincipal model", () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npm --prefix frontend run test -- src/runtime/principal/types.test.ts`
 Expected: FAIL — `Cannot find module './types'` 或文件不存在错误。
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 Create `frontend/src/runtime/principal/types.ts`:
 
@@ -125,17 +125,17 @@ export const PLACEHOLDER_PRINCIPAL: TrustedPrincipal = {
 };
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `npm --prefix frontend run test -- src/runtime/principal/types.test.ts`
 Expected: PASS — 2 tests passed。
 
-- [ ] **Step 5: Run typecheck**
+- [x] **Step 5: Run typecheck**
 
 Run: `npm --prefix frontend run typecheck`
 Expected: PASS — no type errors。
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add frontend/src/runtime/principal/types.ts frontend/src/runtime/principal/types.test.ts
@@ -157,7 +157,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 - Consumes: `TrustedPrincipal`、`PLACEHOLDER_PRINCIPAL`（from Task 1）
 - Produces: `PrincipalInjector`（interface，`inject(request: Request): TrustedPrincipal`）、`LocalPlaceholderPrincipalInjector`（class）、`injectPrincipal(request: Request): TrustedPrincipal`（模块级便捷函数）、`setPrincipalInjectorForTests(injector: PrincipalInjector | null): void`（测试钩子）
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `frontend/src/runtime/principal/principal-injector.test.ts`:
 
@@ -214,12 +214,12 @@ describe("PrincipalInjector", () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npm --prefix frontend run test -- src/runtime/principal/principal-injector.test.ts`
 Expected: FAIL — `Cannot find module './principal-injector'`。
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 Create `frontend/src/runtime/principal/principal-injector.ts`:
 
@@ -248,17 +248,17 @@ export function setPrincipalInjectorForTests(injector: PrincipalInjector | null)
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `npm --prefix frontend run test -- src/runtime/principal/principal-injector.test.ts`
 Expected: PASS — 5 tests passed。
 
-- [ ] **Step 5: Run typecheck**
+- [x] **Step 5: Run typecheck**
 
 Run: `npm --prefix frontend run typecheck`
 Expected: PASS。
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add frontend/src/runtime/principal/principal-injector.ts frontend/src/runtime/principal/principal-injector.test.ts
@@ -285,7 +285,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 - Consumes: 无（纯 durable 层扩展）
 - Produces: `AgentRunRecord.principalId?: string`、`SessionState.principalId?: string`、`DurableRunStore.list(filter?: { state?: AgentRunState; principalId?: string })`、`DurableConversationStore.load(conversationId: string, principalId?: string)`、`RunJsonlLine` run_meta 加 `principalId?: string`
 
-- [ ] **Step 1: Write failing tests for JsonlRunStore principalId persistence, backfill, and filter**
+- [x] **Step 1: Write failing tests for JsonlRunStore principalId persistence, backfill, and filter**
 
 在 `frontend/src/runtime/durable/jsonl-run-store.test.ts` 的 `describe("JsonlRunStore core", ...)` 块内追加以下测试（在现有 `clearAll` 测试之后）：
 
@@ -320,7 +320,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 
 注意：`record()` 辅助函数当前不包含 principalId（字段尚为可选），现有测试不受影响。`appendFileSync` 已在文件顶部 import。
 
-- [ ] **Step 2: Write failing tests for JsonlConversationStore backfill and principal filter**
+- [x] **Step 2: Write failing tests for JsonlConversationStore backfill and principal filter**
 
 在 `frontend/src/runtime/durable/jsonl-conversation-store.test.ts` 末尾追加：
 
@@ -359,12 +359,12 @@ describe("JsonlConversationStore principalId", () => {
 
 确保文件顶部已有 `mkdtempSync, rmSync` import 和 `path, tmpdir` import（与 jsonl-run-store.test.ts 模式一致）。如果顶部缺少 `writeFileSync`，添加它。
 
-- [ ] **Step 3: Run tests to verify they fail**
+- [x] **Step 3: Run tests to verify they fail**
 
 Run: `npm --prefix frontend run test -- src/runtime/durable/jsonl-run-store.test.ts src/runtime/durable/jsonl-conversation-store.test.ts`
 Expected: FAIL — `principalId` 属性不存在 / 类型不匹配。
 
-- [ ] **Step 4: Modify types.ts — add optional principalId fields**
+- [x] **Step 4: Modify types.ts — add optional principalId fields**
 
 在 `frontend/src/runtime/durable/types.ts` 中：
 
@@ -415,7 +415,7 @@ export type RunJsonlLine =
   load(conversationId: string, principalId?: string): Promise<SessionState | null>;
 ```
 
-- [ ] **Step 5: Modify JsonlRunStore — persist, backfill, and filter principalId**
+- [x] **Step 5: Modify JsonlRunStore — persist, backfill, and filter principalId**
 
 在 `frontend/src/runtime/durable/jsonl-run-store.ts` 中：
 
@@ -496,7 +496,7 @@ export type RunJsonlLine =
   }
 ```
 
-- [ ] **Step 6: Modify JsonlConversationStore — backfill and fail-closed filter**
+- [x] **Step 6: Modify JsonlConversationStore — backfill and fail-closed filter**
 
 在 `frontend/src/runtime/durable/jsonl-conversation-store.ts` 中，`load` 方法（约第 32-36 行）改为：
 
@@ -515,17 +515,17 @@ export type RunJsonlLine =
   }
 ```
 
-- [ ] **Step 7: Run tests to verify they pass**
+- [x] **Step 7: Run tests to verify they pass**
 
 Run: `npm --prefix frontend run test -- src/runtime/durable/jsonl-run-store.test.ts src/runtime/durable/jsonl-conversation-store.test.ts`
 Expected: PASS — 所有测试通过，包括新增的 principalId 测试。
 
-- [ ] **Step 8: Run typecheck to verify build is green**
+- [x] **Step 8: Run typecheck to verify build is green**
 
 Run: `npm --prefix frontend run typecheck`
 Expected: PASS — principalId 为可选字段，现有构造点不受影响。
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add frontend/src/runtime/durable/types.ts frontend/src/runtime/durable/jsonl-run-store.ts frontend/src/runtime/durable/jsonl-run-store.test.ts frontend/src/runtime/durable/jsonl-conversation-store.ts frontend/src/runtime/durable/jsonl-conversation-store.test.ts
@@ -552,7 +552,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 - Consumes: `TrustedPrincipal`、`injectPrincipal`（from Task 1/2）、durable types principalId（from Task 3）
 - Produces: `CreateAgentRunInput`（加 `principal: TrustedPrincipal`）、`createAgentRun(input: CreateAgentRunInput)` 传入 principal、`getSession(conversationId: string, principalId: string)`（私有，加 principalId 参数）
 
-- [ ] **Step 1: Write failing tests for createAgentRun principal binding and getSession ownership**
+- [x] **Step 1: Write failing tests for createAgentRun principal binding and getSession ownership**
 
 在 `frontend/src/runtime/agent-runtime-adapter.test.ts` 的 import 块中追加：
 
@@ -608,12 +608,12 @@ import type { TrustedPrincipal } from "./principal/types";
   });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `npm --prefix frontend run test -- src/runtime/agent-runtime-adapter.test.ts`
 Expected: FAIL — `createAgentRun` 签名不接受 `principal`；现有调用缺 `principal` 参数导致类型错误。
 
-- [ ] **Step 3: Upgrade AgentRunRecord.principalId to required in types.ts**
+- [x] **Step 3: Upgrade AgentRunRecord.principalId to required in types.ts**
 
 在 `frontend/src/runtime/durable/types.ts` 中，将 `AgentRunRecord.principalId` 从 `principalId?: string` 改为 `principalId: string`：
 
@@ -628,7 +628,7 @@ export type AgentRunRecord = {
 };
 ```
 
-- [ ] **Step 4: Modify agent-runtime-adapter.ts — CreateAgentRunInput, createAgentRun, getSession**
+- [x] **Step 4: Modify agent-runtime-adapter.ts — CreateAgentRunInput, createAgentRun, getSession**
 
 4a. 在文件顶部 import 块（约第 16-17 行 `JsonlConversationStore` import 之后）加：
 
@@ -693,7 +693,7 @@ async function getSession(conversationId: string, principalId: string): Promise<
 
 4e. `decideAgentRunApproval` / `confirmAgentRunBatch` / `getAgentRunEvents` 本任务**不改签名**（Task 5 改）。但由于 `getAgentRunEvents` 内部调用 `runStore.load` 返回的 `AgentRunRecord` 现在有 required `principalId`，且函数内不构造 AgentRunRecord，不受影响。
 
-- [ ] **Step 5: Update jsonl-run-store.test.ts record() helper — add principalId**
+- [x] **Step 5: Update jsonl-run-store.test.ts record() helper — add principalId**
 
 在 `frontend/src/runtime/durable/jsonl-run-store.test.ts` 中，`record()` 辅助函数（约第 13-15 行）加 `principalId`：
 
@@ -703,7 +703,7 @@ function record(runId: string, query: string, events: AgentRunEvent[]): AgentRun
 }
 ```
 
-- [ ] **Step 6: Update agent-runtime-adapter.test.ts — add principal to all createAgentRun calls**
+- [x] **Step 6: Update agent-runtime-adapter.test.ts — add principal to all createAgentRun calls**
 
 在 `frontend/src/runtime/agent-runtime-adapter.test.ts` 中，将所有 `createAgentRun({ query: ... })` 调用加 `principal: PLACEHOLDER_PRINCIPAL`。涉及约 6 处调用，例如：
 
@@ -717,7 +717,7 @@ await createAgentRun({ query: "查询库存", conversationId: "c1", principal: P
 
 对文件中每个 `createAgentRun({` 调用，在参数对象内加 `principal: PLACEHOLDER_PRINCIPAL`。同时 `decideAgentRunApproval(target.runId, "approve")` 调用本任务不改（Task 5 改签名）。
 
-- [ ] **Step 7: Modify POST /api/agent-runs route — inject principal**
+- [x] **Step 7: Modify POST /api/agent-runs route — inject principal**
 
 在 `frontend/app/api/agent-runs/route.ts` 中：
 
@@ -749,17 +749,17 @@ export async function POST(request: Request) {
 
 注意：route handler 仅从 `payload` 读取 `query` / `rfcName` / `conversationId`，**不读取** `payload.principal` / `payload.principalId`。即使 request body 携带 principal 字段，`injectPrincipal(request)` 返回 server-owned principal，body 中的 principal 字段被忽略（§5.3）。
 
-- [ ] **Step 8: Run tests to verify they pass**
+- [x] **Step 8: Run tests to verify they pass**
 
 Run: `npm --prefix frontend run test -- src/runtime/agent-runtime-adapter.test.ts src/runtime/durable/jsonl-run-store.test.ts`
 Expected: PASS — 所有测试通过，包括 principal 绑定与 getSession 归属校验。
 
-- [ ] **Step 9: Run typecheck to verify build is green (including route handler)**
+- [x] **Step 9: Run typecheck to verify build is green (including route handler)**
 
 Run: `npm --prefix frontend run typecheck`
 Expected: PASS — AgentRunRecord.principalId required，所有构造点已更新；route handler 传入 principal。
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add frontend/src/runtime/durable/types.ts frontend/src/runtime/agent-runtime-adapter.ts frontend/src/runtime/agent-runtime-adapter.test.ts frontend/src/runtime/durable/jsonl-run-store.test.ts frontend/app/api/agent-runs/route.ts
@@ -791,7 +791,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 - Consumes: `TrustedPrincipal`、`injectPrincipal`（from Task 1/2/4）
 - Produces: `decideAgentRunApproval(runId: string, decision: ApprovalDecision, principal: TrustedPrincipal)`、`confirmAgentRunBatch(runId: string, principal: TrustedPrincipal)`、`getAgentRunEvents(runId: string, principal: TrustedPrincipal): Promise<AgentRunEvent[]>`
 
-- [ ] **Step 1: Write failing tests for cross-principal isolation**
+- [x] **Step 1: Write failing tests for cross-principal isolation**
 
 在 `frontend/src/runtime/agent-runtime-adapter.test.ts` 的 `describe("agent-runtime-adapter durable integration", ...)` 块内追加：
 
@@ -838,12 +838,12 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 
 同时，现有测试中所有 `decideAgentRunApproval(runId, decision)` / `confirmAgentRunBatch(runId)` / `getAgentRunEvents(runId)` 调用需在 Step 4 加 `PLACEHOLDER_PRINCIPAL` 参数。
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `npm --prefix frontend run test -- src/runtime/agent-runtime-adapter.test.ts`
 Expected: FAIL — `decideAgentRunApproval` / `confirmAgentRunBatch` / `getAgentRunEvents` 签名不接受 `principal` 参数。
 
-- [ ] **Step 3: Modify agent-runtime-adapter.ts — add principal param and ownership check to 3 functions**
+- [x] **Step 3: Modify agent-runtime-adapter.ts — add principal param and ownership check to 3 functions**
 
 3a. `getAgentRunEvents`（约第 168-171 行）加 `principal` 参数与归属校验：
 
@@ -891,7 +891,7 @@ export async function confirmAgentRunBatch(
 
 **关键**：归属校验在 `claim` lease **之前**执行（§4.1：先验归属，再验并发）。当前代码中 `claim` 在 `load` 之后、`appendDecision` 之前，归属校验插入在 `load` 之后、`claim` 之前，符合设计。
 
-- [ ] **Step 4: Update agent-runtime-adapter.test.ts — add principal to all existing calls**
+- [x] **Step 4: Update agent-runtime-adapter.test.ts — add principal to all existing calls**
 
 在 `frontend/src/runtime/agent-runtime-adapter.test.ts` 中，为所有现有 `decideAgentRunApproval(runId, ...)` 调用加第三参数 `PLACEHOLDER_PRINCIPAL`，所有 `confirmAgentRunBatch(runId)` 调用加第二参数 `PLACEHOLDER_PRINCIPAL`，所有 `getAgentRunEvents(runId)` 调用加第二参数 `PLACEHOLDER_PRINCIPAL`。例如：
 
@@ -902,7 +902,7 @@ await decideAgentRunApproval(target.runId, "approve", PLACEHOLDER_PRINCIPAL);
 const events = await getAgentRunEvents(runId, PLACEHOLDER_PRINCIPAL);
 ```
 
-- [ ] **Step 5: Modify approval route — inject principal**
+- [x] **Step 5: Modify approval route — inject principal**
 
 在 `frontend/app/api/agent-runs/[runId]/approval/route.ts` 中，import `injectPrincipal` 并在 `POST` 入口注入，传给 `decideAgentRunApproval`：
 
@@ -959,7 +959,7 @@ function invalidRequest(message: string) {
 }
 ```
 
-- [ ] **Step 6: Modify batch route — inject principal**
+- [x] **Step 6: Modify batch route — inject principal**
 
 在 `frontend/app/api/agent-runs/[runId]/batch/route.ts` 中：
 
@@ -1004,7 +1004,7 @@ function invalidRequest(message: string) {
 }
 ```
 
-- [ ] **Step 7: Modify stream route — inject principal**
+- [x] **Step 7: Modify stream route — inject principal**
 
 在 `frontend/app/api/agent-runs/[runId]/stream/route.ts` 中，将 `_request` 改为 `request`（需用于注入），传给 `getAgentRunEvents`：
 
@@ -1028,22 +1028,22 @@ export async function GET(request: Request, { params }: { params: Promise<{ runI
 }
 ```
 
-- [ ] **Step 8: Run tests to verify they pass**
+- [x] **Step 8: Run tests to verify they pass**
 
 Run: `npm --prefix frontend run test -- src/runtime/agent-runtime-adapter.test.ts`
 Expected: PASS — 所有测试通过，包括 cross-principal 隔离测试。
 
-- [ ] **Step 9: Run typecheck to verify all route handlers compile**
+- [x] **Step 9: Run typecheck to verify all route handlers compile**
 
 Run: `npm --prefix frontend run typecheck`
 Expected: PASS — 4 个 route handler 均传入 principal，3 个 adapter 函数签名匹配。
 
-- [ ] **Step 10: Run full test suite to verify no regressions**
+- [x] **Step 10: Run full test suite to verify no regressions**
 
 Run: `npm --prefix frontend run test`
 Expected: PASS — 全部测试通过。
 
-- [ ] **Step 11: Commit**
+- [x] **Step 11: Commit**
 
 ```bash
 git add frontend/src/runtime/agent-runtime-adapter.ts frontend/src/runtime/agent-runtime-adapter.test.ts frontend/app/api/agent-runs/[runId]/approval/route.ts frontend/app/api/agent-runs/[runId]/batch/route.ts frontend/app/api/agent-runs/[runId]/stream/route.ts
@@ -1071,7 +1071,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 - Consumes: 全部前序任务的实现
 - Produces: 通过 `openspec validate --all --strict` 与 `npm --prefix frontend run verify`
 
-- [ ] **Step 1: Create the MODIFIED durable-run-state spec patch**
+- [x] **Step 1: Create the MODIFIED durable-run-state spec patch**
 
 Create `openspec/changes/sap-nexus-trusted-principal-model/specs/durable-run-state/spec.md`:
 
@@ -1125,27 +1125,27 @@ The system SHALL define a store-agnostic interface (`DurableRunStore`, `DurableC
 - **AND** no session data is leaked to the caller
 ```
 
-- [ ] **Step 2: Run openspec validate**
+- [x] **Step 2: Run openspec validate**
 
 Run: `openspec validate --all --strict`
 Expected: PASS — 所有 spec（trusted-principal-scope ADDED + durable-run-state MODIFIED）通过校验。
 
-- [ ] **Step 3: Run openspec list to verify change is recognized**
+- [x] **Step 3: Run openspec list to verify change is recognized**
 
 Run: `openspec list --json`
 Expected: 输出包含 `sap-nexus-trusted-principal-model`，specs 包含 `trusted-principal-scope`（ADDED）与 `durable-run-state`（MODIFIED）。
 
-- [ ] **Step 4: Run full frontend verify**
+- [x] **Step 4: Run full frontend verify**
 
 Run: `npm --prefix frontend run verify`
 Expected: PASS — typecheck + test + build 全部通过。
 
-- [ ] **Step 5: Run agent callplan evidence verification script**
+- [x] **Step 5: Run agent callplan evidence verification script**
 
 Run: `scripts/verify-agent-callplan-evidence.sh`
 Expected: PASS（若无变更影响则通过；若脚本报错且与本 change 无关则记录但不阻塞）。
 
-- [ ] **Step 6: Update tasks.md — check off completed items**
+- [x] **Step 6: Update tasks.md — check off completed items**
 
 在 `openspec/changes/sap-nexus-trusted-principal-model/tasks.md` 中，勾选所有已完成项：
 
@@ -1158,12 +1158,12 @@ Expected: PASS（若无变更影响则通过；若脚本报错且与本 change �
 - [x] 5.1, 5.2, 5.3（v1 占位 principal + 默认注入 + 扩展点预留）
 - [x] 6.1, 6.2, 6.3, 6.4, 6.5, 6.6（测试 + 验证）
 
-- [ ] **Step 7: Run git status to verify clean diff**
+- [x] **Step 7: Run git status to verify clean diff**
 
 Run: `git status --short`
 Expected: 仅显示本任务修改的文件（spec.md、tasks.md）。
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add openspec/changes/sap-nexus-trusted-principal-model/specs/durable-run-state/spec.md openspec/changes/sap-nexus-trusted-principal-model/tasks.md
