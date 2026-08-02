@@ -131,4 +131,53 @@ class FileDurableApprovalStoreTest {
             executor.shutdownNow();
         }
     }
+
+    @Test
+    void markExecutedTransitionsToExecutedAndReleasesLease() throws Exception {
+        FileDurableApprovalStore store = new FileDurableApprovalStore(tempDir, "worker-test", 60_000L);
+        store.save(sampleRecord("appr-exec", "approved"));
+        store.claimForExecution("appr-exec");
+
+        store.markExecuted("appr-exec");
+
+        ApprovalRecord found = store.find("appr-exec").orElseThrow();
+        assertEquals("executed", found.status());
+        assertFalse(java.nio.file.Files.exists(tempDir.resolve("leases").resolve("appr-exec.json")));
+    }
+
+    @Test
+    void markExecutedNonExecutingIsNoop() {
+        FileDurableApprovalStore store = new FileDurableApprovalStore(tempDir, "worker-test", 60_000L);
+        store.save(sampleRecord("appr-noexec", "approved"));
+
+        store.markExecuted("appr-noexec");
+
+        assertEquals("approved", store.find("appr-noexec").orElseThrow().status());
+    }
+
+    @Test
+    void markExecutedPreservesAllFields() {
+        FileDurableApprovalStore store = new FileDurableApprovalStore(tempDir, "worker-test", 60_000L);
+        ApprovalRecord original = sampleRecord("appr-fields", "approved");
+        store.save(original);
+        store.claimForExecution("appr-fields");
+        store.markExecuted("appr-fields");
+
+        ApprovalRecord found = store.find("appr-fields").orElseThrow();
+        assertEquals(original.approvalId(), found.approvalId());
+        assertEquals(original.capabilityId(), found.capabilityId());
+        assertEquals(original.parameterSnapshotHash(), found.parameterSnapshotHash());
+        assertEquals(original.parameters(), found.parameters());
+        assertEquals(original.approver(), found.approver());
+        assertEquals(original.approvedAt(), found.approvedAt());
+        assertEquals(original.expiresAt(), found.expiresAt());
+        assertEquals("executed", found.status());
+    }
+
+    @Test
+    void markExecutedNonexistentIsNoop() {
+        FileDurableApprovalStore store = new FileDurableApprovalStore(tempDir, "worker-test", 60_000L);
+        store.markExecuted("nonexistent");
+        assertTrue(store.find("nonexistent").isEmpty());
+    }
 }

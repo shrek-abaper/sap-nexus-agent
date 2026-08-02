@@ -113,7 +113,24 @@ public class FileDurableApprovalStore implements DurableApprovalStore {
 
     @Override
     public void markExecuted(String approvalId) {
-        // Stub - implemented in Task 4.
+        withFileLock(approvalId, () -> {
+            Path file = approvalFile(approvalId);
+            if (!Files.exists(file)) {
+                return null;
+            }
+            try {
+                ApprovalRecord existing = ApprovalRecordCodec.fromJson(Files.readString(file));
+                if (!"executing".equals(existing.status())) {
+                    return null;
+                }
+                ApprovalRecord executed = withStatus(existing, "executed");
+                atomicWrite(file, ApprovalRecordCodec.toJson(executed));
+                deleteLease(approvalId);
+                return null;
+            } catch (IOException e) {
+                throw new IllegalStateException("Failed to mark executed " + approvalId, e);
+            }
+        });
     }
 
     // --- DurableApprovalStore contract (stubs - implemented in Tasks 5-6) ---
@@ -196,6 +213,10 @@ public class FileDurableApprovalStore implements DurableApprovalStore {
             return Optional.empty();
         }
         return Optional.of(ApprovalRecordCodec.leaseFromJson(Files.readString(file)));
+    }
+
+    private void deleteLease(String approvalId) throws IOException {
+        Files.deleteIfExists(leaseFile(approvalId));
     }
 
     private ReentrantLock stripeLock(String approvalId) {
