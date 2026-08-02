@@ -1498,7 +1498,7 @@ git commit -m "feat(durable): add run ownership lease with activity-driven renew
 ---
 
 ## Task 7: Structured checkpoint reference
-- [ ] Task 7: Structured checkpoint reference
+- [x] Task 7: Structured checkpoint reference
 
 **对应 tasks.md：** 5.1 / 5.2 / 5.3 / 5.4（checkpoint 持久化 + 恢复 + fail-closed + 压缩失败保留）
 

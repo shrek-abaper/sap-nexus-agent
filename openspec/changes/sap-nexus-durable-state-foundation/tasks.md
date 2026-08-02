@@ -25,9 +25,9 @@
 
 ## 5. Structured checkpoint + 恢复
 
-- [ ] 5.1 持久化 structured checkpoint reference（绑定 `RegistrySnapshot` + 节点状态）
-- [ ] 5.2 恢复时加载原始 `RegistrySnapshot` + 结构化节点状态（不靠 summary / Memory）
-- [ ] 5.3 snapshot 漂移 fail-closed（复用 S1 validator）
+- [x] 5.1 持久化 structured checkpoint reference（绑定 `RegistrySnapshot` + 节点状态）
+- [x] 5.2 恢复时加载原始 `RegistrySnapshot` + 结构化节点状态（不靠 summary / Memory）
+- [x] 5.3 snapshot 漂移 fail-closed（复用 S1 validator）
 - [ ] 5.4 `ConversationState` 压缩失败保留原 checkpoint 或关闭压缩
 
 ## 6. 幂等 continuation
