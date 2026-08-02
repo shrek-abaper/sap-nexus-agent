@@ -293,7 +293,7 @@ git commit -m "feat(approval): add DurableApprovalStore interface, LeaseOutcome,
 
 ### Task 2: FileDurableApprovalStore save/find (atomic tmp+rename, striped locks)
 
-- [ ] Task 2: FileDurableApprovalStore save/find (atomic tmp+rename, striped locks)
+- [x] Task 2: FileDurableApprovalStore save/find (atomic tmp+rename, striped locks)
 
 **Files:**
 - Create: `services/gateway/core/src/main/java/com/sapnexus/gateway/approval/FileDurableApprovalStore.java`
@@ -303,7 +303,7 @@ git commit -m "feat(approval): add DurableApprovalStore interface, LeaseOutcome,
 - Consumes: `DurableApprovalStore` (Task 1), `ApprovalRecordCodec` (Task 1), `ApprovalRecord` (existing).
 - Produces: `FileDurableApprovalStore` class with real `save` / `find` and stubs for the remaining 7 interface methods (replaced in Tasks 3-6). Constructor signature for tests: `FileDurableApprovalStore(Path baseDir, String workerId, long leaseTtlMs)` where `baseDir` resolves to `approvals/` and `leases/` subdirs. A `sampleRecord(approvalId, status)` test helper is established here and reused by later tasks.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `FileDurableApprovalStoreTest.java`:
 
@@ -376,12 +376,12 @@ class FileDurableApprovalStoreTest {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd services/gateway && ./gradlew :core:test --tests "com.sapnexus.gateway.approval.FileDurableApprovalStoreTest"`
 Expected: COMPILE FAILURE — `FileDurableApprovalStore` does not exist.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 Create `FileDurableApprovalStore.java`. `save` / `find` are real; the other 7 interface methods are stubs replaced in later tasks:
 
@@ -574,12 +574,12 @@ public class FileDurableApprovalStore implements DurableApprovalStore {
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `cd services/gateway && ./gradlew :core:test --tests "com.sapnexus.gateway.approval.FileDurableApprovalStoreTest"`
 Expected: PASS (4 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/gateway/core/src/main/java/com/sapnexus/gateway/approval/FileDurableApprovalStore.java \
