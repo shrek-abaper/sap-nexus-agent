@@ -2,6 +2,7 @@
 change: sap-nexus-trusted-principal-model
 design-doc: docs/superpowers/specs/2026-08-02-trusted-principal-model-design.md
 base-ref: a7ac4d1ca69cc05f1bec1c3bc48efc7e323d039d
+archived-with: 2026-08-02-sap-nexus-trusted-principal-model
 ---
 
 # Trusted Principal Model Implementation Plan
@@ -14,10 +15,12 @@ base-ref: a7ac4d1ca69cc05f1bec1c3bc48efc7e323d039d
 
 **Tech Stack:** TypeScript, Next.js route handlers, vitest, OpenSpec
 
+archived-with: 2026-08-02-sap-nexus-trusted-principal-model
 ---
 change: sap-nexus-trusted-principal-model
 design-doc: docs/superpowers/specs/2026-08-02-trusted-principal-model-design.md
 base-ref: a7ac4d1ca69cc05f1bec1c3bc48efc7e323d039d
+archived-with: 2026-08-02-sap-nexus-trusted-principal-model
 ---
 
 ## Global Constraints
@@ -53,6 +56,7 @@ base-ref: a7ac4d1ca69cc05f1bec1c3bc48efc7e323d039d
 | `openspec/changes/sap-nexus-trusted-principal-model/specs/durable-run-state/spec.md`（新建） | MODIFIED durable-run-state spec patch | Task 6 |
 | `openspec/changes/sap-nexus-trusted-principal-model/tasks.md`（修改） | 勾选完成项 | Task 6 |
 
+archived-with: 2026-08-02-sap-nexus-trusted-principal-model
 ---
 
 ### Task 1: TrustedPrincipal 数据模型 + PLACEHOLDER_PRINCIPAL
@@ -144,6 +148,7 @@ git commit -m "feat(principal): add TrustedPrincipal model and PLACEHOLDER_PRINC
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
+archived-with: 2026-08-02-sap-nexus-trusted-principal-model
 ---
 
 ### Task 2: PrincipalInjector 接口 + LocalPlaceholderPrincipalInjector + 测试钩子
@@ -267,6 +272,7 @@ git commit -m "feat(principal): add PrincipalInjector interface and LocalPlaceho
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
+archived-with: 2026-08-02-sap-nexus-trusted-principal-model
 ---
 
 ### Task 3: durable types principalId（可选）+ JsonlRunStore 持久化/回填/过滤 + JsonlConversationStore 持久化/回填/归属过滤
@@ -534,6 +540,7 @@ git commit -m "feat(durable): add optional principalId to durable types, persist
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
+archived-with: 2026-08-02-sap-nexus-trusted-principal-model
 ---
 
 ### Task 4: createAgentRun + getSession principal 绑定 + POST /api/agent-runs 注入（principalId 升级 required）
@@ -773,6 +780,7 @@ git commit -m "feat(principal): bind principalId in createAgentRun/getSession, i
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
+archived-with: 2026-08-02-sap-nexus-trusted-principal-model
 ---
 
 ### Task 5: cross-principal 隔离 + 3 个 route handler 注入（approval/batch/stream）
@@ -1056,6 +1064,7 @@ git commit -m "feat(principal): cross-principal fail-closed isolation and server
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
+archived-with: 2026-08-02-sap-nexus-trusted-principal-model
 ---
 
 ### Task 6: openspec MODIFIED spec patch + 验证回归
@@ -1176,6 +1185,7 @@ git commit -m "chore(principal): add MODIFIED durable-run-state spec patch and c
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
+archived-with: 2026-08-02-sap-nexus-trusted-principal-model
 ---
 
 ## Self-Review
@@ -1225,3 +1235,4 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 - `DurableConversationStore.load(conversationId, principalId?)` — Task 3 定义，getSession Task 4 调用（不传 principalId，自行校验归属）。
 
 类型与签名跨任务一致，无不匹配。
+

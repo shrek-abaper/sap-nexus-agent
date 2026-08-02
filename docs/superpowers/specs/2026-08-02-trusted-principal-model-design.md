@@ -2,6 +2,8 @@
 comet_change: sap-nexus-trusted-principal-model
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-08-02-sap-nexus-trusted-principal-model
+status: final
 ---
 
 # Design: Trusted Principal Model (P0B 项2/4)
@@ -412,3 +414,4 @@ v1 单用户场景无需迁移脚本。未来引入多用户时，需要：
 - `trusted-principal-scope`（New）：定义 TrustedPrincipal 模型、PrincipalInjector 接口、server-owned 注入契约、cross-principal 隔离、本地占位 principal。spec.md 已存在 4 个 ADDED Requirement。
 - `durable-run-state`（MODIFIED）：向后兼容扩展已归档 spec。在 "Durable agent run state" Requirement 加 principalId 绑定语义（创建时写入、不可变）；在 "Store-agnostic durable interface" Requirement 加 list/load 的 principalId 过滤参数。MODIFIED spec.md 将在 build 阶段创建（spec patch）。
 - 此映射更新 design.md 原 "Modified Capabilities: 无"（因项 1 已归档，D2 spec 策略更新）。
+
