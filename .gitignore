@@ -22,6 +22,8 @@ logs/
 runtime/*
 !runtime/.gitkeep
 runtime/traces/
+# Workbench durable state dev data (JSONL runs/sessions/leases/idempotency)
+.workbench-data/
 tmp/
 temp/
 
