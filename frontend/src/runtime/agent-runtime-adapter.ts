@@ -56,6 +56,8 @@ type AgentRunnerInput = {
 
 type AgentRunner = (input: AgentRunnerInput) => Promise<WorkbenchOutcome>;
 
+type AsyncPush = (event: Omit<AgentRunEvent, "runId" | "sequence" | "timestamp">) => Promise<void>;
+
 const workbenchDataDir = process.env.WORKBENCH_DATA_DIR ?? path.join(process.cwd(), ".workbench-data");
 const durableDataDir = path.join(workbenchDataDir, "durable");
 const workerId = process.env.WORKER_ID ?? `worker-${process.pid}`;
@@ -138,11 +140,8 @@ export async function createAgentRun(input: CreateAgentRunInput): Promise<{ runI
     const runner = runnerForTests ?? runLocalPythonAgent;
     const context = input.conversationId ? buildContext(await getSession(input.conversationId, input.principal.principalId)) : undefined;
     const outcome = await runner({ query, gatewayUrl: gatewayUrl(), intentMode: intentMode(), context });
-    const events = buildEventsFromOutcome(runId, query, outcome, timestamp);
-    for (const event of events.slice(1)) {
-      await runStore.appendEvent(runId, event);
-    }
-    record.events = events;
+    await emitEventsFromOutcome(runId, query, outcome, timestamp,
+      (event) => runStore.appendEvent(runId, event), 2);
     if (outcome.status === "awaiting_approval" || outcome.status === "awaiting_batch_confirm") {
       record.pendingOutcome = outcome;
       await runStore.appendPendingOutcome(runId, outcome);
@@ -232,10 +231,8 @@ export async function decideAgentRunApproval(
       intentMode: intentMode(),
       continuation: { decision, callPlan, validationResult, approvalRecord }
     });
-    const newEvents = buildApprovalEvents(record, outcome, new Date().toISOString());
-    for (const event of newEvents) {
-      await runStore.appendEvent(runId, event);
-    }
+    await emitApprovalEvents(record, outcome, new Date().toISOString(),
+      (event) => runStore.appendEvent(runId, event));
     await runStore.markExecuted(idemKey, outcome);
     if (outcome.status === "awaiting_approval" || outcome.status === "awaiting_batch_confirm") {
       await runStore.release(runId, workerId);
@@ -295,10 +292,8 @@ export async function confirmAgentRunBatch(
       intentMode: intentMode(),
       continuation: { type: "batch", callPlan, combinations }
     });
-    const newEvents = buildBatchEvents(record, outcome, new Date().toISOString());
-    for (const event of newEvents) {
-      await runStore.appendEvent(runId, event);
-    }
+    await emitBatchEvents(record, outcome, new Date().toISOString(),
+      (event) => runStore.appendEvent(runId, event));
     await runStore.markExecuted(idemKey, outcome);
     if (outcome.status === "awaiting_approval" || outcome.status === "awaiting_batch_confirm") {
       await runStore.release(runId, workerId);
@@ -320,13 +315,20 @@ export function getTraceMetadata(traceId: string) {
   };
 }
 
-function buildEventsFromOutcome(
+async function emitEventsFromOutcome(
   runId: string,
   query: string,
   outcome: WorkbenchOutcome,
-  timestamp: string
-): AgentRunEvent[] {
-  const events: AgentRunEvent[] = [{ runId, sequence: 1, timestamp, type: "run_started", state: "running" }];
+  timestamp: string,
+  emit: (event: AgentRunEvent) => Promise<void>,
+  nextSequence: number
+): Promise<void> {
+  let seq = nextSequence;
+  const push: AsyncPush = async (event) => {
+    await emit({ runId, sequence: seq, timestamp, ...event });
+    seq++;
+  };
+
   const callPlan = objectOrNull(outcome.callPlan);
   const validation = objectOrNull(outcome.validationResult);
   const execution = objectOrNull(outcome.executionResult);
@@ -336,7 +338,7 @@ function buildEventsFromOutcome(
   const gatewayTraceId =
     textValue(outcome.gatewayTraceId) ?? textValue(execution?.traceId) ?? textValue(validation?.traceId);
 
-  push(events, runId, timestamp, {
+  await push({
     type: "intent_parsed",
     state: "intent_parsed",
     capabilityId,
@@ -353,11 +355,11 @@ function buildEventsFromOutcome(
   });
 
   if (!callPlan) {
-    pushTerminalOutcome(events, runId, timestamp, outcome, agentTraceId, gatewayTraceId);
-    return events;
+    await emitTerminalOutcome(push, outcome, agentTraceId, gatewayTraceId);
+    return;
   }
 
-  push(events, runId, timestamp, {
+  await push({
     type: "capability_selected",
     state: "capability_selected",
     capabilityId,
@@ -367,7 +369,7 @@ function buildEventsFromOutcome(
       payload: toJsonValue({ capabilityId, kind: callPlan.kind ?? "Function" })
     })
   });
-  push(events, runId, timestamp, {
+  await push({
     type: "callplan_created",
     state: "callplan_created",
     capabilityId,
@@ -376,7 +378,7 @@ function buildEventsFromOutcome(
   });
   const isAction = callPlan.kind === "Action";
   if (!isAction) {
-    push(events, runId, timestamp, {
+    await push({
       type: "approval_state_changed",
       state: "approval_checked",
       hitlState: "approval_not_required"
@@ -384,14 +386,14 @@ function buildEventsFromOutcome(
   }
 
   if (validation) {
-    push(events, runId, timestamp, {
+    await push({
       type: "gateway_validate_started",
       state: "validating",
       capabilityId,
       agentTraceId,
       gatewayTraceId: textValue(validation.traceId) ?? gatewayTraceId
     });
-    push(events, runId, timestamp, {
+    await push({
       type: "gateway_validate_completed",
       state: "validating",
       capabilityId,
@@ -400,19 +402,19 @@ function buildEventsFromOutcome(
       artifact: redactArtifact({ label: "Gateway Validation", kind: "validation", payload: toJsonValue(validation) })
     });
     if (validation.success === false) {
-      pushFailure(events, runId, timestamp, "validating", outcome);
-      return events;
+      await emitFailure(push, "validating", outcome);
+      return;
     }
   }
 
   if (isAction && outcome.status === "awaiting_approval") {
     const approvalRecord = objectOrNull(outcome.approvalRecord);
-    push(events, runId, timestamp, {
+    await push({
       type: "approval_state_changed",
       state: "awaiting_approval",
       hitlState: "approval_required"
     });
-    push(events, runId, timestamp, {
+    await push({
       type: "approval_state_changed",
       state: "awaiting_approval",
       hitlState: "awaiting_human_approval",
@@ -424,12 +426,12 @@ function buildEventsFromOutcome(
           })
         : undefined
     });
-    return events;
+    return;
   }
 
   if (outcome.status === "awaiting_batch_confirm") {
     const combinations = outcome.combinations ?? null;
-    push(events, runId, timestamp, {
+    await push({
       type: "batch_confirm_requested",
       state: "awaiting_batch_confirm",
       capabilityId,
@@ -442,18 +444,18 @@ function buildEventsFromOutcome(
           })
         : undefined
     });
-    return events;
+    return;
   }
 
   if (execution) {
-    push(events, runId, timestamp, {
+    await push({
       type: "gateway_execute_started",
       state: "executing",
       capabilityId,
       agentTraceId,
       gatewayTraceId: textValue(execution.traceId) ?? gatewayTraceId
     });
-    push(events, runId, timestamp, {
+    await push({
       type: "gateway_execute_completed",
       state: "executing",
       capabilityId,
@@ -462,13 +464,13 @@ function buildEventsFromOutcome(
       artifact: redactArtifact({ label: "ExecutionResult", kind: "execution-result", payload: toJsonValue(execution) })
     });
     if (execution.success === false) {
-      pushFailure(events, runId, timestamp, "executing", outcome);
-      return events;
+      await emitFailure(push, "executing", outcome);
+      return;
     }
   }
 
   if (fact) {
-    push(events, runId, timestamp, {
+    await push({
       type: "reasoning_fact_created",
       state: "fact_created",
       capabilityId,
@@ -479,7 +481,7 @@ function buildEventsFromOutcome(
   }
 
   if (outcome.responseText) {
-    push(events, runId, timestamp, {
+    await push({
       type: "narrative_created",
       state: "narrated",
       artifact: redactArtifact({
@@ -491,7 +493,7 @@ function buildEventsFromOutcome(
   }
 
   if (agentTraceId || gatewayTraceId) {
-    push(events, runId, timestamp, {
+    await push({
       type: "trace_linked",
       state: "trace_linked",
       agentTraceId,
@@ -505,31 +507,22 @@ function buildEventsFromOutcome(
   }
 
   if (outcome.status === "success" || outcome.status === "clarification") {
-    push(events, runId, timestamp, { type: "run_completed", state: "completed" });
+    await push({ type: "run_completed", state: "completed" });
   } else {
-    pushFailure(events, runId, timestamp, "failed", outcome);
+    await emitFailure(push, "failed", outcome);
   }
-  return events;
 }
 
-function pushTerminalOutcome(
-  events: AgentRunEvent[],
-  runId: string,
-  timestamp: string,
+async function emitTerminalOutcome(
+  push: AsyncPush,
   outcome: WorkbenchOutcome,
   agentTraceId?: string,
   gatewayTraceId?: string
-) {
-  // S2-A hybrid SSE (Design Doc §SSE 事件): when outcome carries a
-  // matchDecision of SHOW_OPTIONS or ESCALATE_TO_PLANNER, emit a
-  // dedicated match_decision_created event with a `match-decision` artifact
-  // so the Workbench can render the five-state decision view. SELECT /
-  // CLARIFY / REJECT reuse the existing capability_selected / narrative_created
-  // / run_failed paths and do NOT emit this event.
-  pushMatchDecisionEventIfPresent(events, runId, timestamp, outcome);
+): Promise<void> {
+  await emitMatchDecisionEventIfPresent(push, outcome);
 
   if (outcome.responseText) {
-    push(events, runId, timestamp, {
+    await push({
       type: "narrative_created",
       state: "narrated",
       artifact: redactArtifact({
@@ -540,7 +533,7 @@ function pushTerminalOutcome(
     });
   }
   if (agentTraceId || gatewayTraceId) {
-    push(events, runId, timestamp, {
+    await push({
       type: "trace_linked",
       state: "trace_linked",
       agentTraceId,
@@ -553,18 +546,16 @@ function pushTerminalOutcome(
     });
   }
   if (outcome.status === "clarification") {
-    push(events, runId, timestamp, { type: "run_completed", state: "completed" });
+    await push({ type: "run_completed", state: "completed" });
   } else {
-    pushFailure(events, runId, timestamp, "intent_parsed", outcome);
+    await emitFailure(push, "intent_parsed", outcome);
   }
 }
 
-function pushMatchDecisionEventIfPresent(
-  events: AgentRunEvent[],
-  runId: string,
-  timestamp: string,
+async function emitMatchDecisionEventIfPresent(
+  push: AsyncPush,
   outcome: WorkbenchOutcome
-) {
+): Promise<void> {
   const matchDecision = objectOrNull(outcome.matchDecision);
   if (!matchDecision) {
     return;
@@ -576,13 +567,8 @@ function pushMatchDecisionEventIfPresent(
   const candidates = matchDecision.candidates ?? null;
   const handoff = matchDecision.handoff ?? null;
   const rationale = textValue(matchDecision.rationale) ?? "";
-  // S2-B (Task 9): fold the DryRunResult into the match-decision artifact
-  // payload when present. Only ESCALATE_TO_PLANNER outcomes carry a dry-run
-  // (the orchestrator wires the handoff into the PlanCompiler). The
-  // Workbench's `buildDryRunView` parses this field to render the dry-run
-  // preview (PlanGraph nodes/edges/gaps/governanceFlags) in the same turn.
   const dryRun = objectOrNull(outcome.dryRun);
-  push(events, runId, timestamp, {
+  await push({
     type: "match_decision_created",
     state: "match_decided",
     artifact: redactArtifact({
@@ -599,14 +585,12 @@ function pushMatchDecisionEventIfPresent(
   });
 }
 
-function pushFailure(
-  events: AgentRunEvent[],
-  runId: string,
-  timestamp: string,
+async function emitFailure(
+  push: AsyncPush,
   stage: AgentRunState,
   outcome: WorkbenchOutcome
-) {
-  push(events, runId, timestamp, {
+): Promise<void> {
+  await push({
     type: "run_failed",
     state: "failed",
     error: {
@@ -617,11 +601,16 @@ function pushFailure(
   });
 }
 
-function buildApprovalEvents(record: AgentRunRecord, outcome: WorkbenchOutcome, timestamp: string): AgentRunEvent[] {
-  const events: AgentRunEvent[] = [];
-  const base = record.events.length;
-  const pushAll = (event: Omit<AgentRunEvent, "runId" | "sequence" | "timestamp">) => {
-    events.push({ runId: record.runId, sequence: base + events.length + 1, timestamp, ...event });
+async function emitApprovalEvents(
+  record: AgentRunRecord,
+  outcome: WorkbenchOutcome,
+  timestamp: string,
+  emit: (event: AgentRunEvent) => Promise<void>
+): Promise<void> {
+  let seq = record.events.length + 1;
+  const push: AsyncPush = async (event) => {
+    await emit({ runId: record.runId, sequence: seq, timestamp, ...event });
+    seq++;
   };
   const callPlan = objectOrNull(outcome.callPlan) ?? objectOrNull(record.pendingOutcome?.callPlan);
   const execution = objectOrNull(outcome.executionResult);
@@ -631,47 +620,46 @@ function buildApprovalEvents(record: AgentRunRecord, outcome: WorkbenchOutcome, 
   const gatewayTraceId = textValue(outcome.gatewayTraceId) ?? textValue(execution?.traceId);
 
   if (outcome.status === "rejected") {
-    pushAll({ type: "approval_state_changed", state: "rejected", hitlState: "rejected", capabilityId, agentTraceId,
+    await push({ type: "approval_state_changed", state: "rejected", hitlState: "rejected", capabilityId, agentTraceId,
       artifact: approvalRecord ? redactArtifact({ label: "ApprovalRecord", kind: "approval", payload: toJsonValue(approvalRecord) }) : undefined });
-    return events;
+    // §4.4: append run_failed terminal so the stream can close on rejection
+    await push({ type: "run_failed", state: "failed",
+      error: { errorType: "APPROVAL_REJECTED", message: outcome.responseText || outcome.message || "Approval rejected", stage: "approval_checked" } });
+    return;
   }
   const approvalStatus = textValue(approvalRecord?.status);
   if (approvalStatus !== "approved" && approvalStatus !== "executed") {
-    pushFailureAll(pushAll, "approval_checked", outcome);
-    return events;
+    await emitFailure(push, "approval_checked", outcome);
+    return;
   }
-  pushAll({ type: "approval_state_changed", state: "approval_checked", hitlState: "approved", capabilityId, agentTraceId,
+  await push({ type: "approval_state_changed", state: "approval_checked", hitlState: "approved", capabilityId, agentTraceId,
     artifact: approvalRecord ? redactArtifact({ label: "ApprovalRecord", kind: "approval", payload: toJsonValue(approvalRecord) }) : undefined });
   if (execution) {
-    pushAll({ type: "gateway_execute_started", state: "executing", capabilityId, agentTraceId, gatewayTraceId });
-    pushAll({ type: "gateway_execute_completed", state: "executing", capabilityId, agentTraceId, gatewayTraceId,
+    await push({ type: "gateway_execute_started", state: "executing", capabilityId, agentTraceId, gatewayTraceId });
+    await push({ type: "gateway_execute_completed", state: "executing", capabilityId, agentTraceId, gatewayTraceId,
       artifact: redactArtifact({ label: "ActionResult", kind: "execution-result", payload: toJsonValue(execution) }) });
   }
   if (outcome.responseText) {
-    pushAll({ type: "narrative_created", state: "narrated",
+    await push({ type: "narrative_created", state: "narrated",
       artifact: redactArtifact({ label: "Chinese Narrative", kind: "narrative", payload: toJsonValue({ text: outcome.responseText }) }) });
   }
   if (outcome.status === "success") {
-    pushAll({ type: "run_completed", state: "completed", capabilityId, agentTraceId, gatewayTraceId });
+    await push({ type: "run_completed", state: "completed", capabilityId, agentTraceId, gatewayTraceId });
   } else {
-    pushFailureAll(pushAll, "executing", outcome);
+    await emitFailure(push, "executing", outcome);
   }
-  return events;
 }
 
-function pushFailureAll(
-  pushAll: (event: Omit<AgentRunEvent, "runId" | "sequence" | "timestamp">) => void,
-  stage: AgentRunState,
-  outcome: WorkbenchOutcome
-) {
-  pushAll({ type: "run_failed", state: "failed", error: { errorType: outcome.errorType || "AGENT_RUN_FAILED", message: outcome.responseText || outcome.message || "Agent run failed", stage } });
-}
-
-function buildBatchEvents(record: AgentRunRecord, outcome: WorkbenchOutcome, timestamp: string): AgentRunEvent[] {
-  const events: AgentRunEvent[] = [];
-  const base = record.events.length;
-  const pushAll = (event: Omit<AgentRunEvent, "runId" | "sequence" | "timestamp">) => {
-    events.push({ runId: record.runId, sequence: base + events.length + 1, timestamp, ...event });
+async function emitBatchEvents(
+  record: AgentRunRecord,
+  outcome: WorkbenchOutcome,
+  timestamp: string,
+  emit: (event: AgentRunEvent) => Promise<void>
+): Promise<void> {
+  let seq = record.events.length + 1;
+  const push: AsyncPush = async (event) => {
+    await emit({ runId: record.runId, sequence: seq, timestamp, ...event });
+    seq++;
   };
   const callPlan = objectOrNull(outcome.callPlan) ?? objectOrNull(record.pendingOutcome?.callPlan);
   const capabilityId = textValue(callPlan?.capabilityId);
@@ -679,15 +667,14 @@ function buildBatchEvents(record: AgentRunRecord, outcome: WorkbenchOutcome, tim
   const gatewayTraceId = textValue(outcome.gatewayTraceId);
 
   if (outcome.responseText) {
-    pushAll({ type: "narrative_created", state: "narrated",
+    await push({ type: "narrative_created", state: "narrated",
       artifact: redactArtifact({ label: "Chinese Narrative", kind: "narrative", payload: toJsonValue({ text: outcome.responseText }) }) });
   }
   if (outcome.status === "success") {
-    pushAll({ type: "run_completed", state: "completed", capabilityId, agentTraceId, gatewayTraceId });
+    await push({ type: "run_completed", state: "completed", capabilityId, agentTraceId, gatewayTraceId });
   } else {
-    pushFailureAll(pushAll, "executing", outcome);
+    await emitFailure(push, "executing", outcome);
   }
-  return events;
 }
 
 function buildRuntimeFailureEventsTail(runId: string, baseSequence: number, timestamp: string, error: unknown): AgentRunEvent[] {
@@ -709,15 +696,6 @@ function buildRuntimeFailureEvents(runId: string, timestamp: string, error: unkn
       error: { errorType: "AGENT_RUNTIME_ERROR", message: safeMessage, stage: "running" }
     }
   ];
-}
-
-function push(
-  events: AgentRunEvent[],
-  runId: string,
-  timestamp: string,
-  event: Omit<AgentRunEvent, "runId" | "sequence" | "timestamp">
-) {
-  events.push({ runId, sequence: events.length + 1, timestamp, ...event });
 }
 
 async function runLocalPythonAgent(input: AgentRunnerInput): Promise<WorkbenchOutcome> {

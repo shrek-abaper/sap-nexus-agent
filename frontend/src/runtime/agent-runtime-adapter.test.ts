@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -206,5 +206,33 @@ describe("agent-runtime-adapter durable integration", () => {
       dataScope: { tenantId: "evil" }
     };
     await expect(confirmAgentRunBatch(runId, attacker)).rejects.toThrow(/not found/);
+  });
+
+  it("rejection emits run_failed terminal event after approval_state_changed", async () => {
+    const runner = vi.fn(async (input: any) => {
+      if (input.continuation) {
+        return {
+          status: "rejected",
+          callPlan: { capabilityId: "cap-1", kind: "Action", agentTraceId: "t" },
+          validationResult: { success: true, capabilityId: "cap-1", traceId: "g" },
+          approvalRecord: { id: "apr-1", status: "rejected" },
+          responseText: "审批已拒绝"
+        } as WorkbenchOutcome;
+      }
+      return {
+        status: "awaiting_approval",
+        callPlan: { capabilityId: "cap-1", kind: "Action", agentTraceId: "t" },
+        validationResult: { success: true, capabilityId: "cap-1", traceId: "g" },
+        approvalRecord: { id: "apr-1", status: "pending" },
+        responseText: "待审批"
+      } as WorkbenchOutcome;
+    });
+    setAgentRunnerForTests(runner);
+    const { runId } = await createAgentRun({ query: "创建采购申请", conversationId: "c-reject", principal: PLACEHOLDER_PRINCIPAL });
+    await decideAgentRunApproval(runId, "reject", PLACEHOLDER_PRINCIPAL);
+    const events = await getAgentRunEvents(runId, PLACEHOLDER_PRINCIPAL);
+    const lastEvent = events[events.length - 1];
+    expect(lastEvent.type).toBe("run_failed");
+    expect(lastEvent.error?.errorType).toBe("APPROVAL_REJECTED");
   });
 });
