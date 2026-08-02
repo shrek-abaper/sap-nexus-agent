@@ -19,6 +19,11 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Primary;
+import org.springframework.stereotype.Component;
+
 /**
  * File-backed reference implementation of {@link DurableApprovalStore}.
  *
@@ -34,15 +39,25 @@ import org.slf4j.LoggerFactory;
  * dedicated {@code .lock} file (cross-process, for future multi-worker).
  * Content writes use tmp + {@link Files#move} with REPLACE_EXISTING + ATOMIC_MOVE.
  */
+@Component
+@Primary
 public class FileDurableApprovalStore implements DurableApprovalStore {
 
     private static final Logger log = LoggerFactory.getLogger(FileDurableApprovalStore.class);
+    private static final String DEFAULT_WORKER_ID = "worker-" + ProcessHandle.current().pid();
+    private static final long DEFAULT_LEASE_TTL_MS = 60_000L;
 
     private final Path approvalsDir;
     private final Path leasesDir;
     private final String workerId;
     private final long leaseTtlMs;
     private final ConcurrentHashMap<String, ReentrantLock> locks = new ConcurrentHashMap<>();
+
+    @Autowired
+    public FileDurableApprovalStore(
+            @Value("${SAP_NEXUS_GATEWAY_DATA_DIR:.gateway-data}") String dataDir) {
+        this(java.nio.file.Path.of(dataDir, "durable"), DEFAULT_WORKER_ID, DEFAULT_LEASE_TTL_MS);
+    }
 
     FileDurableApprovalStore(Path baseDir, String workerId, long leaseTtlMs) {
         this.approvalsDir = baseDir.resolve("approvals");
