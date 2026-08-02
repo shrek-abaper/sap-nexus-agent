@@ -1,9 +1,9 @@
 ## 1. Store-agnostic 接口契约
 
-- [ ] 1.1 定义 `DurableRunStore` 接口（save / load / list / lease / claim / markExecuted）
-- [ ] 1.2 定义 `DurableConversationStore` 接口（save / load / clear）
-- [ ] 1.3 定义 structured checkpoint reference 数据结构（`RegistrySnapshotId` + 节点状态 + `ApprovalRecord` 引用）
-- [ ] 1.4 定义 idempotency key schema（`runId` + continuation type + 参数 hash）
+- [x] 1.1 定义 `DurableRunStore` 接口（save / load / list / lease / claim / markExecuted）
+- [x] 1.2 定义 `DurableConversationStore` 接口（save / load / clear）
+- [x] 1.3 定义 structured checkpoint reference 数据结构（`RegistrySnapshotId` + 节点状态 + `ApprovalRecord` 引用）
+- [x] 1.4 定义 idempotency key schema（`runId` + continuation type + 参数 hash）
 
 ## 2. 本地参考实现（store 选型在 comet-design 阶段决定）
 
