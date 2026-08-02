@@ -29,10 +29,17 @@ export class JsonlConversationStore implements DurableConversationStore {
     renameSync(tmp, target);
   }
 
-  async load(conversationId: string): Promise<SessionState | null> {
+  async load(conversationId: string, principalId?: string): Promise<SessionState | null> {
     const file = this.file(conversationId);
     if (!existsSync(file)) return null;
-    return JSON.parse(readFileSync(file, "utf8")) as SessionState;
+    const state = JSON.parse(readFileSync(file, "utf8")) as SessionState;
+    if (!state.principalId) {
+      state.principalId = "local-user-0001";
+    }
+    if (principalId && state.principalId !== principalId) {
+      return null;
+    }
+    return state;
   }
 
   async clear(conversationId: string): Promise<void> {

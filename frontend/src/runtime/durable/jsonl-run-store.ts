@@ -110,7 +110,7 @@ export class JsonlRunStore implements DurableRunStore {
 
   async save(runId: string, record: AgentRunRecord): Promise<void> {
     const file = this.runFile(runId);
-    const lines: string[] = [JSON.stringify({ kind: "run_meta", runId, query: record.query } as RunJsonlLine)];
+    const lines: string[] = [JSON.stringify({ kind: "run_meta", runId, query: record.query, principalId: record.principalId } as RunJsonlLine)];
     for (const event of record.events) {
       lines.push(JSON.stringify({ kind: "event", ...event } as RunJsonlLine));
     }
@@ -138,6 +138,7 @@ export class JsonlRunStore implements DurableRunStore {
   private replay(file: string): AgentRunRecord {
     const content = readFileSync(file, "utf8");
     let query = "";
+    let principalId: string | undefined;
     const events: AgentRunEvent[] = [];
     let pendingOutcome: WorkbenchOutcome | undefined;
     let decision: ApprovalDecision | undefined;
@@ -153,6 +154,7 @@ export class JsonlRunStore implements DurableRunStore {
       switch (line.kind) {
         case "run_meta":
           query = line.query;
+          principalId = line.principalId;
           break;
         case "event": {
           const { kind: _kind, ...event } = line;
@@ -171,7 +173,7 @@ export class JsonlRunStore implements DurableRunStore {
       }
     }
     events.sort((a, b) => a.sequence - b.sequence);
-    const record: AgentRunRecord = { runId: path.basename(file, ".jsonl"), query, events };
+    const record: AgentRunRecord = { runId: path.basename(file, ".jsonl"), query, events, principalId: principalId ?? "local-user-0001" };
     if (pendingOutcome) record.pendingOutcome = pendingOutcome;
     if (decision) record.decision = decision;
     return record;
@@ -234,14 +236,16 @@ export class JsonlRunStore implements DurableRunStore {
     return record.result;
   }
 
-  async list(filter?: { state?: AgentRunState }): Promise<AgentRunRecord[]> {
+  async list(filter?: { state?: AgentRunState; principalId?: string }): Promise<AgentRunRecord[]> {
     if (!existsSync(this.runsDir)) return [];
     const records: AgentRunRecord[] = [];
     for (const entry of readdirSync(this.runsDir)) {
       if (!entry.endsWith(".jsonl")) continue;
       const record = this.replay(path.join(this.runsDir, entry));
       const lastState = record.events[record.events.length - 1]?.state;
-      if (!filter?.state || lastState === filter.state) {
+      const stateMatch = !filter?.state || lastState === filter.state;
+      const principalMatch = !filter?.principalId || record.principalId === filter.principalId;
+      if (stateMatch && principalMatch) {
         records.push(record);
       }
     }

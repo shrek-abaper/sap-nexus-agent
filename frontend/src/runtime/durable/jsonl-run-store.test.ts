@@ -29,7 +29,7 @@ describe("JsonlRunStore core", () => {
     const events = [event("run-1", 1, "run_started", "running"), event("run-1", 2, "run_completed", "completed")];
     await store.save("run-1", record("run-1", "query text", events));
     const loaded = await store.load("run-1");
-    expect(loaded).toEqual(record("run-1", "query text", events));
+    expect(loaded).toEqual({ ...record("run-1", "query text", events), principalId: "local-user-0001" });
   });
 
   it("appendEvent adds events incrementally and persists via fsync", async () => {
@@ -90,5 +90,32 @@ describe("JsonlRunStore core", () => {
     expect(loaded?.runId).toBe("run-1");
     expect(loaded?.query).toBe("query text");
     expect(loaded?.events).toEqual(events);
+  });
+
+  it("save persists principalId in run_meta and load returns it", async () => {
+    const store = new JsonlRunStore(dir);
+    const events = [event("run-1", 1, "run_started", "running")];
+    await store.save("run-1", { runId: "run-1", query: "q", events, principalId: "user-a" });
+    const loaded = await store.load("run-1");
+    expect(loaded?.principalId).toBe("user-a");
+  });
+
+  it("load backfills principalId to local-user-0001 for legacy records", async () => {
+    const store = new JsonlRunStore(dir);
+    // write a legacy run_meta line without principalId by appending raw JSONL
+    const legacyLine = JSON.stringify({ kind: "run_meta", runId: "run-legacy", query: "old" }) + "\n" +
+      JSON.stringify({ kind: "event", runId: "run-legacy", sequence: 1, timestamp: "2026-08-02T00:00:00Z", type: "run_started", state: "running" }) + "\n";
+    appendFileSync(path.join(dir, "runs", "run-legacy.jsonl"), legacyLine);
+    const loaded = await store.load("run-legacy");
+    expect(loaded?.principalId).toBe("local-user-0001");
+  });
+
+  it("list filters by principalId", async () => {
+    const store = new JsonlRunStore(dir);
+    await store.save("run-a", { runId: "run-a", query: "q", events: [event("run-a", 1, "run_started", "running")], principalId: "user-a" });
+    await store.save("run-b", { runId: "run-b", query: "q", events: [event("run-b", 1, "run_started", "running")], principalId: "user-b" });
+    expect((await store.list({ principalId: "user-a" })).map((r) => r.runId)).toEqual(["run-a"]);
+    expect((await store.list({ principalId: "user-b" })).map((r) => r.runId)).toEqual(["run-b"]);
+    expect((await store.list()).length).toBe(2);
   });
 });

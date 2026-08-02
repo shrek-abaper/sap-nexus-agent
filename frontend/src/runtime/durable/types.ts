@@ -20,6 +20,7 @@ export type SessionState = {
   lastContext: LastContext | null;
   lastRunId: string | null;
   history: Turn[];
+  principalId?: string;
 };
 
 export type ApprovalDecision = "approve" | "reject";
@@ -48,6 +49,7 @@ export type AgentRunRecord = {
   events: AgentRunEvent[];
   pendingOutcome?: WorkbenchOutcome;
   decision?: ApprovalDecision;
+  principalId?: string;
 };
 
 // --- Durable store data structures ---
@@ -71,7 +73,7 @@ export type ContinuationType =
 // --- JSONL line types (run event log, discriminated by `kind`) ---
 
 export type RunJsonlLine =
-  | { kind: "run_meta"; runId: string; query: string }
+  | { kind: "run_meta"; runId: string; query: string; principalId?: string }
   | ({ kind: "event" } & AgentRunEvent)
   | { kind: "pending_outcome"; value: WorkbenchOutcome }
   | { kind: "decision"; value: ApprovalDecision }
@@ -82,7 +84,7 @@ export type RunJsonlLine =
 export interface DurableRunStore {
   save(runId: string, record: AgentRunRecord): Promise<void>;
   load(runId: string): Promise<AgentRunRecord | null>;
-  list(filter?: { state?: AgentRunState }): Promise<AgentRunRecord[]>;
+  list(filter?: { state?: AgentRunState; principalId?: string }): Promise<AgentRunRecord[]>;
   appendEvent(runId: string, event: AgentRunEvent): Promise<void>;
   appendPendingOutcome(runId: string, outcome: WorkbenchOutcome): Promise<void>;
   appendDecision(runId: string, decision: ApprovalDecision): Promise<void>;
@@ -98,7 +100,7 @@ export interface DurableRunStore {
 
 export interface DurableConversationStore {
   save(conversationId: string, state: SessionState): Promise<void>;
-  load(conversationId: string): Promise<SessionState | null>;
+  load(conversationId: string, principalId?: string): Promise<SessionState | null>;
   clear(conversationId: string): Promise<void>;
   clearAll(): Promise<void>;
 }
