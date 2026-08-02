@@ -1,6 +1,6 @@
 workflow: full
 language: zh-CN
-phase: design
+phase: build
 context_compression: off
 build_mode: null
 build_pause: null
@@ -11,7 +11,7 @@ isolation: null
 verify_mode: null
 auto_transition: true
 base_ref: e2735ab018029a4f6f1f4328815704f058e7bb45
-design_doc: null
+design_doc: docs/superpowers/specs/2026-08-02-durable-approval-store-design.md
 plan: null
 verify_result: pending
 verification_report: null
