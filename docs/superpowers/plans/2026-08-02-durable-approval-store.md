@@ -1282,7 +1282,7 @@ git commit -m "feat(approval): recoverAll and reconcile with fail-closed drift h
 
 ### Task 7: Spring wiring (@Primary) + full verification
 
-- [ ] Task 7: Spring wiring (@Primary) + full verification
+- [x] Task 7: Spring wiring (@Primary) + full verification
 
 **Files:**
 - Modify: `services/gateway/core/src/main/java/com/sapnexus/gateway/approval/FileDurableApprovalStore.java` (add `@Component @Primary` + Spring `@Autowired @Value` constructor; add Spring imports)
@@ -1292,7 +1292,7 @@ git commit -m "feat(approval): recoverAll and reconcile with fail-closed drift h
 - Consumes: `FileDurableApprovalStore` (Tasks 2-6), Spring `@Value("${SAP_NEXUS_GATEWAY_DATA_DIR:.gateway-data}")`.
 - Produces: `FileDurableApprovalStore` as the production `@Primary` `ApprovalStore` bean. `CapabilityController` injects `ApprovalStore` and Spring now selects the durable store. Existing `@WebMvcTest` tests are unaffected (they provide their own `ApprovalStore @Bean` in `@TestConfiguration`, and `@WebMvcTest` does not scan `@Component`).
 
-- [ ] **Step 1: Add Spring annotations and constructor**
+- [x] **Step 1: Add Spring annotations and constructor**
 
 In `FileDurableApprovalStore.java`, add these imports:
 
@@ -1327,27 +1327,27 @@ public class FileDurableApprovalStore implements DurableApprovalStore {
 
 Leave the existing test constructor body exactly as-is; only the field declarations above it change (the two new `static final` constants are new, the `DEFAULT_WORKER_ID`/`DEFAULT_LEASE_TTL_MS` replace any hardcoded uses — but none exist yet since the test constructor takes them as params).
 
-- [ ] **Step 2: Verify existing approval tests still pass**
+- [x] **Step 2: Verify existing approval tests still pass**
 
 Run: `cd services/gateway && ./gradlew :core:test --tests "com.sapnexus.gateway.approval.*"`
 Expected: PASS — `ApprovalRecordCodecTest`, `ApprovalRecordTest`, `ApprovalGuardTest`, `InMemoryApprovalStoreTest`, `FileDurableApprovalStoreTest` all green. `InMemoryApprovalStore` is unchanged.
 
-- [ ] **Step 3: Verify app-layer tests are not broken by @Primary**
+- [x] **Step 3: Verify app-layer tests are not broken by @Primary**
 
 Run: `cd services/gateway && ./gradlew :app:test`
 Expected: PASS. `CapabilityApprovalApiTest` and `CapabilityWriteExecutionApiTest` use `@WebMvcTest` + `@TestConfiguration` providing their own `ApprovalStore @Bean` (an `InMemoryApprovalStore`), so `@Primary` on `FileDurableApprovalStore` is not loaded in those sliced tests. If any full `@SpringBootTest` exists that now picks up the durable store, confirm it starts (the default `.gateway-data/durable/` dir is auto-created by the constructor).
 
-- [ ] **Step 4: Run the full Gateway test suite**
+- [x] **Step 4: Run the full Gateway test suite**
 
 Run: `cd services/gateway && ./gradlew test`
 Expected: BUILD SUCCESSFUL, all tests pass.
 
-- [ ] **Step 5: Run openspec validation**
+- [x] **Step 5: Run openspec validation**
 
 Run: `openspec validate --all --strict`
 Expected: validation passes (no output errors).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add services/gateway/core/src/main/java/com/sapnexus/gateway/approval/FileDurableApprovalStore.java

@@ -7,8 +7,8 @@
 ## 2. 替换 InMemoryApprovalStore
 
 - [x] 2.1 实现 `DurableApprovalStore`（`save` / `find` / `claimForExecution` / `markExecuted`），复用项 1（`durable-state-foundation`）store 无关接口
-- [ ] 2.2 将 `@Component` 绑定从 `InMemoryApprovalStore` 切换到 `DurableApprovalStore`（`ApprovalGuard` 消费 `ApprovalStore` 契约不变）
-- [ ] 2.3 移除 `InMemoryApprovalStore` 进程级 `ConcurrentMap` 实现（或保留为测试桩，按 comet-design 决策）
+- [x] 2.2 将 `@Component` 绑定从 `InMemoryApprovalStore` 切换到 `DurableApprovalStore`（`ApprovalGuard` 消费 `ApprovalStore` 契约不变）
+- [x] 2.3 移除 `InMemoryApprovalStore` 进程级 `ConcurrentMap` 实现（或保留为测试桩，按 comet-design 决策）
 
 ## 3. cross-restart approval 恢复
 
@@ -35,9 +35,9 @@
 
 ## 7. 测试与验证
 
-- [ ] 7.1 cross-restart 恢复测试（`pending` / `approved` / `executing` approval 重启后可继续）
-- [ ] 7.2 cross-worker anti-replay 测试（重复 claim denied + 并发 claim 原子）
+- [x] 7.1 cross-restart 恢复测试（`pending` / `approved` / `executing` approval 重启后可继续）
+- [x] 7.2 cross-worker anti-replay 测试（重复 claim denied + 并发 claim 原子）
 - [ ] 7.3 JSONL 审计保留测试（durable store swap 后 JSONL 仍 authoritative）
-- [ ] 7.4 TTL 跨重启校验测试（过期 approval 重启后不可 execute）
-- [ ] 7.5 `gradle test`（Gateway core）通过
+- [x] 7.4 TTL 跨重启校验测试（过期 approval 重启后不可 execute）
+- [x] 7.5 `gradle test`（Gateway core）通过
 - [ ] 7.6 `openspec validate --all --strict` 通过
