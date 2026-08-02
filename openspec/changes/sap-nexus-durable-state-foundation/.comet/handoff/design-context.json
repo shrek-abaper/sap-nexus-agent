@@ -1,0 +1,15 @@
+{
+  "change": "sap-nexus-durable-state-foundation",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "4116f7b44f9cb5f5b4cfd7e8463c51feca2261267a4d42efb75504202a4078a3",
+  "files": [
+    { "path": "openspec/changes/sap-nexus-durable-state-foundation/proposal.md", "sha256": "83691b761b9b7e80656ed0efbf87ec2cc2f2a2c794fe86dc939a13480f46ccc9" },
+    { "path": "openspec/changes/sap-nexus-durable-state-foundation/design.md", "sha256": "6216fd43a980aa24f0eed03066f67760b489385c079ea093fd953b4fa4a052ce" },
+    { "path": "openspec/changes/sap-nexus-durable-state-foundation/tasks.md", "sha256": "afbb57d1e0ed10b5ac33866bf39ba118b995b17f62e19781cd6c5a2d93f5f984" },
+    { "path": "openspec/changes/sap-nexus-durable-state-foundation/specs/conversational-context/spec.md", "sha256": "b16ae1e06229ec8ba8a4e27bf2fbf2907f8ae03db115e195f814ff687d1ddae0" },
+    { "path": "openspec/changes/sap-nexus-durable-state-foundation/specs/durable-run-state/spec.md", "sha256": "9725d3b8effba09557c5291eb7de2bbf6b74c324e7e615361de20a817e41ebf1" }
+  ]
+}
