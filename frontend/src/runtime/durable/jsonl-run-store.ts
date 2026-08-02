@@ -16,6 +16,7 @@ import type { AgentRunEvent, AgentRunState } from "../run-event-schema";
 import type {
   AgentRunRecord,
   ApprovalDecision,
+  CheckpointRef,
   DurableRunStore,
   LeaseOutcome,
   RunJsonlLine,
@@ -178,6 +179,29 @@ export class JsonlRunStore implements DurableRunStore {
 
   async appendDecision(runId: string, decision: ApprovalDecision): Promise<void> {
     this.appendLine(runId, { kind: "decision", value: decision });
+  }
+
+  async appendCheckpointRef(runId: string, ref: CheckpointRef): Promise<void> {
+    this.appendLine(runId, { kind: "checkpoint_ref", value: ref });
+  }
+
+  async loadCheckpointRef(runId: string): Promise<CheckpointRef | null> {
+    const file = this.runFile(runId);
+    if (!existsSync(file)) return null;
+    const content = readFileSync(file, "utf8");
+    let latest: CheckpointRef | null = null;
+    for (const raw of content.split("\n")) {
+      if (!raw.trim()) continue;
+      try {
+        const line = JSON.parse(raw) as RunJsonlLine;
+        if (line.kind === "checkpoint_ref") {
+          latest = line.value;
+        }
+      } catch {
+        // corrupt line: skip (fail-closed at store layer; caller decides)
+      }
+    }
+    return latest;
   }
 
   async list(filter?: { state?: AgentRunState }): Promise<AgentRunRecord[]> {

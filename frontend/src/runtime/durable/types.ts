@@ -95,7 +95,8 @@ export interface DurableRunStore {
   claim(runId: string, workerId: string, ttlMs: number): Promise<LeaseOutcome>;
   release(runId: string, workerId: string): Promise<void>;
   renew(runId: string, workerId: string, ttlMs: number): Promise<void>;
-  // Task 7 追加: appendCheckpointRef / loadCheckpointRef
+  appendCheckpointRef(runId: string, ref: CheckpointRef): Promise<void>;
+  loadCheckpointRef(runId: string): Promise<CheckpointRef | null>;
   // Task 8 追加: markExecuted / lookupExecuted
 }
 
