@@ -6,11 +6,15 @@ import type {
   AgentRunRecord,
   ApprovalDecision,
   ConversationContext,
+  DurableConversationStore,
+  DurableRunStore,
   LastContext,
   SessionState,
   Turn,
   WorkbenchOutcome
 } from "./durable/types";
+import { JsonlConversationStore } from "./durable/jsonl-conversation-store";
+import { JsonlRunStore } from "./durable/jsonl-run-store";
 
 export type { ApprovalDecision } from "./durable/types";
 
@@ -47,36 +51,35 @@ type AgentRunnerInput = {
 
 type AgentRunner = (input: AgentRunnerInput) => Promise<WorkbenchOutcome>;
 
-const globalRunStore = globalThis as typeof globalThis & {
-  __SAP_NEXUS_AGENT_RUNS__?: Map<string, AgentRunRecord>;
-  __SAP_NEXUS_AGENT_SESSIONS__?: Map<string, SessionState>;
-};
+const workbenchDataDir = process.env.WORKBENCH_DATA_DIR ?? path.join(process.cwd(), ".workbench-data");
+const durableDataDir = path.join(workbenchDataDir, "durable");
 
-// Next route handlers can load this module in separate bundles; keep runs process-wide.
-const runs = (globalRunStore.__SAP_NEXUS_AGENT_RUNS__ ??= new Map<string, AgentRunRecord>());
-// Conversational sessions keyed by conversationId; parallel to `runs` so a run
-// can carry forward the prior turn's lastContext + recent history (Task 7).
-const sessions = (globalRunStore.__SAP_NEXUS_AGENT_SESSIONS__ ??= new Map<string, SessionState>());
+let runStore: DurableRunStore = new JsonlRunStore(durableDataDir);
+let conversationStore: DurableConversationStore = new JsonlConversationStore(durableDataDir);
 let runnerForTests: AgentRunner | null = null;
 
 export function setAgentRunnerForTests(runner: AgentRunner | null) {
   runnerForTests = runner;
 }
 
+export function setDurableStoresForTests(run: DurableRunStore, conv: DurableConversationStore) {
+  runStore = run;
+  conversationStore = conv;
+}
+
 export function resetAgentRunsForTests() {
-  runs.clear();
+  void runStore.clearAll();
 }
 
 export function resetAgentSessionsForTests() {
-  sessions.clear();
+  void conversationStore.clearAll();
 }
 
-function getSession(conversationId: string): SessionState {
-  let session = sessions.get(conversationId);
-  if (!session) {
-    session = { lastContext: null, lastRunId: null, history: [] };
-    sessions.set(conversationId, session);
-  }
+async function getSession(conversationId: string): Promise<SessionState> {
+  const existing = await conversationStore.load(conversationId);
+  if (existing) return existing;
+  const session: SessionState = { lastContext: null, lastRunId: null, history: [] };
+  await conversationStore.save(conversationId, session);
   return session;
 }
 
@@ -96,18 +99,12 @@ export async function createAgentRun(input: CreateAgentRunInput): Promise<{ runI
     throw new Error("Raw RFC execution is not allowed");
   }
 
-  // Q2: reject new queries on a conversation that still has a pending write
-  // approval. The user must approve or reject the prior Action before the
-  // conversation can accept new input. Source of truth is the run record:
-  // a run is still pending only while it holds a pendingOutcome that has not
-  // yet been decided (record.decision unset). This avoids depending on a
-  // separately-synced status field that decideAgentRunApproval never clears
-  // (Concern 1).
+  // Q2: reject new queries on a conversation that still has a pending write approval.
   if (input.conversationId) {
-    const session = getSession(input.conversationId);
+    const session = await getSession(input.conversationId);
     const lastRunId = session.lastRunId;
     if (lastRunId) {
-      const lastRun = runs.get(lastRunId);
+      const lastRun = await runStore.load(lastRunId);
       if (lastRun?.pendingOutcome && !lastRun.decision) {
         throw new Error("当前对话有待审批的写操作，请先处理审批后再发起新查询。");
       }
@@ -122,46 +119,50 @@ export async function createAgentRun(input: CreateAgentRunInput): Promise<{ runI
     query,
     events: [{ runId, sequence: 1, timestamp, type: "run_started", state: "running" }]
   };
-  runs.set(runId, record);
+  await runStore.save(runId, record);
 
   try {
     const runner = runnerForTests ?? runLocalPythonAgent;
-    const context = input.conversationId ? buildContext(getSession(input.conversationId)) : undefined;
+    const context = input.conversationId ? buildContext(await getSession(input.conversationId)) : undefined;
     const outcome = await runner({ query, gatewayUrl: gatewayUrl(), intentMode: intentMode(), context });
-    record.events = buildEventsFromOutcome(runId, query, outcome, timestamp);
+    const events = buildEventsFromOutcome(runId, query, outcome, timestamp);
+    for (const event of events.slice(1)) {
+      await runStore.appendEvent(runId, event);
+    }
+    record.events = events;
     if (outcome.status === "awaiting_approval" || outcome.status === "awaiting_batch_confirm") {
       record.pendingOutcome = outcome;
+      await runStore.appendPendingOutcome(runId, outcome);
     }
 
-    // Backfill session: CLARIFY/SELECT update lastContext; REJECT/ESCALATE and
-    // awaiting_approval outcomes carry null lastContext and clear it.
     if (input.conversationId) {
-      const session = getSession(input.conversationId);
+      const session = await getSession(input.conversationId);
       session.lastRunId = runId;
       session.history.push({ role: "user", content: query });
       if (outcome.responseText) {
         session.history.push({ role: "assistant", content: outcome.responseText });
       }
       session.lastContext = outcome.lastContext ?? null;
+      await conversationStore.save(input.conversationId, session);
     }
   } catch (error) {
-    record.events = buildRuntimeFailureEvents(runId, timestamp, error);
+    const failEvents = buildRuntimeFailureEvents(runId, timestamp, error);
+    for (const event of failEvents.slice(1)) {
+      await runStore.appendEvent(runId, event);
+    }
+    record.events = failEvents;
   }
 
   return { runId };
 }
 
 export async function getAgentRunEvents(runId: string): Promise<AgentRunEvent[]> {
-  const run = runs.get(runId);
-  if (!run) {
-    return [];
-  }
-
-  return run.events;
+  const run = await runStore.load(runId);
+  return run ? run.events : [];
 }
 
 export async function decideAgentRunApproval(runId: string, decision: ApprovalDecision): Promise<void> {
-  const record = runs.get(runId);
+  const record = await runStore.load(runId);
   if (!record) {
     throw new Error("Agent run not found");
   }
@@ -179,7 +180,7 @@ export async function decideAgentRunApproval(runId: string, decision: ApprovalDe
     throw new Error("Agent run approval context is incomplete");
   }
 
-  record.decision = decision;
+  await runStore.appendDecision(runId, decision);
   const runner = runnerForTests ?? runLocalPythonAgent;
   try {
     const outcome = await runner({
@@ -188,14 +189,20 @@ export async function decideAgentRunApproval(runId: string, decision: ApprovalDe
       intentMode: intentMode(),
       continuation: { decision, callPlan, validationResult, approvalRecord }
     });
-    appendApprovalEvents(record, outcome, new Date().toISOString());
+    const newEvents = buildApprovalEvents(record, outcome, new Date().toISOString());
+    for (const event of newEvents) {
+      await runStore.appendEvent(runId, event);
+    }
   } catch (error) {
-    appendRuntimeFailure(record, error, new Date().toISOString());
+    const failEvents = buildRuntimeFailureEventsTail(record.runId, record.events.length, new Date().toISOString(), error);
+    for (const event of failEvents) {
+      await runStore.appendEvent(runId, event);
+    }
   }
 }
 
 export async function confirmAgentRunBatch(runId: string): Promise<void> {
-  const record = runs.get(runId);
+  const record = await runStore.load(runId);
   if (!record) {
     throw new Error("Agent run not found");
   }
@@ -212,7 +219,7 @@ export async function confirmAgentRunBatch(runId: string): Promise<void> {
     throw new Error("Agent run batch context is incomplete");
   }
 
-  record.decision = "approve";
+  await runStore.appendDecision(runId, "approve");
   const runner = runnerForTests ?? runLocalPythonAgent;
   try {
     const outcome = await runner({
@@ -221,9 +228,15 @@ export async function confirmAgentRunBatch(runId: string): Promise<void> {
       intentMode: intentMode(),
       continuation: { type: "batch", callPlan, combinations }
     });
-    appendBatchEvents(record, outcome, new Date().toISOString());
+    const newEvents = buildBatchEvents(record, outcome, new Date().toISOString());
+    for (const event of newEvents) {
+      await runStore.appendEvent(runId, event);
+    }
   } catch (error) {
-    appendRuntimeFailure(record, error, new Date().toISOString());
+    const failEvents = buildRuntimeFailureEventsTail(record.runId, record.events.length, new Date().toISOString(), error);
+    for (const event of failEvents) {
+      await runStore.appendEvent(runId, event);
+    }
   }
 }
 
@@ -532,7 +545,12 @@ function pushFailure(
   });
 }
 
-function appendApprovalEvents(record: AgentRunRecord, outcome: WorkbenchOutcome, timestamp: string) {
+function buildApprovalEvents(record: AgentRunRecord, outcome: WorkbenchOutcome, timestamp: string): AgentRunEvent[] {
+  const events: AgentRunEvent[] = [];
+  const base = record.events.length;
+  const pushAll = (event: Omit<AgentRunEvent, "runId" | "sequence" | "timestamp">) => {
+    events.push({ runId: record.runId, sequence: base + events.length + 1, timestamp, ...event });
+  };
   const callPlan = objectOrNull(outcome.callPlan) ?? objectOrNull(record.pendingOutcome?.callPlan);
   const execution = objectOrNull(outcome.executionResult);
   const approvalRecord = objectOrNull(outcome.approvalRecord);
@@ -541,115 +559,69 @@ function appendApprovalEvents(record: AgentRunRecord, outcome: WorkbenchOutcome,
   const gatewayTraceId = textValue(outcome.gatewayTraceId) ?? textValue(execution?.traceId);
 
   if (outcome.status === "rejected") {
-    push(record.events, record.runId, timestamp, {
-      type: "approval_state_changed",
-      state: "rejected",
-      hitlState: "rejected",
-      capabilityId,
-      agentTraceId,
-      artifact: approvalRecord
-        ? redactArtifact({ label: "ApprovalRecord", kind: "approval", payload: toJsonValue(approvalRecord) })
-        : undefined
-    });
-    return;
+    pushAll({ type: "approval_state_changed", state: "rejected", hitlState: "rejected", capabilityId, agentTraceId,
+      artifact: approvalRecord ? redactArtifact({ label: "ApprovalRecord", kind: "approval", payload: toJsonValue(approvalRecord) }) : undefined });
+    return events;
   }
-
   const approvalStatus = textValue(approvalRecord?.status);
   if (approvalStatus !== "approved" && approvalStatus !== "executed") {
-    pushFailure(record.events, record.runId, timestamp, "approval_checked", outcome);
-    return;
+    pushFailureAll(pushAll, "approval_checked", outcome);
+    return events;
   }
-
-  push(record.events, record.runId, timestamp, {
-    type: "approval_state_changed",
-    state: "approval_checked",
-    hitlState: "approved",
-    capabilityId,
-    agentTraceId,
-    artifact: approvalRecord
-      ? redactArtifact({ label: "ApprovalRecord", kind: "approval", payload: toJsonValue(approvalRecord) })
-      : undefined
-  });
-
+  pushAll({ type: "approval_state_changed", state: "approval_checked", hitlState: "approved", capabilityId, agentTraceId,
+    artifact: approvalRecord ? redactArtifact({ label: "ApprovalRecord", kind: "approval", payload: toJsonValue(approvalRecord) }) : undefined });
   if (execution) {
-    push(record.events, record.runId, timestamp, {
-      type: "gateway_execute_started",
-      state: "executing",
-      capabilityId,
-      agentTraceId,
-      gatewayTraceId
-    });
-    push(record.events, record.runId, timestamp, {
-      type: "gateway_execute_completed",
-      state: "executing",
-      capabilityId,
-      agentTraceId,
-      gatewayTraceId,
-      artifact: redactArtifact({ label: "ActionResult", kind: "execution-result", payload: toJsonValue(execution) })
-    });
+    pushAll({ type: "gateway_execute_started", state: "executing", capabilityId, agentTraceId, gatewayTraceId });
+    pushAll({ type: "gateway_execute_completed", state: "executing", capabilityId, agentTraceId, gatewayTraceId,
+      artifact: redactArtifact({ label: "ActionResult", kind: "execution-result", payload: toJsonValue(execution) }) });
   }
-
   if (outcome.responseText) {
-    push(record.events, record.runId, timestamp, {
-      type: "narrative_created",
-      state: "narrated",
-      artifact: redactArtifact({
-        label: "Chinese Narrative",
-        kind: "narrative",
-        payload: toJsonValue({ text: outcome.responseText })
-      })
-    });
+    pushAll({ type: "narrative_created", state: "narrated",
+      artifact: redactArtifact({ label: "Chinese Narrative", kind: "narrative", payload: toJsonValue({ text: outcome.responseText }) }) });
   }
   if (outcome.status === "success") {
-    push(record.events, record.runId, timestamp, {
-      type: "run_completed",
-      state: "completed",
-      capabilityId,
-      agentTraceId,
-      gatewayTraceId
-    });
+    pushAll({ type: "run_completed", state: "completed", capabilityId, agentTraceId, gatewayTraceId });
   } else {
-    pushFailure(record.events, record.runId, timestamp, "executing", outcome);
+    pushFailureAll(pushAll, "executing", outcome);
   }
+  return events;
 }
 
-function appendBatchEvents(record: AgentRunRecord, outcome: WorkbenchOutcome, timestamp: string) {
+function pushFailureAll(
+  pushAll: (event: Omit<AgentRunEvent, "runId" | "sequence" | "timestamp">) => void,
+  stage: AgentRunState,
+  outcome: WorkbenchOutcome
+) {
+  pushAll({ type: "run_failed", state: "failed", error: { errorType: outcome.errorType || "AGENT_RUN_FAILED", message: outcome.responseText || outcome.message || "Agent run failed", stage } });
+}
+
+function buildBatchEvents(record: AgentRunRecord, outcome: WorkbenchOutcome, timestamp: string): AgentRunEvent[] {
+  const events: AgentRunEvent[] = [];
+  const base = record.events.length;
+  const pushAll = (event: Omit<AgentRunEvent, "runId" | "sequence" | "timestamp">) => {
+    events.push({ runId: record.runId, sequence: base + events.length + 1, timestamp, ...event });
+  };
   const callPlan = objectOrNull(outcome.callPlan) ?? objectOrNull(record.pendingOutcome?.callPlan);
   const capabilityId = textValue(callPlan?.capabilityId);
   const agentTraceId = textValue(callPlan?.agentTraceId);
   const gatewayTraceId = textValue(outcome.gatewayTraceId);
 
   if (outcome.responseText) {
-    push(record.events, record.runId, timestamp, {
-      type: "narrative_created",
-      state: "narrated",
-      artifact: redactArtifact({
-        label: "Chinese Narrative",
-        kind: "narrative",
-        payload: toJsonValue({ text: outcome.responseText })
-      })
-    });
+    pushAll({ type: "narrative_created", state: "narrated",
+      artifact: redactArtifact({ label: "Chinese Narrative", kind: "narrative", payload: toJsonValue({ text: outcome.responseText }) }) });
   }
   if (outcome.status === "success") {
-    push(record.events, record.runId, timestamp, {
-      type: "run_completed",
-      state: "completed",
-      capabilityId,
-      agentTraceId,
-      gatewayTraceId
-    });
+    pushAll({ type: "run_completed", state: "completed", capabilityId, agentTraceId, gatewayTraceId });
   } else {
-    pushFailure(record.events, record.runId, timestamp, "executing", outcome);
+    pushFailureAll(pushAll, "executing", outcome);
   }
+  return events;
 }
 
-function appendRuntimeFailure(record: AgentRunRecord, error: unknown, timestamp: string) {
+function buildRuntimeFailureEventsTail(runId: string, baseSequence: number, timestamp: string, error: unknown): AgentRunEvent[] {
   const safeMessage = error instanceof Error ? error.message : "Agent runtime failed";
-  push(record.events, record.runId, timestamp, {
-    type: "run_failed",
-    state: "failed",
-    error: { errorType: "AGENT_RUNTIME_ERROR", message: safeMessage, stage: "running" }
-  });
+  return [{ runId, sequence: baseSequence + 1, timestamp, type: "run_failed", state: "failed",
+    error: { errorType: "AGENT_RUNTIME_ERROR", message: safeMessage, stage: "running" } }];
 }
 
 function buildRuntimeFailureEvents(runId: string, timestamp: string, error: unknown): AgentRunEvent[] {
