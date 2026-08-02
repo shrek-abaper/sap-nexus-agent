@@ -2,5 +2,7 @@
   "openspec_proposal": "openspec/changes/sap-nexus-trusted-principal-model/proposal.md",
   "openspec_design": "openspec/changes/sap-nexus-trusted-principal-model/design.md",
   "openspec_tasks": "openspec/changes/sap-nexus-trusted-principal-model/tasks.md",
-  "openspec_delta_spec": "openspec/changes/sap-nexus-trusted-principal-model/specs/trusted-principal-scope/spec.md"
+  "openspec_delta_spec": "openspec/changes/sap-nexus-trusted-principal-model/specs/trusted-principal-scope/spec.md",
+  "handoff_context": "openspec/changes/sap-nexus-trusted-principal-model/.comet/handoff/design-context.json",
+  "handoff_markdown": "openspec/changes/sap-nexus-trusted-principal-model/.comet/handoff/design-context.md"
 }

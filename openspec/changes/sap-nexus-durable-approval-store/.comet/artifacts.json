@@ -2,5 +2,7 @@
   "openspec_proposal": "openspec/changes/sap-nexus-durable-approval-store/proposal.md",
   "openspec_design": "openspec/changes/sap-nexus-durable-approval-store/design.md",
   "openspec_tasks": "openspec/changes/sap-nexus-durable-approval-store/tasks.md",
-  "openspec_delta_spec": "openspec/changes/sap-nexus-durable-approval-store/specs/durable-approval-store/spec.md"
+  "openspec_delta_spec": "openspec/changes/sap-nexus-durable-approval-store/specs/durable-approval-store/spec.md",
+  "handoff_context": "openspec/changes/sap-nexus-durable-approval-store/.comet/handoff/design-context.json",
+  "handoff_markdown": "openspec/changes/sap-nexus-durable-approval-store/.comet/handoff/design-context.md"
 }
