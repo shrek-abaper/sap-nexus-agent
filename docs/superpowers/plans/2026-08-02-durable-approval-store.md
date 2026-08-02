@@ -878,7 +878,7 @@ git commit -m "feat(approval): atomic markExecuted with lease release"
 
 ### Task 5: claimLease / releaseLease / renewLease (LeaseOutcome three states)
 
-- [ ] Task 5: claimLease / releaseLease / renewLease (LeaseOutcome three states)
+- [x] Task 5: claimLease / releaseLease / renewLease (LeaseOutcome three states)
 
 **Files:**
 - Modify: `services/gateway/core/src/main/java/com/sapnexus/gateway/approval/FileDurableApprovalStore.java` (replace 3 lease stubs)
@@ -888,7 +888,7 @@ git commit -m "feat(approval): atomic markExecuted with lease release"
 - Consumes: `withFileLock`, `writeLease`, `readLease`, `deleteLease` helpers (Tasks 2-4); `LeaseOutcome` (Task 1).
 - Produces: `claimLease` (three-state: `Claimed` / `Rejected(holder, expiresAt)` / `ForceClaimed(previousHolder)`), `releaseLease` (delete if holder matches), `renewLease` (rewrite if holder matches). These are recovery-scenario methods per Design §4.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append these methods to `FileDurableApprovalStoreTest.java`:
 
@@ -987,12 +987,12 @@ Add this import at the top of the test file (if not already present):
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd services/gateway && ./gradlew :core:test --tests "com.sapnexus.gateway.approval.FileDurableApprovalStoreTest"`
 Expected: FAIL — `claimLeaseNoLeaseReturnsClaimed` throws `UnsupportedOperationException` (stub).
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 In `FileDurableApprovalStore.java`, replace the three lease stubs with:
 
@@ -1055,12 +1055,12 @@ In `FileDurableApprovalStore.java`, replace the three lease stubs with:
     }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `cd services/gateway && ./gradlew :core:test --tests "com.sapnexus.gateway.approval.FileDurableApprovalStoreTest"`
 Expected: PASS (21 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/gateway/core/src/main/java/com/sapnexus/gateway/approval/FileDurableApprovalStore.java \
