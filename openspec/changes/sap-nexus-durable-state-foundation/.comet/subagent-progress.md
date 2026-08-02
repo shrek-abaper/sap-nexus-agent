@@ -1,39 +1,37 @@
 # Subagent Progress - sap-nexus-durable-state-foundation
 
 > Comet 协调检查点（build_mode: subagent-driven-development, review_mode: standard, tdd_mode: tdd）
-> 每次派发/回报/审查/修复/勾选后更新。
+> Build 阶段完成，进入 verify 阶段。
 
-## 当前 Task
-- Plan Task: Task 2: canonicalJson + sha256 工具
-- 映射 OpenSpec task: 1.4（idempotency key schema 依赖的稳定序列化）
-- 阶段: implementing
-- review_mode: standard
-- 审查-修复轮次: 0/1（standard 最多 1 轮）
-- 风险任务级 review: 未触发（待 implementer 风险信号自报）
+## 状态
+- Phase: verify（build complete, verify_result=pending）
+- All 10 tasks done
+- Final review: pass（IMPORTANT-1 fix -> re-review pass）
+- Build guard: ALL CHECKS PASSED
 
-## Task 1（已完成）
-- Plan Task: Task 1: Store-agnostic 接口契约 + 共享类型提取
-- 提交: 0f25c06..3dd0e13
-- 变更: durable/types.ts (105行) + vitest.config.ts (8行) + agent-runtime-adapter.ts (+12/-65)
-- 验证: typecheck PASS + build PASS（Task 1 纯类型提取，TDD 不适用，用户确认）
-- 风险信号: 未命中（公共 API 经 re-export 向后兼容；diff 190 行未超 200）
-- review: standard 下未命中风险信号，不派发每任务 reviewer
-- 顾虑（接受）: WorkbenchOutcome 领域注释未保留（brief 设计，类型形状一致）；ApprovalDecision re-export（向后兼容，无外部 consumer）
+## 已完成 Task（全部）
+- Task 1: 接口契约+类型提取 (3dd0e13)
+- Task 2: canonicalJson+sha256 (6a04ef0)
+- Task 3: ConversationStore JSON (57ac19d)
+- Task 4: RunStore JSONL 核心 (39058b3, reviewer pass)
+- Task 5: 替换 Map 为 store (a16f64a, reviewer opus pass)
+- Task 6: lease (fb09814, reviewer opus pass)
+- Task 7: checkpoint ref (6430814 + fix 740c9e3, reviewer pass + re-review)
+- Task 8: 幂等 continuation (081d5c5, reviewer opus pass)
+- Task 9: 三层分层约束 (5e4cfeb)
+- Task 10: 综合测试验证 (d5a9676, M6 .gitignore 处理)
+- Final fix: replay fail-closed (82f855b, IMPORTANT-1 + MINOR-2)
 
-## 已通过审查阶段
-- Task 1: 定向勾选验证通过（plan + OpenSpec 1.1-1.4 task-checkoff PASS）
+## Final review
+- 整体: Approved + 安全 ✅
+- IMPORTANT-1 (replay try/catch) -> fix 82f855b -> re-review pass
+- 已知 MINOR backlog: Task 6 lease 硬化 / Task 7 CheckpointRef 字段校验 / Task 8 idempotency TTL+崩溃窗口 / MINOR-1 continuation lease 释放（均生产硬化 backlog）
 
-## 未解决 reviewer 反馈
-- (无)
+## Build 配置
+- build_command: npm --prefix frontend run build
+- verify_command: npm --prefix frontend run verify
+- npm verify PASS (typecheck + test + build)
+- openspec validate --all --strict PASS (15/15)
 
-## Task 列表
-- [x] Task 1: Store-agnostic 接口契约 + 共享类型提取 (done)
-- [ ] Task 2: canonicalJson + sha256 工具 (implementing)
-- [ ] Task 3: DurableConversationStore JSON 参考实现
-- [ ] Task 4: DurableRunStore JSONL 核心实现
-- [ ] Task 5: 替换进程内 Map 为 durable store
-- [ ] Task 6: Run ownership / lease
-- [ ] Task 7: Structured checkpoint reference
-- [ ] Task 8: 幂等 continuation
-- [ ] Task 9: 三层状态分层持久化约束
-- [ ] Task 10: 综合测试与验证
+## Task 列表（全 done）
+- [x] Task 1-10 (all done, reviewed where risk hit)
