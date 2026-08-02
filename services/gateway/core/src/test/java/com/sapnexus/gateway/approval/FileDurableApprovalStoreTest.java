@@ -1,5 +1,6 @@
 package com.sapnexus.gateway.approval;
 
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -179,5 +180,92 @@ class FileDurableApprovalStoreTest {
         FileDurableApprovalStore store = new FileDurableApprovalStore(tempDir, "worker-test", 60_000L);
         store.markExecuted("nonexistent");
         assertTrue(store.find("nonexistent").isEmpty());
+    }
+
+    @Test
+    void claimLeaseNoLeaseReturnsClaimed() {
+        FileDurableApprovalStore store = new FileDurableApprovalStore(tempDir, "worker-A", 60_000L);
+        LeaseOutcome outcome = store.claimLease("appr-l1", "worker-A", 60_000L);
+        assertInstanceOf(LeaseOutcome.Claimed.class, outcome);
+    }
+
+    @Test
+    void claimLeaseSameWorkerReturnsClaimed() {
+        FileDurableApprovalStore store = new FileDurableApprovalStore(tempDir, "worker-A", 60_000L);
+        store.claimLease("appr-l2", "worker-A", 60_000L);
+        LeaseOutcome outcome = store.claimLease("appr-l2", "worker-A", 60_000L);
+        assertInstanceOf(LeaseOutcome.Claimed.class, outcome);
+    }
+
+    @Test
+    void claimLeaseUnexpiredDifferentWorkerReturnsRejected() {
+        FileDurableApprovalStore store = new FileDurableApprovalStore(tempDir, "worker-A", 60_000L);
+        store.claimLease("appr-l3", "worker-A", 60_000L);
+
+        LeaseOutcome outcome = store.claimLease("appr-l3", "worker-B", 60_000L);
+
+        assertInstanceOf(LeaseOutcome.Rejected.class, outcome);
+        LeaseOutcome.Rejected rejected = (LeaseOutcome.Rejected) outcome;
+        assertEquals("worker-A", rejected.holder());
+        assertTrue(rejected.expiresAt().isAfter(Instant.now()));
+    }
+
+    @Test
+    void claimLeaseExpiredDifferentWorkerReturnsForceClaimed() throws Exception {
+        FileDurableApprovalStore store = new FileDurableApprovalStore(tempDir, "worker-A", 1L);
+        store.claimLease("appr-l4", "worker-A", 1L);
+        // wait for lease to expire
+        Thread.sleep(20);
+
+        LeaseOutcome outcome = store.claimLease("appr-l4", "worker-B", 60_000L);
+
+        assertInstanceOf(LeaseOutcome.ForceClaimed.class, outcome);
+        assertEquals("worker-A", ((LeaseOutcome.ForceClaimed) outcome).previousHolder());
+    }
+
+    @Test
+    void releaseLeaseByHolderDeletesLease() throws Exception {
+        FileDurableApprovalStore store = new FileDurableApprovalStore(tempDir, "worker-A", 60_000L);
+        store.claimLease("appr-l5", "worker-A", 60_000L);
+
+        store.releaseLease("appr-l5", "worker-A");
+
+        assertFalse(java.nio.file.Files.exists(tempDir.resolve("leases").resolve("appr-l5.json")));
+    }
+
+    @Test
+    void releaseLeaseByNonHolderIsNoop() throws Exception {
+        FileDurableApprovalStore store = new FileDurableApprovalStore(tempDir, "worker-A", 60_000L);
+        store.claimLease("appr-l6", "worker-A", 60_000L);
+
+        store.releaseLease("appr-l6", "worker-B");
+
+        assertTrue(java.nio.file.Files.exists(tempDir.resolve("leases").resolve("appr-l6.json")));
+    }
+
+    @Test
+    void renewLeaseByHolderExtendsExpiry() throws Exception {
+        FileDurableApprovalStore store = new FileDurableApprovalStore(tempDir, "worker-A", 60_000L);
+        store.claimLease("appr-l7", "worker-A", 60_000L);
+        LeaseInfo before = ApprovalRecordCodec.leaseFromJson(
+                java.nio.file.Files.readString(tempDir.resolve("leases").resolve("appr-l7.json")));
+
+        store.renewLease("appr-l7", "worker-A", 120_000L);
+
+        LeaseInfo after = ApprovalRecordCodec.leaseFromJson(
+                java.nio.file.Files.readString(tempDir.resolve("leases").resolve("appr-l7.json")));
+        assertTrue(after.expiresAt().isAfter(before.expiresAt()));
+    }
+
+    @Test
+    void renewLeaseByNonHolderIsNoop() throws Exception {
+        FileDurableApprovalStore store = new FileDurableApprovalStore(tempDir, "worker-A", 60_000L);
+        store.claimLease("appr-l8", "worker-A", 60_000L);
+
+        store.renewLease("appr-l8", "worker-B", 120_000L);
+
+        LeaseInfo lease = ApprovalRecordCodec.leaseFromJson(
+                java.nio.file.Files.readString(tempDir.resolve("leases").resolve("appr-l8.json")));
+        assertEquals("worker-A", lease.workerId());
     }
 }

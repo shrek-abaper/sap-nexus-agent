@@ -148,18 +148,59 @@ public class FileDurableApprovalStore implements DurableApprovalStore {
 
     @Override
     public LeaseOutcome claimLease(String approvalId, String workerId, long ttlMs) {
-        // Stub - implemented in Task 5.
-        throw new UnsupportedOperationException("claimLease not yet implemented");
+        return withFileLock(approvalId, () -> {
+            try {
+                Optional<LeaseInfo> existing = readLease(approvalId);
+                Instant now = Instant.now();
+                if (existing.isPresent()) {
+                    LeaseInfo lease = existing.get();
+                    boolean expired = !lease.expiresAt().isAfter(now);
+                    if (!expired && !lease.workerId().equals(workerId)) {
+                        return new LeaseOutcome.Rejected(lease.workerId(), lease.expiresAt());
+                    }
+                    if (expired && !lease.workerId().equals(workerId)) {
+                        String previousHolder = lease.workerId();
+                        writeLease(approvalId, workerId, ttlMs);
+                        log.warn("Force-claimed lease for {} from previous holder {}", approvalId, previousHolder);
+                        return new LeaseOutcome.ForceClaimed(previousHolder);
+                    }
+                }
+                writeLease(approvalId, workerId, ttlMs);
+                return new LeaseOutcome.Claimed();
+            } catch (IOException e) {
+                throw new IllegalStateException("Failed to claim lease " + approvalId, e);
+            }
+        });
     }
 
     @Override
     public void releaseLease(String approvalId, String workerId) {
-        // Stub - implemented in Task 5.
+        withFileLock(approvalId, () -> {
+            try {
+                Optional<LeaseInfo> existing = readLease(approvalId);
+                if (existing.isPresent() && existing.get().workerId().equals(workerId)) {
+                    deleteLease(approvalId);
+                }
+                return null;
+            } catch (IOException e) {
+                throw new IllegalStateException("Failed to release lease " + approvalId, e);
+            }
+        });
     }
 
     @Override
     public void renewLease(String approvalId, String workerId, long ttlMs) {
-        // Stub - implemented in Task 5.
+        withFileLock(approvalId, () -> {
+            try {
+                Optional<LeaseInfo> existing = readLease(approvalId);
+                if (existing.isPresent() && existing.get().workerId().equals(workerId)) {
+                    writeLease(approvalId, workerId, ttlMs);
+                }
+                return null;
+            } catch (IOException e) {
+                throw new IllegalStateException("Failed to renew lease " + approvalId, e);
+            }
+        });
     }
 
     // --- helpers ---
