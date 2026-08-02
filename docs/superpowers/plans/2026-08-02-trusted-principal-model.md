@@ -270,7 +270,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ---
 
 ### Task 3: durable types principalId（可选）+ JsonlRunStore 持久化/回填/过滤 + JsonlConversationStore 持久化/回填/归属过滤
-- [ ] Task 3: durable types principalId（可选）+ JsonlRunStore 持久化/回填/过滤 + JsonlConversationStore 持久化/回填/归属过滤
+- [x] Task 3: durable types principalId（可选）+ JsonlRunStore 持久化/回填/过滤 + JsonlConversationStore 持久化/回填/归属过滤
 
 > 本任务在 types.ts 中将 principalId 加为**可选**字段（向后兼容，build 保持 green）。Task 4 再将 AgentRunRecord.principalId 升级为 required。
 
