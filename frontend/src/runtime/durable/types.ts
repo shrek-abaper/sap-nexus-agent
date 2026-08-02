@@ -49,7 +49,7 @@ export type AgentRunRecord = {
   events: AgentRunEvent[];
   pendingOutcome?: WorkbenchOutcome;
   decision?: ApprovalDecision;
-  principalId?: string;
+  principalId: string;
 };
 
 // --- Durable store data structures ---

@@ -18,6 +18,7 @@ import { JsonlRunStore } from "./durable/jsonl-run-store";
 import { canonicalJson, sha256Hex } from "./durable/canonical-json";
 import { idempotencyKey } from "./durable/idempotency";
 import type { ContinuationType } from "./durable/types";
+import type { TrustedPrincipal } from "./principal/types";
 
 export type { ApprovalDecision } from "./durable/types";
 
@@ -28,6 +29,7 @@ type CreateAgentRunInput = {
   query: string;
   rfcName?: string;
   conversationId?: string;
+  principal: TrustedPrincipal;
 };
 
 type ApprovalContinuation = {
@@ -79,12 +81,17 @@ export function resetAgentSessionsForTests() {
   void conversationStore.clearAll();
 }
 
-async function getSession(conversationId: string): Promise<SessionState> {
+async function getSession(conversationId: string, principalId: string): Promise<SessionState> {
   const existing = await conversationStore.load(conversationId);
-  if (existing) return existing;
-  const session: SessionState = { lastContext: null, lastRunId: null, history: [] };
-  await conversationStore.save(conversationId, session);
-  return session;
+  if (!existing) {
+    const session: SessionState = { lastContext: null, lastRunId: null, history: [], principalId };
+    await conversationStore.save(conversationId, session);
+    return session;
+  }
+  if (existing.principalId !== principalId) {
+    throw new Error("Conversation does not belong to the current principal");
+  }
+  return existing;
 }
 
 function buildContext(session: SessionState): ConversationContext | undefined {
@@ -105,7 +112,7 @@ export async function createAgentRun(input: CreateAgentRunInput): Promise<{ runI
 
   // Q2: reject new queries on a conversation that still has a pending write approval.
   if (input.conversationId) {
-    const session = await getSession(input.conversationId);
+    const session = await getSession(input.conversationId, input.principal.principalId);
     const lastRunId = session.lastRunId;
     if (lastRunId) {
       const lastRun = await runStore.load(lastRunId);
@@ -121,14 +128,15 @@ export async function createAgentRun(input: CreateAgentRunInput): Promise<{ runI
   const record: AgentRunRecord = {
     runId,
     query,
-    events: [{ runId, sequence: 1, timestamp, type: "run_started", state: "running" }]
+    events: [{ runId, sequence: 1, timestamp, type: "run_started", state: "running" }],
+    principalId: input.principal.principalId
   };
   await runStore.save(runId, record);
   await runStore.claim(runId, workerId, 60_000);
 
   try {
     const runner = runnerForTests ?? runLocalPythonAgent;
-    const context = input.conversationId ? buildContext(await getSession(input.conversationId)) : undefined;
+    const context = input.conversationId ? buildContext(await getSession(input.conversationId, input.principal.principalId)) : undefined;
     const outcome = await runner({ query, gatewayUrl: gatewayUrl(), intentMode: intentMode(), context });
     const events = buildEventsFromOutcome(runId, query, outcome, timestamp);
     for (const event of events.slice(1)) {
@@ -142,7 +150,7 @@ export async function createAgentRun(input: CreateAgentRunInput): Promise<{ runI
     }
 
     if (input.conversationId) {
-      const session = await getSession(input.conversationId);
+      const session = await getSession(input.conversationId, input.principal.principalId);
       session.lastRunId = runId;
       session.history.push({ role: "user", content: query });
       if (outcome.responseText) {

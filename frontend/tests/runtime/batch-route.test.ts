@@ -5,6 +5,7 @@ import {
   resetAgentRunsForTests,
   setAgentRunnerForTests
 } from "../../src/runtime/agent-runtime-adapter";
+import { PLACEHOLDER_PRINCIPAL } from "../../src/runtime/principal/types";
 
 const pendingBatchOutcome = {
   status: "awaiting_batch_confirm",
@@ -48,7 +49,7 @@ describe("agent run batch route", () => {
         responseText: "物料 DEMOA2：在工厂 5200 为 176 EA；在工厂 1000 为 0 EA。"
       });
     setAgentRunnerForTests(runner);
-    const run = await createAgentRun({ query: "DEMOA2 在 5200 和 1000 的库存" });
+    const run = await createAgentRun({ query: "DEMOA2 在 5200 和 1000 的库存", principal: PLACEHOLDER_PRINCIPAL });
 
     const response = await POST(request({}), {
       params: Promise.resolve({ runId: run.runId })
@@ -72,7 +73,7 @@ describe("agent run batch route", () => {
       .mockResolvedValueOnce(pendingBatchOutcome)
       .mockResolvedValueOnce({ status: "success", responseText: "完成" });
     setAgentRunnerForTests(runner);
-    const run = await createAgentRun({ query: "DEMOA2 在 5200 和 1000 的库存" });
+    const run = await createAgentRun({ query: "DEMOA2 在 5200 和 1000 的库存", principal: PLACEHOLDER_PRINCIPAL });
     await POST(request({}), { params: Promise.resolve({ runId: run.runId }) });
 
     const duplicate = await POST(request({}), {

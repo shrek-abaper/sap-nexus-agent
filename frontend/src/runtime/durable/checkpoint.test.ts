@@ -8,7 +8,7 @@ import type { AgentRunEvent } from "../run-event-schema";
 
 function seed(runId: string): AgentRunRecord {
   const e: AgentRunEvent = { runId, sequence: 1, timestamp: "t", type: "run_started", state: "running" };
-  return { runId, query: "q", events: [e] };
+  return { runId, query: "q", events: [e], principalId: "local-user-0001" };
 }
 
 describe("checkpoint ref", () => {

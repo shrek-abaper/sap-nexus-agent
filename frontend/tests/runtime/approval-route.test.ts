@@ -5,6 +5,7 @@ import {
   resetAgentRunsForTests,
   setAgentRunnerForTests
 } from "../../src/runtime/agent-runtime-adapter";
+import { PLACEHOLDER_PRINCIPAL } from "../../src/runtime/principal/types";
 
 const pendingOutcome = {
   status: "awaiting_approval",
@@ -62,7 +63,7 @@ describe("agent run approval route", () => {
         approvalRecord: { ...pendingOutcome.approvalRecord, status: "rejected" }
       });
     setAgentRunnerForTests(runner);
-    const run = await createAgentRun({ query: "创建采购申请" });
+    const run = await createAgentRun({ query: "创建采购申请", principal: PLACEHOLDER_PRINCIPAL });
 
     const response = await POST(request({ decision: "reject" }), {
       params: Promise.resolve({ runId: run.runId })
@@ -75,7 +76,7 @@ describe("agent run approval route", () => {
   it("rejects browser attempts to override approval context", async () => {
     const runner = vi.fn().mockResolvedValueOnce(pendingOutcome);
     setAgentRunnerForTests(runner);
-    const run = await createAgentRun({ query: "创建采购申请" });
+    const run = await createAgentRun({ query: "创建采购申请", principal: PLACEHOLDER_PRINCIPAL });
 
     const response = await POST(request({
       decision: "approve",
@@ -103,7 +104,7 @@ describe("agent run approval route", () => {
         approvalRecord: { ...pendingOutcome.approvalRecord, status: "rejected" }
       });
     setAgentRunnerForTests(runner);
-    const run = await createAgentRun({ query: "创建采购申请" });
+    const run = await createAgentRun({ query: "创建采购申请", principal: PLACEHOLDER_PRINCIPAL });
     await POST(request({ decision: "reject" }), {
       params: Promise.resolve({ runId: run.runId })
     });

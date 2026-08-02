@@ -24,7 +24,7 @@ describe("three-layer state stratification (§4.2.1)", () => {
   it("PlanExecutionState + EvidenceState (authority) are append-only: run JSONL never loses history", async () => {
     const store = new JsonlRunStore(dir);
     const e1: AgentRunEvent = { runId: "r1", sequence: 1, timestamp: "t", type: "run_started", state: "running" };
-    const rec: AgentRunRecord = { runId: "r1", query: "q", events: [e1] };
+    const rec: AgentRunRecord = { runId: "r1", query: "q", events: [e1], principalId: "local-user-0001" };
     await store.save("r1", rec);
     await store.appendEvent("r1", { runId: "r1", sequence: 2, timestamp: "t2", type: "intent_parsed", state: "intent_parsed" });
     await store.appendCheckpointRef("r1", { registrySnapshotId: "s1", nodeState: { a: 1 } });
@@ -39,7 +39,7 @@ describe("three-layer state stratification (§4.2.1)", () => {
   it("compacting ConversationState does not affect run JSONL (layer isolation)", async () => {
     const store = new JsonlRunStore(dir);
     const conv = new JsonlConversationStore(dir);
-    await store.save("r1", { runId: "r1", query: "q", events: [{ runId: "r1", sequence: 1, timestamp: "t", type: "run_started", state: "running" }] });
+    await store.save("r1", { runId: "r1", query: "q", events: [{ runId: "r1", sequence: 1, timestamp: "t", type: "run_started", state: "running" }], principalId: "local-user-0001" });
     await conv.save("c1", { lastContext: null, lastRunId: "r1", history: [{ role: "user", content: "x" }] });
     await conv.save("c1", { lastContext: null, lastRunId: "r1", history: [] }); // compact session
     const run = await store.load("r1");

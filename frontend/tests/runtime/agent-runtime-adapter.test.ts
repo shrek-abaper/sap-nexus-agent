@@ -8,6 +8,7 @@ import {
   resetAgentSessionsForTests,
   setAgentRunnerForTests
 } from "../../src/runtime/agent-runtime-adapter";
+import { PLACEHOLDER_PRINCIPAL } from "../../src/runtime/principal/types";
 
 describe("agent runtime adapter", () => {
   beforeEach(() => {
@@ -72,7 +73,7 @@ describe("agent runtime adapter", () => {
     }));
     setAgentRunnerForTests(runner);
 
-    const run = await createAgentRun({ query: "MAT-LIVE 在 1000 还有多少可用库存？" });
+    const run = await createAgentRun({ query: "MAT-LIVE 在 1000 还有多少可用库存？", principal: PLACEHOLDER_PRINCIPAL });
     const events = await getAgentRunEvents(run.runId);
 
     expect(runner).toHaveBeenCalledWith({
@@ -111,7 +112,8 @@ describe("agent runtime adapter", () => {
     await expect(
       createAgentRun({
         query: "查库存",
-        rfcName: "BAPI_MATERIAL_AVAILABILITY"
+        rfcName: "BAPI_MATERIAL_AVAILABILITY",
+        principal: PLACEHOLDER_PRINCIPAL
       })
     ).rejects.toThrow("Raw RFC execution is not allowed");
     expect(runner).not.toHaveBeenCalled();
@@ -158,7 +160,7 @@ describe("agent runtime adapter", () => {
     }));
     setAgentRunnerForTests(runner);
 
-    const run = await createAgentRun({ query: "创建采购申请" });
+    const run = await createAgentRun({ query: "创建采购申请", principal: PLACEHOLDER_PRINCIPAL });
     const events = await getAgentRunEvents(run.runId);
 
     expect(events.some((event) => event.type === "gateway_execute_started")).toBe(false);
@@ -221,7 +223,7 @@ describe("agent runtime adapter", () => {
       });
     setAgentRunnerForTests(runner);
 
-    const run = await createAgentRun({ query: "创建采购申请" });
+    const run = await createAgentRun({ query: "创建采购申请", principal: PLACEHOLDER_PRINCIPAL });
     await decideAgentRunApproval(run.runId, "approve");
 
     expect(runner).toHaveBeenNthCalledWith(2, {
@@ -285,7 +287,7 @@ describe("agent runtime adapter", () => {
       });
     setAgentRunnerForTests(runner);
 
-    const run = await createAgentRun({ query: "创建采购申请" });
+    const run = await createAgentRun({ query: "创建采购申请", principal: PLACEHOLDER_PRINCIPAL });
     await decideAgentRunApproval(run.runId, "reject");
     const events = await getAgentRunEvents(run.runId);
 
@@ -333,7 +335,7 @@ describe("agent runtime adapter", () => {
       });
     setAgentRunnerForTests(runner);
 
-    const run = await createAgentRun({ query: "创建采购申请" });
+    const run = await createAgentRun({ query: "创建采购申请", principal: PLACEHOLDER_PRINCIPAL });
     await decideAgentRunApproval(run.runId, "approve");
     const events = await getAgentRunEvents(run.runId);
 
@@ -352,7 +354,7 @@ describe("agent runtime adapter", () => {
       }))
     );
 
-    const run = await firstModule.createAgentRun({ query: "查库存" });
+    const run = await firstModule.createAgentRun({ query: "查库存", principal: PLACEHOLDER_PRINCIPAL });
 
     vi.resetModules();
     const secondModule = await import("../../src/runtime/agent-runtime-adapter");
@@ -390,9 +392,9 @@ describe("agent runtime adapter", () => {
     setAgentRunnerForTests(runner);
 
     // First run: fresh session, no prior lastContext -> context undefined
-    await createAgentRun({ query: "查库存 DEMOA2", conversationId: "conv-1" });
+    await createAgentRun({ query: "查库存 DEMOA2", conversationId: "conv-1", principal: PLACEHOLDER_PRINCIPAL });
     // Second run: same conversationId, should inherit lastContext from first outcome
-    await createAgentRun({ query: "1000", conversationId: "conv-1" });
+    await createAgentRun({ query: "1000", conversationId: "conv-1", principal: PLACEHOLDER_PRINCIPAL });
 
     expect(runner.mock.calls[0][0].context).toBeUndefined();
     const secondCall = runner.mock.calls[1][0];
@@ -415,10 +417,10 @@ describe("agent runtime adapter", () => {
     }));
     setAgentRunnerForTests(runner);
 
-    await createAgentRun({ query: "建PR 物料X", conversationId: "conv-2" });
+    await createAgentRun({ query: "建PR 物料X", conversationId: "conv-2", principal: PLACEHOLDER_PRINCIPAL });
     // Second call same conversationId: approval pending, must reject without invoking runner
     await expect(
-      createAgentRun({ query: "再查一个", conversationId: "conv-2" })
+      createAgentRun({ query: "再查一个", conversationId: "conv-2", principal: PLACEHOLDER_PRINCIPAL })
     ).rejects.toThrow(/审批/);
     expect(runner).toHaveBeenCalledTimes(1);
   });
@@ -450,12 +452,12 @@ describe("agent runtime adapter", () => {
       .mockResolvedValueOnce({ status: "success", responseText: "完成", lastContext: null });
     setAgentRunnerForTests(runner);
 
-    const run1 = await createAgentRun({ query: "建PR 物料X", conversationId: "conv-decided" });
+    const run1 = await createAgentRun({ query: "建PR 物料X", conversationId: "conv-decided", principal: PLACEHOLDER_PRINCIPAL });
     await decideAgentRunApproval(run1.runId, "approve");
 
     // After approval is decided, a new query on the same conversation must
     // NOT be rejected by Q2 and must invoke the runner.
-    const run2 = await createAgentRun({ query: "再查一个", conversationId: "conv-decided" });
+    const run2 = await createAgentRun({ query: "再查一个", conversationId: "conv-decided", principal: PLACEHOLDER_PRINCIPAL });
     expect(run2.runId).not.toBe(run1.runId);
     expect(runner).toHaveBeenCalledTimes(3);
   });
@@ -482,9 +484,9 @@ describe("agent runtime adapter", () => {
     });
     setAgentRunnerForTests(runner);
 
-    await createAgentRun({ query: "查库存", conversationId: "conv-clear" });
-    await createAgentRun({ query: "再查", conversationId: "conv-clear" });
-    await createAgentRun({ query: "第三次", conversationId: "conv-clear" });
+    await createAgentRun({ query: "查库存", conversationId: "conv-clear", principal: PLACEHOLDER_PRINCIPAL });
+    await createAgentRun({ query: "再查", conversationId: "conv-clear", principal: PLACEHOLDER_PRINCIPAL });
+    await createAgentRun({ query: "第三次", conversationId: "conv-clear", principal: PLACEHOLDER_PRINCIPAL });
 
     // Second call inherited lastContext from first run
     expect(runner.mock.calls[1][0].context?.lastContext?.capabilityId).toBe("MM.Inventory.GetAvailability");
@@ -509,7 +511,7 @@ describe("agent runtime adapter", () => {
     setAgentRunnerForTests(runner);
 
     for (let i = 0; i < 5; i++) {
-      await createAgentRun({ query: `q${i}`, conversationId: "conv-hist" });
+      await createAgentRun({ query: `q${i}`, conversationId: "conv-hist", principal: PLACEHOLDER_PRINCIPAL });
     }
 
     // 5th run's context is built from session history after 4 completed runs
@@ -540,9 +542,9 @@ describe("agent runtime adapter", () => {
       }
     }));
     setAgentRunnerForTests(runner);
-    await createAgentRun({ query: "q0", conversationId: "conv-reset" });
+    await createAgentRun({ query: "q0", conversationId: "conv-reset", principal: PLACEHOLDER_PRINCIPAL });
     resetAgentSessionsForTests();
-    await createAgentRun({ query: "q1", conversationId: "conv-reset" });
+    await createAgentRun({ query: "q1", conversationId: "conv-reset", principal: PLACEHOLDER_PRINCIPAL });
 
     expect(runner.mock.calls[1][0].context).toBeUndefined();
   });
@@ -550,7 +552,7 @@ describe("agent runtime adapter", () => {
   it("does not pass context when conversationId is absent", async () => {
     const runner = vi.fn(async (_input: any) => ({ status: "success", responseText: "done" }));
     setAgentRunnerForTests(runner);
-    await createAgentRun({ query: "查库存" });
+    await createAgentRun({ query: "查库存", principal: PLACEHOLDER_PRINCIPAL });
 
     expect(runner.mock.calls[0][0].context).toBeUndefined();
   });
@@ -576,7 +578,7 @@ describe("agent runtime adapter", () => {
     const runner = vi.fn().mockResolvedValueOnce(pendingOutcome);
     setAgentRunnerForTests(runner);
 
-    const run = await createAgentRun({ query: "DEMOA2 在 5200 和 1000 的库存" });
+    const run = await createAgentRun({ query: "DEMOA2 在 5200 和 1000 的库存", principal: PLACEHOLDER_PRINCIPAL });
 
     const events = await getAgentRunEvents(run.runId);
     expect(events.some((e) => e.state === "awaiting_batch_confirm")).toBe(true);
@@ -609,7 +611,7 @@ describe("agent runtime adapter", () => {
       });
     setAgentRunnerForTests(runner);
 
-    const run = await createAgentRun({ query: "DEMOA2 在 5200 和 1000 的库存" });
+    const run = await createAgentRun({ query: "DEMOA2 在 5200 和 1000 的库存", principal: PLACEHOLDER_PRINCIPAL });
     await confirmAgentRunBatch(run.runId);
 
     expect(runner).toHaveBeenCalledTimes(2);

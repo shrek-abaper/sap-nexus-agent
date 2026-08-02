@@ -15,6 +15,8 @@ import {
 import { JsonlConversationStore } from "./durable/jsonl-conversation-store";
 import { JsonlRunStore } from "./durable/jsonl-run-store";
 import type { WorkbenchOutcome } from "./durable/types";
+import { PLACEHOLDER_PRINCIPAL } from "./principal/types";
+import type { TrustedPrincipal } from "./principal/types";
 
 function awaitingOutcome(runId: string): WorkbenchOutcome {
   return {
@@ -48,7 +50,7 @@ describe("agent-runtime-adapter durable integration", () => {
   });
 
   it("createAgentRun persists events to durable store", async () => {
-    const { runId } = await createAgentRun({ query: "查询库存" });
+    const { runId } = await createAgentRun({ query: "查询库存", principal: PLACEHOLDER_PRINCIPAL });
     const events = await getAgentRunEvents(runId);
     expect(events.length).toBeGreaterThan(0);
     expect(events[0].type).toBe("run_started");
@@ -59,7 +61,7 @@ describe("agent-runtime-adapter durable integration", () => {
   });
 
   it("pending approval run recovers across store reset (cross-restart)", async () => {
-    const { runId } = await createAgentRun({ query: "查询库存", conversationId: "c1" });
+    const { runId } = await createAgentRun({ query: "查询库存", conversationId: "c1", principal: PLACEHOLDER_PRINCIPAL });
     // simulate restart: rebind store to same dir
     const reopenedRun = new JsonlRunStore(dir);
     const reopenedConv = new JsonlConversationStore(dir);
@@ -69,17 +71,17 @@ describe("agent-runtime-adapter durable integration", () => {
   });
 
   it("Q2 gate rejects new query while prior approval pending", async () => {
-    await createAgentRun({ query: "查询库存", conversationId: "c1" });
-    await expect(createAgentRun({ query: "再次查询", conversationId: "c1" }))
+    await createAgentRun({ query: "查询库存", conversationId: "c1", principal: PLACEHOLDER_PRINCIPAL });
+    await expect(createAgentRun({ query: "再次查询", conversationId: "c1", principal: PLACEHOLDER_PRINCIPAL }))
       .rejects.toThrow(/有待审批/);
   });
 
   it("decideAgentRunApproval loads from store and appends decision events", async () => {
     setAgentRunnerForTests(async () => ({ status: "success", responseText: "已执行" } as WorkbenchOutcome));
-    const { runId } = await createAgentRun({ query: "查询库存" });
+    const { runId } = await createAgentRun({ query: "查询库存", principal: PLACEHOLDER_PRINCIPAL });
     // re-arm runner to awaiting for the initial run
     setAgentRunnerForTests(async () => awaitingOutcome(runId));
-    await createAgentRun({ query: "查询库存", conversationId: "c2" }).catch(() => {});
+    await createAgentRun({ query: "查询库存", conversationId: "c2", principal: PLACEHOLDER_PRINCIPAL }).catch(() => {});
     // pick the awaiting run created above
     const runs = await runStore.list({ state: "awaiting_approval" });
     const target = runs[runs.length - 1];
@@ -90,17 +92,17 @@ describe("agent-runtime-adapter durable integration", () => {
   });
 
   it("resetAgentRunsForTests clears durable runs", async () => {
-    const { runId } = await createAgentRun({ query: "查询库存" });
+    const { runId } = await createAgentRun({ query: "查询库存", principal: PLACEHOLDER_PRINCIPAL });
     resetAgentRunsForTests();
     expect(await getAgentRunEvents(runId)).toEqual([]);
   });
 
   it("resetAgentSessionsForTests clears durable sessions", async () => {
-    await createAgentRun({ query: "查询库存", conversationId: "c1" });
+    await createAgentRun({ query: "查询库存", conversationId: "c1", principal: PLACEHOLDER_PRINCIPAL });
     resetAgentSessionsForTests();
     // after reset, Q2 gate no longer sees the prior pending run via session
     setAgentRunnerForTests(async () => ({ status: "success", responseText: "ok" } as WorkbenchOutcome));
-    await expect(createAgentRun({ query: "新查询", conversationId: "c1" })).resolves.toBeDefined();
+    await expect(createAgentRun({ query: "新查询", conversationId: "c1", principal: PLACEHOLDER_PRINCIPAL })).resolves.toBeDefined();
   });
 
   it("duplicate approve continuation is idempotent (executes once)", async () => {
@@ -112,7 +114,7 @@ describe("agent-runtime-adapter durable integration", () => {
       }
       return awaitingOutcome("run-x");
     });
-    const { runId } = await createAgentRun({ query: "查询库存", conversationId: "c-idem" });
+    const { runId } = await createAgentRun({ query: "查询库存", conversationId: "c-idem", principal: PLACEHOLDER_PRINCIPAL });
     await decideAgentRunApproval(runId, "approve");
     await decideAgentRunApproval(runId, "approve"); // duplicate
     expect(calls).toBe(1);
@@ -132,9 +134,38 @@ describe("agent-runtime-adapter durable integration", () => {
       }
       return batchOutcome;
     });
-    const { runId } = await createAgentRun({ query: "批量查询", conversationId: "c-batch-idem" });
+    const { runId } = await createAgentRun({ query: "批量查询", conversationId: "c-batch-idem", principal: PLACEHOLDER_PRINCIPAL });
     await confirmAgentRunBatch(runId);
     await confirmAgentRunBatch(runId); // duplicate
     expect(calls).toBe(1);
+  });
+
+  it("createAgentRun binds principalId to the run record", async () => {
+    const { runId } = await createAgentRun({ query: "查询库存", principal: PLACEHOLDER_PRINCIPAL });
+    const events = await getAgentRunEvents(runId);
+    expect(events.length).toBeGreaterThan(0);
+    const runs = await runStore.list({ principalId: "local-user-0001" });
+    expect(runs.some((r) => r.runId === runId)).toBe(true);
+  });
+
+  it("getSession writes principalId on first request and validates on subsequent", async () => {
+    setAgentRunnerForTests(async () => ({ status: "success", responseText: "ok" } as WorkbenchOutcome));
+    const { runId } = await createAgentRun({ query: "查询库存", conversationId: "c-own", principal: PLACEHOLDER_PRINCIPAL });
+    expect(runId).toBeDefined();
+    // second request with same principal should succeed (no throw)
+    const { runId: runId2 } = await createAgentRun({ query: "再次查询", conversationId: "c-own", principal: PLACEHOLDER_PRINCIPAL });
+    expect(runId2).toBeDefined();
+  });
+
+  it("getSession rejects cross-principal access to existing conversation (fail-closed)", async () => {
+    await createAgentRun({ query: "查询库存", conversationId: "c-x", principal: PLACEHOLDER_PRINCIPAL });
+    const attacker: TrustedPrincipal = {
+      principalId: "attacker-002",
+      role: "operator",
+      dataScope: { tenantId: "evil" }
+    };
+    await expect(
+      createAgentRun({ query: "越权", conversationId: "c-x", principal: attacker })
+    ).rejects.toThrow(/does not belong/);
   });
 });

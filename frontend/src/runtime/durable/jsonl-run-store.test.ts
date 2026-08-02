@@ -11,7 +11,7 @@ function event(runId: string, sequence: number, type: AgentRunEvent["type"], sta
 }
 
 function record(runId: string, query: string, events: AgentRunEvent[]): AgentRunRecord {
-  return { runId, query, events };
+  return { runId, query, events, principalId: "local-user-0001" };
 }
 
 describe("JsonlRunStore core", () => {

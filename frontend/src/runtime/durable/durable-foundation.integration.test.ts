@@ -8,7 +8,7 @@ import type { AgentRunEvent } from "../run-event-schema";
 import type { AgentRunRecord, WorkbenchOutcome } from "./types";
 
 function runRecord(runId: string, state: AgentRunEvent["state"]): AgentRunRecord {
-  return { runId, query: "q", events: [{ runId, sequence: 1, timestamp: "t", type: "run_started", state }] };
+  return { runId, query: "q", events: [{ runId, sequence: 1, timestamp: "t", type: "run_started", state }], principalId: "local-user-0001" };
 }
 
 describe("durable foundation integration", () => {
