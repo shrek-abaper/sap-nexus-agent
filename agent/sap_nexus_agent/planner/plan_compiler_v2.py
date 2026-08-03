@@ -14,6 +14,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
 
+from sap_nexus_agent.governed_context import PlannerFailure
 from sap_nexus_agent.match_decision import EscalationHandoff
 from sap_nexus_agent.planner.capability_card import CapabilityCard, discover_cards
 from sap_nexus_agent.planner.goal_spec import GoalConstraint, GoalSpec, build_goal_spec
@@ -140,6 +141,20 @@ def compile_plan_v2(
     sources: SemanticSourceDocuments,
 ) -> PlanCompileResult:
     """编译确定性 PlanGraph v2。不调用 LLM/Gateway/SAP。"""
+    if handoff.registry_snapshot_id != snapshot.snapshot_id:
+        raise PlannerFailure(
+            error_type="SNAPSHOT_DRIFT",
+            message=(
+                f"snapshot drift: handoff={handoff.registry_snapshot_id} "
+                f"!= snapshot={snapshot.snapshot_id}"
+            ),
+            snapshot_id=snapshot.snapshot_id,
+            audit_evidence={
+                "expected_snapshot_id": snapshot.snapshot_id,
+                "actual_snapshot_id": handoff.registry_snapshot_id,
+                "stage": "compile_plan_v2",
+            },
+        )
     cards = discover_cards(snapshot, sources)
     raw_capabilities = _index_raw_capabilities(sources)
     goal = _build_goal_v2(handoff, cards)

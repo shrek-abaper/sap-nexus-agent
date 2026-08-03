@@ -153,7 +153,7 @@ PlannerErrorType = Literal[
 
 
 @dataclass(frozen=True)
-class PlannerFailure:
+class PlannerFailure(Exception):
     """Structured planner failure with audit evidence (no silent None).
 
     Replaces ``_compile_dry_run_safely``'s ``except Exception: return None``.

@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from sap_nexus_agent.governed_context import PlannerFailure
 from sap_nexus_agent.match_decision import EscalationHandoff, MatchedIntent
 from sap_nexus_agent.planner.plan_compiler import Gap, Flag
 from sap_nexus_agent.planner.plan_compiler_v2 import PlanCompileResult, compile_plan_v2
@@ -418,3 +419,25 @@ def test_compile_plan_v2_partitions_write_action_into_action_partition():
     assert pr_nodes[0]["nodeId"] not in result.plan_graph["readPartition"]
     assert pr_nodes[0]["governance"]["requiresApproval"] is True
     assert pr_nodes[0]["governance"]["capabilityKind"] == "Action"
+
+
+# ---- Task 11: snapshot drift -> PlannerFailure(SNAPSHOT_DRIFT) ----
+
+
+def test_compile_plan_v2_raises_planner_failure_on_snapshot_drift():
+    snapshot = _real_snapshot()
+    sources = _real_sources()
+    drift_handoff = EscalationHandoff(
+        reason="drift",
+        matched_intents=[
+            MatchedIntent("MM.Inventory.GetAvailability", {"material": "M1", "plant": "5300"}, [])
+        ],
+        utterance="drift",
+        registry_snapshot_id="sha256:" + "f" * 64,  # 不同于 snapshot.snapshot_id
+    )
+    with pytest.raises(PlannerFailure) as exc_info:
+        compile_plan_v2(drift_handoff, snapshot, sources)
+    assert exc_info.value.error_type == "SNAPSHOT_DRIFT"
+    assert exc_info.value.snapshot_id == snapshot.snapshot_id
+    assert "expected_snapshot_id" in exc_info.value.audit_evidence
+    assert "actual_snapshot_id" in exc_info.value.audit_evidence
