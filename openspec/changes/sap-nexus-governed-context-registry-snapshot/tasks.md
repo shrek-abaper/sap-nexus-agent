@@ -1,7 +1,7 @@
 ## 1. GovernedContext 与受治理上下文契约
 
-- [ ] 1.1 新增 `agent/sap_nexus_agent/governed_context.py`，定义 `GovernedContext`（`principal`/`scopes`/`snapshotId`/`registryVersion`）、`SnapshotLease`（持有并校验 `RegistrySnapshot`）、`VisibleCapabilitySet`、`PlannerFailure`（`error_type`/`message`/`snapshot_id`/`audit_evidence`）
-- [ ] 1.2 `PlannerFailure.error_type` 枚举固化为 `SNAPSHOT_MISSING` / `SNAPSHOT_DRIFT` / `PRINCIPAL_MISMATCH` / `SOURCE_LOAD_ERROR` / `VISIBILITY_DENIED`
+- [x] 1.1 新增 `agent/sap_nexus_agent/governed_context.py`，定义 `GovernedContext`（`principal`/`scopes`/`snapshotId`/`registryVersion`）、`SnapshotLease`（持有并校验 `RegistrySnapshot`）、`VisibleCapabilitySet`、`PlannerFailure`（`error_type`/`message`/`snapshot_id`/`audit_evidence`）
+- [x] 1.2 `PlannerFailure.error_type` 枚举固化为 `SNAPSHOT_MISSING` / `SNAPSHOT_DRIFT` / `PRINCIPAL_MISMATCH` / `SOURCE_LOAD_ERROR` / `VISIBILITY_DENIED`
 
 ## 2. run_query 入口绑定 GovernedContext
 
