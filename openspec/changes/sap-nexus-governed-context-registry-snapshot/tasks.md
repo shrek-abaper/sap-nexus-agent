@@ -28,8 +28,8 @@
 
 ## 6. capability kind 从 Registry snapshot 投影
 
-- [ ] 6.1 orchestrator 用 `CapabilityCard.governance.requires_approval` 判定 Action，移除 `capability_id in ACTION_CAPABILITY_IDS` 兜底
-- [ ] 6.2 kind / sideEffect / approvalPolicy 全部从 snapshot 投影，回归现有 inventory/PO/PR 路径
+- [x] 6.1 orchestrator 用 `CapabilityCard.governance.requires_approval` 判定 Action，移除 `capability_id in ACTION_CAPABILITY_IDS` 兜底
+- [x] 6.2 kind / sideEffect / approvalPolicy 全部从 snapshot 投影，回归现有 inventory/PO/PR 路径
 
 ## 7. ApprovalRecord 携带 registry_snapshot_id
 

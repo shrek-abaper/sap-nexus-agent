@@ -286,6 +286,15 @@ def run_query(
     if capability_id == INVENTORY_CAPABILITY_ID:
         parameters.setdefault("unit", "EA")
 
+    # Kind from snapshot projection (Design Doc D6): use
+    # governance.requires_approval from the visible CapabilityCard,
+    # not the hardcoded ACTION_CAPABILITY_IDS set.
+    matched_card = next(
+        (c for c in visible_capability_set.cards if c.capability_id == capability_id),
+        None,
+    )
+    is_action = matched_card is not None and matched_card.governance.requires_approval
+
     # Multi-value detection (Design Doc §4.4): expand combinations and await
     # user confirmation before any Gateway call. READ-only: Action capabilities
     # must NOT take this path - they require an ApprovalRecord (single-action
@@ -300,7 +309,7 @@ def run_query(
                 response_text=f"组合数 {len(combinations)} 过多，请缩小范围（如减少物料或工厂）。",
                 match_decision=decision,
             )
-        kind = "Action" if capability_id in ACTION_CAPABILITY_IDS else "Function"
+        kind = "Action" if is_action else "Function"
         call_plan = create_call_plan(capability_id, parameters, kind=kind)
         combos_desc = "; ".join(
             f"material={c.get('material')}, plant={c.get('plant')}" for c in combinations
@@ -313,7 +322,7 @@ def run_query(
             match_decision=decision,
         )
 
-    kind = "Action" if capability_id in ACTION_CAPABILITY_IDS else "Function"
+    kind = "Action" if is_action else "Function"
     call_plan = create_call_plan(capability_id, parameters, kind=kind)
     validation = gateway.validate(call_plan.capability_id, call_plan.parameters)
     if not validation.success:

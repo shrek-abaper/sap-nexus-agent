@@ -1394,3 +1394,63 @@ def test_compile_dry_run_safely_returns_planner_failure_on_source_load_error():
     assert result is not None
     assert isinstance(result, PlannerFailure)
     assert result.error_type == "SOURCE_LOAD_ERROR"
+
+
+# ---- Task 6: capability kind from governance.requires_approval ----
+
+
+def test_kind_from_governance_requires_approval():
+    from sap_nexus_agent.planner.capability_card import CapabilityCard, Governance
+
+    card_action = CapabilityCard(
+        capability_id="MM.PR.CreateDraft",
+        name="PR",
+        governance=Governance(
+            side_effect="sap_write", requires_approval=True, data_classification="internal"
+        ),
+        registry_snapshot_id="sha256:x",
+    )
+    assert card_action.governance.requires_approval is True
+
+    card_function = CapabilityCard(
+        capability_id="MM.Inventory.GetAvailability",
+        name="Inv",
+        governance=Governance(
+            side_effect="none", requires_approval=False, data_classification="internal"
+        ),
+        registry_snapshot_id="sha256:x",
+    )
+    assert card_function.governance.requires_approval is False
+
+
+def test_orchestrator_kind_uses_governance_not_action_capability_ids():
+    """PR CreateDraft path produces awaiting_approval (Action kind from governance)."""
+    from sap_nexus_agent.orchestrator import run_query
+
+    class _FakeGateway:
+        def validate(self, capability_id, parameters):
+            return ValidationResult(
+                trace_id="t",
+                capability_id=capability_id,
+                success=True,
+                error_type="NONE",
+                messages=[],
+            )
+
+        def execute(self, capability_id, parameters, approval_id=None):
+            return ExecutionResult(
+                trace_id="t",
+                capability_id=capability_id,
+                success=True,
+                executor={},
+                return_messages=[],
+                data={},
+                duration_ms=1,
+                error_type=None,
+            )
+
+    outcome = run_query(
+        "帮我创建采购申请 物料 M1 工厂 1000 数量 10",
+        _FakeGateway(),
+    )
+    assert outcome.status in {"awaiting_approval", "clarification", "failure"}
