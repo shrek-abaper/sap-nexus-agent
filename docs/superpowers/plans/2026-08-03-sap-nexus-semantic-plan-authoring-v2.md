@@ -933,7 +933,7 @@ git commit -m "feat(semantic_planning): validate projectionRef/ruleSetRefs again
 - Consumes: `EscalationHandoff`、`RegistrySnapshot`、`SemanticSourceDocuments`、`discover_cards`、`build_goal_spec`、`GoalSpec`/`GoalConstraint`、`CapabilityCard`、`SemanticGraphCompiler`、`validate_plan_graph_v2`、v1 `Gap`/`Flag`/常量/`_node_id_for`/`_plan_id_for`/`_project_node_governance`/`_index_producers_by_fact_type`/`_index_raw_capabilities`/`_compute_gaps`/`_format_issues`。
 - Produces: `compile_plan_v2(handoff, snapshot, sources) -> PlanCompileResult`。
 
-- [ ] **Step 1: 写失败测试——compile_plan_v2 产出双 READ v2 plan（goalConstraint 源）**
+- [x] **Step 1: 写失败测试——compile_plan_v2 产出双 READ v2 plan（goalConstraint 源）**
 
 ```python
 from sap_nexus_agent.match_decision import EscalationHandoff, MatchedIntent
@@ -998,12 +998,12 @@ def test_compile_plan_v2_produces_dual_read_plan_with_goal_constraint_sources():
     )
 ```
 
-- [ ] **Step 2: 运行确认失败**
+- [x] **Step 2: 运行确认失败**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_planner_plan_compiler_v2.py::test_compile_plan_v2_produces_dual_read_plan_with_goal_constraint_sources -q`
 Expected: FAIL（`compile_plan_v2` 未实现，`ImportError`）
 
-- [ ] **Step 3: 实现 `compile_plan_v2` 骨架**
+- [x] **Step 3: 实现 `compile_plan_v2` 骨架**
 
 在 `plan_compiler_v2.py` 追加（复用 v1 内部函数 + goalConstraint authoring + 分区 + v2 validator）：
 
@@ -1218,12 +1218,12 @@ def _strip_v2_fields_for_gap_calc(plan_graph: dict[str, Any]) -> dict[str, Any]:
 
 注意：`_is_read_only` 期望 capability 含 `kind` 与 `governance`（含 `sideEffect`/`requiresApproval`/`approvalPolicy`）。`_project_node_governance` 已把 `capabilityKind` 投影到 node；但 `_is_read_only` 读 `capability["kind"]` 与 `capability["governance"]`，故需用 raw capability 形状。上面 `_partition_nodes` 已构造 `capability_view`。
 
-- [ ] **Step 4: 运行确认通过**
+- [x] **Step 4: 运行确认通过**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_planner_plan_compiler_v2.py::test_compile_plan_v2_produces_dual_read_plan_with_goal_constraint_sources -q`
 Expected: PASS
 
-- [ ] **Step 5: 确定性测试**
+- [x] **Step 5: 确定性测试**
 
 ```python
 def test_compile_plan_v2_is_deterministic():
@@ -1238,7 +1238,7 @@ def test_compile_plan_v2_is_deterministic():
 Run: `.venv/bin/python -m pytest agent/tests/test_planner_plan_compiler_v2.py -q`
 Expected: PASS
 
-- [ ] **Step 6: 提交**
+- [x] **Step 6: 提交**
 
 ```bash
 git add agent/sap_nexus_agent/planner/plan_compiler_v2.py agent/tests/test_planner_plan_compiler_v2.py
