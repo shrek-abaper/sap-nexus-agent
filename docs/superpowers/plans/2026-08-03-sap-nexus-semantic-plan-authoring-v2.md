@@ -1607,7 +1607,7 @@ git commit -m "feat(planner): v2 compiler authors factField source and data edge
 - Consumes: snapshot `relations` 中 `dependsOn` 关系（`capabilityId`=dependent, `dependsOnCapabilityId`=prerequisite）；两端 capability 都在 plan 内 -> author 一条 `dependency` edge（`fromNodeId=prerequisite, toNodeId=dependent`）。
 - Produces: `_topological_order` 按 data+dependency edges 拓扑排序（Kahn 算法，无 edge 时按 nodeId 排序）。
 
-- [ ] **Step 1: 构造含 dependsOn 关系的 fixture + 写失败测试**
+- [x] **Step 1: 构造含 dependsOn 关系的 fixture + 写失败测试**
 
 ```python
 def _sources_with_depends_on() -> tuple[SemanticSourceDocuments, RegistrySnapshot]:
@@ -1659,12 +1659,12 @@ def test_compile_plan_v2_authors_dependency_edge_from_depends_on_relation():
 
 注意：若 `Test.Consumer.GetSummary` 同时有 fact 输入和 dependsOn 关系，会同时产生 data edge + dependency edge。为隔离测试，本 fixture 的 consumer 应**无 fact 输入**（纯 dependsOn）。调整 `_sources_with_depends_on` 的 consumer inputs 为空或 identifier。
 
-- [ ] **Step 2: 运行确认失败**
+- [x] **Step 2: 运行确认失败**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_planner_plan_compiler_v2.py::test_compile_plan_v2_authors_dependency_edge_from_depends_on_relation -q`
 Expected: FAIL（当前不 author dependency edge）
 
-- [ ] **Step 3: 实现 dependency edge authoring + 真拓扑排序**
+- [x] **Step 3: 实现 dependency edge authoring + 真拓扑排序**
 
 在 `_build_plan_graph_v2` 中，nodes 构造后扫描 `sources.relations`：
 
@@ -1725,12 +1725,12 @@ def _topological_order(node_ids: list[str], edges: list[dict[str, Any]]) -> list
     return order if len(order) == len(node_ids) else list(node_ids)
 ```
 
-- [ ] **Step 4: 运行确认通过**
+- [x] **Step 4: 运行确认通过**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_planner_plan_compiler_v2.py -q`
 Expected: PASS
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 ```bash
 git add agent/sap_nexus_agent/planner/plan_compiler_v2.py agent/tests/test_planner_plan_compiler_v2.py
