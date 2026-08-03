@@ -357,19 +357,23 @@ def test_compile_plan_v2_topological_order_no_edges_falls_back_to_node_id_order(
 
 
 def test_compile_plan_v2_topological_order_respects_data_edge():
-    """Data edge (producer -> consumer) must be respected in topologicalOrder."""
+    """Data edge (producer -> consumer) must be respected in topologicalOrder.
+
+    The handoff deliberately lists the CONSUMER first to verify the topo
+    sort reorders based on the data edge, not insertion order.
+    """
     sources, snapshot = _sources_with_fact_field()
     handoff = EscalationHandoff(
         reason="fact-field",
         matched_intents=[
             MatchedIntent(
-                capability_id="MM.Inventory.GetAvailability",
-                parameters={"material": "M1", "plant": "5300"},
+                capability_id="Test.Consumer.GetSummary",
+                parameters={},
                 missing=[],
             ),
             MatchedIntent(
-                capability_id="Test.Consumer.GetSummary",
-                parameters={},
+                capability_id="MM.Inventory.GetAvailability",
+                parameters={"material": "M1", "plant": "5300"},
                 missing=[],
             ),
         ],
@@ -380,5 +384,6 @@ def test_compile_plan_v2_topological_order_respects_data_edge():
     order = result.plan_graph["topologicalOrder"]
     inv = next(n for n in result.plan_graph["nodes"] if n["capabilityId"] == "MM.Inventory.GetAvailability")
     con = next(n for n in result.plan_graph["nodes"] if n["capabilityId"] == "Test.Consumer.GetSummary")
-    # Producer (inv) must come before consumer (con) due to data edge.
+    # Producer (inv) must come before consumer (con) due to data edge,
+    # even though consumer was listed first in the handoff (insertion order).
     assert order.index(inv["nodeId"]) < order.index(con["nodeId"])

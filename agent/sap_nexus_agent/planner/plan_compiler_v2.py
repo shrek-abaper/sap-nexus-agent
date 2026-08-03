@@ -389,8 +389,51 @@ def _build_node_v2(
 
 
 def _topological_order(node_ids: list[str], edges: list[dict[str, Any]]) -> list[str]:
-    """无 edge 时按 nodeId 排序（确定性）；有 edge 时按拓扑排序。Task 9 强化。"""
-    return list(node_ids) if not edges else list(node_ids)
+    """无 edge 时按 nodeId 顺序（确定性）；有 edge 时按 Kahn 拓扑排序。
+
+    Kahn's algorithm with a sorted ready-queue for deterministic output.
+    Respects both data edges (producer -> consumer) and dependency edges
+    (prerequisite -> dependent): for every edge, ``fromNodeId`` appears
+    before ``toNodeId`` in the result, satisfying the S1 validator's
+    ``_validate_topological_order`` constraint.
+
+    No edges -> fall back to ``list(node_ids)`` (insertion order, deterministic).
+    Cycle fallback -> append unprocessed nodes in sorted order (defensive;
+    cycles are caught by the S1 validator, not by this function).
+    """
+    if not edges:
+        return list(node_ids)
+
+    node_set = set(node_ids)
+    adj: dict[str, list[str]] = {nid: [] for nid in node_ids}
+    in_degree: dict[str, int] = {nid: 0 for nid in node_ids}
+
+    for edge in edges:
+        frm = edge["fromNodeId"]
+        to = edge["toNodeId"]
+        if frm in node_set and to in node_set:
+            adj[frm].append(to)
+            in_degree[to] += 1
+
+    # Kahn's algorithm: always pop the lexicographically smallest ready node
+    # so the output is deterministic across runs.
+    ready = sorted(nid for nid in node_ids if in_degree[nid] == 0)
+    result: list[str] = []
+
+    while ready:
+        node = ready.pop(0)
+        result.append(node)
+        for neighbor in adj[node]:
+            in_degree[neighbor] -= 1
+            if in_degree[neighbor] == 0:
+                ready.append(neighbor)
+        ready.sort()
+
+    # Cycle fallback: append unprocessed nodes in sorted order (defensive).
+    if len(result) < len(node_ids):
+        result.extend(sorted(nid for nid in node_ids if nid not in set(result)))
+
+    return result
 
 
 def _partition_nodes(
