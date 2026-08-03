@@ -387,3 +387,34 @@ def test_compile_plan_v2_topological_order_respects_data_edge():
     # Producer (inv) must come before consumer (con) due to data edge,
     # even though consumer was listed first in the handoff (insertion order).
     assert order.index(inv["nodeId"]) < order.index(con["nodeId"])
+
+
+# ---- Task 10: partition authoring - write Action node isolation ----
+
+
+def test_compile_plan_v2_partitions_write_action_into_action_partition():
+    snapshot = _real_snapshot()
+    sources = _real_sources()
+    handoff = EscalationHandoff(
+        reason="write",
+        matched_intents=[
+            MatchedIntent(
+                capability_id="MM.PR.CreateDraft",
+                parameters={
+                    "material": "M1", "plant": "5100", "quantity": 10,
+                    "unit": "EA", "delivery_date": "2026-08-01",
+                    "purchasing_group": "PG1",
+                },
+                missing=[],
+            )
+        ],
+        utterance="create PR",
+        registry_snapshot_id=snapshot.snapshot_id,
+    )
+    result = compile_plan_v2(handoff, snapshot, sources)
+    pr_nodes = [n for n in result.plan_graph["nodes"] if n["capabilityId"] == "MM.PR.CreateDraft"]
+    assert pr_nodes
+    assert pr_nodes[0]["nodeId"] in result.plan_graph["actionPartition"]
+    assert pr_nodes[0]["nodeId"] not in result.plan_graph["readPartition"]
+    assert pr_nodes[0]["governance"]["requiresApproval"] is True
+    assert pr_nodes[0]["governance"]["capabilityKind"] == "Action"
