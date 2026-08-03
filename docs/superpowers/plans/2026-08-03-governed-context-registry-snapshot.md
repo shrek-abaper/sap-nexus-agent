@@ -62,7 +62,7 @@ base-ref: 3c041d536a5a55c24a53a89a0853bb786f06ff43
 - Consumes: `RegistrySnapshot`、`SemanticSourceDocuments`（from `semantic_planning`）、`CapabilityCard`（from `planner.capability_card`）
 - Produces: `TrustedPrincipal`、`PLACEHOLDER_PRINCIPAL`、`load_principal_from_env`、`GovernedContext`、`SnapshotLease`、`SnapshotDriftError`、`VisibleCapabilitySet`、`PlannerFailure`
 
-- [ ] **Step 1: 编写失败测试 — TrustedPrincipal + PLACEHOLDER_PRINCIPAL**
+- [x] **Step 1: 编写失败测试 — TrustedPrincipal + PLACEHOLDER_PRINCIPAL**
 
 ```python
 # agent/tests/test_governed_context.py
@@ -151,12 +151,12 @@ def test_load_principal_from_env_falls_back_on_malformed_json(monkeypatch):
     assert principal == PLACEHOLDER_PRINCIPAL
 ```
 
-- [ ] **Step 2: 运行测试验证失败**
+- [x] **Step 2: 运行测试验证失败**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_governed_context.py -v`
 Expected: FAIL — `ModuleNotFoundError: No module named 'sap_nexus_agent.governed_context'`
 
-- [ ] **Step 3: 实现 governed_context.py — TrustedPrincipal + PLACEHOLDER + load_principal_from_env**
+- [x] **Step 3: 实现 governed_context.py — TrustedPrincipal + PLACEHOLDER + load_principal_from_env**
 
 ```python
 # agent/sap_nexus_agent/governed_context.py
@@ -222,12 +222,12 @@ def load_principal_from_env() -> TrustedPrincipal:
         return PLACEHOLDER_PRINCIPAL
 ```
 
-- [ ] **Step 4: 运行测试验证通过**
+- [x] **Step 4: 运行测试验证通过**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_governed_context.py::test_placeholder_principal_fields agent/tests/test_governed_context.py::test_load_principal_from_env_defaults_to_placeholder agent/tests/test_governed_context.py::test_load_principal_from_env_parses_valid_json agent/tests/test_governed_context.py::test_load_principal_from_env_falls_back_on_malformed_json -v`
 Expected: PASS (4 tests)
 
-- [ ] **Step 5: 编写失败测试 — GovernedContext + SnapshotLease + SnapshotDriftError**
+- [x] **Step 5: 编写失败测试 — GovernedContext + SnapshotLease + SnapshotDriftError**
 
 ```python
 # 追加到 agent/tests/test_governed_context.py
@@ -282,7 +282,7 @@ def test_snapshot_lease_assert_same_raises_on_drift():
     assert "sha256:different" in str(exc_info.value)
 ```
 
-- [ ] **Step 6: 实现 — GovernedContext + SnapshotLease + SnapshotDriftError**
+- [x] **Step 6: 实现 — GovernedContext + SnapshotLease + SnapshotDriftError**
 
 ```python
 # 追加到 agent/sap_nexus_agent/governed_context.py
@@ -325,12 +325,12 @@ class SnapshotLease:
             raise SnapshotDriftError(self.snapshot_id, other_snapshot_id, stage)
 ```
 
-- [ ] **Step 7: 运行测试验证通过**
+- [x] **Step 7: 运行测试验证通过**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_governed_context.py -v -k "governed_context or snapshot_lease"`
 Expected: PASS (5 tests)
 
-- [ ] **Step 8: 编写失败测试 — VisibleCapabilitySet + PlannerFailure**
+- [x] **Step 8: 编写失败测试 — VisibleCapabilitySet + PlannerFailure**
 
 ```python
 # 追加到 agent/tests/test_governed_context.py
@@ -396,7 +396,7 @@ def test_planner_failure_is_frozen():
         failure.error_type = "SNAPSHOT_DRIFT"  # type: ignore[misc]
 ```
 
-- [ ] **Step 9: 实现 — VisibleCapabilitySet + PlannerFailure**
+- [x] **Step 9: 实现 — VisibleCapabilitySet + PlannerFailure**
 
 ```python
 # 追加到 agent/sap_nexus_agent/governed_context.py
@@ -429,12 +429,12 @@ class PlannerFailure:
     audit_evidence: dict  # {expected_snapshot_id, actual_snapshot_id, principal_id, source_paths, stage}
 ```
 
-- [ ] **Step 10: 运行全部测试验证通过**
+- [x] **Step 10: 运行全部测试验证通过**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_governed_context.py -v`
 Expected: PASS (all tests)
 
-- [ ] **Step 11: Commit**
+- [x] **Step 11: Commit**
 
 ```bash
 git add agent/sap_nexus_agent/governed_context.py agent/tests/test_governed_context.py
@@ -461,7 +461,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 - Consumes: Task 1 的 `TrustedPrincipal`、`PLACEHOLDER_PRINCIPAL`、`GovernedContext`、`SnapshotLease`、`PlannerFailure`、`load_principal_from_env`
 - Produces: `run_query(..., principal=...)` 新签名；`AgentOutcome.planner_failure` 字段
 
-- [ ] **Step 1: 编写失败测试 — run_query 接受 principal 参数并绑定到 GovernedContext**
+- [x] **Step 1: 编写失败测试 — run_query 接受 principal 参数并绑定到 GovernedContext**
 
 ```python
 # 追加到 agent/tests/test_orchestrator.py
@@ -519,12 +519,12 @@ def test_agent_outcome_has_planner_failure_field():
     assert outcome.planner_failure is None
 ```
 
-- [ ] **Step 2: 运行测试验证失败**
+- [x] **Step 2: 运行测试验证失败**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_orchestrator.py::test_run_query_accepts_principal_param agent/tests/test_orchestrator.py::test_agent_outcome_has_planner_failure_field -v`
 Expected: FAIL — `TypeError: run_query() got an unexpected keyword argument 'principal'`
 
-- [ ] **Step 3: 实现 — AgentOutcome 增 planner_failure 字段**
+- [x] **Step 3: 实现 — AgentOutcome 增 planner_failure 字段**
 
 在 `agent/sap_nexus_agent/orchestrator.py` 的 `AgentOutcome` dataclass 末尾（`combinations` 字段之后）添加:
 
@@ -550,7 +550,7 @@ from sap_nexus_agent.governed_context import (
 )
 ```
 
-- [ ] **Step 4: 实现 — run_query 增 principal 参数 + 入口构造 lease/ctx**
+- [x] **Step 4: 实现 — run_query 增 principal 参数 + 入口构造 lease/ctx**
 
 修改 `run_query` 签名（`agent/sap_nexus_agent/orchestrator.py:110`）:
 
@@ -638,7 +638,7 @@ def run_query(
     )
 ```
 
-- [ ] **Step 5: 实现 — workbench_output.py 增 plannerFailure 序列化**
+- [x] **Step 5: 实现 — workbench_output.py 增 plannerFailure 序列化**
 
 在 `agent/sap_nexus_agent/workbench_output.py` 的 `outcome_to_workbench_dict` 函数中，在 `"dryRun"` 行之后添加:
 
@@ -660,7 +660,7 @@ def _planner_failure_to_dict(failure) -> dict[str, object] | None:
     }
 ```
 
-- [ ] **Step 6: 实现 — frontend WorkbenchOutcome 增 plannerFailure 字段**
+- [x] **Step 6: 实现 — frontend WorkbenchOutcome 增 plannerFailure 字段**
 
 在 `frontend/src/runtime/durable/types.ts` 的 `WorkbenchOutcome` type 中，在 `dryRun` 之后添加:
 
@@ -668,17 +668,17 @@ def _planner_failure_to_dict(failure) -> dict[str, object] | None:
   plannerFailure?: Record<string, unknown> | null;
 ```
 
-- [ ] **Step 7: 运行测试验证通过**
+- [x] **Step 7: 运行测试验证通过**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_orchestrator.py::test_run_query_accepts_principal_param agent/tests/test_orchestrator.py::test_run_query_defaults_principal_to_placeholder agent/tests/test_orchestrator.py::test_agent_outcome_has_planner_failure_field -v`
 Expected: PASS (3 tests)
 
-- [ ] **Step 8: 运行现有回归测试确保不破坏**
+- [x] **Step 8: 运行现有回归测试确保不破坏**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_orchestrator.py agent/tests/test_workbench_output.py agent/tests/test_conversation_context.py -v`
 Expected: PASS (all existing tests still pass — new params default None, new field defaults None)
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add agent/sap_nexus_agent/orchestrator.py agent/sap_nexus_agent/workbench_output.py frontend/src/runtime/durable/types.ts agent/tests/test_orchestrator.py
@@ -703,7 +703,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 - Consumes: Task 1 的 `VisibleCapabilitySet`、`GovernedContext`；Task 2 的 `SnapshotLease`
 - Produces: `filter_catalog(catalog, visible_cards) -> IntentCatalog`；`select_capability(parse_result, visible) -> MatchDecision`
 
-- [ ] **Step 1: 编写失败测试 — filter_catalog helper**
+- [x] **Step 1: 编写失败测试 — filter_catalog helper**
 
 ```python
 # 追加到 agent/tests/test_visibility.py
@@ -771,12 +771,12 @@ def test_filter_catalog_preserves_capability_not_in_cards():
     assert filtered.capability_ids == frozenset({"A"})
 ```
 
-- [ ] **Step 2: 运行测试验证失败**
+- [x] **Step 2: 运行测试验证失败**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_visibility.py::test_filter_catalog_keeps_visible_capabilities -v`
 Expected: FAIL — `ImportError: cannot import name 'filter_catalog'`
 
-- [ ] **Step 3: 实现 — filter_catalog helper**
+- [x] **Step 3: 实现 — filter_catalog helper**
 
 在 `agent/sap_nexus_agent/visibility.py` 末尾添加:
 
@@ -804,12 +804,12 @@ def filter_catalog(
 
 在 `__all__` 列表中添加 `"filter_catalog"`。
 
-- [ ] **Step 4: 运行测试验证通过**
+- [x] **Step 4: 运行测试验证通过**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_visibility.py -v -k filter_catalog`
 Expected: PASS (3 tests)
 
-- [ ] **Step 5: 编写失败测试 — select_capability 接受 VisibleCapabilitySet**
+- [x] **Step 5: 编写失败测试 — select_capability 接受 VisibleCapabilitySet**
 
 ```python
 # 追加到 agent/tests/test_capability_selector.py
@@ -867,12 +867,12 @@ def test_select_capability_without_visible_backward_compat():
     assert decision.decision_type == "SELECT"
 ```
 
-- [ ] **Step 6: 运行测试验证失败**
+- [x] **Step 6: 运行测试验证失败**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_capability_selector.py::test_select_capability_accepts_visible_capability_set -v`
 Expected: FAIL — `TypeError: select_capability() got an unexpected keyword argument 'visible'` 或 `AttributeError: registry_snapshot_id`
 
-- [ ] **Step 7: 实现 — select_capability 接 VisibleCapabilitySet**
+- [x] **Step 7: 实现 — select_capability 接 VisibleCapabilitySet**
 
 修改 `agent/sap_nexus_agent/capability_selector.py:42` 的 `select_capability` 签名和函数体:
 
@@ -927,7 +927,7 @@ if TYPE_CHECKING:
             ),
 ```
 
-- [ ] **Step 8: 实现 — orchestrator 中构造 VisibleCapabilitySet 并传给 select_capability**
+- [x] **Step 8: 实现 — orchestrator 中构造 VisibleCapabilitySet 并传给 select_capability**
 
 在 `agent/sap_nexus_agent/orchestrator.py` 的 `run_query` 函数体中，在 `parsed = intent_adapter(text)` 或 `parsed = intent_adapter(text, context)` 之后，`decision = select_capability(parsed)` 之前，添加:
 
@@ -951,17 +951,17 @@ if TYPE_CHECKING:
     decision = select_capability(parsed, visible=visible_capability_set)
 ```
 
-- [ ] **Step 9: 运行测试验证通过**
+- [x] **Step 9: 运行测试验证通过**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_capability_selector.py agent/tests/test_visibility.py -v`
 Expected: PASS
 
-- [ ] **Step 10: 运行回归测试**
+- [x] **Step 10: 运行回归测试**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_orchestrator.py agent/tests/test_eval_runner.py -v`
 Expected: PASS
 
-- [ ] **Step 11: Commit**
+- [x] **Step 11: Commit**
 
 ```bash
 git add agent/sap_nexus_agent/visibility.py agent/sap_nexus_agent/capability_selector.py agent/sap_nexus_agent/orchestrator.py agent/tests/test_visibility.py agent/tests/test_capability_selector.py
@@ -986,7 +986,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 
 > **注意:** Task 3 的 Step 7 已在 `select_capability` 中将 `visible_snapshot_id` 填入 `handoff.registry_snapshot_id`。本 Task 补充专项测试断言非空 + 等于 GovernedContext.snapshotId，并验证 `EscalationHandoff` 类型语义不变（`str`，非 optional，语义非空）。
 
-- [ ] **Step 1: 编写失败测试 — handoff.registry_snapshot_id 非空且等于 visible.snapshot_id**
+- [x] **Step 1: 编写失败测试 — handoff.registry_snapshot_id 非空且等于 visible.snapshot_id**
 
 ```python
 # 追加到 agent/tests/test_capability_selector.py
@@ -1056,12 +1056,12 @@ def test_handoff_snapshot_id_empty_when_no_visible():
     assert decision.handoff.registry_snapshot_id == ""
 ```
 
-- [ ] **Step 2: 运行测试验证通过**
+- [x] **Step 2: 运行测试验证通过**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_capability_selector.py::test_handoff_snapshot_id_is_non_empty_when_visible_provided agent/tests/test_capability_selector.py::test_handoff_snapshot_id_empty_when_no_visible -v`
 Expected: PASS（Task 3 已实现填入逻辑；本 Task 的测试验证语义正确性）
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add agent/tests/test_capability_selector.py
@@ -1087,7 +1087,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 - Consumes: Task 1 的 `SnapshotLease`、`PlannerFailure`、`SnapshotDriftError`；Task 2 的 `AgentOutcome.planner_failure`
 - Produces: `CapabilityCard.registry_snapshot_id` 字段；`_compile_dry_run_safely(handoff, lease) -> DryRunResult | PlannerFailure`
 
-- [ ] **Step 1: 编写失败测试 — CapabilityCard 携带 registry_snapshot_id**
+- [x] **Step 1: 编写失败测试 — CapabilityCard 携带 registry_snapshot_id**
 
 ```python
 # 追加到 agent/tests/test_planner_capability_card.py
@@ -1124,12 +1124,12 @@ def test_discover_cards_binds_registry_snapshot_id():
         assert card.registry_snapshot_id == snapshot.snapshot_id
 ```
 
-- [ ] **Step 2: 运行测试验证失败**
+- [x] **Step 2: 运行测试验证失败**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_planner_capability_card.py::test_capability_card_has_registry_snapshot_id_field -v`
 Expected: FAIL — `TypeError: CapabilityCard.__init__() got an unexpected keyword argument 'registry_snapshot_id'`
 
-- [ ] **Step 3: 实现 — CapabilityCard 增 registry_snapshot_id 字段**
+- [x] **Step 3: 实现 — CapabilityCard 增 registry_snapshot_id 字段**
 
 在 `agent/sap_nexus_agent/planner/capability_card.py:66-88` 的 `CapabilityCard` dataclass 中，在 `inputs` 字段之后添加:
 
@@ -1137,7 +1137,7 @@ Expected: FAIL — `TypeError: CapabilityCard.__init__() got an unexpected keywo
     registry_snapshot_id: str = ""
 ```
 
-- [ ] **Step 4: 实现 — discover_cards 移除 del snapshot，填入 registry_snapshot_id**
+- [x] **Step 4: 实现 — discover_cards 移除 del snapshot，填入 registry_snapshot_id**
 
 在 `agent/sap_nexus_agent/planner/capability_card.py:137` 的 `discover_cards` 函数中:
 
@@ -1162,17 +1162,17 @@ Expected: FAIL — `TypeError: CapabilityCard.__init__() got an unexpected keywo
         )
 ```
 
-- [ ] **Step 5: 运行测试验证通过**
+- [x] **Step 5: 运行测试验证通过**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_planner_capability_card.py -v -k "registry_snapshot_id or discover_cards_binds"`
 Expected: PASS
 
-- [ ] **Step 6: 运行回归测试确保 discover_cards 变更不破坏现有测试**
+- [x] **Step 6: 运行回归测试确保 discover_cards 变更不破坏现有测试**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_planner_capability_card.py agent/tests/test_planner_handoff.py agent/tests/test_planner_plan_compiler.py -v`
 Expected: PASS
 
-- [ ] **Step 7: 编写失败测试 — _compile_dry_run_safely 返回 PlannerFailure on drift**
+- [x] **Step 7: 编写失败测试 — _compile_dry_run_safely 返回 PlannerFailure on drift**
 
 ```python
 # 追加到 agent/tests/test_orchestrator.py
@@ -1252,12 +1252,12 @@ def test_compile_dry_run_safely_returns_planner_failure_on_source_load_error():
     assert result is not None
 ```
 
-- [ ] **Step 8: 运行测试验证失败**
+- [x] **Step 8: 运行测试验证失败**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_orchestrator.py::test_compile_dry_run_safely_returns_planner_failure_on_drift -v`
 Expected: FAIL — `TypeError: _compile_dry_run_safely() got an unexpected keyword argument 'lease'`
 
-- [ ] **Step 9: 实现 — _compile_dry_run_safely 重写: 消费 lease, 返 PlannerFailure**
+- [x] **Step 9: 实现 — _compile_dry_run_safely 重写: 消费 lease, 返 PlannerFailure**
 
 替换 `agent/sap_nexus_agent/orchestrator.py:595-617` 的 `_compile_dry_run_safely` 函数:
 
@@ -1305,7 +1305,7 @@ def _compile_dry_run_safely(
         )
 ```
 
-- [ ] **Step 10: 实现 — orchestrator ESCALATE 路径调用新 _compile_dry_run_safely**
+- [x] **Step 10: 实现 — orchestrator ESCALATE 路径调用新 _compile_dry_run_safely**
 
 修改 `agent/sap_nexus_agent/orchestrator.py:173-189` 的 ESCALATE 路径:
 
@@ -1330,17 +1330,17 @@ def _compile_dry_run_safely(
         )
 ```
 
-- [ ] **Step 11: 运行测试验证通过**
+- [x] **Step 11: 运行测试验证通过**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_orchestrator.py::test_compile_dry_run_safely_returns_planner_failure_on_drift agent/tests/test_orchestrator.py::test_compile_dry_run_safely_returns_planner_failure_on_source_load_error -v`
 Expected: PASS
 
-- [ ] **Step 12: 运行回归测试**
+- [x] **Step 12: 运行回归测试**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_orchestrator.py agent/tests/test_planner_handoff.py agent/tests/test_planner_capability_card.py agent/tests/test_planner_plan_compiler.py agent/tests/test_eval_runner.py -v`
 Expected: PASS
 
-- [ ] **Step 13: Commit**
+- [x] **Step 13: Commit**
 
 ```bash
 git add agent/sap_nexus_agent/planner/capability_card.py agent/sap_nexus_agent/orchestrator.py agent/tests/test_planner_capability_card.py agent/tests/test_orchestrator.py
@@ -1363,7 +1363,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 - Consumes: Task 3 的 `VisibleCapabilitySet.cards`（含 `governance.requires_approval`）
 - Produces: kind 判定不再依赖 `ACTION_CAPABILITY_IDS` 硬编码集合
 
-- [ ] **Step 1: 编写失败测试 — kind 从 governance.requires_approval 判定**
+- [x] **Step 1: 编写失败测试 — kind 从 governance.requires_approval 判定**
 
 ```python
 # 追加到 agent/tests/test_orchestrator.py
@@ -1418,12 +1418,12 @@ def test_orchestrator_kind_uses_governance_not_action_capability_ids():
     assert outcome.status in {"awaiting_approval", "clarification", "failure"}
 ```
 
-- [ ] **Step 2: 运行测试验证通过（部分已有行为）**
+- [x] **Step 2: 运行测试验证通过（部分已有行为）**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_orchestrator.py::test_kind_from_governance_requires_approval -v`
 Expected: PASS（CapabilityCard 已有 governance 字段）
 
-- [ ] **Step 3: 实现 — orchestrator kind 判定从 governance 投影**
+- [x] **Step 3: 实现 — orchestrator kind 判定从 governance 投影**
 
 在 `agent/sap_nexus_agent/orchestrator.py` 的 `run_query` 函数中，需要从 `visible_capability_set` 查找当前 `capability_id` 对应的 card，用 `card.governance.requires_approval` 判定 kind。
 
@@ -1456,17 +1456,17 @@ Expected: PASS（CapabilityCard 已有 governance 字段）
 
 > **注意:** `ACTION_CAPABILITY_IDS` 常量保留（`continue_batch` 仍用于 defense-in-depth guard），但 `run_query` 的 kind 判定不再依赖它。
 
-- [ ] **Step 4: 运行测试验证通过**
+- [x] **Step 4: 运行测试验证通过**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_orchestrator.py -v -k "kind or pr_create or awaiting_approval"`
 Expected: PASS
 
-- [ ] **Step 5: 运行回归测试**
+- [x] **Step 5: 运行回归测试**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_orchestrator.py agent/tests/test_orchestrator_write.py agent/tests/test_eval_runner.py -v`
 Expected: PASS
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add agent/sap_nexus_agent/orchestrator.py agent/tests/test_orchestrator.py
@@ -1491,7 +1491,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 - Consumes: Task 2 的 `GovernedContext.snapshot_id`（通过 `lease.snapshot_id`）
 - Produces: `ApprovalRecord.registry_snapshot_id: str = ""`（optional, 向后兼容）
 
-- [ ] **Step 1: 编写失败测试 — ApprovalRecord registry_snapshot_id 字段**
+- [x] **Step 1: 编写失败测试 — ApprovalRecord registry_snapshot_id 字段**
 
 ```python
 # 追加到 agent/tests/test_approval.py
@@ -1577,12 +1577,12 @@ def test_create_approval_record_accepts_registry_snapshot_id():
     assert record.registry_snapshot_id == "sha256:snap-3"
 ```
 
-- [ ] **Step 2: 运行测试验证失败**
+- [x] **Step 2: 运行测试验证失败**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_approval.py::test_approval_record_has_registry_snapshot_id_field -v`
 Expected: FAIL — `TypeError: ApprovalRecord.__init__() got an unexpected keyword argument 'registry_snapshot_id'`
 
-- [ ] **Step 3: 实现 — ApprovalRecord 增 registry_snapshot_id 字段**
+- [x] **Step 3: 实现 — ApprovalRecord 增 registry_snapshot_id 字段**
 
 在 `agent/sap_nexus_agent/approval.py:26-35` 的 `ApprovalRecord` dataclass 中，在 `status` 字段之后添加:
 
@@ -1590,7 +1590,7 @@ Expected: FAIL — `TypeError: ApprovalRecord.__init__() got an unexpected keywo
     registry_snapshot_id: str = ""
 ```
 
-- [ ] **Step 4: 实现 — from_dict / to_dict 兼容**
+- [x] **Step 4: 实现 — from_dict / to_dict 兼容**
 
 修改 `from_dict`（`approval.py:37-51`），在 return 的 cls(...) 中添加:
 
@@ -1604,7 +1604,7 @@ Expected: FAIL — `TypeError: ApprovalRecord.__init__() got an unexpected keywo
             "registrySnapshotId": self.registry_snapshot_id,
 ```
 
-- [ ] **Step 5: 实现 — create_approval_record 接收 registry_snapshot_id**
+- [x] **Step 5: 实现 — create_approval_record 接收 registry_snapshot_id**
 
 修改 `create_approval_record`（`approval.py:122-140`）签名:
 
@@ -1624,7 +1624,7 @@ def create_approval_record(
         registry_snapshot_id=registry_snapshot_id,
 ```
 
-- [ ] **Step 6: 实现 — orchestrator 调用 create_approval_record 填入 snapshot_id**
+- [x] **Step 6: 实现 — orchestrator 调用 create_approval_record 填入 snapshot_id**
 
 修改 `agent/sap_nexus_agent/orchestrator.py:241-245` 的 `create_approval_record` 调用:
 
@@ -1637,17 +1637,17 @@ def create_approval_record(
         )
 ```
 
-- [ ] **Step 7: 运行测试验证通过**
+- [x] **Step 7: 运行测试验证通过**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_approval.py -v`
 Expected: PASS
 
-- [ ] **Step 8: 运行回归测试**
+- [x] **Step 8: 运行回归测试**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_approval.py agent/tests/test_orchestrator.py agent/tests/test_orchestrator_write.py agent/tests/test_cli_approval.py -v`
 Expected: PASS
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add agent/sap_nexus_agent/approval.py agent/sap_nexus_agent/orchestrator.py agent/tests/test_approval.py
@@ -1673,7 +1673,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 - Consumes: Task 1 的 `load_principal_from_env`；Task 3 的 `filter_catalog`
 - Produces: cli.py 读 env + 过滤 catalog + 传 principal；frontend spawn 时设 env
 
-- [ ] **Step 1: 编写失败测试 — cli.py 读 SAP_NEXUS_PRINCIPAL env**
+- [x] **Step 1: 编写失败测试 — cli.py 读 SAP_NEXUS_PRINCIPAL env**
 
 ```python
 # 追加到 agent/tests/test_cli_context.py（或新建 test_cli_principal.py）
@@ -1696,12 +1696,12 @@ def test_cli_reads_principal_from_env(monkeypatch, capsys):
     assert "status" in payload
 ```
 
-- [ ] **Step 2: 运行测试验证通过（env 默认回退 PLACEHOLDER）**
+- [x] **Step 2: 运行测试验证通过（env 默认回退 PLACEHOLDER）**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_cli_context.py::test_cli_reads_principal_from_env -v`
 Expected: 可能 PASS（默认行为不崩），但需要验证 principal 被正确读取
 
-- [ ] **Step 3: 实现 — cli.py 读 env + filter_catalog + 传 principal**
+- [x] **Step 3: 实现 — cli.py 读 env + filter_catalog + 传 principal**
 
 修改 `agent/sap_nexus_agent/cli.py`，在 imports 中添加:
 
@@ -1752,12 +1752,12 @@ from sap_nexus_agent.semantic_planning import build_registry_snapshot, load_sema
 
 > **注意:** `--context` 路径也需要同样处理。两个路径提取为 helper 或在每处重复。
 
-- [ ] **Step 4: 运行测试验证通过**
+- [x] **Step 4: 运行测试验证通过**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_cli_context.py -v`
 Expected: PASS
 
-- [ ] **Step 5: 编写失败测试 — runLocalPythonAgent 设置 SAP_NEXUS_PRINCIPAL env**
+- [x] **Step 5: 编写失败测试 — runLocalPythonAgent 设置 SAP_NEXUS_PRINCIPAL env**
 
 ```typescript
 // 追加到 frontend/src/runtime/agent-runtime-adapter.test.ts
@@ -1782,7 +1782,7 @@ describe("runLocalPythonAgent principal env", () => {
 });
 ```
 
-- [ ] **Step 6: 实现 — AgentRunnerInput 增 principal 字段**
+- [x] **Step 6: 实现 — AgentRunnerInput 增 principal 字段**
 
 修改 `frontend/src/runtime/agent-runtime-adapter.ts:49-55` 的 `AgentRunnerInput` type:
 
@@ -1797,7 +1797,7 @@ type AgentRunnerInput = {
 };
 ```
 
-- [ ] **Step 7: 实现 — executeRunnerInBackground 传 principal 给 runner**
+- [x] **Step 7: 实现 — executeRunnerInBackground 传 principal 给 runner**
 
 修改 `frontend/src/runtime/agent-runtime-adapter.ts:145-155` 的 `executeRunnerInBackground` 函数，在 `runner` 调用中传入 principal:
 
@@ -1822,7 +1822,7 @@ async function executeRunnerInBackground(
   void executeRunnerInBackground(runId, query, input.conversationId, timestamp, input.principal.principalId, input.principal);
 ```
 
-- [ ] **Step 8: 实现 — runLocalPythonAgent spawn 时设 SAP_NEXUS_PRINCIPAL env**
+- [x] **Step 8: 实现 — runLocalPythonAgent spawn 时设 SAP_NEXUS_PRINCIPAL env**
 
 修改 `frontend/src/runtime/agent-runtime-adapter.ts:767-770` 的 `env` 对象:
 
@@ -1834,17 +1834,17 @@ async function executeRunnerInBackground(
   };
 ```
 
-- [ ] **Step 9: 运行前端测试验证通过**
+- [x] **Step 9: 运行前端测试验证通过**
 
 Run: `npm --prefix frontend run verify`
 Expected: PASS
 
-- [ ] **Step 10: 运行 Python 回归测试**
+- [x] **Step 10: 运行 Python 回归测试**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_cli_context.py agent/tests/test_cli_approval.py agent/tests/test_cli_batch.py -v`
 Expected: PASS
 
-- [ ] **Step 11: Commit**
+- [x] **Step 11: Commit**
 
 ```bash
 git add agent/sap_nexus_agent/cli.py frontend/src/runtime/agent-runtime-adapter.ts agent/tests/test_cli_context.py frontend/src/runtime/agent-runtime-adapter.test.ts
@@ -1866,7 +1866,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 - Consumes: Task 5 的 `discover_cards`（已绑 snapshot + 填入 `registry_snapshot_id`）
 - Produces: negative test 断言 CapabilityCard 不含技术绑定字段
 
-- [ ] **Step 1: 编写 negative test — CapabilityCard 不泄漏技术绑定**
+- [x] **Step 1: 编写 negative test — CapabilityCard 不泄漏技术绑定**
 
 ```python
 # 追加到 agent/tests/test_planner_capability_card.py
@@ -1925,12 +1925,12 @@ def test_capability_card_only_exposes_semantic_fields():
 
 需要在 test 文件头部添加 `import dataclasses`（如果尚未导入）。
 
-- [ ] **Step 2: 运行测试验证通过**
+- [x] **Step 2: 运行测试验证通过**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_planner_capability_card.py::test_capability_card_does_not_leak_technical_bindings agent/tests/test_planner_capability_card.py::test_capability_card_only_exposes_semantic_fields -v`
 Expected: PASS（Task 5 已实现 registry_snapshot_id 字段；现有 CapabilityCard 已无技术绑定字段）
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add agent/tests/test_planner_capability_card.py
@@ -1955,7 +1955,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 - Consumes: Task 1-9 全部实现
 - Produces: visibility leakage = 0 测试、cross-principal 决策层测试、snapshot 漂移/source load 失败/visibility denial 测试、matcher Eval 回归、安全投影回归、openspec validate
 
-- [ ] **Step 1: 编写 visibility leakage = 0 测试**
+- [x] **Step 1: 编写 visibility leakage = 0 测试**
 
 ```python
 # 追加到 agent/tests/test_governed_context.py
@@ -1986,7 +1986,7 @@ def test_visibility_leakage_zero():
     assert "MM.Inventory.GetAvailability" in visible_ids
 ```
 
-- [ ] **Step 2: 编写 cross-principal 决策层 fail-closed 测试**
+- [x] **Step 2: 编写 cross-principal 决策层 fail-closed 测试**
 
 ```python
 # 追加到 agent/tests/test_governed_context.py
@@ -2032,7 +2032,7 @@ def test_cross_principal_governed_context_binding():
     assert ctx_a.snapshot_id == ctx_b.snapshot_id == "sha256:same-snap"
 ```
 
-- [ ] **Step 3: 编写 snapshot 漂移 / source load 失败 / visibility denial 返回结构化 PlannerFailure 测试**
+- [x] **Step 3: 编写 snapshot 漂移 / source load 失败 / visibility denial 返回结构化 PlannerFailure 测试**
 
 ```python
 # 追加到 agent/tests/test_governed_context.py
@@ -2074,52 +2074,52 @@ def test_planner_failure_visibility_denied():
 
 > **注意:** Task 5 的 Step 7 已编写 `_compile_dry_run_safely` 的 drift 和 source load error 测试。本 Step 补充 SNAPSHOT_MISSING 和 VISIBILITY_DENIED 的数据结构验证。
 
-- [ ] **Step 4: 运行所有新增测试**
+- [x] **Step 4: 运行所有新增测试**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_governed_context.py -v`
 Expected: PASS
 
-- [ ] **Step 5: 运行 matcher Eval 6/6 回归**
+- [x] **Step 5: 运行 matcher Eval 6/6 回归**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_eval_runner.py -v`
 Expected: PASS (matcher_cases.yaml 5 active + dry_run 3 active 回归不回退)
 
-- [ ] **Step 6: 运行 inventory/PO/PR 路径回归**
+- [x] **Step 6: 运行 inventory/PO/PR 路径回归**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_orchestrator.py agent/tests/test_orchestrator_write.py agent/tests/test_cli_approval.py agent/tests/test_cli_batch.py agent/tests/test_cli_context.py -v`
 Expected: PASS
 
-- [ ] **Step 7: 运行 CapabilityCard 安全投影回归**
+- [x] **Step 7: 运行 CapabilityCard 安全投影回归**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_planner_capability_card.py agent/tests/test_visibility.py -v`
 Expected: PASS
 
-- [ ] **Step 8: 运行 openspec validate**
+- [x] **Step 8: 运行 openspec validate**
 
 Run: `openspec validate --all --strict`
 Expected: PASS (all specs valid)
 
-- [ ] **Step 9: 运行 openspec list**
+- [x] **Step 9: 运行 openspec list**
 
 Run: `openspec list --json`
 Expected: 输出包含 `sap-nexus-governed-context-registry-snapshot` change
 
-- [ ] **Step 10: 运行 verify-agent-callplan-evidence**
+- [x] **Step 10: 运行 verify-agent-callplan-evidence**
 
 Run: `scripts/verify-agent-callplan-evidence.sh`
 Expected: PASS
 
-- [ ] **Step 11: 运行前端 verify**
+- [x] **Step 11: 运行前端 verify**
 
 Run: `npm --prefix frontend run verify`
 Expected: PASS
 
-- [ ] **Step 12: 运行全量 pytest**
+- [x] **Step 12: 运行全量 pytest**
 
 Run: `.venv/bin/python -m pytest agent/tests -q`
 Expected: PASS (all tests, no regressions)
 
-- [ ] **Step 13: Commit**
+- [x] **Step 13: Commit**
 
 ```bash
 git add agent/tests/test_governed_context.py agent/tests/test_orchestrator.py
