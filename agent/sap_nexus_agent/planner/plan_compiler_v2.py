@@ -220,7 +220,56 @@ def _build_plan_graph_v2(
         {"factTypeId": ft, "producerNodeId": nid}
         for ft, nid in fact_type_to_node.items()
     ]
-    edges: list[dict[str, Any]] = []  # Task 8/9 追加 data/dependency edge
+    edges: list[dict[str, Any]] = []
+    # Second pass: author factField sources + data edges for fact-bound inputs.
+    # For each consumer node's required ``fact`` input, resolve the producer
+    # node (from fact_type_to_node), find the producer output field whose
+    # factTypeRef matches, and author a factField source binding + a 1:1
+    # data edge (S1 validator requires EDGE_INCONSISTENT if missing/mismatched).
+    data_edges: list[dict[str, Any]] = []
+    edge_counter = 0
+    cards_by_id = {c.capability_id: c for c in cards}
+    for node in nodes:
+        card = cards_by_id.get(node["capabilityId"])
+        if card is None:
+            continue
+        for inp in card.inputs:
+            if inp.binding_kind != "fact" or not inp.required:
+                continue
+            fact_type = inp.satisfiable_by_fact_type
+            if fact_type is None:
+                continue
+            producer_node_id = fact_type_to_node.get(fact_type)
+            if producer_node_id is None or producer_node_id == node["nodeId"]:
+                continue
+            producer_cap_id = next(
+                n["capabilityId"] for n in nodes if n["nodeId"] == producer_node_id
+            )
+            producer_raw = raw_capabilities.get(producer_cap_id, {})
+            field_name = _first_fact_field(producer_raw, fact_type)
+            node["parameterBindings"].append(
+                {
+                    "parameterName": inp.name,
+                    "source": {
+                        "kind": "factField",
+                        "producerNodeId": producer_node_id,
+                        "factTypeId": fact_type,
+                        "field": field_name,
+                    },
+                }
+            )
+            data_edges.append(
+                {
+                    "edgeId": f"edge.data.{edge_counter}",
+                    "kind": "data",
+                    "fromNodeId": producer_node_id,
+                    "toNodeId": node["nodeId"],
+                    "factTypeId": fact_type,
+                }
+            )
+            edge_counter += 1
+
+    edges.extend(data_edges)
     topological_order = _topological_order(node_ids, edges)
 
     read_partition, action_partition = _partition_nodes(nodes, raw_capabilities, topological_order)
@@ -249,18 +298,23 @@ def _build_node_v2(
     raw_capability: Mapping[str, Any],
     handoff_parameters: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """v2 node：author goalConstraint + literal 源；factField 在 Task 8 追加。
+    """v2 node: author goalConstraint + literal sources.
 
-    参数源 authoring 规则（identifier 输入，按优先级）：
-    1. 有匹配 GoalConstraint（name + semanticType）-> ``goalConstraint`` 源
-    2. 否则有 handoff 参数值 -> ``literal`` 源（semanticType 从 InputDescriptor
-       取，值从 handoff 参数取）
-    3. 否则 required -> 不绑定（missing_parameter gap by _compute_gaps）
+    factField sources are authored in ``_build_plan_graph_v2``'s second pass
+    (they require cross-node producer resolution + raw output lookup that
+    this function does not have access to).
 
-    与 v1 的差异：v2 对 ``identifier`` 输入不论 ``required`` 均尝试绑定
-    goalConstraint（用户经 handoff 提供的值即便能力声明为可选也应当获得
-    参数溯源），从而保证每个产出节点都有参数源（见 v2 validator
-    PARAMETER_SOURCE_MISSING 仅针对 required 输入）。
+    Parameter source authoring rules (identifier inputs, by priority):
+    1. Matching GoalConstraint (name + semanticType) -> ``goalConstraint`` source
+    2. Else has handoff parameter value -> ``literal`` source (semanticType
+       from InputDescriptor, value from handoff parameter)
+    3. Else required -> unbound (missing_parameter gap by _compute_gaps)
+
+    Unlike v1, v2 attempts goalConstraint binding for ``identifier`` inputs
+    regardless of ``required`` (user-supplied handoff values should get
+    parameter provenance even for optional inputs), ensuring every produced
+    node has a parameter source (v2 validator PARAMETER_SOURCE_MISSING only
+    targets required inputs).
     """
     constraints_by_name = {c.name: c for c in goal.constraints}
     bindings: list[dict[str, Any]] = []
@@ -297,7 +351,7 @@ def _build_node_v2(
                     },
                 }
             )
-        # factField 分支在 Task 8 追加
+        # factField sources are authored in _build_plan_graph_v2's second pass
     return {
         "nodeId": node_id,
         "capabilityId": card.capability_id,
@@ -351,5 +405,22 @@ def _compute_governance_flags_v2(
 
 
 def _strip_v2_fields_for_gap_calc(plan_graph: dict[str, Any]) -> dict[str, Any]:
-    """_compute_gaps 读取 nodes/parameterBindings，v2 字段不影响。返回原 plan_graph。"""
+    """_compute_gaps reads nodes/parameterBindings, v2 fields don't affect it."""
     return plan_graph
+
+
+def _first_fact_field(
+    producer_raw: Mapping[str, Any], fact_type: str
+) -> str:
+    """Find the first producer output field whose factTypeRef matches.
+
+    Returns the output ``name``. The S1 ``_validate_parameter_source``
+    validator checks ``output["name"] == source["field"]`` and
+    ``output.get("factTypeRef") == source["factTypeId"]``. An empty string
+    would fail schema ``minLength: 1`` -> ``FACT_TYPE_MISMATCH``; producers
+    are expected to have a named output for the declared Fact Type.
+    """
+    for output in producer_raw.get("outputs", []):
+        if output.get("factTypeRef") == fact_type and output.get("name"):
+            return output["name"]
+    return ""
