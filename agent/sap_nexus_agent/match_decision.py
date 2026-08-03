@@ -70,6 +70,12 @@ class MatchDecision:
     - ``REJECT``              -> ``error_type``
     - ``SHOW_OPTIONS``        -> ``candidates``
     - ``ESCALATE_TO_PLANNER`` -> ``handoff``
+
+    Runbook 14 replay fields (advisory, for audit trail):
+    - ``envelope_id``       -> links back to the source ``IntentEnvelope``
+    - ``recall_candidates`` -> capability_ids surfaced by the recall stage
+    - ``rerank_evidence``   -> per-candidate score breakdown from rerank
+    - ``discard_reasons``   -> structured reasons for filtered LLM output
     """
 
     decision_type: DecisionType
@@ -80,6 +86,11 @@ class MatchDecision:
     candidates: list[MatchedIntent] | None = None  # SHOW_OPTIONS
     handoff: EscalationHandoff | None = None  # ESCALATE_TO_PLANNER
     rationale: str = ""
+    # Runbook 14 replay fields (advisory). Tuples for immutability.
+    envelope_id: str | None = None
+    recall_candidates: tuple[str, ...] = ()
+    rerank_evidence: tuple[dict[str, object], ...] = ()
+    discard_reasons: tuple[str, ...] = ()
 
     def to_selection_result(self) -> SelectionResult | None:
         """Narrow-view compat: map onto the legacy SelectionResult.
