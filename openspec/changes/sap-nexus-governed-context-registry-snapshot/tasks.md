@@ -17,8 +17,8 @@
 
 ## 4. matcher 绑定非空 snapshotId
 
-- [ ] 4.1 `EscalationHandoff.registry_snapshot_id` 从 `GovernedContext` 填入（非空），不再 `getattr` 默认空串
-- [ ] 4.2 `IntentParseResult` 或 matcher 入口携带 `snapshotId`，使 handoff 与决策可追溯同快照
+- [x] 4.1 `EscalationHandoff.registry_snapshot_id` 从 `GovernedContext` 填入（非空），不再 `getattr` 默认空串
+- [x] 4.2 `IntentParseResult` 或 matcher 入口携带 `snapshotId`，使 handoff 与决策可追溯同快照
 
 ## 5. planner 绑定同一 snapshot + 结构化 fail-closed
 

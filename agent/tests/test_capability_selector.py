@@ -509,3 +509,70 @@ def test_select_capability_without_visible_backward_compat():
     )
     decision = select_capability(parse_result)
     assert decision.decision_type == "SELECT"
+
+
+# ---- Task 4: handoff.registry_snapshot_id non-empty when visible provided ----
+
+
+def test_handoff_snapshot_id_is_non_empty_when_visible_provided():
+    """EscalationHandoff.registry_snapshot_id non-empty when visible provided."""
+    from sap_nexus_agent.intent import IntentParseResult
+    from sap_nexus_agent.match_decision import MatchedIntent
+    from sap_nexus_agent.capability_selector import select_capability
+    from sap_nexus_agent.governed_context import VisibleCapabilitySet
+
+    parse_result = IntentParseResult(
+        intent=None,
+        parameters={},
+        missing_parameters=[],
+        matched_intents=[
+            MatchedIntent(capability_id="MM.Inventory.GetAvailability", parameters={}, missing=[]),
+            MatchedIntent(capability_id="MM.PurchaseOrder.GetList", parameters={}, missing=[]),
+        ],
+    )
+    visible = VisibleCapabilitySet(
+        cards=(
+            CapabilityCard(
+                capability_id="MM.Inventory.GetAvailability",
+                name="Inv",
+                governance=Governance(
+                    side_effect="none", requires_approval=False, data_classification="internal"
+                ),
+            ),
+            CapabilityCard(
+                capability_id="MM.PurchaseOrder.GetList",
+                name="PO",
+                governance=Governance(
+                    side_effect="none", requires_approval=False, data_classification="internal"
+                ),
+            ),
+        ),
+        snapshot_id="sha256:snap-42",
+        principal_id="user-1",
+    )
+    decision = select_capability(parse_result, visible=visible)
+    assert decision.decision_type == "ESCALATE_TO_PLANNER"
+    assert decision.handoff is not None
+    assert decision.handoff.registry_snapshot_id == "sha256:snap-42"
+    assert decision.handoff.registry_snapshot_id != ""
+
+
+def test_handoff_snapshot_id_empty_when_no_visible():
+    """Without visible, handoff.registry_snapshot_id falls back to default (backward compat)."""
+    from sap_nexus_agent.intent import IntentParseResult
+    from sap_nexus_agent.match_decision import MatchedIntent
+    from sap_nexus_agent.capability_selector import select_capability
+
+    parse_result = IntentParseResult(
+        intent=None,
+        parameters={},
+        missing_parameters=[],
+        matched_intents=[
+            MatchedIntent(capability_id="A", parameters={}, missing=[]),
+            MatchedIntent(capability_id="B", parameters={}, missing=[]),
+        ],
+    )
+    decision = select_capability(parse_result)
+    assert decision.decision_type == "ESCALATE_TO_PLANNER"
+    assert decision.handoff is not None
+    assert decision.handoff.registry_snapshot_id == ""
