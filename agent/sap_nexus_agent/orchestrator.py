@@ -267,7 +267,21 @@ def run_query(
         principal_id=effective_principal.principal_id,
     )
 
-    decision = select_capability(parsed, visible=visible_capability_set)
+    # Runbook 14 bridge: if the adapter returned an IntentEnvelope, dispatch
+    # through recall -> rerank -> select_capability_from_envelope. Otherwise
+    # fall back to the legacy IntentParseResult -> select_capability path.
+    # This allows new envelope-based adapters to coexist with legacy ones
+    # during the migration; the BREAKING removal of IntentParseResult is
+    # deferred to a follow-up.
+    from sap_nexus_agent.intent_envelope import IntentEnvelope
+
+    if isinstance(parsed, IntentEnvelope):
+        decision, envelope = _dispatch_envelope(
+            parsed, visible_capability_set, lease
+        )
+    else:
+        decision = select_capability(parsed, visible=visible_capability_set)
+        envelope = None
 
     # REJECT (technical override / unsupported intent): no Gateway.
     if decision.decision_type == "REJECT":
@@ -340,7 +354,12 @@ def run_query(
 
     # SELECT -> CallPlan -> Gateway validate/execute (existing path).
     capability_id = decision.capability_id
-    parameters = dict(decision.parameters or parsed.parameters)
+    # For the envelope path, decision.parameters already carries the goal's
+    # merged parameters; for the legacy path, fall back to parsed.parameters.
+    if envelope is not None:
+        parameters = dict(decision.parameters or {})
+    else:
+        parameters = dict(decision.parameters or parsed.parameters)
     if capability_id == INVENTORY_CAPABILITY_ID:
         parameters.setdefault("unit", "EA")
 
@@ -359,8 +378,15 @@ def run_query(
     # approval). Action batch is a non-goal (Design Doc §2); an Action with
     # multi_parameters falls through to the awaiting_approval path below using
     # base parameters.
-    if parsed.multi_parameters and capability_id not in ACTION_CAPABILITY_IDS:
-        combinations = expand_combinations(parameters, parsed.multi_parameters)
+    #
+    # Envelope path: multi_parameters is not yet carried on IntentEnvelope
+    # (deferred to a follow-up per Task 8.1 note); the legacy path reads it
+    # from parsed.multi_parameters.
+    multi_parameters = (
+        {} if envelope is not None else getattr(parsed, "multi_parameters", {}) or {}
+    )
+    if multi_parameters and capability_id not in ACTION_CAPABILITY_IDS:
+        combinations = expand_combinations(parameters, multi_parameters)
         if len(combinations) > BATCH_COMBINATION_CAP:
             return AgentOutcome(
                 status="clarification",
@@ -838,6 +864,36 @@ def _default_planner_sources() -> tuple[RegistrySnapshot, SemanticSourceDocument
 # ---------------------------------------------------------------------------
 # Runbook 14: cross-turn continuation helpers
 # ---------------------------------------------------------------------------
+
+
+def _dispatch_envelope(
+    envelope: "IntentEnvelope",
+    visible_capability_set: "VisibleCapabilitySet",
+    lease: SnapshotLease,
+) -> "tuple[MatchDecision, IntentEnvelope]":
+    """Run the Runbook 14 envelope pipeline: recall -> rerank -> selector.
+
+    Returns the ``MatchDecision`` and the source ``IntentEnvelope`` (for
+    callers that need to read goal-level fields not carried on the decision).
+    Advisory recall / rerank evidence is attached to the decision's replay
+    fields by ``select_capability_from_envelope``.
+    """
+    from sap_nexus_agent.capability_selector import select_capability_from_envelope
+    from sap_nexus_agent.recall import recall
+    from sap_nexus_agent.rerank import rerank
+    from sap_nexus_agent.registry_loader import load_intent_catalog
+
+    catalog = load_intent_catalog()
+    visible_ids = frozenset(c.capability_id for c in visible_capability_set.cards)
+    recall_candidates = recall(envelope.utterance, visible_ids, catalog)
+    ranked_candidates, rerank_evidence = rerank(recall_candidates, envelope, catalog)
+    decision = select_capability_from_envelope(
+        envelope,
+        recall_candidates=ranked_candidates,
+        rerank_evidence=rerank_evidence,
+        visible_capability_ids=visible_ids,
+    )
+    return decision, envelope
 
 
 def _clear_pending_if_present(
