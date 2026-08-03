@@ -1891,7 +1891,7 @@ git commit -m "feat(planner): v2 compiler raises PlannerFailure on snapshot drif
 **Interfaces:**
 - Produces: `compile_plan_v2_from_handoff(handoff, snapshot, sources) -> PlanCompileResult`（薄封装，调用 `compile_plan_v2`）。
 
-- [ ] **Step 1: 写失败测试——dry-run 输出齐全 + 不调 Gateway**
+- [x] **Step 1: 写失败测试——dry-run 输出齐全 + 不调 Gateway**
 
 ```python
 from unittest.mock import MagicMock
@@ -1925,12 +1925,12 @@ def test_compile_plan_v2_from_handoff_outputs_all_v2_fields_without_gateway(monk
     exploding.assert_not_called()
 ```
 
-- [ ] **Step 2: 运行确认失败**
+- [x] **Step 2: 运行确认失败**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_planner_plan_compiler_v2.py::test_compile_plan_v2_from_handoff_outputs_all_v2_fields_without_gateway -q`
 Expected: FAIL（`compile_plan_v2_from_handoff` 未定义）
 
-- [ ] **Step 3: 在 `handoff.py` 追加入口**
+- [x] **Step 3: 在 `handoff.py` 追加入口**
 
 在 `agent/sap_nexus_agent/planner/handoff.py` 末尾追加（不修改 v1 `compile_dry_run_from_handoff`）：
 
@@ -1951,12 +1951,12 @@ def compile_plan_v2_from_handoff(
     return compile_plan_v2(handoff, snapshot, sources)
 ```
 
-- [ ] **Step 4: 运行确认通过**
+- [x] **Step 4: 运行确认通过**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_planner_plan_compiler_v2.py -q`
 Expected: PASS
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 ```bash
 git add agent/sap_nexus_agent/planner/handoff.py agent/tests/test_planner_plan_compiler_v2.py

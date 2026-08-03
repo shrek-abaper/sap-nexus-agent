@@ -21,8 +21,8 @@
 
 ## 4. v2 dry-run 输出
 
-- [ ] 4.1 暴露 v2 dry-run 输出，携带 plan、gaps、governance、`projectionRef`、`ruleSetRefs`、`snapshotId`
-- [ ] 4.2 验证 v2 dry-run 不调用 Gateway validate / execute，不调用 SAP
+- [x] 4.1 暴露 v2 dry-run 输出，携带 plan、gaps、governance、`projectionRef`、`ruleSetRefs`、`snapshotId`
+- [x] 4.2 验证 v2 dry-run 不调用 Gateway validate / execute，不调用 SAP
 
 ## 5. 测试与 fixtures
 
