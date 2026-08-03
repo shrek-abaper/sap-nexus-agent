@@ -1,7 +1,7 @@
 ## 1. PlanGraph v2 Schema
 
-- [ ] 1.1 新建 `schemas/plan-graph-v2.schema.json`，含 `planGraphVersion: 2`、`readPartition`、`actionPartition`、`projectionRef`、`ruleSetRefs`，以及 `registeredDefault` 参数源种类（v1 的 node/edge/topologicalOrder/goalOutputs 字段保留）
-- [ ] 1.2 验证 v1 `schemas/plan-graph.schema.json` 未改动，且 v1 fixtures 仍能通过其校验
+- [x] 1.1 新建 `schemas/plan-graph-v2.schema.json`，含 `planGraphVersion: 2`、`readPartition`、`actionPartition`、`projectionRef`、`ruleSetRefs`，以及 `registeredDefault` 参数源种类（v1 的 node/edge/topologicalOrder/goalOutputs 字段保留）
+- [x] 1.2 验证 v1 `schemas/plan-graph.schema.json` 未改动，且 v1 fixtures 仍能通过其校验
 
 ## 2. v2 契约与校验器
 

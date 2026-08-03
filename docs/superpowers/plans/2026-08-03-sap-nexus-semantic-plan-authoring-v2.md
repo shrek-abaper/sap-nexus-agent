@@ -67,7 +67,7 @@ base-ref: 6de56e6dac15d9f957db2fab388ca67d0219a24a
 **Interfaces:**
 - Produces: `schemas/plan-graph-v2.schema.json`（`planGraphVersion: const 2`，required 含 `readPartition`/`actionPartition`/`projectionRef`/`ruleSetRefs`，`parameterSource` oneOf 含 `registeredDefaultSource`）。
 
-- [ ] **Step 1: 写 v2 schema 失败测试**
+- [x] **Step 1: 写 v2 schema 失败测试**
 
 新建 `agent/tests/test_semantic_planning_v2.py`，首个测试加载 v2 schema 并断言关键字段：
 
@@ -115,12 +115,12 @@ def test_plan_graph_v2_schema_carries_partition_and_registered_default():
         assert schema["properties"][part]["uniqueItems"] is True
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_semantic_planning_v2.py::test_plan_graph_v2_schema_carries_partition_and_registered_default -q`
 Expected: FAIL（`plan-graph-v2.schema.json` 不存在，`FileNotFoundError`）
 
-- [ ] **Step 3: 创建 v2 schema 文件**
+- [x] **Step 3: 创建 v2 schema 文件**
 
 创建 `schemas/plan-graph-v2.schema.json`。基于 v1 `plan-graph.schema.json` 复制并修改：
 
@@ -147,12 +147,12 @@ Expected: FAIL（`plan-graph-v2.schema.json` 不存在，`FileNotFoundError`）
   ```
 - 其余 `$defs`（node/edge/governance/goalOutput/goalConstraintSource/literalSource/factFieldSource/dataEdge/dependencyEdge/sha256）与 v1 一致。
 
-- [ ] **Step 4: 运行测试确认通过**
+- [x] **Step 4: 运行测试确认通过**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_semantic_planning_v2.py::test_plan_graph_v2_schema_carries_partition_and_registered_default -q`
 Expected: PASS
 
-- [ ] **Step 5: v1 回归守护——断言 v1 schema 未改动**
+- [x] **Step 5: v1 回归守护——断言 v1 schema 未改动**
 
 在同一测试文件追加：
 
@@ -176,7 +176,7 @@ def test_plan_graph_v1_schema_remains_unchanged():
 Run: `.venv/bin/python -m pytest agent/tests/test_semantic_planning_v2.py -q`
 Expected: PASS（2 tests）
 
-- [ ] **Step 6: v1 fixtures 仍通过 v1 schema 校验**
+- [x] **Step 6: v1 fixtures 仍通过 v1 schema 校验**
 
 追加测试，用现有 fixture `agent/tests/fixtures/semantic_planning/plan-material-supply.yaml` 校验 v1 schema 通过、v2 schema 因 `const:2` 拒绝：
 
@@ -203,7 +203,7 @@ def test_v1_fixture_passes_v1_schema_and_fails_v2_schema():
 Run: `.venv/bin/python -m pytest agent/tests/test_semantic_planning_v2.py -q`
 Expected: PASS（3 tests）
 
-- [ ] **Step 7: 提交**
+- [x] **Step 7: 提交**
 
 ```bash
 git add schemas/plan-graph-v2.schema.json agent/tests/test_semantic_planning_v2.py
