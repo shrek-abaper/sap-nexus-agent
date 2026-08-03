@@ -35,6 +35,7 @@ docs/wiki/sap-nexus-agent-technology-selection.md
 docs/wiki/sap-nexus-agent-openharness-semantic-orchestration.md
 docs/wiki/sap-nexus-agent-deerflow-adoption-analysis.md
 docs/wiki/archive/sap-nexus-agent-mm-mvp-notion.md
+docs/superpowers/specs/2026-08-03-sap-nexus-complete-agent-roadmap-design.md
 ```
 
 Key current scope (session-start details; structured maturity overview in the "Architecture Maturity & Current Status" table below):
@@ -68,16 +69,18 @@ Current completed change = sap-nexus-durable-state-foundation (P0B 项1 archived
 Current completed change = sap-nexus-trusted-principal-model (P0B 项2 archived 2026-08-02 at openspec/changes/archive/2026-08-02-sap-nexus-trusted-principal-model/): TrustedPrincipal/PrincipalRole/DataScope server-owned model, PrincipalInjector + LocalPlaceholderPrincipalInjector (injectPrincipal ignores request body, anti-prompt-injection), durable Run/Sessions bind principalId (required, backfill local-user-0001 for legacy), cross-principal fail-closed (read getAgentRunEvents returns [] / write decide+confirm throw not-found, ownership check before lease claim §4.1, getSession + conversationStore.load fail-closed), 4 route handlers server-owned injection (POST/approval/batch/stream); 76 tests pass; main spec merge trusted-principal-scope (ADDED 4) + durable-run-state (MODIFIED principalId binding + list/load filter). 项3 durable-approval-store 已归档（见下行）/ 项4 incremental-sse-reconnect 待续
 Current completed change = sap-nexus-durable-approval-store (P0B 项3 archived 2026-08-02 at openspec/changes/archive/2026-08-02-sap-nexus-durable-approval-store/): FileDurableApprovalStore replacing InMemoryApprovalStore (durable ApprovalRecord persistence + cross-restart recoverAll/reconcile + cross-worker claim/lease anti-replay + LeaseOutcome three-state Claimed/Rejected/ForceClaimed + striped ReentrantLock + FileChannel.lock + atomic tmp+rename + @Primary wiring + @PostConstruct startup recovery); 176 tests pass; main spec merge durable-approval-store (ADDED 4 requirements). 项4 incremental-sse-reconnect 已归档（见下行）
 Current completed change = sap-nexus-incremental-sse-reconnect (P0B 项4 archived 2026-08-02 at openspec/changes/archive/2026-08-02-sap-nexus-incremental-sse-reconnect/): incremental SSE + cursor reconnect (event builders -> async emitter emitEventsFromOutcome/emitApprovalEvents/emitBatchEvents + createAgentRun/decideAgentRunApproval/confirmAgentRunBatch fire-and-forget background executeRunnerInBackground/executeApprovalInBackground/executeBatchInBackground + stream route ReadableStream polling cursor/terminal/backpressure desiredSize + client AgentConsole lastSequence onerror ?cursor=N reconnect + §4.4 rejection run_failed terminal fix + principal auth preserved); 88 tests pass; main spec merge sse-cursor-reconnect (ADDED 4 requirements). P0B row 22 全部 4 项归档完成
-Planned sequence = archived semantic planning foundation -> [P0A hygiene completed] -> S2-A semantic decision hardening (archived) -> S2-B planner dry-run (archived) -> row 19A conversational context (archived) -> row 19B multi-value batch query (archived) -> conditional trusted/durable runtime gate -> PlanGraph-governed read-only composition pilot -> recommendation integration
+Planned sequence = archived semantic planning foundation -> S2-A/S2-B archived -> conversation/batch archived -> P0B four-part foundation archived -> runbooks 13-22 complete Agent delivery
 S3 scheduling input = borrow ready-node/concurrency/timeout/cancel/ledger/trace mechanics only after PlanGraph validation; never infer execution from LLM Tool Calls
 S3 output input = deterministic OutputProjection with freshness, completeness, limitations and Fact lineage; partial failure remains incomplete
-Conditional platform gate = sap-nexus-trusted-durable-runtime-foundation; not required for local S2, required before shared S3, long approval, multi-worker/HA, or non-sandbox WRITE
+Completed platform gate = sap-nexus-trusted-durable-runtime-foundation; all four P0B changes archived 2026-08-02
 Triggered memory candidate = sap-nexus-governed-user-memory-pilot; user preferences only, never business facts, approval, policy, or execution authority
 Live blocker = none for PO OData read; SAP SICF was reactivated and PO live smoke passed
 Deferred Phase 3+ workstream = sap-nexus-capability-matching-contract
 Reserved executor workstream = sap-nexus-sql-read-executor-contract
-Current composition runtime = not implemented; architecture requires multi-capability requests to ESCALATE_TO_PLANNER, and S2-A now reliably produces ESCALATE_TO_PLANNER on multi-goal utterances (matcher Eval 6/6); S3 read-only composition pilot remains gated
-Reserved composition scope = Dynamic Planner and Write composition; S3 read-only execution remains planned, not implemented
+Current composition runtime = not implemented; multi-goal requests produce ESCALATE_TO_PLANNER and a deterministic PlanGraph dry-run, but no PlanExecutor, OutputProjection, recommendation or multi-capability execution exists
+Complete Agent target = runbooks 13-22: governed context -> LLM-first recall -> PlanGraph v2 -> READ executor -> projection -> recommendation -> grounded narrative -> Workbench -> single approved Action -> release gate
+MVP Knowledge/RAG = reserved interface only; no knowledge source, vector store, embedding retrieval or cross-session similar-question retrieval
+Reserved composition scope = general Dynamic Planner, multi-WRITE/Saga, automatic compensation and free LLM Tool Calling
 No branch creation unless user explicitly asks
 ```
 
@@ -91,15 +94,15 @@ No branch creation unless user explicitly asks
 | `Completed Pilot` | sandbox-only write vertical slice | 已完成并归档；保留外部审批、参数快照、反重放和 stateful JCo LUW 基线 |
 | `Completed Foundation` | `sap-nexus-semantic-planning-foundation` | S1 Fact Type、Capability Relation、GoalSpec、PlanGraph、Registry Snapshot、immutable graph 和 deterministic validator 已实现、验证并归档到 `openspec/changes/archive/2026-07-19-sap-nexus-semantic-planning-foundation/` |
 | `Completed Design` | `sap-nexus-planner-dry-run` (S2-A + S2-B) | 五态 `MatchDecision`、多意图/歧义检测、visibility pre-filter、matcher Eval 6/6、progressive `CapabilityCard` + deterministic `PlanCompiler` dry-run 已实现、验证并归档到 `openspec/changes/archive/2026-07-25-sap-nexus-planner-dry-run/`；不执行 Gateway / SAP |
-| `Completed Capability` | `sap-nexus-agent-conversational-context`、`sap-nexus-multi-value-batch-query` | 即时多轮对话上下文（sticky-CLARIFY + `ConversationContext` + 权威/不可信分离注入）和多值批量查询（`multi_parameters` 拆分 + `awaiting_batch_confirm` + `continue_batch` 全链路，READ-only v1）已实现并归档；进程内 session Map，P0B 接手替换为 durable store；详见 runbook 12 |
-| `Next Design` | `sap-nexus-trusted-durable-runtime-foundation` (P0B Conditional Gate) | 共享 S3、长审批、multi-worker/HA 或非 sandbox WRITE 前的硬门禁：trusted principal、durable Run/Approval、ownership/lease、incremental SSE + reconnect；不阻塞本地 S2 |
-| `Planned Pilot` | 只读多能力组合“物料库存 + 采购订单供给概览” | S2 验证后分 change 实施；只允许 `sideEffect=none` Function 和 PlanGraph-governed ready-node scheduling |
-| `Reserved` | `CDS_ADT`、`CDS_ODATA`、`REST_JSON`、`SQL_READ`、Phase 3+ retrieval / rerank、Graph Registry、Dynamic Planner、Write composition | 保留边界和安全约束；Dynamic Planner 仍需关系本体、Dry-run、Read pilot 和规模/需求证据 |
+| `Completed Capability` | `sap-nexus-agent-conversational-context`、`sap-nexus-multi-value-batch-query` | 即时多轮对话上下文和 READ-only 多值批量查询已实现；durable Run/Session 已由 P0B 接管；详见 runbook 12 |
+| `Completed Foundation` | P0B trusted/durable runtime four-part delivery | durable Run/Session、trusted principal、durable approval、ownership/lease、incremental SSE + reconnect 均已归档；它们是完整 Agent 的运行基础，不等于多能力执行 |
+| `Planned` | 完整 Agent Runbooks 13-22 | 受治理上下文、完整意图与能力召回、PlanGraph v2、READ executor、组合事实、建议、grounded narrative、Workbench、单 Action 人审闭环和 E2E release gate |
+| `Reserved` | Knowledge/RAG、跨会话相似问题检索、Phase 3+ embedding retrieval/rerank、Graph Registry、通用 Dynamic Planner、多 WRITE/Saga | 保留接口和安全边界，不进入本轮 MVP；不得将预留描述为已实现 |
 | `Not In Scope` | 任意 RFC / URL / SQL 执行、生产 write action 自动提交、GraphDB / OWL 运行时主链路 | 明确拒绝或另立 change |
 
 近期约束：
 
-- 第二条 live read capability、sandbox write pilot、S1 semantic planning foundation 和 P0A source-of-truth/repository hygiene 均已完成；现在进入 S2-A Semantic MatchDecision Hardening 和 S2-B Planner Dry-run，不继续增加低价值 executor family 预留。
+- 第二条 live read capability、sandbox write pilot、S1、S2-A/S2-B、会话/批量能力和 P0B 均已完成；下一实施入口固定为 runbook 13，不直接跳到 PlanExecutor 或 WRITE。
 - 版本记录和路线图优先体现能力落地、评测回归和 write 纵切，而不是继续增加低成本架构占位。
 - 已有 reserved executor 只保留 fail-closed 边界，不能被解读为当前实现承诺。
 
@@ -118,11 +121,21 @@ Runbooks are numbered by workstream creation order, not by roadmap row or calend
 | `05` | `05-gateway-execution-contract.md` | `v0.2.1` | Archived | `2026-06-28` | Completed and archived unified technical execution request/result, binding dispatcher contract, JCo compatibility, and Gateway redaction / trace consistency |
 | `06` | `06-eval-harness-seed.md` | `v0.2.0` | Implemented | `2026-07-04` | First Eval Harness seed cases and bad case regression contract implemented directly |
 | `07` | `07-odata-gateway-read-pilot.md` | `v0.2.1` | Implemented / Active | `2026-07-09` | OData Gateway Read Pilot plus archived PO item detail/filter activation; live PO smoke passed after SICF reactivation |
-| `08` | `08-capability-matching-contract.md` | `v0.3.0` | S2-A Done / Phase 3+ Scale-up Deferred | `2026-07-25` | S2-A baseline five-state MatchDecision, multi-intent/ambiguity, visibility and matcher Eval done (archived in planner-dry-run); embedding/retrieval/rerank remain Phase 3+ |
+| `08` | `08-capability-matching-contract.md` | `v0.3.2` | Completed / Archived | `2026-08-03` | S2-A five-state matching contract is closed; runbooks 13-14 are successors, while Phase 3+ scale-up remains a separate trigger-based workstream |
 | `09` | `09-sql-read-executor-contract.md` | `v0.2.0` | Reserved | `2026-06-28` | Reserved `SQL_READ` safety boundary; not a near-term runtime priority before Eval seed, second read, and sandbox write pilot |
-| `10` | `10-capability-composition-contract.md` | `v0.3.8` | S2-A/S2-B Archived; S3 Gate Next | `2026-07-25` | S1 archived; P0A hygiene closed; S2-A/S2-B archived in sap-nexus-planner-dry-run (matcher Eval 6/6, dry-run eval 3/3 + 1 pending); shared S3 is gated by trusted/durable runtime and deterministic OutputProjection |
+| `10` | `10-capability-composition-contract.md` | `v0.3.10` | Completed / Archived | `2026-08-03` | S1/S2 composition contract is closed at deterministic PlanGraph dry-run; runbooks 13-22 exclusively own the implementation continuation |
 | `11` | `11-sandbox-write-vertical-slice.md` | `v0.2.26` | Completed / Archived | `2026-07-17` | Sandbox PR `10137471` committed; external approval, Gateway anti-replay/hash/atomic claim, stateful JCo LUW and replay-complete trace verified; main spec `pr-create-action` merged; no additional SAP WRITE |
-| `12` | `12-conversational-context-and-multi-value-batch.md` | `v0.1.0` | Implemented / Archived | `2026-08-01` | Instant multi-turn conversation context (row 19A) + multi-value batch query (row 19B) capability chain registered; conversational-context, llm-intent-enhancement, fix-batch-confirm-loop, multi-value-batch-service-integration archived; READ-only v1, process-local, pre-P0B |
+| `12` | `12-conversational-context-and-multi-value-batch.md` | `v0.1.2` | Completed / Archived | `2026-08-03` | Conversation and READ-only batch workstream is closed; P0B supersedes its storage baseline and runbook 13 is the only current Agent entry |
+| `13` | `13-governed-context-registry-snapshot.md` | `v0.1.0` | Planned | `2026-08-03` | Bind principal, visibility, matcher, planner, executor and approval to one RegistrySnapshot |
+| `14` | `14-governed-intent-capability-recall.md` | `v0.1.1` | Planned | `2026-08-03` | LLM-first IntentEnvelope and governed closed-set capability recall; no Knowledge/RAG in MVP |
+| `15` | `15-semantic-plan-authoring-v2.md` | `v0.1.0` | Planned | `2026-08-03` | Compile advisory goals into deterministic PlanGraph v2 with parameter provenance and READ/WRITE partition |
+| `16` | `16-read-plan-executor.md` | `v0.1.0` | Planned | `2026-08-03` | Execute validated READ nodes with ready-node scheduling and durable ledger |
+| `17` | `17-composite-fact-output-projection.md` | `v0.1.0` | Planned | `2026-08-03` | Deterministic ReasoningFact[] to MaterialSupplySnapshot projection |
+| `18` | `18-recommendation-decision-plan.md` | `v0.1.0` | Planned | `2026-08-03` | Registered RuleSet to RecommendationPlan and at most one ActionProposal |
+| `19` | `19-grounded-narrative-orchestration.md` | `v0.1.0` | Planned | `2026-08-03` | Claims/evidence/limitations narrative envelope with template fallback |
+| `20` | `20-workbench-plan-evidence-experience.md` | `v0.1.0` | Planned | `2026-08-03` | Full plan, node, fact, recommendation, narrative, approval and replay UX |
+| `21` | `21-read-to-write-action-governance.md` | `v0.1.0` | Planned | `2026-08-03` | Human-approved, exactly-once single Action after multi-READ reasoning |
+| `22` | `22-end-to-end-agent-eval-release-gate.md` | `v0.1.0` | Planned | `2026-08-03` | L1 single-capability, L2 multi-READ and L3 READ-to-WRITE release gates |
 
 Versioning rules:
 

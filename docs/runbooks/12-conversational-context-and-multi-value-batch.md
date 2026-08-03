@@ -5,31 +5,33 @@
 | Field | Value |
 |---|---|
 | Runbook | `12-conversational-context-and-multi-value-batch` |
-| Version | `v0.1.0` |
-| Status | `Implemented / Archived` |
+| Version | `v0.1.2` |
+| Status | `Completed / Archived` |
 | Created | `2026-08-01` |
-| Updated | `2026-08-01` |
-| Last Change | Documentation-governance pass (2026-08-01): retroactively records four already-archived changes that complete the “stateful multi-turn + multi-value batch query” capability chain. No runtime change in this pass. |
+| Updated | `2026-08-03` |
+| Last Change | Current-state correction after P0B: preserves the original pre-P0B feature record while recognizing durable Run/Session, trusted principal, durable approval and incremental SSE as archived foundations. No runtime change. |
 | Workstream | Instant multi-turn conversation context (row 19A) + multi-value batch query (row 19B) |
 | Related Changes | `sap-nexus-agent-conversational-context` (archived 2026-07-26); `sap-nexus-agent-llm-intent-enhancement` (archived 2026-07-26); `fix-batch-confirm-loop` (archived 2026-07-27); `multi-value-batch-service-integration` (archived 2026-07-27) |
-| Current Phase | All four changes archived; batch query end-to-end usable (READ-only v1); next is P0B durable runtime or S3 read-composition pilot |
+| Current Phase | Closed; do not resume implementation from this runbook |
+| Successor | Runbook 13 starts the complete Agent workstream; later runbooks own multi-capability execution |
+| Reopen Policy | Do not reopen; WRITE batch semantics require a separate future change |
 
 ---
 
 ## 1. Session Goal
 
-This runbook is the continuation entry for two connected capabilities landed between 2026-07-26 and 2026-07-27:
+This archived runbook records two connected capabilities delivered between 2026-07-26 and 2026-07-27:
 
 1. **Instant multi-turn conversation context** (row 19A): close the gap where a stateless single-turn intent parser cannot resume a `CLARIFY` after the user supplies bare parameters in the next turn.
 2. **Multi-value batch query** (row 19B): let a single utterance carrying multiple values for one parameter (e.g. several materials) fan out to N atomic executions after explicit user confirmation.
 
-Both are lightweight, process-local, READ-only v1, and intentionally pre-P0B: no persistence, no cross-restart, no multi-worker sharing. The `ConversationState` interface is aligned with technical-architecture §4.2.1 three-layer stratification so P0B can swap the in-memory Map for a durable store without restructuring the advisory layer.
+Both were delivered as lightweight, process-local, READ-only v1 features before P0B. P0B has since replaced Run/Session state with durable stores and added trusted principal, durable approval and incremental SSE/reconnect; this historical runbook does not redefine those newer runtime contracts.
 
 The four changes form one chain: `conversational-context` lays the session/state foundation -> `llm-intent-enhancement` adds LLM coreference resolution and multi-value split (but stops at the orchestrator layer) -> `fix-batch-confirm-loop` stops a death loop the second change introduced -> `multi-value-batch-service-integration` wires `continue_batch` through to workbench/CLI/API/SSE so the batch feature is end-to-end usable.
 
 ---
 
-## 2. Source Of Truth
+## 2. Archive Sources and Verified Baseline
 
 ```text
 AGENTS.md
@@ -44,10 +46,10 @@ agent/sap_nexus_agent/llm_intent.py
 agent/sap_nexus_agent/intent.py
 ```
 
-Verified baseline:
+Verified feature baseline and later runtime supersession:
 
 - `PendingClarification` and `ConversationState` are advisory context, never execution authority; once `SELECT` fires a `CallPlan` / `ApprovalRecord`, execution authority stays with the existing state machine.
-- The session state lives only in the Workbench backend process (`sessions: Map<conversationId, SessionState>`); the Python Agent remains a one-shot subprocess fed “current query + context” each turn.
+- The original feature stored session state in the Workbench backend process; P0B later replaced it with durable Run/Session stores. The Python Agent remains a structured runner fed current query plus governed context.
 - LLM history re-injection applies the authority/untrusted-data separation contract (static rules as `SystemMessage`; historical text as a hidden `<durable_context_data>` `HumanMessage`).
 - `awaiting_batch_confirm` returns combinations without executing any Gateway call; `continue_batch` runs each combination through the existing single-capability `SELECT -> CallPlan -> Gateway validate/execute` path.
 - v1 is READ-only: Actions (`sideEffect=sap_write`) fall to `awaiting_approval` and do not enter `continue_batch`.
@@ -88,7 +90,7 @@ Verified baseline:
 
 - Cross-turn `ESCALATE_TO_PLANNER` disambiguation and `SHOW_OPTIONS` selection.
 - Coexistence of approval-pending with CLARIFY-pending.
-- Cross-restart persistence, multi-worker sharing, long-conversation compaction (all P0B).
+- Original v1 excluded cross-restart persistence and multi-worker sharing; P0B later delivered durable Run/Session state. Long-conversation compaction remains separate.
 - WRITE batch approval semantics (per-combo approval snapshot / hash / atomic claim).
 - Server-side `BatchRecord` audit, combinations pagination/streaming, per-combo `gateway_execute` SSE event.
 - `BATCH_COMBINATION_CAP` as a configurable value (currently hardcoded `20`).
@@ -98,7 +100,7 @@ Verified baseline:
 ## 4. Safety Boundaries
 
 - `ConversationState` and `awaiting_batch_confirm` are advisory context, never execution authority; they do not interact with the `CallPlan` / `ApprovalRecord` lifecycle.
-- The session state and combinations are process-local only; no cross-restart persistence or multi-worker sharing before P0B.
+- P0B now owns durable Run/Session state. Batch combinations retain their explicit READ-only continuation contract and must not be treated as PlanExecution or WRITE authority.
 - LLM history re-injection must apply the authority/untrusted-data separation contract; the rule path does not call the LLM and is unaffected.
 - `awaiting_batch_confirm` must return combinations without executing; explicit user confirmation is required before `continue_batch`.
 - v1 is READ-only: Actions fall to `awaiting_approval` and do not enter `continue_batch`; WRITE batch approval semantics are a separate future design.
@@ -107,7 +109,7 @@ Verified baseline:
 
 ---
 
-## 5. Acceptance Criteria
+## 5. Archived Acceptance Criteria
 
 | Area | Acceptance | Evidence |
 |---|---|---|
@@ -129,16 +131,14 @@ Verified baseline:
 
 ---
 
-## 6. Next Start Here
+## 6. Archive Handoff - Do Not Reopen
 
 1. Re-read technical-architecture §4.2.1 / §4.2.2 / §4.2.3, this runbook, and runbook 08 §4.1.1.
 2. Check `git status --short` and `openspec list --json`; no active change is assumed.
 3. All four changes are archived; the multi-value batch query capability is end-to-end usable (READ-only v1).
-4. Choose the next workstream:
-   - **P0B `sap-nexus-trusted-durable-runtime-foundation`** (conditional gate): replace the process-local `sessions` Map with a durable store; required before shared S3, long approval, multi-worker/HA, or non-sandbox WRITE. The `ConversationState` interface is already aligned for this.
-   - **S3 `sap-nexus-read-composition-pilot`** (planned): PlanGraph-governed ready-node lifecycle + deterministic `OutputProjection` for the “material inventory + purchase-order supply overview” scenario; local single-user PoC may defer durable.
-   - **WRITE batch approval semantics** (future): per-combo approval snapshot/hash/atomic claim for batch Actions; must not reuse the READ batch path.
-5. Non-blocking engineering cleanup surfaced as verify SUGGESTIONs (low-risk tweak candidates): `_requires_safe_fallback` dead-code removal, `multiParameters` non-dict guard, `continue_batch` error-handling hardening (first-error-only on full failure, silent None-fact drop), PO descriptor `requiredOneOf`, per-combo `gateway_execute` SSE event, `BATCH_COMBINATION_CAP` as config.
+4. P0B is complete. Continue from runbook 13, then follow runbooks 14-22; do not skip directly to PlanExecutor or WRITE.
+5. WRITE batch approval remains separate future scope and must not reuse the READ batch path.
+6. Non-blocking engineering cleanup surfaced as verify SUGGESTIONs (low-risk tweak candidates): `_requires_safe_fallback` dead-code removal, `multiParameters` non-dict guard, `continue_batch` error-handling hardening (first-error-only on full failure, silent None-fact drop), PO descriptor `requiredOneOf`, per-combo `gateway_execute` SSE event, `BATCH_COMBINATION_CAP` as config.
 
 ---
 
@@ -160,7 +160,9 @@ Verified baseline:
 
 - None.
 
-### Next Start Here
+### Historical Handoff - Superseded
+
+> Superseded by completed P0B foundations and runbooks 13-22. Retained only as the `2026-08-01` closeout record.
 
 1. P0B durable runtime OR S3 read-composition pilot OR WRITE batch approval semantics - user decision.
 2. Optional low-risk cleanup tweak from verify SUGGESTIONs.

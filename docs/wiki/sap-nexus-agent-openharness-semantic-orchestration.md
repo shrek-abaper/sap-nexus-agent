@@ -5,16 +5,23 @@
 | 字段 | 内容 |
 |---|---|
 | 文档名称 | `SAP Nexus Agent OpenHarness 对比与语义智能编排路线` |
-| 当前版本 | `v0.1.2` |
+| 当前版本 | `v0.1.3` |
 | 状态 | `Decision Baseline` |
 | 创建日期 | `2026-07-18` |
-| 最近更新 | `2026-07-24` |
+| 最近更新 | `2026-08-03` |
 | 维护目录 | `docs/wiki/` |
 | 文档定位 | 记录 OpenHarness 对比结论，并定义 SAP Nexus 后续语义规划、只读多能力组合和受治理能力演进路线 |
 | 关联技术架构 | `docs/wiki/sap-nexus-agent-technical-architecture.md` |
 | 关联技术选型 | `docs/wiki/sap-nexus-agent-technology-selection.md` |
 | 关联实施路线 | `docs/wiki/sap-nexus-agent-implementation-roadmap.md` |
-| 关联 Runbook | `docs/runbooks/10-capability-composition-contract.md` |
+| 关联 Runbook | 当前 `docs/runbooks/13-governed-context-registry-snapshot.md`；历史 `docs/runbooks/10-capability-composition-contract.md` |
+
+## 版本记录
+
+| 版本 | 日期 | 变更摘要 | 决策状态 |
+|---|---|---|---|
+| `v0.1.3` | `2026-08-03` | 同步 S2-A/S2-B/P0B 已归档事实，并将原 S3 单一 pilot 拆分入口收口到 Runbooks 13-19；当前开发入口改为 Runbook 13，OpenHarness 仍仅作设计参考 | 当前决策基线 |
+| `v0.1.2` | `2026-07-24` | 校准 S2-A 五态匹配与 S2-B dry-run 的顺序、visibility 和 deterministic authority 边界 | 历史决策基线 |
 
 ---
 
@@ -250,7 +257,7 @@ Existing Gateway Family
 
 ### S2-A：Semantic MatchDecision Hardening
 
-建议作为 `sap-nexus-planner-dry-run` 的第一 milestone，不另建执行 runtime。
+该范围已作为 `sap-nexus-planner-dry-run` 的第一 milestone 完成并归档，未另建执行 runtime。
 
 范围：
 
@@ -263,7 +270,7 @@ Existing Gateway Family
 
 ### S2-B：Planner Dry-run
 
-建议 change：`sap-nexus-planner-dry-run`
+已完成 change：`sap-nexus-planner-dry-run`
 
 范围：
 
@@ -357,7 +364,7 @@ Dynamic Planner 仍只能在已发布关系图内工作；它不能生成任意 
 - 部分 Read 失败必须标注 incomplete，不得把部分事实叙述为完整业务结论。
 - request-owned user / tenant / role / approval actor 不得成为授权依据；身份或授权 provider 失败时执行 fail-closed。
 - ConversationState 可摘要；PlanExecutionState、Approval 和 Evidence 不得被 summary、Memory 或 generic checkpoint 重建。
-- 当前进程内 Run/Approval 和 buffered SSE 只属于本地 MVP，不是共享 S3 或生产 WRITE 的 readiness evidence。
+- P0B 已交付本地 durable Run/Approval 和 incremental SSE/reconnect；该 file/JSONL、单 worker 基线仍不是 multi-worker/HA 或生产 WRITE 的 readiness evidence。
 - 组合链含 Write 时，未来必须声明 `partialFailurePolicy` 和 `compensationPolicy`，本轮不实现。
 
 ---
@@ -405,13 +412,13 @@ Dynamic Planner 仍只能在已发布关系图内工作；它不能生成任意 
 | 新增 OpenHarness 代码依赖 | 拒绝 |
 | 首个场景：物料库存 + 采购订单供给概览 | 已确认 |
 | S1 Semantic Planning Foundation | 已实现 / 已验证 / 已归档 |
-| P0A Source-of-truth / repository hygiene | 当前文档与仓库卫生前置；不改变 runtime |
-| S2-A Semantic MatchDecision Hardening | 下一业务 design 的第一 milestone；五态决策、多意图/歧义、visibility 和 matcher Eval |
-| S2-B Planner Dry-run | 第二 milestone；progressive CapabilityCard + deterministic compiler；dry-run only |
-| Trusted / Durable Runtime | 本地 S2 不要求；共享 S3、长审批、multi-worker/HA 或非 sandbox WRITE 前的条件门禁 |
-| S3 Read-only Composition Pilot | S2 验证后实施；增加 deterministic OutputProjection 和 incomplete/freshness 语义 |
+| P0A Source-of-truth / repository hygiene | 已完成；不改变 runtime |
+| S2-A Semantic MatchDecision Hardening | 已完成并归档；五态决策、多意图/歧义、visibility 和 matcher Eval |
+| S2-B Planner Dry-run | 已完成并归档；progressive CapabilityCard + deterministic compiler；dry-run only |
+| Trusted / Durable Runtime | P0B 四项基础已完成并归档；后续直接复用 |
+| S3 Read-only Composition Pilot | 已拆分为 Runbooks 13-19，不再作为单一活动 change |
 | 自动本体/能力发布 | 禁止；只允许 draft + human publish |
 | Dynamic Planner | Phase 3+ / Reserved |
 | Write composition | Reserved；保持逐节点审批和事务边界 |
 
-下一步先完成 P0A source-of-truth / repository hygiene 收敛，再为 `sap-nexus-planner-dry-run` 创建正式 design。S2-A 先补齐五态 MatchDecision、多意图/歧义、visibility 和 matcher Eval；S2-B 再覆盖 progressive CapabilityCard discovery、GoalSpec/PlanDraft candidate、deterministic PlanCompiler 和 dry-run evidence。两者都不调用 Gateway 或 SAP；trusted/durable runtime、S3 execution、Memory、Dynamic Planner 和 Write composition 均保持独立 change。
+P0A、S2-A/S2-B 和 P0B 均已完成并归档。当前从 Runbook 13 开始，按 `13 -> 14 -> 15 -> 16 -> 17 -> 18 -> 19 -> 20 -> 21 -> 22` 完整交付；OpenHarness 继续只提供机制参考，不成为 runtime、执行权威或自由 Tool Calling 入口。

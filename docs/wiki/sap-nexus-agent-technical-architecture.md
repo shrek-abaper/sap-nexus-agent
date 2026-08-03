@@ -5,21 +5,24 @@
 | 字段 | 内容 |
 |---|---|
 | 文档名称 | `SAP Nexus Agent 技术架构文档` |
-| 当前版本 | `v0.2.20` |
+| 当前版本 | `v0.2.22` |
 | 状态 | `Product Architecture Baseline Draft` |
 | 创建日期 | `2026-06-18` |
-| 最近更新 | `2026-08-01` |
+| 最近更新 | `2026-08-03` |
 | 维护目录 | `docs/wiki/` |
 | 文档定位 | SAP Nexus Agent 从 MVP 到量产交付的长期技术架构指导文件 |
 | 关联路线 | `docs/wiki/sap-nexus-agent-implementation-roadmap.md` |
 | 关联知识导入 | `docs/wiki/archive/sap-nexus-agent-mm-mvp-notion.md` |
 | 关联智能编排路线 | `docs/wiki/sap-nexus-agent-openharness-semantic-orchestration.md` |
 | 关联 DeerFlow 决策 | `docs/wiki/sap-nexus-agent-deerflow-adoption-analysis.md` |
+| 关联完整 Agent 设计 | `docs/superpowers/specs/2026-08-03-sap-nexus-complete-agent-roadmap-design.md` |
 
 ## 版本记录
 
 | 版本 | 日期 | 变更摘要 | 决策状态 |
 |---|---|---|---|
+| `v0.2.22` | `2026-08-03` | 完成跨 AI 开发交接入口收口：当前成熟度继续以 runbook README 为准，完整 Agent 目标以 2026-08-03 design 为准，当前实施只从 Runbook 13 启动；Runbook 10 保留为已归档 S1/S2 历史契约，不再承担当前入口职责 | 当前架构基线 |
+| `v0.2.21` | `2026-08-03` | 固化完整 Agent 目标链与 runbooks 13-22：同快照治理、LLM-first 意图与能力召回、PlanGraph v2、READ PlanExecutor、确定性 OutputProjection、RuleSet/Recommendation、grounded narrative、Workbench、单 Action 人审闭环和 E2E release gate；Knowledge/RAG 仅预留接口、不进入 MVP；同步 S2-A/S2-B/P0B 已归档事实并将 D-1 标记已解决 | 当前架构基线 |
 | `v0.2.20` | `2026-08-01` | 澄清意图识别与能力匹配的主次契约：§4.3 与 L2 表明确意图识别（`IntentParseResult`）以 LLM 为主路径（`hybrid` 默认，LLM 优先，仅 `LlmUnavailable` 回退规则，对齐 spec `conversational-context`）；能力匹配 / 选择（`MatchDecision`）仍以 deterministic 规则 + Registry 为权威，LLM 不替代 governance 判断 | 当前架构基线 |
 | `v0.2.19` | `2026-08-01` | 新增 §4.2.3 多值参数批量查询（READ-only v1）：登记 `multi_parameters` 拆分 -> `expand_combinations` 笛卡尔积 -> `awaiting_batch_confirm`（不执行）-> `continue_batch` 逐组合执行 -> `narrate_inventory_facts` 聚合的 orchestrator 层批量协调契约；定义 `BATCH_COMBINATION_CAP=20` 软上限、v1 READ-only 边界（Action 落 `awaiting_approval`）、combinations 进程内非持久化（P0B 替换）、`fix-batch-confirm-loop` 死循环修复；同步 `multi-value-batch-service-integration` + `sap-nexus-agent-llm-intent-enhancement` + `fix-batch-confirm-loop` 已归档事实 | 当前架构基线 |
 | `v0.2.18` | `2026-07-25` | 新增 §4.2.2 即时多轮与会话上下文：把 `ConversationState` 的轻量实例（`PendingClarification`）从 P0B durable runtime 中独立出来，定义 sticky-CLARIFY 跨轮延续机制、历史重注入的权威/不可信分离契约（借鉴 DeerFlow `DurableContextMiddleware`）和 `IntentAdapter` 签名扩展方向；明确即时多轮先于 P0B、不引入持久化、不改变 runtime 架构 | 当前架构基线 |
@@ -59,6 +62,7 @@
 - **Agent 不是 ReAct-first / LLM + tool calling**：LLM 可提出候选理解或推理步骤，但不能自由选择工具、生成 `rfcName`、跳过校验或直接执行 SAP。
 - **SAP / external access method 是执行器绑定细节**：对 Agent 暴露的是注册能力 `capabilityId`，不是裸 `rfcName`、CDS view、ADT URL、OData service URL、REST endpoint、JSON payload 或 SQL text。
 - **内部控制台是 Agent 可观测入口**：前端不是绕过 Harness 的 SAP 工具页，而是面向 Agent 运行、审计、回放和人审状态的 Workbench Console。
+- **Knowledge/RAG 在当前 MVP 仅预留边界**：不连接知识源、向量库或跨会话相似问题检索，不把检索内容作为能力、参数、事实、规则、权限或审批权威。
 
 本文档回答：
 
@@ -71,7 +75,7 @@
 
 架构预留不是零成本。每个 reserved executor family 都是未来实现、评审、评测和运维的隐含契约。已有 reserved executor 只保留 fail-closed 边界，不能被解读为当前实现承诺。
 
-成熟度等级（`Live` / `Completed Pilot` / `Completed Foundation` / `Next Design` / `Planned Pilot` / `Reserved` / `Not In Scope`）定义架构占位的性质与门禁要求，属于长期基线。各项能力的当前成熟度归属、已实现/未实现标注和近期 next step 不在本文档维护，统一见 `docs/runbooks/README.md` "Architecture Maturity & Current Status" 与 `docs/runbooks/10-capability-composition-contract.md`；阶段生命周期标签由 `docs/wiki/sap-nexus-agent-implementation-roadmap.md` 承载。架构基线只保留 fail-closed 边界、分层职责与长期能力形态，不随进度变化频繁改版。
+成熟度等级（`Live` / `Completed Pilot` / `Completed Foundation` / `Next Design` / `Planned Pilot` / `Reserved` / `Not In Scope`）定义架构占位的性质与门禁要求，属于长期基线。各项能力的当前成熟度归属、已实现/未实现标注和近期 next step 不在本文档维护，统一见 `docs/runbooks/README.md` "Architecture Maturity & Current Status"；完整 Agent 目标契约见 `docs/superpowers/specs/2026-08-03-sap-nexus-complete-agent-roadmap-design.md`，当前实施入口为 `docs/runbooks/13-governed-context-registry-snapshot.md`。阶段生命周期标签由 `docs/wiki/sap-nexus-agent-implementation-roadmap.md` 承载。`docs/runbooks/10-capability-composition-contract.md` 仅保留为已归档 S1/S2 历史契约，不得作为活动入口。架构基线只保留 fail-closed 边界、分层职责与长期能力形态，不随进度变化频繁改版。
 
 ---
 
@@ -111,6 +115,25 @@ User Intent
 -> ActionResult
 -> AuditTrace / Replay
 ```
+
+当前完整 Agent MVP 目标链在既有单能力纵切之上扩展为：
+
+```text
+durable conversation + TrustedPrincipal + RegistrySnapshot
+-> LLM-first IntentEnvelope candidate
+-> visibility-filtered registered capability recall
+-> deterministic MatchDecision
+-> GoalSpec / PlanDraft candidate
+-> deterministic PlanGraph
+-> READ PlanExecutor -> ReasoningFact[]
+-> deterministic OutputProjection
+-> registered RuleSet -> RecommendationPlan
+-> grounded NarrativeEnvelope
+-> optional single ActionProposal
+-> Human Approval -> exactly-once Action
+```
+
+当前代码事实只完成到 `MatchDecision` 与 PlanGraph dry-run；`PlanExecutor`、`OutputProjection`、组合建议/叙事和 READ-to-WRITE 组合闭环属于 runbooks 13-22 的目标态，不得描述为已实现。
 
 MVP 第一条纵切：
 
@@ -217,7 +240,11 @@ LLM -> 只在小候选集合内做 rerank、解释和澄清问题生成
 Harness -> 最终 MatchDecision、CallPlan 入口和 trace 记录
 ```
 
-MVP 不启用 embedding retrieval、LLM rerank 或 planner。即使进入 Phase 3+，LLM 的选择结果仍然只是 advisory candidate。最终能否选择、澄清、拒绝或升级到多能力 planner，必须由 deterministic harness 根据 Registry、schema、governance、参数适配结果和 Eval Harness 决定。
+MVP 不启用 embedding retrieval、向量 Knowledge/RAG 或面向海量能力的 LLM rerank。当前已实现 deterministic planner dry-run，但尚未实现多能力执行。即使未来进入 Phase 3+，LLM 的选择与计划结果仍只是 advisory candidate；最终决策和执行资格由 deterministic harness 根据 Registry、schema、governance、参数适配、PlanGraph validator 和 Eval Harness 决定。
+
+### 3.10 Knowledge/RAG 预留边界
+
+Knowledge/RAG 可在未来作为带来源、版本和 freshness 的补充 `EvidenceProvider`，但不属于当前完整 Agent MVP。当前不连接文档库、向量库或外部知识源，不做跨会话相似问题检索，也不允许 RAG 内容成为 capability、参数、`ReasoningFact`、RuleSet、权限、PlanGraph 或 Approval 的权威来源。任何后续接入必须另立 runbook/change 和 Eval gate，且不改变 `capabilityId -> bindingId -> Gateway` 执行边界。
 
 ### 3.7 OpenHarness 对比后的语义规划控制面
 
@@ -377,7 +404,7 @@ Adapter 的职责：
 - 聚合 agent trace、gateway trace 和 replay metadata。
 - 屏蔽 Python Agent 内部实现和 Java Gateway executor details。
 
-第一版传输协议继续采用 **SSE first**，但必须区分协议格式与运行能力：当前 Workbench 是在 Agent 子进程结束后读取进程内事件并一次性返回 SSE-formatted body，不是增量发布、断线续传或 durable stream。目标 SSE runtime 必须支持事件序号、增量发布、reconnect cursor、terminal state 和 replay；WebSocket 只在真正需要双向协作时再引入。
+传输协议继续采用 **SSE first**。P0B 已实现事件序号、后台增量发布、reconnect cursor、terminal state 和 replay；后续 PlanExecution 事件必须扩展该通道，不得另建一次性 SSE body 或第二套 stream。WebSocket 只在真正需要双向协作时再引入。
 
 #### 4.2.1 长对话与权威状态分层
 
@@ -393,15 +420,15 @@ Workbench 进入长对话、跨重启恢复或长审批等待前，必须把通�
 
 未来 `UserPreferenceMemory` 只允许保存用户明确确认的语言、单位展示、业务术语和叙事偏好，并满足 tenant / user / agent 隔离、来源与时间戳、可查看、可更正、可删除和 retention。Memory 不可改变 capability 可见性、required parameter、side effect、approval requirement、PlanGraph 或 Evidence。
 
-Durable Runtime 的启用门槛不是由 DeerFlow、PostgreSQL 或 Redis 等产品反推，而是由运行要求决定：本地 S2 Dry-run 不强制持久化；共享 S3、跨重启恢复、长审批、multi-worker / HA 或任何非 sandbox WRITE 暴露前，必须具备持久 Thread / Run、run ownership / lease、structured checkpoint reference、durable Approval、事件 cursor 和幂等 continuation。Store 与 stream bridge 只在这些契约明确后选型。
+Durable Runtime 的启用门槛不是由 DeerFlow、PostgreSQL 或 Redis 等产品反推，而是由运行要求决定。P0B 已按该门槛交付 durable Run/Session、run ownership/lease、structured checkpoint reference、durable Approval、事件 cursor 和幂等 continuation；后续 PlanExecution 必须复用这些契约。当前 file/JSONL 实现仍是本地/单 worker 基线，不代表 multi-worker 量产 store 已选型。
 
 #### 4.2.2 即时多轮与会话上下文（轻量实例）
 
-§4.2.1 的三层状态分层是 durable / 长对话目标形态，绑定 P0B。但在 P0B 之前，Workbench 已暴露一个更基础的多轮缺口：**单轮无状态的意图识别无法衔接 CLARIFY 后的参数补充**（用户第一轮"你能查库存吗"收到"请提供物料编号和工厂"，第二轮"DEMOA2 1000"因脱离语境被 `REJECT(UNSUPPORTED_INTENT)`）。本节定义 `ConversationState` 的轻量实例，先于 P0B 落地，不引入持久化、不改变 runtime 架构。
+本节记录 P0B 之前落地的轻量多轮实例及其现行语义。它最初解决 **单轮无状态的意图识别无法衔接 CLARIFY 后参数补充**；P0B 后，Run/Session 承载已升级为 durable store，但 `PendingClarification` 仍只属于 advisory `ConversationState`，不获得执行权。
 
 **状态定位**：即时多轮的 `PendingClarification` 属于 `ConversationState`（advisory context），**不是执行权威**。它只承载意图层的待补参数，不能影响 `PlanExecutionState` / `EvidenceState`。一旦 `SELECT` 触发并产生 `CallPlan` / `ApprovalRecord`，执行权威仍由现有状态机管理，多轮状态自然消解。
 
-**状态承载**：状态只能放 Workbench backend 进程内（`runs` Map 旁挂 `sessions: Map<conversationId, SessionState>`）。Python Agent 仍是一次性子进程，每次由 backend 把"当前 query + 会话上下文"一起喂入。v1 不做跨重启持久化、不做 multi-worker 共享（属 P0B）。
+**状态承载**：原始 v1 使用 Workbench backend 进程内 Map；P0B 已将 Run/Session 替换为 durable store，并绑定 `principalId`。Python Agent 仍由 backend 输入“当前 query + governed context”；multi-worker 共享 store 仍是后续量产选型。
 
 **延续判定（sticky-CLARIFY）**：当 session 存在 pending CLARIFY 且本轮输入不含任何已注册能力的主关键词时，视为对上一轮澄清的 slot-fill 回答；重跑该 capability 的参数 extractor，合并参数后重判 missing。若本轮含主关键词，视为新轮并覆盖 pending。该机制对 rule 与 LLM 路径通用，是 hybrid 安全兜底的必备基线（rule 路径无 LLM 也能工作）。
 
@@ -420,9 +447,9 @@ Durable Runtime 的启用门槛不是由 DeerFlow、PostgreSQL 或 Redis 等产�
 
 **`IntentAdapter` 签名扩展方向**：当前 `Callable[[str], IntentParseResult]` 扩展为 `Callable[[str, ConversationContext | None], IntentParseResult]`，`ConversationContext` 携带 `pending_clarification` 与可选 `history`。默认 `None` 保持全部现有测试零改动。透传链：前端 `conversationId` -> backend 取 session.pending 组 context -> CLI stdin JSON -> `run_query(text, gateway, intent_adapter, context=context)` -> `intent_adapter(text, context)`。
 
-**v1 范围与非目标**：v1 仅覆盖 `CLARIFY` 跨轮 slot-fill。`ESCALATE_TO_PLANNER` 跨轮消歧、`SHOW_OPTIONS` 跨轮选择、审批 pending 与 CLARIFY pending 共存的处理、跨重启恢复、长对话压缩 / summary、`UserPreferenceMemory` 均为非目标（后者属 P0B 或独立 change）。
+**v1 范围与后续边界**：原始 feature 仅覆盖 `CLARIFY` 跨轮 slot-fill。P0B 已补跨重启 Run/Session；`ESCALATE_TO_PLANNER`/`SHOW_OPTIONS` 的完整跨轮交互、长对话压缩和 `UserPreferenceMemory` 仍需独立 change。
 
-**与 P0B 的边界**：v1 的 `ConversationState` 接口须对齐 §4.2.1 三层分层，使 P0B 接手时能将进程内 Map 替换为 durable store，并挂载 DeerFlow 式 `SummarizationMiddleware` / `DurableContextMiddleware`，无需重构 advisory 层契约。v1 不提前实现 Thread / Run / Checkpoint 的完整形态。
+**P0B 后现状**：durable Run/Session、trusted principal、durable approval 和 SSE reconnect 已实现；后续只在现有接口上扩展 PlanExecution/Evidence 状态。Summarization 和 governed user memory 仍未实现，也不得用于重建执行权威。
 
 #### 4.2.3 多值参数批量查询（READ-only v1）
 
@@ -461,9 +488,10 @@ MVP 不建设海量能力匹配栈。能力数量处于个位数或十几个时�
 MVP 流水线：
 
 ```text
-Natural Language
--> Rule / keyword / trigger phrase match
--> Registry exact capability lookup
+Natural Language + governed conversation context
+-> LLM-first IntentEnvelope candidate (rule fallback only on LLM unavailable)
+-> snapshot-bound visibility pre-filter
+-> Registry closed-set capability recall
 -> Required parameter check
 -> Governance filter
 -> MatchDecision
@@ -471,7 +499,7 @@ Natural Language
 
 MVP 阶段 `MatchDecision` 仍是能力匹配、Eval Harness 和 CallPlan 的共同边界，但不要求 embedding retrieval、candidate rerank 或多域 planner。
 
-当前 runtime 状态（`SelectionResult` 尚非完整五态 `MatchDecision`、规则 parser 按固定顺序返回首个命中意图、多能力请求尚未可靠产生 `ESCALATE_TO_PLANNER`）与 Current / S2-A / S2-B / S3 能力演进矩阵不在本文档维护，见 `docs/runbooks/08-capability-matching-contract.md` 与 `docs/runbooks/10-capability-composition-contract.md`；架构只保留下述 MVP 契约定义与 fail-closed 边界。
+当前 runtime 已实现 LLM-first hybrid intent、五态 `MatchDecision`、可靠 multi-intent escalation 和 deterministic PlanGraph dry-run；仍未实现多能力 PlanExecutor、OutputProjection、建议/叙事和组合 Action proposal。详细成熟度见 `docs/runbooks/README.md`、runbook 08 与 runbook 10；架构只保留下述契约和 fail-closed 边界。
 
 | Decision | MVP 含义 | 下一步 |
 |---|---|---|
@@ -479,7 +507,7 @@ MVP 阶段 `MatchDecision` 仍是能力匹配、Eval Harness 和 CallPlan 的共
 | `CLARIFY` | 能力基本明确但缺少参数或存在参数歧义 | 向用户提出澄清问题 |
 | `SHOW_OPTIONS` | 少量能力都合理且不能安全自动选择 | 展示 2-3 个业务选项 |
 | `REJECT` | 无注册能力、越权、危险请求或裸技术执行请求 | 明确拒绝并记录原因 |
-| `ESCALATE_TO_PLANNER` | 用户目标明显需要多能力组合 | 仅记录和解释，不在 MVP 自动编排执行 |
+| `ESCALATE_TO_PLANNER` | 用户目标明显需要多能力组合 | 生成受治理 dry-run；Runbooks 13-17 完成前不得自动执行 |
 
 MVP 安全边界：
 
@@ -634,7 +662,7 @@ Action 的强制约束：
 
 ### 5.4 能力组合语义模型（Reserved）
 
-能力组合的通用 runtime 和 Dynamic Planner 仍是 `Reserved`。S1 Semantic Planning Foundation 已实现并验证，S2-A Semantic MatchDecision Hardening 和 S2-B Planner Dry-run 是当前 `Next Design` 的两个顺序 milestone。原子能力（`Skill` / `Function` / `Action`）仍是唯一执行单元；近期先补齐基础语义决策，再验证 progressive candidate discovery 和 deterministic dry-run，最后以只读 pilot 验证 PlanGraph-governed 组合，不直接进入自由 runtime 编排。
+能力组合的通用 Dynamic Planner 仍是 `Reserved`。S1、S2-A、S2-B 和 P0B 已实现并归档；当前原子能力仍是唯一执行单元，多能力仅到 PlanGraph dry-run。下一阶段按 runbooks 13-22 依次完成同快照治理、READ PlanExecutor、OutputProjection、建议、叙事、Workbench 和单 Action 人审闭环，不进入自由 runtime 编排。
 
 组合不是单一概念，而是三种形态各异、支持前提不同的东西：
 
@@ -644,11 +672,11 @@ Action 的强制约束：
 | Composite Capability | 固定多步流程注册为一个 `capabilityId`，内部确定性 DAG | L3 | 服从同一 governance / approval / eval / replay，不引入自由编排 |
 | Dynamic Planner | 运行时按意图动态编排原子能力 | L2 | 必须先有能力关系本体，仅在本体依赖图内工作 |
 
-本体前提（硬约束）：组合之前必须先建模能力间关系（`producesFactType` / `consumesFactType` / `dependsOn` / `precondition`）。关系本体缺失前，目标契约要求多能力请求只走 `ESCALATE_TO_PLANNER`（记录 + 解释），不触发自动编排；当前 runtime 尚需在 S2-A 落地可靠的多意图检测和该决策。Planner 编排的对象是本体依赖图，不是 LLM 自由发挥——这与"Harness != LLM + tool calling"一致。
+本体前提（硬约束）：组合之前必须先建模能力间关系（`producesFactType` / `consumesFactType` / `dependsOn` / `precondition`）。关系缺失时只能输出结构化 gap，不触发执行。当前 multi-intent 已进入 `ESCALATE_TO_PLANNER` 和 dry-run；Planner 编排的对象仍是已发布关系图，不是 LLM 自由发挥——这与"Harness != LLM + tool calling"一致。
 
 执行边界：
 
-- S2-A 完成后，多能力请求必须可靠落到 `ESCALATE_TO_PLANNER`；在此之前不得静默选择首个命中能力。只有后续 `sap-nexus-read-composition-pilot` 通过独立 design、eval 和 verify 后，才允许执行已批准的只读 PlanGraph。
+- 多能力请求已可靠落到 `ESCALATE_TO_PLANNER` 并产 dry-run；只有 runbooks 13-17 通过独立 design、eval 和 verify 后，才允许执行已批准的只读 PlanGraph。
 - `Composite Capability` 若落地，必须作为一个注册 `capabilityId` 出现，内部 DAG 确定、可评测、可回放，并逐步校验每步 governance / sideEffect / approval。
 - 组合链中的 write 步骤仍必须走 Human Approval，不因"整体是 composite"而绕过单步审批。
 
@@ -1599,11 +1627,11 @@ JSONL 只适用于本地 trace、eval 和早期 replay。Thread / Run、Approval
 
 ## 18. Known Correctness Defects
 
-本节记录当前 runtime 已知、未修复的正确性缺陷，区别于功能排期。缺陷在对应收敛里程碑验证通过前不得被描述为已解决。
+本节保留已识别正确性缺陷及其收敛状态，区别于功能排期。已解决项保留历史问题与验证归属，不再描述为当前缺陷。
 
-### D-1：多目标 utterance 静默降级为首命中单能力
+### D-1：多目标 utterance 静默降级为首命中单能力（已解决）
 
 - **现象**：rule parser 按固定顺序返回首个命中意图；包含多个业务目标（如“物料库存 + 采购订单供给概览”）的请求被静默降级为首个命中的单能力（如仅库存）。
 - **影响**：返回结果在业务上不完整但无任何告警，系统丢弃了一半意图却返回看似正确的答案，污染用户信任；违反“事实先于叙事”与 fail-closed 原则。
-- **当前缓解**：无。
-- **收敛归属**：S2-A 五态 `MatchDecision`——多意图/歧义检测必须将并列多能力目标导向 `ESCALATE_TO_PLANNER`（record + explain），`false SELECT` 作为回归失败项。详见 `docs/runbooks/08-capability-matching-contract.md`。
+- **解决证据**：S2-A 五态 `MatchDecision` 已归档，multi-intent/ambiguity matcher Eval 6/6，`false SELECT` 回归关闭；多目标进入 `ESCALATE_TO_PLANNER`。
+- **剩余边界**：该修复只证明正确升级与 dry-run，不证明多能力已执行；执行闭环由 runbooks 13-22 承担。

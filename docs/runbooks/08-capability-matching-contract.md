@@ -5,19 +5,21 @@
 | Field | Value |
 |---|---|
 | Runbook | `08-capability-matching-contract` |
-| Version | `v0.3.1` |
-| Status | `S2-A Done / Phase 3+ Scale-up Deferred` |
+| Version | `v0.3.2` |
+| Status | `Completed / Archived` |
 | Created | `2026-06-26` |
-| Updated | `2026-07-25` |
-| Workstream | S2-A baseline semantic decision hardening done (archived in sap-nexus-planner-dry-run); Phase 3+ retrieval / rerank later |
+| Updated | `2026-08-03` |
+| Workstream | S2-A baseline semantic decision hardening completed and archived; Phase 3+ scale-up is a separate deferred workstream |
 | Related Change | `sap-nexus-planner-dry-run` (S2-A); `sap-nexus-capability-matching-contract` (Phase 3+ scale-up) |
-| Current Phase | Implement explicit five-state MatchDecision, multi-intent / ambiguity handling, visibility and matcher Eval before S2-B dry-run |
+| Current Phase | Closed; do not resume implementation from this runbook |
+| Successor | Runbook 13 for same-snapshot governance; Runbook 14 for complete IntentEnvelope/recall |
+| Reopen Policy | Do not reopen; create a separate change only when the documented Phase 3+ scale trigger is met |
 
 ---
 
 ## 1. Session Goal
 
-This runbook now separates baseline decision correctness from scale-stage retrieval. S2-A does not build a Capability Index, embedding retrieval, LLM rerank, or executable planner, but it must turn the current implicit selector behavior into a deterministic five-state `MatchDecision`:
+This archived runbook separates the delivered baseline decision contract from future scale-stage retrieval. S2-A delivered the deterministic five-state `MatchDecision` without building a Capability Index, embedding retrieval, LLM rerank, or executable planner:
 
 ```text
 User utterance
@@ -29,15 +31,15 @@ User utterance
 -> CallPlan / clarification / options / rejection / planner handoff
 ```
 
-Current runtime status: `IntentParseResult -> SelectionResult` supports three active capabilities, missing-parameter clarification and technical-override rejection, but does not implement a first-class five-state `MatchDecision`. The rule parser returns the first matching intent, so a request containing inventory and purchase-order goals can be silently reduced to inventory. S2-A must close this gap before S2-B generates GoalSpec / PlanDraft candidates.
+Current runtime status: S2-A implements first-class five-state `MatchDecision`, multi-intent/ambiguity handling and matcher Eval; S2-B implements deterministic PlanGraph dry-run. Remaining gaps are one non-empty `RegistrySnapshot` across intent-to-planner handoff, real LLM catalog visibility pre-filtering, a complete `IntentEnvelope`, and executable multi-capability runtime. Runbooks 13-16 own those gaps.
 
 Only the scale-up portion restarts when capability scale or Eval bad cases prove lightweight discovery insufficient.
 
 ---
 
-## 2. Source Of Truth
+## 2. Archive Sources and Verified Baseline
 
-Read these before opening or implementing the change:
+These sources formed the archived delivery. Do not open a new implementation from this section:
 
 ```text
 AGENTS.md
@@ -59,13 +61,13 @@ Expected baseline:
 - The active capability catalog remains small, closed-set, and Registry-owned.
 - MVP matching uses rules + Registry exact lookup; LLM output remains advisory until accepted by deterministic Harness.
 - Gateway continues to accept only `capabilityId` / allowlisted `bindingId` paths, never request-provided technical execution details.
-- Current code does not yet guarantee `SHOW_OPTIONS` or `ESCALATE_TO_PLANNER`; documentation must not present those decisions as implemented runtime behavior before S2-A verification.
+- S2-A guarantees tested `SHOW_OPTIONS` and `ESCALATE_TO_PLANNER` behavior; documentation must still distinguish these decisions and dry-run preview from actual multi-capability execution.
 
 ---
 
-## 3. Proposed Scope
+## 3. Delivered Scope and Deferred Scale-up
 
-S2-A baseline scope:
+Delivered S2-A baseline scope:
 
 - Implement `MatchDecision` with five decisions: `SELECT`, `CLARIFY`, `SHOW_OPTIONS`, `REJECT`, `ESCALATE_TO_PLANNER`.
 - Detect single-goal, parallel multi-goal, conditional multi-goal and ambiguous-candidate requests before selecting a capability.
@@ -100,7 +102,7 @@ MVP decision set:
 | `CLARIFY` | A candidate is likely but required inputs are missing or ambiguous | Ask user a clarification question |
 | `SHOW_OPTIONS` | Multiple candidates are plausible and safe automatic selection is not justified | Show 2-3 business options |
 | `REJECT` | No registered capability, unsafe request, permission failure, or request-owned technical execution detail | Reject with traceable reason |
-| `ESCALATE_TO_PLANNER` | User goal requires multiple capabilities or reasoning over multiple facts | Record and explain; MVP does not auto-plan or execute DAG |
+| `ESCALATE_TO_PLANNER` | User goal requires multiple capabilities or reasoning over multiple facts | Hand off to deterministic dry-run; no PlanGraph execution |
 
 Representative output shape:
 
@@ -140,7 +142,7 @@ Decision rules:
 
 The five-state `MatchDecision` is single-turn by default: each utterance is parsed independently. This produces a multi-turn gap when a user answers a `CLARIFY` with bare parameters (e.g. turn 1 "你能查库存吗" -> `CLARIFY` missing [material, plant]; turn 2 "DEMOA2 1000" matches no capability keyword and falls to `REJECT(UNSUPPORTED_INTENT)`). This subsection defines the cross-turn continuation contract for the lightweight multi-turn instance introduced in technical-architecture §4.2.2.
 
-**PendingClarification state (advisory, in-memory):** when a turn resolves to `CLARIFY`, the backend records `PendingClarification { capability_id, parameters, missing_parameters, clarification_text }` under `sessions: Map<conversationId, SessionState>`. This is `ConversationState` (advisory context), not execution authority; it does not interact with `CallPlan` / `ApprovalRecord` lifecycle.
+**PendingClarification state (historical v1 baseline, later made durable):** when a turn resolves to `CLARIFY`, the original implementation recorded `PendingClarification { capability_id, parameters, missing_parameters, clarification_text }` under `sessions: Map<conversationId, SessionState>`. P0B later replaced Run/Session storage with a durable store. This remains `ConversationState` advisory context, not execution authority.
 
 **Sticky-CLARIFY resolution:** when the next utterance arrives and the session has a pending CLARIFY:
 
@@ -198,7 +200,7 @@ Exclude `rfcName`, service URL, entity set, HTTP method/headers, credential refe
 
 ---
 
-## 6. Acceptance Criteria
+## 6. Archived Acceptance Criteria
 
 | Area | Acceptance |
 |---|---|
@@ -211,10 +213,10 @@ Exclude `rfcName`, service URL, entity set, HTTP method/headers, credential refe
 | Governance | Unsafe, disabled, write, unapproved, or unauthorized candidates fail closed |
 | Parameters | Missing and ambiguous required inputs produce `CLARIFY` |
 | Rejection | Bare RFC / endpoint / technical override requests produce `REJECT` |
-| Planner boundary | Multi-fact goals produce `ESCALATE_TO_PLANNER`; no MVP auto-planning |
+| Planner boundary | Multi-fact goals produce `ESCALATE_TO_PLANNER` and deterministic dry-run; no PlanGraph execution |
 | Eval | Matching evals cover direct/synonym hit, missing parameter, multi-intent, ambiguous candidate, capability gap, visibility leakage, unsafe technical request, prompt injection, write intent and planner escalation; false `SELECT` fails regression |
 
-Recommended verification after implementation:
+Archived verification commands:
 
 ```bash
 .venv/bin/python scripts/validate-registry-contract.py registry/capabilities.yaml
