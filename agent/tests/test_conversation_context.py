@@ -58,7 +58,12 @@ def test_conversation_context_round_trip():
 def test_conversation_context_empty_round_trip():
     ctx = ConversationContext(last_context=None, history=None)
     payload = ctx.to_dict()
-    assert payload == {"lastContext": None, "history": None}
+    assert payload == {
+        "lastContext": None,
+        "history": None,
+        "pendingShowOptions": None,
+        "pendingEscalate": None,
+    }
     assert ConversationContext.from_dict(payload) == ctx
 
 
@@ -655,20 +660,28 @@ def test_awaiting_batch_confirm_no_last_context():
 # Runbook 14: PendingShowOptions / PendingEscalate dataclasses.
 def test_pending_show_options_construction():
     from sap_nexus_agent.conversation_context import PendingShowOptions
+    from sap_nexus_agent.match_decision import MatchedIntent
 
     pending = PendingShowOptions(
-        candidates=["MM.PurchaseOrder.GetList", "MM.PR.CreateDraft"],
+        candidates=(
+            MatchedIntent(capability_id="MM.PurchaseOrder.GetList", parameters={}, missing=[]),
+            MatchedIntent(capability_id="MM.PR.CreateDraft", parameters={}, missing=[]),
+        ),
         snapshot_id="snap-001",
     )
-    assert pending.candidates == ["MM.PurchaseOrder.GetList", "MM.PR.CreateDraft"]
+    assert len(pending.candidates) == 2
+    assert pending.candidates[0].capability_id == "MM.PurchaseOrder.GetList"
     assert pending.snapshot_id == "snap-001"
 
 
 def test_pending_show_options_round_trip():
     from sap_nexus_agent.conversation_context import PendingShowOptions
+    from sap_nexus_agent.match_decision import MatchedIntent
 
     pending = PendingShowOptions(
-        candidates=["MM.PurchaseOrder.GetList"],
+        candidates=(
+            MatchedIntent(capability_id="MM.PurchaseOrder.GetList", parameters={}, missing=[]),
+        ),
         snapshot_id="snap-001",
     )
     payload = pending.to_dict()
@@ -717,3 +730,192 @@ def test_pending_escalate_round_trip():
     payload = pending.to_dict()
     restored = PendingEscalate.from_dict(payload)
     assert restored == pending
+
+
+# ---------------------------------------------------------------------------
+# Task 7.1: ConversationContext pending fields + round-trip
+# ---------------------------------------------------------------------------
+
+
+def test_conversation_context_has_pending_fields():
+    ctx = ConversationContext(last_context=None, history=None)
+    assert ctx.pending_show_options is None
+    assert ctx.pending_escalate is None
+
+
+def test_conversation_context_round_trip_with_pending_show_options():
+    from sap_nexus_agent.conversation_context import PendingShowOptions
+    from sap_nexus_agent.match_decision import MatchedIntent
+
+    candidates = (
+        MatchedIntent(capability_id="MM.PurchaseOrder.GetList", parameters={}, missing=[]),
+    )
+    ctx = ConversationContext(
+        last_context=None,
+        history=None,
+        pending_show_options=PendingShowOptions(candidates=candidates, snapshot_id="snap-001"),
+    )
+    payload = ctx.to_dict()
+    restored = ConversationContext.from_dict(payload)
+    assert restored == ctx
+    assert restored.pending_show_options is not None
+    assert restored.pending_show_options.snapshot_id == "snap-001"
+    assert restored.pending_show_options.candidates[0].capability_id == "MM.PurchaseOrder.GetList"
+    assert restored.pending_escalate is None
+
+
+def test_conversation_context_round_trip_with_pending_escalate():
+    from sap_nexus_agent.conversation_context import PendingEscalate
+    from sap_nexus_agent.match_decision import EscalationHandoff, MatchedIntent
+
+    handoff = EscalationHandoff(
+        reason="multi-intent",
+        matched_intents=[
+            MatchedIntent(
+                capability_id="MM.Inventory.GetAvailability",
+                parameters={"material": "DEMOA2"},
+                missing=["plant"],
+            )
+        ],
+        utterance="库存 + 采购订单概览",
+        registry_snapshot_id="snap-001",
+    )
+    ctx = ConversationContext(
+        last_context=None,
+        history=None,
+        pending_escalate=PendingEscalate(handoff=handoff, snapshot_id="snap-001"),
+    )
+    payload = ctx.to_dict()
+    restored = ConversationContext.from_dict(payload)
+    assert restored == ctx
+    assert restored.pending_escalate is not None
+    assert restored.pending_escalate.snapshot_id == "snap-001"
+    assert restored.pending_show_options is None
+
+
+# ---------------------------------------------------------------------------
+# Task 7.2 / 9.7: mutual exclusivity (with_* / clear_pending)
+# ---------------------------------------------------------------------------
+
+
+def test_with_pending_show_options_clears_escalate():
+    from sap_nexus_agent.conversation_context import PendingShowOptions, PendingEscalate
+    from sap_nexus_agent.match_decision import EscalationHandoff, MatchedIntent
+
+    handoff = EscalationHandoff(
+        reason="r", matched_intents=[], utterance="u", registry_snapshot_id="s"
+    )
+    ctx = ConversationContext(
+        last_context=None,
+        history=None,
+        pending_escalate=PendingEscalate(handoff=handoff, snapshot_id="snap-1"),
+    )
+    new_ctx = ctx.with_pending_show_options(
+        PendingShowOptions(
+            candidates=(MatchedIntent(capability_id="X", parameters={}, missing=[]),),
+            snapshot_id="snap-2",
+        )
+    )
+    assert new_ctx.pending_show_options is not None
+    assert new_ctx.pending_escalate is None
+
+
+def test_with_pending_escalate_clears_show_options():
+    from sap_nexus_agent.conversation_context import PendingShowOptions, PendingEscalate
+    from sap_nexus_agent.match_decision import MatchedIntent, EscalationHandoff
+
+    ctx = ConversationContext(
+        last_context=None,
+        history=None,
+        pending_show_options=PendingShowOptions(
+            candidates=(MatchedIntent(capability_id="X", parameters={}, missing=[]),),
+            snapshot_id="snap-1",
+        ),
+    )
+    handoff = EscalationHandoff(
+        reason="r", matched_intents=[], utterance="u", registry_snapshot_id="s"
+    )
+    new_ctx = ctx.with_pending_escalate(
+        PendingEscalate(handoff=handoff, snapshot_id="snap-2")
+    )
+    assert new_ctx.pending_escalate is not None
+    assert new_ctx.pending_show_options is None
+
+
+def test_clear_pending_clears_both():
+    from sap_nexus_agent.conversation_context import PendingShowOptions, PendingEscalate
+    from sap_nexus_agent.match_decision import MatchedIntent, EscalationHandoff
+
+    handoff = EscalationHandoff(
+        reason="r", matched_intents=[], utterance="u", registry_snapshot_id="s"
+    )
+    # Build a context where both are set by first writing one then the other
+    # (the dataclass itself permits direct construction, but clear_pending
+    # must empty both regardless of how they were populated).
+    ctx = ConversationContext(
+        last_context=None,
+        history=None,
+        pending_show_options=PendingShowOptions(
+            candidates=(MatchedIntent(capability_id="X", parameters={}, missing=[]),),
+            snapshot_id="snap-1",
+        ),
+        pending_escalate=PendingEscalate(handoff=handoff, snapshot_id="snap-2"),
+    )
+    cleared = ctx.clear_pending()
+    assert cleared.pending_show_options is None
+    assert cleared.pending_escalate is None
+    # Original is unchanged (frozen).
+    assert ctx.pending_show_options is not None
+    assert ctx.pending_escalate is not None
+
+
+def test_mutual_exclusivity_all_transitions():
+    """Verify all pending state transitions clear the others (Task 9.7)."""
+    from sap_nexus_agent.conversation_context import (
+        ConversationContext,
+        PendingShowOptions,
+        PendingEscalate,
+    )
+    from sap_nexus_agent.match_decision import MatchedIntent, EscalationHandoff
+
+    handoff = EscalationHandoff(
+        reason="r", matched_intents=[], utterance="u", registry_snapshot_id="s"
+    )
+    cand = (MatchedIntent(capability_id="X", parameters={}, missing=[]),)
+
+    # SHOW_OPTIONS -> ESCALATE: clears show_options
+    ctx = ConversationContext(
+        last_context=None,
+        history=None,
+        pending_show_options=PendingShowOptions(candidates=cand, snapshot_id="s1"),
+    )
+    ctx = ctx.with_pending_escalate(PendingEscalate(handoff=handoff, snapshot_id="s2"))
+    assert ctx.pending_show_options is None and ctx.pending_escalate is not None
+
+    # ESCALATE -> SHOW_OPTIONS: clears escalate
+    ctx = ctx.with_pending_show_options(
+        PendingShowOptions(candidates=cand, snapshot_id="s3")
+    )
+    assert ctx.pending_show_options is not None and ctx.pending_escalate is None
+
+    # clear_pending: clears both
+    ctx = ctx.clear_pending()
+    assert ctx.pending_show_options is None and ctx.pending_escalate is None
+
+
+def test_with_pending_none_clears_target_field():
+    """Passing None to with_pending_* clears only the target field."""
+    from sap_nexus_agent.conversation_context import PendingShowOptions
+    from sap_nexus_agent.match_decision import MatchedIntent
+
+    ctx = ConversationContext(
+        last_context=None,
+        history=None,
+        pending_show_options=PendingShowOptions(
+            candidates=(MatchedIntent(capability_id="X", parameters={}, missing=[]),),
+            snapshot_id="snap-1",
+        ),
+    )
+    new_ctx = ctx.with_pending_show_options(None)
+    assert new_ctx.pending_show_options is None
+    assert new_ctx.pending_escalate is None
