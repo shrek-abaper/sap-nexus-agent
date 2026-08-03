@@ -545,3 +545,45 @@ def test_invalid_plan_preserves_structured_issues_not_none():
     assert invalid_flags
     # rationale 携带 issue 摘要
     assert "issue" in result.rationale or "failed" in result.rationale
+
+
+# ---- Task 14: dual-READ + factField fixture stability tests ----
+
+
+def test_dual_read_fixture_is_stable_with_empty_edges_and_refs():
+    snapshot = _real_snapshot()
+    sources = _real_sources()
+    handoff = _dual_read_handoff(snapshot)
+    r1 = compile_plan_v2(handoff, snapshot, sources)
+    r2 = compile_plan_v2(handoff, snapshot, sources)
+    assert r1 == r2
+    pg = r1.plan_graph
+    assert pg["edges"] == []
+    assert pg["projectionRef"] == []
+    assert pg["ruleSetRefs"] == []
+    assert pg["actionPartition"] == []
+    assert set(pg["readPartition"]) == {n["nodeId"] for n in pg["nodes"]}
+    # snapshotId 绑定
+    assert pg["snapshotId"] == snapshot.snapshot_id
+    # goalOutputs 覆盖两个 FactType
+    output_facts = {o["factTypeId"] for o in pg["goalOutputs"]}
+    assert "sapnexus:InventoryAvailabilityFact" in output_facts
+    assert "sapnexus:PurchaseOrderSupplyFact" in output_facts
+
+
+def test_fact_field_fixture_produces_data_edge_and_stable():
+    sources, snapshot = _sources_with_fact_field()
+    handoff = EscalationHandoff(
+        reason="fact-field",
+        matched_intents=[
+            MatchedIntent("MM.Inventory.GetAvailability", {"material": "M1", "plant": "5300"}, []),
+            MatchedIntent("Test.Consumer.GetSummary", {}, []),
+        ],
+        utterance="summary",
+        registry_snapshot_id=snapshot.snapshot_id,
+    )
+    r1 = compile_plan_v2(handoff, snapshot, sources)
+    r2 = compile_plan_v2(handoff, snapshot, sources)
+    assert r1 == r2
+    data_edges = [e for e in r1.plan_graph["edges"] if e["kind"] == "data"]
+    assert len(data_edges) == 1
