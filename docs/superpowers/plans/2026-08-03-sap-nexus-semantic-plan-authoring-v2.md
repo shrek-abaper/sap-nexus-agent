@@ -1403,7 +1403,7 @@ git commit -m "feat(planner): v2 compiler authors literal parameter source"
 **Interfaces:**
 - Produces: 对 `fact` 输入，若有生产者节点产出该 factType -> `factField` 源 + 一条 `data` edge（`fromNodeId=producer, toNodeId=consumer, factTypeId`）。
 
-- [ ] **Step 1: 构造自定义 fixture（含 fact 输入的生产者-消费者对）**
+- [x] **Step 1: 构造自定义 fixture（含 fact 输入的生产者-消费者对）**
 
 真实 registry 无 fact 输入，需自定义 `SemanticSourceDocuments`。在测试文件加 helper：
 
@@ -1463,7 +1463,7 @@ def _sources_with_fact_field() -> tuple[SemanticSourceDocuments, RegistrySnapsho
     return sources, snapshot
 ```
 
-- [ ] **Step 2: 写失败测试——factField 源 + data edge**
+- [x] **Step 2: 写失败测试——factField 源 + data edge**
 
 ```python
 def test_compile_plan_v2_authors_fact_field_source_and_data_edge():
@@ -1509,12 +1509,12 @@ def test_compile_plan_v2_authors_fact_field_source_and_data_edge():
     assert edge["fromNodeId"] == inv_nodes[0]["nodeId"]
 ```
 
-- [ ] **Step 3: 运行确认失败**
+- [x] **Step 3: 运行确认失败**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_planner_plan_compiler_v2.py::test_compile_plan_v2_authors_fact_field_source_and_data_edge -q`
 Expected: FAIL（当前不 author factField/data edge）
 
-- [ ] **Step 4: 实现 factField 源 + data edge authoring**
+- [x] **Step 4: 实现 factField 源 + data edge authoring**
 
 在 `_build_plan_graph_v2` 中，nodes 构造完成后，第二轮扫描 fact 输入并 author data edge。修改 `_build_node_v2` 追加 factField 分支，并在 `_build_plan_graph_v2` 中 author data edge：
 
@@ -1581,12 +1581,12 @@ def _first_fact_field(producer_raw: Mapping[str, Any], fact_type: str) -> str:
 
 注意：S1 `_validate_parameter_source` 校验 `output["name"] == source["field"]` 且 `output.get("factTypeRef") == source["factTypeId"]`。若 `field` 为空字符串，校验失败 -> `FACT_TYPE_MISMATCH`。需确保 producer output 有 `name` 字段。真实 `MM.Inventory.GetAvailability` 的 outputs 应有 `name`。测试 fixture 的 producer output 需含 `name`。
 
-- [ ] **Step 5: 运行确认通过**
+- [x] **Step 5: 运行确认通过**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_planner_plan_compiler_v2.py::test_compile_plan_v2_authors_fact_field_source_and_data_edge -q`
 Expected: PASS
 
-- [ ] **Step 6: 提交**
+- [x] **Step 6: 提交**
 
 ```bash
 git add agent/sap_nexus_agent/planner/plan_compiler_v2.py agent/tests/test_planner_plan_compiler_v2.py
