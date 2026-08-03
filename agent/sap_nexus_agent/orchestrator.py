@@ -226,7 +226,20 @@ def run_query(
         parsed = intent_adapter(text)
     else:
         parsed = intent_adapter(text, context)
-    decision = select_capability(parsed)
+
+    # Discover cards from snapshot and filter visible (Design Doc §4).
+    from sap_nexus_agent.planner.capability_card import discover_cards
+    from sap_nexus_agent.visibility import filter_visible
+
+    all_cards = discover_cards(snapshot, sources)
+    visible_cards = filter_visible(all_cards, for_execution=False)
+    visible_capability_set = VisibleCapabilitySet(
+        cards=tuple(visible_cards),
+        snapshot_id=lease.snapshot_id,
+        principal_id=effective_principal.principal_id,
+    )
+
+    decision = select_capability(parsed, visible=visible_capability_set)
 
     # REJECT (technical override / unsupported intent): no Gateway.
     if decision.decision_type == "REJECT":

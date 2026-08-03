@@ -33,6 +33,7 @@ __all__ = [
     "InputDescriptor",
     "SideEffect",
     "Visibility",
+    "filter_catalog",
     "filter_visible",
 ]
 
@@ -61,3 +62,23 @@ def filter_visible(
         and c.governance.side_effect == "none"
         and c.governance.data_classification == "internal"
     ]
+
+
+def filter_catalog(
+    catalog: "IntentCatalog",
+    visible_cards: list[CapabilityCard],
+) -> "IntentCatalog":
+    """Filter an IntentCatalog to only capabilities present in visible_cards.
+
+    Used by cli.py to pre-filter the catalog before building the intent
+    adapter, so the LLM prompt only contains visible capabilities
+    (Design Doc §4 data flow: ``filter_visible(catalog) -> visible catalog``).
+    """
+    from sap_nexus_agent.registry_loader import IntentCatalog
+
+    visible_ids = frozenset(c.capability_id for c in visible_cards)
+    filtered = tuple(c for c in catalog.capabilities if c.capability_id in visible_ids)
+    return IntentCatalog(
+        capabilities=filtered,
+        capability_ids=frozenset(c.capability_id for c in filtered),
+    )

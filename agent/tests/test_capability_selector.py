@@ -432,3 +432,80 @@ def test_select_parameters_excludes_multi_parameters():
     assert decision.decision_type == "SELECT"
     assert decision.parameters == {"material": "DEMOA2"}
     assert "plant" not in decision.parameters
+
+
+# ---- Task 3: select_capability accepts VisibleCapabilitySet ----
+
+from sap_nexus_agent.governed_context import VisibleCapabilitySet
+from sap_nexus_agent.planner.capability_card import CapabilityCard, Governance
+
+
+def _visible_card(capability_id: str, snapshot_id: str = "sha256:test") -> VisibleCapabilitySet:
+    card = CapabilityCard(
+        capability_id=capability_id,
+        name=capability_id,
+        governance=Governance(
+            side_effect="none", requires_approval=False, data_classification="internal"
+        ),
+    )
+    return VisibleCapabilitySet(cards=(card,), snapshot_id=snapshot_id, principal_id="user-1")
+
+
+def test_select_capability_accepts_visible_capability_set():
+    """select_capability with visible set filters matched_intents to visible only."""
+    from sap_nexus_agent.intent import IntentParseResult
+    from sap_nexus_agent.match_decision import MatchedIntent
+    from sap_nexus_agent.capability_selector import select_capability
+
+    parse_result = IntentParseResult(
+        intent=None,
+        parameters={},
+        missing_parameters=[],
+        matched_intents=[
+            MatchedIntent(capability_id="MM.Inventory.GetAvailability", parameters={}, missing=[]),
+            MatchedIntent(capability_id="MM.PurchaseOrder.GetList", parameters={}, missing=[]),
+            MatchedIntent(capability_id="MM.Hidden.Capability", parameters={}, missing=[]),
+        ],
+    )
+    # visible contains the two real capabilities; hidden is filtered out.
+    visible = VisibleCapabilitySet(
+        cards=(
+            CapabilityCard(
+                capability_id="MM.Inventory.GetAvailability",
+                name="inv",
+                governance=Governance(
+                    side_effect="none", requires_approval=False, data_classification="internal"
+                ),
+            ),
+            CapabilityCard(
+                capability_id="MM.PurchaseOrder.GetList",
+                name="po",
+                governance=Governance(
+                    side_effect="none", requires_approval=False, data_classification="internal"
+                ),
+            ),
+        ),
+        snapshot_id="sha256:snap-1",
+        principal_id="user-1",
+    )
+    decision = select_capability(parse_result, visible=visible)
+    assert decision.decision_type == "ESCALATE_TO_PLANNER"
+    assert decision.handoff is not None
+    assert decision.handoff.registry_snapshot_id == "sha256:snap-1"
+    visible_in_handoff = [mi.capability_id for mi in decision.handoff.matched_intents]
+    assert "MM.Hidden.Capability" not in visible_in_handoff
+    assert len(visible_in_handoff) == 2
+
+
+def test_select_capability_without_visible_backward_compat():
+    """select_capability without visible param behaves as before (backward compat)."""
+    from sap_nexus_agent.intent import IntentParseResult
+    from sap_nexus_agent.capability_selector import select_capability
+
+    parse_result = IntentParseResult(
+        intent="inventory_availability",
+        parameters={"material": "M1", "plant": "P1"},
+        missing_parameters=[],
+    )
+    decision = select_capability(parse_result)
+    assert decision.decision_type == "SELECT"

@@ -11,9 +11,9 @@
 
 ## 3. visibility pre-filter 接入 matcher 决策路径
 
-- [ ] 3.1 `filter_visible` 扩展 principal/role 维度（基于 `CapabilityCard` + `GovernedContext.principal`）
-- [ ] 3.2 在 matcher 决策前构造 `VisibleCapabilitySet`（`discover_cards` -> `filter_visible`），作为 intent/matcher/召回的唯一能力来源
-- [ ] 3.3 `select_capability` 接收 `VisibleCapabilitySet`，不可见能力不进入候选
+- [x] 3.1 `filter_visible` 扩展 principal/role 维度（基于 `CapabilityCard` + `GovernedContext.principal`）
+- [x] 3.2 在 matcher 决策前构造 `VisibleCapabilitySet`（`discover_cards` -> `filter_visible`），作为 intent/matcher/召回的唯一能力来源
+- [x] 3.3 `select_capability` 接收 `VisibleCapabilitySet`，不可见能力不进入候选
 
 ## 4. matcher 绑定非空 snapshotId
 
