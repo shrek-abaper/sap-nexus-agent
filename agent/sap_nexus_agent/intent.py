@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 import re
+import uuid
 from typing import TYPE_CHECKING
+
+from sap_nexus_agent.intent_envelope import IntentEnvelope, IntentGoal
 
 if TYPE_CHECKING:
     # Type-only import: avoids a circular import at runtime
@@ -455,3 +458,58 @@ def _clarification(missing: list[str]) -> str | None:
     if missing:
         return "请提供要查询的物料编号和工厂。"
     return None
+
+
+def parse_intent_envelope(
+    text: str,
+    context: "ConversationContext | None" = None,
+    *,
+    snapshot_id: str = "",
+) -> IntentEnvelope:
+    """Rule-path intent parsing returning IntentEnvelope (created_by='rule').
+
+    Runbook 14: reuses existing keyword extraction via ``parse_intent`` and
+    converts the ``IntentParseResult`` to an ``IntentEnvelope``. Technical
+    override (rfcName / OData) produces an envelope with empty goals and
+    ``discard_reasons`` recording the violation. ``model_evidence`` is empty
+    on the rule path (no LLM payload to summarize).
+    """
+    rule_payload = parse_intent(text, context=context)
+    return _rule_payload_to_envelope(rule_payload, text, snapshot_id)
+
+
+def _rule_payload_to_envelope(
+    rule_payload: "IntentParseResult",
+    utterance: str,
+    snapshot_id: str,
+) -> IntentEnvelope:
+    """Convert an IntentParseResult (rule path) to IntentEnvelope."""
+    discard_reasons: list[str] = []
+    if rule_payload.contains_rfc_name:
+        discard_reasons.append("technical_field:rfcName")
+    if rule_payload.contains_odata_override:
+        discard_reasons.append("technical_field:odata_override")
+
+    goals: list[IntentGoal] = []
+    for mi in rule_payload.matched_intents:
+        goals.append(
+            IntentGoal(
+                goal_text=utterance,
+                capability_hint=mi.capability_id,
+                parameters=dict(mi.parameters),
+                missing=list(mi.missing),
+            )
+        )
+
+    return IntentEnvelope(
+        envelope_id=uuid.uuid4().hex,
+        utterance=utterance,
+        goals=tuple(goals),
+        user_constraints={},
+        ambiguities=[],
+        reference_turn_id=None,
+        model_evidence={},  # rule path: empty model_evidence
+        snapshot_id=snapshot_id,
+        discard_reasons=discard_reasons,
+        created_by="rule",
+    )

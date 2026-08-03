@@ -113,6 +113,8 @@ def test_registry_v2_metadata_does_not_change_runtime_descriptors():
         "domain",
         "business_object",
         "inputs",
+        "aliases",
+        "examples",
     )
     assert tuple(field.name for field in fields(InputDescriptor)) == (
         "name",
@@ -140,3 +142,30 @@ def test_registry_v2_metadata_does_not_change_runtime_descriptors():
         "createdBy",
         "requiresApproval",
     )
+
+
+# Runbook 14: aliases / examples fields.
+def test_capability_descriptor_has_aliases_and_examples_fields():
+    from sap_nexus_agent.registry_loader import CapabilityDescriptor
+
+    field_names = {f.name for f in fields(CapabilityDescriptor)}
+    assert "aliases" in field_names
+    assert "examples" in field_names
+
+
+def test_load_intent_catalog_populates_aliases_and_examples():
+    catalog = load_intent_catalog(str(REPO_ROOT))
+    inv = catalog.find("MM.Inventory.GetAvailability")
+    assert inv is not None
+    # aliases / examples should be tuples (may be empty if registry lacks them).
+    assert isinstance(inv.aliases, tuple)
+    assert isinstance(inv.examples, tuple)
+
+
+def test_load_intent_catalog_capabilities_without_aliases_examples_still_load():
+    catalog = load_intent_catalog(str(REPO_ROOT))
+    # All 3 capabilities must load; absence of aliases/examples is OK.
+    assert len(catalog.capabilities) >= 3
+    for cap in catalog.capabilities:
+        assert isinstance(cap.aliases, tuple)
+        assert isinstance(cap.examples, tuple)

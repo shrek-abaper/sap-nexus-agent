@@ -9,6 +9,13 @@ capabilities:
     businessObject: InventoryStock
     ontologyIri: sapnexus:MM_Inventory_GetAvailability
     semanticType: sapnexus:InventoryAvailabilityReadFunction
+    aliases:
+      - 库存查询
+      - 物料可用量
+      - 库存
+    examples:
+      - 查物料 DEMOA2 在 1000 工厂的库存
+      - 1000 工厂 DEMOA2 还有多少
     inputs:
       - name: material
         semanticName: materialNumber
@@ -85,6 +92,13 @@ capabilities:
     businessObject: PurchaseOrder
     ontologyIri: sapnexus:MM_PurchaseOrder_GetList
     semanticType: sapnexus:PurchaseOrderListReadFunction
+    aliases:
+      - 采购订单查询
+      - PO查询
+      - 订单
+    examples:
+      - 查采购订单 4500000001
+      - 供应商 1000 的采购订单
     inputs:
       - name: poNumber
         semanticName: purchaseOrderNumber
@@ -154,6 +168,13 @@ capabilities:
     businessObject: PurchaseRequisition
     ontologyIri: sapnexus:MM_PR_CreateDraft
     semanticType: sapnexus:PurchaseRequisitionCreateAction
+    aliases:
+      - 创建采购申请
+      - 建PR
+      - PR草稿
+    examples:
+      - 帮我建一个采购申请 DEMOA2 1000 100 EA
+      - 创建 PR 草稿 物料 DEMOA2 工厂 1000 数量 100
     inputs:
       - name: material
         semanticName: materialNumber

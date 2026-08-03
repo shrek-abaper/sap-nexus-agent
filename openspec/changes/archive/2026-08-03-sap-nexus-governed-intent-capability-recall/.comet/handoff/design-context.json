@@ -1,0 +1,16 @@
+{
+  "change": "sap-nexus-governed-intent-capability-recall",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "66e60523c3f46289ac96098a189dee0b28a7140aa49b9b774285d5ab17c37add",
+  "files": [
+    { "path": "openspec/changes/sap-nexus-governed-intent-capability-recall/proposal.md", "sha256": "be6755a23158cc7a5c6dbe1b0d6a7218571f527534a274a5565bd98260f87796" },
+    { "path": "openspec/changes/sap-nexus-governed-intent-capability-recall/design.md", "sha256": "973b315efc3e03b6f20f251b89d02d35522b9726c01f0163ac29641b0e813d49" },
+    { "path": "openspec/changes/sap-nexus-governed-intent-capability-recall/tasks.md", "sha256": "34311715fd86ce355f736df381a7627dda288fec4e075408980242b5cb557129" },
+    { "path": "openspec/changes/sap-nexus-governed-intent-capability-recall/specs/conversational-context/spec.md", "sha256": "5d984e2ed9b6433ba47963b95ade6c31e5182846c7154335cbec2351c82fd039" },
+    { "path": "openspec/changes/sap-nexus-governed-intent-capability-recall/specs/governed-intent-envelope-recall/spec.md", "sha256": "6ee1b341e988175e4bc77b502c4bbcf8ddd3b1765cad0ba64acceb5d34c081fb" },
+    { "path": "openspec/changes/sap-nexus-governed-intent-capability-recall/specs/semantic-match-decision/spec.md", "sha256": "d75c0a0228b2b2eaa72c4073e7233f8f6783ea5c67e599788450bc8b5adadd74" }
+  ]
+}

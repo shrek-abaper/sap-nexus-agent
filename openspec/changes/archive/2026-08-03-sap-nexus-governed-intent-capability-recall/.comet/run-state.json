@@ -1,0 +1,19 @@
+{
+  "runId": "94cb9894-69d2-4bcd-9ee1-81f68cdac8cf",
+  "skill": "comet-classic",
+  "skillVersion": "1",
+  "skillHash": "e211dc93b4bbc218965022f6d64f54a26e2240bd45b8bf6e1321ceb96775a3a3",
+  "orchestration": "deterministic",
+  "currentStep": "archived",
+  "iteration": 4,
+  "pending": null,
+  "pendingRef": ".comet/pending-action.json",
+  "trajectoryRef": ".comet/trajectory.jsonl",
+  "contextRef": ".comet/context.md",
+  "artifactsRef": ".comet/artifacts.json",
+  "checkpointRef": ".comet/checkpoint.json",
+  "status": "completed",
+  "retries": {},
+  "archivedAt": "2026-08-03",
+  "archivedTo": "openspec/changes/archive/2026-08-03-sap-nexus-governed-intent-capability-recall/"
+}

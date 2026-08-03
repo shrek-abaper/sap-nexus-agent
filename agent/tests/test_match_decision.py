@@ -229,3 +229,51 @@ def test_decision_type_literal_accepts_five_states():
     for dt in ("SELECT", "CLARIFY", "REJECT", "SHOW_OPTIONS", "ESCALATE_TO_PLANNER"):
         d = MatchDecision(decision_type=dt)  # type: ignore[arg-type]
         assert d.decision_type == dt
+
+
+# Runbook 14: MatchDecision replay fields.
+def test_match_decision_replay_fields_default_empty():
+    """Replay fields default to empty/null so existing callers still work."""
+    decision = MatchDecision(
+        decision_type="SELECT",
+        capability_id="MM.Inventory.GetAvailability",
+        parameters={"material": "DEMOA2"},
+    )
+    assert decision.envelope_id is None
+    assert decision.recall_candidates == ()
+    assert decision.rerank_evidence == ()
+    assert decision.discard_reasons == ()
+
+
+def test_match_decision_select_carries_replay_fields():
+    """SELECT decision carries envelope_id + recall + rerank + discard."""
+    decision = MatchDecision(
+        decision_type="SELECT",
+        capability_id="MM.Inventory.GetAvailability",
+        parameters={"material": "DEMOA2", "plant": "1000"},
+        envelope_id="env-001",
+        recall_candidates=("MM.Inventory.GetAvailability", "MM.PurchaseOrder.GetList"),
+        rerank_evidence=(
+            {"capabilityId": "MM.Inventory.GetAvailability", "score": 5},
+            {"capabilityId": "MM.PurchaseOrder.GetList", "score": 2},
+        ),
+        discard_reasons=(),
+    )
+    assert decision.envelope_id == "env-001"
+    assert len(decision.recall_candidates) == 2
+    assert decision.recall_candidates[0] == "MM.Inventory.GetAvailability"
+    assert decision.rerank_evidence[0]["score"] == 5
+    assert decision.discard_reasons == ()
+
+
+def test_match_decision_reject_carries_discard_reasons():
+    """REJECT decision carries discard_reasons for filtered LLM output."""
+    decision = MatchDecision(
+        decision_type="REJECT",
+        error_type="UNKNOWN_CAPABILITY",
+        envelope_id="env-002",
+        discard_reasons=("unknown_capability:Foo.Bar", "technical_field:baseUrl"),
+    )
+    assert decision.envelope_id == "env-002"
+    assert "unknown_capability:Foo.Bar" in decision.discard_reasons
+    assert "technical_field:baseUrl" in decision.discard_reasons

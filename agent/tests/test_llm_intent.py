@@ -763,3 +763,117 @@ def test_messages_base_system_contains_multi_value_guidance():
     system_content = msgs[0]["content"]
     assert "multiParameters" in system_content
     assert "数组" in system_content or "array" in system_content.lower()
+
+
+# Runbook 14: LLM payload -> IntentEnvelope conversion.
+def test_payload_to_envelope_single_capability():
+    """payload_to_envelope produces IntentEnvelope with created_by='llm'."""
+    from sap_nexus_agent.llm_intent import payload_to_envelope
+    from sap_nexus_agent.intent_envelope import IntentEnvelope
+
+    payload = {
+        "capabilityId": "MM.Inventory.GetAvailability",
+        "parameters": {"material": "DEMOA2", "plant": "1000"},
+    }
+    catalog = _load_catalog()
+    envelope = payload_to_envelope(
+        payload,
+        catalog,
+        utterance="查库存 DEMOA2 1000",
+        snapshot_id="snap-001",
+        visible_capability_ids=frozenset(("MM.Inventory.GetAvailability",)),
+    )
+    assert isinstance(envelope, IntentEnvelope)
+    assert envelope.created_by == "llm"
+    assert envelope.snapshot_id == "snap-001"
+    assert len(envelope.envelope_id) > 0
+    assert len(envelope.goals) == 1
+    assert envelope.goals[0].capability_hint == "MM.Inventory.GetAvailability"
+    assert envelope.goals[0].parameters["material"] == "DEMOA2"
+
+
+def test_payload_to_envelope_unknown_capability_discarded():
+    """Unknown capability_id is discarded with structured reason."""
+    from sap_nexus_agent.llm_intent import payload_to_envelope
+
+    payload = {"capabilityId": "Foo.Bar", "parameters": {}}
+    catalog = _load_catalog()
+    envelope = payload_to_envelope(
+        payload,
+        catalog,
+        utterance="x",
+        snapshot_id="snap-001",
+        visible_capability_ids=frozenset(("MM.Inventory.GetAvailability",)),
+    )
+    assert envelope.created_by == "llm"
+    assert len(envelope.goals) == 0
+    assert "unknown_capability:Foo.Bar" in envelope.discard_reasons
+
+
+def test_payload_to_envelope_technical_field_discarded():
+    """Technical field in parameters is discarded with reason."""
+    from sap_nexus_agent.llm_intent import payload_to_envelope
+
+    payload = {
+        "capabilityId": "MM.Inventory.GetAvailability",
+        "parameters": {"material": "DEMOA2", "baseUrl": "http://x"},
+    }
+    catalog = _load_catalog()
+    envelope = payload_to_envelope(
+        payload,
+        catalog,
+        utterance="x",
+        snapshot_id="snap-001",
+        visible_capability_ids=frozenset(("MM.Inventory.GetAvailability",)),
+    )
+    assert "technical_field:baseUrl" in envelope.discard_reasons
+    # baseUrl must NOT leak into goal parameters.
+    assert "baseUrl" not in envelope.goals[0].parameters
+
+
+def test_payload_to_envelope_multi_candidate():
+    """Multi-candidate payload produces multiple goals."""
+    from sap_nexus_agent.llm_intent import payload_to_envelope
+
+    payload = {
+        "candidates": [
+            {"capabilityId": "MM.Inventory.GetAvailability", "parameters": {"material": "DEMOA2"}},
+            {"capabilityId": "MM.PurchaseOrder.GetList", "parameters": {}},
+        ]
+    }
+    catalog = _load_catalog()
+    visible = frozenset(("MM.Inventory.GetAvailability", "MM.PurchaseOrder.GetList"))
+    envelope = payload_to_envelope(
+        payload, catalog, utterance="x", snapshot_id="snap-001", visible_capability_ids=visible
+    )
+    assert len(envelope.goals) == 2
+    hints = {g.capability_hint for g in envelope.goals}
+    assert "MM.Inventory.GetAvailability" in hints
+    assert "MM.PurchaseOrder.GetList" in hints
+
+
+def test_payload_to_envelope_model_evidence_populated():
+    """model_evidence contains a summary of the LLM payload."""
+    from sap_nexus_agent.llm_intent import payload_to_envelope
+
+    payload = {
+        "capabilityId": "MM.Inventory.GetAvailability",
+        "parameters": {"material": "DEMOA2", "plant": "1000"},
+    }
+    catalog = _load_catalog()
+    envelope = payload_to_envelope(
+        payload,
+        catalog,
+        utterance="x",
+        snapshot_id="snap-001",
+        visible_capability_ids=frozenset(("MM.Inventory.GetAvailability",)),
+    )
+    assert envelope.model_evidence  # non-empty
+    assert "capabilityId" in envelope.model_evidence or "candidates" in envelope.model_evidence
+
+
+def _load_catalog():
+    from sap_nexus_agent.registry_loader import load_intent_catalog
+    from pathlib import Path
+    repo_root = Path(__file__).resolve().parents[2]
+    return load_intent_catalog(str(repo_root))

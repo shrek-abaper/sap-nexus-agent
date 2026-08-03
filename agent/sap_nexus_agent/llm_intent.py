@@ -534,3 +534,162 @@ def resolve_with_context(
             MatchedIntent(capability_id=cap_id, parameters=merged, missing=list(missing))
         ],
     )
+
+
+def payload_to_envelope(
+    payload: dict[str, object],
+    catalog: IntentCatalog,
+    *,
+    utterance: str,
+    snapshot_id: str,
+    visible_capability_ids: "frozenset[str]",
+) -> IntentEnvelope:
+    """Convert an LLM payload to an IntentEnvelope (created_by='llm').
+
+    Runbook 14: replaces ``_payload_to_parse_result`` for callers that
+    consume ``IntentEnvelope``. Detects discard reasons (unknown capability,
+    technical field, invalid param) and records them in
+    ``envelope.discard_reasons``. Goals are built only from valid candidates
+    (unknown capabilities / technical fields are filtered out).
+
+    Args:
+        payload: Raw LLM payload (single capabilityId / candidates list /
+            escalation variants).
+        catalog: IntentCatalog for descriptor lookups.
+        utterance: Original user utterance.
+        snapshot_id: From GovernedContext.
+        visible_capability_ids: Closed set for visibility filtering.
+
+    Returns:
+        IntentEnvelope with ``created_by='llm'`` and ``model_evidence``
+        summarizing the payload.
+    """
+    import uuid as _uuid
+
+    from sap_nexus_agent.discard import detect_discard_reasons
+    from sap_nexus_agent.intent_envelope import IntentEnvelope, IntentGoal
+
+    if not isinstance(payload, dict):
+        return IntentEnvelope(
+            envelope_id=_uuid.uuid4().hex,
+            utterance=utterance,
+            goals=(),
+            user_constraints={},
+            ambiguities=[],
+            reference_turn_id=None,
+            model_evidence={},
+            snapshot_id=snapshot_id,
+            discard_reasons=["invalid_payload:not_a_dict"],
+            created_by="llm",
+        )
+
+    discard_reasons = detect_discard_reasons(payload, visible_capability_ids)
+
+    # Build goals from valid candidates only.
+    goals: list[IntentGoal] = []
+
+    # Goals-based shape (preferred Runbook 14 format).
+    raw_goals = payload.get("goals")
+    if isinstance(raw_goals, list):
+        for goal in raw_goals:
+            if not isinstance(goal, dict):
+                continue
+            hint = goal.get("capabilityHint")
+            if not isinstance(hint, str) or hint not in visible_capability_ids:
+                continue
+            descriptor = catalog.find(hint)
+            if descriptor is None:
+                continue
+            raw_params = goal.get("parameters") or {}
+            params = _extract_parameters(raw_params, descriptor)
+            missing = [
+                inp.name
+                for inp in descriptor.inputs
+                if inp.required and inp.name not in params
+            ]
+            goals.append(
+                IntentGoal(
+                    goal_text=str(goal.get("goalText", utterance)),
+                    capability_hint=hint,
+                    parameters=params,
+                    missing=missing,
+                )
+            )
+    else:
+        # Legacy candidates list shape.
+        candidates_raw = payload.get("candidates")
+        if candidates_raw is None and isinstance(payload.get("escalation"), dict):
+            candidates_raw = payload["escalation"].get("candidates")
+
+        if isinstance(candidates_raw, list):
+            for cand in candidates_raw:
+                if not isinstance(cand, dict):
+                    continue
+                cap_id = cand.get("capabilityId")
+                if not isinstance(cap_id, str) or cap_id not in visible_capability_ids:
+                    continue
+                descriptor = catalog.find(cap_id)
+                if descriptor is None:
+                    continue
+                raw_params = cand.get("parameters") or {}
+                params = _extract_parameters(raw_params, descriptor)
+                missing = [
+                    inp.name
+                    for inp in descriptor.inputs
+                    if inp.required and inp.name not in params
+                ]
+                goals.append(
+                    IntentGoal(
+                        goal_text=utterance,
+                        capability_hint=cap_id,
+                        parameters=params,
+                        missing=missing,
+                    )
+                )
+        else:
+            # Single capabilityId shape.
+            cap_id = payload.get("capabilityId")
+            if isinstance(cap_id, str) and cap_id in visible_capability_ids:
+                descriptor = catalog.find(cap_id)
+                if descriptor is not None:
+                    raw_params = payload.get("parameters") or {}
+                    params = _extract_parameters(raw_params, descriptor)
+                    missing = [
+                        inp.name
+                        for inp in descriptor.inputs
+                        if inp.required and inp.name not in params
+                    ]
+                    goals.append(
+                        IntentGoal(
+                            goal_text=utterance,
+                            capability_hint=cap_id,
+                            parameters=params,
+                            missing=missing,
+                        )
+                    )
+
+    # Build model_evidence summary.
+    model_evidence: dict[str, object] = {}
+    if "capabilityId" in payload:
+        model_evidence["capabilityId"] = payload["capabilityId"]
+    if isinstance(payload.get("candidates"), list):
+        model_evidence["candidates"] = [
+            c.get("capabilityId") if isinstance(c, dict) else None
+            for c in payload["candidates"]
+        ]
+    if isinstance(raw_goals, list):
+        model_evidence["goals"] = len(raw_goals)
+    model_evidence["discard_count"] = len(discard_reasons)
+
+    return IntentEnvelope(
+        envelope_id=_uuid.uuid4().hex,
+        utterance=utterance,
+        goals=tuple(goals),
+        user_constraints={},
+        ambiguities=[],
+        reference_turn_id=None,
+        model_evidence=model_evidence,
+        snapshot_id=snapshot_id,
+        discard_reasons=discard_reasons,
+        created_by="llm",
+    )
