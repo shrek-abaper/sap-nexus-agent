@@ -5,9 +5,9 @@
 
 ## 2. run_query 入口绑定 GovernedContext
 
-- [ ] 2.1 `run_query` 增 `principal` / `governed_context` 参数（默认 `None` 时回退 `PLACEHOLDER_PRINCIPAL`，本地 dev 不崩）
-- [ ] 2.2 入口构造 `SnapshotLease`（复用 `_default_planner_sources` + `build_registry_snapshot`），保证 `snapshotId` 非空并贯穿下游
-- [ ] 2.3 `AgentOutcome` 增 `planner_failure` 字段，承载结构化失败
+- [x] 2.1 `run_query` 增 `principal` / `governed_context` 参数（默认 `None` 时回退 `PLACEHOLDER_PRINCIPAL`，本地 dev 不崩）
+- [x] 2.2 入口构造 `SnapshotLease`（复用 `_default_planner_sources` + `build_registry_snapshot`），保证 `snapshotId` 非空并贯穿下游
+- [x] 2.3 `AgentOutcome` 增 `planner_failure` 字段，承载结构化失败
 
 ## 3. visibility pre-filter 接入 matcher 决策路径
 

@@ -43,6 +43,16 @@ from sap_nexus_agent.semantic_planning import (
     build_registry_snapshot,
     load_semantic_sources,
 )
+from sap_nexus_agent.governed_context import (
+    PLACEHOLDER_PRINCIPAL,
+    GovernedContext,
+    PlannerFailure,
+    SnapshotDriftError,
+    SnapshotLease,
+    TrustedPrincipal,
+    VisibleCapabilitySet,
+    load_principal_from_env,
+)
 
 
 INVENTORY_CAPABILITY_ID = "MM.Inventory.GetAvailability"
@@ -80,6 +90,10 @@ class AgentOutcome:
     # Multi-value batch (Design Doc §4.4): combinations awaiting user confirm.
     # Populated only for status="awaiting_batch_confirm".
     combinations: list[dict[str, str]] | None = None
+    # Structured planner failure (Design Doc §3.5). Populated when the
+    # planner encounters snapshot drift, source load error, or visibility
+    # denial. None for all non-ESCALATE paths and successful dry-runs.
+    planner_failure: "PlannerFailure | None" = None
 
 
 IntentAdapter = Callable[[str, "ConversationContext | None"], IntentParseResult]
@@ -113,6 +127,7 @@ def run_query(
     *,
     intent_adapter: IntentAdapter = parse_intent,
     context: ConversationContext | None = None,
+    principal: TrustedPrincipal | None = None,
     snapshot: RegistrySnapshot | None = None,
     sources: SemanticSourceDocuments | None = None,
     planner_sources_loader: PlannerSourcesLoader | None = None,
@@ -140,6 +155,69 @@ def run_query(
     (Task 3) and history injection (Task 4) consume the same parameter
     downstream.
     """
+    # GovernedContext binding (Design Doc §4 data flow).
+    # principal defaults to PLACEHOLDER for local dev backward compat.
+    effective_principal = principal or PLACEHOLDER_PRINCIPAL
+
+    # Construct SnapshotLease at entry: reuse injected snapshot/sources or
+    # load via _default_planner_sources. Failure -> PlannerFailure.
+    planner_failure: PlannerFailure | None = None
+    lease: SnapshotLease | None = None
+    try:
+        if snapshot is None or sources is None:
+            loader = planner_sources_loader or _default_planner_sources
+            loaded_snapshot, loaded_sources = loader()
+            if snapshot is None:
+                snapshot = loaded_snapshot
+            if sources is None:
+                sources = loaded_sources
+        if not snapshot.snapshot_id:
+            planner_failure = PlannerFailure(
+                error_type="SNAPSHOT_MISSING",
+                message="build_registry_snapshot returned empty snapshot_id",
+                snapshot_id=None,
+                audit_evidence={
+                    "expected_snapshot_id": None,
+                    "actual_snapshot_id": None,
+                    "principal_id": effective_principal.principal_id,
+                    "source_paths": [],
+                    "stage": "entry",
+                },
+            )
+        else:
+            lease = SnapshotLease(snapshot=snapshot, sources=sources)
+    except Exception as exc:
+        planner_failure = PlannerFailure(
+            error_type="SOURCE_LOAD_ERROR",
+            message=f"failed to load registry sources: {exc}",
+            snapshot_id=None,
+            audit_evidence={
+                "expected_snapshot_id": None,
+                "actual_snapshot_id": None,
+                "principal_id": effective_principal.principal_id,
+                "source_paths": [],
+                "stage": "entry",
+            },
+        )
+
+    if planner_failure is not None:
+        return AgentOutcome(
+            status="failure",
+            message=planner_failure.message,
+            response_text=planner_failure.message,
+            error_type=planner_failure.error_type,
+            planner_failure=planner_failure,
+        )
+
+    assert lease is not None  # for type checker
+    scopes = tuple(f"{k}:{v}" for k, v in effective_principal.data_scope.items())
+    governed_context = GovernedContext(
+        principal=effective_principal,
+        scopes=scopes,
+        snapshot_id=lease.snapshot_id,
+        registry_version=snapshot.snapshot_version,
+    )
+
     # Backward-compat dispatch: when context is None, call the adapter with
     # the original single-arg signature so existing 1-arg adapters (and the
     # default ``parse_intent``) are byte-for-byte unchanged. Only forward
