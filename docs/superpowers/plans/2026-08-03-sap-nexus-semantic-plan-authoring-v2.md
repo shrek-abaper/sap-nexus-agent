@@ -346,7 +346,7 @@ git commit -m "feat(planner): add PlanCompileResult dataclass for v2 compiler"
 - `_validate_parameter_source` 不认识 `registeredDefault`——v2 写 `_validate_parameter_sources_v2`，遍历 bindings 时对 `registeredDefault` 走自定义分支（本期报 `RESERVED_SOURCE_NOT_AUTHORED`），其余 3 源调用 S1 `_validate_parameter_source`。
 - 其余 `_validate_*`（snapshot/identity、nodes、edges、topological、governance、goalOutputs）直接 import 复用。
 
-- [ ] **Step 1: 写失败测试——v2 validator 接受合法 v2 plan**
+- [x] **Step 1: 写失败测试——v2 validator 接受合法 v2 plan**
 
 在 `agent/tests/test_semantic_planning_v2.py` 追加。用真实 registry 构造一个最小合法 v2 plan（双 READ 节点 + 空分区占位由 compiler 产出；此处手工构造以隔离 validator）：
 
@@ -444,12 +444,12 @@ def test_validate_plan_graph_v2_accepts_valid_v2_plan():
     assert report.valid is True, report.issues
 ```
 
-- [ ] **Step 2: 运行确认失败**
+- [x] **Step 2: 运行确认失败**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_semantic_planning_v2.py::test_validate_plan_graph_v2_accepts_valid_v2_plan -q`
 Expected: FAIL（`ModuleNotFoundError: sap_nexus_agent.semantic_planning.validation_v2`）
 
-- [ ] **Step 3: 实现 v2 validator 主体**
+- [x] **Step 3: 实现 v2 validator 主体**
 
 创建 `agent/sap_nexus_agent/semantic_planning/validation_v2.py`：
 
@@ -684,7 +684,7 @@ def _validate_refs(
 
 注意：`_validate_partitions` 与 `_validate_refs` 本 task 先放占位 `NotImplementedError`，Task 4/5 实现。为让 Task 3 测试（合法 plan，分区合法、refs 空）通过，本 task 先把这两个函数实现为"最小可过"版本——见 Step 4。
 
-- [ ] **Step 4: 实现 `_validate_partitions` 与 `_validate_refs` 最小版本（空通过）**
+- [x] **Step 4: 实现 `_validate_partitions` 与 `_validate_refs` 最小版本（空通过）**
 
 为让 Task 3 测试先通过，把两个占位函数替换为最小实现：
 
@@ -725,12 +725,12 @@ def _validate_refs(
     return None
 ```
 
-- [ ] **Step 5: 运行确认通过**
+- [x] **Step 5: 运行确认通过**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_semantic_planning_v2.py -q`
 Expected: PASS（含 schema 3 tests + validator 1 test）
 
-- [ ] **Step 6: 提交**
+- [x] **Step 6: 提交**
 
 ```bash
 git add agent/sap_nexus_agent/semantic_planning/validation_v2.py agent/tests/test_semantic_planning_v2.py

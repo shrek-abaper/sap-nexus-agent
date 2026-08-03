@@ -5,8 +5,8 @@
 
 ## 2. v2 契约与校验器
 
-- [ ] 2.1 在 `semantic_planning` 中新增 v2 PlanGraph 契约类型（分区结构 + `registeredDefault` 源种类）
-- [ ] 2.2 实现 v2 validator，复用 S1 `validate_plan_graph` 校验原语（provenance、edges、cycle、topological order、governance、snapshot、goalOutputs）
+- [x] 2.1 在 `semantic_planning` 中新增 v2 PlanGraph 契约类型（分区结构 + `registeredDefault` 源种类）
+- [x] 2.2 实现 v2 validator，复用 S1 `validate_plan_graph` 校验原语（provenance、edges、cycle、topological order、governance、snapshot、goalOutputs）
 - [ ] 2.3 新增分区隔离校验：Action / 非 read-only 节点 MUST NOT 出现在 `readPartition`
 - [ ] 2.4 新增 `projectionRef` / `ruleSetRefs` 引用校验：非空时引用实体 MUST 来自 snapshot；为空时通过（本期默认）
 
