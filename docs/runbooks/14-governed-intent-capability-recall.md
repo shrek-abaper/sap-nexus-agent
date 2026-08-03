@@ -6,8 +6,9 @@
 |---|---|
 | Runbook | `14-governed-intent-capability-recall` |
 | Version | `v0.2.0` |
-| Status | `Implemented` |
+| Status | `Archived` |
 | Created / Updated | `2026-08-03` |
+| Archived | `2026-08-03` — `openspec/changes/archive/2026-08-03-sap-nexus-governed-intent-capability-recall/` |
 | Depends On | Runbook 13 |
 | Unblocks | Runbook 15 |
 
