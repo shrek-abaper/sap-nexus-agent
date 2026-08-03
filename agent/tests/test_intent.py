@@ -742,3 +742,57 @@ def test_intent_parse_result_has_multi_parameters_field():
     from sap_nexus_agent.intent import IntentParseResult
     result = IntentParseResult(intent=None, parameters={}, missing_parameters=[])
     assert result.multi_parameters == {}
+
+
+# Runbook 14: rule path produces IntentEnvelope via parse_intent_envelope.
+def test_parse_intent_envelope_rule_path_basic():
+    """parse_intent_envelope returns IntentEnvelope with created_by='rule'."""
+    from sap_nexus_agent.intent import parse_intent_envelope
+    from sap_nexus_agent.intent_envelope import IntentEnvelope
+
+    envelope = parse_intent_envelope("库存 DEMOA2 1000", snapshot_id="snap-rule")
+    assert isinstance(envelope, IntentEnvelope)
+    assert envelope.created_by == "rule"
+    assert envelope.snapshot_id == "snap-rule"
+    assert envelope.model_evidence == {}
+    assert len(envelope.goals) >= 1
+    assert envelope.goals[0].capability_hint == "MM.Inventory.GetAvailability"
+
+
+def test_parse_intent_envelope_rule_path_rfc_name():
+    """rfcName in utterance produces envelope with discard_reasons, empty goals."""
+    from sap_nexus_agent.intent import parse_intent_envelope
+    from sap_nexus_agent.intent_envelope import IntentEnvelope
+
+    envelope = parse_intent_envelope("rfcName=BAPI_X 查库存", snapshot_id="snap-rule")
+    assert isinstance(envelope, IntentEnvelope)
+    assert envelope.created_by == "rule"
+    assert len(envelope.goals) == 0
+    assert any("technical_field" in r for r in envelope.discard_reasons)
+
+
+def test_parse_intent_envelope_rule_path_multi_intent():
+    """Multi-intent utterance produces envelope with multiple goals."""
+    from sap_nexus_agent.intent import parse_intent_envelope
+
+    envelope = parse_intent_envelope("库存 DEMOA2 1000 采购订单 4500000001", snapshot_id="snap-001")
+    assert len(envelope.goals) >= 2
+    cap_hints = {g.capability_hint for g in envelope.goals}
+    assert "MM.Inventory.GetAvailability" in cap_hints
+    assert "MM.PurchaseOrder.GetList" in cap_hints
+
+
+def test_parse_intent_envelope_default_snapshot_id():
+    """Default snapshot_id is empty string when not provided."""
+    from sap_nexus_agent.intent import parse_intent_envelope
+
+    envelope = parse_intent_envelope("库存 DEMOA2 1000")
+    assert envelope.snapshot_id == ""
+
+
+def test_parse_intent_envelope_envelope_id_is_uuid_hex():
+    """envelope_id is a non-empty UUID hex string."""
+    from sap_nexus_agent.intent import parse_intent_envelope
+
+    envelope = parse_intent_envelope("库存 DEMOA2 1000", snapshot_id="snap-001")
+    assert len(envelope.envelope_id) == 32  # uuid4().hex length
