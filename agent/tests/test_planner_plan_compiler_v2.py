@@ -476,3 +476,72 @@ def test_compile_plan_v2_from_handoff_outputs_all_v2_fields_without_gateway(monk
     mock_gateway.validate.assert_not_called()
     mock_gateway.execute.assert_not_called()
     exploding.assert_not_called()
+
+
+# ---- Task 13: 7 类 bad-case fail-closed (compiler layer) ----
+
+
+def test_bad_case_unknown_capability_fails_closed():
+    """spec R4: unknown capability -> UNKNOWN_CAPABILITY, plan invalid."""
+    snapshot = _real_snapshot()
+    sources = _real_sources()
+    handoff = EscalationHandoff(
+        reason="bad",
+        matched_intents=[MatchedIntent("MM.DoesNotExist.Get", {"material": "M1", "plant": "5300"}, [])],
+        utterance="bad",
+        registry_snapshot_id=snapshot.snapshot_id,
+    )
+    result = compile_plan_v2(handoff, snapshot, sources)
+    assert result.plan_graph is not None  # 不返回 None
+    assert any(f.kind == "invalid_plan_graph" for f in result.governance_flags)
+
+
+def test_bad_case_missing_parameter_source_fails_closed():
+    """spec R4: required parameter no source -> PARAMETER_SOURCE_MISSING."""
+    snapshot = _real_snapshot()
+    sources = _real_sources()
+    handoff = EscalationHandoff(
+        reason="bad",
+        matched_intents=[MatchedIntent("MM.Inventory.GetAvailability", {"plant": "5300"}, [])],
+        utterance="bad",  # 缺 material
+        registry_snapshot_id=snapshot.snapshot_id,
+    )
+    result = compile_plan_v2(handoff, snapshot, sources)
+    assert result.plan_graph is not None
+    assert any(f.kind == "invalid_plan_graph" for f in result.governance_flags)
+    # gap 记录 missing_parameter
+    assert any(g.kind == "missing_parameter" for g in result.gaps)
+
+
+def test_bad_case_snapshot_drift_fails_closed():
+    """spec R7: snapshot drift -> PlannerFailure(SNAPSHOT_DRIFT)。"""
+    snapshot = _real_snapshot()
+    sources = _real_sources()
+    handoff = EscalationHandoff(
+        reason="bad",
+        matched_intents=[MatchedIntent("MM.Inventory.GetAvailability", {"material": "M1", "plant": "5300"}, [])],
+        utterance="bad",
+        registry_snapshot_id="sha256:" + "f" * 64,
+    )
+    with pytest.raises(PlannerFailure) as exc:
+        compile_plan_v2(handoff, snapshot, sources)
+    assert exc.value.error_type == "SNAPSHOT_DRIFT"
+
+
+def test_invalid_plan_preserves_structured_issues_not_none():
+    """spec R4: invalid plan must return structured issues (never None)."""
+    snapshot = _real_snapshot()
+    sources = _real_sources()
+    handoff = EscalationHandoff(
+        reason="bad",
+        matched_intents=[MatchedIntent("MM.Inventory.GetAvailability", {"plant": "5300"}, [])],
+        utterance="bad",
+        registry_snapshot_id=snapshot.snapshot_id,
+    )
+    result = compile_plan_v2(handoff, snapshot, sources)
+    assert result is not None
+    assert result.plan_graph is not None
+    invalid_flags = [f for f in result.governance_flags if f.kind == "invalid_plan_graph"]
+    assert invalid_flags
+    # rationale 携带 issue 摘要
+    assert "issue" in result.rationale or "failed" in result.rationale

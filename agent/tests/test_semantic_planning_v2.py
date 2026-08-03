@@ -221,3 +221,122 @@ def test_validate_plan_graph_v2_unknown_projection_ref_fails_closed():
     assert report.valid is False
     codes = {issue.code for issue in report.issues}
     assert "UNKNOWN_PROJECTION_REF" in codes
+
+
+# ---- Task 13: 7 类 bad-case fail-closed (validator layer) ----
+
+
+def test_bad_case_unknown_capability_validator():
+    """spec R4: unknown capability -> UNKNOWN_CAPABILITY."""
+    snapshot = _real_snapshot()
+    plan = _valid_v2_plan(snapshot)
+    plan["nodes"][0]["capabilityId"] = "MM.DoesNotExist.Get"
+    graph = SemanticGraphCompiler().compile(_real_sources())
+    report = validate_plan_graph_v2(graph, snapshot, _goal_spec_for_inventory(), plan)
+    assert report.valid is False
+    assert any(i.code == "UNKNOWN_CAPABILITY" for i in report.issues)
+
+
+def test_bad_case_cycle_validator():
+    """spec R4: dependency cycle -> DEPENDENCY_CYCLE."""
+    snapshot = _real_snapshot()
+    plan = _valid_v2_plan(snapshot)
+    # 加第二个节点 + 互相 dependency edge 形成环
+    plan["nodes"].append({
+        "nodeId": "node.MM.PurchaseOrder.GetList",
+        "capabilityId": "MM.PurchaseOrder.GetList",
+        "parameterBindings": [],
+        "producesFactTypes": ["sapnexus:PurchaseOrderSupplyFact"],
+        "governance": plan["nodes"][0]["governance"],
+    })
+    plan["edges"] = [
+        {"edgeId": "e1", "kind": "dependency", "fromNodeId": "node.MM.Inventory.GetAvailability", "toNodeId": "node.MM.PurchaseOrder.GetList"},
+        {"edgeId": "e2", "kind": "dependency", "fromNodeId": "node.MM.PurchaseOrder.GetList", "toNodeId": "node.MM.Inventory.GetAvailability"},
+    ]
+    plan["topologicalOrder"] = ["node.MM.Inventory.GetAvailability", "node.MM.PurchaseOrder.GetList"]
+    plan["readPartition"] = ["node.MM.Inventory.GetAvailability", "node.MM.PurchaseOrder.GetList"]
+    plan["actionPartition"] = []
+    plan["goalOutputs"] = [{"factTypeId": "sapnexus:InventoryAvailabilityFact", "producerNodeId": "node.MM.Inventory.GetAvailability"}]
+    graph = SemanticGraphCompiler().compile(_real_sources())
+    report = validate_plan_graph_v2(graph, snapshot, _goal_spec_for_inventory(), plan)
+    assert report.valid is False
+    assert any(i.code == "DEPENDENCY_CYCLE" for i in report.issues)
+
+
+def test_bad_case_type_mismatch_validator():
+    """factField source on an identifier parameter -> FACT_TYPE_MISMATCH.
+
+    The inventory capability's ``material`` input has ``bindingKind: identifier``
+    (not ``fact``). Replacing the existing ``goalConstraint`` binding for
+    ``material`` with a ``factField`` source triggers ``FACT_TYPE_MISMATCH``
+    because ``input_field["bindingKind"] != "fact"``.
+    """
+    snapshot = _real_snapshot()
+    plan = _valid_v2_plan(snapshot)
+    # Replace the "material" binding (goalConstraint) with a factField source.
+    # The validator checks: input_field["bindingKind"] != "fact" -> FACT_TYPE_MISMATCH.
+    plan["nodes"][0]["parameterBindings"][0] = {
+        "parameterName": "material",
+        "source": {
+            "kind": "factField",
+            "producerNodeId": "node.MM.Inventory.GetAvailability",
+            "factTypeId": "sapnexus:DoesNotExist",
+            "field": "x",
+        },
+    }
+    graph = SemanticGraphCompiler().compile(_real_sources())
+    report = validate_plan_graph_v2(graph, snapshot, _goal_spec_for_inventory(), plan)
+    assert report.valid is False
+    assert any(i.code == "FACT_TYPE_MISMATCH" for i in report.issues)
+
+
+def test_bad_case_inconsistent_relation_validator():
+    """dependency edge not matching snapshot dependsOn -> EDGE_INCONSISTENT."""
+    snapshot = _real_snapshot()
+    plan = _valid_v2_plan(snapshot)
+    plan["nodes"].append({
+        "nodeId": "node.MM.PurchaseOrder.GetList",
+        "capabilityId": "MM.PurchaseOrder.GetList",
+        "parameterBindings": [],
+        "producesFactTypes": ["sapnexus:PurchaseOrderSupplyFact"],
+        "governance": plan["nodes"][0]["governance"],
+    })
+    # snapshot 无 dependsOn 关系，但 plan author 了一条 dependency edge
+    plan["edges"] = [{"edgeId": "e1", "kind": "dependency", "fromNodeId": "node.MM.Inventory.GetAvailability", "toNodeId": "node.MM.PurchaseOrder.GetList"}]
+    plan["topologicalOrder"] = ["node.MM.Inventory.GetAvailability", "node.MM.PurchaseOrder.GetList"]
+    plan["readPartition"] = ["node.MM.Inventory.GetAvailability", "node.MM.PurchaseOrder.GetList"]
+    plan["actionPartition"] = []
+    plan["goalOutputs"] = [{"factTypeId": "sapnexus:InventoryAvailabilityFact", "producerNodeId": "node.MM.Inventory.GetAvailability"}]
+    graph = SemanticGraphCompiler().compile(_real_sources())
+    report = validate_plan_graph_v2(graph, snapshot, _goal_spec_for_inventory(), plan)
+    assert report.valid is False
+    assert any(i.code == "EDGE_INCONSISTENT" for i in report.issues)
+
+
+def test_bad_case_action_in_read_validator():
+    """spec R3: Action 节点入 readPartition -> PARTITION_GOVERNANCE_VIOLATION."""
+    snapshot = _real_snapshot()
+    plan = _valid_v2_plan(snapshot)
+    plan["nodes"][0]["governance"] = {
+        "capabilityKind": "Action", "sideEffect": "sap_write",
+        "requiresApproval": True, "approvalPolicy": "human_required",
+    }
+    graph = SemanticGraphCompiler().compile(_real_sources())
+    report = validate_plan_graph_v2(graph, snapshot, _goal_spec_for_inventory(), plan)
+    assert report.valid is False
+    assert any(
+        i.code == "PARTITION_GOVERNANCE_VIOLATION" or i.code == "GOVERNANCE_VIOLATION"
+        for i in report.issues
+    )
+
+
+def test_bad_case_missing_source_validator():
+    """spec R4: required parameter no source -> PARAMETER_SOURCE_MISSING."""
+    snapshot = _real_snapshot()
+    plan = _valid_v2_plan(snapshot)
+    # 清空 inventory 节点的 parameterBindings（material/plant 都无源）
+    plan["nodes"][0]["parameterBindings"] = []
+    graph = SemanticGraphCompiler().compile(_real_sources())
+    report = validate_plan_graph_v2(graph, snapshot, _goal_spec_for_inventory(), plan)
+    assert report.valid is False
+    assert any(i.code == "PARAMETER_SOURCE_MISSING" for i in report.issues)
