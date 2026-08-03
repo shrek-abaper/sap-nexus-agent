@@ -45,8 +45,17 @@ def _build_adapter_and_principal(intent_mode: str):
         cards = discover_cards(snapshot, sources)
         visible_cards = filter_visible(cards, for_execution=False)
         catalog = filter_catalog(catalog, visible_cards)
-    except Exception:
-        pass  # fallback: unfiltered catalog (local dev tolerance)
+    except Exception as exc:
+        # Snapshot load failed: fall back to unfiltered catalog but let
+        # run_query re-load the snapshot (fail-closed PlannerFailure on
+        # persistent failure). matcher visibility filter is defense-in-depth.
+        import logging
+
+        logging.getLogger(__name__).warning(
+            "snapshot load failed in cli; falling back to unfiltered catalog: %s", exc
+        )
+        snapshot = None
+        sources = None
     intent_adapter = build_intent_adapter(intent_mode, catalog)
     return intent_adapter, principal, snapshot, sources
 

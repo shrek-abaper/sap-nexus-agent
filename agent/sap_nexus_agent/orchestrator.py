@@ -51,7 +51,6 @@ from sap_nexus_agent.governed_context import (
     SnapshotLease,
     TrustedPrincipal,
     VisibleCapabilitySet,
-    load_principal_from_env,
 )
 
 
@@ -233,6 +232,25 @@ def run_query(
 
     all_cards = discover_cards(snapshot, sources)
     visible_cards = filter_visible(all_cards, for_execution=False)
+    if not visible_cards:
+        return AgentOutcome(
+            status="failure",
+            message="principal has no visible capabilities",
+            response_text="principal has no visible capabilities",
+            error_type="VISIBILITY_DENIED",
+            planner_failure=PlannerFailure(
+                error_type="VISIBILITY_DENIED",
+                message="principal has no visible capabilities",
+                snapshot_id=lease.snapshot_id,
+                audit_evidence={
+                    "expected_snapshot_id": lease.snapshot_id,
+                    "actual_snapshot_id": lease.snapshot_id,
+                    "principal_id": effective_principal.principal_id,
+                    "source_paths": [],
+                    "stage": "visibility",
+                },
+            ),
+        )
     visible_capability_set = VisibleCapabilitySet(
         cards=tuple(visible_cards),
         snapshot_id=lease.snapshot_id,

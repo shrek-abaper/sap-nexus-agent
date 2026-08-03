@@ -68,6 +68,7 @@ def select_capability(
     # only visible capabilities (double-check; the catalog was already
     # pre-filtered). Also derive snapshot_id for the handoff from visible.
     visible_snapshot_id = ""
+    visible_ids = frozenset()  # empty if no visible set provided
     if visible is not None:
         visible_ids = frozenset(c.capability_id for c in visible.cards)
         visible_snapshot_id = visible.snapshot_id
@@ -182,6 +183,12 @@ def select_capability(
     # 5. Single intent complete -> SELECT.
     capability_id = parse_result.capability_id or INTENT_TO_CAPABILITY.get(parse_result.intent)
     if capability_id:
+        if visible is not None and capability_id not in visible_ids:
+            return MatchDecision(
+                decision_type="REJECT",
+                error_type="VISIBILITY_DENIED",
+                rationale="matched capability is not visible to this principal",
+            )
         return MatchDecision(
             decision_type="SELECT",
             capability_id=capability_id,

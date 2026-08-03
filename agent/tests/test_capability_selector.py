@@ -576,3 +576,32 @@ def test_handoff_snapshot_id_empty_when_no_visible():
     assert decision.decision_type == "ESCALATE_TO_PLANNER"
     assert decision.handoff is not None
     assert decision.handoff.registry_snapshot_id == ""
+
+
+def test_select_capability_rejects_non_visible_capability_id():
+    """SELECT path REJECTs capability_id not in visible set (defense-in-depth)."""
+    from sap_nexus_agent.intent import IntentParseResult
+    from sap_nexus_agent.capability_selector import select_capability
+
+    parse_result = IntentParseResult(
+        intent="inventory_availability",
+        parameters={"material": "M1", "plant": "P1"},
+        missing_parameters=[],
+    )
+    # visible set contains only PO, not inventory -> SELECT inventory should REJECT
+    visible = VisibleCapabilitySet(
+        cards=(
+            CapabilityCard(
+                capability_id="MM.PurchaseOrder.GetList",
+                name="PO",
+                governance=Governance(
+                    side_effect="none", requires_approval=False, data_classification="internal"
+                ),
+            ),
+        ),
+        snapshot_id="sha256:snap",
+        principal_id="user-1",
+    )
+    decision = select_capability(parse_result, visible=visible)
+    assert decision.decision_type == "REJECT"
+    assert decision.error_type == "VISIBILITY_DENIED"
