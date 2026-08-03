@@ -1,0 +1,18 @@
+{
+  "change": "sap-nexus-governed-context-registry-snapshot",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "41ade3e6e335a0e23814c4949fd0a5d8124e97175bf2298e612baf69b57ae1f8",
+  "files": [
+    { "path": "openspec/changes/sap-nexus-governed-context-registry-snapshot/proposal.md", "sha256": "3ebf3df607b5e0a07be15a3ed50a772f3d0b1d567b81e9b49b33e67a69f9ba9a" },
+    { "path": "openspec/changes/sap-nexus-governed-context-registry-snapshot/design.md", "sha256": "5073220dad1eb1c256fdefd501d34ce7c4fde2a097076c0d0f439f01b01dc3ba" },
+    { "path": "openspec/changes/sap-nexus-governed-context-registry-snapshot/tasks.md", "sha256": "7a9c4656077a526765892c6b9d075720b8ae07e9bab971f2d6857590c952f420" },
+    { "path": "openspec/changes/sap-nexus-governed-context-registry-snapshot/specs/governed-context-registry-snapshot/spec.md", "sha256": "48c8017fd515b3f4ea48d2808c7aa7fbd40205b51abe655fdc5a14ac9924d1e2" },
+    { "path": "openspec/changes/sap-nexus-governed-context-registry-snapshot/specs/planner-dry-run/spec.md", "sha256": "a0ee107dfa7b579190f8eda69fae8966ef6c5098f671fec8c38778e8cadfd72e" },
+    { "path": "openspec/changes/sap-nexus-governed-context-registry-snapshot/specs/pr-create-action/spec.md", "sha256": "2dcc25da65faee058ae2c2f45d95d527b12b51d0d5f31a6087f35cd6bd07495d" },
+    { "path": "openspec/changes/sap-nexus-governed-context-registry-snapshot/specs/semantic-match-decision/spec.md", "sha256": "e75314fa7d18e12ea78c0341cabe2e7a64304529cfe8b62f94e7753ec7768d3e" },
+    { "path": "openspec/changes/sap-nexus-governed-context-registry-snapshot/specs/trusted-principal-scope/spec.md", "sha256": "2d13acbaf92497f908dd0111b1c603bfcf6aaa12404a45e761734717c6a8f997" }
+  ]
+}
