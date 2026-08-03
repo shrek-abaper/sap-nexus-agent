@@ -1454,3 +1454,423 @@ def test_orchestrator_kind_uses_governance_not_action_capability_ids():
         _FakeGateway(),
     )
     assert outcome.status in {"awaiting_approval", "clarification", "failure"}
+
+
+# ---------------------------------------------------------------------------
+# Runbook 14 Task 7.3 / 7.4 / 7.5 / 9.5 / 9.6: cross-turn continuation
+# ---------------------------------------------------------------------------
+
+from sap_nexus_agent.conversation_context import (  # noqa: E402
+    ConversationContext,
+    LastContext,
+    PendingEscalate,
+    PendingShowOptions,
+)
+
+
+def _show_options_adapter(_text):
+    """Adapter that always returns an ambiguous SHOW_OPTIONS IntentParseResult.
+
+    SHOW_OPTIONS fires when ``is_ambiguous=True`` and ``matched_intents``
+    has exactly one entry (the selector checks multi-intent -> ESCALATE
+    first, so >1 entries would escalate).
+    """
+    return types.SimpleNamespace(
+        intent=None,
+        parameters={},
+        missing_parameters=[],
+        contains_rfc_name=False,
+        contains_odata_override=False,
+        capability_id=None,
+        clarification=None,
+        matched_intents=[
+            MatchedIntent(
+                capability_id="MM.PurchaseOrder.GetList",
+                parameters={},
+                missing=[],
+            ),
+        ],
+        is_ambiguous=True,
+        multi_parameters={},
+    )
+
+
+def _escalate_adapter(_text):
+    """Adapter that always returns a multi-intent ESCALATE IntentParseResult."""
+    return IntentParseResult(
+        intent=None,
+        parameters={},
+        missing_parameters=[],
+        matched_intents=[
+            MatchedIntent(
+                capability_id="MM.Inventory.GetAvailability",
+                parameters={"material": "DEMOA1", "plant": "1000"},
+                missing=[],
+            ),
+            MatchedIntent(
+                capability_id="MM.PurchaseOrder.GetList",
+                parameters={},
+                missing=[],
+            ),
+        ],
+    )
+
+
+def _show_options_adapter_with_context(text, context=None):
+    """Variant accepting the context arg for context-passing paths."""
+    return _show_options_adapter(text)
+
+
+def _escalate_adapter_with_context(text, context=None):
+    """Variant accepting the context arg for context-passing paths."""
+    return _escalate_adapter(text)
+
+
+def test_show_options_writes_pending_show_options():
+    """Turn N SHOW_OPTIONS writes pending_show_options on updated_context."""
+    gateway = FakeGatewayClient()
+    ctx = ConversationContext(last_context=None, history=None)
+    outcome = run_query(
+        "订单", gateway, intent_adapter=_show_options_adapter_with_context, context=ctx
+    )
+    assert outcome.match_decision is not None
+    assert outcome.match_decision.decision_type == "SHOW_OPTIONS"
+    assert outcome.updated_context is not None
+    assert outcome.updated_context.pending_show_options is not None
+    assert outcome.updated_context.pending_escalate is None
+    candidates = outcome.updated_context.pending_show_options.candidates
+    assert len(candidates) == 1
+    assert candidates[0].capability_id == "MM.PurchaseOrder.GetList"
+
+
+def test_show_options_writes_pending_then_select_clears():
+    """Turn N SHOW_OPTIONS writes pending; Turn N+1 selection clears + SELECT."""
+    gateway = FakeGatewayClient()
+    ctx = ConversationContext(last_context=None, history=None)
+    outcome_n = run_query(
+        "订单", gateway, intent_adapter=_show_options_adapter_with_context, context=ctx
+    )
+    assert outcome_n.updated_context.pending_show_options is not None
+
+    # Turn N+1: "采购订单" -> primary keyword selects MM.PurchaseOrder.GetList.
+    # The pending state is cleared on entry; the real parse_intent runs and
+    # produces a SELECT (PO list with no required params).
+    outcome_n1 = run_query(
+        "采购订单",
+        gateway,
+        context=outcome_n.updated_context,
+    )
+    assert outcome_n1.updated_context is not None
+    assert outcome_n1.updated_context.pending_show_options is None
+    assert outcome_n1.updated_context.pending_escalate is None
+
+
+def test_escalate_writes_pending_escalate():
+    """Turn N ESCALATE writes pending_escalate on updated_context."""
+    gateway = FakeGatewayClient()
+    ctx = ConversationContext(last_context=None, history=None)
+    outcome = run_query(
+        "查库存和采购订单", gateway, intent_adapter=_escalate_adapter_with_context, context=ctx
+    )
+    assert outcome.match_decision is not None
+    assert outcome.match_decision.decision_type == "ESCALATE_TO_PLANNER"
+    assert outcome.updated_context is not None
+    assert outcome.updated_context.pending_escalate is not None
+    assert outcome.updated_context.pending_show_options is None
+
+
+def test_escalate_writes_pending_then_confirm_clears():
+    """Turn N ESCALATE writes pending; Turn N+1 '继续' clears pending."""
+    gateway = FakeGatewayClient()
+    ctx = ConversationContext(last_context=None, history=None)
+    outcome_n = run_query(
+        "查库存和采购订单", gateway, intent_adapter=_escalate_adapter_with_context, context=ctx
+    )
+    assert outcome_n.updated_context.pending_escalate is not None
+
+    # Turn N+1: "继续" -> confirmation clears pending_escalate. The fresh
+    # parse_intent runs (no primary keyword, no params) and the selector
+    # produces REJECT(UNSUPPORTED_INTENT); the key assertion is that
+    # updated_context has no pending state.
+    outcome_n1 = run_query(
+        "继续", gateway, context=outcome_n.updated_context
+    )
+    assert outcome_n1.updated_context is not None
+    assert outcome_n1.updated_context.pending_escalate is None
+    assert outcome_n1.updated_context.pending_show_options is None
+
+
+def test_new_intent_clears_pending_show_options():
+    """Turn N+1 with a new primary keyword clears pending_show_options."""
+    gateway = FakeGatewayClient()
+    ctx = ConversationContext(
+        last_context=None,
+        history=None,
+        pending_show_options=PendingShowOptions(
+            candidates=(
+                MatchedIntent(
+                    capability_id="MM.PurchaseOrder.GetList",
+                    parameters={},
+                    missing=[],
+                ),
+            ),
+            snapshot_id="snap-1",
+        ),
+    )
+    # Turn N+1: "查库存" -> inventory primary keyword -> clear pending.
+    outcome = run_query("查库存", gateway, context=ctx)
+    assert outcome.updated_context is not None
+    assert outcome.updated_context.pending_show_options is None
+    assert outcome.updated_context.pending_escalate is None
+
+
+def test_new_intent_clears_pending_escalate():
+    """Turn N+1 with a new primary keyword clears pending_escalate."""
+    from sap_nexus_agent.match_decision import EscalationHandoff
+
+    gateway = FakeGatewayClient()
+    handoff = EscalationHandoff(
+        reason="multi-intent",
+        matched_intents=[
+            MatchedIntent(
+                capability_id="MM.Inventory.GetAvailability",
+                parameters={},
+                missing=[],
+            )
+        ],
+        utterance="库存 + 采购订单",
+        registry_snapshot_id="snap-1",
+    )
+    ctx = ConversationContext(
+        last_context=None,
+        history=None,
+        pending_escalate=PendingEscalate(handoff=handoff, snapshot_id="snap-1"),
+    )
+    # Turn N+1: "查库存" -> inventory primary keyword -> clear pending.
+    outcome = run_query("查库存", gateway, context=ctx)
+    assert outcome.updated_context is not None
+    assert outcome.updated_context.pending_escalate is None
+    assert outcome.updated_context.pending_show_options is None
+
+
+def test_run_query_context_none_has_no_updated_context():
+    """Single-turn path (context=None) leaves updated_context=None."""
+    gateway = FakeGatewayClient()
+    outcome = run_query(
+        "查库存 DEMOA1 在 1000", gateway, context=None
+    )
+    assert outcome.updated_context is None
+
+
+def test_select_clears_prior_pending_show_options():
+    """SELECT on turn N+1 clears any prior pending_show_options."""
+    gateway = FakeGatewayClient()
+    ctx = ConversationContext(
+        last_context=None,
+        history=None,
+        pending_show_options=PendingShowOptions(
+            candidates=(
+                MatchedIntent(
+                    capability_id="MM.PurchaseOrder.GetList",
+                    parameters={},
+                    missing=[],
+                ),
+            ),
+            snapshot_id="snap-1",
+        ),
+    )
+    # Turn N+1: full inventory query -> SELECT -> pending cleared.
+    outcome = run_query(
+        "查库存 DEMOA1 在 1000", gateway, context=ctx
+    )
+    assert outcome.status == "success"
+    assert outcome.updated_context is not None
+    assert outcome.updated_context.pending_show_options is None
+    assert outcome.updated_context.pending_escalate is None
+
+
+def test_reject_clears_prior_pending_escalate():
+    """REJECT on turn N+1 clears any prior pending_escalate."""
+    from sap_nexus_agent.match_decision import EscalationHandoff
+
+    gateway = FakeGatewayClient()
+    handoff = EscalationHandoff(
+        reason="multi-intent",
+        matched_intents=[],
+        utterance="",
+        registry_snapshot_id="snap-1",
+    )
+    ctx = ConversationContext(
+        last_context=None,
+        history=None,
+        pending_escalate=PendingEscalate(handoff=handoff, snapshot_id="snap-1"),
+    )
+
+    def reject_adapter(_text, _context=None):
+        return IntentParseResult(
+            intent=None,
+            parameters={},
+            missing_parameters=[],
+            contains_rfc_name=True,
+        )
+
+    outcome = run_query(
+        "rfcName=BAPI_EVIL", gateway, intent_adapter=reject_adapter, context=ctx
+    )
+    assert outcome.match_decision.decision_type == "REJECT"
+    assert outcome.updated_context is not None
+    assert outcome.updated_context.pending_escalate is None
+    assert outcome.updated_context.pending_show_options is None
+
+
+def test_clarify_clears_prior_pending_show_options():
+    """CLARIFY on turn N+1 clears any prior pending_show_options."""
+    gateway = FakeGatewayClient()
+    ctx = ConversationContext(
+        last_context=None,
+        history=None,
+        pending_show_options=PendingShowOptions(
+            candidates=(
+                MatchedIntent(
+                    capability_id="MM.PurchaseOrder.GetList",
+                    parameters={},
+                    missing=[],
+                ),
+            ),
+            snapshot_id="snap-1",
+        ),
+    )
+    # Turn N+1: inventory query missing plant -> CLARIFY -> pending cleared.
+    outcome = run_query("查一下 DEMOA1 的可用量", gateway, context=ctx)
+    assert outcome.match_decision.decision_type == "CLARIFY"
+    assert outcome.updated_context is not None
+    assert outcome.updated_context.pending_show_options is None
+    assert outcome.updated_context.pending_escalate is None
+
+
+def test_show_options_writes_no_pending_when_context_none():
+    """SHOW_OPTIONS with context=None -> updated_context stays None."""
+    gateway = FakeGatewayClient()
+    outcome = run_query(
+        "订单", gateway, intent_adapter=_show_options_adapter, context=None
+    )
+    assert outcome.match_decision.decision_type == "SHOW_OPTIONS"
+    # Single-turn path: no context to write pending state onto.
+    assert outcome.updated_context is None
+
+
+def test_escalate_writes_no_pending_when_context_none():
+    """ESCALATE with context=None -> updated_context stays None."""
+    gateway = FakeGatewayClient()
+    outcome = run_query(
+        "查库存和采购订单", gateway, intent_adapter=_escalate_adapter, context=None
+    )
+    assert outcome.match_decision.decision_type == "ESCALATE_TO_PLANNER"
+    assert outcome.updated_context is None
+
+
+def test_resolve_pending_state_returns_unchanged_when_no_pending():
+    """_resolve_pending_state is a no-op when no pending state is set."""
+    from sap_nexus_agent.orchestrator import _resolve_pending_state
+
+    ctx = ConversationContext(last_context=None, history=None)
+    result = _resolve_pending_state("any text", ctx)
+    assert result is ctx
+
+
+def test_resolve_pending_state_clears_show_options_on_selection():
+    """_resolve_pending_state clears pending_show_options on candidate selection."""
+    from sap_nexus_agent.orchestrator import _resolve_pending_state
+
+    ctx = ConversationContext(
+        last_context=None,
+        history=None,
+        pending_show_options=PendingShowOptions(
+            candidates=(
+                MatchedIntent(
+                    capability_id="MM.PurchaseOrder.GetList",
+                    parameters={},
+                    missing=[],
+                ),
+            ),
+            snapshot_id="snap-1",
+        ),
+    )
+    result = _resolve_pending_state("采购订单", ctx)
+    assert result.pending_show_options is None
+
+
+def test_resolve_pending_state_clears_escalate_on_confirm():
+    """_resolve_pending_state clears pending_escalate on '继续'."""
+    from sap_nexus_agent.match_decision import EscalationHandoff
+    from sap_nexus_agent.orchestrator import _resolve_pending_state
+
+    handoff = EscalationHandoff(
+        reason="r", matched_intents=[], utterance="u", registry_snapshot_id="s"
+    )
+    ctx = ConversationContext(
+        last_context=None,
+        history=None,
+        pending_escalate=PendingEscalate(handoff=handoff, snapshot_id="snap-1"),
+    )
+    result = _resolve_pending_state("继续", ctx)
+    assert result.pending_escalate is None
+
+
+def test_resolve_pending_state_keeps_show_options_on_unrelated_text():
+    """_resolve_pending_state keeps pending_show_options when text has no primary keyword."""
+    from sap_nexus_agent.orchestrator import _resolve_pending_state
+
+    ctx = ConversationContext(
+        last_context=None,
+        history=None,
+        pending_show_options=PendingShowOptions(
+            candidates=(
+                MatchedIntent(
+                    capability_id="MM.PurchaseOrder.GetList",
+                    parameters={},
+                    missing=[],
+                ),
+            ),
+            snapshot_id="snap-1",
+        ),
+    )
+    # "DEMOA2" has no primary keyword -> pending retained (selector re-runs
+    # and will likely REJECT, but the pending state is advisory and cleared
+    # by the REJECT outcome's _clear_pending_if_present, not here).
+    result = _resolve_pending_state("DEMOA2", ctx)
+    assert result.pending_show_options is not None
+
+
+def test_clear_pending_if_present_returns_none_for_none():
+    """_clear_pending_if_present(None) returns None (single-turn path)."""
+    from sap_nexus_agent.orchestrator import _clear_pending_if_present
+
+    assert _clear_pending_if_present(None) is None
+
+
+def test_clear_pending_if_present_returns_unchanged_when_no_pending():
+    """_clear_pending_if_present returns the same context when no pending state."""
+    from sap_nexus_agent.orchestrator import _clear_pending_if_present
+
+    ctx = ConversationContext(last_context=None, history=None)
+    assert _clear_pending_if_present(ctx) is ctx
+
+
+def test_clear_pending_if_present_clears_both():
+    """_clear_pending_if_present clears any pending state present."""
+    from sap_nexus_agent.match_decision import EscalationHandoff
+    from sap_nexus_agent.orchestrator import _clear_pending_if_present
+
+    handoff = EscalationHandoff(
+        reason="r", matched_intents=[], utterance="u", registry_snapshot_id="s"
+    )
+    ctx = ConversationContext(
+        last_context=None,
+        history=None,
+        pending_escalate=PendingEscalate(handoff=handoff, snapshot_id="snap-1"),
+    )
+    result = _clear_pending_if_present(ctx)
+    assert result is not ctx
+    assert result.pending_escalate is None
+    assert result.pending_show_options is None

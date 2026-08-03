@@ -93,6 +93,12 @@ class AgentOutcome:
     # planner encounters snapshot drift, source load error, or visibility
     # denial. None for all non-ESCALATE paths and successful dry-runs.
     planner_failure: "PlannerFailure | None" = None
+    # Runbook 14 cross-turn continuation: the updated ConversationContext
+    # for the next turn. Populated when SHOW_OPTIONS / ESCALATE_TO_PLANNER
+    # writes advisory pending state (pending_show_options / pending_escalate),
+    # and when a non-pending decision clears prior pending state. None when
+    # run_query was called without a context (single-turn; no continuation).
+    updated_context: "ConversationContext | None" = None
 
 
 IntentAdapter = Callable[[str, "ConversationContext | None"], IntentParseResult]
@@ -224,6 +230,10 @@ def run_query(
     if context is None:
         parsed = intent_adapter(text)
     else:
+        # Runbook 14 cross-turn continuation: inspect pending_show_options /
+        # pending_escalate from turn N and clear them if turn N+1 is a new
+        # intent (primary keyword) or a candidate selection / confirm.
+        context = _resolve_pending_state(text, context)
         parsed = intent_adapter(text, context)
 
     # Discover cards from snapshot and filter visible (Design Doc §4).
@@ -267,6 +277,7 @@ def run_query(
             response_text=decision.rationale,
             error_type=decision.error_type,
             match_decision=decision,
+            updated_context=_clear_pending_if_present(context),
         )
 
     # CLARIFY (single intent missing required params): no Gateway.
@@ -277,6 +288,7 @@ def run_query(
             response_text=decision.rationale,
             missing_parameters=decision.missing_parameters,
             match_decision=decision,
+            updated_context=_clear_pending_if_present(context),
         )
 
     # SHOW_OPTIONS / ESCALATE_TO_PLANNER: handoff to workbench/planner, no Gateway.
@@ -289,6 +301,33 @@ def run_query(
                 planner_failure = result
             else:
                 dry_run = result
+        # Runbook 14: write advisory pending state for cross-turn continuation.
+        # Mutual exclusivity is enforced by ConversationContext.with_pending_*.
+        updated_context = None
+        if context is not None:
+            from sap_nexus_agent.conversation_context import (
+                PendingEscalate,
+                PendingShowOptions,
+            )
+
+            if (
+                decision.decision_type == "SHOW_OPTIONS"
+                and decision.candidates
+            ):
+                pending = PendingShowOptions(
+                    candidates=tuple(decision.candidates),
+                    snapshot_id=lease.snapshot_id,
+                )
+                updated_context = context.with_pending_show_options(pending)
+            elif (
+                decision.decision_type == "ESCALATE_TO_PLANNER"
+                and decision.handoff is not None
+            ):
+                pending = PendingEscalate(
+                    handoff=decision.handoff,
+                    snapshot_id=lease.snapshot_id,
+                )
+                updated_context = context.with_pending_escalate(pending)
         return AgentOutcome(
             status="match_decision",
             message=decision.rationale,
@@ -296,6 +335,7 @@ def run_query(
             match_decision=decision,
             dry_run=dry_run,
             planner_failure=planner_failure,
+            updated_context=updated_context,
         )
 
     # SELECT -> CallPlan -> Gateway validate/execute (existing path).
@@ -326,6 +366,7 @@ def run_query(
                 status="clarification",
                 response_text=f"组合数 {len(combinations)} 过多，请缩小范围（如减少物料或工厂）。",
                 match_decision=decision,
+                updated_context=_clear_pending_if_present(context),
             )
         kind = "Action" if is_action else "Function"
         call_plan = create_call_plan(capability_id, parameters, kind=kind)
@@ -338,6 +379,7 @@ def run_query(
             call_plan=call_plan,
             combinations=combinations,
             match_decision=decision,
+            updated_context=_clear_pending_if_present(context),
         )
 
     kind = "Action" if is_action else "Function"
@@ -353,6 +395,7 @@ def run_query(
             gateway_trace_id=validation.trace_id,
             error_type=validation.error_type,
             match_decision=decision,
+            updated_context=_clear_pending_if_present(context),
         )
 
     is_action = call_plan.kind == "Action"
@@ -372,6 +415,7 @@ def run_query(
             gateway_trace_id=validation.trace_id,
             approval_record=pending,
             match_decision=decision,
+            updated_context=_clear_pending_if_present(context),
         )
     execution = gateway.execute(call_plan.capability_id, call_plan.parameters)
     if not execution.success:
@@ -386,11 +430,18 @@ def run_query(
             gateway_trace_id=execution.trace_id,
             error_type=execution.error_type,
             match_decision=decision,
+            updated_context=_clear_pending_if_present(context),
         )
 
     if capability_id == INVENTORY_CAPABILITY_ID:
-        return _finalize_inventory(call_plan, validation, execution, decision=decision)
-    return _finalize_purchase_order(call_plan, validation, execution, decision=decision)
+        return _finalize_inventory(
+            call_plan, validation, execution, decision=decision,
+            updated_context=_clear_pending_if_present(context),
+        )
+    return _finalize_purchase_order(
+        call_plan, validation, execution, decision=decision,
+        updated_context=_clear_pending_if_present(context),
+    )
 
 
 def continue_batch(
@@ -624,6 +675,7 @@ def _finalize_inventory(
     execution: ExecutionResult,
     *,
     decision: MatchDecision | None = None,
+    updated_context: "ConversationContext | None" = None,
 ) -> AgentOutcome:
     fact = build_availability_fact(call_plan.agent_trace_id, execution, call_plan.parameters)
     if fact is None:
@@ -637,6 +689,7 @@ def _finalize_inventory(
             gateway_trace_id=execution.trace_id,
             error_type="NARRATIVE_GUARD_ERROR",
             match_decision=decision,
+            updated_context=updated_context,
         )
     try:
         response_text = narrate_fact(fact, capability_id="MM.Inventory.GetAvailability")
@@ -652,6 +705,7 @@ def _finalize_inventory(
             gateway_trace_id=execution.trace_id,
             error_type="NARRATIVE_GUARD_ERROR",
             match_decision=decision,
+            updated_context=updated_context,
         )
     return AgentOutcome(
         status="success",
@@ -662,6 +716,7 @@ def _finalize_inventory(
         fact=fact,
         gateway_trace_id=execution.trace_id,
         match_decision=decision,
+        updated_context=updated_context,
     )
 
 
@@ -671,6 +726,7 @@ def _finalize_purchase_order(
     execution: ExecutionResult,
     *,
     decision: MatchDecision | None = None,
+    updated_context: "ConversationContext | None" = None,
 ) -> AgentOutcome:
     facts = build_purchase_order_facts(call_plan.agent_trace_id, execution, call_plan.parameters)
     total_count = execution.data.get("totalCount")
@@ -688,6 +744,7 @@ def _finalize_purchase_order(
             gateway_trace_id=execution.trace_id,
             error_type="NARRATIVE_GUARD_ERROR",
             match_decision=decision,
+            updated_context=updated_context,
         )
     return AgentOutcome(
         status="success",
@@ -698,6 +755,7 @@ def _finalize_purchase_order(
         facts=facts,
         gateway_trace_id=execution.trace_id,
         match_decision=decision,
+        updated_context=updated_context,
     )
 
 
@@ -775,3 +833,97 @@ def _default_planner_sources() -> tuple[RegistrySnapshot, SemanticSourceDocument
     sources = load_semantic_sources(repo_root)
     snapshot = build_registry_snapshot(sources)
     return snapshot, sources
+
+
+# ---------------------------------------------------------------------------
+# Runbook 14: cross-turn continuation helpers
+# ---------------------------------------------------------------------------
+
+
+def _clear_pending_if_present(
+    context: "ConversationContext | None",
+) -> "ConversationContext | None":
+    """Clear advisory pending state when the new decision supersedes it.
+
+    SELECT / CLARIFY / REJECT all represent a fresh capability decision for
+    turn N+1; any pending_show_options / pending_escalate left over from
+    turn N must be discarded so the next turn starts clean. Returns the
+    cleared context, or None if no context was provided (single-turn path).
+    """
+    if context is None:
+        return None
+    if context.pending_show_options is None and context.pending_escalate is None:
+        return context
+    return context.clear_pending()
+
+
+def _resolve_pending_state(
+    text: str,
+    context: "ConversationContext",
+) -> "ConversationContext":
+    """Inspect pending_show_options / pending_escalate at turn N+1 entry.
+
+    Advisory only: this function MUST NOT route execution or short-circuit
+    the selector. It only clears pending state when the user's turn N+1
+    utterance signals a new intent (primary keyword) or a candidate
+    selection / planner confirmation - the selector re-runs in either case
+    so the decision is re-derived from the fresh utterance.
+
+    Clearing rules:
+    - ``pending_show_options``: cleared when the utterance contains a
+      primary keyword for one of the candidates (selection) or any primary
+      keyword at all (new intent). The selector re-runs on the fresh text.
+    - ``pending_escalate``: cleared when the utterance is a confirmation
+      ("继续" / "continue" / "ok") or contains any primary keyword (new
+      intent). Confirmation hands off to the planner dry-run; new intent
+      starts a fresh capability match.
+
+    If neither pending state is present, the context is returned unchanged.
+    """
+    from sap_nexus_agent.llm_intent import _contains_any_primary_keyword
+
+    if context.pending_show_options is None and context.pending_escalate is None:
+        return context
+
+    has_primary = _contains_any_primary_keyword(text)
+
+    if context.pending_show_options is not None:
+        if _match_selected_capability(text, context.pending_show_options.candidates):
+            return context.clear_pending()
+        if has_primary:
+            return context.clear_pending()
+
+    if context.pending_escalate is not None:
+        normalized = text.strip().lower()
+        if normalized in ("继续", "continue", "ok", "好的", "确认", "confirm"):
+            return context.clear_pending()
+        if has_primary:
+            return context.clear_pending()
+
+    return context
+
+
+def _match_selected_capability(text: str, candidates) -> str | None:
+    """Match utterance against a candidate's primary keyword.
+
+    Returns the matched capability_id, or None if no candidate's primary
+    keyword set matches the utterance. Used by ``_resolve_pending_state``
+    to detect a SHOW_OPTIONS selection on turn N+1.
+    """
+    from sap_nexus_agent.intent import (
+        INVENTORY_PRIMARY_KEYWORDS,
+        PR_CREATE_PRIMARY_KEYWORDS,
+        PURCHASE_ORDER_PRIMARY_KEYWORDS,
+    )
+
+    keyword_map = {
+        "MM.Inventory.GetAvailability": INVENTORY_PRIMARY_KEYWORDS,
+        "MM.PurchaseOrder.GetList": PURCHASE_ORDER_PRIMARY_KEYWORDS,
+        "MM.PR.CreateDraft": PR_CREATE_PRIMARY_KEYWORDS,
+    }
+    for cand in candidates:
+        cid = cand.capability_id
+        keywords = keyword_map.get(cid)
+        if keywords and any(k in text for k in keywords):
+            return cid
+    return None
