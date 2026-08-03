@@ -2183,7 +2183,7 @@ git commit -m "test(planner): 7 bad-case fail-closed scenarios for v2 compiler a
 **Files:**
 - Test: `agent/tests/test_planner_plan_compiler_v2.py`
 
-- [ ] **Step 1: 强化双 READ fixture 测试（稳定可重复 + 空 edges + refs 空）**
+- [x] **Step 1: 强化双 READ fixture 测试（稳定可重复 + 空 edges + refs 空）**
 
 ```python
 def test_dual_read_fixture_is_stable_with_empty_edges_and_refs():
@@ -2207,7 +2207,7 @@ def test_dual_read_fixture_is_stable_with_empty_edges_and_refs():
     assert "sapnexus:PurchaseOrderSupplyFact" in output_facts
 ```
 
-- [ ] **Step 2: factField fixture 稳定性（已在 Task 8 构造，此处强化断言）**
+- [x] **Step 2: factField fixture 稳定性（已在 Task 8 构造，此处强化断言）**
 
 ```python
 def test_fact_field_fixture_produces_data_edge_and_stable():
@@ -2228,12 +2228,12 @@ def test_fact_field_fixture_produces_data_edge_and_stable():
     assert len(data_edges) == 1
 ```
 
-- [ ] **Step 3: 运行确认通过**
+- [x] **Step 3: 运行确认通过**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_planner_plan_compiler_v2.py -q`
 Expected: PASS
 
-- [ ] **Step 4: 提交**
+- [x] **Step 4: 提交**
 
 ```bash
 git add agent/tests/test_planner_plan_compiler_v2.py
