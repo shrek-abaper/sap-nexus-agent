@@ -2249,7 +2249,7 @@ git commit -m "test(planner): stabilize dual-READ and factField v2 fixtures"
 **Files:**
 - Test: `agent/tests/test_planner_plan_compiler_v2.py`
 
-- [ ] **Step 1: dry-run 输出齐全测试（plan/gaps/governance/refs/snapshotId）**
+- [x] **Step 1: dry-run 输出齐全测试（plan/gaps/governance/refs/snapshotId）**
 
 ```python
 def test_v2_dry_run_output_surfaces_all_fields():
@@ -2271,12 +2271,12 @@ def test_v2_dry_run_output_surfaces_all_fields():
     assert str(len(result.plan_graph["nodes"])) in result.rationale
 ```
 
-- [ ] **Step 2: v1 回归——v1 测试不改仍通过**
+- [x] **Step 2: v1 回归——v1 测试不改仍通过**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_planner_plan_compiler.py agent/tests/test_semantic_planning_contract.py agent/tests/test_planner_handoff.py -q`
 Expected: PASS（v1 零改动，全部通过）
 
-- [ ] **Step 3: v1 compiler 输出仍为 v1（版本守护）**
+- [x] **Step 3: v1 compiler 输出仍为 v1（版本守护）**
 
 ```python
 def test_v1_compiler_still_produces_v1_plan_graph():
@@ -2303,7 +2303,7 @@ def test_v1_compiler_still_produces_v1_plan_graph():
 Run: `.venv/bin/python -m pytest agent/tests/test_planner_plan_compiler_v2.py -q`
 Expected: PASS
 
-- [ ] **Step 4: 提交**
+- [x] **Step 4: 提交**
 
 ```bash
 git add agent/tests/test_planner_plan_compiler_v2.py
