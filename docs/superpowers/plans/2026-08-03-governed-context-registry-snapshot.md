@@ -2,6 +2,7 @@
 change: sap-nexus-governed-context-registry-snapshot
 design-doc: docs/superpowers/specs/2026-08-03-governed-context-registry-snapshot-design.md
 base-ref: 3c041d536a5a55c24a53a89a0853bb786f06ff43
+archived-with: 2026-08-03-sap-nexus-governed-context-registry-snapshot
 ---
 
 # Governed Context & Registry Snapshot 实施计划
@@ -24,6 +25,7 @@ base-ref: 3c041d536a5a55c24a53a89a0853bb786f06ff43
 - 不改召回算法/PlanGraph v2/PlanExecutor/UI；不执行新 SAP WRITE
 - 测试命令: `.venv/bin/python -m pytest agent/tests -q` + `openspec validate --all --strict` + `scripts/verify-agent-callplan-evidence.sh` + `npm --prefix frontend run verify`
 
+archived-with: 2026-08-03-sap-nexus-governed-context-registry-snapshot
 ---
 
 ## 文件结构
@@ -48,6 +50,7 @@ base-ref: 3c041d536a5a55c24a53a89a0853bb786f06ff43
 | `agent/tests/test_approval.py` | registry_snapshot_id 兼容 | Task 7, 10 |
 | `agent/tests/test_eval_runner.py` | matcher Eval 回归 | Task 10 |
 
+archived-with: 2026-08-03-sap-nexus-governed-context-registry-snapshot
 ---
 
 ### Task 1: GovernedContext 契约与受治理上下文数据结构
@@ -443,6 +446,7 @@ git commit -m "feat: add governed_context.py with TrustedPrincipal, GovernedCont
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
+archived-with: 2026-08-03-sap-nexus-governed-context-registry-snapshot
 ---
 
 ### Task 2: run_query 入口绑定 GovernedContext 与 SnapshotLease
@@ -687,6 +691,7 @@ git commit -m "feat: bind GovernedContext + SnapshotLease in run_query entry; ad
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
+archived-with: 2026-08-03-sap-nexus-governed-context-registry-snapshot
 ---
 
 ### Task 3: visibility pre-filter 接入 matcher 决策路径
@@ -970,6 +975,7 @@ git commit -m "feat: wire visibility pre-filter into matcher path; select_capabi
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
+archived-with: 2026-08-03-sap-nexus-governed-context-registry-snapshot
 ---
 
 ### Task 4: matcher 绑定非空 snapshotId
@@ -1070,6 +1076,7 @@ git commit -m "test: assert EscalationHandoff.registry_snapshot_id non-empty whe
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
+archived-with: 2026-08-03-sap-nexus-governed-context-registry-snapshot
 ---
 
 ### Task 5: planner 绑定同一 snapshot + 结构化 fail-closed
@@ -1349,6 +1356,7 @@ git commit -m "feat: discover_cards binds snapshot; _compile_dry_run_safely cons
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
+archived-with: 2026-08-03-sap-nexus-governed-context-registry-snapshot
 ---
 
 ### Task 6: capability kind 从 Registry snapshot 投影
@@ -1475,6 +1483,7 @@ git commit -m "feat: project capability kind from governance.requires_approval i
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
+archived-with: 2026-08-03-sap-nexus-governed-context-registry-snapshot
 ---
 
 ### Task 7: ApprovalRecord 携带 registry_snapshot_id
@@ -1656,6 +1665,7 @@ git commit -m "feat: ApprovalRecord carries registry_snapshot_id; create_approva
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
+archived-with: 2026-08-03-sap-nexus-governed-context-registry-snapshot
 ---
 
 ### Task 8: principal 透传 Node backend -> Python agent
@@ -1853,6 +1863,7 @@ git commit -m "feat: principal passthrough Node backend -> Python agent via SAP_
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
+archived-with: 2026-08-03-sap-nexus-governed-context-registry-snapshot
 ---
 
 ### Task 9: CapabilityCard 安全投影固化
@@ -1939,6 +1950,7 @@ git commit -m "test: CapabilityCard safe projection negative test (no technical 
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
+archived-with: 2026-08-03-sap-nexus-governed-context-registry-snapshot
 ---
 
 ### Task 10: 测试与验证
@@ -2128,6 +2140,7 @@ git commit -m "test: visibility leakage, cross-principal, PlannerFailure structu
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
+archived-with: 2026-08-03-sap-nexus-governed-context-registry-snapshot
 ---
 
 ## 自检清单
@@ -2160,3 +2173,4 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 - `select_capability(parse_result, visible=None)`: `visible` 类型为 `VisibleCapabilitySet | None`
 - `_compile_dry_run_safely(handoff, *, lease) -> DryRunResult | PlannerFailure`
 - `filter_catalog(catalog: IntentCatalog, visible_cards: list[CapabilityCard]) -> IntentCatalog`
+

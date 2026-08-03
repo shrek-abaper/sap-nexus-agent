@@ -265,7 +265,7 @@ GoalSpec candidate
 | 21 | `sap-nexus-capability-composition-contract` | Dynamic Planner / Write Reserved | 保留通用动态组合、Composite Capability 和 Write composition 边界 | 关系本体、dry-run、read pilot 和规模/需求证据满足后另立 change |
 | 22 | `sap-nexus-trusted-durable-runtime-foundation` | Completed / Archived (2026-08-02) | 建立 trusted principal / tenant / role / data scope、persistent thread/run、durable approval、ownership/lease、structured checkpoint reference、incremental SSE + reconnect 和幂等 continuation | 四项独立 change 均已归档：`sap-nexus-durable-state-foundation`、`sap-nexus-trusted-principal-model`、`sap-nexus-durable-approval-store`、`sap-nexus-incremental-sse-reconnect`；后续 Runbooks 13-22 直接复用该基础，不得重建第二套身份、状态、审批或事件机制 |
 | 23 | `sap-nexus-governed-user-memory-pilot` | Later / Triggered；不属于 S2/S3 | 只保存用户明确确认的语言、单位展示、术语和叙事偏好 | 身份、tenant、retention、查看/更正/删除和审计契约已稳定；不得保存业务事实、approval 或执行权威 |
-| 24 | `sap-nexus-governed-context-registry-snapshot` | Planned / Runbook 13 | 让 intent、recall、planner、executor 和 approval 使用同一 principal/visibility/snapshot | 非空 snapshot 端到端绑定；visibility leakage 为 0；漂移结构化 fail-closed |
+| 24 | `sap-nexus-governed-context-registry-snapshot` | Completed / Archived (2026-08-03) / Runbook 13 | 让 intent、recall、planner、executor 和 approval 使用同一 principal/visibility/snapshot | 非空 snapshot 端到端绑定；visibility leakage 为 0；漂移结构化 fail-closed；pytest 836 passed/1 skipped；归档 `openspec/changes/archive/2026-08-03-sap-nexus-governed-context-registry-snapshot/`；主 spec 合并 governed-context-registry-snapshot (ADDED 6) + planner-dry-run/pr-create-action/semantic-match-decision/trusted-principal-scope (5 modified/added) |
 | 25 | `sap-nexus-governed-intent-capability-recall` | Planned / Runbook 14 | LLM-first IntentEnvelope、多目标拆分和已注册能力召回 | 五态 decision 可回放；false SELECT 与 visibility leakage 为 0；MVP 不接 Knowledge/RAG |
 | 26 | `sap-nexus-semantic-plan-authoring-v2` | Planned / Runbook 15 | 将 advisory goal/plan 编译为含参数来源和 READ/WRITE 分区的 PlanGraph v2 | unknown relation/capability、cycle、type/source/snapshot 问题 fail-closed；不执行 Gateway |
 | 27 | `sap-nexus-read-plan-executor` | Planned / Runbook 16 | 执行 validated READ DAG，提供 ready-node scheduling、durable ledger、timeout/cancel/replay | 两个 READ 节点可安全并发；Action blocked；恢复不重复执行 |
@@ -867,7 +867,7 @@ Knowledge/RAG 仅预留 `EvidenceProvider` 边界；MVP 不连接知识源、向
 - S2-A 已完成显式五态 `MatchDecision`、multi-intent/ambiguity 和 matcher Eval；`false SELECT` 已关闭。
 - S2-B 已完成 progressive discovery 与 deterministic dry-run，且未接入 Gateway/SAP 多能力执行。
 - P0B durable state、trusted principal、durable approval 与 incremental SSE/reconnect 已完成。
-- Runbook 13 必须先关闭真实 LLM catalog visibility 和 non-empty same-snapshot handoff，再允许 Runbook 14-16 前进。
+- Runbook 13 已关闭真实 LLM catalog visibility 和 non-empty same-snapshot handoff；Runbook 14-16 可以前进。
 - `CapabilityCard` 必须绑定 Registry Snapshot，并排除 RFC、URL、credential、raw SQL 和 technical mapping。
 
 ### Read-only pilot 前置
@@ -1184,7 +1184,7 @@ capability design
 
 `sap-nexus-capability-registry-gateway`、`sap-nexus-agent-callplan-evidence`、`sap-nexus-agent-llm-intent-adapter`、`sap-nexus-agent-workbench-console`、`sap-nexus-workbench-live-agent-runtime`、`sap-nexus-inventory-md04-stock-req-list`、`sap-nexus-registry-ontology-contract` 和 `sap-nexus-gateway-execution-contract` 均已完成验证并归档。`sap-nexus-eval-harness-seed` 已直接实施完成。`sap-nexus-odata-gateway-read-pilot`（Phase 4D OData Gateway Read Pilot）已提前落地，第二条 SAP read capability（PO，走 OData）由该 change 隐式满足。`sap-nexus-sandbox-write-vertical-slice` 已治理 Purchasing Group 并成功创建、commit sandbox PR `10137471`；verify repair、merged-main 全量验证与 Comet archive 均已完成，归档目录为 `openspec/changes/archive/2026-07-17-sap-nexus-sandbox-write-vertical-slice/`。
 
-OpenHarness / DeerFlow 对比、首个组合场景、S1、P0A、S2、row 19A/19B 和 P0B 四项基础均已归档。当前推荐不是直接实现 Dynamic Planner、DeerFlow integration、Knowledge/RAG、Memory 或新的 executor family，而是从 Runbook 13 开始按契约依赖逐项完成完整 Agent：
+OpenHarness / DeerFlow 对比、首个组合场景、S1、P0A、S2、row 19A/19B、P0B 四项基础和 Runbook 13 受治理上下文均已归档。当前推荐不是直接实现 Dynamic Planner、DeerFlow integration、Knowledge/RAG、Memory 或新的 executor family，而是从 Runbook 14 开始按契约依赖逐项完成完整 Agent：
 
 ```text
 1. sap-nexus-semantic-planning-foundation (S1 implemented / verified / archived 2026-07-19)
@@ -1195,7 +1195,7 @@ OpenHarness / DeerFlow 对比、首个组合场景、S1、P0A、S2、row 19A/19B
 5. sap-nexus-multi-value-batch-query (row 19B archived 2026-07-27; continue_batch 全链路 + READ-only)
    - 衍生 fix-batch-confirm-loop (awaiting_batch_confirm 死循环 hotfix, archived 2026-07-27)
 6. sap-nexus-trusted-durable-runtime-foundation (P0B four changes archived 2026-08-02)
-7. runbook 13 governed context / same RegistrySnapshot
+7. sap-nexus-governed-context-registry-snapshot (Runbook 13 archived 2026-08-03; same snapshotId + visibility pre-filter + PlannerFailure fail-closed)
 8. runbook 14 LLM-first intent and governed capability recall
 9. runbook 15 deterministic PlanGraph v2
 10. runbook 16 READ PlanExecutor
@@ -1270,7 +1270,33 @@ Live blocker 已解除：SAP SICF 重新激活后，PO live smoke 已通过；PO
 - `sap-nexus-governed-user-memory-pilot`：Later / Triggered，不属于 S2/S3；Memory 不保存业务事实或执行权威。
 - WRITE 批量审批语义：row 19B 多值批量查询 v1 仅 READ-only（Action 落 `awaiting_approval`）；per-combo approval snapshot / hash / atomic claim 的 WRITE 批量审批须单独设计，不得复用 READ 批量路径。
 
-当前下一推荐：S1、P0A、S2、row 19A/19B 和 P0B 均已归档；从 runbook 13 开始，按 `13 -> 14 -> 15 -> 16 -> 17 -> 18 -> 19 -> 20 -> 21 -> 22` 实施完整 Agent。Knowledge/RAG 仅预留，通用 Dynamic Planner、多 WRITE/Saga 和自动补偿继续 Reserved。
+当前下一推荐：S1、P0A、S2、row 19A/19B、P0B 和 Runbook 13 均已归档；从 runbook 14 开始，按 `14 -> 15 -> 16 -> 17 -> 18 -> 19 -> 20 -> 21 -> 22` 实施完整 Agent。Knowledge/RAG 仅预留，通用 Dynamic Planner、多 WRITE/Saga 和自动补偿继续 Reserved。
+
+### 17.5 `sap-nexus-governed-context-registry-snapshot`
+
+已完成代码实施、Comet full workflow 验证与归档（`2026-08-03`）：让一次 Agent run 的意图识别、候选召回、规划、执行和审批共享同一个受治理上下文与 `RegistrySnapshot`，关闭 visibility、snapshot handoff 和 Registry-derived capability kind 缺口。归档 change 位于 `openspec/changes/archive/2026-08-03-sap-nexus-governed-context-registry-snapshot/`，主 spec 位于 `openspec/specs/governed-context-registry-snapshot/spec.md`。
+
+落地范围：
+
+- 新增 `GovernedContext`、`SnapshotLease`、`VisibleCapabilitySet`、`PlannerFailure` 数据结构；`run_query` 入口构造 lease/ctx/visible，intent/matcher/planner/approval 消费同一非空 `snapshotId`。
+- Principal 载体为环境变量 `SAP_NEXUS_PRINCIPAL`；Node spawn 设 env，Python cli 读 `os.environ`；后端不读 request/prompt/history/model output 中的 principal。
+- Snapshot 漂移 fail-closed：`assert_same` 失败抛 `SnapshotDriftError`，包装为 `PlannerFailure(SNAPSHOT_DRIFT)`，不自动换新快照继续既有计划或审批。
+- `PlannerFailure(error_type, message, snapshot_id, audit_evidence)` 暴露 5 种 error_type：`SNAPSHOT_UNAVAILABLE`、`SNAPSHOT_DRIFT`、`VISIBILITY_DENIED`、`PRINCIPAL_MISMATCH`、`CAPABILITY_NOT_FOUND`。
+- Visibility pre-filter 在 matcher 之前：cli.py catalog 加载点 `filter_catalog` + matcher 层 `select_capability` 双保险，不可见 capability 在进入 LLM prompt 前即移除。
+- `CapabilityCard` 安全投影：携带 `registry_snapshot_id`，不包含 RFC、URL、header、credential、raw SQL 或 binding mapping。
+- Capability kind 从 `governance.requires_approval` 投影，移除 `ACTION_CAPABILITY_IDS` 兜底。
+- `ApprovalRecord` 添加 optional `registry_snapshot_id`；Node/Java 漂移执行校验留 RB21。
+- 5 个 delta spec：`governed-context-registry-snapshot` 新增 + `semantic-match-decision` / `planner-dry-run` / `trusted-principal-scope` / `pr-create-action` modified。
+
+退出标准达成：
+
+- 同一 run 的 intent/matcher/planner/approval 记录使用同一非空 `snapshotId`；visibility leakage Eval 为 0；cross-principal 访问保持 fail-closed；capability kind/side effect/approval policy 均从 Registry snapshot 投影；source load、snapshot drift、visibility denial 返回稳定 error type 和 audit evidence。
+- pytest 836 passed/1 skipped；openspec 16 passed/0 failed；`scripts/verify-agent-callplan-evidence.sh` exit 0；frontend verify 通过。
+- Code Review 0 Critical / 3 Important 全修复（VISIBILITY_DENIED runtime check、cli fallback log warning、`select_capability` defense-in-depth）/ 4 Minor（2 已修，2 接受）。
+
+架构决策：snapshot 不可加载、漂移或 principal 不匹配时返回结构化失败，不以空 dry-run 静默降级；visibility 绑定 governance + principal，role-based 推迟到 `visibilityScope`；`CapabilityCard` 不暴露技术绑定；commit / rollback 守卫继续由 P0B `FileDurableApprovalStore` 承担，不在本 change 重建审批机制。
+
+后续约束：Runbook 14-22 直接复用 `GovernedContext` / `SnapshotLease` / `VisibleCapabilitySet` / `PlannerFailure`；新增 visibility 维度、snapshot lease 生命周期改动或新 `PlannerFailure` error_type 须另立 change，不得在 recall / PlanExecutor / UI 工作中夹带。
 
 ---
 

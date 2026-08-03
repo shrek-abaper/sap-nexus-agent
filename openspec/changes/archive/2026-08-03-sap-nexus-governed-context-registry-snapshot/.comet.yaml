@@ -1,6 +1,6 @@
 workflow: full
 language: zh-CN
-phase: verify
+phase: archive
 context_compression: off
 build_mode: executing-plans
 build_pause: null
@@ -13,12 +13,12 @@ auto_transition: true
 base_ref: 871045e7969f807622689cf5e21ea17dea022c5f
 design_doc: docs/superpowers/specs/2026-08-03-governed-context-registry-snapshot-design.md
 plan: docs/superpowers/plans/2026-08-03-governed-context-registry-snapshot.md
-verify_result: pending
+verify_result: pass
 verification_report: docs/superpowers/reports/2026-08-03-sap-nexus-governed-context-registry-snapshot-verify.md
-branch_status: pending
+branch_status: handled
 created_at: 2026-08-03
-verified_at: null
-archived: false
+verified_at: 2026-08-03
+archived: true
 direct_override: null
 build_command: .venv/bin/python -m pytest agent/tests -q && npm --prefix frontend run build
 verify_command: npm --prefix frontend run verify

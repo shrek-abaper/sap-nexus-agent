@@ -21,6 +21,7 @@
 
 | 版本 | 日期 | 变更摘要 | 决策状态 |
 |---|---|---|---|
+| `v0.2.23` | `2026-08-03` | Runbook 13 `sap-nexus-governed-context-registry-snapshot` 已归档：`GovernedContext` / `SnapshotLease` / `VisibleCapabilitySet` / `PlannerFailure` 数据结构落地，同 `snapshotId` 端到端绑定，principal 透传 + visibility pre-filter，5 种 error_type 结构化 fail-closed；主 spec 合并 `governed-context-registry-snapshot` + `planner-dry-run` / `pr-create-action` / `semantic-match-decision` / `trusted-principal-scope`；当前实施入口移到 Runbook 14 | 当前架构基线 |
 | `v0.2.22` | `2026-08-03` | 完成跨 AI 开发交接入口收口：当前成熟度继续以 runbook README 为准，完整 Agent 目标以 2026-08-03 design 为准，当前实施只从 Runbook 13 启动；Runbook 10 保留为已归档 S1/S2 历史契约，不再承担当前入口职责 | 当前架构基线 |
 | `v0.2.21` | `2026-08-03` | 固化完整 Agent 目标链与 runbooks 13-22：同快照治理、LLM-first 意图与能力召回、PlanGraph v2、READ PlanExecutor、确定性 OutputProjection、RuleSet/Recommendation、grounded narrative、Workbench、单 Action 人审闭环和 E2E release gate；Knowledge/RAG 仅预留接口、不进入 MVP；同步 S2-A/S2-B/P0B 已归档事实并将 D-1 标记已解决 | 当前架构基线 |
 | `v0.2.20` | `2026-08-01` | 澄清意图识别与能力匹配的主次契约：§4.3 与 L2 表明确意图识别（`IntentParseResult`）以 LLM 为主路径（`hybrid` 默认，LLM 优先，仅 `LlmUnavailable` 回退规则，对齐 spec `conversational-context`）；能力匹配 / 选择（`MatchDecision`）仍以 deterministic 规则 + Registry 为权威，LLM 不替代 governance 判断 | 当前架构基线 |
@@ -75,7 +76,7 @@
 
 架构预留不是零成本。每个 reserved executor family 都是未来实现、评审、评测和运维的隐含契约。已有 reserved executor 只保留 fail-closed 边界，不能被解读为当前实现承诺。
 
-成熟度等级（`Live` / `Completed Pilot` / `Completed Foundation` / `Next Design` / `Planned Pilot` / `Reserved` / `Not In Scope`）定义架构占位的性质与门禁要求，属于长期基线。各项能力的当前成熟度归属、已实现/未实现标注和近期 next step 不在本文档维护，统一见 `docs/runbooks/README.md` "Architecture Maturity & Current Status"；完整 Agent 目标契约见 `docs/superpowers/specs/2026-08-03-sap-nexus-complete-agent-roadmap-design.md`，当前实施入口为 `docs/runbooks/13-governed-context-registry-snapshot.md`。阶段生命周期标签由 `docs/wiki/sap-nexus-agent-implementation-roadmap.md` 承载。`docs/runbooks/10-capability-composition-contract.md` 仅保留为已归档 S1/S2 历史契约，不得作为活动入口。架构基线只保留 fail-closed 边界、分层职责与长期能力形态，不随进度变化频繁改版。
+成熟度等级（`Live` / `Completed Pilot` / `Completed Foundation` / `Next Design` / `Planned Pilot` / `Reserved` / `Not In Scope`）定义架构占位的性质与门禁要求，属于长期基线。各项能力的当前成熟度归属、已实现/未实现标注和近期 next step 不在本文档维护，统一见 `docs/runbooks/README.md` "Architecture Maturity & Current Status"；完整 Agent 目标契约见 `docs/superpowers/specs/2026-08-03-sap-nexus-complete-agent-roadmap-design.md`，当前实施入口为 `docs/runbooks/14-governed-intent-capability-recall.md`（Runbook 13 `sap-nexus-governed-context-registry-snapshot` 已归档）。阶段生命周期标签由 `docs/wiki/sap-nexus-agent-implementation-roadmap.md` 承载。`docs/runbooks/10-capability-composition-contract.md` 仅保留为已归档 S1/S2 历史契约，不得作为活动入口。架构基线只保留 fail-closed 边界、分层职责与长期能力形态，不随进度变化频繁改版。
 
 ---
 

@@ -5,11 +5,17 @@
 | Field | Value |
 |---|---|
 | Runbook | `13-governed-context-registry-snapshot` |
-| Version | `v0.1.0` |
-| Status | `Planned` |
-| Created / Updated | `2026-08-03` |
+| Version | `v0.1.1` |
+| Status | `Completed / Archived` |
+| Created | `2026-08-03` |
+| Updated | `2026-08-03` |
+| Last Change | Comet archive of `sap-nexus-governed-context-registry-snapshot` (26/26 tasks, pytest 836 passed/1 skipped, openspec 16 passed, verify PASS). Main specs merged: `governed-context-registry-snapshot` (ADDED 6), `planner-dry-run` (MODIFIED 3), `pr-create-action` (MODIFIED 1), `semantic-match-decision` (ADDED 1 + MODIFIED 1), `trusted-principal-scope` (ADDED 1). |
 | Depends On | P0B trusted principal and durable runtime foundation (archived) |
 | Unblocks | Runbooks 14-22 |
+| Related Changes | `sap-nexus-governed-context-registry-snapshot` (archived 2026-08-03 at `openspec/changes/archive/2026-08-03-sap-nexus-governed-context-registry-snapshot/`) |
+| Current Phase | Closed; do not resume implementation from this runbook |
+| Successor | Runbook 14 (`14-governed-intent-capability-recall.md`) starts LLM-first IntentEnvelope and governed closed-set capability recall |
+| Reopen Policy | Do not reopen; visibility scope expansion, snapshot lease lifecycle changes or new PlannerFailure error types require a separate future change |
 
 ## 1. Goal
 
@@ -65,4 +71,39 @@ openspec validate --all --strict
 
 ## 8. Next Start Here
 
-以独立 Comet change 实施本 runbook；完成并归档后进入 Runbook 14。不得把 recall、PlanExecutor 或 UI 工作夹带进本 change。
+本 runbook 已归档。下一实施入口为 Runbook 14 (`docs/runbooks/14-governed-intent-capability-recall.md`)：LLM-first IntentEnvelope、多目标拆分和已注册能力召回。不得跳过 14 直接进入 PlanExecutor 或 UI 工作。
+
+---
+
+## Session Closeout - 2026-08-03
+
+### Completed
+
+- Comet full workflow（open → design → build → verify → archive）全部走完，change `sap-nexus-governed-context-registry-snapshot` 归档至 `openspec/changes/archive/2026-08-03-sap-nexus-governed-context-registry-snapshot/`。
+- 26/26 tasks 全部勾选；5 个 delta spec 按 ADDED/MODIFIED 语义合并到主 spec（`governed-context-registry-snapshot` +6 / `planner-dry-run` ~3 / `pr-create-action` ~1 / `semantic-match-decision` +1 ~1 / `trusted-principal-scope` +1）。
+- Design Doc 和 Plan 已由归档脚本自动标注 `archived-with` / `status` 元数据。
+
+### Verified
+
+- Command: `.venv/bin/python -m pytest agent/tests -q`
+- Result: 836 passed, 1 skipped
+- Command: `openspec validate --all --strict`
+- Result: 16 passed, 0 failed
+- Command: `npm --prefix frontend run verify`
+- Result: passed（Task 8，review 修复未触及 frontend）
+- Command: `scripts/verify-agent-callplan-evidence.sh`
+- Result: exit 0（pytest + Eval 7/7 + 13/13 + 9/9 + 6/6 + 3/3 + openspec 16）
+- Command: `grep -c '\- \[ \]' tasks.md`
+- Result: 0（全部勾选）
+- Code Review: 0 Critical / 3 Important 全部修复 / 4 Minor（2 已修，2 接受）
+- 验证报告: `docs/superpowers/reports/2026-08-03-sap-nexus-governed-context-registry-snapshot-verify.md`
+
+### Blockers
+
+- 无
+
+### Next Start Here
+
+1. Runbook 14 (`14-governed-intent-capability-recall.md`) — LLM-first IntentEnvelope 和 governed closed-set capability recall。
+2. 不得跳到 PlanExecutor、OutputProjection 或 WRITE。
+3. 复用本 change 建立的 `GovernedContext` / `SnapshotLease` / `VisibleCapabilitySet` / `PlannerFailure` 数据结构；新增 visibility 维度或 snapshot lease 生命周期改动须另立 change。

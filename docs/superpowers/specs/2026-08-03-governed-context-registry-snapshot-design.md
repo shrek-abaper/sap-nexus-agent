@@ -2,6 +2,8 @@
 comet_change: sap-nexus-governed-context-registry-snapshot
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-08-03-sap-nexus-governed-context-registry-snapshot
+status: final
 ---
 
 # Governed Context & Registry Snapshot 深度设计
@@ -198,3 +200,4 @@ run_query(text, gateway, *, intent_adapter, principal=None, context=None, ...)
 8. 回归测试 + `openspec validate --all --strict` + `pytest agent/tests` + `verify-agent-callplan-evidence.sh` + `npm --prefix frontend run verify`。
 
 **回滚**：新参数默认 None / 字段 optional，旧调用路径行为不变；可按文件 revert。
+

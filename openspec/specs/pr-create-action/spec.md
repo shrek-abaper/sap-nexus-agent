@@ -3,7 +3,6 @@
 ## Purpose
 
 定义 SAP Nexus 首个受 Human Approval 保护的 SAP WRITE Action：从 `MM.PR.CreateDraft` capability 注册、ApprovalRecord 与参数快照完整性、Gateway fail-closed 审批守卫和单次执行，到 `BAPI_PR_CREATE` stateful LUW、真实 commit/rollback 状态、Workbench continuation、回归评测及可回放脱敏 trace 的端到端契约。
-
 ## Requirements
 ### Requirement: PR 创建 Action capability 注册
 
@@ -35,12 +34,18 @@
 
 ### Requirement: ApprovalRecord 契约
 
-系统 SHALL 定义 `ApprovalRecord`，记录审批对象（PR 参数快照 hash）、审批人、审批时间、过期时间、执行状态。Agent 审计状态为 pending/approved/executed/rejected；Gateway 可使用内部 executing 状态表示已原子占用、不可重放。薄纵切下审批对象为用户确认的 PR 参数快照（material/plant/quantity/unit/delivery date/purchasing group），而非 RecommendationPlan 建议版本。
+系统 SHALL 定义 `ApprovalRecord`，记录审批对象（PR 参数快照 hash）、审批人、审批时间、过期时间、执行状态，以及 `registry_snapshot_id`（绑定生成该 approval 时 `GovernedContext` 的非空 `snapshotId`）。Agent 审计状态为 pending/approved/executed/rejected；Gateway 可使用内部 executing 状态表示已原子占用、不可重放。薄纵切下审批对象为用户确认的 PR 参数快照（material/plant/quantity/unit/delivery date/purchasing group），而非 RecommendationPlan 建议版本。`registry_snapshot_id` SHALL 在 pending 生成时从 `GovernedContext` 填入，使 approval 记录与同一 run 的 matcher/planner 共享同一 snapshot 标识；跨语言 approval store 的「漂移使审批失效」执行校验留 Runbook 21。
 
 #### Scenario: 审批记录参数快照
 
 - **WHEN** 用户确认 PR 参数并审批
-- **THEN** 系统生成 `ApprovalRecord`，记录参数快照 hash、审批人、审批时间、过期时间，状态置为 `approved`
+- **THEN** 系统生成 `ApprovalRecord`，记录参数快照 hash、审批人、审批时间、过期时间、`registry_snapshot_id`，状态置为 `approved`
+
+#### Scenario: ApprovalRecord 携带同快照标识
+
+- **WHEN** orchestrator 生成 pending `ApprovalRecord`
+- **THEN** `ApprovalRecord.registry_snapshot_id` 非空且等于 `GovernedContext.snapshotId`
+- **AND** 与同一 run 的 matcher/planner 使用同一 `snapshotId`
 
 #### Scenario: 审批过期
 
@@ -284,3 +289,4 @@
 
 - **WHEN** validate 或 read capability execute 写 trace
 - **THEN** 保留既有通用 trace 字段，WRITE 专用 result summary 为空对象且不改变 read 响应
+
