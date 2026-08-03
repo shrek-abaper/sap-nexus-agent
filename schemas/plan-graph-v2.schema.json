@@ -1,0 +1,238 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sap-nexus-agent.local/schemas/plan-graph-v2.schema.json",
+  "title": "SAP Nexus PlanGraph v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planGraphVersion",
+    "planId",
+    "goalId",
+    "executionMode",
+    "snapshotId",
+    "nodes",
+    "edges",
+    "topologicalOrder",
+    "goalOutputs",
+    "readPartition",
+    "actionPartition",
+    "projectionRef",
+    "ruleSetRefs"
+  ],
+  "properties": {
+    "planGraphVersion": { "type": "integer", "const": 2 },
+    "planId": { "type": "string", "minLength": 1 },
+    "goalId": { "type": "string", "minLength": 1 },
+    "executionMode": { "type": "string", "enum": ["PLAN_ONLY", "READ_ONLY"] },
+    "snapshotId": { "$ref": "#/$defs/sha256" },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/node" }
+    },
+    "edges": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/edge" }
+    },
+    "topologicalOrder": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "goalOutputs": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/goalOutput" }
+    },
+    "readPartition": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "actionPartition": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "projectionRef": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "ruleSetRefs": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "nodeId",
+        "capabilityId",
+        "parameterBindings",
+        "producesFactTypes",
+        "governance"
+      ],
+      "properties": {
+        "nodeId": { "type": "string", "minLength": 1 },
+        "capabilityId": { "type": "string", "minLength": 1 },
+        "parameterBindings": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/parameterBinding" }
+        },
+        "producesFactTypes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "governance": { "$ref": "#/$defs/governance" }
+      }
+    },
+    "parameterBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["parameterName", "source"],
+      "properties": {
+        "parameterName": { "type": "string", "minLength": 1 },
+        "source": { "$ref": "#/$defs/parameterSource" }
+      }
+    },
+    "parameterSource": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "constraintName"],
+          "properties": {
+            "kind": { "const": "goalConstraint" },
+            "constraintName": { "type": "string", "minLength": 1 }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "semanticType", "value"],
+          "properties": {
+            "kind": { "const": "literal" },
+            "semanticType": { "type": "string", "minLength": 1 },
+            "value": { "type": ["string", "number", "integer", "boolean"] }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "producerNodeId", "factTypeId", "field"],
+          "properties": {
+            "kind": { "const": "factField" },
+            "producerNodeId": { "type": "string", "minLength": 1 },
+            "factTypeId": { "type": "string", "minLength": 1 },
+            "field": { "type": "string", "minLength": 1 }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "parameterName", "semanticType", "value"],
+          "properties": {
+            "kind": { "const": "registeredDefault" },
+            "parameterName": { "type": "string", "minLength": 1 },
+            "semanticType": { "type": "string", "minLength": 1 },
+            "value": { "type": ["string", "number", "integer", "boolean"] }
+          }
+        }
+      ]
+    },
+    "goalConstraintSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "constraintName"],
+      "properties": {
+        "kind": { "const": "goalConstraint" },
+        "constraintName": { "type": "string", "minLength": 1 }
+      }
+    },
+    "literalSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "semanticType", "value"],
+      "properties": {
+        "kind": { "const": "literal" },
+        "semanticType": { "type": "string", "minLength": 1 },
+        "value": { "type": ["string", "number", "integer", "boolean"] }
+      }
+    },
+    "factFieldSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "producerNodeId", "factTypeId", "field"],
+      "properties": {
+        "kind": { "const": "factField" },
+        "producerNodeId": { "type": "string", "minLength": 1 },
+        "factTypeId": { "type": "string", "minLength": 1 },
+        "field": { "type": "string", "minLength": 1 }
+      }
+    },
+    "governance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["capabilityKind", "sideEffect", "requiresApproval", "approvalPolicy"],
+      "properties": {
+        "capabilityKind": { "type": "string", "enum": ["Function", "Action"] },
+        "sideEffect": { "type": "string", "enum": ["none", "read", "write", "sap_write"] },
+        "requiresApproval": { "type": "boolean" },
+        "approvalPolicy": { "type": "string", "enum": ["not_required", "human_required"] }
+      }
+    },
+    "edge": {
+      "oneOf": [
+        { "$ref": "#/$defs/dataEdge" },
+        { "$ref": "#/$defs/dependencyEdge" }
+      ]
+    },
+    "dataEdge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["edgeId", "kind", "fromNodeId", "toNodeId", "factTypeId"],
+      "properties": {
+        "edgeId": { "type": "string", "minLength": 1 },
+        "kind": { "const": "data" },
+        "fromNodeId": { "type": "string", "minLength": 1 },
+        "toNodeId": { "type": "string", "minLength": 1 },
+        "factTypeId": { "type": "string", "minLength": 1 }
+      }
+    },
+    "dependencyEdge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["edgeId", "kind", "fromNodeId", "toNodeId"],
+      "properties": {
+        "edgeId": { "type": "string", "minLength": 1 },
+        "kind": { "const": "dependency" },
+        "fromNodeId": { "type": "string", "minLength": 1 },
+        "toNodeId": { "type": "string", "minLength": 1 }
+      }
+    },
+    "goalOutput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["factTypeId", "producerNodeId"],
+      "properties": {
+        "factTypeId": { "type": "string", "minLength": 1 },
+        "producerNodeId": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}
