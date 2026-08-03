@@ -343,6 +343,7 @@ def run_query(
             capability_id=call_plan.capability_id,
             parameters=call_plan.parameters,
             approver="user",
+            registry_snapshot_id=lease.snapshot_id,
         )
         return AgentOutcome(
             status="awaiting_approval",

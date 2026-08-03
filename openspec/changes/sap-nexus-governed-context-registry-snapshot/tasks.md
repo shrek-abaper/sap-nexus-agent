@@ -33,9 +33,9 @@
 
 ## 7. ApprovalRecord 携带 registry_snapshot_id
 
-- [ ] 7.1 Python `ApprovalRecord` 增 `registry_snapshot_id` 字段，`from_dict`/`to_dict` 向后兼容（`.get` 默认空）
-- [ ] 7.2 `create_approval_record` 从 `GovernedContext` 填入 `registry_snapshot_id`
-- [ ] 7.3 Node 侧 `ApprovalRecord` 同步加 `registrySnapshotId` 字段（序列化兼容，不改变 store 治理语义；漂移执行校验留 Runbook 21）
+- [x] 7.1 Python `ApprovalRecord` 增 `registry_snapshot_id` 字段，`from_dict`/`to_dict` 向后兼容（`.get` 默认空）
+- [x] 7.2 `create_approval_record` 从 `GovernedContext` 填入 `registry_snapshot_id`
+- [x] 7.3 Node 侧 `approvalRecord` 为 `Record<string, unknown>`，Python `to_dict` 加 `registrySnapshotId` 后自动透传，无需 Node 侧加字段（漂移执行校验留 Runbook 21）
 
 ## 8. principal 透传 Node backend -> Python agent
 
