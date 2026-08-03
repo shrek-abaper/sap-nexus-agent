@@ -2319,28 +2319,28 @@ git commit -m "test(planner): v2 dry-run output surface and v1 regression guard"
 **Files:**
 - Modify: `docs/runbooks/README.md`、roadmap row 26、Runbook 15（状态/版本）
 
-- [ ] **Step 1: 全量 pytest（v1 + v2）**
+- [x] **Step 1: 全量 pytest（v1 + v2）**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_semantic_planning_contract.py agent/tests/test_planner_plan_compiler.py agent/tests/test_semantic_planning_v2.py agent/tests/test_planner_plan_compiler_v2.py -q`
 Expected: 全绿。若 v1 测试 FAIL，说明 v2 改动意外影响 v1 -> 修正（v1 模块必须零改动）。
 
-- [ ] **Step 2: verify-agent-callplan-evidence.sh**
+- [x] **Step 2: verify-agent-callplan-evidence.sh**
 
 Run: `scripts/verify-agent-callplan-evidence.sh`
 Expected: 通过。若报 evidence 命令缺失，检查脚本是否需追加 v2 测试命令（按 CLAUDE.md §4，该脚本应含 `pytest agent/tests`，已覆盖）。
 
-- [ ] **Step 3: openspec validate**
+- [x] **Step 3: openspec validate**
 
 Run: `openspec validate --all --strict`
 Expected: 通过。若报 spec.md 场景与实现不符（如 `registeredDefault` scenario），按 Design Doc §6 Spec Patch 更新 `specs/semantic-plan-authoring-v2/spec.md` 的 "Optional input uses registered default" scenario 为 reserved 描述。
 
-- [ ] **Step 4: 更新 Runbook 15 状态/版本 + docs/runbooks/README.md + roadmap row 26**
+- [x] **Step 4: 更新 Runbook 15 状态/版本 + docs/runbooks/README.md + roadmap row 26**
 
 - Runbook 15：标记 v2 实现 completed，版本 bump（先读实际当前版本再 bump，避免漂移）。
 - `docs/runbooks/README.md`：更新 Runbook 15 状态链接。
 - roadmap row 26：标记进度。
 
-- [ ] **Step 5: git status 确认 + 提交**
+- [x] **Step 5: git status 确认 + 提交**
 
 ```bash
 git status --short
@@ -2348,7 +2348,7 @@ git add docs/runbooks/README.md docs/runbooks/ docs/wiki/  # 实际改动的文�
 git commit -m "docs(runbook-15): mark semantic-plan-authoring-v2 implemented with v2 plan graph"
 ```
 
-- [ ] **Step 6: 最终全量验证**
+- [x] **Step 6: 最终全量验证**
 
 Run:
 ```bash

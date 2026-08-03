@@ -33,7 +33,7 @@
 
 ## 6. 验证与文档
 
-- [ ] 6.1 `pytest agent/tests/test_semantic_planning_contract.py agent/tests/test_planner_plan_compiler.py`（+ 新 v2 测试）全绿
-- [ ] 6.2 `scripts/verify-agent-callplan-evidence.sh` 通过
-- [ ] 6.3 `openspec validate --all --strict` 通过
-- [ ] 6.4 更新 Runbook 15 状态 / 版本 + `docs/runbooks/README.md` + roadmap row 26
+- [x] 6.1 `pytest agent/tests/test_semantic_planning_contract.py agent/tests/test_planner_plan_compiler.py`（+ 新 v2 测试）全绿
+- [x] 6.2 `scripts/verify-agent-callplan-evidence.sh` 通过
+- [x] 6.3 `openspec validate --all --strict` 通过
+- [x] 6.4 更新 Runbook 15 状态 / 版本 + `docs/runbooks/README.md` + roadmap row 26
