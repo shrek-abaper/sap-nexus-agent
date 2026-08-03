@@ -650,3 +650,70 @@ def test_awaiting_batch_confirm_no_last_context():
     )
     payload = outcome_to_workbench_dict(outcome)
     assert payload["lastContext"] is None
+
+
+# Runbook 14: PendingShowOptions / PendingEscalate dataclasses.
+def test_pending_show_options_construction():
+    from sap_nexus_agent.conversation_context import PendingShowOptions
+
+    pending = PendingShowOptions(
+        candidates=["MM.PurchaseOrder.GetList", "MM.PR.CreateDraft"],
+        snapshot_id="snap-001",
+    )
+    assert pending.candidates == ["MM.PurchaseOrder.GetList", "MM.PR.CreateDraft"]
+    assert pending.snapshot_id == "snap-001"
+
+
+def test_pending_show_options_round_trip():
+    from sap_nexus_agent.conversation_context import PendingShowOptions
+
+    pending = PendingShowOptions(
+        candidates=["MM.PurchaseOrder.GetList"],
+        snapshot_id="snap-001",
+    )
+    payload = pending.to_dict()
+    restored = PendingShowOptions.from_dict(payload)
+    assert restored == pending
+
+
+def test_pending_escalate_construction():
+    from sap_nexus_agent.conversation_context import PendingEscalate
+    from sap_nexus_agent.match_decision import EscalationHandoff, MatchedIntent
+
+    handoff = EscalationHandoff(
+        reason="multi-intent",
+        matched_intents=[
+            MatchedIntent(
+                capability_id="MM.Inventory.GetAvailability",
+                parameters={"material": "DEMOA2"},
+                missing=["plant"],
+            )
+        ],
+        utterance="库存 + 采购订单概览",
+        registry_snapshot_id="snap-001",
+    )
+    pending = PendingEscalate(handoff=handoff, snapshot_id="snap-001")
+    assert pending.handoff == handoff
+    assert pending.snapshot_id == "snap-001"
+
+
+def test_pending_escalate_round_trip():
+    from sap_nexus_agent.conversation_context import PendingEscalate
+    from sap_nexus_agent.match_decision import EscalationHandoff, MatchedIntent
+
+    handoff = EscalationHandoff(
+        reason="multi-intent",
+        matched_intents=[
+            MatchedIntent(
+                capability_id="MM.Inventory.GetAvailability",
+                parameters={"material": "DEMOA2"},
+                missing=["plant"],
+            )
+        ],
+        utterance="库存 + 采购订单概览",
+        registry_snapshot_id="snap-001",
+    )
+    pending = PendingEscalate(handoff=handoff, snapshot_id="snap-001")
+    payload = pending.to_dict()
+    restored = PendingEscalate.from_dict(payload)
+    assert restored == pending

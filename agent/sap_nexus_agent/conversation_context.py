@@ -4,6 +4,9 @@ Frozen dataclasses representing the agent's conversational state:
 - LastContext: the last capability decision (CLARIFY missing params / SELECT among candidates)
 - Turn: a single user or assistant utterance
 - ConversationContext: last_context + recent history (last ~3 turns)
+- PendingShowOptions / PendingEscalate: Runbook 14 cross-turn continuation
+  state for SHOW_OPTIONS / ESCALATE_TO_PLANNER (advisory only, no execution
+  authority).
 
 All three are JSON round-trippable via to_dict() / from_dict() for transparent
 pass-through across LLM calls. The context field defaults to None so existing
@@ -13,6 +16,12 @@ callers can adopt it with zero changes.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    # Type-only import: avoids a circular import at runtime
+    # (conversation_context -> match_decision -> capability_selector).
+    from sap_nexus_agent.match_decision import EscalationHandoff
 
 
 @dataclass(frozen=True)
@@ -90,3 +99,85 @@ class ConversationContext:
             else None
         )
         return cls(last_context=last_context, history=history)
+
+
+@dataclass(frozen=True)
+class PendingShowOptions:
+    """Advisory cross-turn state for SHOW_OPTIONS (Runbook 14).
+
+    Carries the candidate capability_ids shown to the user on turn N so turn
+    N+1 can resolve a selection without re-running recall/rerank. Advisory
+    only: MUST NOT influence CallPlan / ApprovalRecord lifecycle.
+    """
+
+    candidates: list[str]
+    snapshot_id: str
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "candidates": list(self.candidates),
+            "snapshotId": self.snapshot_id,
+        }
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, object]) -> "PendingShowOptions":
+        return cls(
+            candidates=[str(x) for x in (payload.get("candidates") or [])],
+            snapshot_id=str(payload["snapshotId"]),
+        )
+
+
+@dataclass(frozen=True)
+class PendingEscalate:
+    """Advisory cross-turn state for ESCALATE_TO_PLANNER (Runbook 14).
+
+    Carries the EscalationHandoff from turn N so turn N+1 can confirm
+    continuation to the planner (dry-run only). Advisory only: MUST NOT
+    influence CallPlan / ApprovalRecord lifecycle.
+    """
+
+    handoff: "EscalationHandoff"
+    snapshot_id: str
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "handoff": {
+                "reason": self.handoff.reason,
+                "matchedIntents": [
+                    {
+                        "capabilityId": mi.capability_id,
+                        "parameters": dict(mi.parameters),
+                        "missing": list(mi.missing),
+                    }
+                    for mi in self.handoff.matched_intents
+                ],
+                "utterance": self.handoff.utterance,
+                "registrySnapshotId": self.handoff.registry_snapshot_id,
+            },
+            "snapshotId": self.snapshot_id,
+        }
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, object]) -> "PendingEscalate":
+        from sap_nexus_agent.match_decision import EscalationHandoff, MatchedIntent
+
+        handoff_raw = payload.get("handoff")
+        if not isinstance(handoff_raw, dict):
+            raise ValueError("PendingEscalate.from_dict: handoff must be a dict")
+        matched_raw = handoff_raw.get("matchedIntents") or []
+        matched_intents = [
+            MatchedIntent(
+                capability_id=str(mi["capabilityId"]),
+                parameters={str(k): str(v) for k, v in dict(mi.get("parameters") or {}).items()},
+                missing=[str(x) for x in (mi.get("missing") or [])],
+            )
+            for mi in matched_raw
+            if isinstance(mi, dict)
+        ]
+        handoff = EscalationHandoff(
+            reason=str(handoff_raw["reason"]),
+            matched_intents=matched_intents,
+            utterance=str(handoff_raw["utterance"]),
+            registry_snapshot_id=str(handoff_raw["registrySnapshotId"]),
+        )
+        return cls(handoff=handoff, snapshot_id=str(payload["snapshotId"]))
