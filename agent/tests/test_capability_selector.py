@@ -605,3 +605,164 @@ def test_select_capability_rejects_non_visible_capability_id():
     decision = select_capability(parse_result, visible=visible)
     assert decision.decision_type == "REJECT"
     assert decision.error_type == "VISIBILITY_DENIED"
+
+
+# Runbook 14: select_capability_from_envelope with replay fields.
+def test_select_from_envelope_select_carries_replay_fields():
+    """SELECT decision carries envelope_id + recall + rerank + discard."""
+    from sap_nexus_agent.capability_selector import select_capability_from_envelope
+    from sap_nexus_agent.intent_envelope import IntentEnvelope, IntentGoal
+
+    goal = IntentGoal(
+        goal_text="查库存",
+        capability_hint="MM.Inventory.GetAvailability",
+        parameters={"material": "DEMOA2", "plant": "1000"},
+        missing=[],
+    )
+    envelope = IntentEnvelope(
+        envelope_id="env-001",
+        utterance="查库存 DEMOA2 1000",
+        goals=(goal,),
+        user_constraints={},
+        ambiguities=[],
+        reference_turn_id=None,
+        model_evidence={},
+        snapshot_id="snap-001",
+        discard_reasons=[],
+        created_by="llm",
+    )
+    recall_candidates = ["MM.Inventory.GetAvailability"]
+    rerank_evidence = (
+        {"capabilityId": "MM.Inventory.GetAvailability", "score": 6, "components": {"llm_hint": 3, "lexical": 2, "param_fit": 1}},
+    )
+    decision = select_capability_from_envelope(
+        envelope,
+        recall_candidates=recall_candidates,
+        rerank_evidence=rerank_evidence,
+    )
+    assert decision.decision_type == "SELECT"
+    assert decision.capability_id == "MM.Inventory.GetAvailability"
+    assert decision.envelope_id == "env-001"
+    assert decision.recall_candidates == ("MM.Inventory.GetAvailability",)
+    assert len(decision.rerank_evidence) == 1
+    assert decision.discard_reasons == ()
+
+
+def test_select_from_envelope_clarify_missing_params():
+    """Single goal with missing required params -> CLARIFY."""
+    from sap_nexus_agent.capability_selector import select_capability_from_envelope
+    from sap_nexus_agent.intent_envelope import IntentEnvelope, IntentGoal
+
+    goal = IntentGoal(
+        goal_text="查库存",
+        capability_hint="MM.Inventory.GetAvailability",
+        parameters={"material": "DEMOA2"},  # plant missing
+        missing=["plant"],
+    )
+    envelope = IntentEnvelope(
+        envelope_id="env-002",
+        utterance="查库存 DEMOA2",
+        goals=(goal,),
+        user_constraints={},
+        ambiguities=[],
+        reference_turn_id=None,
+        model_evidence={},
+        snapshot_id="snap-001",
+        discard_reasons=[],
+        created_by="llm",
+    )
+    decision = select_capability_from_envelope(
+        envelope,
+        recall_candidates=["MM.Inventory.GetAvailability"],
+        rerank_evidence=(),
+    )
+    assert decision.decision_type == "CLARIFY"
+    assert "plant" in (decision.missing_parameters or [])
+
+
+def test_select_from_envelope_reject_unknown_capability():
+    """Goal with unknown capability_hint (not in visible) -> REJECT."""
+    from sap_nexus_agent.capability_selector import select_capability_from_envelope
+    from sap_nexus_agent.intent_envelope import IntentEnvelope, IntentGoal
+
+    goal = IntentGoal(
+        goal_text="x",
+        capability_hint="Foo.Bar",
+        parameters={},
+        missing=[],
+    )
+    envelope = IntentEnvelope(
+        envelope_id="env-003",
+        utterance="x",
+        goals=(goal,),
+        user_constraints={},
+        ambiguities=[],
+        reference_turn_id=None,
+        model_evidence={},
+        snapshot_id="snap-001",
+        discard_reasons=["unknown_capability:Foo.Bar"],
+        created_by="llm",
+    )
+    decision = select_capability_from_envelope(
+        envelope,
+        recall_candidates=[],
+        rerank_evidence=(),
+        visible_capability_ids=frozenset(("MM.Inventory.GetAvailability",)),
+    )
+    assert decision.decision_type == "REJECT"
+    assert "unknown_capability:Foo.Bar" in decision.discard_reasons
+
+
+def test_select_from_envelope_escalate_multi_goal():
+    """Multiple goals -> ESCALATE_TO_PLANNER."""
+    from sap_nexus_agent.capability_selector import select_capability_from_envelope
+    from sap_nexus_agent.intent_envelope import IntentEnvelope, IntentGoal
+
+    g1 = IntentGoal(goal_text="库存", capability_hint="MM.Inventory.GetAvailability", parameters={"material": "DEMOA2", "plant": "1000"}, missing=[])
+    g2 = IntentGoal(goal_text="采购订单", capability_hint="MM.PurchaseOrder.GetList", parameters={"poNumber": "4500000001"}, missing=[])
+    envelope = IntentEnvelope(
+        envelope_id="env-004",
+        utterance="库存 + 采购订单",
+        goals=(g1, g2),
+        user_constraints={},
+        ambiguities=[],
+        reference_turn_id=None,
+        model_evidence={},
+        snapshot_id="snap-001",
+        discard_reasons=[],
+        created_by="llm",
+    )
+    decision = select_capability_from_envelope(
+        envelope,
+        recall_candidates=["MM.Inventory.GetAvailability", "MM.PurchaseOrder.GetList"],
+        rerank_evidence=(),
+    )
+    assert decision.decision_type == "ESCALATE_TO_PLANNER"
+    assert decision.handoff is not None
+    assert len(decision.handoff.matched_intents) == 2
+
+
+def test_select_from_envelope_reject_technical_field():
+    """Envelope with discard_reasons containing technical_field -> REJECT."""
+    from sap_nexus_agent.capability_selector import select_capability_from_envelope
+    from sap_nexus_agent.intent_envelope import IntentEnvelope
+
+    envelope = IntentEnvelope(
+        envelope_id="env-005",
+        utterance="rfcName=BAPI_X",
+        goals=(),
+        user_constraints={},
+        ambiguities=[],
+        reference_turn_id=None,
+        model_evidence={},
+        snapshot_id="snap-001",
+        discard_reasons=["technical_field:rfcName"],
+        created_by="rule",
+    )
+    decision = select_capability_from_envelope(
+        envelope,
+        recall_candidates=[],
+        rerank_evidence=(),
+    )
+    assert decision.decision_type == "REJECT"
+    assert "technical_field:rfcName" in decision.discard_reasons

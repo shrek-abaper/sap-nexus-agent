@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     # runtime import is done lazily inside select_capability, mirroring the
     # pattern used in intent.py for the same cycle.
     from sap_nexus_agent.governed_context import VisibleCapabilitySet
+    from sap_nexus_agent.intent_envelope import IntentEnvelope
     from sap_nexus_agent.match_decision import EscalationHandoff, MatchDecision, MatchedIntent
 
 
@@ -211,4 +212,144 @@ def select_capability(
         decision_type="REJECT",
         error_type="UNSUPPORTED_INTENT",
         rationale="当前仅支持已注册的能力（库存可用量查询、采购订单列表、采购申请草稿创建）。",
+    )
+
+
+def select_capability_from_envelope(
+    envelope: "IntentEnvelope",
+    *,
+    recall_candidates: list[str] | tuple[str, ...] = (),
+    rerank_evidence: list[dict[str, object]] | tuple[dict[str, object], ...] = (),
+    visible_capability_ids: "frozenset[str] | None" = None,
+) -> "MatchDecision":
+    """Runbook 14 envelope-driven selector.
+
+    Consumes ``IntentEnvelope`` + recall candidates + rerank evidence and
+    produces a five-state ``MatchDecision`` with replay fields populated.
+
+    Decision tree (order-sensitive):
+
+    1. Technical override (discard_reasons contains technical_field)
+       -> REJECT(UNSUPPORTED_RFC_NAME) with discard_reasons
+    2. All goals have unknown capability_hint (or no goals)
+       -> REJECT(UNKNOWN_CAPABILITY) with discard_reasons
+    3. Multiple goals with valid capability_hints
+       -> ESCALATE_TO_PLANNER(handoff)
+    4. Single goal with missing required params -> CLARIFY(missing_parameters)
+    5. Single goal complete -> SELECT(capability_id, parameters)
+    6. No goals / no valid hints -> REJECT(UNSUPPORTED_INTENT)
+
+    Replay fields (``envelope_id`` / ``recall_candidates`` / ``rerank_evidence``
+    / ``discard_reasons``) are always populated from the envelope.
+    """
+    from sap_nexus_agent.match_decision import (
+        EscalationHandoff,
+        MatchDecision,
+        MatchedIntent,
+    )
+
+    envelope_id = envelope.envelope_id
+    recall_tuple = tuple(recall_candidates)
+    rerank_tuple = tuple(rerank_evidence)
+    discard_tuple = tuple(envelope.discard_reasons)
+
+    # 1. Technical override (rfcName / OData in discard_reasons).
+    if any(r.startswith("technical_field:") for r in envelope.discard_reasons):
+        return MatchDecision(
+            decision_type="REJECT",
+            error_type="UNSUPPORTED_RFC_NAME",
+            rationale="技术字段覆盖被丢弃",
+            envelope_id=envelope_id,
+            recall_candidates=recall_tuple,
+            rerank_evidence=rerank_tuple,
+            discard_reasons=discard_tuple,
+        )
+
+    # Filter goals to those whose capability_hint is visible (if visibility
+    # set was provided).
+    if visible_capability_ids is not None:
+        valid_goals = [
+            g for g in envelope.goals
+            if g.capability_hint and g.capability_hint in visible_capability_ids
+        ]
+    else:
+        valid_goals = [
+            g for g in envelope.goals if g.capability_hint
+        ]
+
+    # 2. No valid goals but discard_reasons has unknown_capability -> REJECT.
+    if not valid_goals and any(r.startswith("unknown_capability:") for r in envelope.discard_reasons):
+        return MatchDecision(
+            decision_type="REJECT",
+            error_type="UNKNOWN_CAPABILITY",
+            rationale="LLM 候选能力不在可见闭集内",
+            envelope_id=envelope_id,
+            recall_candidates=recall_tuple,
+            rerank_evidence=rerank_tuple,
+            discard_reasons=discard_tuple,
+        )
+
+    # 3. Multiple valid goals -> ESCALATE_TO_PLANNER.
+    if len(valid_goals) > 1:
+        matched_intents = [
+            MatchedIntent(
+                capability_id=g.capability_hint,  # type: ignore[arg-type]
+                parameters=dict(g.parameters),
+                missing=list(g.missing),
+            )
+            for g in valid_goals
+        ]
+        handoff = EscalationHandoff(
+            reason="multi-intent",
+            matched_intents=matched_intents,
+            utterance=envelope.utterance,
+            registry_snapshot_id=envelope.snapshot_id,
+        )
+        return MatchDecision(
+            decision_type="ESCALATE_TO_PLANNER",
+            handoff=handoff,
+            rationale="多个目标需要 planner 组合",
+            envelope_id=envelope_id,
+            recall_candidates=recall_tuple,
+            rerank_evidence=rerank_tuple,
+            discard_reasons=discard_tuple,
+        )
+
+    # 4. Single valid goal with missing params -> CLARIFY.
+    if len(valid_goals) == 1:
+        goal = valid_goals[0]
+        if goal.missing:
+            return MatchDecision(
+                decision_type="CLARIFY",
+                capability_id=goal.capability_hint,
+                parameters=dict(goal.parameters),
+                missing_parameters=list(goal.missing),
+                rationale="缺少必需参数",
+                envelope_id=envelope_id,
+                recall_candidates=recall_tuple,
+                rerank_evidence=rerank_tuple,
+                discard_reasons=discard_tuple,
+            )
+        # 5. Single goal complete -> SELECT.
+        return MatchDecision(
+            decision_type="SELECT",
+            capability_id=goal.capability_hint,
+            parameters=dict(goal.parameters),
+            missing_parameters=[],
+            rationale="single capability matched with complete parameters",
+            envelope_id=envelope_id,
+            recall_candidates=recall_tuple,
+            rerank_evidence=rerank_tuple,
+            discard_reasons=discard_tuple,
+        )
+
+    # 6. No goals / no valid hints -> REJECT(UNSUPPORTED_INTENT).
+    return MatchDecision(
+        decision_type="REJECT",
+        error_type="UNSUPPORTED_INTENT",
+        rationale="当前仅支持已注册的能力（库存可用量查询、采购订单列表、采购申请草稿创建）。",
+        envelope_id=envelope_id,
+        recall_candidates=recall_tuple,
+        rerank_evidence=rerank_tuple,
+        discard_reasons=discard_tuple,
     )
