@@ -16,8 +16,7 @@ from typing import Any
 
 from sap_nexus_agent.match_decision import EscalationHandoff
 from sap_nexus_agent.planner.capability_card import CapabilityCard, discover_cards
-from sap_nexus_agent.planner.goal_spec import GoalSpec
-from sap_nexus_agent.planner.handoff import _build_goal_with_constraints
+from sap_nexus_agent.planner.goal_spec import GoalConstraint, GoalSpec, build_goal_spec
 from sap_nexus_agent.planner.plan_compiler import (
     Flag,
     Gap,
@@ -64,6 +63,77 @@ class PlanCompileResult:
     rationale: str
 
 
+_IDENTIFIER_BINDING_KIND = "identifier"
+
+
+def _build_goal_v2(
+    handoff: EscalationHandoff,
+    cards: list[CapabilityCard],
+) -> GoalSpec:
+    """v2 GoalSpec：constraints 仅限跨能力共享参数。
+
+    与 v1 ``_build_goal_with_constraints``（为所有 identifier 参数建约束）
+    不同，v2 仅将出现在 **2+ 个不同能力** 的 matched_intents 中的
+    identifier 参数投影为 ``GoalConstraint``。仅出现在单个能力的参数
+    由 ``_build_node_v2`` 的 literal 分支绑定（semanticType 从
+    InputDescriptor 取，值从 handoff 参数取）。
+
+    设计依据：GoalConstraint 表达的是「目标级」约束（跨能力共享），
+    而非单能力参数值。单能力场景下所有 identifier 参数走 literal 源。
+    """
+    goal = build_goal_spec(handoff, cards)
+    cards_by_id = {c.capability_id: c for c in cards}
+
+    # Count distinct capabilities per identifier parameter name.
+    param_capabilities: dict[str, set[str]] = {}
+    for matched in handoff.matched_intents:
+        card = cards_by_id.get(matched.capability_id)
+        if card is None:
+            continue
+        inputs_by_name = {inp.name: inp for inp in card.inputs}
+        for param_name in matched.parameters:
+            inp = inputs_by_name.get(param_name)
+            if inp is None or inp.binding_kind != _IDENTIFIER_BINDING_KIND:
+                continue
+            param_capabilities.setdefault(param_name, set()).add(
+                matched.capability_id
+            )
+
+    constraints: list[GoalConstraint] = []
+    seen: set[tuple[str, str]] = set()
+    for matched in handoff.matched_intents:
+        card = cards_by_id.get(matched.capability_id)
+        if card is None:
+            continue
+        inputs_by_name = {inp.name: inp for inp in card.inputs}
+        for param_name, param_value in matched.parameters.items():
+            inp = inputs_by_name.get(param_name)
+            if inp is None or inp.binding_kind != _IDENTIFIER_BINDING_KIND:
+                continue
+            if len(param_capabilities.get(param_name, set())) < 2:
+                continue
+            key = (param_name, inp.semantic_type)
+            if key in seen:
+                continue
+            seen.add(key)
+            constraints.append(
+                GoalConstraint(
+                    name=param_name,
+                    semantic_type=inp.semantic_type,
+                    value=param_value,
+                )
+            )
+
+    return GoalSpec(
+        goal_id=goal.goal_id,
+        goal_type=goal.goal_type,
+        desired_fact_types=goal.desired_fact_types,
+        execution_mode=goal.execution_mode,
+        goal_spec_version=goal.goal_spec_version,
+        constraints=tuple(constraints),
+    )
+
+
 def compile_plan_v2(
     handoff: EscalationHandoff,
     snapshot: RegistrySnapshot,
@@ -72,8 +142,8 @@ def compile_plan_v2(
     """编译确定性 PlanGraph v2。不调用 LLM/Gateway/SAP。"""
     cards = discover_cards(snapshot, sources)
     raw_capabilities = _index_raw_capabilities(sources)
-    goal = _build_goal_with_constraints(handoff, cards)
-    plan_graph = _build_plan_graph_v2(goal, snapshot, cards, raw_capabilities)
+    goal = _build_goal_v2(handoff, cards)
+    plan_graph = _build_plan_graph_v2(goal, snapshot, cards, raw_capabilities, handoff)
     gaps = _compute_gaps(goal, cards, _strip_v2_fields_for_gap_calc(plan_graph))
 
     graph = SemanticGraphCompiler().compile(sources)
@@ -111,8 +181,14 @@ def _build_plan_graph_v2(
     snapshot: RegistrySnapshot,
     cards: list[CapabilityCard],
     raw_capabilities: Mapping[str, Mapping[str, Any]],
+    handoff: EscalationHandoff,
 ) -> dict[str, Any]:
     producers_by_fact = _index_producers_by_fact_type(cards)
+    params_by_capability: dict[str, dict[str, Any]] = {}
+    for matched in handoff.matched_intents:
+        params_by_capability.setdefault(matched.capability_id, {}).update(
+            matched.parameters
+        )
     nodes: list[dict[str, Any]] = []
     node_ids: list[str] = []
     node_id_by_capability: dict[str, str] = {}
@@ -129,7 +205,15 @@ def _build_plan_graph_v2(
             node_id_by_capability[card.capability_id] = node_id
             node_ids.append(node_id)
             raw = raw_capabilities.get(card.capability_id, {})
-            nodes.append(_build_node_v2(card, goal, node_id, raw))
+            nodes.append(
+                _build_node_v2(
+                    card,
+                    goal,
+                    node_id,
+                    raw,
+                    params_by_capability.get(card.capability_id, {}),
+                )
+            )
         fact_type_to_node[fact_type] = node_id
 
     goal_outputs = [
@@ -163,9 +247,15 @@ def _build_node_v2(
     goal: GoalSpec,
     node_id: str,
     raw_capability: Mapping[str, Any],
+    handoff_parameters: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """v2 node：本期先 author goalConstraint 源；literal/factField
-    在 Task 7/8 追加。
+    """v2 node：author goalConstraint + literal 源；factField 在 Task 8 追加。
+
+    参数源 authoring 规则（identifier 输入，按优先级）：
+    1. 有匹配 GoalConstraint（name + semanticType）-> ``goalConstraint`` 源
+    2. 否则有 handoff 参数值 -> ``literal`` 源（semanticType 从 InputDescriptor
+       取，值从 handoff 参数取）
+    3. 否则 required -> 不绑定（missing_parameter gap by _compute_gaps）
 
     与 v1 的差异：v2 对 ``identifier`` 输入不论 ``required`` 均尝试绑定
     goalConstraint（用户经 handoff 提供的值即便能力声明为可选也应当获得
@@ -174,6 +264,7 @@ def _build_node_v2(
     """
     constraints_by_name = {c.name: c for c in goal.constraints}
     bindings: list[dict[str, Any]] = []
+    params = handoff_parameters or {}
     for inp in card.inputs:
         constraint = constraints_by_name.get(inp.name)
         if (
@@ -190,6 +281,23 @@ def _build_node_v2(
                     },
                 }
             )
+        elif (
+            inp.binding_kind == "identifier"
+            and inp.name in params
+            and constraint is None
+        ):
+            # literal 源：semanticType 从 InputDescriptor 取，值从 handoff 参数取
+            bindings.append(
+                {
+                    "parameterName": inp.name,
+                    "source": {
+                        "kind": "literal",
+                        "semanticType": inp.semantic_type,
+                        "value": params[inp.name],
+                    },
+                }
+            )
+        # factField 分支在 Task 8 追加
     return {
         "nodeId": node_id,
         "capabilityId": card.capability_id,

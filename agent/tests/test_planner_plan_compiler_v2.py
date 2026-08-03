@@ -97,3 +97,35 @@ def test_compile_plan_v2_is_deterministic():
     second = compile_plan_v2(_dual_read_handoff(snapshot), snapshot, sources)
     assert first == second
     assert first.plan_graph == second.plan_graph
+
+
+def test_compile_plan_v2_authors_literal_source_for_identifier_without_constraint():
+    snapshot = _real_snapshot()
+    sources = _real_sources()
+    # handoff 提供 plant 值，但不构造对应 GoalConstraint（移除 plant constraint）
+    handoff = EscalationHandoff(
+        reason="literal",
+        matched_intents=[
+            MatchedIntent(
+                capability_id="MM.Inventory.GetAvailability",
+                parameters={"material": "M1", "plant": "5300"},
+                missing=[],
+            )
+        ],
+        utterance="inventory for M1 at 5300",
+        registry_snapshot_id=snapshot.snapshot_id,
+    )
+    result = compile_plan_v2(handoff, snapshot, sources)
+    inv_nodes = [
+        n for n in result.plan_graph["nodes"]
+        if n["capabilityId"] == "MM.Inventory.GetAvailability"
+    ]
+    assert inv_nodes
+    kinds = {b["source"]["kind"] for b in inv_nodes[0]["parameterBindings"]}
+    # material 有 GoalConstraint -> goalConstraint；plant 无 constraint 但有值 -> literal
+    assert "literal" in kinds
+    literal_bindings = [
+        b for b in inv_nodes[0]["parameterBindings"]
+        if b["source"]["kind"] == "literal"
+    ]
+    assert any(b["parameterName"] == "plant" for b in literal_bindings)
