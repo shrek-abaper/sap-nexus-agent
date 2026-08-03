@@ -7,6 +7,15 @@ import jsonschema
 import pytest
 import yaml
 
+from sap_nexus_agent.semantic_planning import (
+    RegistrySnapshot,
+    SemanticSourceDocuments,
+    build_registry_snapshot,
+    load_semantic_sources,
+)
+from sap_nexus_agent.semantic_planning.graph import SemanticGraphCompiler
+from sap_nexus_agent.semantic_planning.validation_v2 import validate_plan_graph_v2
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCHEMA_DIR = REPO_ROOT / "schemas"
 
@@ -90,3 +99,86 @@ def test_v1_fixture_passes_v1_schema_and_fails_v2_schema():
     jsonschema.Draft202012Validator(v1).validate(fixture)  # 不抛
     with pytest.raises(jsonschema.ValidationError):
         jsonschema.Draft202012Validator(v2).validate(fixture)
+
+
+def _real_sources() -> SemanticSourceDocuments:
+    return load_semantic_sources(REPO_ROOT)
+
+
+def _real_snapshot() -> RegistrySnapshot:
+    return build_registry_snapshot(_real_sources())
+
+
+def _valid_v2_plan(snapshot: RegistrySnapshot) -> dict:
+    """手工构造一个合法 v2 plan（inventory 单节点，READ_ONLY）。"""
+    return {
+        "planGraphVersion": 2,
+        "planId": "plan.v2.test",
+        "goalId": "goal.v2.test",
+        "executionMode": "READ_ONLY",
+        "snapshotId": snapshot.snapshot_id,
+        "nodes": [
+            {
+                "nodeId": "node.MM.Inventory.GetAvailability",
+                "capabilityId": "MM.Inventory.GetAvailability",
+                "parameterBindings": [
+                    {
+                        "parameterName": "material",
+                        "source": {
+                            "kind": "goalConstraint",
+                            "constraintName": "material",
+                        },
+                    },
+                    {
+                        "parameterName": "plant",
+                        "source": {
+                            "kind": "goalConstraint",
+                            "constraintName": "plant",
+                        },
+                    },
+                ],
+                "producesFactTypes": ["sapnexus:InventoryAvailabilityFact"],
+                "governance": {
+                    "capabilityKind": "Function",
+                    "sideEffect": "none",
+                    "requiresApproval": False,
+                    "approvalPolicy": "not_required",
+                },
+            }
+        ],
+        "edges": [],
+        "topologicalOrder": ["node.MM.Inventory.GetAvailability"],
+        "goalOutputs": [
+            {
+                "factTypeId": "sapnexus:InventoryAvailabilityFact",
+                "producerNodeId": "node.MM.Inventory.GetAvailability",
+            }
+        ],
+        "readPartition": ["node.MM.Inventory.GetAvailability"],
+        "actionPartition": [],
+        "projectionRef": [],
+        "ruleSetRefs": [],
+    }
+
+
+def _goal_spec_for_inventory() -> dict:
+    return {
+        "goalSpecVersion": 1,
+        "goalId": "goal.v2.test",
+        "goalType": "sapnexus:GoalFor:InventoryAvailabilityFact",
+        "executionMode": "READ_ONLY",
+        "desiredFactTypes": ["sapnexus:InventoryAvailabilityFact"],
+        "constraints": [
+            {"name": "material", "semanticType": "sapnexus:MaterialNumber", "value": "M1"},
+            {"name": "plant", "semanticType": "sapnexus:Plant", "value": "5300"},
+        ],
+    }
+
+
+def test_validate_plan_graph_v2_accepts_valid_v2_plan():
+    snapshot = _real_snapshot()
+    sources = _real_sources()
+    graph = SemanticGraphCompiler().compile(sources)
+    plan = _valid_v2_plan(snapshot)
+    report = validate_plan_graph_v2(graph, snapshot, _goal_spec_for_inventory(), plan)
+    assert report.valid is True, report.issues
