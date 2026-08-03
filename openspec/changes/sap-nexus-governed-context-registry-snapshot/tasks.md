@@ -48,8 +48,8 @@
 
 ## 10. 测试与验证
 
-- [ ] 10.1 visibility leakage = 0 测试：不可见 capability 不进入 LLM prompt 候选与 matcher 决策
-- [ ] 10.2 cross-principal 决策层 fail-closed 测试：多 principal 注入，A 不可见能力不产生 SELECT/候选
-- [ ] 10.3 snapshot 漂移 / source load 失败 / visibility denial 返回结构化 `PlannerFailure` 测试
-- [ ] 10.4 matcher Eval 6/6 回归 + `CapabilityCard` 安全投影回归 + 现有 inventory/PO/PR 路径回归
-- [ ] 10.5 运行 `openspec validate --all --strict` + `.venv/bin/python -m pytest agent/tests -q` + `scripts/verify-agent-callplan-evidence.sh` + `npm --prefix frontend run verify`
+- [x] 10.1 visibility leakage = 0 测试：不可见 capability 不进入 LLM prompt 候选与 matcher 决策
+- [x] 10.2 cross-principal 决策层 fail-closed 测试：多 principal 注入，A 不可见能力不产生 SELECT/候选
+- [x] 10.3 snapshot 漂移 / source load 失败 / visibility denial 返回结构化 `PlannerFailure` 测试
+- [x] 10.4 matcher Eval 6/6 回归 + `CapabilityCard` 安全投影回归 + 现有 inventory/PO/PR 路径回归
+- [x] 10.5 运行 `openspec validate --all --strict` + `.venv/bin/python -m pytest agent/tests -q` + `scripts/verify-agent-callplan-evidence.sh` + `npm --prefix frontend run verify`

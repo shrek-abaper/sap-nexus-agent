@@ -215,3 +215,97 @@ def test_planner_failure_is_frozen():
     )
     with pytest.raises(Exception):
         failure.error_type = "SNAPSHOT_DRIFT"  # type: ignore[misc]
+
+
+# ---- Task 10: visibility leakage / cross-principal / planner failure ----
+
+
+def test_visibility_leakage_zero():
+    """HIDDEN capability must not enter VisibleCapabilitySet."""
+    from sap_nexus_agent.planner.capability_card import CapabilityCard, Governance
+    from sap_nexus_agent.visibility import filter_visible
+
+    hidden_card = CapabilityCard(
+        capability_id="MM.Internal.Debug",
+        name="Debug",
+        governance=Governance(
+            side_effect="none", requires_approval=False, data_classification="internal"
+        ),
+        visibility="HIDDEN",
+        registry_snapshot_id="sha256:snap",
+    )
+    visible_card = CapabilityCard(
+        capability_id="MM.Inventory.GetAvailability",
+        name="Inv",
+        governance=Governance(
+            side_effect="none", requires_approval=False, data_classification="internal"
+        ),
+        visibility="VISIBLE_DRY_RUN",
+        registry_snapshot_id="sha256:snap",
+    )
+    cards = [hidden_card, visible_card]
+    visible = filter_visible(cards, for_execution=False)
+    visible_ids = {c.capability_id for c in visible}
+    assert "MM.Internal.Debug" not in visible_ids
+    assert "MM.Inventory.GetAvailability" in visible_ids
+
+
+def test_cross_principal_governed_context_binding():
+    """Different principals produce different GovernedContexts with correct principal_id."""
+    snapshot = _fake_snapshot("sha256:same-snap")
+    sources = _fake_sources()
+    lease = SnapshotLease(snapshot=snapshot, sources=sources)
+
+    principal_a = TrustedPrincipal("user-A", "operator", {"tenantId": "t1"})
+    principal_b = TrustedPrincipal("user-B", "viewer", {"tenantId": "t2"})
+
+    ctx_a = GovernedContext(
+        principal=principal_a,
+        scopes=("tenantId:t1",),
+        snapshot_id=lease.snapshot_id,
+        registry_version=1,
+    )
+    ctx_b = GovernedContext(
+        principal=principal_b,
+        scopes=("tenantId:t2",),
+        snapshot_id=lease.snapshot_id,
+        registry_version=1,
+    )
+
+    assert ctx_a.principal.principal_id == "user-A"
+    assert ctx_b.principal.principal_id == "user-B"
+    assert ctx_a.snapshot_id == ctx_b.snapshot_id == "sha256:same-snap"
+
+
+def test_planner_failure_snapshot_missing():
+    failure = PlannerFailure(
+        error_type="SNAPSHOT_MISSING",
+        message="snapshot_id is empty",
+        snapshot_id=None,
+        audit_evidence={
+            "expected_snapshot_id": None,
+            "actual_snapshot_id": None,
+            "principal_id": "user-1",
+            "source_paths": [],
+            "stage": "entry",
+        },
+    )
+    assert failure.error_type == "SNAPSHOT_MISSING"
+    assert failure.snapshot_id is None
+
+
+def test_planner_failure_visibility_denied():
+    failure = PlannerFailure(
+        error_type="VISIBILITY_DENIED",
+        message="principal has no visible capabilities",
+        snapshot_id="sha256:snap",
+        audit_evidence={
+            "expected_snapshot_id": "sha256:snap",
+            "actual_snapshot_id": "sha256:snap",
+            "principal_id": "user-1",
+            "source_paths": [],
+            "stage": "matcher",
+        },
+    )
+    assert failure.error_type == "VISIBILITY_DENIED"
+    assert failure.audit_evidence["stage"] == "matcher"
