@@ -849,7 +849,7 @@ git commit -m "feat(semantic_planning): enforce read-only partition isolation in
 **Interfaces:**
 - Produces: `_validate_refs`——`projectionRef`/`ruleSetRefs` 非空时，每个引用须能在 snapshot sources 中找到；空通过。
 
-- [ ] **Step 1: 写失败测试——非空 projectionRef 且不在 snapshot 被拒；空通过**
+- [x] **Step 1: 写失败测试——非空 projectionRef 且不在 snapshot 被拒；空通过**
 
 ```python
 def test_validate_plan_graph_v2_empty_refs_pass():
@@ -873,12 +873,12 @@ def test_validate_plan_graph_v2_unknown_projection_ref_fails_closed():
     assert "UNKNOWN_PROJECTION_REF" in codes
 ```
 
-- [ ] **Step 2: 运行确认失败**
+- [x] **Step 2: 运行确认失败**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_semantic_planning_v2.py::test_validate_plan_graph_v2_unknown_projection_ref_fails_closed -q`
 Expected: FAIL（当前 `_validate_refs` 直接 return，report.valid 为 True）
 
-- [ ] **Step 3: 实现 `_validate_refs`**
+- [x] **Step 3: 实现 `_validate_refs`**
 
 本期 snapshot 不含 projection/ruleSet 注册表，故任何非空 ref 都无法在 snapshot 中找到 -> fail-closed。实现：
 
@@ -907,12 +907,12 @@ def _validate_refs(
             )
 ```
 
-- [ ] **Step 4: 运行确认通过**
+- [x] **Step 4: 运行确认通过**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_semantic_planning_v2.py -q`
 Expected: PASS
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 ```bash
 git add agent/sap_nexus_agent/semantic_planning/validation_v2.py agent/tests/test_semantic_planning_v2.py
