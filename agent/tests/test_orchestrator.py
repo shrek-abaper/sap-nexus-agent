@@ -1319,3 +1319,78 @@ def test_agent_outcome_has_planner_failure_field():
     """AgentOutcome has a planner_failure field defaulting to None."""
     outcome = AgentOutcome(status="success")
     assert outcome.planner_failure is None
+
+
+# ---- Task 5: _compile_dry_run_safely returns PlannerFailure on drift/error ----
+
+
+def test_compile_dry_run_safely_returns_planner_failure_on_drift():
+    from sap_nexus_agent.orchestrator import _compile_dry_run_safely
+    from sap_nexus_agent.governed_context import SnapshotLease, PlannerFailure
+    from sap_nexus_agent.match_decision import EscalationHandoff, MatchedIntent
+    from sap_nexus_agent.semantic_planning.contracts import (
+        RegistrySnapshot,
+        SemanticSourceDocuments,
+        SnapshotSource,
+    )
+
+    snapshot = RegistrySnapshot(
+        snapshot_version=1,
+        canonicalization_version=1,
+        snapshot_id="sha256:lease-snap",
+        sources=(SnapshotSource(path="x", document_version=1, digest="x"),),
+    )
+    sources = SemanticSourceDocuments(
+        capabilities={"capabilities": []},
+        executor_bindings={"bindings": []},
+        fact_types={"factTypes": []},
+        relations={"relations": []},
+    )
+    lease = SnapshotLease(snapshot=snapshot, sources=sources)
+    handoff = EscalationHandoff(
+        reason="multi-intent",
+        matched_intents=[MatchedIntent(capability_id="A", parameters={}, missing=[])],
+        utterance="test",
+        registry_snapshot_id="sha256:different-snap",
+    )
+    result = _compile_dry_run_safely(handoff, lease=lease)
+    assert result is not None
+    assert isinstance(result, PlannerFailure)
+    assert result.error_type == "SNAPSHOT_DRIFT"
+    assert result.audit_evidence["expected_snapshot_id"] == "sha256:lease-snap"
+    assert result.audit_evidence["actual_snapshot_id"] == "sha256:different-snap"
+
+
+def test_compile_dry_run_safely_returns_planner_failure_on_source_load_error():
+    from sap_nexus_agent.orchestrator import _compile_dry_run_safely
+    from sap_nexus_agent.governed_context import SnapshotLease, PlannerFailure
+    from sap_nexus_agent.match_decision import EscalationHandoff, MatchedIntent
+    from sap_nexus_agent.semantic_planning.contracts import (
+        RegistrySnapshot,
+        SemanticSourceDocuments,
+        SnapshotSource,
+    )
+
+    snapshot = RegistrySnapshot(
+        snapshot_version=1,
+        canonicalization_version=1,
+        snapshot_id="sha256:snap",
+        sources=(SnapshotSource(path="x", document_version=1, digest="x"),),
+    )
+    sources = SemanticSourceDocuments(
+        capabilities={"capabilities": "not-a-list"},  # type: ignore[arg-type]
+        executor_bindings={"bindings": []},
+        fact_types={"factTypes": []},
+        relations={"relations": []},
+    )
+    lease = SnapshotLease(snapshot=snapshot, sources=sources)
+    handoff = EscalationHandoff(
+        reason="multi-intent",
+        matched_intents=[MatchedIntent(capability_id="A", parameters={}, missing=[])],
+        utterance="test",
+        registry_snapshot_id="sha256:snap",
+    )
+    result = _compile_dry_run_safely(handoff, lease=lease)
+    assert result is not None
+    assert isinstance(result, PlannerFailure)
+    assert result.error_type == "SOURCE_LOAD_ERROR"

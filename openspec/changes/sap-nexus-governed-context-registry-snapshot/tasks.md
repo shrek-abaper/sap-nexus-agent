@@ -22,9 +22,9 @@
 
 ## 5. planner 绑定同一 snapshot + 结构化 fail-closed
 
-- [ ] 5.1 `discover_cards` 绑定 snapshot（移除 `del snapshot`），`CapabilityCard` 增 `registry_snapshot_id` 字段并填入
-- [ ] 5.2 `_compile_dry_run_safely` 消费 `SnapshotLease`（不再另行加载 snapshot），`snapshotId` 漂移返 `PlannerFailure(SNAPSHOT_DRIFT)`
-- [ ] 5.3 source load 失败返 `PlannerFailure(SOURCE_LOAD_ERROR)` + audit evidence，不再 `except Exception: return None`
+- [x] 5.1 `discover_cards` 绑定 snapshot（移除 `del snapshot`），`CapabilityCard` 增 `registry_snapshot_id` 字段并填入
+- [x] 5.2 `_compile_dry_run_safely` 消费 `SnapshotLease`（不再另行加载 snapshot），`snapshotId` 漂移返 `PlannerFailure(SNAPSHOT_DRIFT)`
+- [x] 5.3 source load 失败返 `PlannerFailure(SOURCE_LOAD_ERROR)` + audit evidence，不再 `except Exception: return None`
 
 ## 6. capability kind 从 Registry snapshot 投影
 

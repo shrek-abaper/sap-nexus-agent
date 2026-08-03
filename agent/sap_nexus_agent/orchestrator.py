@@ -264,19 +264,20 @@ def run_query(
     # SHOW_OPTIONS / ESCALATE_TO_PLANNER: handoff to workbench/planner, no Gateway.
     if decision.decision_type in ("SHOW_OPTIONS", "ESCALATE_TO_PLANNER"):
         dry_run = None
+        planner_failure = None
         if decision.decision_type == "ESCALATE_TO_PLANNER" and decision.handoff is not None:
-            dry_run = _compile_dry_run_safely(
-                decision.handoff,
-                snapshot=snapshot,
-                sources=sources,
-                planner_sources_loader=planner_sources_loader,
-            )
+            result = _compile_dry_run_safely(decision.handoff, lease=lease)
+            if isinstance(result, PlannerFailure):
+                planner_failure = result
+            else:
+                dry_run = result
         return AgentOutcome(
             status="match_decision",
             message=decision.rationale,
             response_text=decision.rationale,
             match_decision=decision,
             dry_run=dry_run,
+            planner_failure=planner_failure,
         )
 
     # SELECT -> CallPlan -> Gateway validate/execute (existing path).
@@ -686,26 +687,44 @@ def _message_text(message: object) -> str:
 def _compile_dry_run_safely(
     handoff,
     *,
-    snapshot: RegistrySnapshot | None,
-    sources: SemanticSourceDocuments | None,
-    planner_sources_loader: PlannerSourcesLoader | None,
-) -> DryRunResult | None:
-    """Compile a dry-run from the handoff, loading sources if not injected.
+    lease: SnapshotLease,
+) -> "DryRunResult | PlannerFailure":
+    """Compile a dry-run from the handoff, consuming the same lease.
 
-    Swallows source-loading errors so an ESCALATE decision never crashes
-    the orchestrator: if the registry cannot be loaded, ``dry_run`` is
-    ``None`` and the match_decision still surfaces to the workbench. The
-    PlanCompiler itself is deterministic and does not call the Gateway.
+    Checks snapshot drift via ``lease.assert_same`` before compiling.
+    On drift or source-load failure, returns a structured ``PlannerFailure``
+    (Design Doc §3.5) instead of silently returning None.
     """
     try:
-        if snapshot is None or sources is None:
-            loader = planner_sources_loader or _default_planner_sources
-            snapshot, sources = loader()
-        return compile_dry_run_from_handoff(handoff, snapshot, sources)
-    except Exception:
-        # Source-loading failure (registry missing, YAML malformed, etc.).
-        # The match_decision still surfaces; the dry-run is omitted.
-        return None
+        lease.assert_same(handoff.registry_snapshot_id, stage="planner")
+    except SnapshotDriftError as exc:
+        return PlannerFailure(
+            error_type="SNAPSHOT_DRIFT",
+            message=str(exc),
+            snapshot_id=lease.snapshot_id,
+            audit_evidence={
+                "expected_snapshot_id": exc.expected,
+                "actual_snapshot_id": exc.actual,
+                "principal_id": None,
+                "source_paths": [],
+                "stage": exc.stage,
+            },
+        )
+    try:
+        return compile_dry_run_from_handoff(handoff, lease.snapshot, lease.sources)
+    except Exception as exc:
+        return PlannerFailure(
+            error_type="SOURCE_LOAD_ERROR",
+            message=f"planner source compilation failed: {exc}",
+            snapshot_id=lease.snapshot_id,
+            audit_evidence={
+                "expected_snapshot_id": lease.snapshot_id,
+                "actual_snapshot_id": lease.snapshot_id,
+                "principal_id": None,
+                "source_paths": [],
+                "stage": "planner",
+            },
+        )
 
 
 def _default_planner_sources() -> tuple[RegistrySnapshot, SemanticSourceDocuments]:

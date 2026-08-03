@@ -638,3 +638,44 @@ def test_visibility_module_re_exports_capability_card_and_governance():
     card = _make_card(visibility="HIDDEN")
     assert filter_visible([card], for_execution=False) == []
     assert filter_visible([card], for_execution=True) == []
+
+
+# ---- Task 5: CapabilityCard.registry_snapshot_id + discover_cards binds snapshot ----
+
+
+def test_capability_card_has_registry_snapshot_id_field():
+    from sap_nexus_agent.planner.capability_card import CapabilityCard, Governance
+
+    card = CapabilityCard(
+        capability_id="X",
+        name="X",
+        governance=Governance(
+            side_effect="none", requires_approval=False, data_classification="internal"
+        ),
+        registry_snapshot_id="sha256:snap-1",
+    )
+    assert card.registry_snapshot_id == "sha256:snap-1"
+
+
+def test_capability_card_registry_snapshot_id_defaults_empty():
+    from sap_nexus_agent.planner.capability_card import CapabilityCard, Governance
+
+    card = CapabilityCard(
+        capability_id="X",
+        name="X",
+        governance=Governance(
+            side_effect="none", requires_approval=False, data_classification="internal"
+        ),
+    )
+    assert card.registry_snapshot_id == ""
+
+
+def test_discover_cards_binds_registry_snapshot_id():
+    from sap_nexus_agent.planner.capability_card import discover_cards
+
+    snapshot = _load_real_snapshot()
+    sources = _load_real_sources()
+    cards = discover_cards(snapshot, sources)
+    assert len(cards) > 0
+    for card in cards:
+        assert card.registry_snapshot_id == snapshot.snapshot_id
