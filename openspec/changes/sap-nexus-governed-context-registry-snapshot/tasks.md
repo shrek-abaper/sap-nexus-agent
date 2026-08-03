@@ -39,8 +39,8 @@
 
 ## 8. principal 透传 Node backend -> Python agent
 
-- [ ] 8.1 `cli.py` 加 `--principal`（stdin JSON，与 `--context` 模式对齐或合并 payload，design 阶段定形态）
-- [ ] 8.2 `frontend/src/runtime/agent-runtime-adapter.ts` 的 `executeRunnerInBackground` -> `runner` 传 principal；`runLocalPythonAgent` spawn 时传 `--principal`
+- [x] 8.1 `cli.py` 读 `SAP_NEXUS_PRINCIPAL` env（JSON）-> `TrustedPrincipal` + `filter_catalog` 过滤 + 传 principal/snapshot/sources 给 run_query
+- [x] 8.2 `frontend/src/runtime/agent-runtime-adapter.ts` 的 `executeRunnerInBackground` -> `runner` 传 principal；`runLocalPythonAgent` spawn 时设 `SAP_NEXUS_PRINCIPAL` env
 
 ## 9. CapabilityCard 安全投影固化
 

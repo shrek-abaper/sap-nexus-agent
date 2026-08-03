@@ -13,6 +13,42 @@ from sap_nexus_agent.llm_intent import build_intent_adapter
 from sap_nexus_agent.orchestrator import continue_action, continue_batch, run_query
 from sap_nexus_agent.registry_loader import load_intent_catalog
 from sap_nexus_agent.workbench_output import outcome_to_workbench_dict
+from sap_nexus_agent.governed_context import load_principal_from_env
+from sap_nexus_agent.visibility import filter_catalog, filter_visible
+from sap_nexus_agent.planner.capability_card import discover_cards
+from sap_nexus_agent.semantic_planning import build_registry_snapshot, load_semantic_sources
+from pathlib import Path
+
+
+def _resolve_repo_root() -> Path:
+    here = Path(__file__).resolve().parents[1]
+    for parent in [here, *here.parents]:
+        if (parent / "registry" / "capabilities.yaml").exists():
+            return parent
+    return Path.cwd()
+
+
+def _build_adapter_and_principal(intent_mode: str):
+    """Load catalog, filter visible, build adapter.
+
+    Returns ``(intent_adapter, principal, snapshot, sources)``. On snapshot
+    load failure, falls back to unfiltered catalog (local dev tolerance).
+    """
+    principal = load_principal_from_env()
+    catalog = load_intent_catalog()
+    snapshot = None
+    sources = None
+    try:
+        repo_root = _resolve_repo_root()
+        sources = load_semantic_sources(repo_root)
+        snapshot = build_registry_snapshot(sources)
+        cards = discover_cards(snapshot, sources)
+        visible_cards = filter_visible(cards, for_execution=False)
+        catalog = filter_catalog(catalog, visible_cards)
+    except Exception:
+        pass  # fallback: unfiltered catalog (local dev tolerance)
+    intent_adapter = build_intent_adapter(intent_mode, catalog)
+    return intent_adapter, principal, snapshot, sources
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -99,13 +135,15 @@ def main(argv: list[str] | None = None) -> int:
                     "message": "Invalid conversation context payload.",
                 }))
             return 2
-        catalog = load_intent_catalog()
-        intent_adapter = build_intent_adapter(args.intent_mode, catalog)
+        intent_adapter, principal, snapshot, sources = _build_adapter_and_principal(args.intent_mode)
         outcome = run_query(
             args.query,
             gateway,
             intent_adapter=intent_adapter,
             context=context,
+            principal=principal,
+            snapshot=snapshot,
+            sources=sources,
         )
         if args.json:
             print(json.dumps(outcome_to_workbench_dict(outcome), ensure_ascii=False))
@@ -116,12 +154,14 @@ def main(argv: list[str] | None = None) -> int:
     if not args.query:
         parser.error("query is required unless --continue-action is used")
 
-    catalog = load_intent_catalog()
-    intent_adapter = build_intent_adapter(args.intent_mode, catalog)
+    intent_adapter, principal, snapshot, sources = _build_adapter_and_principal(args.intent_mode)
     outcome = run_query(
         args.query,
         gateway,
         intent_adapter=intent_adapter,
+        principal=principal,
+        snapshot=snapshot,
+        sources=sources,
     )
     if args.json:
         print(json.dumps(outcome_to_workbench_dict(outcome), ensure_ascii=False))
