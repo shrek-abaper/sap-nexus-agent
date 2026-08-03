@@ -44,7 +44,7 @@
 
 ## 9. CapabilityCard 安全投影固化
 
-- [ ] 9.1 确认 `discover_cards` 不读 `executorBinding`/`executor`，补 negative test 断言 `CapabilityCard` 不含 `rfcName`/`serviceUrl`/`credentialRef`/`rawSql`/technical mapping
+- [x] 9.1 确认 `discover_cards` 不读 `executorBinding`/`executor`，补 negative test 断言 `CapabilityCard` 不含 `rfcName`/`serviceUrl`/`credentialRef`/`rawSql`/technical mapping
 
 ## 10. 测试与验证
 

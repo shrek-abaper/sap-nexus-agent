@@ -679,3 +679,58 @@ def test_discover_cards_binds_registry_snapshot_id():
     assert len(cards) > 0
     for card in cards:
         assert card.registry_snapshot_id == snapshot.snapshot_id
+
+
+# ---- Task 9: CapabilityCard safe projection negative test ----
+
+
+def test_capability_card_does_not_leak_technical_bindings():
+    """CapabilityCard must NOT contain rfcName, serviceUrl, credentialRef, rawSql, executorBinding."""
+    import dataclasses
+    from sap_nexus_agent.planner.capability_card import discover_cards
+
+    snapshot = _load_real_snapshot()
+    sources = _load_real_sources()
+    cards = discover_cards(snapshot, sources)
+    assert len(cards) > 0
+
+    forbidden_fields = {
+        "rfcName",
+        "serviceUrl",
+        "entitySet",
+        "httpMethod",
+        "headers",
+        "credentialRef",
+        "rawSql",
+        "executorBinding",
+        "executor",
+    }
+    for card in cards:
+        field_names = {f.name for f in dataclasses.fields(card)}
+        assert not (field_names & forbidden_fields), (
+            f"CapabilityCard leaks technical field(s): {field_names & forbidden_fields}"
+        )
+        gov_fields = {f.name for f in dataclasses.fields(card.governance)}
+        assert not (gov_fields & forbidden_fields), (
+            f"Governance leaks technical field(s): {gov_fields & forbidden_fields}"
+        )
+
+
+def test_capability_card_only_exposes_semantic_fields():
+    """CapabilityCard fields are limited to semantic projection."""
+    import dataclasses
+    from sap_nexus_agent.planner.capability_card import CapabilityCard
+
+    expected_fields = {
+        "capability_id",
+        "name",
+        "governance",
+        "visibility",
+        "produces_fact_types",
+        "inputs",
+        "registry_snapshot_id",
+    }
+    actual_fields = {f.name for f in dataclasses.fields(CapabilityCard)}
+    assert actual_fields == expected_fields, (
+        f"Unexpected CapabilityCard fields: {actual_fields - expected_fields}"
+    )
