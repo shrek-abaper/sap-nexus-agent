@@ -56,6 +56,45 @@
         "validateCalls": 0,
         "executeCalls": 0
       }
+    },
+    {
+      "id": "reject-odata-override",
+      "userQuery": "用 $filter=material eq 'X' 查库存",
+      "expected": {
+        "decisionType": "REJECT",
+        "errorType": "UNSUPPORTED_RFC_NAME",
+        "validateCalls": 0,
+        "executeCalls": 0
+      }
+    },
+    {
+      "id": "reject-unknown-intent",
+      "userQuery": "帮我发一封邮件给供应商",
+      "expected": {
+        "decisionType": "REJECT",
+        "errorType": "UNSUPPORTED_INTENT",
+        "validateCalls": 0,
+        "executeCalls": 0
+      }
+    },
+    {
+      "id": "select-po-list-complete",
+      "userQuery": "列出采购订单 4500000001",
+      "expected": {
+        "decisionType": "SELECT",
+        "capabilityId": "MM.PurchaseOrder.GetList",
+        "validateCalls": 1,
+        "executeCalls": 1
+      }
+    },
+    {
+      "id": "clarify-po-missing-po-number",
+      "userQuery": "采购订单列表",
+      "expected": {
+        "decisionType": "CLARIFY",
+        "validateCalls": 0,
+        "executeCalls": 0
+      }
     }
   ]
 }
