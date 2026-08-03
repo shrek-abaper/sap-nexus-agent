@@ -200,3 +200,24 @@ def test_validate_plan_graph_v2_rejects_action_in_read_partition():
     assert report.valid is False
     codes = {issue.code for issue in report.issues}
     assert "PARTITION_GOVERNANCE_VIOLATION" in codes or "GOVERNANCE_VIOLATION" in codes
+
+
+def test_validate_plan_graph_v2_empty_refs_pass():
+    snapshot = _real_snapshot()
+    plan = _valid_v2_plan(snapshot)
+    plan["projectionRef"] = []
+    plan["ruleSetRefs"] = []
+    graph = SemanticGraphCompiler().compile(_real_sources())
+    report = validate_plan_graph_v2(graph, snapshot, _goal_spec_for_inventory(), plan)
+    assert report.valid is True, report.issues
+
+
+def test_validate_plan_graph_v2_unknown_projection_ref_fails_closed():
+    snapshot = _real_snapshot()
+    plan = _valid_v2_plan(snapshot)
+    plan["projectionRef"] = ["sapnexus:Projection:DoesNotExist"]
+    graph = SemanticGraphCompiler().compile(_real_sources())
+    report = validate_plan_graph_v2(graph, snapshot, _goal_spec_for_inventory(), plan)
+    assert report.valid is False
+    codes = {issue.code for issue in report.issues}
+    assert "UNKNOWN_PROJECTION_REF" in codes

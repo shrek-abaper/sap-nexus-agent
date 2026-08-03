@@ -258,5 +258,20 @@ def _validate_refs(
     snapshot: RegistrySnapshot,
     issues: list[ValidationIssue],
 ) -> None:
-    # 本期 projectionRef/ruleSetRefs 空 -> 通过；非空校验在 Task 5
-    return None
+    """projectionRef/ruleSetRefs 非空须来自 snapshot；本期 snapshot 无注册表，
+    非空即 fail-closed。空通过。"""
+    for field_name, code in (
+        ("projectionRef", "UNKNOWN_PROJECTION_REF"),
+        ("ruleSetRefs", "UNKNOWN_RULESET_REF"),
+    ):
+        refs = plan_graph.get(field_name, ())
+        if not refs:
+            continue
+        for index, ref in enumerate(refs):
+            issues.append(
+                ValidationIssue(
+                    f"/{field_name}/{index}",
+                    code,
+                    f"{field_name} references entity not present in snapshot: {ref}",
+                )
+            )
