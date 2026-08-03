@@ -751,7 +751,7 @@ git commit -m "feat(semantic_planning): add v2 validator reusing S1 primitives w
 - Consumes: S1 `_is_read_only(capability) -> bool`（Function + sideEffect=none + requiresApproval=false + approvalPolicy=not_required）。
 - Produces: `_validate_partitions` 强化版——`readPartition` 中非 read-only 节点 -> `PARTITION_GOVERNANCE_VIOLATION`。
 
-- [ ] **Step 1: 写失败测试——Action 节点入 readPartition 被拒**
+- [x] **Step 1: 写失败测试——Action 节点入 readPartition 被拒**
 
 ```python
 def test_validate_plan_graph_v2_rejects_action_in_read_partition():
@@ -772,12 +772,12 @@ def test_validate_plan_graph_v2_rejects_action_in_read_partition():
     assert "PARTITION_GOVERNANCE_VIOLATION" in codes or "GOVERNANCE_VIOLATION" in codes
 ```
 
-- [ ] **Step 2: 运行确认失败**
+- [x] **Step 2: 运行确认失败**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_semantic_planning_v2.py::test_validate_plan_graph_v2_rejects_action_in_read_partition -q`
 Expected: FAIL（当前 `_validate_partitions` 未校验 read-only，report.valid 为 True 或仅 GOVERNANCE_VIOLATION 但无 PARTITION 信号——视 _validate_plan_governance 是否先报；需确保有 PARTITION_GOVERNANCE_VIOLATION）
 
-- [ ] **Step 3: 强化 `_validate_partitions`**
+- [x] **Step 3: 强化 `_validate_partitions`**
 
 在 `validation_v2.py` 中 import `_is_read_only`，强化 `_validate_partitions`：
 
@@ -824,12 +824,12 @@ def _validate_partitions(
             )
 ```
 
-- [ ] **Step 4: 运行确认通过**
+- [x] **Step 4: 运行确认通过**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_semantic_planning_v2.py -q`
 Expected: PASS
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 ```bash
 git add agent/sap_nexus_agent/semantic_planning/validation_v2.py agent/tests/test_semantic_planning_v2.py
