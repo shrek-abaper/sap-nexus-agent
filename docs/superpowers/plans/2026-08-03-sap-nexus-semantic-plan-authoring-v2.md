@@ -1750,7 +1750,7 @@ git commit -m "feat(planner): v2 compiler authors dependency edges and topologic
 **Interfaces:**
 - Produces: `_partition_nodes` 确保 Action/非 read-only 节点入 `actionPartition`；node governance `requiresApproval=true`（已在 `_project_node_governance` 从 raw capability 投影，无需额外改）。
 
-- [ ] **Step 1: 写测试——PR.CreateDraft（write Action）入 actionPartition**
+- [x] **Step 1: 写测试——PR.CreateDraft（write Action）入 actionPartition**
 
 ```python
 def test_compile_plan_v2_partitions_write_action_into_action_partition():
@@ -1781,16 +1781,16 @@ def test_compile_plan_v2_partitions_write_action_into_action_partition():
     assert pr_nodes[0]["governance"]["capabilityKind"] == "Action"
 ```
 
-- [ ] **Step 2: 运行确认（应已通过，因 Task 6 已实现分区）**
+- [x] **Step 2: 运行确认（应已通过，因 Task 6 已实现分区）**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_planner_plan_compiler_v2.py::test_compile_plan_v2_partitions_write_action_into_action_partition -q`
 Expected: PASS（若 FAIL，修正 `_partition_nodes` 的 `_is_read_only` 判断）
 
-- [ ] **Step 3: 若 FAIL，修正 `_partition_nodes`**
+- [x] **Step 3: 若 FAIL，修正 `_partition_nodes`**
 
 确保 `_is_read_only` 接收的 `capability_view` 含完整 `governance`（含 `approvalPolicy`）。`_project_node_governance` 已产出 `approvalPolicy`，但 `_is_read_only` 读 `capability["governance"]["approvalPolicy"]`。`_partition_nodes` 的 `capability_view` 用 raw capability 的 governance，需确保 raw capability governance 含 `approvalPolicy`。真实 `MM.PR.CreateDraft` 的 governance 应含 `approvalPolicy: human_required`。
 
-- [ ] **Step 4: 运行确认通过 + 提交**
+- [x] **Step 4: 运行确认通过 + 提交**
 
 ```bash
 .venv/bin/python -m pytest agent/tests/test_planner_plan_compiler_v2.py -q

@@ -15,7 +15,7 @@
 - [x] 3.1 实现 v2 compiler 入口，消费 `EscalationHandoff` + `RegistrySnapshot` + `SemanticSourceDocuments`，绑定与 matcher 相同的 `snapshotId`
 - [x] 3.2 在 `goalConstraint` 之外，author `literal`、`factField`、`registeredDefault` 参数源
 - [x] 3.3 为 `factField` 绑定 author `data` edge，为 snapshot `dependsOn` 关系 author `dependency` edge
-- [ ] 3.4 将节点分区到 `readPartition`（READ-only）与 `actionPartition`（Action / write，`requiresApproval=true`）
+- [x] 3.4 将节点分区到 `readPartition`（READ-only）与 `actionPartition`（Action / write，`requiresApproval=true`）
 - [x] 3.5 编译失败时返回结构化 gaps / failures，含明确 issues（error code、JSON Pointer path、message）；不得返回 `None`
 - [ ] 3.6 snapshot 漂移时返回结构化 `PlannerFailure(SNAPSHOT_DRIFT)`（复用 Runbook 13 模式）
 
