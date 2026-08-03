@@ -17,7 +17,7 @@
 - [x] 3.3 为 `factField` 绑定 author `data` edge，为 snapshot `dependsOn` 关系 author `dependency` edge
 - [x] 3.4 将节点分区到 `readPartition`（READ-only）与 `actionPartition`（Action / write，`requiresApproval=true`）
 - [x] 3.5 编译失败时返回结构化 gaps / failures，含明确 issues（error code、JSON Pointer path、message）；不得返回 `None`
-- [ ] 3.6 snapshot 漂移时返回结构化 `PlannerFailure(SNAPSHOT_DRIFT)`（复用 Runbook 13 模式）
+- [x] 3.6 snapshot 漂移时返回结构化 `PlannerFailure(SNAPSHOT_DRIFT)`（复用 Runbook 13 模式）
 
 ## 4. v2 dry-run 输出
 

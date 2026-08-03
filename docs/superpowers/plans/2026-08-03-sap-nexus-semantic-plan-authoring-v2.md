@@ -1812,7 +1812,7 @@ git commit -m "feat(planner): v2 partition authoring isolates Action nodes with 
 - Consumes: `PlannerFailure`、`PlannerErrorType`（`SNAPSHOT_DRIFT`）。
 - Produces: `compile_plan_v2` 在 `handoff.registry_snapshot_id != snapshot.snapshot_id` 时 raise `PlannerFailure(SNAPSHOT_DRIFT, ...)`。
 
-- [ ] **Step 1: 写失败测试——snapshot 漂移抛 PlannerFailure**
+- [x] **Step 1: 写失败测试——snapshot 漂移抛 PlannerFailure**
 
 ```python
 from sap_nexus_agent.governed_context import PlannerFailure
@@ -1838,12 +1838,12 @@ def test_compile_plan_v2_raises_planner_failure_on_snapshot_drift():
     assert "actual_snapshot_id" in exc_info.value.audit_evidence
 ```
 
-- [ ] **Step 2: 运行确认失败**
+- [x] **Step 2: 运行确认失败**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_planner_plan_compiler_v2.py::test_compile_plan_v2_raises_planner_failure_on_snapshot_drift -q`
 Expected: FAIL（当前不检查 snapshot 漂移）
 
-- [ ] **Step 3: 在 `compile_plan_v2` 入口加漂移检查**
+- [x] **Step 3: 在 `compile_plan_v2` 入口加漂移检查**
 
 ```python
 from sap_nexus_agent.governed_context import PlannerFailure
@@ -1866,12 +1866,12 @@ def compile_plan_v2(handoff, snapshot, sources):
     # ... 现有编译逻辑 ...
 ```
 
-- [ ] **Step 4: 运行确认通过**
+- [x] **Step 4: 运行确认通过**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_planner_plan_compiler_v2.py -q`
 Expected: PASS
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 ```bash
 git add agent/sap_nexus_agent/planner/plan_compiler_v2.py agent/tests/test_planner_plan_compiler_v2.py
