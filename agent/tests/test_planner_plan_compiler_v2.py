@@ -587,3 +587,46 @@ def test_fact_field_fixture_produces_data_edge_and_stable():
     assert r1 == r2
     data_edges = [e for e in r1.plan_graph["edges"] if e["kind"] == "data"]
     assert len(data_edges) == 1
+
+
+# ---- Task 15: dry-run output surface + v1 regression guard ----
+
+
+def test_v2_dry_run_output_surfaces_all_fields():
+    snapshot = _real_snapshot()
+    sources = _real_sources()
+    result = compile_plan_v2(_dual_read_handoff(snapshot), snapshot, sources)
+    # plan
+    assert result.plan_graph["planGraphVersion"] == 2
+    # gaps
+    assert isinstance(result.gaps, list)
+    # governance
+    assert isinstance(result.governance_flags, list)
+    # projectionRef / ruleSetRefs
+    assert result.projection_ref == []
+    assert result.rule_set_refs == []
+    # snapshotId
+    assert result.snapshot_id == snapshot.snapshot_id
+    # rationale 含节点数
+    assert str(len(result.plan_graph["nodes"])) in result.rationale
+
+
+def test_v1_compiler_still_produces_v1_plan_graph():
+    """spec R1: v1 compiler 输出 planGraphVersion:1，不受 v2 影响。"""
+    from sap_nexus_agent.planner.plan_compiler import compile_dry_run
+    from sap_nexus_agent.planner.goal_spec import GoalSpec, GoalConstraint
+    goal = GoalSpec(
+        goal_id="goal.regression",
+        goal_type="sapnexus:PlannerDryRunGoal",
+        desired_fact_types=("sapnexus:InventoryAvailabilityFact",),
+        execution_mode="PLAN_ONLY",
+        constraints=(
+            GoalConstraint("material", "sapnexus:MaterialNumber", "M1"),
+            GoalConstraint("plant", "sapnexus:Plant", "5300"),
+        ),
+    )
+    result = compile_dry_run(goal, _real_snapshot(), _real_sources())
+    assert result.plan_graph["planGraphVersion"] == 1
+    # v1 不含 v2 字段
+    for field in ("readPartition", "actionPartition", "projectionRef", "ruleSetRefs"):
+        assert field not in result.plan_graph
