@@ -143,7 +143,7 @@ def compile_plan_v2(
     cards = discover_cards(snapshot, sources)
     raw_capabilities = _index_raw_capabilities(sources)
     goal = _build_goal_v2(handoff, cards)
-    plan_graph = _build_plan_graph_v2(goal, snapshot, cards, raw_capabilities, handoff)
+    plan_graph = _build_plan_graph_v2(goal, snapshot, cards, raw_capabilities, handoff, sources)
     gaps = _compute_gaps(goal, cards, _strip_v2_fields_for_gap_calc(plan_graph))
 
     graph = SemanticGraphCompiler().compile(sources)
@@ -182,6 +182,7 @@ def _build_plan_graph_v2(
     cards: list[CapabilityCard],
     raw_capabilities: Mapping[str, Mapping[str, Any]],
     handoff: EscalationHandoff,
+    sources: SemanticSourceDocuments,
 ) -> dict[str, Any]:
     producers_by_fact = _index_producers_by_fact_type(cards)
     params_by_capability: dict[str, dict[str, Any]] = {}
@@ -270,6 +271,32 @@ def _build_plan_graph_v2(
             edge_counter += 1
 
     edges.extend(data_edges)
+
+    # Third pass: author dependency edges from dependsOn relations.
+    # For each snapshot dependsOn relation where both capabilities are in
+    # the plan, author a ``dependency`` edge (fromNodeId=prerequisite,
+    # toNodeId=dependent). The S1 validator requires exactly one dependency
+    # edge per expected dependsOn (EDGE_INCONSISTENT if missing).
+    dependency_edges: list[dict[str, Any]] = []
+    cap_to_node = {n["capabilityId"]: n["nodeId"] for n in nodes}
+    relations = sources.relations.get("relations", []) if hasattr(sources, "relations") else []
+    dep_edge_counter = edge_counter
+    for relation in relations:
+        if relation.get("relationType") != "dependsOn":
+            continue
+        dependent_cap = relation.get("capabilityId")
+        prerequisite_cap = relation.get("dependsOnCapabilityId")
+        if dependent_cap not in cap_to_node or prerequisite_cap not in cap_to_node:
+            continue
+        dependency_edges.append({
+            "edgeId": f"edge.dep.{dep_edge_counter}",
+            "kind": "dependency",
+            "fromNodeId": cap_to_node[prerequisite_cap],
+            "toNodeId": cap_to_node[dependent_cap],
+        })
+        dep_edge_counter += 1
+    edges.extend(dependency_edges)
+
     topological_order = _topological_order(node_ids, edges)
 
     read_partition, action_partition = _partition_nodes(nodes, raw_capabilities, topological_order)

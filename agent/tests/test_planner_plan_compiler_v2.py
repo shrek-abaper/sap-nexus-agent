@@ -248,3 +248,137 @@ def test_compile_plan_v2_authors_fact_field_source_and_data_edge():
     assert not any(
         f.kind == "invalid_plan_graph" for f in result.governance_flags
     )
+
+
+# ---- Task 9: dependency edge authoring + topological sort ----
+
+
+def _sources_with_depends_on() -> tuple[SemanticSourceDocuments, RegistrySnapshot]:
+    """Construct a custom sources with a dependsOn relation.
+
+    The consumer ``Test.Consumer.GetSummary`` has **no fact input** (empty
+    inputs) to isolate the dependency edge from data edges. It produces
+    ``sapnexus:TestSummaryFact`` so it is included in the plan via
+    ``desired_fact_types``. A ``dependsOn`` relation declares it depends on
+    ``MM.Inventory.GetAvailability`` (prerequisite).
+    """
+    base = _real_sources()
+    caps = _unfreeze(base.capabilities)
+    facts = _unfreeze(base.fact_types)
+    relations = _unfreeze(base.relations)
+    # Consumer with no fact input (pure dependsOn, no data edge).
+    caps["capabilities"].append({
+        "capabilityId": "Test.Consumer.GetSummary",
+        "name": "Test Consumer",
+        "description": "Depends on inventory availability",
+        "domain": "MM",
+        "businessObject": "Test",
+        "ontologyIri": "sapnexus:Test_Consumer",
+        "semanticType": "sapnexus:TestConsumerReadFunction",
+        "aliases": [],
+        "status": "active",
+        "kind": "Function",
+        "inputs": [],
+        "outputs": [
+            {"name": "summary", "factTypeRef": "sapnexus:TestSummaryFact"}
+        ],
+        "governance": {
+            "sideEffect": "none",
+            "requiresApproval": False,
+            "approvalPolicy": "not_required",
+            "dataClassification": "internal",
+        },
+        "executor": {"type": "ODATA"},
+        "executorBinding": {"type": "ODATA", "bindingId": "test-binding"},
+    })
+    if "sapnexus:TestSummaryFact" not in facts.get("factTypes", []):
+        facts["factTypes"].append({"factTypeId": "sapnexus:TestSummaryFact", "fields": []})
+    # Test.Consumer.GetSummary dependsOn MM.Inventory.GetAvailability
+    relations["relations"].append({
+        "relationId": "rel.test.dependsOn",
+        "relationType": "dependsOn",
+        "capabilityId": "Test.Consumer.GetSummary",
+        "dependsOnCapabilityId": "MM.Inventory.GetAvailability",
+    })
+    sources = SemanticSourceDocuments(
+        capabilities=caps,
+        executor_bindings=base.executor_bindings,
+        fact_types=facts,
+        relations=relations,
+    )
+    snapshot = build_registry_snapshot(sources)
+    return sources, snapshot
+
+
+def test_compile_plan_v2_authors_dependency_edge_from_depends_on_relation():
+    sources, snapshot = _sources_with_depends_on()
+    handoff = EscalationHandoff(
+        reason="depends-on",
+        matched_intents=[
+            MatchedIntent(
+                capability_id="MM.Inventory.GetAvailability",
+                parameters={"material": "M1", "plant": "5300"},
+                missing=[],
+            ),
+            MatchedIntent(
+                capability_id="Test.Consumer.GetSummary",
+                parameters={},
+                missing=[],
+            ),
+        ],
+        utterance="summary depending on inventory",
+        registry_snapshot_id=snapshot.snapshot_id,
+    )
+    result = compile_plan_v2(handoff, snapshot, sources)
+    dep_edges = [e for e in result.plan_graph["edges"] if e["kind"] == "dependency"]
+    assert len(dep_edges) == 1
+    inv = next(n for n in result.plan_graph["nodes"] if n["capabilityId"] == "MM.Inventory.GetAvailability")
+    con = next(n for n in result.plan_graph["nodes"] if n["capabilityId"] == "Test.Consumer.GetSummary")
+    assert dep_edges[0]["fromNodeId"] == inv["nodeId"]
+    assert dep_edges[0]["toNodeId"] == con["nodeId"]
+    # topologicalOrder: inv (prerequisite) before con (dependent)
+    order = result.plan_graph["topologicalOrder"]
+    assert order.index(inv["nodeId"]) < order.index(con["nodeId"])
+    # v2 validator must accept the dependency edge
+    assert not any(
+        f.kind == "invalid_plan_graph" for f in result.governance_flags
+    )
+
+
+def test_compile_plan_v2_topological_order_no_edges_falls_back_to_node_id_order():
+    """No edges -> topologicalOrder falls back to nodeId sorted order (deterministic)."""
+    snapshot = _real_snapshot()
+    sources = _real_sources()
+    result = compile_plan_v2(_dual_read_handoff(snapshot), snapshot, sources)
+    order = result.plan_graph["topologicalOrder"]
+    # Dual-read: two READ nodes, no data/dependency edges between them.
+    # Fallback: nodeId sorted order.
+    assert order == sorted(order)
+
+
+def test_compile_plan_v2_topological_order_respects_data_edge():
+    """Data edge (producer -> consumer) must be respected in topologicalOrder."""
+    sources, snapshot = _sources_with_fact_field()
+    handoff = EscalationHandoff(
+        reason="fact-field",
+        matched_intents=[
+            MatchedIntent(
+                capability_id="MM.Inventory.GetAvailability",
+                parameters={"material": "M1", "plant": "5300"},
+                missing=[],
+            ),
+            MatchedIntent(
+                capability_id="Test.Consumer.GetSummary",
+                parameters={},
+                missing=[],
+            ),
+        ],
+        utterance="summary from inventory",
+        registry_snapshot_id=snapshot.snapshot_id,
+    )
+    result = compile_plan_v2(handoff, snapshot, sources)
+    order = result.plan_graph["topologicalOrder"]
+    inv = next(n for n in result.plan_graph["nodes"] if n["capabilityId"] == "MM.Inventory.GetAvailability")
+    con = next(n for n in result.plan_graph["nodes"] if n["capabilityId"] == "Test.Consumer.GetSummary")
+    # Producer (inv) must come before consumer (con) due to data edge.
+    assert order.index(inv["nodeId"]) < order.index(con["nodeId"])
