@@ -1974,7 +1974,7 @@ git commit -m "feat(planner): add compile_plan_v2_from_handoff entrypoint with d
 
 **bad-case 清单（来自 spec）：** unknown capability、unknown/inconsistent relation、cycle、type mismatch、missing source、snapshot drift、Action-in-READ。
 
-- [ ] **Step 1: 写 7 类 bad-case 测试（compiler 层）**
+- [x] **Step 1: 写 7 类 bad-case 测试（compiler 层）**
 
 在 `test_planner_plan_compiler_v2.py` 追加。每类断言 `result.plan_graph` 非 None（结构化）且 `governance_flags` 含 `invalid_plan_graph` 或 raise `PlannerFailure`：
 
@@ -2026,7 +2026,7 @@ def test_bad_case_snapshot_drift_fails_closed():
     assert exc.value.error_type == "SNAPSHOT_DRIFT"
 ```
 
-- [ ] **Step 2: 写 7 类 bad-case 测试（validator 层，直接构造非法 v2 plan）**
+- [x] **Step 2: 写 7 类 bad-case 测试（validator 层，直接构造非法 v2 plan）**
 
 在 `test_semantic_planning_v2.py` 追加：
 
@@ -2138,12 +2138,12 @@ def test_bad_case_missing_source_validator():
     assert any(i.code == "PARAMETER_SOURCE_MISSING" for i in report.issues)
 ```
 
-- [ ] **Step 3: 运行全部 bad-case**
+- [x] **Step 3: 运行全部 bad-case**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_semantic_planning_v2.py agent/tests/test_planner_plan_compiler_v2.py -q`
 Expected: 全部 PASS。若有 FAIL，根据失败码修正 compiler/validator（常见：unknown capability 在 compiler 层因 `discover_cards` 过滤掉非 active -> 节点为空 -> `_validate_nodes_and_projections` 不报 UNKNOWN_CAPABILITY 而是走 schema minItems=1；需确认 bad-case 测试断言 `invalid_plan_graph` flag 而非特定 issue code）。
 
-- [ ] **Step 4: 结构化 issues 不返回 None 守护测试**
+- [x] **Step 4: 结构化 issues 不返回 None 守护测试**
 
 ```python
 def test_invalid_plan_preserves_structured_issues_not_none():
@@ -2167,7 +2167,7 @@ def test_invalid_plan_preserves_structured_issues_not_none():
 Run: `.venv/bin/python -m pytest agent/tests/test_planner_plan_compiler_v2.py agent/tests/test_semantic_planning_v2.py -q`
 Expected: PASS
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 ```bash
 git add agent/tests/test_planner_plan_compiler_v2.py agent/tests/test_semantic_planning_v2.py

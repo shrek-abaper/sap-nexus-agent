@@ -27,7 +27,7 @@
 ## 5. 测试与 fixtures
 
 - [ ] 5.1 双 READ fixture（`MM.Inventory.GetAvailability` + `MM.PurchaseOrder.GetList`）生成稳定可重复的 PlanGraph v2（`readPartition` 含两节点，`actionPartition` 空，refs 空）
-- [ ] 5.2 bad-case 测试：unknown capability、unknown / inconsistent relation、cycle、type mismatch、missing source、snapshot drift、Action-in-READ，全部 fail-closed 并带结构化 issues
+- [x] 5.2 bad-case 测试：unknown capability、unknown / inconsistent relation、cycle、type mismatch、missing source、snapshot drift、Action-in-READ，全部 fail-closed 并带结构化 issues
 - [ ] 5.3 dry-run 输出测试：plan / gaps / governance / `projectionRef` / `ruleSetRefs` 齐全，无 Gateway 调用
 - [ ] 5.4 v1 回归：`test_semantic_planning_contract.py` 与 `test_planner_plan_compiler.py` 不改动仍通过
 
