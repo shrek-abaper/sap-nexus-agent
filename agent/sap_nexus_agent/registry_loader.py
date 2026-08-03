@@ -23,6 +23,10 @@ class CapabilityDescriptor:
     domain: str
     business_object: str
     inputs: tuple[InputDescriptor, ...]
+    # Runbook 14: optional aliases / examples for recall. Default empty tuple
+    # so existing capabilities without these fields still load successfully.
+    aliases: tuple[str, ...] = ()
+    examples: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -104,6 +108,12 @@ def load_intent_catalog(repo_root: str | None = None) -> IntentCatalog:
             for inp in (cap.get("inputs") or [])
             if isinstance(inp, dict) and "name" in inp
         )
+        # Runbook 14: optional aliases / examples. Backward compatible —
+        # absent fields yield empty tuples.
+        raw_aliases = cap.get("aliases") or []
+        aliases = tuple(str(a) for a in raw_aliases) if isinstance(raw_aliases, list) else ()
+        raw_examples = cap.get("examples") or []
+        examples = tuple(str(e) for e in raw_examples) if isinstance(raw_examples, list) else ()
         descriptors.append(
             CapabilityDescriptor(
                 capability_id=cap["capabilityId"],
@@ -112,6 +122,8 @@ def load_intent_catalog(repo_root: str | None = None) -> IntentCatalog:
                 domain=cap.get("domain", ""),
                 business_object=cap.get("businessObject", ""),
                 inputs=inputs,
+                aliases=aliases,
+                examples=examples,
             )
         )
 
