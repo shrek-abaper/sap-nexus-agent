@@ -1,0 +1,14 @@
+{
+  "change": "sap-nexus-semantic-plan-authoring-v2",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "cb2cf8221e2be0f5fcf4840c89bd7eb390326f804859c8895c0882f9a0d9a5b7",
+  "files": [
+    { "path": "openspec/changes/sap-nexus-semantic-plan-authoring-v2/proposal.md", "sha256": "e522f7d270dcc29e66bd0600abe4d480326174e26ddd83efcd5eada5c85ca738" },
+    { "path": "openspec/changes/sap-nexus-semantic-plan-authoring-v2/design.md", "sha256": "d6090ef35306e72c5fdeb0c69359f15fcbc3418cda3edf2326f2c096674b6ae5" },
+    { "path": "openspec/changes/sap-nexus-semantic-plan-authoring-v2/tasks.md", "sha256": "b61f94cd3a6260fbb9995b80a32c20c69404f3ed09c4d76d8681687040177304" },
+    { "path": "openspec/changes/sap-nexus-semantic-plan-authoring-v2/specs/semantic-plan-authoring-v2/spec.md", "sha256": "fce49f74912ea15310a11bad0f3a7a8c4c342101fc63a049856598b651490fd2" }
+  ]
+}
