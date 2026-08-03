@@ -224,7 +224,7 @@ git commit -m "feat(schema): add PlanGraph v2 schema with partitions and registe
 - Consumes: `sap_nexus_agent.planner.plan_compiler.Gap`、`Flag`（复用 v1 dataclass）。
 - Produces: `PlanCompileResult`（frozen dataclass）、v2 常量 `_SOURCE_KIND_REGISTERED_DEFAULT`、`_PARTITION_READ`/`_PARTITION_ACTION`。
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 新建 `agent/tests/test_planner_plan_compiler_v2.py`：
 
@@ -262,12 +262,12 @@ def test_plan_compile_result_is_frozen_and_carries_v2_fields():
     assert result.snapshot_id.startswith("sha256:")
 ```
 
-- [ ] **Step 2: 运行确认失败**
+- [x] **Step 2: 运行确认失败**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_planner_plan_compiler_v2.py::test_plan_compile_result_is_frozen_and_carries_v2_fields -q`
 Expected: FAIL（`ModuleNotFoundError: sap_nexus_agent.planner.plan_compiler_v2`）
 
-- [ ] **Step 3: 实现 PlanCompileResult + 常量**
+- [x] **Step 3: 实现 PlanCompileResult + 常量**
 
 创建 `agent/sap_nexus_agent/planner/plan_compiler_v2.py`：
 
@@ -315,12 +315,12 @@ class PlanCompileResult:
     rationale: str
 ```
 
-- [ ] **Step 4: 运行确认通过**
+- [x] **Step 4: 运行确认通过**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_planner_plan_compiler_v2.py::test_plan_compile_result_is_frozen_and_carries_v2_fields -q`
 Expected: PASS
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 ```bash
 git add agent/sap_nexus_agent/planner/plan_compiler_v2.py agent/tests/test_planner_plan_compiler_v2.py
