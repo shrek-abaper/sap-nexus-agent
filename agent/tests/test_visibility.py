@@ -260,3 +260,74 @@ def test_filter_visible_does_not_mutate_input():
     original = list(cards)
     _ = filter_visible(cards, for_execution=True)
     assert cards == original
+
+
+# ---- filter_catalog (Task 3: catalog pre-filter for LLM prompt) ----
+
+from sap_nexus_agent.registry_loader import IntentCatalog, CapabilityDescriptor
+from sap_nexus_agent.visibility import filter_catalog
+
+
+def _descriptor(capability_id: str) -> CapabilityDescriptor:
+    return CapabilityDescriptor(
+        capability_id=capability_id,
+        name=f"Cap {capability_id}",
+        description="",
+        domain="",
+        business_object="",
+        inputs=(),
+    )
+
+
+def test_filter_catalog_keeps_visible_capabilities():
+    catalog = IntentCatalog(
+        capabilities=(_descriptor("A"), _descriptor("B"), _descriptor("C")),
+        capability_ids=frozenset({"A", "B", "C"}),
+    )
+    visible_cards = [
+        CapabilityCard(
+            capability_id="A",
+            name="A",
+            governance=Governance(
+                side_effect="none", requires_approval=False, data_classification="internal"
+            ),
+        ),
+        CapabilityCard(
+            capability_id="C",
+            name="C",
+            governance=Governance(
+                side_effect="none", requires_approval=False, data_classification="internal"
+            ),
+        ),
+    ]
+    filtered = filter_catalog(catalog, visible_cards)
+    assert filtered.capability_ids == frozenset({"A", "C"})
+    assert len(filtered.capabilities) == 2
+
+
+def test_filter_catalog_empty_visible_returns_empty():
+    catalog = IntentCatalog(
+        capabilities=(_descriptor("A"),),
+        capability_ids=frozenset({"A"}),
+    )
+    filtered = filter_catalog(catalog, [])
+    assert filtered.capability_ids == frozenset()
+    assert len(filtered.capabilities) == 0
+
+
+def test_filter_catalog_filters_out_non_visible():
+    catalog = IntentCatalog(
+        capabilities=(_descriptor("A"), _descriptor("B")),
+        capability_ids=frozenset({"A", "B"}),
+    )
+    visible_cards = [
+        CapabilityCard(
+            capability_id="A",
+            name="A",
+            governance=Governance(
+                side_effect="none", requires_approval=False, data_classification="internal"
+            ),
+        ),
+    ]
+    filtered = filter_catalog(catalog, visible_cards)
+    assert filtered.capability_ids == frozenset({"A"})

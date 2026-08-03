@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import dataclasses
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -10,6 +11,7 @@ if TYPE_CHECKING:
     # (capability_selector -> match_decision -> capability_selector). The
     # runtime import is done lazily inside select_capability, mirroring the
     # pattern used in intent.py for the same cycle.
+    from sap_nexus_agent.governed_context import VisibleCapabilitySet
     from sap_nexus_agent.match_decision import EscalationHandoff, MatchDecision, MatchedIntent
 
 
@@ -39,7 +41,10 @@ class SelectionResult:
     message: str | None = None
 
 
-def select_capability(parse_result: IntentParseResult) -> MatchDecision:
+def select_capability(
+    parse_result: IntentParseResult,
+    visible: "VisibleCapabilitySet | None" = None,
+) -> MatchDecision:
     """Five-state capability match decision (Design Doc § selector).
 
     Decision tree (order-sensitive):
@@ -58,6 +63,31 @@ def select_capability(parse_result: IntentParseResult) -> MatchDecision:
     """
     # Lazy import breaks the capability_selector <-> match_decision cycle.
     from sap_nexus_agent.match_decision import EscalationHandoff, MatchDecision
+
+    # When a VisibleCapabilitySet is provided, filter matched_intents to
+    # only visible capabilities (double-check; the catalog was already
+    # pre-filtered). Also derive snapshot_id for the handoff from visible.
+    visible_snapshot_id = ""
+    visible_ids = frozenset()  # empty if no visible set provided
+    if visible is not None:
+        visible_ids = frozenset(c.capability_id for c in visible.cards)
+        visible_snapshot_id = visible.snapshot_id
+        if parse_result.matched_intents:
+            filtered = [
+                mi
+                for mi in parse_result.matched_intents
+                if mi.capability_id in visible_ids
+            ]
+            # Rebuild parse_result with filtered matched_intents. Support both
+            # IntentParseResult (frozen dataclass) and test SimpleNamespace.
+            if dataclasses.is_dataclass(parse_result):
+                parse_result = dataclasses.replace(parse_result, matched_intents=filtered)
+            else:
+                from types import SimpleNamespace
+
+                parse_result = SimpleNamespace(
+                    **{**vars(parse_result), "matched_intents": filtered}
+                )
 
     # 1. Technical-override rejection (rfcName / OData injection) takes priority -
     #    same semantics as the Java-side CapabilityRequest guard (Task 6).
@@ -80,7 +110,7 @@ def select_capability(parse_result: IntentParseResult) -> MatchDecision:
                 # so a future enhancement populates them without a selector
                 # signature change.
                 utterance=getattr(parse_result, "utterance", ""),
-                registry_snapshot_id=getattr(parse_result, "registry_snapshot_id", ""),
+                registry_snapshot_id=visible_snapshot_id or getattr(parse_result, "registry_snapshot_id", ""),
             ),
             rationale=f"matched {len(parse_result.matched_intents)} capabilities; planner composition required",
         )
@@ -153,6 +183,12 @@ def select_capability(parse_result: IntentParseResult) -> MatchDecision:
     # 5. Single intent complete -> SELECT.
     capability_id = parse_result.capability_id or INTENT_TO_CAPABILITY.get(parse_result.intent)
     if capability_id:
+        if visible is not None and capability_id not in visible_ids:
+            return MatchDecision(
+                decision_type="REJECT",
+                error_type="VISIBILITY_DENIED",
+                rationale="matched capability is not visible to this principal",
+            )
         return MatchDecision(
             decision_type="SELECT",
             capability_id=capability_id,

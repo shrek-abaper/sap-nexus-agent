@@ -43,6 +43,15 @@ from sap_nexus_agent.semantic_planning import (
     build_registry_snapshot,
     load_semantic_sources,
 )
+from sap_nexus_agent.governed_context import (
+    PLACEHOLDER_PRINCIPAL,
+    GovernedContext,
+    PlannerFailure,
+    SnapshotDriftError,
+    SnapshotLease,
+    TrustedPrincipal,
+    VisibleCapabilitySet,
+)
 
 
 INVENTORY_CAPABILITY_ID = "MM.Inventory.GetAvailability"
@@ -80,6 +89,10 @@ class AgentOutcome:
     # Multi-value batch (Design Doc §4.4): combinations awaiting user confirm.
     # Populated only for status="awaiting_batch_confirm".
     combinations: list[dict[str, str]] | None = None
+    # Structured planner failure (Design Doc §3.5). Populated when the
+    # planner encounters snapshot drift, source load error, or visibility
+    # denial. None for all non-ESCALATE paths and successful dry-runs.
+    planner_failure: "PlannerFailure | None" = None
 
 
 IntentAdapter = Callable[[str, "ConversationContext | None"], IntentParseResult]
@@ -113,6 +126,7 @@ def run_query(
     *,
     intent_adapter: IntentAdapter = parse_intent,
     context: ConversationContext | None = None,
+    principal: TrustedPrincipal | None = None,
     snapshot: RegistrySnapshot | None = None,
     sources: SemanticSourceDocuments | None = None,
     planner_sources_loader: PlannerSourcesLoader | None = None,
@@ -140,6 +154,69 @@ def run_query(
     (Task 3) and history injection (Task 4) consume the same parameter
     downstream.
     """
+    # GovernedContext binding (Design Doc §4 data flow).
+    # principal defaults to PLACEHOLDER for local dev backward compat.
+    effective_principal = principal or PLACEHOLDER_PRINCIPAL
+
+    # Construct SnapshotLease at entry: reuse injected snapshot/sources or
+    # load via _default_planner_sources. Failure -> PlannerFailure.
+    planner_failure: PlannerFailure | None = None
+    lease: SnapshotLease | None = None
+    try:
+        if snapshot is None or sources is None:
+            loader = planner_sources_loader or _default_planner_sources
+            loaded_snapshot, loaded_sources = loader()
+            if snapshot is None:
+                snapshot = loaded_snapshot
+            if sources is None:
+                sources = loaded_sources
+        if not snapshot.snapshot_id:
+            planner_failure = PlannerFailure(
+                error_type="SNAPSHOT_MISSING",
+                message="build_registry_snapshot returned empty snapshot_id",
+                snapshot_id=None,
+                audit_evidence={
+                    "expected_snapshot_id": None,
+                    "actual_snapshot_id": None,
+                    "principal_id": effective_principal.principal_id,
+                    "source_paths": [],
+                    "stage": "entry",
+                },
+            )
+        else:
+            lease = SnapshotLease(snapshot=snapshot, sources=sources)
+    except Exception as exc:
+        planner_failure = PlannerFailure(
+            error_type="SOURCE_LOAD_ERROR",
+            message=f"failed to load registry sources: {exc}",
+            snapshot_id=None,
+            audit_evidence={
+                "expected_snapshot_id": None,
+                "actual_snapshot_id": None,
+                "principal_id": effective_principal.principal_id,
+                "source_paths": [],
+                "stage": "entry",
+            },
+        )
+
+    if planner_failure is not None:
+        return AgentOutcome(
+            status="failure",
+            message=planner_failure.message,
+            response_text=planner_failure.message,
+            error_type=planner_failure.error_type,
+            planner_failure=planner_failure,
+        )
+
+    assert lease is not None  # for type checker
+    scopes = tuple(f"{k}:{v}" for k, v in effective_principal.data_scope.items())
+    governed_context = GovernedContext(
+        principal=effective_principal,
+        scopes=scopes,
+        snapshot_id=lease.snapshot_id,
+        registry_version=snapshot.snapshot_version,
+    )
+
     # Backward-compat dispatch: when context is None, call the adapter with
     # the original single-arg signature so existing 1-arg adapters (and the
     # default ``parse_intent``) are byte-for-byte unchanged. Only forward
@@ -148,7 +225,39 @@ def run_query(
         parsed = intent_adapter(text)
     else:
         parsed = intent_adapter(text, context)
-    decision = select_capability(parsed)
+
+    # Discover cards from snapshot and filter visible (Design Doc §4).
+    from sap_nexus_agent.planner.capability_card import discover_cards
+    from sap_nexus_agent.visibility import filter_visible
+
+    all_cards = discover_cards(snapshot, sources)
+    visible_cards = filter_visible(all_cards, for_execution=False)
+    if not visible_cards:
+        return AgentOutcome(
+            status="failure",
+            message="principal has no visible capabilities",
+            response_text="principal has no visible capabilities",
+            error_type="VISIBILITY_DENIED",
+            planner_failure=PlannerFailure(
+                error_type="VISIBILITY_DENIED",
+                message="principal has no visible capabilities",
+                snapshot_id=lease.snapshot_id,
+                audit_evidence={
+                    "expected_snapshot_id": lease.snapshot_id,
+                    "actual_snapshot_id": lease.snapshot_id,
+                    "principal_id": effective_principal.principal_id,
+                    "source_paths": [],
+                    "stage": "visibility",
+                },
+            ),
+        )
+    visible_capability_set = VisibleCapabilitySet(
+        cards=tuple(visible_cards),
+        snapshot_id=lease.snapshot_id,
+        principal_id=effective_principal.principal_id,
+    )
+
+    decision = select_capability(parsed, visible=visible_capability_set)
 
     # REJECT (technical override / unsupported intent): no Gateway.
     if decision.decision_type == "REJECT":
@@ -173,19 +282,20 @@ def run_query(
     # SHOW_OPTIONS / ESCALATE_TO_PLANNER: handoff to workbench/planner, no Gateway.
     if decision.decision_type in ("SHOW_OPTIONS", "ESCALATE_TO_PLANNER"):
         dry_run = None
+        planner_failure = None
         if decision.decision_type == "ESCALATE_TO_PLANNER" and decision.handoff is not None:
-            dry_run = _compile_dry_run_safely(
-                decision.handoff,
-                snapshot=snapshot,
-                sources=sources,
-                planner_sources_loader=planner_sources_loader,
-            )
+            result = _compile_dry_run_safely(decision.handoff, lease=lease)
+            if isinstance(result, PlannerFailure):
+                planner_failure = result
+            else:
+                dry_run = result
         return AgentOutcome(
             status="match_decision",
             message=decision.rationale,
             response_text=decision.rationale,
             match_decision=decision,
             dry_run=dry_run,
+            planner_failure=planner_failure,
         )
 
     # SELECT -> CallPlan -> Gateway validate/execute (existing path).
@@ -193,6 +303,15 @@ def run_query(
     parameters = dict(decision.parameters or parsed.parameters)
     if capability_id == INVENTORY_CAPABILITY_ID:
         parameters.setdefault("unit", "EA")
+
+    # Kind from snapshot projection (Design Doc D6): use
+    # governance.requires_approval from the visible CapabilityCard,
+    # not the hardcoded ACTION_CAPABILITY_IDS set.
+    matched_card = next(
+        (c for c in visible_capability_set.cards if c.capability_id == capability_id),
+        None,
+    )
+    is_action = matched_card is not None and matched_card.governance.requires_approval
 
     # Multi-value detection (Design Doc §4.4): expand combinations and await
     # user confirmation before any Gateway call. READ-only: Action capabilities
@@ -208,7 +327,7 @@ def run_query(
                 response_text=f"组合数 {len(combinations)} 过多，请缩小范围（如减少物料或工厂）。",
                 match_decision=decision,
             )
-        kind = "Action" if capability_id in ACTION_CAPABILITY_IDS else "Function"
+        kind = "Action" if is_action else "Function"
         call_plan = create_call_plan(capability_id, parameters, kind=kind)
         combos_desc = "; ".join(
             f"material={c.get('material')}, plant={c.get('plant')}" for c in combinations
@@ -221,7 +340,7 @@ def run_query(
             match_decision=decision,
         )
 
-    kind = "Action" if capability_id in ACTION_CAPABILITY_IDS else "Function"
+    kind = "Action" if is_action else "Function"
     call_plan = create_call_plan(capability_id, parameters, kind=kind)
     validation = gateway.validate(call_plan.capability_id, call_plan.parameters)
     if not validation.success:
@@ -242,6 +361,7 @@ def run_query(
             capability_id=call_plan.capability_id,
             parameters=call_plan.parameters,
             approver="user",
+            registry_snapshot_id=lease.snapshot_id,
         )
         return AgentOutcome(
             status="awaiting_approval",
@@ -595,26 +715,44 @@ def _message_text(message: object) -> str:
 def _compile_dry_run_safely(
     handoff,
     *,
-    snapshot: RegistrySnapshot | None,
-    sources: SemanticSourceDocuments | None,
-    planner_sources_loader: PlannerSourcesLoader | None,
-) -> DryRunResult | None:
-    """Compile a dry-run from the handoff, loading sources if not injected.
+    lease: SnapshotLease,
+) -> "DryRunResult | PlannerFailure":
+    """Compile a dry-run from the handoff, consuming the same lease.
 
-    Swallows source-loading errors so an ESCALATE decision never crashes
-    the orchestrator: if the registry cannot be loaded, ``dry_run`` is
-    ``None`` and the match_decision still surfaces to the workbench. The
-    PlanCompiler itself is deterministic and does not call the Gateway.
+    Checks snapshot drift via ``lease.assert_same`` before compiling.
+    On drift or source-load failure, returns a structured ``PlannerFailure``
+    (Design Doc §3.5) instead of silently returning None.
     """
     try:
-        if snapshot is None or sources is None:
-            loader = planner_sources_loader or _default_planner_sources
-            snapshot, sources = loader()
-        return compile_dry_run_from_handoff(handoff, snapshot, sources)
-    except Exception:
-        # Source-loading failure (registry missing, YAML malformed, etc.).
-        # The match_decision still surfaces; the dry-run is omitted.
-        return None
+        lease.assert_same(handoff.registry_snapshot_id, stage="planner")
+    except SnapshotDriftError as exc:
+        return PlannerFailure(
+            error_type="SNAPSHOT_DRIFT",
+            message=str(exc),
+            snapshot_id=lease.snapshot_id,
+            audit_evidence={
+                "expected_snapshot_id": exc.expected,
+                "actual_snapshot_id": exc.actual,
+                "principal_id": None,
+                "source_paths": [],
+                "stage": exc.stage,
+            },
+        )
+    try:
+        return compile_dry_run_from_handoff(handoff, lease.snapshot, lease.sources)
+    except Exception as exc:
+        return PlannerFailure(
+            error_type="SOURCE_LOAD_ERROR",
+            message=f"planner source compilation failed: {exc}",
+            snapshot_id=lease.snapshot_id,
+            audit_evidence={
+                "expected_snapshot_id": lease.snapshot_id,
+                "actual_snapshot_id": lease.snapshot_id,
+                "principal_id": None,
+                "source_paths": [],
+                "stage": "planner",
+            },
+        )
 
 
 def _default_planner_sources() -> tuple[RegistrySnapshot, SemanticSourceDocuments]:

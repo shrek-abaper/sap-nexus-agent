@@ -59,6 +59,10 @@ def outcome_to_workbench_dict(outcome: AgentOutcome) -> dict[str, object]:
         # dry-run preview (PlanGraph nodes/edges/gaps/governanceFlags) in the
         # same ESCALATE turn.
         "dryRun": _dry_run_to_dict(outcome.dry_run),
+        # Structured planner failure (Design Doc §3.5). Populated when the
+        # planner encounters snapshot drift / source load error / visibility
+        # denial. None for all non-ESCALATE paths and successful dry-runs.
+        "plannerFailure": _planner_failure_to_dict(outcome.planner_failure),
         # Conversational context (Task 5): LastContext for the next turn,
         # derived from the outcome's match_decision. The backend records this
         # on the session so the next utterance can continue slot-fill (CLARIFY)
@@ -122,6 +126,17 @@ def _dry_run_to_dict(dry_run) -> dict[str, object] | None:
             for flag in dry_run.governance_flags
         ],
         "rationale": dry_run.rationale,
+    }
+
+
+def _planner_failure_to_dict(failure) -> dict[str, object] | None:
+    if failure is None:
+        return None
+    return {
+        "errorType": failure.error_type,
+        "message": failure.message,
+        "snapshotId": failure.snapshot_id,
+        "auditEvidence": dict(failure.audit_evidence),
     }
 
 

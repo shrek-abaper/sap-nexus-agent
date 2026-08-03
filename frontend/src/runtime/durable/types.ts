@@ -40,6 +40,7 @@ export type WorkbenchOutcome = {
   combinations?: Record<string, string>[] | null;
   matchDecision?: Record<string, unknown> | null;
   dryRun?: Record<string, unknown> | null;
+  plannerFailure?: Record<string, unknown> | null;
   lastContext?: LastContext | null;
 };
 

@@ -85,6 +85,7 @@ class CapabilityCard:
     visibility: Visibility = "VISIBLE_DRY_RUN"
     produces_fact_types: tuple[str, ...] = ()
     inputs: tuple[InputDescriptor, ...] = ()
+    registry_snapshot_id: str = ""
 
 
 # ---- projection ----
@@ -154,7 +155,6 @@ def discover_cards(
     does not currently need to consult snapshot fields because
     ``SemanticSourceDocuments`` already carries the raw registry content.
     """
-    del snapshot  # reserved for Task 8 PlanCompiler wiring
     capabilities_yaml = _coerce_mapping(sources.capabilities)
     raw_capabilities = capabilities_yaml.get("capabilities") or []
     if not isinstance(raw_capabilities, (list, tuple)):
@@ -190,6 +190,7 @@ def discover_cards(
                 produces_fact_types=_project_produces_fact_types(
                     raw.get("outputs")
                 ),
+                registry_snapshot_id=snapshot.snapshot_id,
             )
         )
     return cards

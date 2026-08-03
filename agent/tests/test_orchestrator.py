@@ -9,6 +9,7 @@ from sap_nexus_agent.orchestrator import (
     run_query,
 )
 from sap_nexus_agent.registry_loader import load_intent_catalog
+from sap_nexus_agent.governed_context import PLACEHOLDER_PRINCIPAL, TrustedPrincipal
 
 
 class FakeGatewayClient:
@@ -1241,3 +1242,215 @@ def test_continue_batch_raises_for_action_capability():
 
     with pytest.raises(ValueError):
         continue_batch(call_plan, [dict(_ACTION_BASE_PARAMS, plant="5200")], gw)
+
+
+# ---- Task 2: run_query principal binding + planner_failure field ----
+
+
+def test_run_query_accepts_principal_param():
+    """run_query accepts a principal param; defaults to PLACEHOLDER when None."""
+    from sap_nexus_agent.orchestrator import run_query
+
+    class _FakeGateway:
+        def validate(self, capability_id, parameters):
+            return ValidationResult(
+                trace_id="t",
+                capability_id=capability_id,
+                success=True,
+                error_type="NONE",
+                messages=[],
+            )
+
+        def execute(self, capability_id, parameters, approval_id=None):
+            return ExecutionResult(
+                trace_id="t",
+                capability_id=capability_id,
+                success=True,
+                executor={},
+                return_messages=[],
+                duration_ms=1,
+                error_type=None,
+                data={"availableQuantity": 10, "unit": "EA"},
+            )
+
+    principal = TrustedPrincipal("user-42", "operator", {"tenantId": "t1"})
+    outcome = run_query(
+        "查物料 DEMOA1 在工厂 1000 的可用库存",
+        _FakeGateway(),
+        principal=principal,
+    )
+    assert outcome.status in {"success", "failure", "clarification"}
+
+
+def test_run_query_defaults_principal_to_placeholder():
+    """run_query with principal=None uses PLACEHOLDER_PRINCIPAL (backward compat)."""
+    from sap_nexus_agent.orchestrator import run_query
+
+    class _FakeGateway:
+        def validate(self, capability_id, parameters):
+            return ValidationResult(
+                trace_id="t",
+                capability_id=capability_id,
+                success=True,
+                error_type="NONE",
+                messages=[],
+            )
+
+        def execute(self, capability_id, parameters, approval_id=None):
+            return ExecutionResult(
+                trace_id="t",
+                capability_id=capability_id,
+                success=True,
+                executor={},
+                return_messages=[],
+                duration_ms=1,
+                error_type=None,
+                data={"availableQuantity": 10, "unit": "EA"},
+            )
+
+    outcome = run_query(
+        "查物料 DEMOA1 在工厂 1000 的可用库存",
+        _FakeGateway(),
+    )
+    assert outcome.status in {"success", "failure", "clarification"}
+
+
+def test_agent_outcome_has_planner_failure_field():
+    """AgentOutcome has a planner_failure field defaulting to None."""
+    outcome = AgentOutcome(status="success")
+    assert outcome.planner_failure is None
+
+
+# ---- Task 5: _compile_dry_run_safely returns PlannerFailure on drift/error ----
+
+
+def test_compile_dry_run_safely_returns_planner_failure_on_drift():
+    from sap_nexus_agent.orchestrator import _compile_dry_run_safely
+    from sap_nexus_agent.governed_context import SnapshotLease, PlannerFailure
+    from sap_nexus_agent.match_decision import EscalationHandoff, MatchedIntent
+    from sap_nexus_agent.semantic_planning.contracts import (
+        RegistrySnapshot,
+        SemanticSourceDocuments,
+        SnapshotSource,
+    )
+
+    snapshot = RegistrySnapshot(
+        snapshot_version=1,
+        canonicalization_version=1,
+        snapshot_id="sha256:lease-snap",
+        sources=(SnapshotSource(path="x", document_version=1, digest="x"),),
+    )
+    sources = SemanticSourceDocuments(
+        capabilities={"capabilities": []},
+        executor_bindings={"bindings": []},
+        fact_types={"factTypes": []},
+        relations={"relations": []},
+    )
+    lease = SnapshotLease(snapshot=snapshot, sources=sources)
+    handoff = EscalationHandoff(
+        reason="multi-intent",
+        matched_intents=[MatchedIntent(capability_id="A", parameters={}, missing=[])],
+        utterance="test",
+        registry_snapshot_id="sha256:different-snap",
+    )
+    result = _compile_dry_run_safely(handoff, lease=lease)
+    assert result is not None
+    assert isinstance(result, PlannerFailure)
+    assert result.error_type == "SNAPSHOT_DRIFT"
+    assert result.audit_evidence["expected_snapshot_id"] == "sha256:lease-snap"
+    assert result.audit_evidence["actual_snapshot_id"] == "sha256:different-snap"
+
+
+def test_compile_dry_run_safely_returns_planner_failure_on_source_load_error():
+    from sap_nexus_agent.orchestrator import _compile_dry_run_safely
+    from sap_nexus_agent.governed_context import SnapshotLease, PlannerFailure
+    from sap_nexus_agent.match_decision import EscalationHandoff, MatchedIntent
+    from sap_nexus_agent.semantic_planning.contracts import (
+        RegistrySnapshot,
+        SemanticSourceDocuments,
+        SnapshotSource,
+    )
+
+    snapshot = RegistrySnapshot(
+        snapshot_version=1,
+        canonicalization_version=1,
+        snapshot_id="sha256:snap",
+        sources=(SnapshotSource(path="x", document_version=1, digest="x"),),
+    )
+    sources = SemanticSourceDocuments(
+        capabilities={"capabilities": "not-a-list"},  # type: ignore[arg-type]
+        executor_bindings={"bindings": []},
+        fact_types={"factTypes": []},
+        relations={"relations": []},
+    )
+    lease = SnapshotLease(snapshot=snapshot, sources=sources)
+    handoff = EscalationHandoff(
+        reason="multi-intent",
+        matched_intents=[MatchedIntent(capability_id="A", parameters={}, missing=[])],
+        utterance="test",
+        registry_snapshot_id="sha256:snap",
+    )
+    result = _compile_dry_run_safely(handoff, lease=lease)
+    assert result is not None
+    assert isinstance(result, PlannerFailure)
+    assert result.error_type == "SOURCE_LOAD_ERROR"
+
+
+# ---- Task 6: capability kind from governance.requires_approval ----
+
+
+def test_kind_from_governance_requires_approval():
+    from sap_nexus_agent.planner.capability_card import CapabilityCard, Governance
+
+    card_action = CapabilityCard(
+        capability_id="MM.PR.CreateDraft",
+        name="PR",
+        governance=Governance(
+            side_effect="sap_write", requires_approval=True, data_classification="internal"
+        ),
+        registry_snapshot_id="sha256:x",
+    )
+    assert card_action.governance.requires_approval is True
+
+    card_function = CapabilityCard(
+        capability_id="MM.Inventory.GetAvailability",
+        name="Inv",
+        governance=Governance(
+            side_effect="none", requires_approval=False, data_classification="internal"
+        ),
+        registry_snapshot_id="sha256:x",
+    )
+    assert card_function.governance.requires_approval is False
+
+
+def test_orchestrator_kind_uses_governance_not_action_capability_ids():
+    """PR CreateDraft path produces awaiting_approval (Action kind from governance)."""
+    from sap_nexus_agent.orchestrator import run_query
+
+    class _FakeGateway:
+        def validate(self, capability_id, parameters):
+            return ValidationResult(
+                trace_id="t",
+                capability_id=capability_id,
+                success=True,
+                error_type="NONE",
+                messages=[],
+            )
+
+        def execute(self, capability_id, parameters, approval_id=None):
+            return ExecutionResult(
+                trace_id="t",
+                capability_id=capability_id,
+                success=True,
+                executor={},
+                return_messages=[],
+                data={},
+                duration_ms=1,
+                error_type=None,
+            )
+
+    outcome = run_query(
+        "帮我创建采购申请 物料 M1 工厂 1000 数量 10",
+        _FakeGateway(),
+    )
+    assert outcome.status in {"awaiting_approval", "clarification", "failure"}

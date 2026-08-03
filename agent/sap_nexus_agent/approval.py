@@ -33,6 +33,7 @@ class ApprovalRecord:
     approved_at: datetime
     expires_at: datetime
     status: ApprovalState
+    registry_snapshot_id: str = ""
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "ApprovalRecord":
@@ -48,6 +49,7 @@ class ApprovalRecord:
             approved_at=datetime.fromisoformat(str(payload.get("approvedAt", ""))),
             expires_at=datetime.fromisoformat(str(payload.get("expiresAt", ""))),
             status=ApprovalState(str(payload.get("status", ""))),
+            registry_snapshot_id=str(payload.get("registrySnapshotId", "")),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -60,6 +62,7 @@ class ApprovalRecord:
             "approvedAt": self.approved_at.isoformat(),
             "expiresAt": self.expires_at.isoformat(),
             "status": self.status.value,
+            "registrySnapshotId": self.registry_snapshot_id,
         }
 
 
@@ -124,6 +127,7 @@ def create_approval_record(
     parameters: dict[str, str],
     approver: str,
     ttl_seconds: int | None = None,
+    registry_snapshot_id: str = "",
 ) -> ApprovalRecord:
     now = datetime.now(timezone.utc)
     record = ApprovalRecord(
@@ -135,6 +139,7 @@ def create_approval_record(
         approved_at=now,
         expires_at=now + timedelta(seconds=_resolve_ttl(ttl_seconds)),
         status=ApprovalState.pending,
+        registry_snapshot_id=registry_snapshot_id,
     )
     _append_trace_event(record, None, ApprovalState.pending)
     return record

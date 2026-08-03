@@ -315,3 +315,90 @@ def test_ttl_falls_back_to_default_on_invalid_env(monkeypatch):
     )
     delta = record.expires_at - record.approved_at
     assert delta == timedelta(seconds=600)
+
+
+# ---- Task 7: ApprovalRecord registry_snapshot_id ----
+
+
+def test_approval_record_has_registry_snapshot_id_field():
+    from sap_nexus_agent.approval import ApprovalRecord, ApprovalState
+    from datetime import datetime, timezone
+
+    record = ApprovalRecord(
+        approval_id="appr-1",
+        capability_id="MM.PR.CreateDraft",
+        parameter_snapshot_hash="sha256:x",
+        parameters={"material": "M1"},
+        approver="user",
+        approved_at=datetime.now(timezone.utc),
+        expires_at=datetime.now(timezone.utc),
+        status=ApprovalState.pending,
+    )
+    assert record.registry_snapshot_id == ""
+
+
+def test_approval_record_to_dict_includes_registry_snapshot_id():
+    from sap_nexus_agent.approval import ApprovalRecord, ApprovalState
+    from datetime import datetime, timezone
+
+    now = datetime.now(timezone.utc)
+    record = ApprovalRecord(
+        approval_id="appr-1",
+        capability_id="MM.PR.CreateDraft",
+        parameter_snapshot_hash="sha256:x",
+        parameters={"material": "M1"},
+        approver="user",
+        approved_at=now,
+        expires_at=now,
+        status=ApprovalState.pending,
+        registry_snapshot_id="sha256:snap-1",
+    )
+    d = record.to_dict()
+    assert d["registrySnapshotId"] == "sha256:snap-1"
+
+
+def test_approval_record_from_dict_backward_compat_without_field():
+    from sap_nexus_agent.approval import ApprovalRecord
+
+    payload = {
+        "approvalId": "appr-1",
+        "capabilityId": "MM.PR.CreateDraft",
+        "parameterSnapshotHash": "sha256:x",
+        "parameters": {"material": "M1"},
+        "approver": "user",
+        "approvedAt": "2026-01-01T00:00:00+00:00",
+        "expiresAt": "2026-01-01T00:10:00+00:00",
+        "status": "pending",
+    }
+    record = ApprovalRecord.from_dict(payload)
+    assert record.registry_snapshot_id == ""
+
+
+def test_approval_record_from_dict_reads_registry_snapshot_id():
+    from sap_nexus_agent.approval import ApprovalRecord
+
+    payload = {
+        "approvalId": "appr-1",
+        "capabilityId": "MM.PR.CreateDraft",
+        "parameterSnapshotHash": "sha256:x",
+        "parameters": {},
+        "approver": "user",
+        "approvedAt": "2026-01-01T00:00:00+00:00",
+        "expiresAt": "2026-01-01T00:10:00+00:00",
+        "status": "pending",
+        "registrySnapshotId": "sha256:snap-2",
+    }
+    record = ApprovalRecord.from_dict(payload)
+    assert record.registry_snapshot_id == "sha256:snap-2"
+
+
+def test_create_approval_record_accepts_registry_snapshot_id():
+    from sap_nexus_agent.approval import create_approval_record
+
+    record = create_approval_record(
+        capability_id="MM.PR.CreateDraft",
+        parameters={"material": "M1"},
+        approver="user",
+        registry_snapshot_id="sha256:snap-3",
+    )
+    assert record.registry_snapshot_id == "sha256:snap-3"

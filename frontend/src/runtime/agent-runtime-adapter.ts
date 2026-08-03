@@ -52,6 +52,7 @@ type AgentRunnerInput = {
   intentMode: string;
   continuation?: ApprovalContinuation | BatchContinuation;
   context?: ConversationContext;
+  principal?: TrustedPrincipal;
 };
 
 type AgentRunner = (input: AgentRunnerInput) => Promise<WorkbenchOutcome>;
@@ -137,7 +138,7 @@ export async function createAgentRun(input: CreateAgentRunInput): Promise<{ runI
   await runStore.claim(runId, workerId, 60_000);
 
   // §1.1: fire-and-forget background execution; return runId immediately
-  void executeRunnerInBackground(runId, query, input.conversationId, timestamp, input.principal.principalId);
+  void executeRunnerInBackground(runId, query, input.conversationId, timestamp, input.principal.principalId, input.principal);
 
   return { runId };
 }
@@ -147,12 +148,13 @@ async function executeRunnerInBackground(
   query: string,
   conversationId: string | undefined,
   timestamp: string,
-  principalId: string
+  principalId: string,
+  principal?: TrustedPrincipal
 ): Promise<void> {
   try {
     const runner = runnerForTests ?? runLocalPythonAgent;
     const context = conversationId ? buildContext(await getSession(conversationId, principalId)) : undefined;
-    const outcome = await runner({ query, gatewayUrl: gatewayUrl(), intentMode: intentMode(), context });
+    const outcome = await runner({ query, gatewayUrl: gatewayUrl(), intentMode: intentMode(), context, principal });
     await emitEventsFromOutcome(runId, query, outcome, timestamp,
       (event) => runStore.appendEvent(runId, event), 2);
 
@@ -766,7 +768,8 @@ async function runLocalPythonAgent(input: AgentRunnerInput): Promise<WorkbenchOu
   }
   const env = {
     ...process.env,
-    PYTHONPATH: [path.join(repoRoot, "agent"), process.env.PYTHONPATH].filter(Boolean).join(path.delimiter)
+    PYTHONPATH: [path.join(repoRoot, "agent"), process.env.PYTHONPATH].filter(Boolean).join(path.delimiter),
+    ...(input.principal ? { SAP_NEXUS_PRINCIPAL: JSON.stringify(input.principal) } : {})
   };
 
   const { stdout } = await spawnAndCapture(python, args, repoRoot, env, stdinPayload);
