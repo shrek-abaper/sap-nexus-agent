@@ -1258,7 +1258,7 @@ git commit -m "feat(planner): v2 compiler skeleton with goalConstraint sources a
 **Interfaces:**
 - Produces: `_build_node_v2` 对 identifier 输入，无匹配 GoalConstraint 但有 handoff 参数值 -> `literal` 源（semanticType 从 InputDescriptor 取，校验类型一致）。
 
-- [ ] **Step 1: 写失败测试——identifier 输入无 GoalConstraint 但有 handoff 值 -> literal 源**
+- [x] **Step 1: 写失败测试——identifier 输入无 GoalConstraint 但有 handoff 值 -> literal 源**
 
 ```python
 def test_compile_plan_v2_authors_literal_source_for_identifier_without_constraint():
@@ -1293,12 +1293,12 @@ def test_compile_plan_v2_authors_literal_source_for_identifier_without_constrain
     assert any(b["parameterName"] == "plant" for b in literal_bindings)
 ```
 
-- [ ] **Step 2: 运行确认失败**
+- [x] **Step 2: 运行确认失败**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_planner_plan_compiler_v2.py::test_compile_plan_v2_authors_literal_source_for_identifier_without_constraint -q`
 Expected: FAIL（当前 `_build_node_v2` 只 author goalConstraint，plant 无 constraint -> 不绑定 -> missing_parameter gap）
 
-- [ ] **Step 3: 在 `_build_node_v2` 追加 literal 分支**
+- [x] **Step 3: 在 `_build_node_v2` 追加 literal 分支**
 
 修改 `_build_node_v2`，在 goalConstraint 分支后追加：
 
@@ -1378,12 +1378,12 @@ def _build_plan_graph_v2(
 
 `compile_plan_v2` 调用处传入 `handoff`。
 
-- [ ] **Step 4: 运行确认通过**
+- [x] **Step 4: 运行确认通过**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_planner_plan_compiler_v2.py -q`
 Expected: PASS
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 ```bash
 git add agent/sap_nexus_agent/planner/plan_compiler_v2.py agent/tests/test_planner_plan_compiler_v2.py
