@@ -5,8 +5,8 @@
 | Field | Value |
 |---|---|
 | Runbook | `14-governed-intent-capability-recall` |
-| Version | `v0.1.1` |
-| Status | `Planned` |
+| Version | `v0.2.0` |
+| Status | `Implemented` |
 | Created / Updated | `2026-08-03` |
 | Depends On | Runbook 13 |
 | Unblocks | Runbook 15 |
@@ -67,3 +67,42 @@ openspec validate --all --strict
 ## 8. Next Start Here
 
 先冻结 `IntentEnvelope` 和 `MatchDecision` 版本，再进入 Runbook 15。能力规模未达到阈值前，不引入 embedding/RAG 基础设施。
+
+## Session Closeout - 2026-08-03
+
+### Completed
+
+- **Task Group 1 (Data structures)**: `IntentEnvelope` / `IntentGoal` frozen dataclasses; `PendingShowOptions` / `PendingEscalate` advisory cross-turn state; `MatchDecision` extended with replay fields (`envelope_id` / `recall_candidates` / `rerank_evidence` / `discard_reasons`); `CapabilityDescriptor` extended with `aliases` / `examples`; registry schema + `capabilities.yaml` updated.
+- **Task Group 2 (Recall)**: closed-set recall with three sources (lexical / alias / example), merged + deduped; no embedding/RAG.
+- **Task Group 3 (Rerank)**: bounded heuristic rerank (LLM hint +3, lexical +2, alias +2, example +1, param fit +1) with stable tie-break.
+- **Task Group 4 (Discard)**: structured discard detection for LLM output (`unknown_capability` / `technical_field` / `invalid_param`).
+- **Task Group 5 (Envelope production)**: `parse_intent_envelope` (rule path) and `payload_to_envelope` (LLM path) producing `IntentEnvelope` with `created_by` / `snapshot_id` / `discard_reasons`.
+- **Task Group 6 (Selector)**: `select_capability_from_envelope` consuming envelope + recall + rerank evidence; five-state decision tree with replay fields populated.
+- **Task Group 7 (Cross-turn continuation)**: `ConversationContext` extended with `pending_show_options` / `pending_escalate` fields + mutual exclusivity (`with_pending_*` / `clear_pending`); orchestrator writes pending state on SHOW_OPTIONS / ESCALATE and clears on SELECT / CLARIFY / REJECT / new-intent / candidate-selection / planner-confirm.
+- **Task Group 8 (Caller migration, bridge variant)**: `run_query` detects `IntentEnvelope` vs `IntentParseResult` return and dispatches through the envelope pipeline (recall -> rerank -> `select_capability_from_envelope`) or the legacy path. `IntentParseResult` BREAKING removal deferred.
+- **Task Group 9 (Tests)**: 24 new tests covering pending fields, mutual exclusivity, cross-turn SHOW_OPTIONS/ESCALATE write+clear, envelope bridge replay fields.
+- **Task Group 10 (Eval)**: 4 new matcher eval cases (OData reject, unknown intent, PO select, PO clarify); total 10/10 pass. Cross-turn eval cases deferred (eval runner is single-turn only).
+
+### Verified
+
+- Command: `.venv/bin/python -m pytest -q`
+- Result: 950 passed, 7 skipped
+- Command: `.venv/bin/python -m sap_nexus_agent.eval evals/matcher_cases.yaml`
+- Result: Eval passed: 10/10
+- Command: `scripts/verify-agent-callplan-evidence.sh`
+- Result: 17 passed, 0 failed
+- Command: `openspec validate --all --strict`
+- Result: 17 passed, 0 failed
+
+### Deferred
+
+- **BREAKING removal of `IntentParseResult`**: 351 references across 68 files; bridge approach avoids destabilization. Follow-up change should migrate `resolve_with_context` + all test doubles, then remove the legacy type.
+- **Envelope SHOW_OPTIONS for ambiguity**: `select_capability_from_envelope` does not yet read `envelope.ambiguities` to emit SHOW_OPTIONS; single-goal envelopes with complete params produce SELECT. Future enhancement once ambiguity heuristics are defined.
+- **Multi-turn eval cases**: eval runner is single-turn only; cross-turn SHOW_OPTIONS / ESCALATE eval cases require runner extension.
+- **`multi_parameters` on `IntentEnvelope`**: deferred per Task 8.1 note; envelope path has no multi-value batch support yet.
+
+### Next Start Here
+
+1. Archive the OpenSpec change `sap-nexus-governed-intent-capability-recall`.
+2. Begin Runbook 15 (semantic plan authoring v2) — compile advisory goals into deterministic PlanGraph v2.
+3. Optionally: schedule the BREAKING `IntentParseResult` removal as a follow-up tweak.
