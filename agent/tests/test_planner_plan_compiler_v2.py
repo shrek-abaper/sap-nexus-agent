@@ -441,3 +441,38 @@ def test_compile_plan_v2_raises_planner_failure_on_snapshot_drift():
     assert exc_info.value.snapshot_id == snapshot.snapshot_id
     assert "expected_snapshot_id" in exc_info.value.audit_evidence
     assert "actual_snapshot_id" in exc_info.value.audit_evidence
+
+
+# ---- Task 12: handoff entrypoint + dry-run output + no Gateway/SAP ----
+
+from unittest.mock import MagicMock
+
+from sap_nexus_agent.gateway_client import GatewayClientProtocol
+
+
+def test_compile_plan_v2_from_handoff_outputs_all_v2_fields_without_gateway(monkeypatch):
+    import sap_nexus_agent.gateway_client as gateway_module
+
+    exploding = MagicMock(side_effect=AssertionError(
+        "GatewayClient must not be instantiated by v2 compiler"
+    ))
+    monkeypatch.setattr(gateway_module, "GatewayClient", exploding)
+    mock_gateway = MagicMock(spec=GatewayClientProtocol)
+
+    snapshot = _real_snapshot()
+    sources = _real_sources()
+    from sap_nexus_agent.planner.handoff import compile_plan_v2_from_handoff
+    result = compile_plan_v2_from_handoff(_dual_read_handoff(snapshot), snapshot, sources)
+
+    # v2 dry-run 输出齐全
+    assert result.plan_graph["planGraphVersion"] == 2
+    assert result.projection_ref == []
+    assert result.rule_set_refs == []
+    assert result.snapshot_id == snapshot.snapshot_id
+    assert isinstance(result.gaps, list)
+    assert isinstance(result.governance_flags, list)
+    assert isinstance(result.rationale, str) and result.rationale
+    # 不调 Gateway
+    mock_gateway.validate.assert_not_called()
+    mock_gateway.execute.assert_not_called()
+    exploding.assert_not_called()

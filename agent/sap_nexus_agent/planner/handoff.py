@@ -102,3 +102,19 @@ def _build_goal_with_constraints(
         goal_spec_version=goal.goal_spec_version,
         constraints=tuple(constraints),
     )
+
+
+from sap_nexus_agent.planner.plan_compiler_v2 import PlanCompileResult, compile_plan_v2
+
+
+def compile_plan_v2_from_handoff(
+    handoff: EscalationHandoff,
+    snapshot: RegistrySnapshot,
+    sources: SemanticSourceDocuments,
+) -> PlanCompileResult:
+    """Compile a deterministic PlanGraph v2 from an escalation handoff.
+
+    Thin wrapper over ``compile_plan_v2``. Reuses ``_build_goal_with_constraints``
+    for GoalSpec derivation. The v1 ``compile_dry_run_from_handoff`` is untouched.
+    """
+    return compile_plan_v2(handoff, snapshot, sources)
