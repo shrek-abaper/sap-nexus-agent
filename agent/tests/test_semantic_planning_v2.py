@@ -182,3 +182,21 @@ def test_validate_plan_graph_v2_accepts_valid_v2_plan():
     plan = _valid_v2_plan(snapshot)
     report = validate_plan_graph_v2(graph, snapshot, _goal_spec_for_inventory(), plan)
     assert report.valid is True, report.issues
+
+
+def test_validate_plan_graph_v2_rejects_action_in_read_partition():
+    snapshot = _real_snapshot()
+    sources = _real_sources()
+    graph = SemanticGraphCompiler().compile(sources)
+    plan = _valid_v2_plan(snapshot)
+    # 把 inventory 节点的 governance 改成 Action 并放入 readPartition
+    plan["nodes"][0]["governance"] = {
+        "capabilityKind": "Action",
+        "sideEffect": "sap_write",
+        "requiresApproval": True,
+        "approvalPolicy": "human_required",
+    }
+    report = validate_plan_graph_v2(graph, snapshot, _goal_spec_for_inventory(), plan)
+    assert report.valid is False
+    codes = {issue.code for issue in report.issues}
+    assert "PARTITION_GOVERNANCE_VIOLATION" in codes or "GOVERNANCE_VIOLATION" in codes

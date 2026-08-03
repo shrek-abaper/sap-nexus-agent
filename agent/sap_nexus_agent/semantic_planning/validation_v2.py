@@ -24,6 +24,7 @@ from .contracts import (
 from .graph import ImmutableSemanticGraph
 from .validation import (
     _canonical_issues,
+    _is_read_only,
     _load_schema,
     _plan_schema_error_details,
     _plan_unique_items_is_semantic,
@@ -230,7 +231,26 @@ def _validate_partitions(
                 "readPartition ∩ actionPartition must be empty",
             )
         )
-    # read-only 校验在 Task 4 强化
+    # readPartition 中节点须为 read-only（节点 governance 维度）
+    for node_id in read:
+        entry = node_index.get(node_id)
+        if entry is None:
+            continue
+        _node_position, node, _capability = entry
+        governance = node.get("governance", {})
+        # Adapt node governance to capability shape expected by _is_read_only
+        node_capability_view = {
+            "kind": governance.get("capabilityKind"),
+            "governance": governance,
+        }
+        if not _is_read_only(node_capability_view):
+            issues.append(
+                ValidationIssue(
+                    "/readPartition",
+                    "PARTITION_GOVERNANCE_VIOLATION",
+                    f"non-read-only node in readPartition: {node_id}",
+                )
+            )
 
 
 def _validate_refs(
