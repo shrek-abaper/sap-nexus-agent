@@ -7,9 +7,9 @@
 
 ## 2. OutputProjection 注册表 + 校验
 
-- [ ] 2.1 实现 `OutputProjectionRegistry`：`register(declaration)` + `resolve(projectionId, version)`
-- [ ] 2.2 未知 `projectionId` 或未注册 `version` fail-closed 并记录结构化失败
-- [ ] 2.3 注册表单测（注册 + 解析 + 未知拒绝）
+- [x] 2.1 实现 `OutputProjectionRegistry`：`register(declaration)` + `resolve(projectionId, version)`
+- [x] 2.2 未知 `projectionId` 或未注册 `version` fail-closed 并记录结构化失败
+- [x] 2.3 注册表单测（注册 + 解析 + 未知拒绝）
 
 ## 3. Executor 扩展产出（read-plan-executor 修改）
 

@@ -169,7 +169,7 @@ git commit -m "feat(projection): define output projection contracts"
 - Consumes: `OutputProjectionDeclaration`
 - Produces: `ProjectionRegistryError`、`OutputProjectionRegistry.register()`、`OutputProjectionRegistry.resolve()`
 
-- [ ] **Step 1: 写失败测试覆盖 exact version、重复注册和结构化失败**
+- [x] **Step 1: 写失败测试覆盖 exact version、重复注册和结构化失败**
 
 ```typescript
 // frontend/src/runtime/projection/registry.test.ts
@@ -199,13 +199,13 @@ describe("OutputProjectionRegistry", () => {
 });
 ```
 
-- [ ] **Step 2: 运行 registry 测试确认失败**
+- [x] **Step 2: 运行 registry 测试确认失败**
 
 Run: `npm --prefix frontend test -- src/runtime/projection/registry.test.ts`
 
 Expected: FAIL，诊断包含 `Cannot find module './registry'`。
 
-- [ ] **Step 3: 实现 fail-closed registry**
+- [x] **Step 3: 实现 fail-closed registry**
 
 ```typescript
 // frontend/src/runtime/projection/registry.ts
@@ -235,13 +235,13 @@ export class OutputProjectionRegistry {
 }
 ```
 
-- [ ] **Step 4: 运行 registry 测试**
+- [x] **Step 4: 运行 registry 测试**
 
 Run: `npm --prefix frontend test -- src/runtime/projection/registry.test.ts`
 
 Expected: PASS，4 个 case 全部通过。
 
-- [ ] **Step 5: Commit versioned projection registry**
+- [x] **Step 5: Commit versioned projection registry**
 
 ```bash
 git add frontend/src/runtime/projection/registry.ts frontend/src/runtime/projection/registry.test.ts

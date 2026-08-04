@@ -58,7 +58,7 @@ Build config: isolation=branch, build_mode=subagent-driven-development, tdd_mode
 ## Tasks
 
 - [x] Task 1: 冻结 projection 类型契约
-- [ ] Task 2: 实现版本化 OutputProjectionRegistry
+- [x] Task 2: 实现版本化 OutputProjectionRegistry
 - [ ] Task 3: 扩展 PlanExecutor 保留并恢复成功节点数据
 - [ ] Task 4: 实现 FactBuilderRegistry 与 ProjectionInputAssembler
 - [ ] Task 5: 实现确定性 hash 与 MaterialSupplySnapshot projection
@@ -68,3 +68,4 @@ Build config: isolation=branch, build_mode=subagent-driven-development, tdd_mode
 ## Completed
 
 - Task 1: complete (commits efcbe61..aea5172, review clean: Spec compliant + Quality Approved, 0 Critical/Important/Minor). Projection type contracts + 1/1 focused test + typecheck clean.
+- Task 2: complete (commits 3d2662b..127d115, review clean: Spec compliant + Quality Approved, 0 Critical/Important/Minor). Exact version registry + structured fail-closed + duplicate rejection, 4/4 tests clean.
