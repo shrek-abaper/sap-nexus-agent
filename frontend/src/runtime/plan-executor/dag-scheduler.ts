@@ -8,11 +8,15 @@ const TERMINAL_OR_ACTIVE: ReadonlySet<NodeState> = new Set([
   "CANCELLED" as NodeState,
   "VALIDATING" as NodeState,
   "EXECUTING" as NodeState,
+  "BLOCKED_APPROVAL" as NodeState,
 ]);
 
 export function getDependencies(graph: PlanGraphV2, nodeId: string): string[] {
   return graph.edges
-    .filter((e) => e.kind === "dependency" && e.toNodeId === nodeId)
+    .filter(
+      (e) =>
+        (e.kind === "dependency" || e.kind === "data") && e.toNodeId === nodeId
+    )
     .map((e) => e.fromNodeId);
 }
 

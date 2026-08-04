@@ -89,4 +89,60 @@ describe("dag scheduler", () => {
     expect(getMaxConcurrency()).toBe(8);
     process.env.READ_PLAN_EXECUTOR_MAX_CONCURRENCY = orig;
   });
+
+  it("getMaxConcurrency returns 4 for invalid env values (abc, 0, -1)", () => {
+    const orig = process.env.READ_PLAN_EXECUTOR_MAX_CONCURRENCY;
+    process.env.READ_PLAN_EXECUTOR_MAX_CONCURRENCY = "abc";
+    expect(getMaxConcurrency()).toBe(4);
+    process.env.READ_PLAN_EXECUTOR_MAX_CONCURRENCY = "0";
+    expect(getMaxConcurrency()).toBe(4);
+    process.env.READ_PLAN_EXECUTOR_MAX_CONCURRENCY = "-1";
+    expect(getMaxConcurrency()).toBe(4);
+    process.env.READ_PLAN_EXECUTOR_MAX_CONCURRENCY = orig;
+  });
+
+  // --- Critical: data edges are scheduling dependencies ---
+  const dataEdgeGraph: PlanGraphV2 = {
+    planGraphVersion: 2,
+    planId: "p2",
+    goalId: "g2",
+    executionMode: "advisory",
+    snapshotId: "snap-2",
+    nodes: [node("A", "Cap.A"), node("B", "Cap.B")],
+    edges: [
+      { edgeId: "de1", kind: "data", fromNodeId: "A", toNodeId: "B" },
+    ],
+    topologicalOrder: ["A", "B"],
+    goalOutputs: [],
+    readPartition: ["A", "B"],
+    actionPartition: [],
+    projectionRef: [],
+    ruleSetRefs: [],
+  };
+
+  it("getDependencies includes data edges (producer is a dependency of consumer)", () => {
+    expect(getDependencies(dataEdgeGraph, "B")).toEqual(["A"]);
+  });
+
+  it("selectReadyNodes excludes consumer when producer (data edge) is not SUCCEEDED", () => {
+    const ledger = { A: ledgerEntry(NodeState.READY) };
+    const ready = selectReadyNodes(dataEdgeGraph, ledger);
+    expect(ready).toEqual(["A"]);
+    expect(ready).not.toContain("B");
+  });
+
+  it("selectReadyNodes includes consumer when producer (data edge) is SUCCEEDED", () => {
+    const ledger = { A: ledgerEntry(NodeState.SUCCEEDED) };
+    // A is SUCCEEDED (terminal, excluded); B's data-edge dependency A has succeeded so B is now READY
+    expect(selectReadyNodes(dataEdgeGraph, ledger)).toEqual(["B"]);
+  });
+
+  it("selectReadyNodes excludes BLOCKED_APPROVAL nodes", () => {
+    const ledger = {
+      A: ledgerEntry(NodeState.SUCCEEDED),
+      B: ledgerEntry(NodeState.BLOCKED_APPROVAL),
+    };
+    // A is SUCCEEDED so it is excluded (terminal); B is BLOCKED_APPROVAL and must not be selected as READY
+    expect(selectReadyNodes(dataEdgeGraph, ledger)).not.toContain("B");
+  });
 });
