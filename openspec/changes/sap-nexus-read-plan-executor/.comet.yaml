@@ -1,6 +1,6 @@
 workflow: full
 language: zh-CN
-phase: build
+phase: verify
 context_compression: off
 build_mode: subagent-driven-development
 build_pause: null
@@ -20,8 +20,8 @@ created_at: 2026-08-04
 verified_at: null
 archived: false
 direct_override: null
-build_command: null
-verify_command: null
+build_command: npm --prefix frontend run verify
+verify_command: npm --prefix frontend run verify
 handoff_context: openspec/changes/sap-nexus-read-plan-executor/.comet/handoff/design-context.json
 handoff_hash: 3dc32080c6876aa7200d4c3aac75e85ac0022c68ff2dac86d571b0a747f955fa
 classic_profile: full
