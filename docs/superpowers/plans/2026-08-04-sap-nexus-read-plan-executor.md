@@ -160,7 +160,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 - Consumes: `WorkbenchOutcome.dryRun`（`Record<string, unknown>`，序列化的 `PlanCompileResult`）
 - Produces: `PlanGraphV2` 类型 + `parsePlanGraphV2(value: Record<string, unknown>): PlanGraphV2 | null` + `validatePlanGraphV2(graph: PlanGraphV2, expectedSnapshotId: string): { valid: boolean; error?: string }`
 
-- [ ] **Step 1: 写失败测试 - 解析有效 v2 plan_graph**
+- [x] **Step 1: 写失败测试 - 解析有效 v2 plan_graph**
 
 ```typescript
 // frontend/src/runtime/plan-executor/plan-graph-v2-parser.test.ts
@@ -235,12 +235,12 @@ describe("parsePlanGraphV2", () => {
 });
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run: `npm --prefix frontend test -- --run plan-graph-v2-parser.test`
 Expected: FAIL（模块不存在）
 
-- [ ] **Step 3: 创建 types.ts**
+- [x] **Step 3: 创建 types.ts**
 
 ```typescript
 // frontend/src/runtime/plan-executor/types.ts
@@ -341,7 +341,7 @@ export type PlanExecutorResult = {
 };
 ```
 
-- [ ] **Step 4: 创建 plan-graph-v2-parser.ts**
+- [x] **Step 4: 创建 plan-graph-v2-parser.ts**
 
 ```typescript
 // frontend/src/runtime/plan-executor/plan-graph-v2-parser.ts
@@ -433,7 +433,7 @@ export function validatePlanGraphV2(
 }
 ```
 
-- [ ] **Step 5: 补充 validation + snapshot drift 测试**
+- [x] **Step 5: 补充 validation + snapshot drift 测试**
 
 在 `plan-graph-v2-parser.test.ts` 末尾追加：
 
@@ -470,12 +470,12 @@ describe("validatePlanGraphV2", () => {
 });
 ```
 
-- [ ] **Step 6: 运行测试确认通过**
+- [x] **Step 6: 运行测试确认通过**
 
 Run: `npm --prefix frontend test -- --run plan-graph-v2-parser.test`
 Expected: PASS
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add frontend/src/runtime/plan-executor/types.ts frontend/src/runtime/plan-executor/plan-graph-v2-parser.ts frontend/src/runtime/plan-executor/plan-graph-v2-parser.test.ts

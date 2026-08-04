@@ -10,21 +10,26 @@
 
 ## Current Task
 
-- Plan Task: Task 1 - Q6 Python<->Node PlanGraph v2 接线
-- Mapped OpenSpec task: 1.1 (确定并实现 Python -> Node 的 PlanGraph v2 传递契约)
-- Stage: done (review approved, no Critical/Important)
-- Implementer commit: b9c9bb0 (feat(planner): wire ESCALATE path to v2)
-- Review verdict: ✅ Spec compliant, Approved
-- Minor findings (deferred to final review triage):
-  1. test_orchestrator.py ~L662-663 stale comment still references `compile_dry_run`/`DryRunResult` (in-scope, trivial)
-  2. eval.py:269 docstring says "DryRunResult" but runtime now PlanCompileResult (out-of-scope, cosmetic)
+- Plan Task: Task 2 - PlanGraph v2 Node 侧类型 + 反序列化
+- Mapped OpenSpec tasks: 1.2, 1.3
+- Stage: implementing
+- BASE commit (review-package): cb8acd495a55e0aa417d8c07c75c581f0bec622f
+- Brief: .superpowers/sdd/task-2-brief.md
+- Report: .superpowers/sdd/task-2-report.md
+- Implementer model: sonnet
+- Allowed files: frontend/src/runtime/plan-executor/types.ts, plan-graph-v2-parser.ts, plan-graph-v2-parser.test.ts (new only)
 
-## Task → OpenSpec Mapping
+## Completed Tasks
+
+- Task 1 (Q6 v2 wiring): DONE, commit b9c9bb0, review ✅ Approved (no Critical/Important)
+  - Minor findings deferred to final review: (1) test_orchestrator.py ~L662-663 stale comment refs v1; (2) eval.py:269 docstring drift (out-of-scope)
+
+## Task -> OpenSpec Mapping
 
 | Plan Task | OpenSpec tasks.md | Stage |
 |-----------|-------------------|-------|
-| Task 1 | 1.1 | implementing |
-| Task 2 | 1.2, 1.3 | pending |
+| Task 1 | 1.1 | done |
+| Task 2 | 1.2, 1.3 | implementing |
 | Task 3 | 2.1, 2.3 | pending |
 | Task 4 | 2.2 | pending |
 | Task 5 | 3.1, 3.2 | pending |
