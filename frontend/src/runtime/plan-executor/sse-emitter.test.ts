@@ -26,17 +26,17 @@ describe("emitNodeStateChanged", () => {
     expect(events).toHaveLength(1);
   });
 
-  it("supports null fromState (initial transition)", () => {
+  it("uses INITIAL sentinel for initial transition", () => {
     const { event } = emitNodeStateChanged(
       () => {},
       "run-1",
       "nodeB",
-      null,
+      "INITIAL",
       NodeState.READY,
       0,
       1
     );
-    expect(event.fromState).toBeNull();
+    expect(event.fromState).toBe("INITIAL");
     expect(event.toState).toBe(NodeState.READY);
   });
 });

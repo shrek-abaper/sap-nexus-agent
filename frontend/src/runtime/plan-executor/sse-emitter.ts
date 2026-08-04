@@ -8,7 +8,7 @@ export function emitNodeStateChanged(
   emit: EmitFn,
   runId: string,
   nodeId: string,
-  fromState: NodeState | null,
+  fromState: string,
   toState: NodeState,
   attempt: number,
   sequence: number
@@ -20,10 +20,7 @@ export function emitNodeStateChanged(
     type: "node_state_changed",
     state: "running",
     nodeId,
-    // AgentRunEvent.fromState is typed as string | undefined, but the SSE
-    // contract requires null for initial transitions. The schema field should
-    // be `string | null` (Task 4 schema gap); cast bridges the mismatch.
-    fromState: (fromState ?? null) as string | undefined,
+    fromState,
     toState,
     attempt,
   };
