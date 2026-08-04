@@ -2,6 +2,7 @@
 change: sap-nexus-semantic-plan-authoring-v2
 design-doc: docs/superpowers/specs/2026-08-03-sap-nexus-semantic-plan-authoring-v2-design.md
 base-ref: 6de56e6dac15d9f957db2fab388ca67d0219a24a
+archived-with: 2026-08-04-sap-nexus-semantic-plan-authoring-v2
 ---
 
 # PlanGraph v2 语义计划编写 实施计划
@@ -54,6 +55,7 @@ base-ref: 6de56e6dac15d9f957db2fab388ca67d0219a24a
 - `SemanticGraphCompiler` 将 `dependsOn` relation 转为 `SemanticEdge(relation_type="dependsOn", source_id=capabilityId[dependent], target_id=dependsOnCapabilityId[prerequisite])`；S1 `_validate_edges` 据此期望 dependency edge `fromNodeId=prerequisite, toNodeId=dependent`。
 - S1 `_validate_parameter_source` 用 `source["kind"]` 分发，未识别 kind 会落到 fact 分支访问 `source["producerNodeId"]` -> `KeyError`；故 `registeredDefault` 必须由 v2 自定义分支预处理。
 
+archived-with: 2026-08-04-sap-nexus-semantic-plan-authoring-v2
 ---
 
 ## Task 1: PlanGraph v2 Schema 文件 + v1 回归守护
@@ -210,6 +212,7 @@ git add schemas/plan-graph-v2.schema.json agent/tests/test_semantic_planning_v2.
 git commit -m "feat(schema): add PlanGraph v2 schema with partitions and registeredDefault source"
 ```
 
+archived-with: 2026-08-04-sap-nexus-semantic-plan-authoring-v2
 ---
 
 ## Task 2: PlanCompileResult dataclass + v2 常量
@@ -327,6 +330,7 @@ git add agent/sap_nexus_agent/planner/plan_compiler_v2.py agent/tests/test_plann
 git commit -m "feat(planner): add PlanCompileResult dataclass for v2 compiler"
 ```
 
+archived-with: 2026-08-04-sap-nexus-semantic-plan-authoring-v2
 ---
 
 ## Task 3: v2 Validator 主体——shape 校验 + 复用 S1 原语
@@ -737,6 +741,7 @@ git add agent/sap_nexus_agent/semantic_planning/validation_v2.py agent/tests/tes
 git commit -m "feat(semantic_planning): add v2 validator reusing S1 primitives with v2 shape"
 ```
 
+archived-with: 2026-08-04-sap-nexus-semantic-plan-authoring-v2
 ---
 
 ## Task 4: 分区隔离校验（read-only 强制）
@@ -836,6 +841,7 @@ git add agent/sap_nexus_agent/semantic_planning/validation_v2.py agent/tests/tes
 git commit -m "feat(semantic_planning): enforce read-only partition isolation in v2 validator"
 ```
 
+archived-with: 2026-08-04-sap-nexus-semantic-plan-authoring-v2
 ---
 
 ## Task 5: projectionRef / ruleSetRefs 引用校验
@@ -919,6 +925,7 @@ git add agent/sap_nexus_agent/semantic_planning/validation_v2.py agent/tests/tes
 git commit -m "feat(semantic_planning): validate projectionRef/ruleSetRefs against snapshot in v2"
 ```
 
+archived-with: 2026-08-04-sap-nexus-semantic-plan-authoring-v2
 ---
 
 ## Task 6: v2 Compiler 骨架 + goalConstraint 源
@@ -1245,6 +1252,7 @@ git add agent/sap_nexus_agent/planner/plan_compiler_v2.py agent/tests/test_plann
 git commit -m "feat(planner): v2 compiler skeleton with goalConstraint sources and partitions"
 ```
 
+archived-with: 2026-08-04-sap-nexus-semantic-plan-authoring-v2
 ---
 
 ## Task 7: literal 源 authoring
@@ -1390,6 +1398,7 @@ git add agent/sap_nexus_agent/planner/plan_compiler_v2.py agent/tests/test_plann
 git commit -m "feat(planner): v2 compiler authors literal parameter source"
 ```
 
+archived-with: 2026-08-04-sap-nexus-semantic-plan-authoring-v2
 ---
 
 ## Task 8: factField 源 + data edge authoring
@@ -1593,6 +1602,7 @@ git add agent/sap_nexus_agent/planner/plan_compiler_v2.py agent/tests/test_plann
 git commit -m "feat(planner): v2 compiler authors factField source and data edge"
 ```
 
+archived-with: 2026-08-04-sap-nexus-semantic-plan-authoring-v2
 ---
 
 ## Task 9: dependency edge authoring + 拓扑排序强化
@@ -1737,6 +1747,7 @@ git add agent/sap_nexus_agent/planner/plan_compiler_v2.py agent/tests/test_plann
 git commit -m "feat(planner): v2 compiler authors dependency edges and topological sort"
 ```
 
+archived-with: 2026-08-04-sap-nexus-semantic-plan-authoring-v2
 ---
 
 ## Task 10: 分区 authoring 校验 + Action 节点 requiresApproval
@@ -1798,6 +1809,7 @@ git add agent/sap_nexus_agent/planner/plan_compiler_v2.py agent/tests/test_plann
 git commit -m "feat(planner): v2 partition authoring isolates Action nodes with requiresApproval"
 ```
 
+archived-with: 2026-08-04-sap-nexus-semantic-plan-authoring-v2
 ---
 
 ## Task 11: snapshot 漂移 -> PlannerFailure(SNAPSHOT_DRIFT)
@@ -1878,6 +1890,7 @@ git add agent/sap_nexus_agent/planner/plan_compiler_v2.py agent/tests/test_plann
 git commit -m "feat(planner): v2 compiler raises PlannerFailure on snapshot drift"
 ```
 
+archived-with: 2026-08-04-sap-nexus-semantic-plan-authoring-v2
 ---
 
 ## Task 12: handoff 入口 + dry-run 输出 + 不调 Gateway/SAP
@@ -1963,6 +1976,7 @@ git add agent/sap_nexus_agent/planner/handoff.py agent/tests/test_planner_plan_c
 git commit -m "feat(planner): add compile_plan_v2_from_handoff entrypoint with dry-run output"
 ```
 
+archived-with: 2026-08-04-sap-nexus-semantic-plan-authoring-v2
 ---
 
 ## Task 13: 7 类 bad-case fail-closed（compiler + validator 联合）
@@ -2174,6 +2188,7 @@ git add agent/tests/test_planner_plan_compiler_v2.py agent/tests/test_semantic_p
 git commit -m "test(planner): 7 bad-case fail-closed scenarios for v2 compiler and validator"
 ```
 
+archived-with: 2026-08-04-sap-nexus-semantic-plan-authoring-v2
 ---
 
 ## Task 14: 双 READ fixture + factField fixture 稳定性测试
@@ -2240,6 +2255,7 @@ git add agent/tests/test_planner_plan_compiler_v2.py
 git commit -m "test(planner): stabilize dual-READ and factField v2 fixtures"
 ```
 
+archived-with: 2026-08-04-sap-nexus-semantic-plan-authoring-v2
 ---
 
 ## Task 15: dry-run 输出测试 + v1 回归
@@ -2310,6 +2326,7 @@ git add agent/tests/test_planner_plan_compiler_v2.py
 git commit -m "test(planner): v2 dry-run output surface and v1 regression guard"
 ```
 
+archived-with: 2026-08-04-sap-nexus-semantic-plan-authoring-v2
 ---
 
 ## Task 16: 全量验证 + 文档更新
@@ -2358,6 +2375,7 @@ openspec validate --all --strict
 ```
 Expected: 全部通过。
 
+archived-with: 2026-08-04-sap-nexus-semantic-plan-authoring-v2
 ---
 
 ## Self-Review
@@ -2379,3 +2397,4 @@ Expected: 全部通过。
 **4. 类型一致性：** `PlanCompileResult` 字段（plan_graph/gaps/governance_flags/projection_ref/rule_set_refs/snapshot_id/rationale）在 Task 2 定义、Task 6/12/15 使用一致；`compile_plan_v2` 签名（handoff, snapshot, sources）-> PlanCompileResult 在 Task 6 定义、Task 11/12/13 使用一致；`validate_plan_graph_v2` 签名（graph, snapshot, goal_spec, plan_graph）-> PlanValidationReport 在 Task 3 定义、Task 4/5/13 使用一致。✓
 
 **5. 关键技术约束体现：** 双版本并存（Global Constraints + 每个 Task 强调 v1 零改动）；4 源闭集（Task 1 schema + Task 7/8 authoring + Task 3 registeredDefault 校验）；edge 由 S1 契约驱动（Task 8 data edge + Task 9 dependency edge fromNodeId=prerequisite）；分区按 topologicalOrder 排序（Task 6/10）；不返回 None（Task 11/13）；snapshot 漂移抛 PlannerFailure（Task 11）；不调 Gateway/SAP（Task 12/15）。✓
+

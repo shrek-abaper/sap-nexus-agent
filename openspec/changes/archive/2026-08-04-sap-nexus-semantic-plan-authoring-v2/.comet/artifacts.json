@@ -4,5 +4,6 @@
   "openspec_tasks": "openspec/changes/sap-nexus-semantic-plan-authoring-v2/tasks.md",
   "openspec_delta_spec": "openspec/changes/sap-nexus-semantic-plan-authoring-v2/specs/semantic-plan-authoring-v2/spec.md",
   "handoff_context": "openspec/changes/sap-nexus-semantic-plan-authoring-v2/.comet/handoff/design-context.json",
-  "handoff_markdown": "openspec/changes/sap-nexus-semantic-plan-authoring-v2/.comet/handoff/design-context.md"
+  "handoff_markdown": "openspec/changes/sap-nexus-semantic-plan-authoring-v2/.comet/handoff/design-context.md",
+  "archive_directory": "openspec/changes/archive/2026-08-04-sap-nexus-semantic-plan-authoring-v2"
 }

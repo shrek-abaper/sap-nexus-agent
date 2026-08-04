@@ -2,6 +2,8 @@
 comet_change: sap-nexus-semantic-plan-authoring-v2
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-08-04-sap-nexus-semantic-plan-authoring-v2
+status: final
 ---
 
 # PlanGraph v2 技术设计（semantic-plan-authoring-v2）
@@ -186,3 +188,4 @@ class PlanCompileResult:
 - LLM 不得创建 capability/relation/FactType/projection/RuleSet；所有 edge/ref 须来自 snapshot。
 - Action 节点 `requiresApproval=true`，仅入 `actionPartition`。
 - 不调用 Gateway validate/execute、不调用 SAP。
+
