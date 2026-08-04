@@ -1366,7 +1366,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 
 **Design Doc 参考:** §4.2 执行流 step 1-9 + §3 D3（per-node Gateway）+ D4（9 态）+ Q3（FAILED 不自动重试）+ Q5（run lease）
 
-- [ ] **Step 1: 写失败测试 - 双 READ 并发执行**
+- [x] **Step 1: 写失败测试 - 双 READ 并发执行**
 
 ```typescript
 // frontend/src/runtime/plan-executor/plan-executor.test.ts
@@ -1502,12 +1502,12 @@ describe("PlanExecutor", () => {
 });
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run: `npm --prefix frontend test -- --run plan-executor.test`
 Expected: FAIL（模块不存在）
 
-- [ ] **Step 3: 实现 plan-executor.ts**
+- [x] **Step 3: 实现 plan-executor.ts**
 
 ```typescript
 // frontend/src/runtime/plan-executor/plan-executor.ts
@@ -1719,12 +1719,12 @@ export class PlanExecutor {
 }
 ```
 
-- [ ] **Step 4: 运行测试确认通过**
+- [x] **Step 4: 运行测试确认通过**
 
 Run: `npm --prefix frontend test -- --run plan-executor.test`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/runtime/plan-executor/plan-executor.ts frontend/src/runtime/plan-executor/plan-executor.test.ts

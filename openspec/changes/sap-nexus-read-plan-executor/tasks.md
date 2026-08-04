@@ -14,13 +14,13 @@
 
 - [x] 3.1 实现 ready-node 选择：依赖闭包（基于 edges）全部 `SUCCEEDED` 才 `READY`，否则 `BLOCKED_DEPENDENCY`
 - [x] 3.2 实现 DAG 独立性决定的有限并发调度
-- [ ] 3.3 双 READ 节点（`MM.Inventory.GetAvailability` + `MM.PurchaseOrder.GetList`）并发执行场景验证
+- [x] 3.3 双 READ 节点（`MM.Inventory.GetAvailability` + `MM.PurchaseOrder.GetList`）并发执行场景验证
 
 ## 4. Per-node Gateway validate/execute
 
-- [ ] 4.1 实现 per-node Gateway `validate -> execute`（复用现有 Gateway，不绕过、不批量端点）
-- [ ] 4.2 validate 失败节点转 `FAILED`，不调 execute，独立节点继续
-- [ ] 4.3 Action / 非 read-only 节点保持 `BLOCKED_APPROVAL`，不执行、不调 Gateway execute
+- [x] 4.1 实现 per-node Gateway `validate -> execute`（复用现有 Gateway，不绕过、不批量端点）
+- [x] 4.2 validate 失败节点转 `FAILED`，不调 execute，独立节点继续
+- [x] 4.3 Action / 非 read-only 节点保持 `BLOCKED_APPROVAL`，不执行、不调 Gateway execute
 
 ## 5. 超时与取消
 
