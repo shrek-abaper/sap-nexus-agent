@@ -29,9 +29,9 @@
 
 ## 6. 恢复与幂等重放
 
-- [ ] 6.1 实现 restart 恢复：从 durable ledger 加载，`SUCCEEDED` 不重复执行，`READY`/未完成续跑
-- [ ] 6.2 实现幂等重放：相同 idempotency key 不重复执行节点，返回已记录结果
-- [ ] 6.3 lease conflict fail-closed（另一 worker 持有 lease 时拒绝操作并记录）
+- [x] 6.1 实现 restart 恢复：从 durable ledger 加载，`SUCCEEDED` 不重复执行，`READY`/未完成续跑
+- [x] 6.2 实现幂等重放：相同 idempotency key 不重复执行节点，返回已记录结果
+- [x] 6.3 lease conflict fail-closed（另一 worker 持有 lease 时拒绝操作并记录）
 
 ## 7. Per-node SSE 事件
 

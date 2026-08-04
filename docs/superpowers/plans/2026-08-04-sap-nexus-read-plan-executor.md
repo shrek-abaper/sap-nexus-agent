@@ -1966,7 +1966,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 
 **Design Doc 参考:** §3 Q3 落实 + §4.2 step 4 + §5 幂等契约
 
-- [ ] **Step 1: 写恢复 + 幂等测试**
+- [x] **Step 1: 写恢复 + 幂等测试**
 
 ```typescript
 // frontend/src/runtime/plan-executor/plan-executor-recovery.test.ts
@@ -2094,23 +2094,23 @@ describe("PlanExecutor recovery", () => {
 });
 ```
 
-- [ ] **Step 2: 运行测试确认失败/通过**
+- [x] **Step 2: 运行测试确认失败/通过**
 
 Run: `npm --prefix frontend test -- --run plan-executor-recovery.test`
 Expected: 部分可能 PASS（Task 8 已实现基本恢复），lease conflict 可能需要调整
 
-- [ ] **Step 3: 确保 lease conflict fail-closed 逻辑正确**
+- [x] **Step 3: 确保 lease conflict fail-closed 逻辑正确**
 
 验证 `plan-executor.ts` 的 `execute` 方法在 `leaseOutcome.status === "rejected"` 时返回空结果（Task 8 已实现，此处验证）。
 
 如果 lease conflict 测试失败，检查 `claim` 是否正确返回 `rejected` status。
 
-- [ ] **Step 4: 运行测试确认全部通过**
+- [x] **Step 4: 运行测试确认全部通过**
 
 Run: `npm --prefix frontend test -- --run plan-executor-recovery.test`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/runtime/plan-executor/plan-executor-recovery.test.ts frontend/src/runtime/plan-executor/plan-executor.ts
