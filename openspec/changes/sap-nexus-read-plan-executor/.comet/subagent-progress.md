@@ -10,21 +10,22 @@
 
 ## Current Task
 
-- Plan Task: Task 5 - DAG 依赖闭包 + ready-node 选择
-- Mapped OpenSpec tasks: 3.1, 3.2
+- Plan Task: Task 6 - Fake Gateway + GatewayClient 接口
+- Mapped OpenSpec task: 8.1
 - Stage: implementing
-- BASE commit (review-package): 5be578b85e5cc105148736009828b80498b8a11f
-- Brief: .superpowers/sdd/task-5-brief.md
-- Report: .superpowers/sdd/task-5-report.md
+- BASE commit (review-package): 9ce0eee59aee5d994f318b2c1528f8db1c45d1d9
+- Brief: .superpowers/sdd/task-6-brief.md
+- Report: .superpowers/sdd/task-6-report.md
 - Implementer model: sonnet
-- Allowed files: frontend/src/runtime/plan-executor/dag-scheduler.ts, dag-scheduler.test.ts (new only)
+- Allowed files: frontend/src/runtime/plan-executor/fake-gateway.ts, fake-gateway.test.ts (new only)
 
 ## Completed Tasks
 
 - Task 1 (Q6 v2 wiring): DONE, commit b9c9bb0, ✅ Approved. Minor deferred: test_orchestrator.py stale comment, eval.py docstring drift.
-- Task 2 (v2 parser+types): DONE, commit 4dd082a, ✅ Approved. Minor deferred: as-cast on parameterBindings (Task 5/8 add source-kind validation), permissive emptiness guard, O(n*m) lookup, unused _drop.
-- Task 3 (node state machine): DONE, commits 4e2f7ba+8a0d856, ✅ Approved (round 1 fix: BLOCKED_APPROVAL lockdown test). Minor #3/#4 deferred: error-message string assertion, Record type hardening.
-- Task 4 (durable node ledger): DONE, commits a691fdc+8549e1e, ✅ Approved (round 1 fix: dual-write appendEvent + node_state_changed event type). Minor deferred: state:"running" hardcoded, saveNodeLedger bulk nodeState-only, concurrency note. NOTE: node_state_changed event type pulled from Task 7 -> Task 7 scope reduces to SSE emitter only (no run-event-schema.ts mod needed).
+- Task 2 (v2 parser+types): DONE, commit 4dd082a, ✅ Approved. Minor deferred: as-cast on parameterBindings (Task 8 add source-kind validation), permissive emptiness guard, O(n*m) lookup, unused _drop.
+- Task 3 (node state machine): DONE, commits 4e2f7ba+8a0d856, ✅ Approved (round 1 fix: BLOCKED_APPROVAL lockdown test). Minor #3/#4 deferred.
+- Task 4 (durable node ledger): DONE, commits a691fdc+8549e1e, ✅ Approved (round 1 fix: dual-write appendEvent + node_state_changed event type). Minor deferred. NOTE: node_state_changed event type pulled from Task 7.
+- Task 5 (DAG scheduler): DONE, commits 51d50de+b8cf58d, ✅ Approved (round 1 fix: data edges in getDependencies + BLOCKED_APPROVAL exclusion + invalid env tests). Minor #4 deferred (test name).
 
 ## Task -> OpenSpec Mapping
 
@@ -34,8 +35,8 @@
 | Task 2 | 1.2, 1.3 | done |
 | Task 3 | 2.1, 2.3 | done |
 | Task 4 | 2.2 | done |
-| Task 5 | 3.1, 3.2 | implementing |
-| Task 6 | 8.1 | pending |
+| Task 5 | 3.1, 3.2 | done |
+| Task 6 | 8.1 | implementing |
 | Task 7 | 7.1, 7.2 | pending (scope reduced: SSE emitter only, event type done in Task 4) |
 | Task 8 | 3.3, 4.1, 4.2, 4.3 | pending |
 | Task 9 | 5.1, 5.2 | pending |

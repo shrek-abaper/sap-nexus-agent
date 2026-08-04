@@ -1049,7 +1049,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 
 **Design Doc 参考:** §3 D6（TDD fake Gateway 先行）
 
-- [ ] **Step 1: 写失败测试 - fake Gateway 基本行为**
+- [x] **Step 1: 写失败测试 - fake Gateway 基本行为**
 
 ```typescript
 // frontend/src/runtime/plan-executor/fake-gateway.test.ts
@@ -1103,12 +1103,12 @@ describe("FakeGateway", () => {
 });
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run: `npm --prefix frontend test -- --run fake-gateway.test`
 Expected: FAIL（模块不存在）
 
-- [ ] **Step 3: 实现 fake-gateway.ts**
+- [x] **Step 3: 实现 fake-gateway.ts**
 
 ```typescript
 // frontend/src/runtime/plan-executor/fake-gateway.ts
@@ -1160,12 +1160,12 @@ function sleep(ms: number): Promise<void> {
 }
 ```
 
-- [ ] **Step 4: 运行测试确认通过**
+- [x] **Step 4: 运行测试确认通过**
 
 Run: `npm --prefix frontend test -- --run fake-gateway.test`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/runtime/plan-executor/fake-gateway.ts frontend/src/runtime/plan-executor/fake-gateway.test.ts
