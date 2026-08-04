@@ -139,6 +139,10 @@ export class PlanExecutor {
 
     const attempt = existing?.attempt ?? 0;
 
+    // Idempotency key = runId + nodeId + attempt + inputHash (Task 10)
+    const idempotencyKey = `${runId}:${nodeId}:${attempt}:${inputHash}`;
+    const cachedResult = await this.store.lookupExecuted(idempotencyKey);
+
     // If node is not yet in READY (initial pickup or BLOCKED_DEPENDENCY cleared),
     // transition to READY first. The 9-state machine requires null/BLOCKED_DEPENDENCY
     // -> READY before READY -> VALIDATING.
@@ -153,6 +157,14 @@ export class PlanExecutor {
 
     // READY -> VALIDATING
     await this.transition(runId, snapshotId, nodeId, NS.READY, NS.VALIDATING, attempt, inputHash);
+
+    if (cachedResult) {
+      // Idempotent replay: skip Gateway validate/execute, transition to SUCCEEDED
+      // using the recorded result (validates -> executing -> succeeded)
+      await this.transition(runId, snapshotId, nodeId, NS.VALIDATING, NS.EXECUTING, attempt, inputHash);
+      await this.transition(runId, snapshotId, nodeId, NS.EXECUTING, NS.SUCCEEDED, attempt, inputHash, cachedResult.gatewayTraceId ?? null);
+      return;
+    }
 
     // Resolve parameters
     const parameters = this.resolveParameters(node.parameterBindings);
@@ -189,6 +201,12 @@ export class PlanExecutor {
 
     // EXECUTING -> SUCCEEDED
     await this.transition(runId, snapshotId, nodeId, NS.EXECUTING, NS.SUCCEEDED, attempt, inputHash, executeResult.traceId ?? null);
+
+    // Record idempotency: future replay with same key skips Gateway calls (Task 10)
+    await this.store.markExecuted(idempotencyKey, {
+      status: "succeeded",
+      gatewayTraceId: executeResult.traceId ?? null,
+    });
   }
 
   private async transition(
