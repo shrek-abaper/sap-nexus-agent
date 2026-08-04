@@ -39,3 +39,32 @@ verify_command: npm --prefix frontend run verify
 - Task 3 M2 (Minor, pre-existing): appendPendingOutcome not called for re-awaiting continuation in decide/confirm.
 - Task 4: complete (commits 5e6dcdb..08b0379, review: Spec ✅ + Quality Approved, 0 C/I, 3 Minor deferred). route.ts ReadableStream polling (cursor/terminal/backpressure/404/400) + stream-route.test.ts 5 tests. **Backpressure load-bearing fix**: brief's verbatim closed on isTerminal even if backpressure broke loop before terminal enqueued; added `backpressured` flag (close only when !backpressured && isTerminal). principal preserved (injectPrincipal). success->clarification test adaptation. 5/5 stream-route + 84/84 full suite + tsc + build clean. Minor: t-4-review.md (M1 cancel race after await; M2 unused test imports; M3 Number() accepts empty/hex cursors - all inherited from brief).
 - Task 5: complete (commits 466a7c2..fc23491, review: Spec ✅ + Quality Approved, 0 C/I, 2 Minor deferred). stream-helpers.ts (buildStreamUrl/lastEventSequence/RECONNECT_DELAY=500) + test 4/4 + AgentConsole streamAgentRun reconnect (cursor + lastSequence + onerror ?cursor=N + intentionallyClosed) + decideApproval cursor. 88/88 full + typecheck clean. reconnect-safety all pass (no storm, no leak, dedup correct). Minor: t-5-review.md (M1 no backoff per-spec YAGNI; M2 lastSequence overwrite not Math.max - verbatim per-spec, SSE monotonic).
+
+---
+
+# SDD Progress Ledger - sap-nexus-output-projection-registry (Runbook 17)
+
+Plan: docs/superpowers/plans/2026-08-04-sap-nexus-output-projection-registry.md
+Design: docs/superpowers/specs/2026-08-04-sap-nexus-output-projection-registry-design.md
+Branch: feature/20260804/sap-nexus-output-projection-registry
+BASE: efcbe61
+Build config: isolation=branch, build_mode=subagent-driven-development, tdd_mode=tdd, review_mode=thorough
+
+## Pre-Flight Findings
+
+- No plan conflicts found. Task 3 replay ordering was clarified before execution: an already-SUCCEEDED ledger entry may rebuild projection data from a complete cache record, then must return without attempting `SUCCEEDED -> READY`.
+- Checkoff precondition repaired after Task 1: repeated generic `Commit`/failure step labels were made task-specific; all plan checkbox texts are unique and Comet targeted checkoff passes.
+
+## Tasks
+
+- [x] Task 1: 冻结 projection 类型契约
+- [ ] Task 2: 实现版本化 OutputProjectionRegistry
+- [ ] Task 3: 扩展 PlanExecutor 保留并恢复成功节点数据
+- [ ] Task 4: 实现 FactBuilderRegistry 与 ProjectionInputAssembler
+- [ ] Task 5: 实现确定性 hash 与 MaterialSupplySnapshot projection
+- [ ] Task 6: 完成端到端 Projection Eval 与隔离证明
+- [ ] Task 7: 全量相关验证与 OpenSpec 任务收口
+
+## Completed
+
+- Task 1: complete (commits efcbe61..aea5172, review clean: Spec compliant + Quality Approved, 0 Critical/Important/Minor). Projection type contracts + 1/1 focused test + typecheck clean.

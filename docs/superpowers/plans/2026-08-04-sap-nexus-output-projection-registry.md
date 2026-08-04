@@ -63,7 +63,7 @@ base-ref: 810a00edb70f1910758a16ece3092e26ce3eac5e
 - Consumes: `NodeState` from `frontend/src/runtime/plan-executor/types.ts`
 - Produces: `ReasoningFact`、`PlanExecutionRecord`、`MaterialSupplySnapshot`、`ProjectionInput`、`OutputProjectionDeclaration`、`FactBuilderDeclaration`
 
-- [ ] **Step 1: 写失败测试，锁定三态、limitation 和 declaration 元数据**
+- [x] **Step 1: 写失败测试，锁定三态、limitation 和 declaration 元数据**
 
 ```typescript
 // frontend/src/runtime/projection/types.test.ts
@@ -91,13 +91,13 @@ describe("projection contracts", () => {
 });
 ```
 
-- [ ] **Step 2: 运行 typecheck，确认模块缺失**
+- [x] **Step 2: 运行 typecheck，确认模块缺失**
 
 Run: `npm --prefix frontend run typecheck`
 
 Expected: FAIL，诊断包含 `Cannot find module './types'`。
 
-- [ ] **Step 3: 创建完整核心类型**
+- [x] **Step 3: 创建完整核心类型**
 
 ```typescript
 // frontend/src/runtime/projection/types.ts
@@ -144,13 +144,13 @@ export type FactBuilderDeclaration<NodeRecord> = {
 };
 ```
 
-- [ ] **Step 4: 运行契约测试与 typecheck**
+- [x] **Step 4: 运行契约测试与 typecheck**
 
 Run: `npm --prefix frontend test -- src/runtime/projection/types.test.ts && npm --prefix frontend run typecheck`
 
 Expected: 两条命令 PASS；TypeScript 不出现隐式 `any` 或字段名漂移。
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit projection type contracts**
 
 ```bash
 git add frontend/src/runtime/projection/types.ts frontend/src/runtime/projection/types.test.ts
@@ -199,7 +199,7 @@ describe("OutputProjectionRegistry", () => {
 });
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [ ] **Step 2: 运行 registry 测试确认失败**
 
 Run: `npm --prefix frontend test -- src/runtime/projection/registry.test.ts`
 
@@ -241,7 +241,7 @@ Run: `npm --prefix frontend test -- src/runtime/projection/registry.test.ts`
 
 Expected: PASS，4 个 case 全部通过。
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 5: Commit versioned projection registry**
 
 ```bash
 git add frontend/src/runtime/projection/registry.ts frontend/src/runtime/projection/registry.test.ts
@@ -342,7 +342,7 @@ Run: `npm --prefix frontend test -- src/runtime/plan-executor/plan-executor.test
 
 Expected: PASS；原有状态、取消、超时、依赖、lease 测试不改断言仍通过，新 recovery case 证明不重呼 Gateway。
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 6: Commit executor projection data retention**
 
 ```bash
 git add frontend/src/runtime/durable/types.ts frontend/src/runtime/plan-executor/types.ts frontend/src/runtime/plan-executor/plan-executor.ts frontend/src/runtime/plan-executor/plan-executor.test.ts frontend/src/runtime/plan-executor/plan-executor-recovery.test.ts
@@ -378,7 +378,7 @@ expect(input.facts.some((fact) => fact.source.nodeId === "node.failed")).toBe(fa
 
 另建 unknown capability 的 succeeded record，断言无 fact，且 `missingFacts` 为 `[{ factType: "InventoryAvailability", reason: "no_fact_builder" }]`；删除 `dataAsOf` 后断言 fact `asOf === nodeExecutedAt`。
 
-- [ ] **Step 2: 运行测试确认失败**
+- [ ] **Step 2: 运行 builder/assembler 测试确认失败**
 
 Run: `npm --prefix frontend test -- src/runtime/projection/fact-builder.test.ts src/runtime/projection/assembler.test.ts`
 
@@ -447,7 +447,7 @@ Run: `npm --prefix frontend test -- src/runtime/projection/fact-builder.test.ts 
 
 Expected: PASS；测试证明 only-succeeded、双时间戳回退、missing builder 和隔离签名。
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 6: Commit fact builders and assembler**
 
 ```bash
 git add frontend/src/runtime/projection/types.ts frontend/src/runtime/projection/fact-builder.ts frontend/src/runtime/projection/fact-builder.test.ts frontend/src/runtime/projection/assembler.ts frontend/src/runtime/projection/assembler.test.ts
@@ -609,7 +609,7 @@ Run: `npm --prefix frontend run typecheck`
 
 Expected: PASS；若 `@ts-expect-error` 变成 unused directive，则 FAIL，说明 projection 边界被意外放宽。
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 5: Commit projection Eval coverage**
 
 ```bash
 git add frontend/src/runtime/projection/assembler.test.ts frontend/src/runtime/projection/material-supply-snapshot.test.ts frontend/src/runtime/plan-executor/plan-executor.test.ts
@@ -647,7 +647,7 @@ Expected: `git diff --check` 无输出；改动仅包含本计划列出的 proje
 
 把 `openspec/changes/sap-nexus-output-projection-registry/tasks.md` 中 1.1-7.2 的 `- [ ]` 全部改为 `- [x]`；若任一项没有对应 PASS evidence，保留未勾选并回到对应任务修复。
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 5: Commit OpenSpec task closeout**
 
 ```bash
 git add openspec/changes/sap-nexus-output-projection-registry/tasks.md

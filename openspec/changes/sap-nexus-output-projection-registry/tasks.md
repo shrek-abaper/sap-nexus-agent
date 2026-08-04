@@ -1,9 +1,9 @@
 ## 1. 类型与契约冻结
 
-- [ ] 1.1 定义 TS `ReasoningFact` 最小镜像契约（与 Python `reasoning_fact.py` dataclass 对齐：factId / domain / businessObject / predicate / value / unit / deterministic / confidence / source / evidence / material / plant / asOf）
-- [ ] 1.2 定义 `PlanExecutionRecord` 类型（`snapshotId` / node ledger 摘要 / `asOf` / succeeded/failed 节点列表）
-- [ ] 1.3 定义 `MaterialSupplySnapshot` 类型（`asOf` / `sourceFreshness` / `completeness` / `facts` / `lineage` / `missingFacts` / `failedNodes` / `limitations`）
-- [ ] 1.4 定义 `OutputProjection` 注册声明类型（`projectionId` / `version` / required FactTypes / optional FactTypes / output schema / time basis / partial policy）
+- [x] 1.1 定义 TS `ReasoningFact` 最小镜像契约（与 Python `reasoning_fact.py` dataclass 对齐：factId / domain / businessObject / predicate / value / unit / deterministic / confidence / source / evidence / material / plant / asOf）
+- [x] 1.2 定义 `PlanExecutionRecord` 类型（`snapshotId` / node ledger 摘要 / `asOf` / succeeded/failed 节点列表）
+- [x] 1.3 定义 `MaterialSupplySnapshot` 类型（`asOf` / `sourceFreshness` / `completeness` / `facts` / `lineage` / `missingFacts` / `failedNodes` / `limitations`）
+- [x] 1.4 定义 `OutputProjection` 注册声明类型（`projectionId` / `version` / required FactTypes / optional FactTypes / output schema / time basis / partial policy）
 
 ## 2. OutputProjection 注册表 + 校验
 
