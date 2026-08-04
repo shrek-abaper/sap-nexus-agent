@@ -1,4 +1,4 @@
-import type { NodeState } from "../plan-executor/types";
+import type { NodeFactRecord, NodeState } from "../plan-executor/types";
 
 export type ReasoningFact = {
   factId: string;
@@ -80,8 +80,8 @@ export type OutputProjectionDeclaration = {
   project(input: ProjectionInput): MaterialSupplySnapshot;
 };
 
-export type FactBuilderDeclaration<NodeRecord> = {
+export type FactBuilderDeclaration = {
   capabilityId: string;
   freshnessField?: string;
-  build(record: NodeRecord): ReasoningFact[];
+  build(record: NodeFactRecord): ReasoningFact[];
 };
