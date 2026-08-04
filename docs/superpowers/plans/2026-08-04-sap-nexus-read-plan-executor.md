@@ -2,6 +2,7 @@
 change: sap-nexus-read-plan-executor
 design-doc: docs/superpowers/specs/2026-08-04-sap-nexus-read-plan-executor-design.md
 base-ref: ae5046e70ccc11587103a593acffdbd44d4b8336
+archived-with: 2026-08-04-sap-nexus-read-plan-executor
 ---
 
 # READ PlanExecutor Implementation Plan
@@ -26,6 +27,7 @@ base-ref: ae5046e70ccc11587103a593acffdbd44d4b8336
 - 非法状态转换、snapshot drift、Action-in-readPartition、lease conflict 全部 fail-closed。
 - 单个 `node_state_changed` SSE 事件（nodeId/fromState/toState/attempt），复用现有 SSE 框架，与 `emitEventsFromOutcome` 正交。
 
+archived-with: 2026-08-04-sap-nexus-read-plan-executor
 ---
 
 ## File Structure
@@ -53,6 +55,7 @@ base-ref: ae5046e70ccc11587103a593acffdbd44d4b8336
 | `frontend/src/runtime/run-event-schema.ts` | 新增 `node_state_changed` 事件类型 + `nodeId`/`fromState`/`toState`/`attempt` 字段 |
 | `frontend/src/runtime/durable/checkpoint.test.ts` | 适配 `NodeLedgerEntry` 类型 |
 
+archived-with: 2026-08-04-sap-nexus-read-plan-executor
 ---
 
 ## Task 1: Q6 Python<->Node PlanGraph v2 接线
@@ -147,6 +150,7 @@ DryRunResult|None to PlanCompileResult|None. SELECT path untouched (D5).
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
+archived-with: 2026-08-04-sap-nexus-read-plan-executor
 ---
 
 ## Task 2: PlanGraph v2 Node 侧类型 + 反序列化
@@ -487,6 +491,7 @@ side. Validate structure + snapshot drift (fail-closed before Gateway).
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
+archived-with: 2026-08-04-sap-nexus-read-plan-executor
 ---
 
 ## Task 3: 节点状态机（9 态 + 合法转换表）
@@ -669,6 +674,7 @@ transitions throw IllegalTransitionError (fail-closed).
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
+archived-with: 2026-08-04-sap-nexus-read-plan-executor
 ---
 
 ## Task 4: Durable node ledger（扩展 CheckpointRef.nodeState）
@@ -850,6 +856,7 @@ transitionNode reuse appendCheckpointRef, no second store.
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
+archived-with: 2026-08-04-sap-nexus-read-plan-executor
 ---
 
 ## Task 5: DAG 依赖闭包 + ready-node 选择
@@ -1036,6 +1043,7 @@ prerequisites are all SUCCEEDED. Bounded by READ_PLAN_EXECUTOR_MAX_CONCURRENCY
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
+archived-with: 2026-08-04-sap-nexus-read-plan-executor
 ---
 
 ## Task 6: Fake Gateway + GatewayClient 接口
@@ -1177,6 +1185,7 @@ for assertion. Supports configurable latency for timeout testing.
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
+archived-with: 2026-08-04-sap-nexus-read-plan-executor
 ---
 
 ## Task 7: node_state_changed SSE 事件
@@ -1352,6 +1361,7 @@ emitEventsFromOutcome single-capability events (D5).
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
+archived-with: 2026-08-04-sap-nexus-read-plan-executor
 ---
 
 ## Task 8: PlanExecutor 主执行器（per-node validate/execute + Action 阻塞）
@@ -1738,6 +1748,7 @@ Snapshot drift and lease conflict fail-closed before Gateway.
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
+archived-with: 2026-08-04-sap-nexus-read-plan-executor
 ---
 
 ## Task 9: 节点级超时 + 用户取消
@@ -1952,6 +1963,7 @@ Gateway calls wrapped in Promise.race with configurable nodeTimeoutMs.
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
+archived-with: 2026-08-04-sap-nexus-read-plan-executor
 ---
 
 ## Task 10: 恢复与幂等重放
@@ -2123,6 +2135,7 @@ recorded results without re-calling Gateway. Lease conflict fail-closed.
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
+archived-with: 2026-08-04-sap-nexus-read-plan-executor
 ---
 
 ## Task 11: 依赖阻塞场景验证
@@ -2224,6 +2237,7 @@ failure leaves dependent nodes BLOCKED_DEPENDENCY without Gateway calls.
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
+archived-with: 2026-08-04-sap-nexus-read-plan-executor
 ---
 
 ## Task 12: v1 回归 + 全量验证 + 文档更新
@@ -2285,6 +2299,7 @@ pytest, frontend verify, callplan evidence, openspec validate.
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
+archived-with: 2026-08-04-sap-nexus-read-plan-executor
 ---
 
 ## 已知限制（后续 runbook 处理）
@@ -2295,6 +2310,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 
 3. **生产 orchestrator 接线**：`PlanExecutor` 当前为独立模块，未接入 `agent-runtime-adapter.ts` 的 `runLocalPythonAgent` 路径。生产接线（从 `WorkbenchOutcome.dryRun.plan_graph` 调用 `PlanExecutor.execute`）延后至 Runbook 17 消费时评估。
 
+archived-with: 2026-08-04-sap-nexus-read-plan-executor
 ---
 
 ## 验证命令
@@ -2329,3 +2345,4 @@ openspec validate --all --strict
 | Lease conflict fail-closed | Task 10 (lease conflict test) |
 | Per-node SSE events | Task 7 (node_state_changed SSE) |
 | Q6 Python<->Node PlanGraph v2 契约 | Task 1 (v1->v2 switch) |
+

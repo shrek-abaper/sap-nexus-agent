@@ -3,6 +3,8 @@ comet_change: sap-nexus-read-plan-executor
 role: technical-design
 canonical_spec: openspec
 status: draft
+archived-with: 2026-08-04-sap-nexus-read-plan-executor
+status: final
 ---
 
 # READ PlanExecutor 技术设计（sap-nexus-read-plan-executor）
@@ -222,3 +224,4 @@ TDD：fake Gateway 先行（D6）：
 - v2 `plan_graph` dict 是否逐键保留 v1 字段（`planId`/`goalId`/`nodes`/`edges`/`topologicalOrder`/`goalOutputs`）-> 决定前端 `DryRunPlanGraph` 是否需适配。Task 1.2 首先核实。
 - `AgentOutcome.dry_run` 类型切换（`DryRunResult` -> `PlanCompileResult`）的下游影响：`orchestrator.py` 5 处引用、`handoff.py`、前端 `WorkbenchOutcome.dryRun` 类型。
 - `node_state_changed` SSE 事件在现有 `AgentRunEvent` 类型上的扩展方式（不改 `emitEventsFromOutcome` 单能力事件）。
+

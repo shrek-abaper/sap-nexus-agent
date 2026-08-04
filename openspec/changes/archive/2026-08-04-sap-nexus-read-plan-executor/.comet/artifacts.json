@@ -4,5 +4,6 @@
   "openspec_tasks": "openspec/changes/sap-nexus-read-plan-executor/tasks.md",
   "openspec_delta_spec": "openspec/changes/sap-nexus-read-plan-executor/specs/read-plan-executor/spec.md",
   "handoff_context": "openspec/changes/sap-nexus-read-plan-executor/.comet/handoff/design-context.json",
-  "handoff_markdown": "openspec/changes/sap-nexus-read-plan-executor/.comet/handoff/design-context.md"
+  "handoff_markdown": "openspec/changes/sap-nexus-read-plan-executor/.comet/handoff/design-context.md",
+  "archive_directory": "openspec/changes/archive/2026-08-04-sap-nexus-read-plan-executor"
 }

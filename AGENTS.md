@@ -1,24 +1,30 @@
 # AGENTS.md
-Project overlay for coding agents working in sap-nexus-agent.
 
-Intentionally avoids repeating user-level guidance in `~/.codex/AGENTS.md`.
+Project overlay for coding agents working in sap-nexus-agent.
+Intentionally avoids repeating user-level guidance in `~/.agents/AGENTS.md`.
 Keep only durable, actionable project rules here. Background knowledge lives in `docs/wiki/`.
 
 ---
 
-## 0. Task Intake (Mandatory)
+## 0. Precedence & Default Mode
 
-Before acting on any task that involves code changes, emit a `[ROUTE]` line and wait for explicit user confirmation.
+Default = **execute directly**. This project overrides user-level §1 / §3
+confirmation defaults (project wins per the user-level conflict rule;
+user-level §6 Safety remains non-overridable).
 
-```
-[ROUTE] Path: {choice} | Score: {N} | Reason: {one sentence}
-```
+- Do NOT enter "plan-mode-and-wait" for non-trivial tasks by default.
+- Reversible task + clear success criteria → proceed autonomously; state
+  assumptions inline in one line, NO confirmation round-trip.
+- Stop and wait ONLY when a HEAVY or `[BLOCKED]` signal in §3 fires.
+- When proceeding, surface key artifacts (diff, test output) for review.
+  Never treat "it ran without error" as "it is correct".
 
 ---
 
 ## 1. Reference Docs (on demand only)
 
-> **Do NOT auto-load reference docs. Load only when the task requires architecture or planning decisions.**
+> **Do NOT auto-load reference docs. Load only when the task requires
+> architecture or planning decisions.**
 
 Key files (read on demand):
 - `docs/wiki/sap-nexus-agent-technical-architecture.md`
@@ -46,65 +52,67 @@ If this file and wiki docs disagree, follow the wiki docs.
 
 ---
 
-## 3. Git and Workflow
+## 3. Routing (opt-in) & Workflow
 
-- Work on the currently checked-out branch; do not create, switch, or rename branches unless explicitly asked.
+**Git:**
+- Work on the currently checked-out branch; do not create, switch, or rename
+  branches unless explicitly asked.
 - Do not commit unless explicitly asked.
 - Run `git status --short` before and after non-trivial edits.
 
-### Comet Routing
+### Routing — default is execute directly
 
-**Pre-check — skip routing and execute directly if ANY of the following is true:**
-- All changes are limited to `.md` or `.html` files
-- No code, schema, registry, config, or binary files are modified
-- Change is limited to a single file with no cross-module impact
-- Fix is a typo / comment / log message / i18n string only
-- Change adds or edits a single capability's parameters / display name / description only — no structural schema change
+Emit `[ROUTE]` and wait for confirmation ONLY if a HEAVY signal fires.
+Otherwise build directly, no scoring, no `[ROUTE]`.
 
-If pre-check passes → execute directly, no scoring needed, no `[ROUTE]` output required.
+**HEAVY signals (any one → route):**
+- Structural schema / OWL / Neo4j migration
+  (NOT plain registry read/write; NOT capability param / display name / description edits)
+- Touches > 2 modules AND > 5 files
+- Requirements genuinely ambiguous — design exploration needed
+- SAP WRITE path (still gated by Human Approval regardless)
 
-**`[BLOCKED]` stop conditions (raise before scoring):**
+`[ROUTE]` format:
+```
+[ROUTE] Path: {comet | comet-tweak} | Trigger: {which HEAVY signal} | Reason: {one sentence}
+```
+
+**`[BLOCKED]` stop conditions (raise before routing):**
 - Task references an undefined capability or unknown RFC name
 - Task would touch SAP WRITE path without confirmed Human Approval
-- Involves ontology class/property rename or deletion with unclear blast radius
-- Scope is ambiguous across ≥ 3 modules — ask for clarification first
+- Ontology class / property rename or deletion with unclear blast radius
+- Scope ambiguous across ≥ 3 modules
 
-Otherwise score the task, then select the path:
+**Path selection (only when a HEAVY signal fired):**
 
-| Criterion                                                                                                                                                                                  | Score |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----- |
-| Touches architecture / ontology registry / OWL schema / Neo4j migration? Excludes: adding or editing a single capability's parameters, updating registry display name or description only. | +3    |
-| Affects more than 5 files OR more than 2 modules?                                                                                                                                          | +2    |
-| Requirements unclear — design exploration needed?                                                                                                                                          | +2    |
-| Likely to span sessions or require tool switching?                                                                                                                                         | +1    |
+| Signal profile                                                                                | Path                                                         |
+| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| Structural schema/ontology migration, OR (>2 modules AND >5 files) needing design exploration | `/comet` — open → design → build → verify → archive          |
+| A single bounded HEAVY signal                                                                 | `/comet-tweak` — build → verify → archive                    |
+| No HEAVY signal                                                                               | Execute directly, emit one `[NOTE]` line summarising changes |
 
-| Score | Path                                                         |
-| ----- | ------------------------------------------------------------ |
-| ≥ 4   | `/comet` — open → design → build → verify → archive          |
-| 2–3   | `/comet-tweak` — build → verify → archive                    |
-| 1     | Execute directly, emit one `[NOTE]` line summarising changes |
-| 0     | Execute directly                                             |
+### Closeout — tiered, NOT per task
 
-### Comet Closeout
-
-Do NOT declare task complete until all items are done:
-
-- [ ] Update relevant runbook and `docs/runbooks/README.md`
-- [ ] Update roadmap / wiki progress; mark workstream archived with links
-- [ ] `openspec list --json && openspec validate --all --strict`
+- **Per task:** emit one `[NOTE]` line; run only the relevant verify (§4).
+- **Per workstream archive ONLY:** update runbook + `docs/runbooks/README.md`,
+  update roadmap / wiki progress with links, then run
+  `openspec list --json && openspec validate --all --strict`.
 
 ---
 
-## 4. Verification
+## 4. Verification (run only what the change touches)
 
-```bash
+Always:
+```
 git status --short
-openspec list --json
-openspec validate --all --strict
-scripts/verify-agent-callplan-evidence.sh
-npm --prefix frontend run verify        # frontend changes only
 ```
 
+Then, by change type:
+- Schema / registry / ontology change → `openspec list --json && openspec validate --all --strict`
+- Frontend change → `npm --prefix frontend run verify`
+- Agent call-plan change → `scripts/verify-agent-callplan-evidence.sh`
+
+Do not run the full suite for edits it doesn't touch.
 Do not claim success without running the relevant command and checking output.
 
 ---
@@ -113,5 +121,5 @@ Do not claim success without running the relevant command and checking output.
 
 - Respond in Chinese unless asked otherwise.
 - Use English for code, identifiers, filenames, env vars, and comments.
-- State assumptions and success criteria before implementation work.
+- State assumptions and success criteria in one line before non-trivial implementation.
 - Mention exact file paths changed when updating docs or architecture.

@@ -18,7 +18,7 @@ verification_report: docs/superpowers/reports/2026-08-04-sap-nexus-read-plan-exe
 branch_status: handled
 created_at: 2026-08-04
 verified_at: 2026-08-04
-archived: false
+archived: true
 direct_override: null
 build_command: npm --prefix frontend run verify
 verify_command: npm --prefix frontend run verify
