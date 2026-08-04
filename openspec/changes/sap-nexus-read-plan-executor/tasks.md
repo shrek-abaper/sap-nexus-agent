@@ -35,8 +35,8 @@
 
 ## 7. Per-node SSE 事件
 
-- [ ] 7.1 新增 per-node SSE 事件类型（`node_ready` / `node_validating` / `node_executing` / `node_succeeded` / `node_failed` / `node_timed_out` / `node_cancelled` 等）
-- [ ] 7.2 复用现有 SSE 框架，不破坏 `emitEventsFromOutcome` 单能力事件
+- [x] 7.1 新增 per-node SSE 事件类型（`node_ready` / `node_validating` / `node_executing` / `node_succeeded` / `node_failed` / `node_timed_out` / `node_cancelled` 等）
+- [x] 7.2 复用现有 SSE 框架，不破坏 `emitEventsFromOutcome` 单能力事件
 
 ## 8. 测试（TDD：fake Gateway 先行）
 

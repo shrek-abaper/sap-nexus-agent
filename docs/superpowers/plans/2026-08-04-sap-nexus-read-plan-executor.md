@@ -1192,7 +1192,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 
 **Design Doc 参考:** §3 Q4 落实（单个 `node_state_changed` 事件）+ §5 契约表 SSE 行
 
-- [ ] **Step 1: 修改 run-event-schema.ts 新增事件类型**
+- [x] **Step 1: 修改 run-event-schema.ts 新增事件类型**
 
 在 `AgentRunEventType` union 中追加 `"node_state_changed"`：
 
@@ -1243,7 +1243,7 @@ export type AgentRunEvent = {
 };
 ```
 
-- [ ] **Step 2: 写失败测试 - SSE emitter**
+- [x] **Step 2: 写失败测试 - SSE emitter**
 
 ```typescript
 // frontend/src/runtime/plan-executor/sse-emitter.test.ts
@@ -1290,12 +1290,12 @@ describe("emitNodeStateChanged", () => {
 });
 ```
 
-- [ ] **Step 3: 运行测试确认失败**
+- [x] **Step 3: 运行测试确认失败**
 
 Run: `npm --prefix frontend test -- --run sse-emitter.test`
 Expected: FAIL（模块不存在）
 
-- [ ] **Step 4: 实现 sse-emitter.ts**
+- [x] **Step 4: 实现 sse-emitter.ts**
 
 ```typescript
 // frontend/src/runtime/plan-executor/sse-emitter.ts
@@ -1329,17 +1329,17 @@ export function emitNodeStateChanged(
 }
 ```
 
-- [ ] **Step 5: 运行测试确认通过**
+- [x] **Step 5: 运行测试确认通过**
 
 Run: `npm --prefix frontend test -- --run sse-emitter.test`
 Expected: PASS
 
-- [ ] **Step 6: 运行现有 SSE 相关测试确认无回归**
+- [x] **Step 6: 运行现有 SSE 相关测试确认无回归**
 
 Run: `npm --prefix frontend test -- --run jsonl-run-store.test`
 Expected: PASS（新增可选字段不破坏现有事件）
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add frontend/src/runtime/run-event-schema.ts frontend/src/runtime/plan-executor/sse-emitter.ts frontend/src/runtime/plan-executor/sse-emitter.test.ts

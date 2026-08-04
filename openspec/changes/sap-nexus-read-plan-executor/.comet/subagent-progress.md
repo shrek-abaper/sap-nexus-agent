@@ -10,14 +10,15 @@
 
 ## Current Task
 
-- Plan Task: Task 6 - Fake Gateway + GatewayClient 接口
-- Mapped OpenSpec task: 8.1
+- Plan Task: Task 7 - node_state_changed SSE 事件 (SCOPE REDUCED)
+- Mapped OpenSpec tasks: 7.1, 7.2
 - Stage: implementing
-- BASE commit (review-package): 9ce0eee59aee5d994f318b2c1528f8db1c45d1d9
-- Brief: .superpowers/sdd/task-6-brief.md
-- Report: .superpowers/sdd/task-6-report.md
+- BASE commit (review-package): 35d668321bed190ed87c6857551ba66115f518e6
+- Brief: .superpowers/sdd/task-7-brief.md
+- Report: .superpowers/sdd/task-7-report.md
 - Implementer model: sonnet
-- Allowed files: frontend/src/runtime/plan-executor/fake-gateway.ts, fake-gateway.test.ts (new only)
+- Allowed files: frontend/src/runtime/plan-executor/sse-emitter.ts, sse-emitter.test.ts (new only). DO NOT modify run-event-schema.ts (Step 1 already done in Task 4 fix).
+- Scope note: Task 4 fix already added `node_state_changed` to AgentRunEventType union + nodeId?/fromState?/toState?/attempt? fields in run-event-schema.ts. Task 7 skips Step 1, creates sse-emitter.ts only.
 
 ## Completed Tasks
 
@@ -25,7 +26,8 @@
 - Task 2 (v2 parser+types): DONE, commit 4dd082a, ✅ Approved. Minor deferred: as-cast on parameterBindings (Task 8 add source-kind validation), permissive emptiness guard, O(n*m) lookup, unused _drop.
 - Task 3 (node state machine): DONE, commits 4e2f7ba+8a0d856, ✅ Approved (round 1 fix: BLOCKED_APPROVAL lockdown test). Minor #3/#4 deferred.
 - Task 4 (durable node ledger): DONE, commits a691fdc+8549e1e, ✅ Approved (round 1 fix: dual-write appendEvent + node_state_changed event type). Minor deferred. NOTE: node_state_changed event type pulled from Task 7.
-- Task 5 (DAG scheduler): DONE, commits 51d50de+b8cf58d, ✅ Approved (round 1 fix: data edges in getDependencies + BLOCKED_APPROVAL exclusion + invalid env tests). Minor #4 deferred (test name).
+- Task 5 (DAG scheduler): DONE, commits 51d50de+b8cf58d, ✅ Approved (round 1 fix: data edges + BLOCKED_APPROVAL exclusion + invalid env tests). Minor #4 deferred.
+- Task 6 (fake gateway): DONE, commit 28251e1, ✅ Approved. Minor deferred: parameters ref not clone, single-result-per-capability Map (Task 8-11 test author notes).
 
 ## Task -> OpenSpec Mapping
 
@@ -36,8 +38,8 @@
 | Task 3 | 2.1, 2.3 | done |
 | Task 4 | 2.2 | done |
 | Task 5 | 3.1, 3.2 | done |
-| Task 6 | 8.1 | implementing |
-| Task 7 | 7.1, 7.2 | pending (scope reduced: SSE emitter only, event type done in Task 4) |
+| Task 6 | 8.1 | done |
+| Task 7 | 7.1, 7.2 | implementing (scope reduced: SSE emitter only) |
 | Task 8 | 3.3, 4.1, 4.2, 4.3 | pending |
 | Task 9 | 5.1, 5.2 | pending |
 | Task 10 | 6.1, 6.2, 6.3 | pending |
