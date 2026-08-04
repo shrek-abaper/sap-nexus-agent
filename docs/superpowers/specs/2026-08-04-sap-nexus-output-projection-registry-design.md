@@ -13,6 +13,7 @@ canonical_spec: openspec
 | Change | `sap-nexus-output-projection-registry` |
 | Runbook | 17 - Composite Fact and Output Projection |
 | Date | 2026-08-04 |
+| Last Updated | 2026-08-05 (Task 4 review patch) |
 | Depends On | Runbook 16 (READ PlanExecutor) |
 | Unblocks | Runbook 18 (Recommendation) |
 | Status | draft |
@@ -65,7 +66,7 @@ frontend/src/runtime/
 
 ```
 PlanExecutor.execute()
-  └─ SUCCEEDED node ─> 保留 NodeFactRecord { nodeId, capabilityId, parameters, executeData, nodeExecutedAt }
+  └─ SUCCEEDED node ─> 保留 NodeFactRecord { nodeId, agentTraceId=runId, capabilityId, parameters, executeData, nodeExecutedAt }
                         （idempotency cache 扩展持久化 + succeededNodeResults 暴露；向后兼容）
                                         │
                                         ▼
@@ -104,7 +105,7 @@ type ReasoningFact = {
 };
 
 type NodeFactRecord = {           // executor 扩展保留
-  nodeId: string; capabilityId: string;
+  nodeId: string; agentTraceId: string; capabilityId: string;
   parameters: Record<string, string>;
   executeData: Record<string, unknown>;  // 保留的 GatewayExecuteResult.data
   nodeExecutedAt: string;                 // ledger updatedAt
@@ -183,6 +184,13 @@ type FactBuilderDeclaration = {
 - `outputHash = sha256(canonical(normalized facts) + projectionVersion + snapshotId)`。
 - 相同输入 -> 相同 hash；fact 值 / version / snapshotId 任一不同 -> 不同 hash。
 
+### 6.7 FactBuilder normalization and correlation
+
+- `NodeFactRecord.agentTraceId` 使用当前 `PlanExecutor.execute(..., runId, ...)` 的 `runId`。fresh、cache replay 和 existing-`SUCCEEDED` hydration 均从当前 run context 注入；该字段不从 Gateway trace 推导，也无需重复持久化到 idempotency payload。
+- FactBuilder 将 `ReasoningFact.agentTraceId` 与 `traceId` 均设置为 `record.agentTraceId`，与 Python builder 的 agent-level correlation 语义一致；`gatewayTraceId` 仅承载 Gateway correlation。
+- PO `orderQuantity` 接受有限 JS number 或合法有限 decimal string。`ReasoningFact.value` 使用确定性 number 归一值，evidence 保留白名单原值；`NaN`、`Infinity` 和非法字符串不得进入 value。
+- PO rows 使用 total order：`purchaseOrder/material/plant/purchaseOrderItem/normalizedQuantity/unit/canonicalWhitelistedRow`。完全相同的重复行可互换；任何非相同行不得依赖 Gateway 输入顺序决定 index-based `factId`。
+
 ## 7. 错误处理 / fail-closed
 
 - 未知 `projectionId@version` -> fail-closed，结构化失败，不产 snapshot。
@@ -200,6 +208,7 @@ await this.store.markExecuted(idempotencyKey, { status: "succeeded", gatewayTrac
 
 扩展为保留 `executeData` + `nodeExecutedAt`：
 - `markExecuted` payload 增补 `{ data: executeResult.data, parameters, capabilityId, nodeExecutedAt }`（idempotency cache 持久化，recovery 时可重建）。
+- `NodeFactRecord.agentTraceId` 由当前 `runId` 注入；fresh 和所有 replay/hydration 路径使用同一 run correlation，不把 `gatewayTraceId` 冒充 agent trace。
 - executor 维护 `nodeResults: Map<nodeId, NodeFactRecord>`，成功时填入，最终汇入 `PlanExecutorResult.succeededNodeResults`。
 - idempotent replay 分支（`cachedResult` 命中）从 cache 重建 `NodeFactRecord`，保证 recovery 一致。
 - `NodeLedgerEntry` 不改（仍存 `resultRef=traceId`）；data 保留是并行的旁路结构，不污染状态机。
@@ -216,6 +225,8 @@ await this.store.markExecuted(idempotencyKey, { status: "succeeded", gatewayTrac
 8. 隔离：projection 仅收 normalized facts + ledger metadata
 9. fail-closed：未知 projectionId@version
 10. executor 回归：Runbook 16 套件不改动通过
+11. trace correlation：fresh/restart/builder facts 的 `agentTraceId` / `traceId` 等于 runId，且区别于 `gatewayTraceId`
+12. PO normalization：decimal string 保留 evidence 并归一为有限 number；相同业务键的输入 permutation 产生稳定 facts/factIds
 
 验证命令：`npm --prefix frontend run verify` + `openspec validate --all --strict`。
 

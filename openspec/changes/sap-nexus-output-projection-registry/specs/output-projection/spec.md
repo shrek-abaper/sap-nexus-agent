@@ -39,6 +39,26 @@ The system SHALL provide a `ProjectionInputAssembler` that consumes a `PlanExecu
 - **AND** records the node's required FactType in `missingFacts` with reason `no_fact_builder`
 - **AND** the projection yields `incomplete`
 
+#### Scenario: Fact correlation uses the executor run identity
+
+- **WHEN** a registered FactBuilder builds facts for a successful node
+- **THEN** every fact's `agentTraceId` and `traceId` equal the trusted `agentTraceId` carried by that node record
+- **AND** `gatewayTraceId` remains the separate Gateway correlation identifier
+- **AND** none of those identifiers is an empty placeholder
+
+#### Scenario: Purchase-order quantities normalize deterministically
+
+- **WHEN** PO items contain a finite number or a valid finite decimal string quantity
+- **THEN** the builder emits the same normalized numeric `value` for equivalent quantities
+- **AND** preserves the whitelisted source value in evidence
+- **AND** rejects `NaN`, infinity, and invalid numeric strings from numeric value output
+
+#### Scenario: Purchase-order fact identity is input-order independent
+
+- **WHEN** multiple PO rows share purchase order, material, and plant but differ in item, quantity, unit, or other whitelisted evidence
+- **THEN** the builder applies a total deterministic ordering before assigning fact ids
+- **AND** permutations of the same input rows produce identical facts and fact ids
+
 ### Requirement: MaterialSupplySnapshot projection produces composite fact bundle
 
 The system SHALL provide a `material-supply-snapshot` projection registered in the `OutputProjectionRegistry` that projects a `PlanExecutionRecord` plus successful `ReasoningFact[]` into a `MaterialSupplySnapshot` consisting of `{ asOf, sourceFreshness, completeness, facts, lineage, missingFacts, failedNodes, limitations }`. The projection SHALL treat the snapshot as a composite fact bundle with lineage and metadata, NOT a derived business metric, and MUST NOT compute procurement quantities, dates, or purchasing groups. Every output fact field SHALL be traceable via `lineage` to its source fact and evidence.
