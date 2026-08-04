@@ -10,33 +10,25 @@
 
 ## Current Task
 
-- Plan Task: Task 11 - 依赖阻塞场景验证
-- Mapped OpenSpec task: 8.3
+- Plan Task: Task 12 - v1 回归 + 全量验证 + 文档更新 (FINAL)
+- Mapped OpenSpec tasks: 8.5, 9.1, 9.2, 9.3, 9.4
 - Stage: implementing
-- BASE commit (review-package): 78478c18411f740fb33af5fab595a9c0c1788967
-- Brief: .superpowers/sdd/task-11-brief.md
-- Report: .superpowers/sdd/task-11-report.md
+- BASE commit (review-package): 6fe1ef4c74424ab6696754721956cb76ac346f72
+- Brief: .superpowers/sdd/task-12-brief.md
+- Report: .superpowers/sdd/task-12-report.md
 - Implementer model: sonnet
-- Allowed files: see brief (test-focused, dependency chain scenarios)
+- Allowed files: docs/runbooks/README.md (modify), roadmap row 27 (modify). Verification commands (run, no code changes).
+- Note: 8.4 (real Gateway integration) explicitly deferred to deployment verification.
 
 ## Completed Tasks
 
-- Task 1-9: DONE (see prior checkpoints, all ✅ Approved, various Minor deferred to ledger).
-- Task 10 (recovery + idempotency): DONE, commit 61e7e1d, ✅ Approved. Minor deferred: cachedResult.status check, sanitization collision (dots), lookupExecuted order, lease audit trail.
+- Task 1-10: DONE (all ✅ Approved, various Minor deferred to ledger).
+- Task 11 (dependency scenarios): DONE, commit 66e1650, ✅ Approved. TDD revealed real bug (dependents of FAILED dropped); fixed +14-line BLOCKED_DEPENDENCY sweep. Minor deferred: comment precision, O(n) lookup.
 
 ## Task -> OpenSpec Mapping
 
 | Plan Task | OpenSpec tasks.md | Stage |
 |-----------|-------------------|-------|
-| Task 1 | 1.1 | done |
-| Task 2 | 1.2, 1.3 | done |
-| Task 3 | 2.1, 2.3 | done |
-| Task 4 | 2.2 | done |
-| Task 5 | 3.1, 3.2 | done |
-| Task 6 | 8.1 | done |
-| Task 7 | 7.1, 7.2 | done |
-| Task 8 | 3.3, 4.1, 4.2, 4.3 | done |
-| Task 9 | 5.1, 5.2 | done |
-| Task 10 | 6.1, 6.2, 6.3 | done |
-| Task 11 | 8.3 | implementing |
-| Task 12 | 8.5, 9.1-9.4 | pending |
+| Task 1-11 | 1.1-8.3 (excl 8.4) | done |
+| Task 12 | 8.5, 9.1, 9.2, 9.3, 9.4 | implementing |
+| (deferred) | 8.4 (real Gateway integration) | deployment verification |

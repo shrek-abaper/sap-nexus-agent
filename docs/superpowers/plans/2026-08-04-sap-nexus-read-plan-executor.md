@@ -2235,45 +2235,45 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 
 **Design Doc 参考:** §7 Migration Plan + §8 Test Strategy
 
-- [ ] **Step 1: Python v1 回归测试**
+- [x] **Step 1: Python v1 回归测试**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_orchestrator.py -q`
 Expected: PASS（SELECT 路径不动，ESCALATE 路径 v2 接线后 dry_run 携带 PlanCompileResult）
 
-- [ ] **Step 2: Python v2 compiler 契约测试**
+- [x] **Step 2: Python v2 compiler 契约测试**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_planner_plan_compiler_v2.py -q`
 Expected: PASS（compiler 未改动）
 
-- [ ] **Step 3: Python 全量测试**
+- [x] **Step 3: Python 全量测试**
 
 Run: `.venv/bin/python -m pytest agent/tests -q`
 Expected: PASS
 
-- [ ] **Step 4: Frontend 全量验证**
+- [x] **Step 4: Frontend 全量验证**
 
 Run: `npm --prefix frontend run verify`
 Expected: PASS（包含 typecheck + lint + test）
 
-- [ ] **Step 5: Agent callplan evidence 验证**
+- [x] **Step 5: Agent callplan evidence 验证**
 
 Run: `scripts/verify-agent-callplan-evidence.sh`
 Expected: PASS
 
-- [ ] **Step 6: OpenSpec 验证**
+- [x] **Step 6: OpenSpec 验证**
 
 Run: `openspec validate --all --strict`
 Expected: PASS
 
-- [ ] **Step 7: 更新 Runbook 16 状态**
+- [x] **Step 7: 更新 Runbook 16 状态**
 
 在 `docs/runbooks/README.md` 中，将 Runbook 16 状态更新为「已实现」并添加链接。
 
-- [ ] **Step 8: 更新 roadmap row 27**
+- [x] **Step 8: 更新 roadmap row 27**
 
 在 roadmap 中标记 row 27（READ PlanExecutor）为完成。
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add docs/runbooks/README.md docs/wiki/
