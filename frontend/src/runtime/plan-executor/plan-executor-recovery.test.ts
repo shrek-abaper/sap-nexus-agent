@@ -64,6 +64,7 @@ describe("PlanExecutor recovery", () => {
     // node.po WAS executed
     const poValCalls = gateway.validateCalls.filter((c) => c.capabilityId === "MM.PurchaseOrder.GetList");
     expect(poValCalls).toHaveLength(1);
+    expect(result.succeededNodeResults.map((record) => record.nodeId)).toEqual(["node.po"]);
   });
 
   it("FAILED node stays FAILED on restart (no auto-retry)", async () => {
@@ -101,6 +102,33 @@ describe("PlanExecutor recovery", () => {
     expect(result2.succeeded).toHaveLength(2);
     // No additional Gateway calls
     expect(gateway.validateCalls.length).toBe(firstCallCount);
+  });
+
+  it("restart restores succeeded node data without re-executing Gateway", async () => {
+    const store = new JsonlRunStore(dir, "worker-A");
+    await store.save("run-1", seed("run-1"));
+    const gateway = new FakeGateway();
+    gateway.setExecuteResult("MM.Inventory.GetAvailability", {
+      success: true,
+      traceId: "gw-inv",
+      data: { availableQuantity: 7 },
+    });
+
+    const first = await new PlanExecutor(store, gateway, "worker-A").execute(
+      dualReadGraph(),
+      "run-1",
+      SNAP
+    );
+    const firstExecuteCallCount = gateway.executeCalls.length;
+    const second = await new PlanExecutor(store, gateway, "worker-A").execute(
+      dualReadGraph(),
+      "run-1",
+      SNAP
+    );
+
+    expect(first.succeededNodeResults).toHaveLength(2);
+    expect(second.succeededNodeResults).toEqual(first.succeededNodeResults);
+    expect(gateway.executeCalls).toHaveLength(firstExecuteCallCount);
   });
 
   it("lease conflict -> fail-closed, no Gateway calls", async () => {
@@ -144,5 +172,40 @@ describe("PlanExecutor recovery", () => {
     // node.po: no idempotency entry -> normal execution
     const poValCalls = gateway.validateCalls.filter((c) => c.capabilityId === "MM.PurchaseOrder.GetList");
     expect(poValCalls).toHaveLength(1);
+    expect(result.succeededNodeResults.map((record) => record.nodeId)).not.toContain("node.inv");
+  });
+
+  it("idempotency replay restores a complete cached node result with its original time", async () => {
+    const store = new JsonlRunStore(dir, "worker-A");
+    await store.save("run-1", seed("run-1"));
+    await store.markExecuted("run-1:node.inv:0:material=M1", {
+      status: "succeeded",
+      gatewayTraceId: "cached-trace",
+      data: { availableQuantity: 7 },
+      parameters: { material: "M1" },
+      capabilityId: "MM.Inventory.GetAvailability",
+      producesFactTypes: ["InventoryAvailability"],
+      nodeExecutedAt: "2026-08-04T00:00:00Z",
+    });
+
+    const gateway = new FakeGateway();
+    const result = await new PlanExecutor(store, gateway, "worker-A").execute(
+      dualReadGraph(),
+      "run-1",
+      SNAP
+    );
+
+    expect(result.succeededNodeResults).toContainEqual({
+      nodeId: "node.inv",
+      capabilityId: "MM.Inventory.GetAvailability",
+      parameters: { material: "M1" },
+      producesFactTypes: ["InventoryAvailability"],
+      gatewayTraceId: "cached-trace",
+      executeData: { availableQuantity: 7 },
+      nodeExecutedAt: "2026-08-04T00:00:00Z",
+    });
+    expect(gateway.executeCalls.map((call) => call.capabilityId)).not.toContain(
+      "MM.Inventory.GetAvailability"
+    );
   });
 });

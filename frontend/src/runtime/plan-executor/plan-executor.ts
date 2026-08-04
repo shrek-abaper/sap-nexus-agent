@@ -1,11 +1,12 @@
 // frontend/src/runtime/plan-executor/plan-executor.ts
-import type { DurableRunStore } from "../durable/types";
+import type { DurableRunStore, WorkbenchOutcome } from "../durable/types";
 import type { AgentRunEvent } from "../run-event-schema";
 import type {
   GatewayClient,
   PlanGraphV2,
   PlanExecutorResult,
   NodeLedgerEntry,
+  NodeFactRecord,
   NodeState,
   ParameterBinding,
 } from "./types";
@@ -81,6 +82,16 @@ export class PlanExecutor {
     try {
       // Step 4: load existing node ledger (recovery)
       let ledger = await loadNodeLedger(this.store, runId);
+      const nodeResults = new Map<string, NodeFactRecord>();
+
+      // Revisit recovered successes only to hydrate their cached result data.
+      await Promise.all(
+        graph.readPartition
+          .filter((nodeId) => ledger[nodeId]?.state === NS.SUCCEEDED)
+          .map((nodeId) =>
+            this.executeNode(graph, runId, expectedSnapshotId, nodeId, ledger, nodeResults)
+          )
+      );
 
       // Step 5-6: schedule + execute ready nodes
       const maxConcurrency = getMaxConcurrency();
@@ -88,7 +99,7 @@ export class PlanExecutor {
 
       while (pending.length > 0 && !this.cancelled) {
         const executing = pending.map(async (nodeId) => {
-          await this.executeNode(graph, runId, expectedSnapshotId, nodeId, ledger);
+          await this.executeNode(graph, runId, expectedSnapshotId, nodeId, ledger, nodeResults);
         });
         await Promise.all(executing);
         // Reload ledger after execution round
@@ -132,7 +143,7 @@ export class PlanExecutor {
 
       // Build result from final ledger
       const finalLedger = await loadNodeLedger(this.store, runId);
-      return this.buildResult(runId, expectedSnapshotId, finalLedger);
+      return this.buildResult(runId, expectedSnapshotId, finalLedger, nodeResults);
     } finally {
       await this.store.release(runId, this.workerId);
     }
@@ -143,28 +154,36 @@ export class PlanExecutor {
     runId: string,
     snapshotId: string,
     nodeId: string,
-    ledger: Record<string, NodeLedgerEntry>
+    ledger: Record<string, NodeLedgerEntry>,
+    nodeResults: Map<string, NodeFactRecord>
   ): Promise<void> {
     const node = graph.nodes.find((n) => n.nodeId === nodeId);
     if (!node) return;
 
     const inputHash = this.computeInputHash(node.parameterBindings);
 
-    // Action / non-read-only node -> BLOCKED_APPROVAL
-    if (node.governance.requiresApproval) {
-      await this.transition(runId, snapshotId, nodeId, null, NS.BLOCKED_APPROVAL, 0, inputHash);
-      return;
-    }
-
-    // Already SUCCEEDED (skip on recovery)
     const existing = ledger[nodeId];
-    if (existing?.state === NS.SUCCEEDED) return;
-
     const attempt = existing?.attempt ?? 0;
 
     // Idempotency key = runId + nodeId + attempt + inputHash (Task 10)
     const idempotencyKey = `${runId}:${nodeId}:${attempt}:${inputHash}`;
     const cachedResult = await this.store.lookupExecuted(idempotencyKey);
+    const cachedRecord = cachedResult
+      ? this.toNodeFactRecord(nodeId, cachedResult)
+      : null;
+
+    // A recovered success may hydrate data from a complete cache, but it must
+    // never re-enter the state machine or call Gateway.
+    if (existing?.state === NS.SUCCEEDED) {
+      if (cachedRecord) nodeResults.set(nodeId, cachedRecord);
+      return;
+    }
+
+    // Action / non-read-only node -> BLOCKED_APPROVAL
+    if (node.governance.requiresApproval) {
+      await this.transition(runId, snapshotId, nodeId, null, NS.BLOCKED_APPROVAL, 0, inputHash);
+      return;
+    }
 
     // If node is not yet in READY (initial pickup or BLOCKED_DEPENDENCY cleared),
     // transition to READY first. The 9-state machine requires null/BLOCKED_DEPENDENCY
@@ -186,6 +205,7 @@ export class PlanExecutor {
       // using the recorded result (validates -> executing -> succeeded)
       await this.transition(runId, snapshotId, nodeId, NS.VALIDATING, NS.EXECUTING, attempt, inputHash);
       await this.transition(runId, snapshotId, nodeId, NS.EXECUTING, NS.SUCCEEDED, attempt, inputHash, cachedResult.gatewayTraceId ?? null);
+      if (cachedRecord) nodeResults.set(nodeId, cachedRecord);
       return;
     }
 
@@ -228,12 +248,36 @@ export class PlanExecutor {
     }
 
     // EXECUTING -> SUCCEEDED
-    await this.transition(runId, snapshotId, nodeId, NS.EXECUTING, NS.SUCCEEDED, attempt, inputHash, executeResult.traceId ?? null);
+    const succeededEntry = await this.transition(
+      runId,
+      snapshotId,
+      nodeId,
+      NS.EXECUTING,
+      NS.SUCCEEDED,
+      attempt,
+      inputHash,
+      executeResult.traceId ?? null
+    );
+    const record: NodeFactRecord = {
+      nodeId,
+      capabilityId: node.capabilityId,
+      parameters,
+      producesFactTypes: [...node.producesFactTypes],
+      gatewayTraceId: executeResult.traceId ?? "",
+      executeData: executeResult.data ?? {},
+      nodeExecutedAt: succeededEntry.updatedAt,
+    };
+    nodeResults.set(nodeId, record);
 
     // Record idempotency: future replay with same key skips Gateway calls (Task 10)
     await this.store.markExecuted(idempotencyKey, {
       status: "succeeded",
-      gatewayTraceId: executeResult.traceId ?? null,
+      gatewayTraceId: record.gatewayTraceId,
+      data: record.executeData,
+      parameters: record.parameters,
+      capabilityId: record.capabilityId,
+      producesFactTypes: record.producesFactTypes,
+      nodeExecutedAt: record.nodeExecutedAt,
     });
   }
 
@@ -246,7 +290,7 @@ export class PlanExecutor {
     attempt: number,
     inputHash: string,
     resultRef: string | null = null
-  ): Promise<void> {
+  ): Promise<NodeLedgerEntry> {
     // Acquire serialized lock (transitionNode read-modify-write is not atomic)
     const wait = this.transitionChain;
     let release!: () => void;
@@ -276,9 +320,34 @@ export class PlanExecutor {
       const emitFn = (event: AgentRunEvent) => this.sseBroadcast(event);
       const { nextSequence } = emitNodeStateChanged(emitFn, runId, nodeId, fromState ?? "INITIAL", toState, attempt, this.sequence);
       this.sequence = nextSequence;
+      return entry;
     } finally {
       release();
     }
+  }
+
+  private toNodeFactRecord(
+    nodeId: string,
+    cachedResult: WorkbenchOutcome
+  ): NodeFactRecord | null {
+    if (
+      !cachedResult.data ||
+      !cachedResult.parameters ||
+      typeof cachedResult.capabilityId !== "string" ||
+      !Array.isArray(cachedResult.producesFactTypes) ||
+      typeof cachedResult.nodeExecutedAt !== "string"
+    ) {
+      return null;
+    }
+    return {
+      nodeId,
+      capabilityId: cachedResult.capabilityId,
+      parameters: cachedResult.parameters,
+      producesFactTypes: cachedResult.producesFactTypes,
+      gatewayTraceId: cachedResult.gatewayTraceId ?? "",
+      executeData: cachedResult.data,
+      nodeExecutedAt: cachedResult.nodeExecutedAt,
+    };
   }
 
   private resolveParameters(bindings: ParameterBinding[]): Record<string, string> {
@@ -345,6 +414,7 @@ export class PlanExecutor {
       snapshotId,
       nodeLedger: {},
       succeeded: [],
+      succeededNodeResults: [],
       failed: [],
       timedOut: [],
       cancelled: [],
@@ -355,7 +425,8 @@ export class PlanExecutor {
   private buildResult(
     runId: string,
     snapshotId: string,
-    ledger: Record<string, NodeLedgerEntry>
+    ledger: Record<string, NodeLedgerEntry>,
+    nodeResults: Map<string, NodeFactRecord>
   ): PlanExecutorResult {
     const succeeded: string[] = [];
     const failed: string[] = [];
@@ -372,6 +443,18 @@ export class PlanExecutor {
         case NS.BLOCKED_APPROVAL: blocked.push(nodeId); break;
       }
     }
-    return { runId, snapshotId, nodeLedger: ledger, succeeded, failed, timedOut, cancelled, blocked };
+    return {
+      runId,
+      snapshotId,
+      nodeLedger: ledger,
+      succeeded,
+      succeededNodeResults: [...nodeResults.values()].sort((a, b) =>
+        a.nodeId.localeCompare(b.nodeId)
+      ),
+      failed,
+      timedOut,
+      cancelled,
+      blocked,
+    };
   }
 }

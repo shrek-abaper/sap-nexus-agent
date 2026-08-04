@@ -42,6 +42,11 @@ export type WorkbenchOutcome = {
   dryRun?: Record<string, unknown> | null;
   plannerFailure?: Record<string, unknown> | null;
   lastContext?: LastContext | null;
+  data?: Record<string, unknown>;
+  parameters?: Record<string, string>;
+  capabilityId?: string;
+  producesFactTypes?: string[];
+  nodeExecutedAt?: string;
 };
 
 export type AgentRunRecord = {

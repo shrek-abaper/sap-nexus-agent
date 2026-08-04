@@ -105,6 +105,39 @@ describe("PlanExecutor", () => {
     expect(gateway.executeCalls).toHaveLength(2);
   });
 
+  it("exposes succeeded node data without changing legacy result semantics", async () => {
+    const store = new JsonlRunStore(dir, "worker-A");
+    await store.save("run-1", seed("run-1"));
+    const gateway = new FakeGateway();
+    gateway.setExecuteResult("MM.Inventory.GetAvailability", {
+      success: true,
+      traceId: "gw-inv",
+      data: { availableQuantity: 7, dataAsOf: "2026-08-04T00:00:00Z" },
+    });
+
+    const result = await new PlanExecutor(store, gateway, "worker-A").execute(
+      singleReadNodeGraph(),
+      "run-1",
+      SNAP
+    );
+
+    expect(result.succeeded).toEqual(["node.inv"]);
+    expect(result.succeededNodeResults).toEqual([
+      expect.objectContaining({
+        nodeId: "node.inv",
+        capabilityId: "MM.Inventory.GetAvailability",
+        parameters: { material: "M1", plant: "5300" },
+        producesFactTypes: ["InventoryAvailability"],
+        gatewayTraceId: "gw-inv",
+        executeData: { availableQuantity: 7, dataAsOf: "2026-08-04T00:00:00Z" },
+        nodeExecutedAt: expect.any(String),
+      }),
+    ]);
+    expect(result.nodeLedger["node.inv"].resultRef).toBe("gw-inv");
+    expect(result.failed).toEqual([]);
+    expect(result.timedOut).toEqual([]);
+  });
+
   it("persists SUCCEEDED state to node ledger", async () => {
     const store = new JsonlRunStore(dir, "worker-A");
     await store.save("run-1", seed("run-1"));

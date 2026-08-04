@@ -84,11 +84,22 @@ export interface GatewayClient {
   execute(capabilityId: string, parameters: Record<string, string>): Promise<GatewayExecuteResult>;
 }
 
+export type NodeFactRecord = {
+  nodeId: string;
+  capabilityId: string;
+  parameters: Record<string, string>;
+  producesFactTypes: string[];
+  gatewayTraceId: string;
+  executeData: Record<string, unknown>;
+  nodeExecutedAt: string;
+};
+
 export type PlanExecutorResult = {
   runId: string;
   snapshotId: string;
   nodeLedger: Record<string, NodeLedgerEntry>;
   succeeded: string[];
+  succeededNodeResults: NodeFactRecord[];
   failed: string[];
   timedOut: string[];
   cancelled: string[];
