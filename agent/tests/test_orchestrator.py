@@ -666,7 +666,7 @@ def test_workbench_dict_select_path_carries_match_decision():
 from pathlib import Path
 
 from sap_nexus_agent.match_decision import EscalationHandoff
-from sap_nexus_agent.planner.plan_compiler import DryRunResult
+from sap_nexus_agent.planner.plan_compiler_v2 import PlanCompileResult
 from sap_nexus_agent.semantic_planning import (
     build_registry_snapshot,
     load_semantic_sources,
@@ -700,8 +700,8 @@ def _multi_intent_parse_result():
 
 
 def test_run_query_escalate_compiles_dry_run_from_handoff():
-    """ESCALATE_TO_PLANNER -> orchestrator calls PlanCompiler.compile_dry_run;
-    AgentOutcome carries a DryRunResult with a 2-node PlanGraph (inventory +
+    """ESCALATE_TO_PLANNER -> orchestrator calls v2 compile_plan_v2_from_handoff;
+    AgentOutcome carries a PlanCompileResult with a 2-node PlanGraph (inventory +
     purchase_order). No Gateway validate/execute."""
     gateway = FakeGatewayClient()
     snapshot, sources = _real_planner_sources()
@@ -718,7 +718,7 @@ def test_run_query_escalate_compiles_dry_run_from_handoff():
     assert outcome.match_decision is not None
     assert outcome.match_decision.decision_type == "ESCALATE_TO_PLANNER"
     assert outcome.dry_run is not None
-    assert isinstance(outcome.dry_run, DryRunResult)
+    assert isinstance(outcome.dry_run, PlanCompileResult)
     nodes = outcome.dry_run.plan_graph["nodes"]
     assert len(nodes) == 2
     capability_ids = {n["capabilityId"] for n in nodes}
@@ -730,9 +730,10 @@ def test_run_query_escalate_compiles_dry_run_from_handoff():
     assert gateway.execute_calls == []
 
 
-def test_run_query_escalate_dry_run_binds_goal_constraints_from_matched_intents():
-    """Dry-run plan_graph binds identifier inputs via goalConstraint sources
-    derived from handoff.matched_intents parameters (material + plant)."""
+def test_run_query_escalate_dry_run_binds_identifier_inputs_from_matched_intents():
+    """v2 plan_graph binds single-capability identifier inputs via literal
+    sources (v2 design: GoalConstraint reserved for cross-capability shared
+    params). material + plant are bound with correct values + semantic types."""
     gateway = FakeGatewayClient()
     snapshot, sources = _real_planner_sources()
 
@@ -773,8 +774,15 @@ def test_run_query_escalate_dry_run_binds_goal_constraints_from_matched_intents(
     bindings = inv_nodes[0]["parameterBindings"]
     bound_names = {b["parameterName"] for b in bindings}
     assert {"material", "plant"}.issubset(bound_names)
+    # v2 binds single-capability identifier params as literal sources (not
+    # goalConstraint, which is reserved for cross-capability shared params).
     source_kinds = {b["source"]["kind"] for b in bindings}
-    assert source_kinds == {"goalConstraint"}
+    assert source_kinds == {"literal"}
+    # Values are preserved from matched-intent parameters.
+    material_binding = next(b for b in bindings if b["parameterName"] == "material")
+    assert material_binding["source"]["value"] == "DEMOA2"
+    plant_binding = next(b for b in bindings if b["parameterName"] == "plant")
+    assert plant_binding["source"]["value"] == "5100"
 
 
 def test_run_query_escalate_dry_run_does_not_call_gateway():
@@ -860,6 +868,34 @@ def test_workbench_dict_dry_run_none_when_absent():
     payload = outcome_to_workbench_dict(outcome)
 
     assert payload["dryRun"] is None
+
+
+def test_run_query_escalate_dry_run_carries_v2_plan_compile_result():
+    """ESCALATE_TO_PLANNER -> AgentOutcome.dry_run is a v2 PlanCompileResult
+    (not v1 DryRunResult), carrying v2-only fields projection_ref /
+    rule_set_refs / snapshot_id and a plan_graph with readPartition."""
+    from sap_nexus_agent.planner.plan_compiler_v2 import PlanCompileResult
+
+    gateway = FakeGatewayClient()
+    snapshot, sources = _real_planner_sources()
+
+    outcome = run_query(
+        "查库存和采购订单",
+        gateway,
+        intent_adapter=lambda _text: _multi_intent_parse_result(),
+        snapshot=snapshot,
+        sources=sources,
+    )
+
+    assert outcome.dry_run is not None
+    assert isinstance(outcome.dry_run, PlanCompileResult)
+    # v2-only fields (absent on v1 DryRunResult)
+    assert hasattr(outcome.dry_run, "projection_ref")
+    assert hasattr(outcome.dry_run, "rule_set_refs")
+    assert hasattr(outcome.dry_run, "snapshot_id")
+    assert outcome.dry_run.snapshot_id == snapshot.snapshot_id
+    # v2 plan_graph carries readPartition (v2-only key)
+    assert "readPartition" in outcome.dry_run.plan_graph
 
 
 def test_expand_combinations_single_key():
