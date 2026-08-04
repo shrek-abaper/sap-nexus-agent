@@ -16,7 +16,8 @@ export type AgentRunEventType =
   | "run_completed"
   | "run_failed"
   | "match_decision_created"
-  | "batch_confirm_requested";
+  | "batch_confirm_requested"
+  | "node_state_changed";
 
 export type AgentRunState =
   | "idle"
@@ -62,6 +63,11 @@ export type AgentRunEvent = {
     message: string;
     stage: AgentRunState;
   };
+  // node_state_changed: plan-graph node transition audit fields (SSE replay)
+  nodeId?: string;
+  fromState?: string;
+  toState?: string;
+  attempt?: number;
 };
 
 export type AgentRunSnapshot = {

@@ -126,7 +126,8 @@ const eventLabels: Record<AgentRunEvent["type"], string> = {
   run_completed: "完成运行",
   run_failed: "运行失败",
   match_decision_created: "匹配决策",
-  batch_confirm_requested: "批量确认请求"
+  batch_confirm_requested: "批量确认请求",
+  node_state_changed: "节点状态变更"
 };
 
 export function buildWorkbenchViewModel(snapshot: AgentRunSnapshot | null): WorkbenchViewModel {

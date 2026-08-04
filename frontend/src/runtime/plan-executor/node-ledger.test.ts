@@ -72,4 +72,49 @@ describe("node ledger", () => {
     expect(loaded.nodeA.state).toBe(NodeState.SUCCEEDED);
     expect(loaded.nodeB.state).toBe(NodeState.VALIDATING);
   });
+
+  it("transitionNode appends a node_state_changed event to the event stream", async () => {
+    const store = new JsonlRunStore(dir, "worker-A");
+    await store.save("run-1", seed("run-1"));
+    await transitionNode(store, "run-1", SNAP, "nodeA", entry(NodeState.VALIDATING, 1));
+    const record = await store.load("run-1");
+    expect(record).not.toBeNull();
+    const nodeEvent = record!.events.find((e) => e.type === "node_state_changed");
+    expect(nodeEvent).toBeDefined();
+    expect(nodeEvent!.nodeId).toBe("nodeA");
+    expect(nodeEvent!.fromState).toBe("INITIAL");
+    expect(nodeEvent!.toState).toBe(NodeState.VALIDATING);
+    expect(nodeEvent!.attempt).toBe(1);
+    // seed event was sequence 1; node_state_changed must be the next sequence
+    expect(nodeEvent!.sequence).toBe(2);
+  });
+
+  it("transitionNode event sequence is monotonic across multiple transitions", async () => {
+    const store = new JsonlRunStore(dir, "worker-A");
+    await store.save("run-1", seed("run-1"));
+    await transitionNode(store, "run-1", SNAP, "nodeA", entry(NodeState.READY));
+    await transitionNode(store, "run-1", SNAP, "nodeA", entry(NodeState.VALIDATING, 1));
+    await transitionNode(store, "run-1", SNAP, "nodeB", entry(NodeState.EXECUTING));
+    const record = await store.load("run-1");
+    const nodeEvents = record!.events.filter((e) => e.type === "node_state_changed");
+    expect(nodeEvents).toHaveLength(3);
+    // sequences must be strictly increasing
+    expect(nodeEvents[0]!.sequence).toBe(2);
+    expect(nodeEvents[1]!.sequence).toBe(3);
+    expect(nodeEvents[2]!.sequence).toBe(4);
+  });
+
+  it("transitionNode records prior state as fromState on subsequent transitions", async () => {
+    const store = new JsonlRunStore(dir, "worker-A");
+    await store.save("run-1", seed("run-1"));
+    await transitionNode(store, "run-1", SNAP, "nodeA", entry(NodeState.READY));
+    await transitionNode(store, "run-1", SNAP, "nodeA", entry(NodeState.VALIDATING, 1));
+    const record = await store.load("run-1");
+    const nodeEvents = record!.events.filter((e) => e.type === "node_state_changed");
+    expect(nodeEvents).toHaveLength(2);
+    expect(nodeEvents[0]!.fromState).toBe("INITIAL");
+    expect(nodeEvents[0]!.toState).toBe(NodeState.READY);
+    expect(nodeEvents[1]!.fromState).toBe(NodeState.READY);
+    expect(nodeEvents[1]!.toState).toBe(NodeState.VALIDATING);
+  });
 });
