@@ -7,7 +7,7 @@
 ## 2. 节点状态机 + durable node ledger
 
 - [x] 2.1 实现 9 态节点状态机（`READY` / `VALIDATING` / `EXECUTING` / `SUCCEEDED` / `FAILED` / `TIMED_OUT` / `CANCELLED` / `BLOCKED_DEPENDENCY` / `BLOCKED_APPROVAL`）与合法转换表
-- [ ] 2.2 扩展 `CheckpointRef.nodeState` 落盘节点状态（sequence / attempt / input hash / result ref / trace span），复用 `DurableRunStore`，不建第二套 store
+- [x] 2.2 扩展 `CheckpointRef.nodeState` 落盘节点状态（sequence / attempt / input hash / result ref / trace span），复用 `DurableRunStore`，不建第二套 store
 - [x] 2.3 非法状态转换 fail-closed 并记录非法尝试
 
 ## 3. Ready-node 调度 + DAG 并发

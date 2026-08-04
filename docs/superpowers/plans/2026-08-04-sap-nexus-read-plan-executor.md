@@ -685,7 +685,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 
 **Design Doc 参考:** §3 Q1 落实（node ledger 形状 + 双写）
 
-- [ ] **Step 1: 写失败测试 - ledger 读写 + 跨实例恢复**
+- [x] **Step 1: 写失败测试 - ledger 读写 + 跨实例恢复**
 
 ```typescript
 // frontend/src/runtime/plan-executor/node-ledger.test.ts
@@ -766,12 +766,12 @@ describe("node ledger", () => {
 });
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run: `npm --prefix frontend test -- --run node-ledger.test`
 Expected: FAIL（模块不存在）
 
-- [ ] **Step 3: 修改 `CheckpointRef.nodeState` 类型**
+- [x] **Step 3: 修改 `CheckpointRef.nodeState` 类型**
 
 在 `frontend/src/runtime/durable/types.ts` 中，修改 `CheckpointRef`：
 
@@ -785,7 +785,7 @@ export type CheckpointRef = {
 
 保持 `Record<string, unknown>` 不变（向后兼容，`NodeLedgerEntry` 在 `plan-executor/types.ts` 中定义，ledger 层做类型 narrowing）。这样不需要修改现有 `checkpoint.test.ts`。
 
-- [ ] **Step 4: 实现 node-ledger.ts**
+- [x] **Step 4: 实现 node-ledger.ts**
 
 ```typescript
 // frontend/src/runtime/plan-executor/node-ledger.ts
@@ -827,17 +827,17 @@ export async function transitionNode(
 }
 ```
 
-- [ ] **Step 5: 运行测试确认通过**
+- [x] **Step 5: 运行测试确认通过**
 
 Run: `npm --prefix frontend test -- --run node-ledger.test`
 Expected: PASS
 
-- [ ] **Step 6: 运行现有 checkpoint 测试确认无回归**
+- [x] **Step 6: 运行现有 checkpoint 测试确认无回归**
 
 Run: `npm --prefix frontend test -- --run checkpoint.test`
 Expected: PASS（`nodeState` 类型仍为 `Record<string, unknown>`，现有测试不破坏）
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add frontend/src/runtime/plan-executor/node-ledger.ts frontend/src/runtime/plan-executor/node-ledger.test.ts

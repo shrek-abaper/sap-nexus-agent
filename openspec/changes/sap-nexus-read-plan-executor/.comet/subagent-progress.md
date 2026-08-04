@@ -10,19 +10,20 @@
 
 ## Current Task
 
-- Plan Task: Task 3 - 节点状态机（9 态 + 合法转换表）
-- Mapped OpenSpec tasks: 2.1, 2.3
+- Plan Task: Task 4 - Durable node ledger（扩展 CheckpointRef.nodeState）
+- Mapped OpenSpec task: 2.2
 - Stage: implementing
-- BASE commit (review-package): bcac39ef21c0671dab96a018faed2b329af1b09f
-- Brief: .superpowers/sdd/task-3-brief.md
-- Report: .superpowers/sdd/task-3-report.md
+- BASE commit (review-package): 75f60f64ce9d08ca31f995baf48522aefdd5c707
+- Brief: .superpowers/sdd/task-4-brief.md
+- Report: .superpowers/sdd/task-4-report.md
 - Implementer model: sonnet
-- Allowed files: frontend/src/runtime/plan-executor/node-state-machine.ts, node-state-machine.test.ts (new only)
+- Allowed files: frontend/src/runtime/durable/types.ts (modify), durable/checkpoint.test.ts (modify), plan-executor/node-ledger.ts (new), plan-executor/node-ledger.test.ts (new)
 
 ## Completed Tasks
 
 - Task 1 (Q6 v2 wiring): DONE, commit b9c9bb0, review ✅ Approved. Minor deferred: test_orchestrator.py stale comment, eval.py docstring drift.
-- Task 2 (v2 parser+types): DONE, commit 4dd082a, review ✅ Approved. Minor deferred: as-cast on parameterBindings (plan-mandated; Task 5/8 should add source-kind validation before binding resolution), permissive emptiness guard, O(n*m) lookup, unused _drop in test.
+- Task 2 (v2 parser+types): DONE, commit 4dd082a, review ✅ Approved. Minor deferred: as-cast on parameterBindings (Task 5/8 add source-kind validation), permissive emptiness guard, O(n*m) lookup, unused _drop.
+- Task 3 (node state machine): DONE, commits 4e2f7ba+8a0d856, review ✅ Approved (round 1 fix for BLOCKED_APPROVAL lockdown test). Minor #3/#4 deferred: error-message string assertion, Record<string,NodeState[]> -> Record<NodeState,NodeState[]> type hardening.
 
 ## Task -> OpenSpec Mapping
 
@@ -30,8 +31,8 @@
 |-----------|-------------------|-------|
 | Task 1 | 1.1 | done |
 | Task 2 | 1.2, 1.3 | done |
-| Task 3 | 2.1, 2.3 | implementing |
-| Task 4 | 2.2 | pending |
+| Task 3 | 2.1, 2.3 | done |
+| Task 4 | 2.2 | implementing |
 | Task 5 | 3.1, 3.2 | pending |
 | Task 6 | 8.1 | pending |
 | Task 7 | 7.1, 7.2 | pending |
