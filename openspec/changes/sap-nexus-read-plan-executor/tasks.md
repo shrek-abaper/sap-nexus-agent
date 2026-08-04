@@ -42,7 +42,7 @@
 
 - [x] 8.1 fake Gateway 完成状态机转换测试（9 态 + 非法转换 fail-closed）
 - [ ] 8.2 fake Gateway 完成恢复测试（restart 跳过 `SUCCEEDED`、续跑 `READY`、幂等重放）
-- [ ] 8.3 fake Gateway 完成调度测试（双 READ 并发、dependency 阻塞、超时、取消、partial failure、lease conflict）
+- [x] 8.3 fake Gateway 完成调度测试（双 READ 并发、dependency 阻塞、超时、取消、partial failure、lease conflict）
 - [ ] 8.4 接现有 READ integration（真实 Gateway validate/execute，受控 capability）
 - [ ] 8.5 v1 回归：现有 orchestrator / call_plan / durable 测试不改动仍通过
 
