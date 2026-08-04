@@ -140,6 +140,32 @@ describe("PlanExecutor", () => {
     expect(result.timedOut).toEqual([]);
   });
 
+  it.each([
+    { label: "missing", traceId: undefined },
+    { label: "blank", traceId: "   " },
+  ])("keeps fresh success but omits projection data when Gateway trace is $label", async ({ traceId }) => {
+    const store = new JsonlRunStore(dir, "worker-A");
+    await store.save("run-1", seed("run-1"));
+    const gateway = new FakeGateway();
+    gateway.setExecuteResult("MM.Inventory.GetAvailability", {
+      success: true,
+      traceId,
+      data: { availableQuantity: 7 },
+    });
+
+    const result = await new PlanExecutor(store, gateway, "worker-A").execute(
+      singleReadNodeGraph(),
+      "run-1",
+      SNAP
+    );
+
+    expect(result.succeeded).toEqual(["node.inv"]);
+    expect(result.nodeLedger["node.inv"].state).toBe(NodeState.SUCCEEDED);
+    expect(result.succeededNodeResults).toEqual([]);
+    expect(result.failed).toEqual([]);
+    expect(result.timedOut).toEqual([]);
+  });
+
   it("persists SUCCEEDED state to node ledger", async () => {
     const store = new JsonlRunStore(dir, "worker-A");
     await store.save("run-1", seed("run-1"));

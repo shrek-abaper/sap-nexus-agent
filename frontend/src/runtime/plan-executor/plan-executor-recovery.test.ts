@@ -214,4 +214,43 @@ describe("PlanExecutor recovery", () => {
       "MM.Inventory.GetAvailability"
     );
   });
+
+  it.each([
+    { label: "missing", gatewayTraceId: undefined },
+    { label: "blank", gatewayTraceId: "   " },
+  ])("keeps cached success without hydrating projection data when Gateway trace is $label", async ({ gatewayTraceId }) => {
+    const store = new JsonlRunStore(dir, "worker-A");
+    await store.save("run-1", seed("run-1"));
+    await store.markExecuted("run-1:node.inv:0:material=M1", {
+      status: "succeeded",
+      gatewayTraceId,
+      data: { availableQuantity: 7 },
+      parameters: { material: "M1" },
+      capabilityId: "MM.Inventory.GetAvailability",
+      producesFactTypes: ["InventoryAvailability"],
+      nodeExecutedAt: "2026-08-04T00:00:00Z",
+    });
+
+    const gateway = new FakeGateway();
+    const first = await new PlanExecutor(store, gateway, "worker-A").execute(
+      dualReadGraph(),
+      "run-1",
+      SNAP
+    );
+    const second = await new PlanExecutor(store, gateway, "worker-A").execute(
+      dualReadGraph(),
+      "run-1",
+      SNAP
+    );
+
+    expect(first.succeeded).toContain("node.inv");
+    expect(second.succeeded).toContain("node.inv");
+    expect(first.nodeLedger["node.inv"].state).toBe(NodeState.SUCCEEDED);
+    expect(second.nodeLedger["node.inv"].state).toBe(NodeState.SUCCEEDED);
+    expect(first.succeededNodeResults.map((record) => record.nodeId)).not.toContain("node.inv");
+    expect(second.succeededNodeResults.map((record) => record.nodeId)).not.toContain("node.inv");
+    expect(gateway.executeCalls.map((call) => call.capabilityId)).not.toContain(
+      "MM.Inventory.GetAvailability"
+    );
+  });
 });

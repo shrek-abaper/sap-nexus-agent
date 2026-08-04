@@ -258,27 +258,29 @@ export class PlanExecutor {
       inputHash,
       executeResult.traceId ?? null
     );
-    const record: NodeFactRecord = {
-      nodeId,
-      agentTraceId: runId,
-      capabilityId: node.capabilityId,
-      parameters,
-      producesFactTypes: [...node.producesFactTypes],
-      gatewayTraceId: executeResult.traceId ?? "",
-      executeData: executeResult.data ?? {},
-      nodeExecutedAt: succeededEntry.updatedAt,
-    };
-    nodeResults.set(nodeId, record);
+    const executeData = executeResult.data ?? {};
+    if (this.hasProjectionGatewayTrace(executeResult.traceId)) {
+      nodeResults.set(nodeId, {
+        nodeId,
+        agentTraceId: runId,
+        capabilityId: node.capabilityId,
+        parameters,
+        producesFactTypes: [...node.producesFactTypes],
+        gatewayTraceId: executeResult.traceId,
+        executeData,
+        nodeExecutedAt: succeededEntry.updatedAt,
+      });
+    }
 
     // Record idempotency: future replay with same key skips Gateway calls (Task 10)
     await this.store.markExecuted(idempotencyKey, {
       status: "succeeded",
-      gatewayTraceId: record.gatewayTraceId,
-      data: record.executeData,
-      parameters: record.parameters,
-      capabilityId: record.capabilityId,
-      producesFactTypes: record.producesFactTypes,
-      nodeExecutedAt: record.nodeExecutedAt,
+      gatewayTraceId: executeResult.traceId,
+      data: executeData,
+      parameters,
+      capabilityId: node.capabilityId,
+      producesFactTypes: [...node.producesFactTypes],
+      nodeExecutedAt: succeededEntry.updatedAt,
     });
   }
 
@@ -337,7 +339,8 @@ export class PlanExecutor {
       !cachedResult.parameters ||
       typeof cachedResult.capabilityId !== "string" ||
       !Array.isArray(cachedResult.producesFactTypes) ||
-      typeof cachedResult.nodeExecutedAt !== "string"
+      typeof cachedResult.nodeExecutedAt !== "string" ||
+      !this.hasProjectionGatewayTrace(cachedResult.gatewayTraceId)
     ) {
       return null;
     }
@@ -347,10 +350,14 @@ export class PlanExecutor {
       capabilityId: cachedResult.capabilityId,
       parameters: cachedResult.parameters,
       producesFactTypes: cachedResult.producesFactTypes,
-      gatewayTraceId: cachedResult.gatewayTraceId ?? "",
+      gatewayTraceId: cachedResult.gatewayTraceId,
       executeData: cachedResult.data,
       nodeExecutedAt: cachedResult.nodeExecutedAt,
     };
+  }
+
+  private hasProjectionGatewayTrace(traceId: string | null | undefined): traceId is string {
+    return typeof traceId === "string" && traceId.trim().length > 0;
   }
 
   private resolveParameters(bindings: ParameterBinding[]): Record<string, string> {
