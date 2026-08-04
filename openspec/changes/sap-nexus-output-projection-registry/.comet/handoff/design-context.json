@@ -1,0 +1,15 @@
+{
+  "change": "sap-nexus-output-projection-registry",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "23910c6316e2d011a3e719f5455d742417a243c29508d93dafeaeccd64a8e059",
+  "files": [
+    { "path": "openspec/changes/sap-nexus-output-projection-registry/proposal.md", "sha256": "30a5d5a72a225ef1c4d41949131912efe68f13699524e5c30eb3692602a32dec" },
+    { "path": "openspec/changes/sap-nexus-output-projection-registry/design.md", "sha256": "df28a843541ce077651ce8696e660c5de1326d984742c267dd10686251dae24f" },
+    { "path": "openspec/changes/sap-nexus-output-projection-registry/tasks.md", "sha256": "f013f6bc1141c93e0080a7ae8a1107639dd64c37b9f896c3d531a07ed2122950" },
+    { "path": "openspec/changes/sap-nexus-output-projection-registry/specs/output-projection/spec.md", "sha256": "ac5eeb516e700eb1d2f300c34880e3c3c93235827bd5ae6e5734db4a6f971de6" },
+    { "path": "openspec/changes/sap-nexus-output-projection-registry/specs/read-plan-executor/spec.md", "sha256": "91aaf725e0496efe182263313118872a8b030cf07000d372688482c2d6bb55a8" }
+  ]
+}
