@@ -68,7 +68,7 @@ base-ref: ae5046e70ccc11587103a593acffdbd44d4b8336
 
 **Design Doc 参考:** §3 Q6 落实（line 94-106）
 
-- [ ] **Step 1: 核实 v2 plan_graph 逐键保留 v1 字段**
+- [x] **Step 1: 核实 v2 plan_graph 逐键保留 v1 字段**
 
 Run: `.venv/bin/python -c "
 from pathlib import Path
@@ -86,7 +86,7 @@ print('v2 extra keys:', [k for k in pg if k not in ['planId','goalId','execution
 "`
 Expected: `ALL v1 keys present in v2 plan_graph`（确认 v2 是 v1 超集，前端 `DryRunPlanGraph` 解析器兼容）
 
-- [ ] **Step 2: 修改 `AgentOutcome.dry_run` 类型注解**
+- [x] **Step 2: 修改 `AgentOutcome.dry_run` 类型注解**
 
 将 `orchestrator.py:88` 的 `dry_run: DryRunResult | None = None` 改为：
 
@@ -102,7 +102,7 @@ from sap_nexus_agent.planner.plan_compiler_v2 import PlanCompileResult
 
 保留 `DryRunResult` import（v1 `compile_dry_run` 仍用于 SELECT 路径的兼容引用）。
 
-- [ ] **Step 3: 修改 `_compile_dry_run_safely` 返回类型 + 调用**
+- [x] **Step 3: 修改 `_compile_dry_run_safely` 返回类型 + 调用**
 
 将 `orchestrator.py:799-803` 的签名改为：
 
@@ -122,19 +122,19 @@ def _compile_dry_run_safely(
 
 替换原来的 `compile_dry_run_from_handoff(handoff, lease.snapshot, lease.sources)`。
 
-- [ ] **Step 4: 运行现有 orchestrator 测试验证 v1 回归**
+- [x] **Step 4: 运行现有 orchestrator 测试验证 v1 回归**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_orchestrator.py -q`
 Expected: 所有测试 PASS（SELECT 路径不动，ESCALATE 路径的 `dry_run` 现在携带 v2 `PlanCompileResult`）
 
 如果有测试断言 `dry_run` 的 v1 特定字段（如缺少 `projection_ref`），更新断言为 v2 超集字段。
 
-- [ ] **Step 5: 运行 v2 compiler 契约测试**
+- [x] **Step 5: 运行 v2 compiler 契约测试**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_planner_plan_compiler_v2.py -q`
 Expected: PASS（compiler 未改动）
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add agent/sap_nexus_agent/orchestrator.py

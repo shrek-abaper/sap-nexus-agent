@@ -1,6 +1,6 @@
 ## 1. PlanGraph v2 消费契约（Python -> Node）
 
-- [ ] 1.1 确定并实现 Python -> Node 的 PlanGraph v2 传递契约（现有 dry-run outcome 是否已携带可消费 plan_graph，或新增 executor 输入契约）
+- [x] 1.1 确定并实现 Python -> Node 的 PlanGraph v2 传递契约（现有 dry-run outcome 是否已携带可消费 plan_graph，或新增 executor 输入契约）
 - [ ] 1.2 Node 侧实现 PlanGraph v2 反序列化与 `readPartition` / 节点 / edges / `snapshotId` 解析
 - [ ] 1.3 校验 PlanGraph v2 有效性 + `snapshotId` 未漂移，无效/漂移 fail-closed 并记录结构化失败
 
