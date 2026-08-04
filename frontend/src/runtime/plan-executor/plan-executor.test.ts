@@ -318,4 +318,75 @@ describe("PlanExecutor", () => {
     expect(result.timedOut).toContain("node.inv");
     expect(result.succeeded).toContain("node.po");
   });
+
+  // --- Task 11: dependency chain scenarios ---
+
+  it("dependent node blocks until prerequisite succeeds", async () => {
+    const graph: PlanGraphV2 = {
+      ...dualReadGraph(),
+      nodes: [
+        { nodeId: "node.inv", capabilityId: "MM.Inventory.GetAvailability",
+          parameterBindings: [{ parameterName: "material", source: { kind: "literal", semanticType: "MaterialCode", value: "M1" } }],
+          producesFactTypes: ["InventoryAvailability"], governance: { requiresApproval: false } },
+        { nodeId: "node.detail", capabilityId: "MM.Inventory.GetDetail",
+          parameterBindings: [
+            { parameterName: "material", source: { kind: "literal", semanticType: "MaterialCode", value: "M1" } },
+            { parameterName: "inventoryRef", source: { kind: "factField", producerNodeId: "node.inv", factTypeId: "InventoryAvailability", field: "id" } },
+          ],
+          producesFactTypes: [], governance: { requiresApproval: false } },
+      ],
+      edges: [
+        { edgeId: "e1", kind: "dependency", fromNodeId: "node.inv", toNodeId: "node.detail" },
+        { edgeId: "e2", kind: "data", fromNodeId: "node.inv", toNodeId: "node.detail", factTypeId: "InventoryAvailability" },
+      ],
+      topologicalOrder: ["node.inv", "node.detail"],
+      readPartition: ["node.inv", "node.detail"],
+    };
+
+    const store = new JsonlRunStore(dir, "worker-A");
+    await store.save("run-1", seed("run-1"));
+    const gateway = new FakeGateway();
+    const executor = new PlanExecutor(store, gateway, "worker-A");
+    const result = await executor.execute(graph, "run-1", SNAP);
+
+    // node.inv executes first (no deps), then node.detail (dep SUCCEEDED)
+    expect(result.succeeded).toContain("node.inv");
+    expect(result.succeeded).toContain("node.detail");
+    // node.inv validated before node.detail
+    expect(gateway.validateCalls[0].capabilityId).toBe("MM.Inventory.GetAvailability");
+    expect(gateway.validateCalls[1].capabilityId).toBe("MM.Inventory.GetDetail");
+  });
+
+  it("partial failure: one node fails, dependent stays BLOCKED_DEPENDENCY", async () => {
+    const graph: PlanGraphV2 = {
+      ...dualReadGraph(),
+      nodes: [
+        { nodeId: "node.inv", capabilityId: "MM.Inventory.GetAvailability",
+          parameterBindings: [{ parameterName: "material", source: { kind: "literal", semanticType: "MaterialCode", value: "M1" } }],
+          producesFactTypes: [], governance: { requiresApproval: false } },
+        { nodeId: "node.detail", capabilityId: "MM.Inventory.GetDetail",
+          parameterBindings: [{ parameterName: "material", source: { kind: "literal", semanticType: "MaterialCode", value: "M1" } }],
+          producesFactTypes: [], governance: { requiresApproval: false } },
+      ],
+      edges: [
+        { edgeId: "e1", kind: "dependency", fromNodeId: "node.inv", toNodeId: "node.detail" },
+      ],
+      topologicalOrder: ["node.inv", "node.detail"],
+      readPartition: ["node.inv", "node.detail"],
+    };
+
+    const store = new JsonlRunStore(dir, "worker-A");
+    await store.save("run-1", seed("run-1"));
+    const gateway = new FakeGateway();
+    gateway.setExecuteResult("MM.Inventory.GetAvailability", { success: false, errorType: "SAP_ERROR", message: "material not found" });
+    const executor = new PlanExecutor(store, gateway, "worker-A");
+    const result = await executor.execute(graph, "run-1", SNAP);
+
+    // node.inv fails, node.detail stays BLOCKED_DEPENDENCY (dep not SUCCEEDED)
+    expect(result.failed).toEqual(["node.inv"]);
+    expect(result.blocked).toContain("node.detail");
+    // node.detail NOT validated (blocked)
+    const detailCalls = gateway.validateCalls.filter((c) => c.capabilityId === "MM.Inventory.GetDetail");
+    expect(detailCalls).toHaveLength(0);
+  });
 });

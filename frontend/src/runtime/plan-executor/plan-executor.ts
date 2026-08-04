@@ -107,6 +107,20 @@ export class PlanExecutor {
         }
       }
 
+      // Mark read-partition nodes that were never selected (prerequisite did
+      // not SUCCEED, e.g. partial failure) as BLOCKED_DEPENDENCY. These nodes
+      // have no ledger entry because selectReadyNodes skipped them every round.
+      // Skipped when cancelled: the cancel sweep above (or pre-existing
+      // terminal states) already accounts for those nodes.
+      if (!this.cancelled) {
+        for (const nodeId of graph.readPartition) {
+          if (ledger[nodeId]) continue;
+          const node = graph.nodes.find((n) => n.nodeId === nodeId);
+          const inputHash = node ? this.computeInputHash(node.parameterBindings) : "";
+          await this.transition(runId, expectedSnapshotId, nodeId, null, NS.BLOCKED_DEPENDENCY, 0, inputHash);
+        }
+      }
+
       // Build result from final ledger
       const finalLedger = await loadNodeLedger(this.store, runId);
       return this.buildResult(runId, expectedSnapshotId, finalLedger);
