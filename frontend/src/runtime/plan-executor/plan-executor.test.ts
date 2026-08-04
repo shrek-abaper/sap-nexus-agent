@@ -9,6 +9,7 @@ import type { AgentRunRecord } from "../durable/types";
 import { FakeGateway } from "./fake-gateway";
 import { NodeState } from "./types";
 import { PlanExecutor } from "./plan-executor";
+import { saveNodeLedger } from "./node-ledger";
 import type { PlanGraphV2, GatewayClient, GatewayValidateResult, GatewayExecuteResult, NodeLedgerEntry } from "./types";
 
 const SNAP = "sha256:snap-001";
@@ -227,7 +228,7 @@ describe("PlanExecutor", () => {
 
   // --- Task 9: node-level timeout + user cancellation ---
 
-  it("node timeout -> TIMED_OUT, independent node continues", async () => {
+  it("execute failure -> FAILED, independent node continues", async () => {
     const store = new JsonlRunStore(dir, "worker-A");
     await store.save("run-1", seed("run-1"));
     // delayMs below nodeTimeoutMs so gateway returns before timeout
@@ -251,7 +252,7 @@ describe("PlanExecutor", () => {
     expect(result.succeeded).toEqual([]);
   });
 
-  it("cancel: uncompleted nodes -> CANCELLED, SUCCEEDED preserved", async () => {
+  it("cancel: uncompleted nodes -> CANCELLED", async () => {
     const store = new JsonlRunStore(dir, "worker-A");
     await store.save("run-1", seed("run-1"));
     const gateway = new FakeGateway({ delayMs: 200 });
@@ -262,5 +263,59 @@ describe("PlanExecutor", () => {
     // Nodes were in-flight when cancelled -> CANCELLED
     expect(result.cancelled.length).toBeGreaterThan(0);
     expect(result.succeeded).toEqual([]);
+  });
+
+  // Lockdown: spec "Cancellation preserves succeeded nodes" - a pre-existing
+  // SUCCEEDED node must survive cancellation. TERMINAL_STATES includes SUCCEEDED,
+  // so the post-loop cancel sweep skips it; selectReadyNodes also skips it.
+  it("cancel: pre-existing SUCCEEDED node is preserved", async () => {
+    const store = new JsonlRunStore(dir, "worker-A");
+    await store.save("run-1", seed("run-1"));
+    // Pre-seed node.inv as SUCCEEDED (simulates a prior completed node)
+    const seededLedger: Record<string, NodeLedgerEntry> = {
+      "node.inv": {
+        state: NodeState.SUCCEEDED,
+        attempt: 1,
+        inputHash: "material=M1&plant=5300",
+        resultRef: null,
+        traceSpan: null,
+        updatedAt: new Date().toISOString(),
+      },
+    };
+    await saveNodeLedger(store, "run-1", SNAP, seededLedger);
+    // node.po is still pending; slow gateway so it's in-flight when cancelled
+    const gateway = new FakeGateway({ delayMs: 200 });
+    const executor = new PlanExecutor(store, gateway, "worker-A", { nodeTimeoutMs: 500 });
+    setTimeout(() => executor.cancel(), 50);
+    const result = await executor.execute(dualReadGraph(), "run-1", SNAP);
+    // Pre-seeded SUCCEEDED node survives cancellation
+    expect(result.succeeded).toContain("node.inv");
+    expect(result.nodeLedger["node.inv"].state).toBe(NodeState.SUCCEEDED);
+    // node.po was in-flight -> CANCELLED
+    expect(result.cancelled).toContain("node.po");
+  });
+
+  // Lockdown: real timeout (gateway slower than nodeTimeoutMs) on one node does
+  // NOT block an independent node from succeeding.
+  it("true timeout on one node -> TIMED_OUT, independent node still succeeds", async () => {
+    const store = new JsonlRunStore(dir, "worker-A");
+    await store.save("run-1", seed("run-1"));
+    // Custom gateway: only MM.Inventory.GetAvailability is slow (times out);
+    // MM.PurchaseOrder.GetList returns instantly (succeeds).
+    const gateway: GatewayClient = {
+      async validate(capabilityId) {
+        return { valid: true, traceId: `val-${capabilityId}` };
+      },
+      async execute(capabilityId, params) {
+        if (capabilityId === "MM.Inventory.GetAvailability") {
+          await new Promise((r) => setTimeout(r, 300)); // exceeds nodeTimeoutMs
+        }
+        return { success: true, traceId: `exec-${capabilityId}`, data: { capabilityId, params } };
+      },
+    };
+    const executor = new PlanExecutor(store, gateway, "worker-A", { nodeTimeoutMs: 50 });
+    const result = await executor.execute(dualReadGraph(), "run-1", SNAP);
+    expect(result.timedOut).toContain("node.inv");
+    expect(result.succeeded).toContain("node.po");
   });
 });
