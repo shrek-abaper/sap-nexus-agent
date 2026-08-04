@@ -30,8 +30,8 @@ from sap_nexus_agent.narrator import (
     narrate_inventory_facts,
     narrate_purchase_order_facts,
 )
-from sap_nexus_agent.planner.handoff import compile_dry_run_from_handoff
-from sap_nexus_agent.planner.plan_compiler import DryRunResult
+from sap_nexus_agent.planner.handoff import compile_plan_v2_from_handoff
+from sap_nexus_agent.planner.plan_compiler_v2 import PlanCompileResult
 from sap_nexus_agent.reasoning_fact import (
     ReasoningFact,
     build_availability_fact,
@@ -83,9 +83,9 @@ class AgentOutcome:
     # (approval continue flow) which do not re-run the selector.
     match_decision: MatchDecision | None = None
     # S2-B dry-run result (Task 9). Populated only for ESCALATE_TO_PLANNER
-    # outcomes - the orchestrator wires the handoff into the PlanCompiler
+    # outcomes - the orchestrator wires the handoff into the PlanCompiler v2
     # (deterministic, no Gateway/SAP). None for every other path.
-    dry_run: DryRunResult | None = None
+    dry_run: PlanCompileResult | None = None
     # Multi-value batch (Design Doc §4.4): combinations awaiting user confirm.
     # Populated only for status="awaiting_batch_confirm".
     combinations: list[dict[str, str]] | None = None
@@ -145,8 +145,8 @@ def run_query(
     touching the Gateway; only SELECT proceeds to CallPlan -> validate/execute.
 
     For ESCALATE_TO_PLANNER, the orchestrator wires the handoff into the
-    S2-B PlanCompiler (``planner.handoff.compile_dry_run_from_handoff``)
-    to produce a deterministic ``DryRunResult`` attached to the outcome.
+    S2-B PlanCompiler v2 (``planner.handoff.compile_plan_v2_from_handoff``)
+    to produce a deterministic ``PlanCompileResult`` attached to the outcome.
     The PlanCompiler does not call the Gateway or SAP. ``snapshot`` /
     ``sources`` may be injected by tests; if absent, the orchestrator
     loads them from the registry via path discovery (or the injected
@@ -800,7 +800,7 @@ def _compile_dry_run_safely(
     handoff,
     *,
     lease: SnapshotLease,
-) -> "DryRunResult | PlannerFailure":
+) -> "PlanCompileResult | PlannerFailure":
     """Compile a dry-run from the handoff, consuming the same lease.
 
     Checks snapshot drift via ``lease.assert_same`` before compiling.
@@ -823,7 +823,7 @@ def _compile_dry_run_safely(
             },
         )
     try:
-        return compile_dry_run_from_handoff(handoff, lease.snapshot, lease.sources)
+        return compile_plan_v2_from_handoff(handoff, lease.snapshot, lease.sources)
     except Exception as exc:
         return PlannerFailure(
             error_type="SOURCE_LOAD_ERROR",

@@ -5,10 +5,10 @@
 | 字段 | 内容 |
 |---|---|
 | 文档名称 | `SAP Nexus Agent 实施路线文档` |
-| 当前版本 | `v0.2.44` |
+| 当前版本 | `v0.2.45` |
 | 状态 | `Lifecycle Roadmap Active` |
 | 创建日期 | `2026-06-18` |
-| 最近更新 | `2026-08-03` |
+| 最近更新 | `2026-08-04` |
 | 维护目录 | `docs/wiki/` |
 | 文档定位 | SAP Nexus Agent 从 MVP 到量产交付的全生命周期实施路线 |
 | 关联技术架构 | `docs/wiki/sap-nexus-agent-technical-architecture.md` |
@@ -21,6 +21,7 @@
 
 | 版本 | 日期 | 变更摘要 | 决策状态 |
 |---|---|---|---|
+| `v0.2.45` | `2026-08-04` | `sap-nexus-read-plan-executor` (Runbook 16) 实施完成：READ-only PlanExecutor 消费已验证 PlanGraph v2 readPartition；PlanGraphV2Parser + NodeStateMachine + DurableNodeLedger + DagScheduler + FakeGateway + SseEmitter + PlanExecutor（timeout/cancel/restart-recovery/idempotent-replay/dependency-blocking/lease-conflict-fail-closed）；Action 节点 BLOCKED_APPROVAL；954 pytest / 174 frontend tests / 19 openspec 通过；生产 orchestrator 接线延后至 Runbook 17；归档 `openspec/changes/sap-nexus-read-plan-executor/` | 当前实施基线 |
 | `v0.2.44` | `2026-08-03` | 完成跨 AI 开发交接文档收口：旧 recommendation、S3 read-composition 和 P0B 路线条目标记为 superseded/decomposed/archived，生产治理调整为 Runbook 22 后置项；S3 回归入口改由 Runbooks 17/22 承担，避免与 Runbooks 13-22 形成重复活动入口 | 当前实施基线 |
 | `v0.2.43` | `2026-08-03` | 基于代码事实和完整 Agent 设计，将后续实施拆为 runbooks 13-22：同快照治理、LLM-first capability recall、PlanGraph v2、READ executor、OutputProjection、RuleSet/Recommendation、grounded narrative、Workbench、单 Action 人审闭环和 E2E release gate；明确 Knowledge/RAG 仅预留、MVP 不接入；同步 P0B 全部归档、D-1 已解决和当前仅到 dry-run 的边界 | 当前实施基线 |
 | `v0.2.42` | `2026-08-02` | P0B 项4 `sap-nexus-incremental-sse-reconnect` 实施完成并归档（依赖项1，项2 merge 解除 adapter 冲突）：incremental SSE + cursor reconnect（event builders -> async emitter emitEventsFromOutcome/emitApprovalEvents/emitBatchEvents + createAgentRun/decideAgentRunApproval/confirmAgentRunBatch fire-and-forget background executeRunnerInBackground/executeApprovalInBackground/executeBatchInBackground + stream route ReadableStream 轮询 cursor/terminal 收敛/backpressure desiredSize + 客户端 AgentConsole lastSequence onerror ?cursor=N reconnect + §4.4 rejection run_failed terminal 修复 + principal 鉴权保留）；88 tests pass；主 spec 合并 `sse-cursor-reconnect`（ADDED 4 requirements）；归档 `openspec/changes/archive/2026-08-02-sap-nexus-incremental-sse-reconnect/`；P0B row 22 全部 4 项归档完成 | 当前实施基线 |
@@ -268,7 +269,7 @@ GoalSpec candidate
 | 24 | `sap-nexus-governed-context-registry-snapshot` | Completed / Archived (2026-08-03) / Runbook 13 | 让 intent、recall、planner、executor 和 approval 使用同一 principal/visibility/snapshot | 非空 snapshot 端到端绑定；visibility leakage 为 0；漂移结构化 fail-closed；pytest 836 passed/1 skipped；归档 `openspec/changes/archive/2026-08-03-sap-nexus-governed-context-registry-snapshot/`；主 spec 合并 governed-context-registry-snapshot (ADDED 6) + planner-dry-run/pr-create-action/semantic-match-decision/trusted-principal-scope (5 modified/added) |
 | 25 | `sap-nexus-governed-intent-capability-recall` | Completed / Archived (2026-08-03) / Runbook 14 | LLM-first IntentEnvelope、多目标拆分和已注册能力召回 | 五态 decision 可回放；false SELECT 与 visibility leakage 为 0；MVP 不接 Knowledge/RAG；950 pytest / 10 eval / 17 openspec 通过；归档 `openspec/changes/archive/2026-08-03-sap-nexus-governed-intent-capability-recall/`；主 spec 合并 conversational-context + semantic-match-decision（MODIFIED）与 governed-intent-envelope-recall（NEW，9 requirements） |
 | 26 | `sap-nexus-semantic-plan-authoring-v2` | Implemented / Archived (2026-08-04) / Runbook 15 | 将 advisory goal/plan 编译为含参数来源和 READ/WRITE 分区的 PlanGraph v2 | unknown relation/capability、cycle、type/source/snapshot 问题 fail-closed；不执行 Gateway；330 pytest (v1 298 + v2 32) / 953+1skip evidence / 18 openspec 通过 |
-| 27 | `sap-nexus-read-plan-executor` | Planned / Runbook 16 | 执行 validated READ DAG，提供 ready-node scheduling、durable ledger、timeout/cancel/replay | 两个 READ 节点可安全并发；Action blocked；恢复不重复执行 |
+| 27 | `sap-nexus-read-plan-executor` | Implemented / Archived (2026-08-04) / Runbook 16 | 执行 validated READ DAG，提供 ready-node scheduling、durable ledger、timeout/cancel/replay | 两个 READ 节点可安全并发；Action blocked；恢复不重复执行；954 pytest / 174 frontend tests / 19 openspec 通过；归档 `openspec/changes/sap-nexus-read-plan-executor/`；生产 orchestrator 接线延后至 Runbook 17 |
 | 28 | `sap-nexus-composite-fact-output-projection` | Planned / Runbook 17 | `ReasoningFact[] -> MaterialSupplySnapshot` 确定性投影 | completeness/freshness/limitations/lineage 完整；partial 不冒充 complete |
 | 29 | `sap-nexus-recommendation-decision-plan` | Planned / Runbook 18 | Registered RuleSet + facts + user constraints -> RecommendationPlan/单 ActionProposal | 缺输入必须澄清；LLM 不猜数量/日期/采购组；最多一个终点 Action |
 | 30 | `sap-nexus-grounded-narrative-orchestration` | Planned / Runbook 19 | claims/evidence/limitations 叙事编排和模板 fallback | unsupported claim 为 0；partial/proposal/approval 状态准确 |

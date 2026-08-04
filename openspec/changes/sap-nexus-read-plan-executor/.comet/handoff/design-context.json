@@ -1,0 +1,14 @@
+{
+  "change": "sap-nexus-read-plan-executor",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "3dc32080c6876aa7200d4c3aac75e85ac0022c68ff2dac86d571b0a747f955fa",
+  "files": [
+    { "path": "openspec/changes/sap-nexus-read-plan-executor/proposal.md", "sha256": "4ac63ffb3f85745ce144e6d5ceb2b7c166ef39bb89c956e569f8d01f42363633" },
+    { "path": "openspec/changes/sap-nexus-read-plan-executor/design.md", "sha256": "b00ce884d1ad5f7706d094bcd62b7be44fb2b1a539b095140ff924608bef86a1" },
+    { "path": "openspec/changes/sap-nexus-read-plan-executor/tasks.md", "sha256": "da19d00fe50fe66b803ca0ef6cfbb06ea6ddff847848162b4905dd4b49530a15" },
+    { "path": "openspec/changes/sap-nexus-read-plan-executor/specs/read-plan-executor/spec.md", "sha256": "1dc421e490cd95426a8ee845692f0c5ba4cc35c39c1f81d86a63c9734c711c33" }
+  ]
+}

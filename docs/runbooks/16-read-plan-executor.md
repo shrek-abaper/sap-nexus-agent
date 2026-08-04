@@ -6,8 +6,8 @@
 |---|---|
 | Runbook | `16-read-plan-executor` |
 | Version | `v0.1.0` |
-| Status | `Planned` |
-| Created / Updated | `2026-08-03` |
+| Status | `Implemented / Archived` |
+| Created / Updated | `2026-08-04` |
 | Depends On | Runbook 15; P0B durable runtime foundation |
 | Unblocks | Runbook 17 |
 
