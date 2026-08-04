@@ -169,7 +169,7 @@ export class PlanExecutor {
     const idempotencyKey = `${runId}:${nodeId}:${attempt}:${inputHash}`;
     const cachedResult = await this.store.lookupExecuted(idempotencyKey);
     const cachedRecord = cachedResult
-      ? this.toNodeFactRecord(nodeId, cachedResult)
+      ? this.toNodeFactRecord(nodeId, runId, cachedResult)
       : null;
 
     // A recovered success may hydrate data from a complete cache, but it must
@@ -260,6 +260,7 @@ export class PlanExecutor {
     );
     const record: NodeFactRecord = {
       nodeId,
+      agentTraceId: runId,
       capabilityId: node.capabilityId,
       parameters,
       producesFactTypes: [...node.producesFactTypes],
@@ -328,6 +329,7 @@ export class PlanExecutor {
 
   private toNodeFactRecord(
     nodeId: string,
+    agentTraceId: string,
     cachedResult: WorkbenchOutcome
   ): NodeFactRecord | null {
     if (
@@ -341,6 +343,7 @@ export class PlanExecutor {
     }
     return {
       nodeId,
+      agentTraceId,
       capabilityId: cachedResult.capabilityId,
       parameters: cachedResult.parameters,
       producesFactTypes: cachedResult.producesFactTypes,

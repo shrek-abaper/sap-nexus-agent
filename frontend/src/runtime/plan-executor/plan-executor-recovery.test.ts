@@ -128,6 +128,11 @@ describe("PlanExecutor recovery", () => {
 
     expect(first.succeededNodeResults).toHaveLength(2);
     expect(second.succeededNodeResults).toEqual(first.succeededNodeResults);
+    expect(first.succeededNodeResults.every((record) => record.agentTraceId === "run-1")).toBe(true);
+    expect(second.succeededNodeResults.every((record) => record.agentTraceId === "run-1")).toBe(true);
+    expect(second.succeededNodeResults.every(
+      (record) => record.agentTraceId !== record.gatewayTraceId,
+    )).toBe(true);
     expect(gateway.executeCalls).toHaveLength(firstExecuteCallCount);
   });
 
@@ -197,6 +202,7 @@ describe("PlanExecutor recovery", () => {
 
     expect(result.succeededNodeResults).toContainEqual({
       nodeId: "node.inv",
+      agentTraceId: "run-1",
       capabilityId: "MM.Inventory.GetAvailability",
       parameters: { material: "M1" },
       producesFactTypes: ["InventoryAvailability"],

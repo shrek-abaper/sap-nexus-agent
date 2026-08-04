@@ -8,6 +8,7 @@ import {
 function record(overrides: Partial<NodeFactRecord> = {}): NodeFactRecord {
   return {
     nodeId: "node.inventory",
+    agentTraceId: "run-1",
     capabilityId: "MM.Inventory.GetAvailability",
     parameters: { material: "MAT-1", plant: "PLANT-1" },
     producesFactTypes: ["InventoryAvailability"],
@@ -62,6 +63,8 @@ describe("material supply fact builders", () => {
     expect(facts).toEqual([
       expect.objectContaining({
         factId: "node.inventory:availableQuantity:0",
+        agentTraceId: "run-1",
+        traceId: "run-1",
         gatewayTraceId: "gw-inventory",
         domain: "MM",
         businessObject: "InventoryStock",
@@ -126,5 +129,60 @@ describe("material supply fact builders", () => {
       "node.po:purchaseOrderItem:2",
     ]);
     expect(JSON.stringify(facts)).not.toContain("must-not-leak");
+  });
+
+  it("normalizes finite decimal-string quantities without changing whitelisted evidence", () => {
+    const builder = createMaterialSupplyFactBuilderRegistry().resolve("MM.PurchaseOrder.GetList");
+    const facts = builder?.build(record({
+      nodeId: "node.po",
+      capabilityId: "MM.PurchaseOrder.GetList",
+      producesFactTypes: ["PurchaseOrder"],
+      executeData: {
+        purchaseOrders: [
+          { purchaseOrder: "4500001", purchaseOrderItem: "10", orderQuantity: "1.000" },
+          { purchaseOrder: "4500001", purchaseOrderItem: "20", orderQuantity: Number.NaN },
+          { purchaseOrder: "4500001", purchaseOrderItem: "30", orderQuantity: Number.POSITIVE_INFINITY },
+          { purchaseOrder: "4500001", purchaseOrderItem: "40", orderQuantity: "not-a-decimal" },
+        ],
+      },
+    }));
+
+    expect(facts?.map((fact) => fact.value)).toEqual([1, null, null, null]);
+    expect(facts?.map((fact) => fact.evidence[0]?.orderQuantity)).toEqual([
+      "1.000",
+      Number.NaN,
+      Number.POSITIVE_INFINITY,
+      "not-a-decimal",
+    ]);
+  });
+
+  it("produces identical facts when tied business-key rows arrive in reverse order", () => {
+    const builder = createMaterialSupplyFactBuilderRegistry().resolve("MM.PurchaseOrder.GetList");
+    const rows = [
+      {
+        purchaseOrder: "4500001",
+        purchaseOrderItem: "20",
+        material: "MAT-1",
+        plant: "P1",
+        orderQuantity: 2,
+        purchaseOrderUnit: "EA",
+      },
+      {
+        purchaseOrder: "4500001",
+        purchaseOrderItem: "10",
+        material: "MAT-1",
+        plant: "P1",
+        orderQuantity: 1,
+        purchaseOrderUnit: "EA",
+      },
+    ];
+    const buildFacts = (purchaseOrders: typeof rows) => builder?.build(record({
+      nodeId: "node.po",
+      capabilityId: "MM.PurchaseOrder.GetList",
+      producesFactTypes: ["PurchaseOrder"],
+      executeData: { purchaseOrders },
+    }));
+
+    expect(buildFacts([...rows].reverse())).toEqual(buildFacts(rows));
   });
 });

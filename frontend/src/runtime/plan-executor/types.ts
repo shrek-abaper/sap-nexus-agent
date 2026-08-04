@@ -86,6 +86,7 @@ export interface GatewayClient {
 
 export type NodeFactRecord = {
   nodeId: string;
+  agentTraceId: string;
   capabilityId: string;
   parameters: Record<string, string>;
   producesFactTypes: string[];

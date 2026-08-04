@@ -9,6 +9,7 @@ const nodeExecutedAt = "2026-08-04T00:00:01Z";
 function nodeRecord(overrides: Partial<NodeFactRecord>): NodeFactRecord {
   return {
     nodeId: "node.inventory",
+    agentTraceId: "run-1",
     capabilityId: "MM.Inventory.GetAvailability",
     parameters: { material: "MAT-1", plant: "PLANT-1" },
     producesFactTypes: ["InventoryAvailability"],
@@ -85,6 +86,11 @@ describe("ProjectionInputAssembler", () => {
       "PurchaseOrder",
     ]);
     expect(input.facts.every((fact) => fact.asOf === dataAsOf)).toBe(true);
+    expect(input.facts.every((fact) => (
+      fact.agentTraceId === "run-1"
+      && fact.traceId === "run-1"
+      && fact.gatewayTraceId !== "run-1"
+    ))).toBe(true);
     expect(input.planExecutionRecord).toMatchObject({
       runId: "run-1",
       snapshotId: "snapshot-1",

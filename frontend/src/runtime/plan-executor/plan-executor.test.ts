@@ -125,6 +125,7 @@ describe("PlanExecutor", () => {
     expect(result.succeededNodeResults).toEqual([
       expect.objectContaining({
         nodeId: "node.inv",
+        agentTraceId: "run-1",
         capabilityId: "MM.Inventory.GetAvailability",
         parameters: { material: "M1", plant: "5300" },
         producesFactTypes: ["InventoryAvailability"],
@@ -133,6 +134,7 @@ describe("PlanExecutor", () => {
         nodeExecutedAt: expect.any(String),
       }),
     ]);
+    expect(result.succeededNodeResults[0]?.agentTraceId).not.toBe("gw-inv");
     expect(result.nodeLedger["node.inv"].resultRef).toBe("gw-inv");
     expect(result.failed).toEqual([]);
     expect(result.timedOut).toEqual([]);

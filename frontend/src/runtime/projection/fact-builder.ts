@@ -41,8 +41,8 @@ const inventoryBuilder: FactBuilderDeclaration = {
 
     return [{
       factId: `${record.nodeId}:availableQuantity:0`,
-      agentTraceId: "",
-      traceId: "",
+      agentTraceId: record.agentTraceId,
+      traceId: record.agentTraceId,
       gatewayTraceId: record.gatewayTraceId,
       domain: "MM",
       businessObject: "InventoryStock",
@@ -62,12 +62,45 @@ const inventoryBuilder: FactBuilderDeclaration = {
 
 type PurchaseOrderRow = {
   purchaseOrder: string | null;
+  purchaseOrderItem: string | null;
   supplier: string | null;
   material: string | null;
   plant: string | null;
   orderQuantity: number | null;
+  orderQuantityEvidence: string | number | null;
   purchaseOrderUnit: string | null;
 };
+
+const DECIMAL_PATTERN = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/;
+
+function finiteDecimal(value: unknown): number | null {
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+  if (typeof value !== "string" || !DECIMAL_PATTERN.test(value)) return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function quantityEvidence(value: unknown): string | number | null {
+  return typeof value === "string" || typeof value === "number" ? value : null;
+}
+
+function orderQuantity(
+  item: Record<string, unknown>,
+  header: Record<string, unknown>,
+): { value: number | null; evidence: string | number | null } {
+  const itemValue = finiteDecimal(item.orderQuantity);
+  if (itemValue !== null) {
+    return { value: itemValue, evidence: quantityEvidence(item.orderQuantity) };
+  }
+  const headerValue = finiteDecimal(header.orderQuantity);
+  if (headerValue !== null) {
+    return { value: headerValue, evidence: quantityEvidence(header.orderQuantity) };
+  }
+  return {
+    value: null,
+    evidence: quantityEvidence(item.orderQuantity) ?? quantityEvidence(header.orderQuantity),
+  };
+}
 
 function objectRecord(value: unknown): Record<string, unknown> | null {
   return typeof value === "object" && value !== null && !Array.isArray(value)
@@ -80,10 +113,11 @@ function purchaseOrderRow(
   header: Record<string, unknown>,
   item: Record<string, unknown>,
 ): PurchaseOrderRow {
-  const itemQuantity = item.orderQuantity;
-  const headerQuantity = header.orderQuantity;
+  const quantity = orderQuantity(item, header);
   return {
     purchaseOrder: optionalText(item.purchaseOrder) ?? optionalText(header.purchaseOrder),
+    purchaseOrderItem: optionalText(item.purchaseOrderItem)
+      ?? optionalText(header.purchaseOrderItem),
     supplier: optionalText(header.supplier) ?? optionalText(item.supplier),
     material: optionalText(item.material)
       ?? optionalText(record.parameters.material)
@@ -91,11 +125,8 @@ function purchaseOrderRow(
     plant: optionalText(item.plant)
       ?? optionalText(record.parameters.plant)
       ?? optionalText(header.plant),
-    orderQuantity: typeof itemQuantity === "number" && Number.isFinite(itemQuantity)
-      ? itemQuantity
-      : typeof headerQuantity === "number" && Number.isFinite(headerQuantity)
-        ? headerQuantity
-        : null,
+    orderQuantity: quantity.value,
+    orderQuantityEvidence: quantity.evidence,
     purchaseOrderUnit: optionalText(item.purchaseOrderUnit)
       ?? optionalText(header.purchaseOrderUnit),
   };
@@ -120,11 +151,36 @@ function purchaseOrderRows(record: NodeFactRecord): PurchaseOrderRow[] {
     }
   }
 
-  return rows.sort((left, right) => {
-    const leftKey = [left.purchaseOrder ?? "", left.material ?? "", left.plant ?? ""].join("\u0000");
-    const rightKey = [right.purchaseOrder ?? "", right.material ?? "", right.plant ?? ""].join("\u0000");
-    return leftKey.localeCompare(rightKey);
-  });
+  return rows.sort(compareRows);
+}
+
+function canonicalScalar(value: string | number | null): string {
+  if (value === null) return "null";
+  if (typeof value === "string") return `string:${JSON.stringify(value)}`;
+  if (Number.isNaN(value)) return "number:NaN";
+  if (value === Number.POSITIVE_INFINITY) return "number:Infinity";
+  if (value === Number.NEGATIVE_INFINITY) return "number:-Infinity";
+  if (Object.is(value, -0)) return "number:-0";
+  return `number:${value}`;
+}
+
+function rowSortKey(row: PurchaseOrderRow): string {
+  return JSON.stringify([
+    row.purchaseOrder,
+    row.material,
+    row.plant,
+    row.purchaseOrderItem,
+    row.orderQuantity,
+    row.purchaseOrderUnit,
+    row.supplier,
+    canonicalScalar(row.orderQuantityEvidence),
+  ]);
+}
+
+function compareRows(left: PurchaseOrderRow, right: PurchaseOrderRow): number {
+  const leftKey = rowSortKey(left);
+  const rightKey = rowSortKey(right);
+  return leftKey < rightKey ? -1 : leftKey > rightKey ? 1 : 0;
 }
 
 const purchaseOrderBuilder: FactBuilderDeclaration = {
@@ -134,8 +190,8 @@ const purchaseOrderBuilder: FactBuilderDeclaration = {
     const asOf = freshness(record, "dataAsOf");
     return purchaseOrderRows(record).map((row, index) => ({
       factId: `${record.nodeId}:purchaseOrderItem:${index}`,
-      agentTraceId: "",
-      traceId: "",
+      agentTraceId: record.agentTraceId,
+      traceId: record.agentTraceId,
       gatewayTraceId: record.gatewayTraceId,
       domain: "MM",
       businessObject: "PurchaseOrder",
@@ -150,7 +206,7 @@ const purchaseOrderBuilder: FactBuilderDeclaration = {
         supplier: row.supplier,
         material: row.material,
         plant: row.plant,
-        orderQuantity: row.orderQuantity,
+        orderQuantity: row.orderQuantityEvidence,
         purchaseOrderUnit: row.purchaseOrderUnit,
       }],
       material: row.material,
