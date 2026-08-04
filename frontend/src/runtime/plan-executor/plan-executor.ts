@@ -17,6 +17,19 @@ import { validatePlanGraphV2 } from "./plan-graph-v2-parser";
 import { emitNodeStateChanged } from "./sse-emitter";
 
 const LEASE_TTL_MS = 60_000;
+const DEFAULT_NODE_TIMEOUT_MS = 30_000;
+
+const TERMINAL_STATES: string[] = [
+  NS.SUCCEEDED,
+  NS.FAILED,
+  NS.TIMED_OUT,
+  NS.CANCELLED,
+];
+
+type PlanExecutorOptions = {
+  nodeTimeoutMs?: number;
+  sseBroadcast?: (event: AgentRunEvent) => void;
+};
 
 export class PlanExecutor {
   private sequence: number = 2; // start after run_started (seq=1)
@@ -24,13 +37,28 @@ export class PlanExecutor {
   // on the node ledger, so concurrent transitions for different nodes would
   // clobber each other. Gateway validate/execute calls remain concurrent.
   private transitionChain: Promise<void> = Promise.resolve();
+  private cancelled: boolean = false;
+  private readonly nodeTimeoutMs: number;
+  private readonly sseBroadcast: (event: AgentRunEvent) => void;
 
   constructor(
     private readonly store: DurableRunStore,
     private readonly gateway: GatewayClient,
     private readonly workerId: string,
-    private readonly sseBroadcast: (event: AgentRunEvent) => void = () => {}
-  ) {}
+    optionsOrBroadcast?: PlanExecutorOptions | ((event: AgentRunEvent) => void)
+  ) {
+    if (typeof optionsOrBroadcast === "function") {
+      this.sseBroadcast = optionsOrBroadcast;
+      this.nodeTimeoutMs = DEFAULT_NODE_TIMEOUT_MS;
+    } else {
+      this.sseBroadcast = optionsOrBroadcast?.sseBroadcast ?? (() => {});
+      this.nodeTimeoutMs = optionsOrBroadcast?.nodeTimeoutMs ?? DEFAULT_NODE_TIMEOUT_MS;
+    }
+  }
+
+  cancel(): void {
+    this.cancelled = true;
+  }
 
   async execute(
     graph: PlanGraphV2,
@@ -58,7 +86,7 @@ export class PlanExecutor {
       const maxConcurrency = getMaxConcurrency();
       let pending = selectReadyNodes(graph, ledger, maxConcurrency);
 
-      while (pending.length > 0) {
+      while (pending.length > 0 && !this.cancelled) {
         const executing = pending.map(async (nodeId) => {
           await this.executeNode(graph, runId, expectedSnapshotId, nodeId, ledger);
         });
@@ -66,6 +94,17 @@ export class PlanExecutor {
         // Reload ledger after execution round
         ledger = await loadNodeLedger(this.store, runId);
         pending = selectReadyNodes(graph, ledger, maxConcurrency);
+      }
+
+      // If cancelled, mark all non-terminal nodes as CANCELLED.
+      // SUCCEEDED nodes are preserved (terminal state, skipped here).
+      if (this.cancelled) {
+        for (const nodeId of graph.readPartition) {
+          const entry = ledger[nodeId];
+          if (entry && !TERMINAL_STATES.includes(entry.state)) {
+            await this.transition(runId, expectedSnapshotId, nodeId, entry.state as NodeState, NS.CANCELLED, entry.attempt, entry.inputHash);
+          }
+        }
       }
 
       // Build result from final ledger
@@ -104,6 +143,10 @@ export class PlanExecutor {
     // transition to READY first. The 9-state machine requires null/BLOCKED_DEPENDENCY
     // -> READY before READY -> VALIDATING.
     const priorState = existing?.state ?? null;
+
+    // Check cancel before starting (post-loop marking handles un-ledgered nodes)
+    if (this.cancelled) return;
+
     if (priorState !== NS.READY) {
       await this.transition(runId, snapshotId, nodeId, priorState, NS.READY, attempt, inputHash);
     }
@@ -122,11 +165,22 @@ export class PlanExecutor {
       return;
     }
 
+    // Check cancel before execute (VALIDATING -> CANCELLED is legal)
+    if (this.cancelled) {
+      await this.transition(runId, snapshotId, nodeId, NS.VALIDATING, NS.CANCELLED, attempt, inputHash);
+      return;
+    }
+
     // VALIDATING -> EXECUTING
     await this.transition(runId, snapshotId, nodeId, NS.VALIDATING, NS.EXECUTING, attempt, inputHash);
 
-    // Gateway execute
-    const executeResult = await this.gateway.execute(node.capabilityId, parameters);
+    // Gateway execute with node-level timeout
+    const executeResult = await this.gatewayExecuteWithTimeout(node.capabilityId, parameters);
+    if (executeResult.timedOut) {
+      // EXECUTING -> TIMED_OUT (doesn't block independent nodes)
+      await this.transition(runId, snapshotId, nodeId, NS.EXECUTING, NS.TIMED_OUT, attempt, inputHash);
+      return;
+    }
     if (!executeResult.success) {
       // EXECUTING -> FAILED
       await this.transition(runId, snapshotId, nodeId, NS.EXECUTING, NS.FAILED, attempt, inputHash);
@@ -201,6 +255,26 @@ export class PlanExecutor {
     const params = this.resolveParameters(bindings);
     const entries = Object.entries(params).sort(([a], [b]) => a.localeCompare(b));
     return entries.map(([k, v]) => `${k}=${v}`).join("&");
+  }
+
+  private async gatewayExecuteWithTimeout(
+    capabilityId: string,
+    parameters: Record<string, string>
+  ): Promise<{ success: boolean; data?: Record<string, unknown>; errorType?: string; timedOut: boolean; traceId?: string }> {
+    try {
+      const result = await Promise.race([
+        this.gateway.execute(capabilityId, parameters),
+        this.timeoutPromise(this.nodeTimeoutMs),
+      ]);
+      if (result === "TIMEOUT") return { success: false, timedOut: true, errorType: "TIMEOUT" };
+      return { success: result.success, data: result.data, errorType: result.errorType, timedOut: false, traceId: result.traceId };
+    } catch {
+      return { success: false, timedOut: false };
+    }
+  }
+
+  private timeoutPromise(ms: number): Promise<"TIMEOUT"> {
+    return new Promise((resolve) => setTimeout(() => resolve("TIMEOUT"), ms));
   }
 
   private emptyResult(runId: string, snapshotId: string): PlanExecutorResult {

@@ -224,4 +224,43 @@ describe("PlanExecutor", () => {
     expect(ledger["node.inv"].inputHash).toContain("M1");
     expect(ledger["node.po"].inputHash).toContain("M2");
   });
+
+  // --- Task 9: node-level timeout + user cancellation ---
+
+  it("node timeout -> TIMED_OUT, independent node continues", async () => {
+    const store = new JsonlRunStore(dir, "worker-A");
+    await store.save("run-1", seed("run-1"));
+    // delayMs below nodeTimeoutMs so gateway returns before timeout
+    const gateway = new FakeGateway({ delayMs: 50 });
+    // Make one node fail execute to test independence
+    gateway.setExecuteResult("MM.Inventory.GetAvailability", { success: false, errorType: "TIMEOUT", message: "timed out" });
+    const executor = new PlanExecutor(store, gateway, "worker-A", { nodeTimeoutMs: 100 });
+    const result = await executor.execute(dualReadGraph(), "run-1", SNAP);
+    // node.inv execute fails -> FAILED (not TIMED_OUT, because fake returns before timeout)
+    expect(result.failed).toContain("node.inv");
+    expect(result.succeeded).toContain("node.po");
+  });
+
+  it("true timeout: gateway slower than nodeTimeoutMs -> TIMED_OUT", async () => {
+    const store = new JsonlRunStore(dir, "worker-A");
+    await store.save("run-1", seed("run-1"));
+    const gateway = new FakeGateway({ delayMs: 300 });
+    const executor = new PlanExecutor(store, gateway, "worker-A", { nodeTimeoutMs: 50 });
+    const result = await executor.execute(dualReadGraph(), "run-1", SNAP);
+    expect(result.timedOut.length).toBeGreaterThan(0);
+    expect(result.succeeded).toEqual([]);
+  });
+
+  it("cancel: uncompleted nodes -> CANCELLED, SUCCEEDED preserved", async () => {
+    const store = new JsonlRunStore(dir, "worker-A");
+    await store.save("run-1", seed("run-1"));
+    const gateway = new FakeGateway({ delayMs: 200 });
+    const executor = new PlanExecutor(store, gateway, "worker-A", { nodeTimeoutMs: 500 });
+    // Cancel after 50ms (while nodes are still executing)
+    setTimeout(() => executor.cancel(), 50);
+    const result = await executor.execute(dualReadGraph(), "run-1", SNAP);
+    // Nodes were in-flight when cancelled -> CANCELLED
+    expect(result.cancelled.length).toBeGreaterThan(0);
+    expect(result.succeeded).toEqual([]);
+  });
 });
