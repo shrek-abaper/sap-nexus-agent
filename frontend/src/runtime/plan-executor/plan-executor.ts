@@ -28,7 +28,8 @@ export class PlanExecutor {
   constructor(
     private readonly store: DurableRunStore,
     private readonly gateway: GatewayClient,
-    private readonly workerId: string
+    private readonly workerId: string,
+    private readonly sseBroadcast: (event: AgentRunEvent) => void = () => {}
   ) {}
 
   async execute(
@@ -49,27 +50,30 @@ export class PlanExecutor {
       return this.emptyResult(runId, expectedSnapshotId);
     }
 
-    // Step 4: load existing node ledger (recovery)
-    let ledger = await loadNodeLedger(this.store, runId);
+    try {
+      // Step 4: load existing node ledger (recovery)
+      let ledger = await loadNodeLedger(this.store, runId);
 
-    // Step 5-6: schedule + execute ready nodes
-    const maxConcurrency = getMaxConcurrency();
-    let pending = selectReadyNodes(graph, ledger, maxConcurrency);
+      // Step 5-6: schedule + execute ready nodes
+      const maxConcurrency = getMaxConcurrency();
+      let pending = selectReadyNodes(graph, ledger, maxConcurrency);
 
-    while (pending.length > 0) {
-      const executing = pending.map(async (nodeId) => {
-        await this.executeNode(graph, runId, expectedSnapshotId, nodeId, ledger);
-      });
-      await Promise.all(executing);
-      // Reload ledger after execution round
-      ledger = await loadNodeLedger(this.store, runId);
-      pending = selectReadyNodes(graph, ledger, maxConcurrency);
+      while (pending.length > 0) {
+        const executing = pending.map(async (nodeId) => {
+          await this.executeNode(graph, runId, expectedSnapshotId, nodeId, ledger);
+        });
+        await Promise.all(executing);
+        // Reload ledger after execution round
+        ledger = await loadNodeLedger(this.store, runId);
+        pending = selectReadyNodes(graph, ledger, maxConcurrency);
+      }
+
+      // Build result from final ledger
+      const finalLedger = await loadNodeLedger(this.store, runId);
+      return this.buildResult(runId, expectedSnapshotId, finalLedger);
+    } finally {
+      await this.store.release(runId, this.workerId);
     }
-
-    // Build result from final ledger
-    const finalLedger = await loadNodeLedger(this.store, runId);
-    await this.store.release(runId, this.workerId);
-    return this.buildResult(runId, expectedSnapshotId, finalLedger);
   }
 
   private async executeNode(
@@ -82,9 +86,11 @@ export class PlanExecutor {
     const node = graph.nodes.find((n) => n.nodeId === nodeId);
     if (!node) return;
 
+    const inputHash = this.computeInputHash(node.parameterBindings);
+
     // Action / non-read-only node -> BLOCKED_APPROVAL
     if (node.governance.requiresApproval) {
-      await this.transition(runId, snapshotId, nodeId, null, NS.BLOCKED_APPROVAL, 0, ledger);
+      await this.transition(runId, snapshotId, nodeId, null, NS.BLOCKED_APPROVAL, 0, inputHash);
       return;
     }
 
@@ -93,18 +99,17 @@ export class PlanExecutor {
     if (existing?.state === NS.SUCCEEDED) return;
 
     const attempt = existing?.attempt ?? 0;
-    const inputHash = this.computeInputHash(node.parameterBindings);
 
     // If node is not yet in READY (initial pickup or BLOCKED_DEPENDENCY cleared),
     // transition to READY first. The 9-state machine requires null/BLOCKED_DEPENDENCY
     // -> READY before READY -> VALIDATING.
     const priorState = existing?.state ?? null;
     if (priorState !== NS.READY) {
-      await this.transition(runId, snapshotId, nodeId, priorState, NS.READY, attempt, ledger);
+      await this.transition(runId, snapshotId, nodeId, priorState, NS.READY, attempt, inputHash);
     }
 
     // READY -> VALIDATING
-    await this.transition(runId, snapshotId, nodeId, NS.READY, NS.VALIDATING, attempt, ledger);
+    await this.transition(runId, snapshotId, nodeId, NS.READY, NS.VALIDATING, attempt, inputHash);
 
     // Resolve parameters
     const parameters = this.resolveParameters(node.parameterBindings);
@@ -113,23 +118,23 @@ export class PlanExecutor {
     const validateResult = await this.gateway.validate(node.capabilityId, parameters);
     if (!validateResult.valid) {
       // VALIDATING -> FAILED
-      await this.transition(runId, snapshotId, nodeId, NS.VALIDATING, NS.FAILED, attempt, ledger);
+      await this.transition(runId, snapshotId, nodeId, NS.VALIDATING, NS.FAILED, attempt, inputHash);
       return;
     }
 
     // VALIDATING -> EXECUTING
-    await this.transition(runId, snapshotId, nodeId, NS.VALIDATING, NS.EXECUTING, attempt, ledger);
+    await this.transition(runId, snapshotId, nodeId, NS.VALIDATING, NS.EXECUTING, attempt, inputHash);
 
     // Gateway execute
     const executeResult = await this.gateway.execute(node.capabilityId, parameters);
     if (!executeResult.success) {
       // EXECUTING -> FAILED
-      await this.transition(runId, snapshotId, nodeId, NS.EXECUTING, NS.FAILED, attempt, ledger);
+      await this.transition(runId, snapshotId, nodeId, NS.EXECUTING, NS.FAILED, attempt, inputHash);
       return;
     }
 
     // EXECUTING -> SUCCEEDED
-    await this.transition(runId, snapshotId, nodeId, NS.EXECUTING, NS.SUCCEEDED, attempt, ledger, executeResult.traceId ?? null);
+    await this.transition(runId, snapshotId, nodeId, NS.EXECUTING, NS.SUCCEEDED, attempt, inputHash, executeResult.traceId ?? null);
   }
 
   private async transition(
@@ -139,7 +144,7 @@ export class PlanExecutor {
     fromState: NodeState | null,
     toState: NodeState,
     attempt: number,
-    ledger: Record<string, NodeLedgerEntry>,
+    inputHash: string,
     resultRef: string | null = null
   ): Promise<void> {
     // Acquire serialized lock (transitionNode read-modify-write is not atomic)
@@ -156,7 +161,7 @@ export class PlanExecutor {
       const entry: NodeLedgerEntry = {
         state: toState,
         attempt,
-        inputHash: ledger[nodeId]?.inputHash ?? "",
+        inputHash,
         resultRef,
         traceSpan: null,
         updatedAt: new Date().toISOString(),
@@ -165,10 +170,10 @@ export class PlanExecutor {
       // Double-write: nodeState (authoritative) + events (audit/SSE)
       await transitionNode(this.store, runId, snapshotId, nodeId, entry);
 
-      // Emit SSE event (coerce null -> "INITIAL" for string param, consistent with node-ledger)
-      const emitFn = (event: AgentRunEvent) => {
-        void this.store.appendEvent(runId, event);
-      };
+      // Live SSE push only (in-memory subscriber broadcast).
+      // The durable node_state_changed event is appended exactly once by
+      // transitionNode above (Task 4 spec-required dual-write).
+      const emitFn = (event: AgentRunEvent) => this.sseBroadcast(event);
       const { nextSequence } = emitNodeStateChanged(emitFn, runId, nodeId, fromState ?? "INITIAL", toState, attempt, this.sequence);
       this.sequence = nextSequence;
     } finally {
@@ -191,8 +196,11 @@ export class PlanExecutor {
   }
 
   private computeInputHash(bindings: ParameterBinding[]): string {
-    const sorted = bindings.map((b) => `${b.parameterName}`).sort().join(",");
-    return `${sorted}`;
+    // Hash resolved parameter VALUES (what is actually sent to the Gateway),
+    // not parameter names. Same inputs -> same hash; different inputs -> different hash.
+    const params = this.resolveParameters(bindings);
+    const entries = Object.entries(params).sort(([a], [b]) => a.localeCompare(b));
+    return entries.map(([k, v]) => `${k}=${v}`).join("&");
   }
 
   private emptyResult(runId: string, snapshotId: string): PlanExecutorResult {

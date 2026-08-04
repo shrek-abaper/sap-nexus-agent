@@ -9,7 +9,7 @@ import type { AgentRunRecord } from "../durable/types";
 import { FakeGateway } from "./fake-gateway";
 import { NodeState } from "./types";
 import { PlanExecutor } from "./plan-executor";
-import type { PlanGraphV2 } from "./types";
+import type { PlanGraphV2, GatewayClient, GatewayValidateResult, GatewayExecuteResult, NodeLedgerEntry } from "./types";
 
 const SNAP = "sha256:snap-001";
 
@@ -55,6 +55,35 @@ function dualReadGraph(): PlanGraphV2 {
     projectionRef: [],
     ruleSetRefs: [],
   };
+}
+
+function singleReadNodeGraph(): PlanGraphV2 {
+  const g = dualReadGraph();
+  return {
+    ...g,
+    nodes: [g.nodes[0]],
+    topologicalOrder: ["node.inv"],
+    readPartition: ["node.inv"],
+  };
+}
+
+function diffParamGraph(): PlanGraphV2 {
+  const g = dualReadGraph();
+  g.nodes[1].parameterBindings[0].source = {
+    kind: "literal",
+    semanticType: "MaterialCode",
+    value: "M2",
+  };
+  return g;
+}
+
+class ThrowingGateway implements GatewayClient {
+  async validate(_capabilityId: string, _parameters: Record<string, string>): Promise<GatewayValidateResult> {
+    throw new Error("gateway validate boom");
+  }
+  async execute(_capabilityId: string, _parameters: Record<string, string>): Promise<GatewayExecuteResult> {
+    throw new Error("gateway execute boom");
+  }
 }
 
 describe("PlanExecutor", () => {
@@ -127,5 +156,72 @@ describe("PlanExecutor", () => {
     expect(result.succeeded).toEqual([]);
     expect(result.failed).toEqual([]);
     expect(result.blocked).toEqual([]);
+  });
+
+  // --- Critical #1: no double-event emission ---
+  it("emits exactly one node_state_changed event per transition (no duplication)", async () => {
+    const store = new JsonlRunStore(dir, "worker-A");
+    await store.save("run-1", seed("run-1"));
+    const executor = new PlanExecutor(store, new FakeGateway(), "worker-A");
+    await executor.execute(singleReadNodeGraph(), "run-1", SNAP);
+    const record = await store.load("run-1");
+    const nodeEvents = record!.events.filter((e) => e.type === "node_state_changed");
+    // Single READ node: INITIAL->READY, READY->VALIDATING, VALIDATING->EXECUTING, EXECUTING->SUCCEEDED
+    expect(nodeEvents).toHaveLength(4);
+  });
+
+  it("broadcasts node_state_changed via sseBroadcast callback (live push only)", async () => {
+    const store = new JsonlRunStore(dir, "worker-A");
+    await store.save("run-1", seed("run-1"));
+    const broadcasted: AgentRunEvent[] = [];
+    const executor = new PlanExecutor(store, new FakeGateway(), "worker-A", (e) => broadcasted.push(e));
+    await executor.execute(singleReadNodeGraph(), "run-1", SNAP);
+    // Live SSE push: one broadcast per transition (4 transitions for a single READ node)
+    expect(broadcasted).toHaveLength(4);
+    expect(broadcasted.every((e) => e.type === "node_state_changed")).toBe(true);
+    // Durable stream must still have exactly 4 (no duplication)
+    const record = await store.load("run-1");
+    const durableEvents = record!.events.filter((e) => e.type === "node_state_changed");
+    expect(durableEvents).toHaveLength(4);
+  });
+
+  // --- Important #2: lease released on execution error ---
+  it("releases lease even when Gateway throws", async () => {
+    const store = new JsonlRunStore(dir, "worker-A");
+    await store.save("run-1", seed("run-1"));
+    const executor = new PlanExecutor(store, new ThrowingGateway(), "worker-A");
+    await expect(executor.execute(singleReadNodeGraph(), "run-1", SNAP)).rejects.toThrow("gateway validate boom");
+    const leaseExpiry = await store.loadLeaseExpiry("run-1");
+    expect(leaseExpiry).toBeNull();
+  });
+
+  // --- Important #3: inputHash computed from values and stored ---
+  it("stores non-empty inputHash reflecting parameter values", async () => {
+    const store = new JsonlRunStore(dir, "worker-A");
+    await store.save("run-1", seed("run-1"));
+    const executor = new PlanExecutor(store, new FakeGateway(), "worker-A");
+    await executor.execute(dualReadGraph(), "run-1", SNAP);
+    const ref = await store.loadCheckpointRef("run-1");
+    const ledger = ref!.nodeState as Record<string, NodeLedgerEntry>;
+    // inputHash is non-empty
+    expect(ledger["node.inv"].inputHash).not.toBe("");
+    // Same params -> same hash
+    expect(ledger["node.inv"].inputHash).toBe(ledger["node.po"].inputHash);
+    // Hash reflects VALUES (contains "M1"), not just parameter names
+    expect(ledger["node.inv"].inputHash).toContain("M1");
+  });
+
+  it("inputHash differs for different parameter values", async () => {
+    const store = new JsonlRunStore(dir, "worker-A");
+    await store.save("run-1", seed("run-1"));
+    const executor = new PlanExecutor(store, new FakeGateway(), "worker-A");
+    await executor.execute(diffParamGraph(), "run-1", SNAP);
+    const ref = await store.loadCheckpointRef("run-1");
+    const ledger = ref!.nodeState as Record<string, NodeLedgerEntry>;
+    // Different param values -> different hash
+    expect(ledger["node.inv"].inputHash).not.toBe(ledger["node.po"].inputHash);
+    // node.inv has M1, node.po has M2
+    expect(ledger["node.inv"].inputHash).toContain("M1");
+    expect(ledger["node.po"].inputHash).toContain("M2");
   });
 });
