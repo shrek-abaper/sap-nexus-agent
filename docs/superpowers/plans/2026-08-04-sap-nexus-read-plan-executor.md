@@ -501,7 +501,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 
 **Design Doc 参考:** §3 D4（9 态定义）+ Q1 落实
 
-- [ ] **Step 1: 写失败测试 - 合法 + 非法转换**
+- [x] **Step 1: 写失败测试 - 合法 + 非法转换**
 
 ```typescript
 // frontend/src/runtime/plan-executor/node-state-machine.test.ts
@@ -597,12 +597,12 @@ describe("node state machine", () => {
 });
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run: `npm --prefix frontend test -- --run node-state-machine.test`
 Expected: FAIL（模块不存在）
 
-- [ ] **Step 3: 实现 node-state-machine.ts**
+- [x] **Step 3: 实现 node-state-machine.ts**
 
 ```typescript
 // frontend/src/runtime/plan-executor/node-state-machine.ts
@@ -651,12 +651,12 @@ export function assertTransition(from: StateOrNull, to: NodeState): void {
 }
 ```
 
-- [ ] **Step 4: 运行测试确认通过**
+- [x] **Step 4: 运行测试确认通过**
 
 Run: `npm --prefix frontend test -- --run node-state-machine.test`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/runtime/plan-executor/node-state-machine.ts frontend/src/runtime/plan-executor/node-state-machine.test.ts

@@ -10,27 +10,27 @@
 
 ## Current Task
 
-- Plan Task: Task 2 - PlanGraph v2 Node 侧类型 + 反序列化
-- Mapped OpenSpec tasks: 1.2, 1.3
+- Plan Task: Task 3 - 节点状态机（9 态 + 合法转换表）
+- Mapped OpenSpec tasks: 2.1, 2.3
 - Stage: implementing
-- BASE commit (review-package): cb8acd495a55e0aa417d8c07c75c581f0bec622f
-- Brief: .superpowers/sdd/task-2-brief.md
-- Report: .superpowers/sdd/task-2-report.md
+- BASE commit (review-package): bcac39ef21c0671dab96a018faed2b329af1b09f
+- Brief: .superpowers/sdd/task-3-brief.md
+- Report: .superpowers/sdd/task-3-report.md
 - Implementer model: sonnet
-- Allowed files: frontend/src/runtime/plan-executor/types.ts, plan-graph-v2-parser.ts, plan-graph-v2-parser.test.ts (new only)
+- Allowed files: frontend/src/runtime/plan-executor/node-state-machine.ts, node-state-machine.test.ts (new only)
 
 ## Completed Tasks
 
-- Task 1 (Q6 v2 wiring): DONE, commit b9c9bb0, review ✅ Approved (no Critical/Important)
-  - Minor findings deferred to final review: (1) test_orchestrator.py ~L662-663 stale comment refs v1; (2) eval.py:269 docstring drift (out-of-scope)
+- Task 1 (Q6 v2 wiring): DONE, commit b9c9bb0, review ✅ Approved. Minor deferred: test_orchestrator.py stale comment, eval.py docstring drift.
+- Task 2 (v2 parser+types): DONE, commit 4dd082a, review ✅ Approved. Minor deferred: as-cast on parameterBindings (plan-mandated; Task 5/8 should add source-kind validation before binding resolution), permissive emptiness guard, O(n*m) lookup, unused _drop in test.
 
 ## Task -> OpenSpec Mapping
 
 | Plan Task | OpenSpec tasks.md | Stage |
 |-----------|-------------------|-------|
 | Task 1 | 1.1 | done |
-| Task 2 | 1.2, 1.3 | implementing |
-| Task 3 | 2.1, 2.3 | pending |
+| Task 2 | 1.2, 1.3 | done |
+| Task 3 | 2.1, 2.3 | implementing |
 | Task 4 | 2.2 | pending |
 | Task 5 | 3.1, 3.2 | pending |
 | Task 6 | 8.1 | pending |
