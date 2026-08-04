@@ -1748,7 +1748,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 
 **Design Doc 参考:** §3 D4（TIMED_OUT / CANCELLED）+ §4.2 step 8
 
-- [ ] **Step 1: 追加超时 + 取消测试**
+- [x] **Step 1: 追加超时 + 取消测试**
 
 在 `plan-executor.test.ts` 末尾追加：
 
@@ -1792,12 +1792,12 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
   });
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run: `npm --prefix frontend test -- --run plan-executor.test`
 Expected: FAIL（超时/取消功能未实现）
 
-- [ ] **Step 3: 修改 PlanExecutor 添加超时 + 取消**
+- [x] **Step 3: 修改 PlanExecutor 添加超时 + 取消**
 
 修改 `plan-executor.ts` 的 constructor 和 `executeNode` 方法：
 
@@ -1934,12 +1934,12 @@ export class PlanExecutor {
     }
 ```
 
-- [ ] **Step 4: 运行测试确认通过**
+- [x] **Step 4: 运行测试确认通过**
 
 Run: `npm --prefix frontend test -- --run plan-executor.test`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/runtime/plan-executor/plan-executor.ts frontend/src/runtime/plan-executor/plan-executor.test.ts
