@@ -7,7 +7,7 @@ const LEGAL_TRANSITIONS: Record<string, NodeState[]> = {
   [NodeState.BLOCKED_DEPENDENCY]: [NodeState.READY, NodeState.CANCELLED],
   [NodeState.BLOCKED_APPROVAL]: [NodeState.CANCELLED],
   [NodeState.READY]: [NodeState.VALIDATING, NodeState.CANCELLED],
-  [NodeState.VALIDATING]: [NodeState.EXECUTING, NodeState.FAILED, NodeState.CANCELLED],
+  [NodeState.VALIDATING]: [NodeState.EXECUTING, NodeState.FAILED, NodeState.TIMED_OUT, NodeState.CANCELLED],
   [NodeState.EXECUTING]: [NodeState.SUCCEEDED, NodeState.FAILED, NodeState.TIMED_OUT, NodeState.CANCELLED],
   [NodeState.FAILED]: [NodeState.READY],
   [NodeState.TIMED_OUT]: [NodeState.READY],
@@ -19,6 +19,7 @@ const INITIAL_STATES: NodeState[] = [
   NodeState.READY,
   NodeState.BLOCKED_DEPENDENCY,
   NodeState.BLOCKED_APPROVAL,
+  NodeState.CANCELLED,
 ];
 
 export function isLegalTransition(from: StateOrNull, to: NodeState): boolean {

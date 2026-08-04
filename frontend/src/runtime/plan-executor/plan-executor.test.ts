@@ -187,11 +187,15 @@ describe("PlanExecutor", () => {
   });
 
   // --- Important #2: lease released on execution error ---
+  // gatewayValidateWithTimeout catches throws (mirrors gatewayExecuteWithTimeout),
+  // so a throwing validate transitions the node to FAILED instead of propagating.
+  // The lease must still be released.
   it("releases lease even when Gateway throws", async () => {
     const store = new JsonlRunStore(dir, "worker-A");
     await store.save("run-1", seed("run-1"));
     const executor = new PlanExecutor(store, new ThrowingGateway(), "worker-A");
-    await expect(executor.execute(singleReadNodeGraph(), "run-1", SNAP)).rejects.toThrow("gateway validate boom");
+    const result = await executor.execute(singleReadNodeGraph(), "run-1", SNAP);
+    expect(result.failed).toContain("node.inv");
     const leaseExpiry = await store.loadLeaseExpiry("run-1");
     expect(leaseExpiry).toBeNull();
   });
@@ -317,6 +321,72 @@ describe("PlanExecutor", () => {
     const result = await executor.execute(dualReadGraph(), "run-1", SNAP);
     expect(result.timedOut).toContain("node.inv");
     expect(result.succeeded).toContain("node.po");
+  });
+
+  // --- Final review fix I-1: validate timeout ---
+
+  // Spec: "A timed-out node SHALL transition to TIMED_OUT without blocking
+  // independent nodes." Validate previously had no timeout wrapper; a hanging
+  // validate left the node in VALIDATING forever and blocked Promise.all.
+  it("validate timeout: hanging validate -> TIMED_OUT, independent node continues", async () => {
+    const store = new JsonlRunStore(dir, "worker-A");
+    await store.save("run-1", seed("run-1"));
+    // Custom gateway: only MM.Inventory.GetAvailability validate is slow;
+    // MM.PurchaseOrder.GetList validate + both executes return instantly.
+    const gateway: GatewayClient = {
+      async validate(capabilityId) {
+        if (capabilityId === "MM.Inventory.GetAvailability") {
+          await new Promise((r) => setTimeout(r, 300)); // exceeds nodeTimeoutMs
+        }
+        return { valid: true, traceId: `val-${capabilityId}` };
+      },
+      async execute(capabilityId, params) {
+        return { success: true, traceId: `exec-${capabilityId}`, data: { capabilityId, params } };
+      },
+    };
+    const executor = new PlanExecutor(store, gateway, "worker-A", { nodeTimeoutMs: 50 });
+    const result = await executor.execute(dualReadGraph(), "run-1", SNAP);
+    // node.inv validate hung -> TIMED_OUT (not SUCCEEDED)
+    expect(result.timedOut).toContain("node.inv");
+    // node.po independent -> still succeeds
+    expect(result.succeeded).toContain("node.po");
+  });
+
+  // --- Final review fix I-2: un-ledgered cancel ---
+
+  // Spec: "uncompleted nodes SHALL transition to CANCELLED." Previously the
+  // cancel sweep only marked ledgered (non-terminal) nodes; un-ledgered nodes
+  // (never picked up due to unsatisfied dependency + cancel) were invisible.
+  it("cancel: un-ledgered dependent node -> CANCELLED (appears in result.cancelled)", async () => {
+    const graph: PlanGraphV2 = {
+      ...dualReadGraph(),
+      nodes: [
+        { nodeId: "node.inv", capabilityId: "MM.Inventory.GetAvailability",
+          parameterBindings: [{ parameterName: "material", source: { kind: "literal", semanticType: "MaterialCode", value: "M1" } }],
+          producesFactTypes: [], governance: { requiresApproval: false } },
+        { nodeId: "node.detail", capabilityId: "MM.Inventory.GetDetail",
+          parameterBindings: [{ parameterName: "material", source: { kind: "literal", semanticType: "MaterialCode", value: "M1" } }],
+          producesFactTypes: [], governance: { requiresApproval: false } },
+      ],
+      edges: [
+        { edgeId: "e1", kind: "dependency", fromNodeId: "node.inv", toNodeId: "node.detail" },
+      ],
+      topologicalOrder: ["node.inv", "node.detail"],
+      readPartition: ["node.inv", "node.detail"],
+    };
+
+    const store = new JsonlRunStore(dir, "worker-A");
+    await store.save("run-1", seed("run-1"));
+    // Slow gateway so node.inv is in-flight (VALIDATING) when cancelled
+    const gateway = new FakeGateway({ delayMs: 200 });
+    const executor = new PlanExecutor(store, gateway, "worker-A", { nodeTimeoutMs: 500 });
+    setTimeout(() => executor.cancel(), 50);
+    const result = await executor.execute(graph, "run-1", SNAP);
+    // node.inv was in-flight (has ledger entry) -> CANCELLED
+    expect(result.cancelled).toContain("node.inv");
+    // node.detail was never picked up (dep unsatisfied) -> CANCELLED, not invisible
+    expect(result.cancelled).toContain("node.detail");
+    expect(result.blocked).not.toContain("node.detail");
   });
 
   // --- Task 11: dependency chain scenarios ---

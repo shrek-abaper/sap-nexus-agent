@@ -105,6 +105,15 @@ export class PlanExecutor {
             await this.transition(runId, expectedSnapshotId, nodeId, entry.state as NodeState, NS.CANCELLED, entry.attempt, entry.inputHash);
           }
         }
+        // Mark un-ledgered read-partition nodes as CANCELLED (spec: uncompleted
+        // nodes SHALL transition to CANCELLED). These nodes were never picked up
+        // (dependency unsatisfied) and have no ledger entry.
+        for (const nodeId of graph.readPartition) {
+          if (ledger[nodeId]) continue;
+          const node = graph.nodes.find((n) => n.nodeId === nodeId);
+          const inputHash = node ? this.computeInputHash(node.parameterBindings) : "";
+          await this.transition(runId, expectedSnapshotId, nodeId, null, NS.CANCELLED, 0, inputHash);
+        }
       }
 
       // Mark read-partition nodes that were never selected (prerequisite did
@@ -183,8 +192,13 @@ export class PlanExecutor {
     // Resolve parameters
     const parameters = this.resolveParameters(node.parameterBindings);
 
-    // Gateway validate
-    const validateResult = await this.gateway.validate(node.capabilityId, parameters);
+    // Gateway validate with node-level timeout
+    const validateResult = await this.gatewayValidateWithTimeout(node.capabilityId, parameters);
+    if (validateResult.timedOut) {
+      // VALIDATING -> TIMED_OUT (doesn't block independent nodes)
+      await this.transition(runId, snapshotId, nodeId, NS.VALIDATING, NS.TIMED_OUT, attempt, inputHash);
+      return;
+    }
     if (!validateResult.valid) {
       // VALIDATING -> FAILED
       await this.transition(runId, snapshotId, nodeId, NS.VALIDATING, NS.FAILED, attempt, inputHash);
@@ -302,6 +316,22 @@ export class PlanExecutor {
       return { success: result.success, data: result.data, errorType: result.errorType, timedOut: false, traceId: result.traceId };
     } catch {
       return { success: false, timedOut: false };
+    }
+  }
+
+  private async gatewayValidateWithTimeout(
+    capabilityId: string,
+    parameters: Record<string, string>
+  ): Promise<{ valid: boolean; traceId?: string; errors?: string[]; timedOut: boolean }> {
+    try {
+      const result = await Promise.race([
+        this.gateway.validate(capabilityId, parameters),
+        this.timeoutPromise(this.nodeTimeoutMs),
+      ]);
+      if (result === "TIMEOUT") return { valid: false, timedOut: true };
+      return { valid: result.valid, traceId: result.traceId, errors: result.errors, timedOut: false };
+    } catch {
+      return { valid: false, timedOut: false };
     }
   }
 

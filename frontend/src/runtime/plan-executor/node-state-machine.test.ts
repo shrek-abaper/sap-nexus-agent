@@ -32,6 +32,9 @@ describe("node state machine", () => {
     it("VALIDATING -> CANCELLED", () => {
       expect(isLegalTransition(NodeState.VALIDATING, NodeState.CANCELLED)).toBe(true);
     });
+    it("VALIDATING -> TIMED_OUT (validate timeout, spec: timed-out node SHALL transition to TIMED_OUT)", () => {
+      expect(isLegalTransition(NodeState.VALIDATING, NodeState.TIMED_OUT)).toBe(true);
+    });
     it("EXECUTING -> CANCELLED", () => {
       expect(isLegalTransition(NodeState.EXECUTING, NodeState.CANCELLED)).toBe(true);
     });
@@ -46,6 +49,9 @@ describe("node state machine", () => {
     });
     it("initial -> BLOCKED_APPROVAL", () => {
       expect(isLegalTransition(null, NodeState.BLOCKED_APPROVAL)).toBe(true);
+    });
+    it("initial -> CANCELLED (never-started node cancelled, spec: uncompleted nodes SHALL transition to CANCELLED)", () => {
+      expect(isLegalTransition(null, NodeState.CANCELLED)).toBe(true);
     });
   });
 
