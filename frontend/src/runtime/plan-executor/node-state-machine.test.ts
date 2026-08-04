@@ -87,5 +87,15 @@ describe("node state machine", () => {
         expect(err.toState).toBe(NodeState.EXECUTING);
       }
     });
+    // Safety-critical lockdown: Action nodes blocked on approval must never execute.
+    it("BLOCKED_APPROVAL -> EXECUTING throws IllegalTransitionError (action nodes must never execute)", () => {
+      expect(() => assertTransition(NodeState.BLOCKED_APPROVAL, NodeState.EXECUTING)).toThrow(IllegalTransitionError);
+    });
+    it("BLOCKED_APPROVAL -> CANCELLED does not throw (only legal exit from approval block)", () => {
+      expect(() => assertTransition(NodeState.BLOCKED_APPROVAL, NodeState.CANCELLED)).not.toThrow();
+    });
+    it("TIMED_OUT -> READY does not throw (retry from timeout, parallel to FAILED -> READY)", () => {
+      expect(() => assertTransition(NodeState.TIMED_OUT, NodeState.READY)).not.toThrow();
+    });
   });
 });
