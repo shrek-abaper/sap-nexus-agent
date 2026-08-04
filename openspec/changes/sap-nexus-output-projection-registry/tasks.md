@@ -13,8 +13,8 @@
 
 ## 3. Executor 扩展产出（read-plan-executor 修改）
 
-- [ ] 3.1 扩展 executor 产出，使 `SUCCEEDED` 节点暴露构建 `ReasoningFact` 所需的 per-node 数据（向后兼容新增字段，不改已有字段语义与状态机）
-- [ ] 3.2 回归 Runbook 16 executor 测试（`frontend run verify` 中 executor 套件）不改动通过
+- [x] 3.1 扩展 executor 产出，使 `SUCCEEDED` 节点暴露构建 `ReasoningFact` 所需的 per-node 数据（向后兼容新增字段，不改已有字段语义与状态机）
+- [x] 3.2 回归 Runbook 16 executor 测试（`frontend run verify` 中 executor 套件）不改动通过
 
 ## 4. 投影输入组装
 

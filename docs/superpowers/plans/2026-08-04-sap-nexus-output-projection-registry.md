@@ -262,7 +262,7 @@ git commit -m "feat(projection): add versioned projection registry"
 - Modify: `frontend/src/runtime/plan-executor/plan-executor-recovery.test.ts`
 - Produces: `NodeFactRecord`、`PlanExecutorResult.succeededNodeResults`
 
-- [ ] **Step 1: 写失败测试，要求新执行保留 data/parameters/time 且旧结果字段不变**
+- [x] **Step 1: 写失败测试，要求新执行保留 data/parameters/time 且旧结果字段不变**
 
 ```typescript
 it("exposes succeeded node data without changing legacy result semantics", async () => {
@@ -286,13 +286,13 @@ it("exposes succeeded node data without changing legacy result semantics", async
 
 在 recovery test 增加：首次执行后新建 executor 再执行，第二次 `succeededNodeResults` 与第一次深相等，且 Gateway 调用数不增加。
 
-- [ ] **Step 2: 运行两个 executor 测试文件确认失败**
+- [x] **Step 2: 运行两个 executor 测试文件确认失败**
 
 Run: `npm --prefix frontend test -- src/runtime/plan-executor/plan-executor.test.ts src/runtime/plan-executor/plan-executor-recovery.test.ts`
 
 Expected: FAIL，`succeededNodeResults` 为 `undefined`。
 
-- [ ] **Step 3: 扩展类型和 idempotency payload**
+- [x] **Step 3: 扩展类型和 idempotency payload**
 
 ```typescript
 // add to plan-executor/types.ts
@@ -312,7 +312,7 @@ producesFactTypes?: string[];
 nodeExecutedAt?: string;
 ```
 
-- [ ] **Step 4: 修改 executor，使 transition 返回 entry，并在 fresh/cache/old-cache 路径构造同形记录**
+- [x] **Step 4: 修改 executor，使 transition 返回 entry，并在 fresh/cache/old-cache 路径构造同形记录**
 
 在 `execute()` 内创建局部 `const nodeResults = new Map<string, NodeFactRecord>()`，传给 `executeNode()`；成功 transition 返回的 `entry.updatedAt` 是唯一 `nodeExecutedAt`。`markExecuted` payload 写入：
 
@@ -336,13 +336,13 @@ await this.store.markExecuted(idempotencyKey, {
 succeededNodeResults: [...nodeResults.values()].sort((a, b) => a.nodeId.localeCompare(b.nodeId)),
 ```
 
-- [ ] **Step 5: 运行 executor 定向回归和完整 frontend typecheck**
+- [x] **Step 5: 运行 executor 定向回归和完整 frontend typecheck**
 
 Run: `npm --prefix frontend test -- src/runtime/plan-executor/plan-executor.test.ts src/runtime/plan-executor/plan-executor-recovery.test.ts && npm --prefix frontend run typecheck`
 
 Expected: PASS；原有状态、取消、超时、依赖、lease 测试不改断言仍通过，新 recovery case 证明不重呼 Gateway。
 
-- [ ] **Step 6: Commit executor projection data retention**
+- [x] **Step 6: Commit executor projection data retention**
 
 ```bash
 git add frontend/src/runtime/durable/types.ts frontend/src/runtime/plan-executor/types.ts frontend/src/runtime/plan-executor/plan-executor.ts frontend/src/runtime/plan-executor/plan-executor.test.ts frontend/src/runtime/plan-executor/plan-executor-recovery.test.ts

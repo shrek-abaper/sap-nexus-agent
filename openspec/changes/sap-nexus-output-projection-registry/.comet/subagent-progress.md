@@ -9,20 +9,19 @@
 
 ## Current Task
 
-- Plan task: `Task 2: 实现版本化 OutputProjectionRegistry`
+- Plan task: `Task 3: 扩展 PlanExecutor 保留并恢复成功节点数据`
 - OpenSpec mapping:
-  - `2.1 实现 OutputProjectionRegistry register + resolve`
-  - `2.2 未知 projectionId/version fail-closed`
-  - `2.3 注册表单测`
+  - `3.1 扩展 executor 产出 per-node projection data`
+  - `3.2 回归 Runbook 16 executor 测试`
 - Stage: `done`
 - Implementer status: `DONE`
-- Base commit: `3d2662b9aed8bb687d6bf5d6e6f03747dd18af51`
-- Implementation commit: `127d1158732561717a2478349fa9e9a4e12fdeb2`
-- Changed files: `frontend/src/runtime/projection/registry.ts`, `frontend/src/runtime/projection/registry.test.ts`
-- RED evidence: focused registry test failed with expected `Cannot find module './registry'`.
-- GREEN evidence: `npm --prefix frontend test -- src/runtime/projection/registry.test.ts` passed (1 file, 4 tests); `git diff --check` clean.
+- Base commit: `dc10caad6bbe06f9b56d012b269484998dc27a50`
+- Implementation commit: `291f2c2f8d821d2cdf1bed0cf4745930eead7857`
+- Changed files: `frontend/src/runtime/plan-executor/types.ts`, `frontend/src/runtime/plan-executor/plan-executor.ts`, `frontend/src/runtime/durable/types.ts`, `frontend/src/runtime/plan-executor/plan-executor.test.ts`, `frontend/src/runtime/plan-executor/plan-executor-recovery.test.ts`
+- RED evidence: focused executor/recovery tests failed only on missing `succeededNodeResults` (up to 4 expected feature-missing failures).
+- GREEN evidence: focused executor/recovery tests passed (2 files, 27 tests); frontend typecheck and `git diff --check` passed.
 - Task review: approved (`Spec compliant`; `Task quality: Approved`; 0 Critical/Important/Minor)
 - Review/fix round: 0/2
 - Unresolved feedback: none
-- Risk signals: public API/interface change (new registry exports); all other signals false; diff 82 lines.
-- Controller resolution: RED/GREEN sequence is durably recorded in the implementer report and matches the expected missing-module RED followed by the 4/4 registry GREEN.
+- Risk signals: cross-module, security-sensitive persisted Gateway data, shared state/concurrency, backward-compatible durable schema extension, public API change, and diff >200 lines; no implementer concerns.
+- Controller resolution: reviewer could not replay raw logs, but static diff proves the new assertions are RED against the base; implementer report records 27/27 GREEN and typecheck exit 0.
