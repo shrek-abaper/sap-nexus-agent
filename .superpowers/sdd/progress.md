@@ -70,3 +70,9 @@ Build config: isolation=branch, build_mode=subagent-driven-development, tdd_mode
 - Task 1: complete (commits efcbe61..aea5172, review clean: Spec compliant + Quality Approved, 0 Critical/Important/Minor). Projection type contracts + 1/1 focused test + typecheck clean.
 - Task 2: complete (commits 3d2662b..127d115, review clean: Spec compliant + Quality Approved, 0 Critical/Important/Minor). Exact version registry + structured fail-closed + duplicate rejection, 4/4 tests clean.
 - Task 3: complete (commits dc10caa..291f2c2, review clean: Spec compliant + Quality Approved, 0 Critical/Important/Minor). Fresh/cache/restart projection data retention, 27/27 executor tests + typecheck clean.
+
+## Current Blocker
+
+- Task 4 review round 1: 3 Important findings. Decimal-string quantity normalization and deterministic PO tie-breaking are unambiguous fixes. Trace correlation needs a design choice because the frozen builder accepts only `NodeFactRecord`, while that record currently carries no agent-level trace.
+- User selected Option A. Written design/spec patch committed as c1e302d and strict OpenSpec validation passed 20/20; waiting for written-spec review confirmation before plan update and fixer dispatch.
+- Written spec confirmed. Existing plan updated with Task 4 review-fix Steps 7-11; dispatching fresh fixer for all three Important findings (review round 1/2).

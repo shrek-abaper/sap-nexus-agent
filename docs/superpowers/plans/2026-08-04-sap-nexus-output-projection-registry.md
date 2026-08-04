@@ -18,11 +18,12 @@ base-ref: 810a00edb70f1910758a16ece3092e26ce3eac5e
 
 - 以 Design Doc §5、§6 为类型和确定性裁决基线；字段名使用 camelCase，时间使用 ISO-8601 string。
 - `ReasoningFact` 保留 Python 镜像字段并新增 `asOf`；FactType 身份写入 `source.factType`，不再增加第二套 fact 模型。
-- 为兑现缺 FactBuilder 降级，`NodeFactRecord` 向后兼容增补 `producesFactTypes`、`gatewayTraceId`，`PlanExecutionRecord` 增补 `missingFacts`；前者来自已验证 PlanGraph/ledger，后者属于 ledger metadata，不向 projection 暴露 raw Gateway payload。
+- 为兑现缺 FactBuilder 降级，`NodeFactRecord` 向后兼容增补 `producesFactTypes`、`gatewayTraceId`、`agentTraceId`，`PlanExecutionRecord` 增补 `missingFacts`；`agentTraceId` 必须来自当前 executor `runId`，不得由 `gatewayTraceId` 代替；其余字段来自已验证 PlanGraph/ledger，不向 projection 暴露 raw Gateway payload。
 - `executeResult.data`、resolved `parameters`、`capabilityId`、`producesFactTypes`、`gatewayTraceId`、`nodeExecutedAt` 写入 idempotency payload；replay 必须从 cache 重建相同 `NodeFactRecord`。
 - 保留 `PlanExecutorResult.nodeLedger`、`succeeded`、`failed`、`timedOut`、`cancelled`、`blocked` 原语义，只新增 `succeededNodeResults`；不改九态状态机转换。
 - 只有 `SUCCEEDED` 节点贡献 facts；失败、超时、取消和两种 blocked 状态只进入 ledger summary。
 - `complete`、`partial`、`incomplete`、lineage、freshness mismatch、conflict、unit incompatibility 和 hash 必须严格遵循 Design Doc §6；不做单位换算，不选冲突真值。
+- PO quantity 只把有限 number 或合法有限 decimal string 归一为 numeric fact value，evidence 保留白名单原值；PO row 必须以 total order 排序，使输入 permutation 不改变 facts/factIds。
 - 不调用 LLM、Gateway、SAP、Knowledge/RAG；不产生 Recommendation/Action，不计算采购数量、日期或采购组，不接生产 orchestrator。
 - 每个任务执行 Red -> Green -> regression -> commit；不得修改既有测试来掩盖回归。
 
@@ -297,7 +298,7 @@ Expected: FAIL，`succeededNodeResults` 为 `undefined`。
 ```typescript
 // add to plan-executor/types.ts
 export type NodeFactRecord = {
-  nodeId: string; capabilityId: string; parameters: Record<string, string>;
+  nodeId: string; agentTraceId: string; capabilityId: string; parameters: Record<string, string>;
   producesFactTypes: string[]; gatewayTraceId: string;
   executeData: Record<string, unknown>; nodeExecutedAt: string;
 };
@@ -318,7 +319,7 @@ nodeExecutedAt?: string;
 
 ```typescript
 const record: NodeFactRecord = {
-  nodeId, capabilityId: node.capabilityId, parameters,
+  nodeId, agentTraceId: runId, capabilityId: node.capabilityId, parameters,
   producesFactTypes: [...node.producesFactTypes], gatewayTraceId: executeResult.traceId ?? "",
   executeData: executeResult.data ?? {}, nodeExecutedAt: succeededEntry.updatedAt,
 };
@@ -361,6 +362,10 @@ git commit -m "feat(plan-executor): retain succeeded node projection data"
 - Create: `frontend/src/runtime/projection/assembler.ts`
 - Create: `frontend/src/runtime/projection/assembler.test.ts`
 - Modify: `frontend/src/runtime/projection/types.ts`（`FactBuilderDeclaration<NodeFactRecord>` 改为唯一具体类型）
+- Review fix modify: `frontend/src/runtime/plan-executor/types.ts`
+- Review fix modify: `frontend/src/runtime/plan-executor/plan-executor.ts`
+- Review fix modify: `frontend/src/runtime/plan-executor/plan-executor.test.ts`
+- Review fix modify: `frontend/src/runtime/plan-executor/plan-executor-recovery.test.ts`
 - Consumes: `PlanExecutorResult.succeededNodeResults`
 - Produces: `FactBuilderRegistry.resolve()`、`createMaterialSupplyFactBuilderRegistry()`、`ProjectionInputAssembler.assemble(result, registry): ProjectionInput`
 
@@ -452,6 +457,41 @@ Expected: PASS；测试证明 only-succeeded、双时间戳回退、missing buil
 ```bash
 git add frontend/src/runtime/projection/types.ts frontend/src/runtime/projection/fact-builder.ts frontend/src/runtime/projection/fact-builder.test.ts frontend/src/runtime/projection/assembler.ts frontend/src/runtime/projection/assembler.test.ts
 git commit -m "feat(projection): assemble normalized facts from executor results"
+```
+
+- [ ] **Step 7: 写 reviewer-fix RED tests**
+
+在 executor fresh/restart tests 断言 `NodeFactRecord.agentTraceId === runId` 且不等于 `gatewayTraceId`；在 builder tests 增加 decimal string、`NaN`、`Infinity`、非法 string，以及相同 `purchaseOrder/material/plant` 不同 item/quantity 的 reversed-input permutation：
+
+```typescript
+expect(replayed.succeededNodeResults[0]).toMatchObject({ agentTraceId: "run-1" });
+expect(decimalFact.value).toBe(1);
+expect(decimalFact.evidence[0].orderQuantity).toBe("1.000");
+expect(buildFacts([...rows].reverse())).toEqual(buildFacts(rows));
+expect(facts.every((fact) => fact.agentTraceId === "run-1" && fact.traceId === "run-1")).toBe(true);
+```
+
+- [ ] **Step 8: 运行 reviewer-fix tests 确认失败**
+
+Run: `npm --prefix frontend test -- src/runtime/plan-executor/plan-executor.test.ts src/runtime/plan-executor/plan-executor-recovery.test.ts src/runtime/projection/fact-builder.test.ts src/runtime/projection/assembler.test.ts`
+
+Expected: FAIL；缺 `agentTraceId`、空 fact traces、decimal string value 为 `null` 或 reversed permutation 不一致，且失败均对应 reviewer finding。
+
+- [ ] **Step 9: 实现 run correlation 与确定性 PO normalization**
+
+`NodeFactRecord.agentTraceId` 在 fresh、cache replay、existing-`SUCCEEDED` hydration 中统一使用当前 `execute(..., runId, ...)` 的 `runId`；无需新增 cache 字段。FactBuilder 将 `agentTraceId`/`traceId` 设为 record 的 agent trace。PO quantity 用显式 finite-decimal parser 归一，evidence 保留原始白名单 scalar；排序 key 包含 item、normalized quantity、unit 和 canonical whitelisted row，形成 total order。
+
+- [ ] **Step 10: 运行 reviewer-fix GREEN 与完整 frontend verify**
+
+Run: `npm --prefix frontend test -- src/runtime/plan-executor/plan-executor.test.ts src/runtime/plan-executor/plan-executor-recovery.test.ts src/runtime/projection/fact-builder.test.ts src/runtime/projection/assembler.test.ts && npm --prefix frontend run verify`
+
+Expected: focused tests PASS；frontend typecheck、全部 Vitest 和 production build PASS；无空 agent trace、raw payload leak 或 Runbook 16 回归。
+
+- [ ] **Step 11: Commit Task 4 review fixes**
+
+```bash
+git add frontend/src/runtime/plan-executor/types.ts frontend/src/runtime/plan-executor/plan-executor.ts frontend/src/runtime/plan-executor/plan-executor.test.ts frontend/src/runtime/plan-executor/plan-executor-recovery.test.ts frontend/src/runtime/projection/fact-builder.ts frontend/src/runtime/projection/fact-builder.test.ts frontend/src/runtime/projection/assembler.test.ts
+git commit -m "fix(projection): preserve fact correlation and ordering"
 ```
 
 ---
