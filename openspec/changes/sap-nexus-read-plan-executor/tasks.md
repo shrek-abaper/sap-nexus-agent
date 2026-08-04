@@ -12,8 +12,8 @@
 
 ## 3. Ready-node 调度 + DAG 并发
 
-- [ ] 3.1 实现 ready-node 选择：依赖闭包（基于 edges）全部 `SUCCEEDED` 才 `READY`，否则 `BLOCKED_DEPENDENCY`
-- [ ] 3.2 实现 DAG 独立性决定的有限并发调度
+- [x] 3.1 实现 ready-node 选择：依赖闭包（基于 edges）全部 `SUCCEEDED` 才 `READY`，否则 `BLOCKED_DEPENDENCY`
+- [x] 3.2 实现 DAG 独立性决定的有限并发调度
 - [ ] 3.3 双 READ 节点（`MM.Inventory.GetAvailability` + `MM.PurchaseOrder.GetList`）并发执行场景验证
 
 ## 4. Per-node Gateway validate/execute

@@ -864,7 +864,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 
 **Design Doc 参考:** §3 Q2 落实（DAG 独立性 + 安全上限）+ §4.2 step 5
 
-- [ ] **Step 1: 写失败测试 - 依赖闭包 + ready 选择**
+- [x] **Step 1: 写失败测试 - 依赖闭包 + ready 选择**
 
 ```typescript
 // frontend/src/runtime/plan-executor/dag-scheduler.test.ts
@@ -961,12 +961,12 @@ describe("dag scheduler", () => {
 });
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run: `npm --prefix frontend test -- --run dag-scheduler.test`
 Expected: FAIL（模块不存在）
 
-- [ ] **Step 3: 实现 dag-scheduler.ts**
+- [x] **Step 3: 实现 dag-scheduler.ts**
 
 ```typescript
 // frontend/src/runtime/plan-executor/dag-scheduler.ts
@@ -1018,12 +1018,12 @@ export function getMaxConcurrency(): number {
 }
 ```
 
-- [ ] **Step 4: 运行测试确认通过**
+- [x] **Step 4: 运行测试确认通过**
 
 Run: `npm --prefix frontend test -- --run dag-scheduler.test`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/runtime/plan-executor/dag-scheduler.ts frontend/src/runtime/plan-executor/dag-scheduler.test.ts
