@@ -2132,7 +2132,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 
 **Design Doc 参考:** §4.2 step 5 + spec scenario "Dependent node blocks until prerequisite succeeds"
 
-- [ ] **Step 1: 追加依赖链测试**
+- [x] **Step 1: 追加依赖链测试**
 
 在 `plan-executor.test.ts` 末尾追加：
 
@@ -2207,12 +2207,12 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
   });
 ```
 
-- [ ] **Step 2: 运行测试确认通过**
+- [x] **Step 2: 运行测试确认通过**
 
 Run: `npm --prefix frontend test -- --run plan-executor.test`
 Expected: PASS
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add frontend/src/runtime/plan-executor/plan-executor.test.ts
