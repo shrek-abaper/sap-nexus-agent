@@ -46,6 +46,13 @@ The system SHALL provide a `ProjectionInputAssembler` that consumes a `PlanExecu
 - **AND** `gatewayTraceId` remains the separate Gateway correlation identifier
 - **AND** none of those identifiers is an empty placeholder
 
+#### Scenario: Missing Gateway correlation degrades explicitly
+
+- **WHEN** a `SUCCEEDED` node record has `gatewayTraceId` = `null`
+- **THEN** the assembler does not invoke its FactBuilder and contributes no fact for that node
+- **AND** records every declared FactType in `missingFacts` with reason `missing_gateway_trace`
+- **AND** no `ReasoningFact` contains an empty or substituted Gateway correlation identifier
+
 #### Scenario: Purchase-order quantities normalize deterministically
 
 - **WHEN** PO items contain a finite number or a valid finite decimal string quantity
@@ -53,11 +60,30 @@ The system SHALL provide a `ProjectionInputAssembler` that consumes a `PlanExecu
 - **AND** preserves the whitelisted source value in evidence
 - **AND** rejects `NaN`, infinity, and invalid numeric strings from numeric value output
 
+#### Scenario: Purchase-order item quantity presence takes precedence
+
+- **WHEN** a nested PO item contains an `orderQuantity` field that is invalid or empty and its header contains a valid quantity
+- **THEN** the builder preserves the item's whitelisted source value in evidence
+- **AND** emits `value` = `null`
+- **AND** does not substitute the header quantity
+
 #### Scenario: Purchase-order fact identity is input-order independent
 
 - **WHEN** multiple PO rows share purchase order, material, and plant but differ in item, quantity, unit, or other whitelisted evidence
 - **THEN** the builder applies a total deterministic ordering before assigning fact ids
 - **AND** permutations of the same input rows produce identical facts and fact ids
+
+#### Scenario: Malformed freshness falls back to executor time
+
+- **WHEN** `dataAsOf` is malformed or lacks an explicit timezone
+- **THEN** the builder falls back to the trusted executor `nodeExecutedAt`
+
+#### Scenario: Freshness aggregates by instant
+
+- **WHEN** successful facts carry valid ISO-8601 times with different timezone offsets
+- **THEN** each fact preserves its selected source string
+- **AND** `PlanExecutionRecord.asOf` is the earliest instant by epoch, normalized to UTC `toISOString()`
+- **AND** equivalent instants expressed with different offsets produce the same aggregate `asOf`
 
 ### Requirement: MaterialSupplySnapshot projection produces composite fact bundle
 

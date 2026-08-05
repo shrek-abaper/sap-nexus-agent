@@ -107,6 +107,8 @@ type ReasoningFact = {
 type NodeFactRecord = {           // executor 扩展保留
   nodeId: string; agentTraceId: string; capabilityId: string;
   parameters: Record<string, string>;
+  producesFactTypes: string[];
+  gatewayTraceId: string | null;
   executeData: Record<string, unknown>;  // 保留的 GatewayExecuteResult.data
   nodeExecutedAt: string;                 // ledger updatedAt
 };
@@ -141,7 +143,7 @@ type OutputProjectionDeclaration = {
 
 type FactBuilderDeclaration = {
   capabilityId: string;
-  build: (record: NodeFactRecord) => ReasoningFact[];
+  build: (record: NodeFactRecord & { gatewayTraceId: string }) => ReasoningFact[];
   freshnessField?: string;        // executeData 中的新鲜度字段路径，缺失回退 nodeExecutedAt
 };
 ```
@@ -187,14 +189,23 @@ type FactBuilderDeclaration = {
 ### 6.7 FactBuilder normalization and correlation
 
 - `NodeFactRecord.agentTraceId` 使用当前 `PlanExecutor.execute(..., runId, ...)` 的 `runId`。fresh、cache replay 和 existing-`SUCCEEDED` hydration 均从当前 run context 注入；该字段不从 Gateway trace 推导，也无需重复持久化到 idempotency payload。
+- 每个 `SUCCEEDED` 节点均保留完整 `NodeFactRecord`。`gatewayTraceId` 是 `string | null`：非空 Gateway trace 保持原值，缺失或纯空白 trace 规范化为 `null`；不得用 `runId` 代替，也不得通过省略 record 隐藏该节点。
+- assembler 遇到 `gatewayTraceId = null` 时不调用 FactBuilder、不产 fact，并对 record 声明的每个 `producesFactTypes` 写入 `missingFacts`，固定 reason 为 `missing_gateway_trace`。FactBuilder 只接收已收窄为非空 Gateway trace 的 record，因此 `ReasoningFact.gatewayTraceId` 继续是非空 string。
 - FactBuilder 将 `ReasoningFact.agentTraceId` 与 `traceId` 均设置为 `record.agentTraceId`，与 Python builder 的 agent-level correlation 语义一致；`gatewayTraceId` 仅承载 Gateway correlation。
-- PO `orderQuantity` 接受有限 JS number 或合法有限 decimal string。`ReasoningFact.value` 使用确定性 number 归一值，evidence 保留白名单原值；`NaN`、`Infinity` 和非法字符串不得进入 value。
+- PO `orderQuantity` 先按字段存在性选择原始值：item 自身存在该字段时必须选择 item（即使值非法或为空），仅字段不存在时才回退 header；随后对所选值执行一次归一。有限 JS number 或合法有限 decimal string 进入 `ReasoningFact.value`，evidence 保留所选白名单原值；`NaN`、`Infinity` 和非法字符串不得进入 value，也不得触发 header 值替代。
 - PO rows 使用 total order：`purchaseOrder/material/plant/purchaseOrderItem/normalizedQuantity/unit/canonicalWhitelistedRow`。完全相同的重复行可互换；任何非相同行不得依赖 Gateway 输入顺序决定 index-based `factId`。
+
+### 6.8 ISO-8601 freshness 与 aggregate `asOf`
+
+- `dataAsOf` 只有在它是带显式 `Z` 或 `±HH:mm` 时区、且可解析为有限 epoch 的 ISO-8601 string 时才有效；否则回退到 executor 生成的可信 `nodeExecutedAt`。
+- 每条 `ReasoningFact.asOf` 保留所选来源的原始合法 ISO-8601 string，供 `sourceFreshness` 和 lineage 追溯。
+- `PlanExecutionRecord.asOf` 不按字符串排序；assembler 按 epoch 取最早 fact instant，并统一输出 UTC `new Date(minEpoch).toISOString()`。不同时区但等价的 instant 必须得到相同 aggregate `asOf`。
 
 ## 7. 错误处理 / fail-closed
 
 - 未知 `projectionId@version` -> fail-closed，结构化失败，不产 snapshot。
 - 缺 FactBuilder（capabilityId 未注册）-> 该节点不贡献 fact，其 required FactType 进 `missingFacts`（reason: `no_fact_builder`）-> 降级 `incomplete`，不崩溃（graceful degradation）。
+- 缺 Gateway correlation（`gatewayTraceId = null`）-> 保留 `SUCCEEDED` 节点和 `NodeFactRecord`，不调用 FactBuilder；声明 FactType 进 `missingFacts`（reason: `missing_gateway_trace`）-> required fact 缺失时降级 `incomplete`。
 - 投影隔离：`project()` 签名只接收 `{ planExecutionRecord, facts }`，类型层面无法访问 raw Gateway payload / conversation / model output。
 - executor 扩展向后兼容：新增 `succeededNodeResults` 字段，不改 `nodeLedger` / `succeeded` / `failed` 等已有字段语义与状态机。
 
@@ -209,7 +220,7 @@ await this.store.markExecuted(idempotencyKey, { status: "succeeded", gatewayTrac
 扩展为保留 `executeData` + `nodeExecutedAt`：
 - `markExecuted` payload 增补 `{ data: executeResult.data, parameters, capabilityId, nodeExecutedAt }`（idempotency cache 持久化，recovery 时可重建）。
 - `NodeFactRecord.agentTraceId` 由当前 `runId` 注入；fresh 和所有 replay/hydration 路径使用同一 run correlation，不把 `gatewayTraceId` 冒充 agent trace。
-- executor 维护 `nodeResults: Map<nodeId, NodeFactRecord>`，成功时填入，最终汇入 `PlanExecutorResult.succeededNodeResults`。
+- executor 维护 `nodeResults: Map<nodeId, NodeFactRecord>`，每个拥有完整 fact-building data 的成功节点均填入并汇入 `PlanExecutorResult.succeededNodeResults`；Gateway trace 缺失或纯空白时 record 的 `gatewayTraceId` 为 `null`，而不是空 string 或省略 record。
 - idempotent replay 分支（`cachedResult` 命中）从 cache 重建 `NodeFactRecord`，保证 recovery 一致。
 - `NodeLedgerEntry` 不改（仍存 `resultRef=traceId`）；data 保留是并行的旁路结构，不污染状态机。
 
@@ -227,6 +238,9 @@ await this.store.markExecuted(idempotencyKey, { status: "succeeded", gatewayTrac
 10. executor 回归：Runbook 16 套件不改动通过
 11. trace correlation：fresh/restart/builder facts 的 `agentTraceId` / `traceId` 等于 runId，且区别于 `gatewayTraceId`
 12. PO normalization：decimal string 保留 evidence 并归一为有限 number；相同业务键的输入 permutation 产生稳定 facts/factIds
+13. projection-missing：fresh/cache/existing-`SUCCEEDED` 缺 Gateway trace 时仍保留 nullable record；assembler 产生 `missing_gateway_trace`，不产空 trace fact、不重调 Gateway
+14. PO precedence：nested item quantity 字段存在但非法时保留 item evidence、value 为 null，不回退合法 header quantity
+15. freshness validation：malformed `dataAsOf` 回退 `nodeExecutedAt`；offset ordering 按 epoch，等价 instant 产生相同 UTC aggregate `asOf`
 
 验证命令：`npm --prefix frontend run verify` + `openspec validate --all --strict`。
 

@@ -32,7 +32,7 @@ executor 与节点级 Gateway 结果均在 TS 运行时；projection 与 executo
 - 备选：仅硬编码 MaterialSupplySnapshot（已否决，违背 runbook「registered OutputProjection@version」且不利 Runbook 18 扩展）。
 
 ### D3. 投影输入组装 = 新增 assembler，executor 扩展产出携带节点 facts
-新增 `ProjectionInputAssembler`：消费 `PlanExecutorResult` + 节点级 Gateway execute 结果，组装 `PlanExecutionRecord`（含 snapshotId / node ledger 摘要 / asOf）+ `successful ReasoningFact[]`。executor 扩展产出以暴露成功节点的 fact 数据（向后兼容新增字段，不改已有字段语义）。`NodeFactRecord.agentTraceId` 由当前 executor `runId` 注入，FactBuilder 用它填充 `ReasoningFact.agentTraceId/traceId`，并与 `gatewayTraceId` 保持语义分离。PO 数量只按版本化规则接受有限 number/decimal string，evidence 保留白名单原值；PO row 排序使用完整 deterministic tie-breaker，不依赖 Gateway 输入顺序。
+新增 `ProjectionInputAssembler`：消费 `PlanExecutorResult` + 节点级 Gateway execute 结果，组装 `PlanExecutionRecord`（含 snapshotId / node ledger 摘要 / asOf）+ `successful ReasoningFact[]`。executor 扩展产出以暴露成功节点的 fact 数据（向后兼容新增字段，不改已有字段语义）。`NodeFactRecord.agentTraceId` 由当前 executor `runId` 注入，FactBuilder 用它填充 `ReasoningFact.agentTraceId/traceId`，并与 `gatewayTraceId` 保持语义分离。每个 `SUCCEEDED` 节点均保留 `NodeFactRecord`；Gateway trace 缺失或纯空白时 `gatewayTraceId = null`，assembler 不产 fact，并按声明 FactType 写入 `missingFacts(reason="missing_gateway_trace")`。PO 数量先按字段存在性选择 item/header 原值，再按版本化规则接受有限 number/decimal string；evidence 保留所选白名单原值，PO row 排序使用完整 deterministic tie-breaker，不依赖 Gateway 输入顺序。Fact freshness 只接受带时区且可解析的 ISO-8601，非法 `dataAsOf` 回退 `nodeExecutedAt`；aggregate `asOf` 按 epoch 取最早值并规范化为 UTC `toISOString()`。
 - 备选：在 executor 内直接产出 projection（耦合 executor 与 projection，已否决）。
 
 ### D4. MaterialSupplySnapshot = 组合事实束（非派生业务指标）

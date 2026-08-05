@@ -16,6 +16,7 @@
 - [x] 3.1 扩展 executor 产出，使 `SUCCEEDED` 节点暴露构建 `ReasoningFact` 所需的 per-node 数据（向后兼容新增字段，不改已有字段语义与状态机）
 - [x] 3.2 回归 Runbook 16 executor 测试（`frontend run verify` 中 executor 套件）不改动通过
 - [ ] 3.3 为 `NodeFactRecord` 增加由当前 `runId` 注入的 `agentTraceId`，覆盖 fresh / cache replay / existing-SUCCEEDED hydration，且不混用 `gatewayTraceId`
+- [ ] 3.4 fresh / cache replay / existing-SUCCEEDED 缺 Gateway trace 时仍保留 `NodeFactRecord(gatewayTraceId=null)`，不改变成功状态、不重调 Gateway
 
 ## 4. 投影输入组装
 
@@ -26,6 +27,9 @@
 - [ ] 4.5 PO decimal-string quantity 确定性归一并保留白名单 evidence，拒绝非有限或非法数值
 - [ ] 4.6 PO rows 使用 total-order tie-breaker，输入 permutation 产生稳定 facts / factIds
 - [ ] 4.7 FactBuilder 使用 `NodeFactRecord.agentTraceId` 填充非空 `ReasoningFact.agentTraceId/traceId`
+- [ ] 4.8 assembler 对 nullable Gateway trace 产生 `missingFacts(reason="missing_gateway_trace")`，且不调用 builder、不产空 trace fact
+- [ ] 4.9 PO item quantity 按字段存在性优先；item 非法/空值保留 evidence 且不得回退合法 header quantity
+- [ ] 4.10 freshness 校验带时区 ISO-8601，非法 `dataAsOf` 回退 `nodeExecutedAt`，aggregate `asOf` 按 epoch 取最早并规范化 UTC
 
 ## 5. MaterialSupplySnapshot 投影
 
