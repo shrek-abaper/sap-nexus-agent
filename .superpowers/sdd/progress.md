@@ -62,7 +62,7 @@ Build config: isolation=branch, build_mode=subagent-driven-development, tdd_mode
 - [x] Task 3: 扩展 PlanExecutor 保留并恢复成功节点数据
 - [x] Task 4: 实现 FactBuilderRegistry 与 ProjectionInputAssembler
 - [x] Task 5: 实现确定性 hash 与 MaterialSupplySnapshot projection
-- [ ] Task 6: 完成端到端 Projection Eval 与隔离证明
+- [x] Task 6: 完成端到端 Projection Eval 与隔离证明
 - [ ] Task 7: 全量相关验证与 OpenSpec 任务收口
 
 ## Completed
@@ -72,6 +72,7 @@ Build config: isolation=branch, build_mode=subagent-driven-development, tdd_mode
 - Task 3: complete (commits dc10caa..291f2c2, review clean: Spec compliant + Quality Approved, 0 Critical/Important/Minor). Fresh/cache/restart projection data retention, 27/27 executor tests + typecheck clean.
 - Task 4: complete (commits 010a450..b8147fd, final review: Spec compliant + Quality Approved, 0 Critical/Important, 1 Minor deferred). Fact builders + assembler + nullable trace degradation + strict freshness/calendar validation + PO item identity; focused 24/24, frontend 221/221, typecheck/build, diff check, OpenSpec strict 20/20.
 - Task 5: complete (commits e48926e..bb49278, review clean: Spec compliant + Quality Approved, 0 Critical/Important/Minor). Deterministic hash + MaterialSupplySnapshot completeness/freshness/lineage/conflict policy; focused 15/15, frontend 232/232, typecheck/build, diff check, OpenSpec strict 20/20.
+- Task 6: complete (commits 54b3d27..4ef7764, review clean: Spec compliant + Quality Approved, 0 Critical/Important/Minor). Real executor-to-projection component Eval, six-case bad-path matrix, and compile-time raw/model-input isolation; regression 152/152, typecheck and diff check clean.
 
 ## Minor findings (deferred to final review)
 

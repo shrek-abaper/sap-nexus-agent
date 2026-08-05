@@ -45,14 +45,14 @@
 
 ## 6. Projection Eval（frontend 测试）
 
-- [ ] 6.1 complete snapshot 场景（双 READ 成功，lineage 完整率 100%）
-- [ ] 6.2 incomplete 场景（单节点失败 -> missingFacts + failedNodes + limitation）
-- [ ] 6.3 partial 场景（可选 fact 缺失 -> limitation）
-- [ ] 6.4 freshness mismatch bad case
-- [ ] 6.5 unit incompatibility bad case
-- [ ] 6.6 duplicate / conflict fact bad case
-- [ ] 6.7 确定性 hash（same input -> same hash；different input -> different hash）
-- [ ] 6.8 projection 隔离测试（仅读 normalized facts + ledger metadata，不读 raw payload / model output）
+- [x] 6.1 complete snapshot 场景（双 READ 成功，lineage 完整率 100%）
+- [x] 6.2 incomplete 场景（单节点失败 -> missingFacts + failedNodes + limitation）
+- [x] 6.3 partial 场景（可选 fact 缺失 -> limitation）
+- [x] 6.4 freshness mismatch bad case
+- [x] 6.5 unit incompatibility bad case
+- [x] 6.6 duplicate / conflict fact bad case
+- [x] 6.7 确定性 hash（same input -> same hash；different input -> different hash）
+- [x] 6.8 projection 隔离测试（仅读 normalized facts + ledger metadata，不读 raw payload / model output）
 
 ## 7. 验证
 

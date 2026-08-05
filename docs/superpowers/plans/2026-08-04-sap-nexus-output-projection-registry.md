@@ -735,7 +735,7 @@ git commit -m "feat(projection): add deterministic material supply snapshot"
 - Modify: `frontend/src/runtime/plan-executor/plan-executor.test.ts`
 - Produces: component-level executor -> assembler -> registry -> projection evidence
 
-- [ ] **Step 1: 写一个双 READ component Eval**
+- [x] **Step 1: 写一个双 READ component Eval**
 
 使用真实 `PlanExecutor` + `JsonlRunStore`、可控 `FakeGateway`、真实 builder registry/assembler/output registry。Gateway 返回同一 `dataAsOf` 的 availability 与 purchase orders；执行：
 
@@ -750,7 +750,7 @@ expect(new Set(snapshot.lineage.map((item) => item.factId)))
   .toEqual(new Set(snapshot.facts.map((fact) => fact.factId)));
 ```
 
-- [ ] **Step 2: 增加 bad-case Eval table 和 projection 隔离编译契约**
+- [x] **Step 2: 增加 bad-case Eval table 和 projection 隔离编译契约**
 
 用 `it.each` 输入明确 fixtures 覆盖 incomplete、partial、freshness mismatch、unit incompatibility、duplicate/conflict；hash same/different 已由 Task 5 的 dedicated test 覆盖。隔离测试只向 `project({ planExecutionRecord, facts })` 传值，并用 `@ts-expect-error` 证明 `rawGatewayPayload`、`conversationText`、`modelOutput` 不是 `ProjectionInput` 字段：
 
@@ -761,19 +761,19 @@ projection.project({ planExecutionRecord, facts, rawGatewayPayload: {} });
 
 该调用放在 `if (false)` 内，避免测试运行时执行，只由 `tsc --noEmit` 验证 excess-property error 确实存在。
 
-- [ ] **Step 3: 运行全部 projection Eval 与 executor 回归**
+- [x] **Step 3: 运行全部 projection Eval 与 executor 回归**
 
 Run: `npm --prefix frontend test -- src/runtime/projection src/runtime/plan-executor`
 
 Expected: PASS；projection 全场景与 Runbook 16 executor 全部通过。
 
-- [ ] **Step 4: 运行 typecheck 证明隔离断言有效**
+- [x] **Step 4: 运行 typecheck 证明隔离断言有效**
 
 Run: `npm --prefix frontend run typecheck`
 
 Expected: PASS；若 `@ts-expect-error` 变成 unused directive，则 FAIL，说明 projection 边界被意外放宽。
 
-- [ ] **Step 5: Commit projection Eval coverage**
+- [x] **Step 5: Commit projection Eval coverage**
 
 ```bash
 git add frontend/src/runtime/projection/assembler.test.ts frontend/src/runtime/projection/material-supply-snapshot.test.ts frontend/src/runtime/plan-executor/plan-executor.test.ts
