@@ -238,6 +238,137 @@ describe("ProjectionInputAssembler", () => {
     expect(input.planExecutionRecord.asOf).toBe("2026-08-04T00:00:00.000Z");
   });
 
+  it("orders mixed-case and non-ASCII node ids by code unit", () => {
+    const nodeIds = ["node.a", "node.Z", "node.é", "node.中"];
+    const nodeLedger = Object.fromEntries(nodeIds.map((nodeId) => [
+      nodeId,
+      {
+        state: NodeState.SUCCEEDED,
+        attempt: 1,
+        inputHash: `${nodeId}-input`,
+        resultRef: `${nodeId}-result`,
+        traceSpan: null,
+        updatedAt: nodeExecutedAt,
+      },
+    ]));
+    const input = new ProjectionInputAssembler().assemble(
+      result({
+        nodeLedger,
+        succeeded: nodeIds,
+        succeededNodeResults: nodeIds.map((nodeId) => nodeRecord({ nodeId })),
+        failed: [],
+      }),
+      createMaterialSupplyFactBuilderRegistry(),
+    );
+
+    expect(input.facts.map((fact) => fact.source.nodeId)).toEqual([
+      "node.Z",
+      "node.a",
+      "node.é",
+      "node.中",
+    ]);
+    expect(input.planExecutionRecord.nodeLedgerSummary.map((entry) => entry.nodeId)).toEqual([
+      "node.Z",
+      "node.a",
+      "node.é",
+      "node.中",
+    ]);
+  });
+
+  it("orders missing facts from mixed-case and non-ASCII node ids by code unit", () => {
+    const nodeIds = ["node.a", "node.Z", "node.é", "node.中"];
+    const input = new ProjectionInputAssembler().assemble(
+      result({
+        nodeLedger: Object.fromEntries(nodeIds.map((nodeId) => [
+          nodeId,
+          {
+            state: NodeState.SUCCEEDED,
+            attempt: 1,
+            inputHash: `${nodeId}-input`,
+            resultRef: null,
+            traceSpan: null,
+            updatedAt: nodeExecutedAt,
+          },
+        ])),
+        succeeded: nodeIds,
+        succeededNodeResults: nodeIds.map((nodeId) => nodeRecord({
+          nodeId,
+          gatewayTraceId: null,
+          producesFactTypes: [`Fact:${nodeId}`],
+        })),
+        failed: [],
+      }),
+      createMaterialSupplyFactBuilderRegistry(),
+    );
+
+    expect(input.planExecutionRecord.missingFacts.map((fact) => fact.factType)).toEqual([
+      "Fact:node.Z",
+      "Fact:node.a",
+      "Fact:node.é",
+      "Fact:node.中",
+    ]);
+  });
+
+  it("assembles a high-cardinality fact set without spreading all epochs", () => {
+    const nodeIds = Array.from(
+      { length: 150 },
+      (_, index) => `node.${index.toString().padStart(3, "0")}`,
+    );
+    const builders = new FactBuilderRegistry();
+    builders.register({
+      capabilityId: "MM.HighCardinality.Read",
+      build: (record) => {
+        const asOf = record.nodeId === "node.000"
+          ? "2026-08-03T23:00:00Z"
+          : dataAsOf;
+        return Array(1_000).fill({
+          factId: `${record.nodeId}:fact`,
+          agentTraceId: record.agentTraceId,
+          traceId: record.agentTraceId,
+          gatewayTraceId: record.gatewayTraceId,
+          domain: "MM",
+          businessObject: "InventoryStock",
+          predicate: "availableQuantity",
+          value: 1,
+          unit: "EA",
+          deterministic: true,
+          confidence: 1,
+          source: { nodeId: record.nodeId, factType: "InventoryAvailability" },
+          evidence: [],
+          material: null,
+          plant: null,
+          asOf,
+        });
+      },
+    });
+
+    const input = new ProjectionInputAssembler().assemble(
+      result({
+        nodeLedger: Object.fromEntries(nodeIds.map((nodeId) => [
+          nodeId,
+          {
+            state: NodeState.SUCCEEDED,
+            attempt: 1,
+            inputHash: `${nodeId}-input`,
+            resultRef: `${nodeId}-result`,
+            traceSpan: null,
+            updatedAt: nodeExecutedAt,
+          },
+        ])),
+        succeeded: nodeIds,
+        succeededNodeResults: nodeIds.map((nodeId) => nodeRecord({
+          nodeId,
+          capabilityId: "MM.HighCardinality.Read",
+        })),
+        failed: [],
+      }),
+      builders,
+    );
+
+    expect(input.facts).toHaveLength(150_000);
+    expect(input.planExecutionRecord.asOf).toBe("2026-08-03T23:00:00.000Z");
+  });
+
   it("keeps the assembler boundary limited to executor result and builder registry", () => {
     expect(ProjectionInputAssembler.prototype.assemble.length).toBe(2);
   });

@@ -11,13 +11,17 @@ function hasGatewayTrace(record: NodeFactRecord): record is TraceableNodeFactRec
   return record.gatewayTraceId !== null;
 }
 
+function compareCodeUnits(left: string, right: string): number {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
 export class ProjectionInputAssembler {
   assemble(result: PlanExecutorResult, builders: FactBuilderRegistry): ProjectionInput {
     const facts: ReasoningFact[] = [];
     const missingFacts: MissingFact[] = [];
 
     for (const record of [...result.succeededNodeResults].sort((a, b) =>
-      a.nodeId.localeCompare(b.nodeId))) {
+      compareCodeUnits(a.nodeId, b.nodeId))) {
       if (!hasGatewayTrace(record)) {
         for (const factType of record.producesFactTypes) {
           missingFacts.push({ factType, reason: "missing_gateway_trace" });
@@ -35,9 +39,12 @@ export class ProjectionInputAssembler {
     }
 
     const failedNodes = [...result.failed, ...result.timedOut, ...result.cancelled].sort();
-    const asOf = facts.length > 0
-      ? new Date(Math.min(...facts.map((fact) => Date.parse(fact.asOf)))).toISOString()
-      : "";
+    let earliestEpoch: number | null = null;
+    for (const fact of facts) {
+      const epoch = Date.parse(fact.asOf);
+      if (earliestEpoch === null || epoch < earliestEpoch) earliestEpoch = epoch;
+    }
+    const asOf = earliestEpoch === null ? "" : new Date(earliestEpoch).toISOString();
 
     return {
       facts,
@@ -49,7 +56,7 @@ export class ProjectionInputAssembler {
         failedNodes,
         missingFacts,
         nodeLedgerSummary: Object.entries(result.nodeLedger)
-          .sort(([left], [right]) => left.localeCompare(right))
+          .sort(([left], [right]) => compareCodeUnits(left, right))
           .map(([nodeId, entry]) => ({
             nodeId,
             state: entry.state,

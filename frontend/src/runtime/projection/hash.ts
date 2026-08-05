@@ -26,5 +26,9 @@ export function computeOutputHash(
   version: string,
   snapshotId: string,
 ): string {
-  return sha256Hex(canonicalJson(normalizeFacts(facts)) + version + snapshotId);
+  return sha256Hex(canonicalJson({
+    facts: normalizeFacts(facts),
+    version,
+    snapshotId,
+  }));
 }

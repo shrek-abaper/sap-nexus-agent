@@ -212,8 +212,11 @@ function projectMaterialSupplySnapshot(input: ProjectionInput): MaterialSupplySn
 
   const projected = projectFacts(input.facts, limitations);
   const sourceFreshness = buildSourceFreshness(input);
-  const distinctDataAsOf = new Set(sourceFreshness.map((entry) => entry.dataAsOf));
-  if (distinctDataAsOf.size > 1) {
+  const distinctFreshnessEpochs = new Set(
+    sourceFreshness.map((entry) => Date.parse(entry.dataAsOf)),
+  );
+  if (distinctFreshnessEpochs.size > 1) {
+    const distinctDataAsOf = new Set(sourceFreshness.map((entry) => entry.dataAsOf));
     addLimitation(limitations, {
       kind: "freshness_mismatch",
       detail: [...distinctDataAsOf].sort(compareCodeUnits).join("|"),

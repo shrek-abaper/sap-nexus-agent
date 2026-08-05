@@ -20,6 +20,10 @@ import { emitNodeStateChanged } from "./sse-emitter";
 const LEASE_TTL_MS = 60_000;
 const DEFAULT_NODE_TIMEOUT_MS = 30_000;
 
+function compareCodeUnits(left: string, right: string): number {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
 const TERMINAL_STATES: string[] = [
   NS.SUCCEEDED,
   NS.FAILED,
@@ -84,10 +88,14 @@ export class PlanExecutor {
       let ledger = await loadNodeLedger(this.store, runId);
       const nodeResults = new Map<string, NodeFactRecord>();
 
-      // Revisit recovered successes only to hydrate their cached result data.
+      // Revisit recovered successes to hydrate data, and interrupted executions
+      // to finish from a durable payload without repeating the Gateway READ.
       await Promise.all(
         graph.readPartition
-          .filter((nodeId) => ledger[nodeId]?.state === NS.SUCCEEDED)
+          .filter((nodeId) => (
+            ledger[nodeId]?.state === NS.SUCCEEDED
+            || ledger[nodeId]?.state === NS.EXECUTING
+          ))
           .map((nodeId) =>
             this.executeNode(graph, runId, expectedSnapshotId, nodeId, ledger, nodeResults)
           )
@@ -179,6 +187,37 @@ export class PlanExecutor {
       return;
     }
 
+    // Cache-first success persistence can leave EXECUTING after a crash. A
+    // complete payload makes EXECUTING -> SUCCEEDED recoverable; without one,
+    // fail closed rather than repeat a potentially completed SAP READ.
+    if (existing?.state === NS.EXECUTING) {
+      if (cachedRecord) {
+        await this.transition(
+          runId,
+          snapshotId,
+          nodeId,
+          NS.EXECUTING,
+          NS.SUCCEEDED,
+          attempt,
+          inputHash,
+          cachedRecord.gatewayTraceId,
+          cachedRecord.nodeExecutedAt,
+        );
+        nodeResults.set(nodeId, cachedRecord);
+      } else {
+        await this.transition(
+          runId,
+          snapshotId,
+          nodeId,
+          NS.EXECUTING,
+          NS.FAILED,
+          attempt,
+          inputHash,
+        );
+      }
+      return;
+    }
+
     // Action / non-read-only node -> BLOCKED_APPROVAL
     if (node.governance.requiresApproval) {
       await this.transition(runId, snapshotId, nodeId, null, NS.BLOCKED_APPROVAL, 0, inputHash);
@@ -247,8 +286,24 @@ export class PlanExecutor {
       return;
     }
 
+    const executeData = executeResult.data ?? {};
+    const nodeExecutedAt = new Date().toISOString();
+
+    // Persist the projection payload before authoritative SUCCEEDED. If this
+    // call is interrupted, restart resolves the remaining EXECUTING state from
+    // the cache or fails closed without issuing the READ again.
+    await this.store.markExecuted(idempotencyKey, {
+      status: "succeeded",
+      gatewayTraceId: executeResult.traceId,
+      data: executeData,
+      parameters,
+      capabilityId: node.capabilityId,
+      producesFactTypes: [...node.producesFactTypes],
+      nodeExecutedAt,
+    });
+
     // EXECUTING -> SUCCEEDED
-    const succeededEntry = await this.transition(
+    await this.transition(
       runId,
       snapshotId,
       nodeId,
@@ -256,9 +311,9 @@ export class PlanExecutor {
       NS.SUCCEEDED,
       attempt,
       inputHash,
-      executeResult.traceId ?? null
+      executeResult.traceId ?? null,
+      nodeExecutedAt,
     );
-    const executeData = executeResult.data ?? {};
     nodeResults.set(nodeId, {
       nodeId,
       agentTraceId: runId,
@@ -267,18 +322,7 @@ export class PlanExecutor {
       producesFactTypes: [...node.producesFactTypes],
       gatewayTraceId: this.projectionGatewayTraceId(executeResult.traceId),
       executeData,
-      nodeExecutedAt: succeededEntry.updatedAt,
-    });
-
-    // Record idempotency: future replay with same key skips Gateway calls (Task 10)
-    await this.store.markExecuted(idempotencyKey, {
-      status: "succeeded",
-      gatewayTraceId: executeResult.traceId,
-      data: executeData,
-      parameters,
-      capabilityId: node.capabilityId,
-      producesFactTypes: [...node.producesFactTypes],
-      nodeExecutedAt: succeededEntry.updatedAt,
+      nodeExecutedAt,
     });
   }
 
@@ -290,7 +334,8 @@ export class PlanExecutor {
     toState: NodeState,
     attempt: number,
     inputHash: string,
-    resultRef: string | null = null
+    resultRef: string | null = null,
+    updatedAt: string = new Date().toISOString(),
   ): Promise<NodeLedgerEntry> {
     // Acquire serialized lock (transitionNode read-modify-write is not atomic)
     const wait = this.transitionChain;
@@ -309,7 +354,7 @@ export class PlanExecutor {
         inputHash,
         resultRef,
         traceSpan: null,
-        updatedAt: new Date().toISOString(),
+        updatedAt,
       };
 
       // Double-write: nodeState (authoritative) + events (audit/SSE)
@@ -456,7 +501,7 @@ export class PlanExecutor {
       nodeLedger: ledger,
       succeeded,
       succeededNodeResults: [...nodeResults.values()].sort((a, b) =>
-        a.nodeId.localeCompare(b.nodeId)
+        compareCodeUnits(a.nodeId, b.nodeId)
       ),
       failed,
       timedOut,

@@ -40,4 +40,35 @@ describe("OutputProjectionRegistry", () => {
 
     expect(() => registry.register(declaration)).toThrowError(/already registered/);
   });
+
+  it("does not resolve a different tuple across an at-sign boundary", () => {
+    const registry = new OutputProjectionRegistry();
+    registry.register({
+      ...declaration,
+      projectionId: "a@b",
+      version: "c",
+    });
+
+    expect(() => registry.resolve("a", "b@c")).toThrowError(ProjectionRegistryError);
+  });
+
+  it("registers and resolves distinct tuples across an at-sign boundary", () => {
+    const registry = new OutputProjectionRegistry();
+    const left = { ...declaration, projectionId: "a@b", version: "c" };
+    const right = { ...declaration, projectionId: "a", version: "b@c" };
+
+    registry.register(left);
+    registry.register(right);
+
+    expect(registry.resolve("a@b", "c")).toBe(left);
+    expect(registry.resolve("a", "b@c")).toBe(right);
+  });
+
+  it("rejects an exact duplicate tuple containing at-signs", () => {
+    const registry = new OutputProjectionRegistry();
+    const withAtSigns = { ...declaration, projectionId: "a@b", version: "c@d" };
+    registry.register(withAtSigns);
+
+    expect(() => registry.register({ ...withAtSigns })).toThrowError(/already registered/);
+  });
 });

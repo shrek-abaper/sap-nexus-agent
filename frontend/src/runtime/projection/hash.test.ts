@@ -60,7 +60,18 @@ describe("projection output hash", () => {
 
     expect(normalizeFacts([lower, upper])).toEqual([upper, lower]);
     expect(computeOutputHash([lower, upper], "1.0.0", "snap-1")).toBe(
-      sha256Hex(canonicalJson([upper, lower]) + "1.0.0" + "snap-1"),
+      sha256Hex(canonicalJson({
+        facts: [upper, lower],
+        version: "1.0.0",
+        snapshotId: "snap-1",
+      })),
     );
+  });
+
+  it("frames version and snapshot boundaries without collisions", () => {
+    const facts = [fact()];
+
+    expect(computeOutputHash(facts, "1", "23"))
+      .not.toBe(computeOutputHash(facts, "12", "3"));
   });
 });

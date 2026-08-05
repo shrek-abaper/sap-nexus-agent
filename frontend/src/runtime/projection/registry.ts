@@ -13,27 +13,29 @@ export class ProjectionRegistryError extends Error {
 }
 
 export class OutputProjectionRegistry {
-  private readonly declarations = new Map<string, OutputProjectionDeclaration>();
+  private readonly declarations = new Map<
+    string,
+    Map<string, OutputProjectionDeclaration>
+  >();
 
   register(declaration: OutputProjectionDeclaration): void {
-    const key = this.key(declaration.projectionId, declaration.version);
-    if (this.declarations.has(key)) {
-      throw new Error(`projection already registered: ${key}`);
+    const versions = this.declarations.get(declaration.projectionId) ?? new Map();
+    if (versions.has(declaration.version)) {
+      throw new Error(
+        `projection already registered: ${declaration.projectionId}@${declaration.version}`,
+      );
     }
 
-    this.declarations.set(key, declaration);
+    versions.set(declaration.version, declaration);
+    this.declarations.set(declaration.projectionId, versions);
   }
 
   resolve(projectionId: string, version: string): OutputProjectionDeclaration {
-    const declaration = this.declarations.get(this.key(projectionId, version));
+    const declaration = this.declarations.get(projectionId)?.get(version);
     if (!declaration) {
       throw new ProjectionRegistryError(projectionId, version);
     }
 
     return declaration;
-  }
-
-  private key(projectionId: string, version: string): string {
-    return `${projectionId}@${version}`;
   }
 }

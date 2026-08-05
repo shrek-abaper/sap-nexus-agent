@@ -238,6 +238,22 @@ describe("materialSupplySnapshotProjection", () => {
     expect(snapshot.completeness).toBe("partial");
   });
 
+  it("treats offset-equivalent source freshness as the same instant", () => {
+    const snapshot = materialSupplySnapshotProjection.project(input([
+      inventoryFact({ asOf: "2026-08-04T00:00:00Z" }),
+      purchaseOrderFact({ asOf: "2026-08-04T08:00:00+08:00" }),
+    ]));
+
+    expect(snapshot.sourceFreshness.map((entry) => entry.dataAsOf)).toEqual([
+      "2026-08-04T00:00:00Z",
+      "2026-08-04T08:00:00+08:00",
+    ]);
+    expect(snapshot.limitations).not.toContainEqual(expect.objectContaining({
+      kind: "freshness_mismatch",
+    }));
+    expect(snapshot.completeness).toBe("complete");
+  });
+
   it("reports required unit incompatibility as incomplete", () => {
     const snapshot = materialSupplySnapshotProjection.project(input([
       inventoryFact({ factId: "inventory-ea", unit: "EA" }),

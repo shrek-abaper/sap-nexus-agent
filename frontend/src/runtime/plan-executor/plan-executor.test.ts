@@ -81,6 +81,17 @@ function diffParamGraph(): PlanGraphV2 {
   return g;
 }
 
+function mixedNodeIdGraph(): PlanGraphV2 {
+  const graph = dualReadGraph();
+  const nodeIds = ["node.a", "node.Z", "node.é", "node.中"];
+  return {
+    ...graph,
+    nodes: nodeIds.map((nodeId) => ({ ...graph.nodes[0], nodeId })),
+    topologicalOrder: nodeIds,
+    readPartition: nodeIds,
+  };
+}
+
 class ThrowingGateway implements GatewayClient {
   async validate(_capabilityId: string, _parameters: Record<string, string>): Promise<GatewayValidateResult> {
     throw new Error("gateway validate boom");
@@ -187,6 +198,24 @@ describe("PlanExecutor", () => {
     expect(result.nodeLedger["node.inv"].resultRef).toBe("gw-inv");
     expect(result.failed).toEqual([]);
     expect(result.timedOut).toEqual([]);
+  });
+
+  it("orders succeeded node results by code unit for mixed node ids", async () => {
+    const store = new JsonlRunStore(dir, "worker-A");
+    await store.save("run-1", seed("run-1"));
+
+    const result = await new PlanExecutor(store, new FakeGateway(), "worker-A").execute(
+      mixedNodeIdGraph(),
+      "run-1",
+      SNAP,
+    );
+
+    expect(result.succeededNodeResults.map((record) => record.nodeId)).toEqual([
+      "node.Z",
+      "node.a",
+      "node.é",
+      "node.中",
+    ]);
   });
 
   it.each([

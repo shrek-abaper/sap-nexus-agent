@@ -2,7 +2,7 @@
 
 ### Requirement: Versioned OutputProjection registry with declared input contract
 
-The system SHALL provide an `OutputProjectionRegistry` that registers projections by `projectionId@version`. Each registered projection SHALL declare its required input FactTypes, optional input FactTypes, output schema, time basis (`asOf` policy), and partial policy. The registry SHALL resolve a projection by exact `projectionId` and `version`. A lookup for an unknown `projectionId` or unregistered `version` SHALL fail closed and record a structured failure. The registry MUST NOT call the LLM, the Gateway, or SAP.
+The system SHALL provide an `OutputProjectionRegistry` that registers projections by the logical tuple `(projectionId, version)`. Each registered projection SHALL declare its required input FactTypes, optional input FactTypes, output schema, time basis (`asOf` policy), and partial policy. The registry SHALL resolve a projection by exact `projectionId` and `version`, preserving tuple boundaries even when either accepted identifier contains `@`. A lookup for an unknown `projectionId` or unregistered `version` SHALL fail closed and record a structured failure. The registry MUST NOT call the LLM, the Gateway, or SAP.
 
 #### Scenario: Registered projection resolved by id and version
 
@@ -16,9 +16,16 @@ The system SHALL provide an `OutputProjectionRegistry` that registers projection
 - **THEN** the registry rejects the lookup fail-closed
 - **AND** records a structured failure identifying the unknown `projectionId`/`version`
 
+#### Scenario: Identifier delimiters do not alias registry tuples
+
+- **WHEN** the registry contains `(projectionId="a@b", version="c")`
+- **THEN** resolving `(projectionId="a", version="b@c")` fails closed unless that exact tuple is separately registered
+- **AND** both distinct tuples can be registered and resolved independently
+- **AND** an exact duplicate tuple is rejected
+
 ### Requirement: Projection input assembly from PlanExecutorResult
 
-The system SHALL provide a `ProjectionInputAssembler` that consumes a `PlanExecutorResult` plus the per-node Gateway execute results and produces a `PlanExecutionRecord` (carrying `snapshotId`, node ledger summary, and `asOf`) together with the successful `ReasoningFact[]`. Only `SUCCEEDED` nodes SHALL contribute facts. Nodes in `FAILED`, `TIMED_OUT`, `CANCELLED`, `BLOCKED_DEPENDENCY`, or `BLOCKED_APPROVAL` state SHALL NOT contribute facts. The assembler MUST NOT read raw Gateway payload beyond what is needed to build normalized facts, and MUST NOT read conversation text or model output.
+The system SHALL provide a `ProjectionInputAssembler` that consumes a `PlanExecutorResult` plus the per-node Gateway execute results and produces a `PlanExecutionRecord` (carrying `snapshotId`, node ledger summary, and `asOf`) together with the successful `ReasoningFact[]`. Only `SUCCEEDED` nodes SHALL contribute facts. Nodes in `FAILED`, `TIMED_OUT`, `CANCELLED`, `BLOCKED_DEPENDENCY`, or `BLOCKED_APPROVAL` state SHALL NOT contribute facts. Observable node, fact, ledger-summary, and missing-fact ordering introduced by this pipeline SHALL use explicit code-unit ordering independent of process locale. Aggregate `asOf` SHALL be computed by a single pass over fact epochs without a cardinality-dependent argument spread. The assembler MUST NOT read raw Gateway payload beyond what is needed to build normalized facts, and MUST NOT read conversation text or model output.
 
 #### Scenario: Dual READ success assembles facts
 
@@ -85,13 +92,42 @@ The system SHALL provide a `ProjectionInputAssembler` that consumes a `PlanExecu
 - **AND** `PlanExecutionRecord.asOf` is the earliest instant by epoch, normalized to UTC `toISOString()`
 - **AND** equivalent instants expressed with different offsets produce the same aggregate `asOf`
 
+#### Scenario: Mixed identifier ordering is replay-stable
+
+- **WHEN** successful nodes use mixed-case or non-ASCII node ids
+- **THEN** facts, missing facts, succeeded node results, and node ledger summaries use code-unit ordering
+- **AND** the order does not depend on the host locale or ICU defaults
+
+### Requirement: Durable projection payload recovery
+
+For a newly completed READ node, the executor SHALL durably persist the complete fact-building payload before recording the authoritative `EXECUTING -> SUCCEEDED` transition. This is an explicit cache-first ordering contract, not a cross-store atomicity claim. On restart, an `EXECUTING` node with a complete matching payload SHALL transition directly to `SUCCEEDED` and hydrate its `NodeFactRecord` without calling Gateway/SAP again. An `EXECUTING` node with no complete payload SHALL transition to `FAILED` without repeating the READ. A historical pre-change `SUCCEEDED` node without a complete payload SHALL remain `SUCCEEDED`, omit the unavailable `NodeFactRecord`, and SHALL NOT be re-executed.
+
+#### Scenario: Persisted payload completes interrupted success
+
+- **WHEN** the payload is durable but execution stops before the `SUCCEEDED` ledger transition
+- **THEN** restart performs the legal `EXECUTING -> SUCCEEDED` transition
+- **AND** restores the complete node fact record
+- **AND** does not call Gateway/SAP again
+
+#### Scenario: Missing payload after interrupted execution fails closed
+
+- **WHEN** restart finds an `EXECUTING` node without a complete matching payload
+- **THEN** the node transitions to `FAILED`
+- **AND** no Gateway/SAP READ is repeated
+
+#### Scenario: Historical success without payload degrades without replay
+
+- **WHEN** restart finds a pre-change `SUCCEEDED` node without a complete payload
+- **THEN** the node remains `SUCCEEDED` and contributes no reconstructed `NodeFactRecord`
+- **AND** no Gateway/SAP READ is repeated
+
 ### Requirement: MaterialSupplySnapshot projection produces composite fact bundle
 
 The system SHALL provide a `material-supply-snapshot` projection registered in the `OutputProjectionRegistry` that projects a `PlanExecutionRecord` plus successful `ReasoningFact[]` into a `MaterialSupplySnapshot` consisting of `{ asOf, sourceFreshness, completeness, facts, lineage, missingFacts, failedNodes, limitations }`. The projection SHALL treat the snapshot as a composite fact bundle with lineage and metadata, NOT a derived business metric, and MUST NOT compute procurement quantities, dates, or purchasing groups. Every output fact field SHALL be traceable via `lineage` to its source fact and evidence.
 
 #### Scenario: Dual READ success yields complete snapshot with full lineage
 
-- **WHEN** the projection receives a `PlanExecutionRecord` with both READ facts present, no failed nodes, and all nodes sharing the same `dataAsOf` (no freshness mismatch)
+- **WHEN** the projection receives a `PlanExecutionRecord` with both READ facts present, no failed nodes, and all nodes sharing the same parsed `dataAsOf` instant (no freshness mismatch)
 - **THEN** the projection yields a `MaterialSupplySnapshot` with `completeness` = `complete`
 - **AND** no `limitations` are produced
 - **AND** every output fact field has a `lineage` entry tracing to its source fact/evidence
@@ -116,13 +152,19 @@ The projection SHALL derive `completeness` as one of `complete`, `partial`, or `
 
 ### Requirement: Freshness, unit, and conflict determinism
 
-The projection SHALL handle cross-node `asOf` mismatch by preserving each node's own time in `sourceFreshness` and producing a `limitation`; it MUST NOT collapse distinct `asOf` values into a single value. The projection SHALL handle unit incompatibility deterministically (record a `limitation`, exclude the incompatible field from `complete` accounting). The projection SHALL handle duplicate or conflicting facts (same predicate, differing values) deterministically and record a `limitation`. Numeric, unit, and time conversions SHALL be performed only by versioned deterministic rules.
+The projection SHALL handle cross-node `asOf` mismatch by comparing distinct parsed epochs, preserving each node's original source string in `sourceFreshness`, and producing a `limitation` only for distinct instants. Offset-different strings representing the same epoch SHALL NOT produce a mismatch. The projection SHALL handle unit incompatibility deterministically (record a `limitation`, exclude the incompatible field from `complete` accounting). The projection SHALL handle duplicate or conflicting facts (same predicate, differing values) deterministically and record a `limitation`. Numeric, unit, and time conversions SHALL be performed only by versioned deterministic rules.
 
 #### Scenario: Freshness mismatch produces limitation
 
-- **WHEN** two successful facts carry different `asOf` times
+- **WHEN** two successful facts carry `asOf` values with different parsed epochs
 - **THEN** the projection preserves each `asOf` in `sourceFreshness`
 - **AND** produces a `limitation` describing the freshness mismatch
+
+#### Scenario: Offset-equivalent freshness is not a mismatch
+
+- **WHEN** two successful facts carry `2026-08-04T00:00:00Z` and `2026-08-04T08:00:00+08:00`
+- **THEN** the projection preserves both original strings in `sourceFreshness`
+- **AND** produces no freshness mismatch limitation
 
 #### Scenario: Unit incompatibility handled deterministically
 
@@ -145,7 +187,7 @@ The projection SHALL handle cross-node `asOf` mismatch by preserving each node's
 
 ### Requirement: Deterministic output hash
 
-The projection SHALL compute a deterministic output hash from the normalized facts (sorted), the projection `version`, and the `snapshotId`. The same inputs (facts, projection version, snapshotId) SHALL always produce the same hash. Different inputs SHALL produce a different hash.
+The projection SHALL compute `sha256(canonicalJson({ facts: normalizeFacts(facts), version, snapshotId }))`. The canonical object envelope SHALL frame the normalized facts, projection `version`, and `snapshotId` without ambiguous string concatenation. The same inputs (facts, projection version, snapshotId) SHALL always produce the same hash. Different inputs SHALL produce a different hash.
 
 #### Scenario: Same inputs produce same hash
 
@@ -156,6 +198,11 @@ The projection SHALL compute a deterministic output hash from the normalized fac
 
 - **WHEN** the projection runs with facts differing in value or in projection `version` or `snapshotId`
 - **THEN** the output hash differs
+
+#### Scenario: Version and snapshot boundaries cannot collide
+
+- **WHEN** normalized facts are equal but one input uses `(version="1", snapshotId="23")` and another uses `(version="12", snapshotId="3")`
+- **THEN** the output hashes differ
 
 ### Requirement: Projection isolated from raw payload and model output
 

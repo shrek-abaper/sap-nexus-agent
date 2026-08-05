@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { JsonlRunStore } from "../durable/jsonl-run-store";
 import type { AgentRunEvent } from "../run-event-schema";
-import type { AgentRunRecord } from "../durable/types";
+import type { AgentRunRecord, WorkbenchOutcome } from "../durable/types";
 import { FakeGateway } from "./fake-gateway";
 import { NodeState } from "./types";
 import { PlanExecutor } from "./plan-executor";
@@ -33,6 +33,39 @@ function dualReadGraph(): PlanGraphV2 {
     edges: [], topologicalOrder: ["node.inv", "node.po"], goalOutputs: [],
     readPartition: ["node.inv", "node.po"], actionPartition: [], projectionRef: [], ruleSetRefs: [],
   };
+}
+
+function singleReadGraph(): PlanGraphV2 {
+  const graph = dualReadGraph();
+  return {
+    ...graph,
+    nodes: [graph.nodes[0]],
+    topologicalOrder: ["node.inv"],
+    readPartition: ["node.inv"],
+  };
+}
+
+class InterruptingMarkExecutedStore extends JsonlRunStore {
+  private interrupted = false;
+
+  constructor(
+    dataDir: string,
+    workerId: string,
+    private readonly persistBeforeFailure: boolean,
+  ) {
+    super(dataDir, workerId);
+  }
+
+  override async markExecuted(key: string, result: WorkbenchOutcome): Promise<void> {
+    if (!this.interrupted) {
+      this.interrupted = true;
+      if (this.persistBeforeFailure) {
+        await super.markExecuted(key, result);
+      }
+      throw new Error("injected markExecuted interruption");
+    }
+    await super.markExecuted(key, result);
+  }
 }
 
 function ledgerEntry(state: NodeState, attempt = 0): NodeLedgerEntry {
@@ -134,6 +167,75 @@ describe("PlanExecutor recovery", () => {
       (record) => record.agentTraceId !== record.gatewayTraceId,
     )).toBe(true);
     expect(gateway.executeCalls).toHaveLength(firstExecuteCallCount);
+  });
+
+  it("fails closed without repeating Gateway when payload persistence fails", async () => {
+    const store = new InterruptingMarkExecutedStore(dir, "worker-A", false);
+    await store.save("run-1", seed("run-1"));
+    const gateway = new FakeGateway();
+
+    await expect(new PlanExecutor(store, gateway, "worker-A").execute(
+      singleReadGraph(),
+      "run-1",
+      SNAP,
+    )).rejects.toThrow("injected markExecuted interruption");
+
+    const reopened = new JsonlRunStore(dir, "worker-A");
+    const interrupted = await reopened.loadCheckpointRef("run-1");
+    expect(interrupted?.nodeState["node.inv"]).toMatchObject({
+      state: NodeState.EXECUTING,
+    });
+    const executeCallsBeforeRestart = gateway.executeCalls.length;
+
+    const recovered = await new PlanExecutor(reopened, gateway, "worker-A").execute(
+      singleReadGraph(),
+      "run-1",
+      SNAP,
+    );
+
+    expect(recovered.failed).toEqual(["node.inv"]);
+    expect(recovered.succeededNodeResults).toEqual([]);
+    expect(gateway.executeCalls).toHaveLength(executeCallsBeforeRestart);
+  });
+
+  it("recovers persisted payload after interruption before durable success", async () => {
+    const store = new InterruptingMarkExecutedStore(dir, "worker-A", true);
+    await store.save("run-1", seed("run-1"));
+    const gateway = new FakeGateway();
+    gateway.setExecuteResult("MM.Inventory.GetAvailability", {
+      success: true,
+      traceId: "gw-inv",
+      data: { availableQuantity: 7 },
+    });
+
+    await expect(new PlanExecutor(store, gateway, "worker-A").execute(
+      singleReadGraph(),
+      "run-1",
+      SNAP,
+    )).rejects.toThrow("injected markExecuted interruption");
+
+    const reopened = new JsonlRunStore(dir, "worker-A");
+    const interrupted = await reopened.loadCheckpointRef("run-1");
+    expect(interrupted?.nodeState["node.inv"]).toMatchObject({
+      state: NodeState.EXECUTING,
+    });
+    const executeCallsBeforeRestart = gateway.executeCalls.length;
+
+    const recovered = await new PlanExecutor(reopened, gateway, "worker-A").execute(
+      singleReadGraph(),
+      "run-1",
+      SNAP,
+    );
+
+    expect(recovered.succeeded).toEqual(["node.inv"]);
+    expect(recovered.succeededNodeResults).toEqual([
+      expect.objectContaining({
+        nodeId: "node.inv",
+        gatewayTraceId: "gw-inv",
+        executeData: { availableQuantity: 7 },
+      }),
+    ]);
+    expect(gateway.executeCalls).toHaveLength(executeCallsBeforeRestart);
   });
 
   it("lease conflict -> fail-closed, no Gateway calls", async () => {
