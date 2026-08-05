@@ -824,25 +824,25 @@ git commit -m "chore(openspec): complete output projection registry change"
 
 **Covers:** final review round 1 的 5 个 Important 与 2 个 Minor findings
 
-- [ ] **Step 1: 写 freshness epoch-equivalence RED test 并修复 mismatch 判断**
+- [x] **Step 1: 写 freshness epoch-equivalence RED test 并修复 mismatch 判断**
 
-- [ ] **Step 2: 写 hash framing collision RED test 并改用 canonical envelope**
+- [x] **Step 2: 写 hash framing collision RED test 并改用 canonical envelope**
 
-- [ ] **Step 3: 写 registry tuple collision RED tests 并改用无歧义 tuple storage**
+- [x] **Step 3: 写 registry tuple collision RED tests 并改用无歧义 tuple storage**
 
-- [ ] **Step 4: 写 SUCCEEDED/cache-write failure-window RED test 并修复 durable recovery ordering**
+- [x] **Step 4: 写 SUCCEEDED/cache-write failure-window RED test 并修复 durable recovery ordering**
 
-- [ ] **Step 5: 写 mixed-case/non-ASCII ordering RED tests 并移除新增 locale-dependent sort**
+- [x] **Step 5: 写 mixed-case/non-ASCII ordering RED tests 并移除新增 locale-dependent sort**
 
-- [ ] **Step 6: 写 high-cardinality assembler test 并改为单次扫描最早 epoch**
+- [x] **Step 6: 写 high-cardinality assembler test 并改为单次扫描最早 epoch**
 
-- [ ] **Step 7: 同步 hash/recovery/freshness 设计文字并收口 stale open questions**
+- [x] **Step 7: 同步 hash/recovery/freshness 设计文字并收口 stale open questions**
 
-- [ ] **Step 8: 运行所有 finding 对应的 focused regressions**
+- [x] **Step 8: 运行所有 finding 对应的 focused regressions**
 
-- [ ] **Step 9: 运行 frontend verify、Classic OpenSpec strict 与 committed diff check**
+- [x] **Step 9: 运行 frontend verify、Classic OpenSpec strict 与 committed diff check**
 
-- [ ] **Step 10: Commit final review fixes**
+- [x] **Step 10: Commit final review fixes**
 
 ---
 

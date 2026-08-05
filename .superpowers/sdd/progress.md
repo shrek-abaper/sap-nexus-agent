@@ -64,6 +64,7 @@ Build config: isolation=branch, build_mode=subagent-driven-development, tdd_mode
 - [x] Task 5: 实现确定性 hash 与 MaterialSupplySnapshot projection
 - [x] Task 6: 完成端到端 Projection Eval 与隔离证明
 - [x] Task 7: 全量相关验证与 OpenSpec 任务收口
+- [x] Task 8: 修复 final whole-branch review findings
 
 ## Completed
 
@@ -74,7 +75,10 @@ Build config: isolation=branch, build_mode=subagent-driven-development, tdd_mode
 - Task 5: complete (commits e48926e..bb49278, review clean: Spec compliant + Quality Approved, 0 Critical/Important/Minor). Deterministic hash + MaterialSupplySnapshot completeness/freshness/lineage/conflict policy; focused 15/15, frontend 232/232, typecheck/build, diff check, OpenSpec strict 20/20.
 - Task 6: complete (commits 54b3d27..4ef7764, review clean: Spec compliant + Quality Approved, 0 Critical/Important/Minor). Real executor-to-projection component Eval, six-case bad-path matrix, and compile-time raw/model-input isolation; regression 152/152, typecheck and diff check clean.
 - Task 7: complete (verification-only at 7eb7267, review: Spec compliant + Quality Approved, 0 Critical/Important, 2 documentation Minor resolved in coordinator checkoff). Frontend verify 28/28 files and 240/240 tests plus typecheck/build; Classic OpenSpec strict 20/20; evidence audit 40/40; committed-range boundary clean.
+- Task 8: complete (commit 2ff280f, fresh re-review: 7/7 original findings resolved, 0 unresolved Important/Minor, 0 new Critical/Important/Minor). Six RED/GREEN cycles; focused 72/72; frontend verify 28/28 files and 251/251 tests plus typecheck/build; Classic OpenSpec strict 20/20.
 
-## Minor findings (deferred to final review)
+## Final Whole-Branch Review
 
-- Task 4 M1: `assembler.ts` uses `Math.min(...facts.map(...))`; extremely large fact arrays may hit the JavaScript argument limit. Final reviewer should triage replacing it with iteration/reduce.
+- Initial review: `0 Critical / 5 Important / 2 Minor`; report `.superpowers/sdd/final-review.md`.
+- Fix round 1: all seven findings addressed in `2ff280f`, including the carried Task 4 argument-limit Minor.
+- Fresh re-review: ready for Verify; `7/7` resolved, no unresolved or new findings; report `.superpowers/sdd/final-rereview-1.md`.
