@@ -9,55 +9,21 @@
 
 ## Current Task
 
-- Plan task: `Task 4: 实现 FactBuilderRegistry 与 ProjectionInputAssembler`
+- Plan task: `Task 5: 实现确定性 hash 与 MaterialSupplySnapshot projection`
 - OpenSpec mapping:
-  - `4.1 实现 ProjectionInputAssembler`
-  - `4.2 仅 SUCCEEDED 贡献 facts`
-  - `4.3 assembler 隔离 raw/conversation/model input`
-  - `4.4 assembler 单测`
-  - `Missing FactBuilder graceful degradation`
-- Stage: `checkoff` (Task 4 review passed; targeted checkoff pending)
-- Implementer status: `DONE` (review-fix round 1 committed by fixer)
-- Base commit: `010a4500aad2ac47e01326262413f2d7d3899f43`
-- Implementation commit: `40d295563e8adadb0e0de6101180a40b736ba160`
-- Review-fix commit: `78b542b51a5a0d057312c0d64b2fa2e7cb1d70cc`
-- Review-fix round 2 commit: `2d6027733f90aacd2fd35f3f4e2dc6ae91c5ce31`
-- Review-fix round 3 commit: `53f2681219ae0604ae267389ef53fc328d5652bc`
-- Review-fix round 4 commit: `b8147fd44f0cd2b14e8607899d5bc3dd1c23154b`
-- Changed files: initial implementation changed `frontend/src/runtime/projection/types.ts`, `frontend/src/runtime/projection/fact-builder.ts`, `frontend/src/runtime/projection/fact-builder.test.ts`, `frontend/src/runtime/projection/assembler.ts`, `frontend/src/runtime/projection/assembler.test.ts`; review-fix round 1 changed `frontend/src/runtime/plan-executor/types.ts`, `frontend/src/runtime/plan-executor/plan-executor.ts`, `frontend/src/runtime/plan-executor/plan-executor.test.ts`, `frontend/src/runtime/plan-executor/plan-executor-recovery.test.ts`, `frontend/src/runtime/projection/fact-builder.ts`, `frontend/src/runtime/projection/fact-builder.test.ts`, `frontend/src/runtime/projection/assembler.test.ts`.
-- RED evidence: both focused suites failed with expected missing `./fact-builder` and `./assembler` modules.
-- GREEN evidence: focused suites passed (2 files, 8 tests), typecheck and diff check passed; full frontend verify passed (26 files, 194 tests + production build).
-- Review-fix RED evidence: focused executor/projection suites failed as intended (4 files, 7 tests failed, 30 passed) for missing agent trace propagation, decimal-string normalization, and permutation stability.
-- Review-fix GREEN evidence: the same focused suites passed (4 files, 37 tests); full frontend verify passed (26 files, 196 tests + production build), and `git diff --check` passed.
-- Review-fix round 2 RED evidence: focused executor/projection suites failed as intended (2 files failed, 4 tests failed, 37 passed) for fresh/cache missing or blank Gateway traces producing invalid records.
-- Review-fix round 2 GREEN evidence: the same focused suites passed (4 files, 41 tests); full frontend verify passed (26 files, 200 tests + production build), and `git diff --check` passed.
-- Task review: needs fixes (0 Critical, 3 Important, 0 Minor)
-- Re-review round 1: fresh reviewer `task4_rereview1` reviewed `010a450..78b542b`; result needs fixes (0 Critical, 1 Important, 0 Minor). Report: `.superpowers/sdd/task-4-rereview-1.md`.
-- Review/fix round: 4/4 (explicitly authorized by the user after the 3/3 blocker)
-- Round 4 dispatch: fresh fixer `task4_fix4`, model `gpt-5.6-sol` (high), implementing Task 4 Steps 17-21; report appends to `.superpowers/sdd/task-4-report.md`.
-- Round 4 RED evidence: focused fact-builder suite failed as intended (5 failed, 19 passed) for invalid calendar acceptance and missing PO item evidence identity.
-- Round 4 GREEN evidence: focused fact-builder suite passed 24/24; full frontend verify passed (26 files, 221 tests + production build), `git diff --check` passed, and strict OpenSpec validation passed 20/20.
-- Round 4 changed files: only `frontend/src/runtime/projection/fact-builder.ts` and `frontend/src/runtime/projection/fact-builder.test.ts`.
-- Round 4 re-review dispatch: fresh reviewer `task4_rereview4`, model `gpt-5.6-sol` (high), reviewing `.superpowers/sdd/review-010a450..b8147fd.diff`; report target `.superpowers/sdd/task-4-rereview-4.md`.
-- Round 4 re-review: Spec compliant + Quality Approved (0 Critical, 0 Important, 1 Minor). Report: `.superpowers/sdd/task-4-rereview-4.md`.
-- Deferred Minor for final review: replace `Math.min(...facts.map(...))` in `assembler.ts` with iteration/reduce to avoid an engine argument-limit edge on extremely large fact arrays.
-- Unresolved blocking feedback: none.
-- Round 3 fixer: fresh fixer `task4_fix3`, model `gpt-5.6-sol` (high), completed Task 4 Steps 12-16; report appended to `.superpowers/sdd/task-4-report.md`.
-- Round 3 RED evidence: focused executor/projection suites failed as intended (4 files failed, 10 tests failed, 37 passed) across nullable trace observability, PO item precedence, freshness validation, and epoch aggregation.
-- Round 3 GREEN evidence: the same focused suites passed (4 files, 47 tests); full frontend verify passed (26 files, 206 tests + production build), `git diff --check` passed, and strict OpenSpec validation passed 20/20.
-- Round 3 changed files: the 9 allowed executor/projection type, implementation, and test files listed in Task 4 Step 16; no coordination or tool-update files were committed.
-- Final Task 4 re-review dispatch: fresh reviewer `task4_rereview3`, model `gpt-5.6-sol` (high), reviewing package `.superpowers/sdd/review-010a450..53f2681.diff`; report target `.superpowers/sdd/task-4-rereview-3.md`.
-- Round 3 re-review: fresh reviewer `task4_rereview3` reviewed `010a450..53f2681`; result needs fixes (0 Critical, 2 Important, 0 Minor). Report: `.superpowers/sdd/task-4-rereview-3.md`.
-- Resolved prior feedback: nullable Gateway trace is observable with explicit `missing_gateway_trace`; PO item quantity uses field-presence precedence; malformed/timezone-less freshness falls back and aggregate `asOf` uses epoch/UTC.
-- Unresolved feedback after round 3:
-  - Reject invalid ISO-8601 calendar dates such as `2026-02-30T00:00:00Z` instead of accepting JavaScript rollover.
-  - Include `purchaseOrderItem` in PO fact evidence so item identity, lineage, and output hash remain observable.
-- Review-fix round 2: fresh fixer `task4_fix2` completed and committed; final Task 4 re-review is pending.
-- Final Task 4 re-review: fresh reviewer `task4_rereview2` reviewed `010a450..2d60277`; result needs fixes (0 Critical, 3 Important, 0 Minor). Report: `.superpowers/sdd/task-4-rereview-2.md`.
-- Review budget: the user selected continuation option 1 and explicitly authorized one final round 4 fix/re-review for the two remaining Important findings. Task 4 remains unchecked and Task 5 has not been dispatched until that review passes.
-- Extra-round design decision: retain every complete `SUCCEEDED` `NodeFactRecord` with nullable `gatewayTraceId`; assembler records `missing_gateway_trace` and emits no fact. PO item quantity uses field-presence precedence. Valid source freshness is preserved per fact; aggregate `asOf` uses earliest epoch normalized to UTC.
-- Design decision: user selected and confirmed Option A; committed as `c1e302d`. `NodeFactRecord.agentTraceId` is derived from executor `runId`, never from `gatewayTraceId`.
-- Written spec review: explicitly confirmed by the user after commit `6456476`; strict OpenSpec validation passed 20/20.
-- Updated plan: Task 4 Steps 12-16 define the extra-round RED/GREEN cases, nullable trace and freshness implementation, full frontend/OpenSpec verification, allowed files, and exact commit.
-- Final-round plan: Task 4 Steps 17-21 define RED/GREEN for strict invalid-calendar rejection and `purchaseOrderItem` evidence identity, with exact two-file scope and commit.
-- Risk signals: cross-module, Gateway-data security boundary, public API changes, diff >200, and process-only DONE_WITH_CONCERNS; no implementation concern.
+  - `5.1 实现 material-supply-snapshot projection`
+  - `5.2 lineage 100% 可追溯`
+  - `5.3 sourceFreshness 保留双时间戳`
+  - `5.4 completeness 三态`
+  - `5.5 completeness 单测`
+  - `5.6 freshness mismatch`
+  - `5.7 unit incompatibility`
+  - `5.8 conflict policy`
+  - `5.9 deterministic output hash`
+- Stage: `implementing`
+- Implementer status: pending dispatch
+- Base commit: `f50764ca7fdde02dfd7e876d07a5500ac29d00ae`
+- Review/fix round: 0/2
+- Dependencies: Task 4 completed through implementation `b8147fd` and checkoff commit `f50764c`; all 21 plan and 12 mapped OpenSpec checkoffs passed.
+- Carried Minor for final review: `assembler.ts` uses `Math.min(...facts.map(...))`, which may hit the JavaScript argument limit for extremely large fact arrays.
+- Risk signals: pending implementer report.
