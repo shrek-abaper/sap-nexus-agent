@@ -1,0 +1,53 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "static-inspection",
+  "role": "required-check",
+  "status": "passed",
+  "bindings": {
+    "change": "sap-nexus-workbench-plan-evidence-experience",
+    "sourceRevision": 3,
+    "contractHash": "ca9f6af057f4330fd305eb4b350a68a9c1c75cccd94bb8ceea4a3460e38e6556",
+    "scopeHash": "d70cc0113ece1a262597a24c56a47f84eff009fe1f74aa9364484d1a497cfad6",
+    "snapshotHash": "4f1308b83dff29e44398ea0c7b740b2fdc9fe81ebe7c1ae8b8c1e0636cda5f6f",
+    "artifactHash": "1ff47d5db74f2f04aac0907035453e9f98ef238740a59e5674f6c958c277d8cd"
+  },
+  "acceptanceIds": [],
+  "actor": "native-runtime:scoped-text-safety",
+  "issuedAt": "2026-08-05T10:02:20.663Z",
+  "evidence": {
+    "subjects": [
+      "docs/runbooks/20-workbench-plan-evidence-experience.md",
+      "docs/runbooks/21-read-to-write-action-governance.md",
+      "docs/runbooks/README.md",
+      "docs/wiki/sap-nexus-agent-deerflow-adoption-analysis.md",
+      "docs/wiki/sap-nexus-agent-implementation-roadmap.md",
+      "docs/wiki/sap-nexus-agent-openharness-semantic-orchestration.md",
+      "docs/wiki/sap-nexus-agent-technical-architecture.md",
+      "docs/wiki/sap-nexus-agent-technology-selection.md",
+      "frontend/app/globals.css",
+      "frontend/src/modules/agent-console/AgentConsole.tsx",
+      "frontend/src/modules/agent-console/ChatStream.tsx",
+      "frontend/src/modules/agent-console/view-model.ts",
+      "frontend/src/modules/plan-evidence/PlanEvidencePanel.test.ts",
+      "frontend/src/modules/plan-evidence/PlanEvidencePanel.tsx",
+      "frontend/src/modules/plan-evidence/view-model.test.ts",
+      "frontend/src/modules/plan-evidence/view-model.ts",
+      "frontend/src/runtime/agent-runtime-adapter.test.ts",
+      "frontend/src/runtime/agent-runtime-adapter.ts",
+      "frontend/src/runtime/durable/jsonl-run-store.test.ts",
+      "frontend/src/runtime/durable/jsonl-run-store.ts",
+      "frontend/src/runtime/plan-evidence/event-projector.test.ts",
+      "frontend/src/runtime/plan-evidence/event-projector.ts",
+      "frontend/src/runtime/plan-evidence/fixtures.ts",
+      "frontend/src/runtime/run-event-schema.ts",
+      "frontend/src/runtime/run-state-machine.test.ts",
+      "frontend/src/runtime/run-state-machine.ts",
+      "frontend/src/shared/types/artifacts.ts"
+    ],
+    "rule": "scoped-text-safety",
+    "resultSummary": "The built-in scoped inspection passed without skipped or blocking input.",
+    "checkReceiptRef": "runtime/evidence/check-receipts/77f3413351dc59d0a3e5644df8cd1f5ce25aebd591b6afb235206587bc341f9b.json",
+    "checkReceiptHash": "77f3413351dc59d0a3e5644df8cd1f5ce25aebd591b6afb235206587bc341f9b"
+  },
+  "receiptHash": "83ac0fa7b9353028d9d7486b6d365880d45cead97d4e6f5e70e69a3bb15ebe4b"
+}

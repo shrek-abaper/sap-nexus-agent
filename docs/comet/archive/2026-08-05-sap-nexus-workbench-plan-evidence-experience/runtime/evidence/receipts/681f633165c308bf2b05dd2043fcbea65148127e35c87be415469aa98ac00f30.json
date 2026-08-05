@@ -1,0 +1,79 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "sap-nexus-workbench-plan-evidence-experience",
+    "sourceRevision": 3,
+    "contractHash": "ca9f6af057f4330fd305eb4b350a68a9c1c75cccd94bb8ceea4a3460e38e6556",
+    "scopeHash": "d70cc0113ece1a262597a24c56a47f84eff009fe1f74aa9364484d1a497cfad6",
+    "snapshotHash": "4f1308b83dff29e44398ea0c7b740b2fdc9fe81ebe7c1ae8b8c1e0636cda5f6f",
+    "artifactHash": "1ff47d5db74f2f04aac0907035453e9f98ef238740a59e5674f6c958c277d8cd"
+  },
+  "acceptanceIds": [
+    "acceptance-0c341a275e390fa9b9adaa5df1977037fbc8ad2d71e336e64bc4303b9d969a93",
+    "acceptance-20ad8a2c5086e1ea8c985214e72cc574b7d347285c9b8ceffc4f704fb397e9ab",
+    "acceptance-2eb3b7b9186272a18352768b3467f53761f079c3bd14e30288dd50e680b9dc1d",
+    "acceptance-33c5ae51e5c5931f5030790569955c5234ab3dc9413681a34e1e4f2b9ff0e9e1",
+    "acceptance-44fa13e5291412e13dd8daa42bf9e01738001ff440e7c9c7b507d8c46ce66c59",
+    "acceptance-49593a1c57920ff994e1b7efb15809cab1c831ad7624db330577beb3b3baf2ec",
+    "acceptance-4bd362e96ba5b7d8ee1b7bcd7d72d15eadd4fc4363373019683a27c3f5fe1599",
+    "acceptance-55bd8461317ae633da3dfa7ca1e87bccc0cdb0ff9318acfe12237ab9f08abc00",
+    "acceptance-5d8c797dc0a412a87bece3e58e61d9acb7987c7997aa5a71cbe8d6ec61a128e8",
+    "acceptance-6153f2058803d63d6b1ab401501a0ff603af8457c6ff2525a2793c0f3f8404db",
+    "acceptance-61c2d6ab831dd97f9f0eae5196300eed88dfa3edf0f8edbc8242d07b3c60d9bd",
+    "acceptance-75e00bde309d183822b2b405403adabf49bf674a654f285579abd0b669790211",
+    "acceptance-79164fa3e63d5eaf09c91d4078f1c3a742b4bc3a85ba2038da051316a1ace1b0",
+    "acceptance-7b5450a5a65ba0ef71679125e712331da705ae23ee098e69cfe4fb00af8e1e2c",
+    "acceptance-7d274196675276fd87d4ab0695dec0eb793633df2f75f3739b7f74184147640e",
+    "acceptance-7d2cd21fb700ca10cb270d219e66266705aab236908d9df0d5ca996b379319a2",
+    "acceptance-7fb9d0299130923c7dad70dc78952cb5d8e354856a175123c0c9e8420a765701",
+    "acceptance-8532bed94925b58595c6fa53243a22a571edc6cc39ddca1f012c12aad51c3b5a",
+    "acceptance-8de10896023467f1316e02db56eed701fdff3b30d91da6170453ff872c2188ac",
+    "acceptance-9f563ca32494df6136f18f7a824d6cc67cf423028f930a3a0e4b2b6935e78295",
+    "acceptance-a5cfbcc480cd46f6b7958e05229de4ff5bc7b911e2b50470f7b20ab195a3efa6",
+    "acceptance-a704845b2dbc6caf710d2256806bdc00c05dfb5aca728f2229f8364fe83bb719",
+    "acceptance-a932dfa37a95567d068d888c74a92255fc61fb130a0659e6416811b1cf70a6a1",
+    "acceptance-b8ffda7bc9f3bdc7d0c8fda499715481cdd77672d7cce8cc29a1d5b98b37daa5",
+    "acceptance-cefb0005f8aa43772d32adb0af9b3196ef9a9cbec09a25170f6a2dffeadcd381",
+    "acceptance-d1c6bc54e2c09320eee17f1efc030a9f6d7d8dc6e4e7a12f047ca6d8f40276dc",
+    "acceptance-d354466e60765a155d1d52313c0e4cbad58be135df7bbdc69eee399dd0ae3c40",
+    "acceptance-e2b9e80aa172e553ab847ee97203dee9cc63fff8805c2cf0ed5b672ccb6e41f8",
+    "acceptance-e6e5e6c9361e33c9fdab45b9975c7a5a8f7ddec7a58702ec2a7e33afb936e537",
+    "acceptance-f61ed1ec789c97b62556c032507ab6a72d6e3a95c8d4f6e6293c516b2b89766e"
+  ],
+  "actor": "native-runtime:command:npm",
+  "issuedAt": "2026-08-05T09:44:56.238Z",
+  "evidence": {
+    "executable": "npm",
+    "args": [
+      "--prefix",
+      "frontend",
+      "run",
+      "verify"
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 300000,
+    "startedAt": "2026-08-05T09:44:30.993Z",
+    "endedAt": "2026-08-05T09:44:56.238Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "1c853016aceb1621ccabdd22ea3c42637796e55a",
+      "afterCommit": "1c853016aceb1621ccabdd22ea3c42637796e55a"
+    },
+    "afterFence": {
+      "snapshotHash": "4f1308b83dff29e44398ea0c7b740b2fdc9fe81ebe7c1ae8b8c1e0636cda5f6f",
+      "scopeHash": "d70cc0113ece1a262597a24c56a47f84eff009fe1f74aa9364484d1a497cfad6",
+      "matched": true
+    },
+    "outputHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "outputSummary": "(exit 0)",
+    "outputTruncated": false
+  },
+  "receiptHash": "681f633165c308bf2b05dd2043fcbea65148127e35c87be415469aa98ac00f30"
+}

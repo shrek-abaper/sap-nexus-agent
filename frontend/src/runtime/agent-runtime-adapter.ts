@@ -176,7 +176,8 @@ async function executeRunnerInBackground(
     await runStore.release(runId, workerId);
   } catch (error) {
     const currentRecord = await runStore.load(runId);
-    const baseSeq = currentRecord?.events.length ?? 1;
+    if (!currentRecord) return;
+    const baseSeq = currentRecord.events.length;
     const failEvents = buildRuntimeFailureEventsTail(runId, baseSeq, new Date().toISOString(), error);
     for (const event of failEvents) {
       await runStore.appendEvent(runId, event);

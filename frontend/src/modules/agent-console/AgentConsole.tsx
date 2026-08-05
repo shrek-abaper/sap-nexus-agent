@@ -27,7 +27,20 @@ const agentRunEventTypes = [
   "trace_linked",
   "run_completed",
   "run_failed",
-  "match_decision_created"
+  "match_decision_created",
+  "batch_confirm_requested",
+  "node_state_changed",
+  "intent_recognized",
+  "capability_recalled",
+  "plan_compiled",
+  "plan_node_state",
+  "fact_emitted",
+  "projection_completed",
+  "recommendation_completed",
+  "narrative_completed",
+  "action_proposed",
+  "approval_updated",
+  "action_executed"
 ] satisfies AgentRunEvent["type"][];
 
 const navItems: { id: string; label: string; icon: IconName }[] = [
@@ -70,16 +83,13 @@ export function AgentConsole() {
     const stream = new EventSource(buildStreamUrl(serverRunId, cursor));
     const handleRunEvent = (message: MessageEvent<string>) => {
       const event = JSON.parse(message.data) as AgentRunEvent;
-      if (nextSnapshot.events.some((existing) => existing.sequence === event.sequence)) {
-        return;
-      }
-      lastSequence = event.sequence;
+      lastSequence = Math.max(lastSequence, event.sequence);
       nextSnapshot = applyRunEvent(nextSnapshot, event);
       setTurns((prev) =>
         prev.map((turn) => (turn.runId === localRunId ? { ...turn, snapshot: nextSnapshot } : turn))
       );
-      const pausedForApproval = event.state === "awaiting_approval";
-      const terminal = event.state === "completed" || event.state === "failed" || event.state === "rejected";
+      const pausedForApproval = nextSnapshot.state === "awaiting_approval";
+      const terminal = nextSnapshot.state === "completed" || nextSnapshot.state === "failed" || nextSnapshot.state === "rejected";
       if (pausedForApproval || terminal) {
         intentionallyClosed = true;
         stream.close();

@@ -13,6 +13,17 @@ export type RedactedArtifact = {
     | "reasoning-fact"
     | "narrative"
     | "trace"
-    | "match-decision";
+    | "match-decision"
+    | "intent-envelope"
+    | "capability-recall"
+    | "plan-graph"
+    | "node-ledger"
+    | "fact"
+    | "projection"
+    | "recommendation"
+    | "narrative-envelope"
+    | "action-proposal"
+    | "approval-record"
+    | "action-result";
   payload: JsonValue;
 };

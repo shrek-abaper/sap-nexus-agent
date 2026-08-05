@@ -17,7 +17,18 @@ export type AgentRunEventType =
   | "run_failed"
   | "match_decision_created"
   | "batch_confirm_requested"
-  | "node_state_changed";
+  | "node_state_changed"
+  | "intent_recognized"
+  | "capability_recalled"
+  | "plan_compiled"
+  | "plan_node_state"
+  | "fact_emitted"
+  | "projection_completed"
+  | "recommendation_completed"
+  | "narrative_completed"
+  | "action_proposed"
+  | "approval_updated"
+  | "action_executed";
 
 export type AgentRunState =
   | "idle"
@@ -56,6 +67,9 @@ export type AgentRunEvent = {
   capabilityId?: string;
   agentTraceId?: string;
   gatewayTraceId?: string;
+  traceId?: string;
+  snapshotId?: string;
+  objectRefs?: Array<{ kind: string; ref: string }>;
   hitlState?: HumanInTheLoopState;
   artifact?: RedactedArtifact;
   error?: {
@@ -77,4 +91,10 @@ export type AgentRunSnapshot = {
   events: AgentRunEvent[];
   latestArtifact?: RedactedArtifact;
   error?: AgentRunEvent["error"];
+  replayIntegrity?: {
+    status: "consistent" | "gap" | "conflict";
+    expectedSequence?: number;
+    receivedSequence?: number;
+    message?: string;
+  };
 };

@@ -5,7 +5,7 @@
 | 字段 | 内容 |
 |---|---|
 | 文档名称 | `SAP Nexus Agent 技术架构文档` |
-| 当前版本 | `v0.2.26` |
+| 当前版本 | `v0.2.27` |
 | 状态 | `Product Architecture Baseline Draft` |
 | 创建日期 | `2026-06-18` |
 | 最近更新 | `2026-08-05` |
@@ -21,6 +21,7 @@
 
 | 版本 | 日期 | 变更摘要 | 决策状态 |
 |---|---|---|---|
+| `v0.2.27` | `2026-08-05` | 同步 Runbook 20 Native change 已归档代码事实：governed event projection、strict durable replay integrity 与 responsive 八分区 Workbench 已完成 component/UI integration 验证；`ActionProposal.pending_approval` 仍非 Human Approval，生产 orchestrator 与 SAP WRITE 未接入；当前入口移到 Runbook 21 | 当前架构基线 |
 | `v0.2.26` | `2026-08-05` | 同步 Runbook 19 Native change 已归档代码事实：deterministic narrative input projection、strict lossless LLM rewrite validation、timeout/invalid JSON template fallback、可追溯 `NarrativeEnvelope` 与 grounded Eval 已完成 component/Eval 验证；生产 orchestrator、Workbench、Human Approval 与 SAP WRITE 仍未 live；当前入口移到 Runbook 20 | 当前架构基线 |
 | `v0.2.25` | `2026-08-05` | 同步 Runbook 18 Native change 已归档代码事实：snapshot-bound RuleSet、deterministic input sufficiency、RecommendationPlan 与单 `pending_approval` ActionProposal 已完成 component/Eval 验证；proposal 不是审批/执行证据，生产 orchestrator、Narrative 与 SAP WRITE 仍未 live；当前入口移到 Runbook 19 | 当前架构基线 |
 | `v0.2.24` | `2026-08-05` | 同步 Runbooks 14-17 已归档代码事实：同快照 LLM-first recall、PlanGraph v2、READ PlanExecutor 与 deterministic OutputProjection 已完成 component/Eval 验证；生产 orchestrator / projectionRef、Recommendation、Narrative 与 Action 闭环仍未 live；当前实施入口移到 Runbook 18 | 当前架构基线 |
@@ -79,7 +80,7 @@
 
 架构预留不是零成本。每个 reserved executor family 都是未来实现、评审、评测和运维的隐含契约。已有 reserved executor 只保留 fail-closed 边界，不能被解读为当前实现承诺。
 
-成熟度等级（`Live` / `Completed Pilot` / `Completed Foundation` / `Next Design` / `Planned Pilot` / `Reserved` / `Not In Scope`）定义架构占位的性质与门禁要求，属于长期基线。各项能力的当前成熟度归属、已实现/未实现标注和近期 next step 不在本文档维护，统一见 `docs/runbooks/README.md` "Architecture Maturity & Current Status"；完整 Agent 目标契约见 `docs/superpowers/specs/2026-08-03-sap-nexus-complete-agent-roadmap-design.md`，当前实施入口为 `docs/runbooks/20-workbench-plan-evidence-experience.md`（Runbooks 13-19 已归档）。阶段生命周期标签由 `docs/wiki/sap-nexus-agent-implementation-roadmap.md` 承载。`docs/runbooks/10-capability-composition-contract.md` 仅保留为已归档 S1/S2 历史契约，不得作为活动入口。架构基线只保留 fail-closed 边界、分层职责与长期能力形态，不随进度变化频繁改版。
+成熟度等级（`Live` / `Completed Pilot` / `Completed Foundation` / `Next Design` / `Planned Pilot` / `Reserved` / `Not In Scope`）定义架构占位的性质与门禁要求，属于长期基线。各项能力的当前成熟度归属、已实现/未实现标注和近期 next step 不在本文档维护，统一见 `docs/runbooks/README.md` "Architecture Maturity & Current Status"；完整 Agent 目标契约见 `docs/superpowers/specs/2026-08-03-sap-nexus-complete-agent-roadmap-design.md`，当前实施入口为 `docs/runbooks/21-read-to-write-action-governance.md`（Runbooks 13-20 已归档）。阶段生命周期标签由 `docs/wiki/sap-nexus-agent-implementation-roadmap.md` 承载。`docs/runbooks/10-capability-composition-contract.md` 仅保留为已归档 S1/S2 历史契约，不得作为活动入口。架构基线只保留 fail-closed 边界、分层职责与长期能力形态，不随进度变化频繁改版。
 
 ---
 
@@ -137,7 +138,7 @@ durable conversation + TrustedPrincipal + RegistrySnapshot
 -> Human Approval -> exactly-once Action
 ```
 
-当前代码已在独立 component/Eval 范围完成同快照 recall、PlanGraph v2、READ PlanExecutor、OutputProjection、RecommendationDecision 与 grounded Narrative；生产 orchestrator / `projectionRef`、Workbench 和 READ-to-WRITE 执行闭环仍属于 Runbooks 20-22，不能把组件测试描述为 live end-to-end composition。
+当前代码已在独立 component/Eval 范围完成同快照 recall、PlanGraph v2、READ PlanExecutor、OutputProjection、RecommendationDecision 与 grounded Narrative，并在 Runbook 20 完成 governed event/replay 与 Workbench component/UI integration；生产 orchestrator / `projectionRef` 和 READ-to-WRITE 执行闭环仍属于 Runbooks 21-22，不能把组件或 UI fixture 描述为 live end-to-end composition。
 
 MVP 第一条纵切：
 
@@ -666,7 +667,7 @@ Action 的强制约束：
 
 ### 5.4 能力组合语义模型（Reserved）
 
-能力组合的通用 Dynamic Planner 仍是 `Reserved`。S1、S2-A、S2-B、P0B 与 Runbooks 13-19 已实现并归档；READ PlanExecutor、OutputProjection、RecommendationDecision 和 grounded Narrative 已有 component/Eval 证据，但生产 orchestrator 尚未形成 live 多能力执行链。下一阶段按 Runbooks 20-22 完成 Workbench、单 Action 人审闭环和 release gate，不进入自由 runtime 编排。
+能力组合的通用 Dynamic Planner 仍是 `Reserved`。S1、S2-A、S2-B、P0B 与 Runbooks 13-20 已实现并归档；READ PlanExecutor、OutputProjection、RecommendationDecision 和 grounded Narrative 已有 component/Eval 证据，Workbench 已有 event/replay component/UI 证据，但生产 orchestrator 尚未形成 live 多能力执行链。下一阶段按 Runbooks 21-22 完成单 Action 人审闭环和 release gate，不进入自由 runtime 编排。
 
 组合不是单一概念，而是三种形态各异、支持前提不同的东西：
 
@@ -680,7 +681,7 @@ Action 的强制约束：
 
 执行边界：
 
-- 多能力请求已可靠落到 `ESCALATE_TO_PLANNER`，Runbooks 13-19 已完成独立 component/Eval；生产只读 PlanGraph orchestration 仍须后续 release gate 明确接线与证明，不能从组件成熟度推断为已 live。
+- 多能力请求已可靠落到 `ESCALATE_TO_PLANNER`，Runbooks 13-20 已完成独立 component/Eval 与 Workbench event/replay integration；生产只读 PlanGraph orchestration 仍须后续 release gate 明确接线与证明，不能从组件或 UI fixture 成熟度推断为已 live。
 - `Composite Capability` 若落地，必须作为一个注册 `capabilityId` 出现，内部 DAG 确定、可评测、可回放，并逐步校验每步 governance / sideEffect / approval。
 - 组合链中的 write 步骤仍必须走 Human Approval，不因"整体是 composite"而绕过单步审批。
 

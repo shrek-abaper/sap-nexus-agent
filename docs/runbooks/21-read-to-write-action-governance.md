@@ -5,9 +5,9 @@
 | Field | Value |
 |---|---|
 | Runbook | `21-read-to-write-action-governance` |
-| Version | `v0.1.0` |
-| Status | `Planned` |
-| Created / Updated | `2026-08-03` |
+| Version | `v0.1.1` |
+| Status | `Planned / Current Entry` |
+| Created / Updated | `2026-08-03 / 2026-08-05` |
 | Depends On | Runbooks 13, 15-20; archived sandbox write and durable approval foundations |
 | Unblocks | Runbook 22 |
 

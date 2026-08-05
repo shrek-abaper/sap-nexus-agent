@@ -1,0 +1,567 @@
+{
+  "schema": "comet.native.implementation-scope.v2",
+  "contractHash": "ca9f6af057f4330fd305eb4b350a68a9c1c75cccd94bb8ceea4a3460e38e6556",
+  "baselineProjectionRef": "runtime/evidence/snapshots/3450b15498e5216b8a6319542ec33d0328f04b65213d5621449e2f69ca783b5e.json",
+  "baselineProjectionHash": "3450b15498e5216b8a6319542ec33d0328f04b65213d5621449e2f69ca783b5e",
+  "currentProjectionRef": "runtime/evidence/snapshots/4f1308b83dff29e44398ea0c7b740b2fdc9fe81ebe7c1ae8b8c1e0636cda5f6f.json",
+  "currentProjectionHash": "4f1308b83dff29e44398ea0c7b740b2fdc9fe81ebe7c1ae8b8c1e0636cda5f6f",
+  "complete": true,
+  "declaredArtifacts": [
+    {
+      "path": "docs/runbooks/20-workbench-plan-evidence-experience.md",
+      "kind": "file"
+    },
+    {
+      "path": "docs/runbooks/21-read-to-write-action-governance.md",
+      "kind": "file"
+    },
+    {
+      "path": "docs/runbooks/README.md",
+      "kind": "file"
+    },
+    {
+      "path": "docs/wiki/sap-nexus-agent-deerflow-adoption-analysis.md",
+      "kind": "file"
+    },
+    {
+      "path": "docs/wiki/sap-nexus-agent-implementation-roadmap.md",
+      "kind": "file"
+    },
+    {
+      "path": "docs/wiki/sap-nexus-agent-openharness-semantic-orchestration.md",
+      "kind": "file"
+    },
+    {
+      "path": "docs/wiki/sap-nexus-agent-technical-architecture.md",
+      "kind": "file"
+    },
+    {
+      "path": "docs/wiki/sap-nexus-agent-technology-selection.md",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/app/globals.css",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/modules/agent-console/AgentConsole.tsx",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/modules/agent-console/ChatStream.tsx",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/modules/agent-console/view-model.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/modules/plan-evidence",
+      "kind": "directory"
+    },
+    {
+      "path": "frontend/src/runtime/agent-runtime-adapter.test.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/runtime/agent-runtime-adapter.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/runtime/durable/jsonl-run-store.test.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/runtime/durable/jsonl-run-store.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/runtime/plan-evidence",
+      "kind": "directory"
+    },
+    {
+      "path": "frontend/src/runtime/run-event-schema.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/runtime/run-state-machine.test.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/runtime/run-state-machine.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/shared/types/artifacts.ts",
+      "kind": "file"
+    }
+  ],
+  "changes": [
+    {
+      "path": "docs/runbooks/20-workbench-plan-evidence-experience.md",
+      "kind": "modified",
+      "before": {
+        "hash": "58dfdf168fdb7c1e9010700ad27e66561ff11c906480184f5278e0cdc64f5a09",
+        "size": 2734
+      },
+      "after": {
+        "hash": "21b3dea8c45db66beca5d3558d792c61f21eee7f9c9ebc7d87da9283d16c0b55",
+        "size": 5156
+      },
+      "attributedTo": [
+        {
+          "path": "docs/runbooks/20-workbench-plan-evidence-experience.md",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "docs/runbooks/21-read-to-write-action-governance.md",
+      "kind": "modified",
+      "before": {
+        "hash": "101eed6e939d7be7f9d06bde895c0236a82973625f58aadfa3f77215a9236dab",
+        "size": 3058
+      },
+      "after": {
+        "hash": "185e1b6645caf140d80ce27fd9e2b62118f7429f02d78206e080c3275e7a35f0",
+        "size": 3087
+      },
+      "attributedTo": [
+        {
+          "path": "docs/runbooks/21-read-to-write-action-governance.md",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "docs/runbooks/README.md",
+      "kind": "modified",
+      "before": {
+        "hash": "52ccc7eedf5344b3dbbb832d4ba44cbe302098ddc65d16864881564b69016a9c",
+        "size": 23704
+      },
+      "after": {
+        "hash": "67722d11ea586860bb4f073096b134ccc65258708e32397d654a0690fc7ea1a6",
+        "size": 24580
+      },
+      "attributedTo": [
+        {
+          "path": "docs/runbooks/README.md",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "docs/wiki/sap-nexus-agent-deerflow-adoption-analysis.md",
+      "kind": "modified",
+      "before": {
+        "hash": "344dadc6453b81065c6b5ebbc898f34263b5b592caa1318761ab01931be8c5af",
+        "size": 35717
+      },
+      "after": {
+        "hash": "4a8a610fad1d83069bcc403e189d29e30320a0a608b6e44274edd50fd14f7798",
+        "size": 35942
+      },
+      "attributedTo": [
+        {
+          "path": "docs/wiki/sap-nexus-agent-deerflow-adoption-analysis.md",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "docs/wiki/sap-nexus-agent-implementation-roadmap.md",
+      "kind": "modified",
+      "before": {
+        "hash": "ef175624b256ff91aa1aea2d63ebbd0c59f5b6302e0db7546208b09747f8c129",
+        "size": 100134
+      },
+      "after": {
+        "hash": "745ad4e79e1a1367449c9daf8d69c4b04f7d1ec205dbe08d24467b72d3e6543a",
+        "size": 100832
+      },
+      "attributedTo": [
+        {
+          "path": "docs/wiki/sap-nexus-agent-implementation-roadmap.md",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "docs/wiki/sap-nexus-agent-openharness-semantic-orchestration.md",
+      "kind": "modified",
+      "before": {
+        "hash": "0279cc3c85c0148abff7c00791202c7ac49fa7284894f953deda48ff0fb7e3e6",
+        "size": 20601
+      },
+      "after": {
+        "hash": "ca14f0fb96f6d5778ecb023a9b7859b8c6a2b875a40f9b4cc532d832cc9e56a3",
+        "size": 20833
+      },
+      "attributedTo": [
+        {
+          "path": "docs/wiki/sap-nexus-agent-openharness-semantic-orchestration.md",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "docs/wiki/sap-nexus-agent-technical-architecture.md",
+      "kind": "modified",
+      "before": {
+        "hash": "f5d067343f096bffe03888876d5a805e531895d828896768e4bc815d18d96da1",
+        "size": 87538
+      },
+      "after": {
+        "hash": "49643badd22ba30aa66556d5a920b0f0d4a82ad693aa43250aec0eec12ebde9d",
+        "size": 88094
+      },
+      "attributedTo": [
+        {
+          "path": "docs/wiki/sap-nexus-agent-technical-architecture.md",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "docs/wiki/sap-nexus-agent-technology-selection.md",
+      "kind": "modified",
+      "before": {
+        "hash": "b9abcc1b7419cef4c1fb2ed747dd00bc27afadff84cbf459132166aa32f2b995",
+        "size": 41378
+      },
+      "after": {
+        "hash": "990d3dd253136e3efb936fb39624ec818efe1f52069affe79dbf09b16d68459a",
+        "size": 41832
+      },
+      "attributedTo": [
+        {
+          "path": "docs/wiki/sap-nexus-agent-technology-selection.md",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/app/globals.css",
+      "kind": "modified",
+      "before": {
+        "hash": "ce6550dd9806cb07e7f285a2dee585032d10b7ae828cbaaa3fd9c7f4138ba3f8",
+        "size": 27938
+      },
+      "after": {
+        "hash": "304192b2ccfa00b658a58daa6e2aa71e85af17b345ee2d5ede9916df9f8eff45",
+        "size": 31233
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/app/globals.css",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/modules/agent-console/AgentConsole.tsx",
+      "kind": "modified",
+      "before": {
+        "hash": "65896e16cc307daf9dfeee07833ae4d283476dd9798c56e28295e5f06aa207eb",
+        "size": 13293
+      },
+      "after": {
+        "hash": "c7ddb9e5c9c53c0745586ce8ae2d3eb236b6b4d091dd3dd0e47d30a85d1c9dec",
+        "size": 13535
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/modules/agent-console/AgentConsole.tsx",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/modules/agent-console/ChatStream.tsx",
+      "kind": "modified",
+      "before": {
+        "hash": "24e75fd4a67f1845a819647ec55b634e668b69b9fbf904365cd03da30ff2e22f",
+        "size": 17925
+      },
+      "after": {
+        "hash": "9ed5044ba763d9542696afe3a6881aec4e0688c09cd27832505f234ded78cf0b",
+        "size": 18271
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/modules/agent-console/ChatStream.tsx",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/modules/agent-console/view-model.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "5ae3b65c2e9eeadf1bdb1a583956a75d7364f28b2c0ad28038825bf662017879",
+        "size": 19837
+      },
+      "after": {
+        "hash": "f46a224b381e697ef1b1fbf07c0d1cde3d7925638257092c5aeaa841c90a2deb",
+        "size": 20766
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/modules/agent-console/view-model.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/modules/plan-evidence/PlanEvidencePanel.test.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "9941163c48e6d672f0c0083d92d63ad854a926d29129626ac6e3feb0503a4fa7",
+        "size": 3238
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/modules/plan-evidence",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/modules/plan-evidence/PlanEvidencePanel.tsx",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "2b2c90cf7dc0c69e943c0d6a4c37f9638f7d6142a75836420577102fae049f0b",
+        "size": 5651
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/modules/plan-evidence",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/modules/plan-evidence/view-model.test.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "fc0d689449b4d2ceca50c502c144ae1a37dbd46f98d6a0d334bb0f4ec9f622ae",
+        "size": 5931
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/modules/plan-evidence",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/modules/plan-evidence/view-model.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "9cda3a8ed1cec3ba28a6935071c4fe4f396253209437ba58ea2fbe8298ed8608",
+        "size": 9103
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/modules/plan-evidence",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/agent-runtime-adapter.test.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "e42c705bf1199c79ac8eebcb099c696bc7bceee64040b540334edb9ec07043da",
+        "size": 15409
+      },
+      "after": {
+        "hash": "2a197e9cb37e96a121bd5da2ed1150bf3d02c5bd945a2b951542227c179ffb3f",
+        "size": 16043
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/agent-runtime-adapter.test.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/agent-runtime-adapter.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "afb2ac399ce9829b0ada2e8874ad207b6ea60ad43a0bb118ba1b40d2efb66bcc",
+        "size": 29072
+      },
+      "after": {
+        "hash": "9b53c70e03699712e78cadac49a22b7fd278800acb94481e970735464be84a11",
+        "size": 29098
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/agent-runtime-adapter.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/durable/jsonl-run-store.test.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "0b0583e7856de0c7b98c28bda6efbbeea186c531ac94adfc731120318ee4b04a",
+        "size": 6529
+      },
+      "after": {
+        "hash": "c74096a604e5c72647d35ec4769a90c006a911b6dc3433368a6c677bf2ba3e51",
+        "size": 7542
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/durable/jsonl-run-store.test.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/durable/jsonl-run-store.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "8004fdaee24ccf61d37b309e9bc8445a09aaa15a25e52f3cb2d287da5308bb0a",
+        "size": 9130
+      },
+      "after": {
+        "hash": "2ecdcee083a2812e9eb6ffca40585e4e27039bb24ef97ef4f9abf157ce34a719",
+        "size": 9899
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/durable/jsonl-run-store.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/plan-evidence/event-projector.test.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "bced03baf42ea5b44082daadbec618646885ea29001a23722393322470050d63",
+        "size": 5554
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/plan-evidence",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/plan-evidence/event-projector.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "b1397716cb0b8b028fd3575223f025cde85650b0ff8fdd6c347dc124cf5f9df7",
+        "size": 9360
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/plan-evidence",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/plan-evidence/fixtures.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "e4bd7ba6613671172c8eda8911e9faf915417dc42ae89a1ec37cff6996269ecc",
+        "size": 7675
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/plan-evidence",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/run-event-schema.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "f1a38a03d15d4fd0f49683e697f07766cf9deb163f931dfd4b94d4926ff18e5f",
+        "size": 1807
+      },
+      "after": {
+        "hash": "2cf2426cfd414053501c01a7011ffdf44998507245f18d19b58afd6c1656d3b6",
+        "size": 2323
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/run-event-schema.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/run-state-machine.test.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "4503085f3193a933c52c8a52ce52eff6d31c92e62e30e66d3248424dd17239fd",
+        "size": 1969
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/run-state-machine.test.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/run-state-machine.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "8c4a87df0b60836d61eacd22e0a868690989baa5446ac7ba943a5246af8ba974",
+        "size": 741
+      },
+      "after": {
+        "hash": "e323dd1ed5c759e75abc30d279f1c37876b60b9a01204c4dbd235a6571f09cdf",
+        "size": 1773
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/run-state-machine.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/shared/types/artifacts.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "e0ad15395b750b6b2436809ed2ff134ad7405c7acba0c2b26104c70545bdece8",
+        "size": 421
+      },
+      "after": {
+        "hash": "c0174c68f563f558b7f6db0eb573e3791588d49757a8b9a3190b25dc917dcf8b",
+        "size": 662
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/shared/types/artifacts.ts",
+          "kind": "file"
+        }
+      ]
+    }
+  ],
+  "unattributed": [],
+  "unresolvedScopes": [],
+  "noCodeReason": null,
+  "scopeHash": "d70cc0113ece1a262597a24c56a47f84eff009fe1f74aa9364484d1a497cfad6"
+}

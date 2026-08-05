@@ -1,0 +1,263 @@
+# Acceptance evidence
+
+<!-- comet-native:acceptance-evidence:start -->
+[
+  {
+    "acceptance_id": "acceptance-0c341a275e390fa9b9adaa5df1977037fbc8ad2d71e336e64bc4303b9d969a93",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/681f633165c308bf2b05dd2043fcbea65148127e35c87be415469aa98ac00f30.json",
+      "runtime/evidence/receipts/eab48236dacc50166a087959099e40d5769f82de5ac35d651bafba8f17f6724e.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-20ad8a2c5086e1ea8c985214e72cc574b7d347285c9b8ceffc4f704fb397e9ab",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/681f633165c308bf2b05dd2043fcbea65148127e35c87be415469aa98ac00f30.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-2eb3b7b9186272a18352768b3467f53761f079c3bd14e30288dd50e680b9dc1d",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/681f633165c308bf2b05dd2043fcbea65148127e35c87be415469aa98ac00f30.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-33c5ae51e5c5931f5030790569955c5234ab3dc9413681a34e1e4f2b9ff0e9e1",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/681f633165c308bf2b05dd2043fcbea65148127e35c87be415469aa98ac00f30.json",
+      "runtime/evidence/receipts/6957d2f4e8867afaf551ee541466fed1bb8742ddb6858e835234906881841e68.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-44fa13e5291412e13dd8daa42bf9e01738001ff440e7c9c7b507d8c46ce66c59",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/681f633165c308bf2b05dd2043fcbea65148127e35c87be415469aa98ac00f30.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-49593a1c57920ff994e1b7efb15809cab1c831ad7624db330577beb3b3baf2ec",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/0fd4f9f1ce268d926a64b97dbd614a04bfafbf90150089813a4634856f5a5509.json",
+      "runtime/evidence/receipts/681f633165c308bf2b05dd2043fcbea65148127e35c87be415469aa98ac00f30.json",
+      "runtime/evidence/receipts/de1b4c0704db5c5432b237b17a8954b09f24457da6a014b2979b0f5ac5d06bc2.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-4bd362e96ba5b7d8ee1b7bcd7d72d15eadd4fc4363373019683a27c3f5fe1599",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/1763001d2acd8d900ecf2ccb0d830aae03a3fcd1f43a2e73bef055709fad018b.json",
+      "runtime/evidence/receipts/681f633165c308bf2b05dd2043fcbea65148127e35c87be415469aa98ac00f30.json",
+      "runtime/evidence/receipts/7e70ef123dc445b901eb4d418e62571fa63bcc27b261d34eeb2b474a3569da13.json",
+      "runtime/evidence/receipts/abfab0826716e0839a0b5996d82c24fbc5963cdf8f4e8f008bb5de230297906c.json",
+      "runtime/evidence/receipts/de1b4c0704db5c5432b237b17a8954b09f24457da6a014b2979b0f5ac5d06bc2.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-55bd8461317ae633da3dfa7ca1e87bccc0cdb0ff9318acfe12237ab9f08abc00",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/681f633165c308bf2b05dd2043fcbea65148127e35c87be415469aa98ac00f30.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-5d8c797dc0a412a87bece3e58e61d9acb7987c7997aa5a71cbe8d6ec61a128e8",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/681f633165c308bf2b05dd2043fcbea65148127e35c87be415469aa98ac00f30.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-6153f2058803d63d6b1ab401501a0ff603af8457c6ff2525a2793c0f3f8404db",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/681f633165c308bf2b05dd2043fcbea65148127e35c87be415469aa98ac00f30.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-61c2d6ab831dd97f9f0eae5196300eed88dfa3edf0f8edbc8242d07b3c60d9bd",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/681f633165c308bf2b05dd2043fcbea65148127e35c87be415469aa98ac00f30.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-75e00bde309d183822b2b405403adabf49bf674a654f285579abd0b669790211",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/681f633165c308bf2b05dd2043fcbea65148127e35c87be415469aa98ac00f30.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-79164fa3e63d5eaf09c91d4078f1c3a742b4bc3a85ba2038da051316a1ace1b0",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/681f633165c308bf2b05dd2043fcbea65148127e35c87be415469aa98ac00f30.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-7b5450a5a65ba0ef71679125e712331da705ae23ee098e69cfe4fb00af8e1e2c",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/0fd4f9f1ce268d926a64b97dbd614a04bfafbf90150089813a4634856f5a5509.json",
+      "runtime/evidence/receipts/681f633165c308bf2b05dd2043fcbea65148127e35c87be415469aa98ac00f30.json",
+      "runtime/evidence/receipts/de1b4c0704db5c5432b237b17a8954b09f24457da6a014b2979b0f5ac5d06bc2.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-7d274196675276fd87d4ab0695dec0eb793633df2f75f3739b7f74184147640e",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/681f633165c308bf2b05dd2043fcbea65148127e35c87be415469aa98ac00f30.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-7d2cd21fb700ca10cb270d219e66266705aab236908d9df0d5ca996b379319a2",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/681f633165c308bf2b05dd2043fcbea65148127e35c87be415469aa98ac00f30.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-7fb9d0299130923c7dad70dc78952cb5d8e354856a175123c0c9e8420a765701",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/681f633165c308bf2b05dd2043fcbea65148127e35c87be415469aa98ac00f30.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-8532bed94925b58595c6fa53243a22a571edc6cc39ddca1f012c12aad51c3b5a",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/681f633165c308bf2b05dd2043fcbea65148127e35c87be415469aa98ac00f30.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-8de10896023467f1316e02db56eed701fdff3b30d91da6170453ff872c2188ac",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/681f633165c308bf2b05dd2043fcbea65148127e35c87be415469aa98ac00f30.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-9f563ca32494df6136f18f7a824d6cc67cf423028f930a3a0e4b2b6935e78295",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/0fd4f9f1ce268d926a64b97dbd614a04bfafbf90150089813a4634856f5a5509.json",
+      "runtime/evidence/receipts/681f633165c308bf2b05dd2043fcbea65148127e35c87be415469aa98ac00f30.json",
+      "runtime/evidence/receipts/de1b4c0704db5c5432b237b17a8954b09f24457da6a014b2979b0f5ac5d06bc2.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-a5cfbcc480cd46f6b7958e05229de4ff5bc7b911e2b50470f7b20ab195a3efa6",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/681f633165c308bf2b05dd2043fcbea65148127e35c87be415469aa98ac00f30.json",
+      "runtime/evidence/receipts/a784ecd53705fd79782f0660c3837aa525589d20de474c01d7204d5edbe842e3.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-a704845b2dbc6caf710d2256806bdc00c05dfb5aca728f2229f8364fe83bb719",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/681f633165c308bf2b05dd2043fcbea65148127e35c87be415469aa98ac00f30.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-a932dfa37a95567d068d888c74a92255fc61fb130a0659e6416811b1cf70a6a1",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/681f633165c308bf2b05dd2043fcbea65148127e35c87be415469aa98ac00f30.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-b8ffda7bc9f3bdc7d0c8fda499715481cdd77672d7cce8cc29a1d5b98b37daa5",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/681f633165c308bf2b05dd2043fcbea65148127e35c87be415469aa98ac00f30.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-cefb0005f8aa43772d32adb0af9b3196ef9a9cbec09a25170f6a2dffeadcd381",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/681f633165c308bf2b05dd2043fcbea65148127e35c87be415469aa98ac00f30.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-d1c6bc54e2c09320eee17f1efc030a9f6d7d8dc6e4e7a12f047ca6d8f40276dc",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/681f633165c308bf2b05dd2043fcbea65148127e35c87be415469aa98ac00f30.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-d354466e60765a155d1d52313c0e4cbad58be135df7bbdc69eee399dd0ae3c40",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/681f633165c308bf2b05dd2043fcbea65148127e35c87be415469aa98ac00f30.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-e2b9e80aa172e553ab847ee97203dee9cc63fff8805c2cf0ed5b672ccb6e41f8",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/681f633165c308bf2b05dd2043fcbea65148127e35c87be415469aa98ac00f30.json",
+      "runtime/evidence/receipts/874da0f7b3f209f940656aa5d8e3e4ca93df3f7261a46da1df75bb3e29fdda19.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-e6e5e6c9361e33c9fdab45b9975c7a5a8f7ddec7a58702ec2a7e33afb936e537",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/0fd4f9f1ce268d926a64b97dbd614a04bfafbf90150089813a4634856f5a5509.json",
+      "runtime/evidence/receipts/681f633165c308bf2b05dd2043fcbea65148127e35c87be415469aa98ac00f30.json",
+      "runtime/evidence/receipts/de1b4c0704db5c5432b237b17a8954b09f24457da6a014b2979b0f5ac5d06bc2.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-f61ed1ec789c97b62556c032507ab6a72d6e3a95c8d4f6e6293c516b2b89766e",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/681f633165c308bf2b05dd2043fcbea65148127e35c87be415469aa98ac00f30.json"
+    ]
+  }
+]
+<!-- comet-native:acceptance-evidence:end -->
+
+# Commands and results
+
+- `npm --prefix frontend run verify`: passed at revision 3; 37 test files and 380 tests passed, TypeScript validation passed, and the Next.js production build completed.
+- `.venv/bin/python -m pytest agent/tests -q`: passed at revision 3 with 954 passed and 1 skipped.
+- `scripts/verify-agent-callplan-evidence.sh`: passed with both contract validators, 954 Agent tests, Eval groups 7/7, 13/13, 9/9, 10/10 and 3/3, and OpenSpec 20/20. The receipt used the same script under `bash -o pipefail` with output limited to its final summary so Comet could store it.
+- `openspec list --json`: passed and reported no active Classic changes.
+- `openspec validate --all --strict`: passed with 20 specifications valid and 0 failed.
+- `git diff --check`: passed with no whitespace errors.
+- Browser observation: proposal-only replay consumed all 3 events through terminal state, displayed no executable approval control, retained all eight semantic sections at a 390px viewport with `scrollWidth=390`, and produced zero browser console errors.
+
+# Skipped checks
+
+- No live Gateway, JCo, OData or SAP command was run. No SAP WRITE, ApprovalRecord creation, proposal continuation or production multi-capability orchestration was attempted because each is outside the confirmed Runbook 20 scope.
+- The aggregate dry-run Eval keeps one documented pending `dry-run-missing-producer` registry construction case; its branch remains covered by `agent/tests/test_planner_plan_compiler.py` and is not part of the Workbench implementation path.
+
+# Spec consistency
+
+- The implementation matches the complete target specification for governed event projection, strict same-run/trace/snapshot references, append-only replay, explicit gap/conflict states, safe summaries, claim-to-evidence navigation and responsive Workbench presentation.
+- Proposal, approval and execution remain separate: `ActionProposal.pending_approval` is read-only evidence, while existing legacy approval controls remain server-authoritative and unchanged.
+- Active runbook and architecture entrypoints identify Runbook 20 as implemented and archived and Runbook 21 as the next workstream; historical records remain preserved.
+
+# Known limitations and risks
+
+- The four run classes are synthetic review fixtures. They demonstrate projection and presentation behavior but do not constitute live production multi-capability execution evidence.
+- This change intentionally does not create proposal-to-approval, exactly-once Action, production orchestrator or SAP WRITE behavior; those remain Runbook 21 scope.
+- UI labels, manual browser observations and fixture states are presentation evidence only. Ledger, ApprovalRecord, Gateway result and trace contracts remain the execution authorities.
+
+# Conclusion
+
+All 30 acceptance items have current revision-3 automated evidence; proposal-only and responsive behavior also have manual browser observations. Required frontend, Agent, Eval, OpenSpec and diff checks passed without invoking SAP WRITE. The change is ready for Native Verify submission.

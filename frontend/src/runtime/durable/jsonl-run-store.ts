@@ -109,6 +109,7 @@ export class JsonlRunStore implements DurableRunStore {
   }
 
   async save(runId: string, record: AgentRunRecord): Promise<void> {
+    validateEventSequence(runId, record.events);
     const file = this.runFile(runId);
     const lines: string[] = [JSON.stringify({ kind: "run_meta", runId, query: record.query, principalId: record.principalId } as RunJsonlLine)];
     for (const event of record.events) {
@@ -180,6 +181,14 @@ export class JsonlRunStore implements DurableRunStore {
   }
 
   async appendEvent(runId: string, event: AgentRunEvent): Promise<void> {
+    const record = await this.load(runId);
+    if (!record) {
+      throw new Error(`Run ${runId} not found`);
+    }
+    const expectedSequence = (record.events.at(-1)?.sequence ?? 0) + 1;
+    if (event.runId !== runId || event.sequence !== expectedSequence) {
+      throw new Error(`Run ${runId} expected sequence ${expectedSequence}, received ${event.sequence}`);
+    }
     this.appendLine(runId, { kind: "event", ...event });
     await this.renew(runId, this.workerId, this.defaultTtlMs);
   }
@@ -260,4 +269,13 @@ export class JsonlRunStore implements DurableRunStore {
       }
     }
   }
+}
+
+function validateEventSequence(runId: string, events: AgentRunEvent[]): void {
+  events.forEach((event, index) => {
+    const expectedSequence = index + 1;
+    if (event.runId !== runId || event.sequence !== expectedSequence) {
+      throw new Error(`Run ${runId} expected sequence ${expectedSequence}, received ${event.sequence}`);
+    }
+  });
 }

@@ -25,6 +25,7 @@ import { HumanApprovalPanel } from "@/modules/human-approval/HumanApprovalPanel"
 import { TraceAuditPanel } from "@/modules/trace-audit/TraceAuditPanel";
 import { ArtifactJson } from "@/shared/ui/ArtifactJson";
 import { Icon } from "@/shared/ui/Icon";
+import { PlanEvidencePanel } from "@/modules/plan-evidence/PlanEvidencePanel";
 
 const resultToneLabel: Record<WorkbenchResultTone, string> = {
   idle: "待运行",
@@ -422,7 +423,8 @@ function EvidencePanel({ snapshot, view }: { snapshot: AgentRunSnapshot; view: W
   const [open, setOpen] = useState(false);
   const approvalArtifact = [...snapshot.events]
     .reverse()
-    .find((event) => event.artifact?.kind === "approval")?.artifact;
+    .find((event) => event.artifact?.kind === "approval" || event.artifact?.kind === "approval-record")?.artifact;
+  const hasProposal = snapshot.events.some((event) => event.artifact?.kind === "action-proposal");
   return (
     <>
       <button
@@ -436,6 +438,7 @@ function EvidencePanel({ snapshot, view }: { snapshot: AgentRunSnapshot; view: W
       </button>
       {open ? (
         <div className="evidence-body">
+          <PlanEvidencePanel snapshot={snapshot} />
           <section className="panel timeline-panel">
             <div className="section-title">
               <h2>Runtime Timeline</h2>
@@ -443,7 +446,9 @@ function EvidencePanel({ snapshot, view }: { snapshot: AgentRunSnapshot; view: W
             </div>
             <RuntimeTimeline events={snapshot.events} />
           </section>
-          <HumanApprovalPanel state={snapshot.hitlState} artifact={approvalArtifact} />
+          {approvalArtifact || !hasProposal ? (
+            <HumanApprovalPanel state={snapshot.hitlState} artifact={approvalArtifact} />
+          ) : null}
           <TraceAuditPanel
             agentTraceId={view.artifacts.agentTraceId}
             gatewayTraceId={view.artifacts.gatewayTraceId}

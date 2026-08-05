@@ -5,7 +5,7 @@
 | 字段 | 内容 |
 |---|---|
 | 文档名称 | `SAP Nexus Agent 实施路线文档` |
-| 当前版本 | `v0.2.48` |
+| 当前版本 | `v0.2.49` |
 | 状态 | `Lifecycle Roadmap Active` |
 | 创建日期 | `2026-06-18` |
 | 最近更新 | `2026-08-05` |
@@ -21,6 +21,7 @@
 
 | 版本 | 日期 | 变更摘要 | 决策状态 |
 |---|---|---|---|
+| `v0.2.49` | `2026-08-05` | `sap-nexus-workbench-plan-evidence-experience` (Runbook 20) Native change 实施并归档：governed event allowlist/redaction projection、strict durable sequence/replay integrity、八分区 Workbench、claim/evidence 导航、partial limitation 与 proposal-only 边界；380 frontend tests / production build / desktop+mobile browser verification；component/UI integration only，生产 orchestrator、Human Approval 与 SAP WRITE 未接入；下一入口 Runbook 21 | 当前实施基线 |
 | `v0.2.48` | `2026-08-05` | `sap-nexus-grounded-narrative-orchestration` (Runbook 19) Native change 实施并归档：deterministic narrative input projection、strict lossless LLM JSON rewrite validator、model timeout/invalid fallback、traceable `NarrativeEnvelope`、中英文状态文案与 grounding Eval；352 frontend tests / production build / 45 narrator tests / 954+1 skipped Agent gate / 20 openspec 通过；component/Eval only，生产 orchestrator、Human Approval 与 SAP WRITE 未接入；下一入口 Runbook 20 | 当前实施基线 |
 | `v0.2.47` | `2026-08-05` | `sap-nexus-recommendation-decision-plan` (Runbook 18) Native change 实施并归档：snapshot-bound exact RuleSetRegistry、deterministic RecommendationDecisionEngine、input sufficiency/freshness/governance gates、可重放 RecommendationPlan 与最多一个 `pending_approval` ActionProposal；316 frontend tests / production build / 954+1 skipped Agent tests / PR Eval 9/9 / call-plan Eval 7/7 / 20 openspec 通过；component/Eval only，生产 orchestrator 与 SAP WRITE 未接入；下一入口 Runbook 19 | 当前实施基线 |
 | `v0.2.46` | `2026-08-05` | `sap-nexus-output-projection-registry` (Runbook 17) 实施并归档：版本化 OutputProjectionRegistry、ProjectionInputAssembler、capability FactBuilder、MaterialSupplySnapshot、deterministic completeness/freshness/lineage/limitations/conflict/hash，以及 PlanExecutor projection payload recovery；251 frontend tests / production build / 20 openspec 通过；生产 orchestrator / projectionRef 接线仍 deferred；下一入口 Runbook 18 | 当前实施基线 |
@@ -276,7 +277,7 @@ GoalSpec candidate
 | 28 | `sap-nexus-output-projection-registry` | Implemented / Archived (2026-08-05) / Runbook 17 | `ReasoningFact[] -> MaterialSupplySnapshot` 版本化确定性投影 | completeness/freshness/limitations/lineage/conflict/hash 与 executor payload recovery 完成；251 frontend tests / build / 20 openspec 通过；归档 `openspec/changes/archive/2026-08-05-sap-nexus-output-projection-registry/`；生产 orchestrator / projectionRef 接线仍 deferred |
 | 29 | `sap-nexus-recommendation-decision-plan` | Implemented / Archived 2026-08-05 | Registered RuleSet + facts + user constraints -> RecommendationPlan/单 ActionProposal | snapshot/freshness/completeness/governance fail-closed；缺输入澄清；最多一个 `pending_approval` proposal；component/Eval only，无 orchestrator/SAP WRITE |
 | 30 | `sap-nexus-grounded-narrative-orchestration` | Implemented / Archived (2026-08-05) / Runbook 19 | claims/evidence/limitations 叙事编排和模板 fallback | strict lossless LLM rewrite + deterministic timeout/invalid fallback；grounding 100%、unsupported claim 0%；partial/incomplete/proposal/approval 状态准确；component/Eval only |
-| 31 | `sap-nexus-workbench-plan-evidence-experience` | Planned / Runbook 20 | 展示 recall、graph、node、fact、projection、recommendation、narrative、approval、replay | SSE cursor 重放一致；UI 标签不作为执行证据；桌面/移动端通过 |
+| 31 | `sap-nexus-workbench-plan-evidence-experience` | Implemented / Archived / Runbook 20 | 展示 recall、graph、node、fact、projection、recommendation、narrative、proposal/approval、replay | governed event + strict durable replay + responsive Workbench 已验证；UI/fixture 不作为审批或执行证据 |
 | 32 | `sap-nexus-read-to-write-action-governance` | Planned / Runbook 21 | 多 READ 后单 WRITE proposal 的 Human Approval 与 exactly-once continuation | 未审批 Gateway WRITE 调用为 0；漂移/重复/cross-principal fail-closed |
 | 33 | `sap-nexus-end-to-end-agent-eval-release-gate` | Planned / Runbook 22 | 建立 L1 单能力、L2 多 READ、L3 READ-to-WRITE 发布门禁 | matcher 到 UI/security 全链路 hard gates 通过后才升级成熟度 |
 
@@ -871,7 +872,7 @@ Knowledge/RAG 仅预留 `EvidenceProvider` 边界；MVP 不连接知识源、向
 - S2-A 已完成显式五态 `MatchDecision`、multi-intent/ambiguity 和 matcher Eval；`false SELECT` 已关闭。
 - S2-B 已完成 progressive discovery 与 deterministic dry-run，且未接入 Gateway/SAP 多能力执行。
 - P0B durable state、trusted principal、durable approval 与 incremental SSE/reconnect 已完成。
-- Runbooks 13-19 已完成并归档：同快照治理、LLM-first recall、PlanGraph v2、READ executor、deterministic OutputProjection、RecommendationDecision 与 grounded Narrative 均已有验证证据；Runbook 20 可以前进。
+- Runbooks 13-20 已完成并归档：同快照治理、LLM-first recall、PlanGraph v2、READ executor、deterministic OutputProjection、RecommendationDecision、grounded Narrative 与 Workbench event/replay experience 均已有验证证据；Runbook 21 可以前进，但必须重新建立真实 Human Approval。
 - `CapabilityCard` 必须绑定 Registry Snapshot，并排除 RFC、URL、credential、raw SQL 和 technical mapping。
 
 ### Read-only pilot 前置
@@ -1188,7 +1189,7 @@ capability design
 
 `sap-nexus-capability-registry-gateway`、`sap-nexus-agent-callplan-evidence`、`sap-nexus-agent-llm-intent-adapter`、`sap-nexus-agent-workbench-console`、`sap-nexus-workbench-live-agent-runtime`、`sap-nexus-inventory-md04-stock-req-list`、`sap-nexus-registry-ontology-contract` 和 `sap-nexus-gateway-execution-contract` 均已完成验证并归档。`sap-nexus-eval-harness-seed` 已直接实施完成。`sap-nexus-odata-gateway-read-pilot`（Phase 4D OData Gateway Read Pilot）已提前落地，第二条 SAP read capability（PO，走 OData）由该 change 隐式满足。`sap-nexus-sandbox-write-vertical-slice` 已治理 Purchasing Group 并成功创建、commit sandbox PR `10137471`；verify repair、merged-main 全量验证与 Comet archive 均已完成，归档目录为 `openspec/changes/archive/2026-07-17-sap-nexus-sandbox-write-vertical-slice/`。
 
-OpenHarness / DeerFlow 对比、首个组合场景、S1、P0A、S2、row 19A/19B、P0B 四项基础和 Runbooks 13-19 均已归档。当前推荐不是直接实现 Dynamic Planner、DeerFlow integration、Knowledge/RAG、Memory 或新的 executor family，而是从 Runbook 20 开始按契约依赖逐项完成完整 Agent：
+OpenHarness / DeerFlow 对比、首个组合场景、S1、P0A、S2、row 19A/19B、P0B 四项基础和 Runbooks 13-20 均已归档。当前推荐不是直接实现 Dynamic Planner、DeerFlow integration、Knowledge/RAG、Memory 或新的 executor family，而是从 Runbook 21 开始按契约依赖逐项完成完整 Agent：
 
 ```text
 1. sap-nexus-semantic-planning-foundation (S1 implemented / verified / archived 2026-07-19)
@@ -1206,8 +1207,8 @@ OpenHarness / DeerFlow 对比、首个组合场景、S1、P0A、S2、row 19A/19B
 11. runbook 17 composite fact OutputProjection (archived 2026-08-05 as `sap-nexus-output-projection-registry`)
 12. runbook 18 RecommendationPlan and single ActionProposal (archived 2026-08-05; component/Eval only)
 13. runbook 19 grounded narrative (archived 2026-08-05; component/Eval only)
-14. runbook 20 Workbench plan/evidence experience (current entry)
-15. runbook 21 Human Approval and exactly-once Action
+14. runbook 20 Workbench plan/evidence experience (archived 2026-08-05; component/UI integration only)
+15. runbook 21 Human Approval and exactly-once Action (current entry)
 16. runbook 22 end-to-end release gate
 ```
 
@@ -1274,7 +1275,7 @@ Live blocker 已解除：SAP SICF 重新激活后，PO live smoke 已通过；PO
 - `sap-nexus-governed-user-memory-pilot`：Later / Triggered，不属于 S2/S3；Memory 不保存业务事实或执行权威。
 - WRITE 批量审批语义：row 19B 多值批量查询 v1 仅 READ-only（Action 落 `awaiting_approval`）；per-combo approval snapshot / hash / atomic claim 的 WRITE 批量审批须单独设计，不得复用 READ 批量路径。
 
-当前下一推荐：S1、P0A、S2、row 19A/19B、P0B 和 Runbooks 13-19 均已归档；从 Runbook 20 开始，按 `20 -> 21 -> 22` 完成 Workbench、governed Action 和 release gate。Knowledge/RAG 仅预留，通用 Dynamic Planner、多 WRITE/Saga 和自动补偿继续 Reserved。
+当前下一推荐：S1、P0A、S2、row 19A/19B、P0B 和 Runbooks 13-20 均已归档；从 Runbook 21 开始，按 `21 -> 22` 完成 governed Action 和 release gate。Knowledge/RAG 仅预留，通用 Dynamic Planner、多 WRITE/Saga 和自动补偿继续 Reserved。
 
 ### 17.5 `sap-nexus-governed-context-registry-snapshot`
 

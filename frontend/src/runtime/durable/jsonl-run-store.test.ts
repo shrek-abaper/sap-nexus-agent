@@ -40,6 +40,25 @@ describe("JsonlRunStore core", () => {
     expect(loaded?.events.map((e) => e.sequence)).toEqual([1, 2]);
   });
 
+  it("rejects duplicate or skipped event sequences before append", async () => {
+    const store = new JsonlRunStore(dir);
+    await store.save("run-1", record("run-1", "q", [event("run-1", 1, "run_started", "running")]));
+
+    await expect(store.appendEvent("run-1", event("run-1", 1, "intent_parsed", "intent_parsed")))
+      .rejects.toThrow("expected sequence 2");
+    await expect(store.appendEvent("run-1", event("run-1", 3, "intent_parsed", "intent_parsed")))
+      .rejects.toThrow("expected sequence 2");
+    expect((await store.load("run-1"))?.events.map((entry) => entry.sequence)).toEqual([1]);
+  });
+
+  it("rejects a non-contiguous event stream on initial save", async () => {
+    const store = new JsonlRunStore(dir);
+    const events = [event("run-1", 1, "run_started", "running"), event("run-1", 3, "run_completed", "completed")];
+
+    await expect(store.save("run-1", record("run-1", "q", events))).rejects.toThrow("expected sequence 2");
+    expect(await store.load("run-1")).toBeNull();
+  });
+
   it("recovers full record across store instances (cross-restart replay)", async () => {
     const store = new JsonlRunStore(dir);
     const events = [event("run-1", 1, "run_started", "running"), event("run-1", 2, "run_completed", "completed")];

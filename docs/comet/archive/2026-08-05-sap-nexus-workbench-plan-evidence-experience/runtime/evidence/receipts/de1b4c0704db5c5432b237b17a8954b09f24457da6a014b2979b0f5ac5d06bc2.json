@@ -1,0 +1,54 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "sap-nexus-workbench-plan-evidence-experience",
+    "sourceRevision": 3,
+    "contractHash": "ca9f6af057f4330fd305eb4b350a68a9c1c75cccd94bb8ceea4a3460e38e6556",
+    "scopeHash": "d70cc0113ece1a262597a24c56a47f84eff009fe1f74aa9364484d1a497cfad6",
+    "snapshotHash": "4f1308b83dff29e44398ea0c7b740b2fdc9fe81ebe7c1ae8b8c1e0636cda5f6f",
+    "artifactHash": "1ff47d5db74f2f04aac0907035453e9f98ef238740a59e5674f6c958c277d8cd"
+  },
+  "acceptanceIds": [
+    "acceptance-49593a1c57920ff994e1b7efb15809cab1c831ad7624db330577beb3b3baf2ec",
+    "acceptance-4bd362e96ba5b7d8ee1b7bcd7d72d15eadd4fc4363373019683a27c3f5fe1599",
+    "acceptance-7b5450a5a65ba0ef71679125e712331da705ae23ee098e69cfe4fb00af8e1e2c",
+    "acceptance-9f563ca32494df6136f18f7a824d6cc67cf423028f930a3a0e4b2b6935e78295",
+    "acceptance-e6e5e6c9361e33c9fdab45b9975c7a5a8f7ddec7a58702ec2a7e33afb936e537"
+  ],
+  "actor": "native-runtime:command:.venv/bin/python",
+  "issuedAt": "2026-08-05T09:45:30.815Z",
+  "evidence": {
+    "executable": ".venv/bin/python",
+    "args": [
+      "-m",
+      "pytest",
+      "agent/tests",
+      "-q"
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 300000,
+    "startedAt": "2026-08-05T09:45:14.987Z",
+    "endedAt": "2026-08-05T09:45:30.815Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "1c853016aceb1621ccabdd22ea3c42637796e55a",
+      "afterCommit": "1c853016aceb1621ccabdd22ea3c42637796e55a"
+    },
+    "afterFence": {
+      "snapshotHash": "4f1308b83dff29e44398ea0c7b740b2fdc9fe81ebe7c1ae8b8c1e0636cda5f6f",
+      "scopeHash": "d70cc0113ece1a262597a24c56a47f84eff009fe1f74aa9364484d1a497cfad6",
+      "matched": true
+    },
+    "outputHash": "3b57846b49fdaa3d7c1d178d4ef49d5456a274aa050e62dc78aac5e09b2c8beb",
+    "outputSummary": "........................................................................ [  7%]\n........................................................................ [ 15%]\n........................................................................ [ 22%]\n........................................................................ [ 30%]\n..................................................s..................... [ 37%]\n........................................................................ [ 45%]\n........................................................................ [ 52%]\n........................................................................ [ 60%]\n........................................................................ [ 67%]\n........................................................................ [ 75%]\n........................................................................ [ 82%]\n........................................................................ [ 90%]\n........................................................................ [ 98%]\n...................                                                      [100%]\n954 passed, 1 skipped in 15.31s",
+    "outputTruncated": false
+  },
+  "receiptHash": "de1b4c0704db5c5432b237b17a8954b09f24457da6a014b2979b0f5ac5d06bc2"
+}

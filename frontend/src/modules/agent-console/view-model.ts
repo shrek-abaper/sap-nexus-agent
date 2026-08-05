@@ -103,6 +103,7 @@ export type WorkbenchViewModel = {
     executionResult?: RedactedArtifact;
     reasoningFact?: RedactedArtifact;
     narrative?: RedactedArtifact;
+    narrativeEnvelope?: RedactedArtifact;
     trace?: RedactedArtifact;
     matchDecision?: RedactedArtifact;
     agentTraceId?: string;
@@ -127,7 +128,18 @@ const eventLabels: Record<AgentRunEvent["type"], string> = {
   run_failed: "运行失败",
   match_decision_created: "匹配决策",
   batch_confirm_requested: "批量确认请求",
-  node_state_changed: "节点状态变更"
+  node_state_changed: "节点状态变更",
+  intent_recognized: "识别受治理意图",
+  capability_recalled: "召回可见能力",
+  plan_compiled: "编译 PlanGraph",
+  plan_node_state: "更新计划节点状态",
+  fact_emitted: "发出业务事实",
+  projection_completed: "完成事实投影",
+  recommendation_completed: "完成确定性建议",
+  narrative_completed: "完成受约束叙事",
+  action_proposed: "形成 Action proposal",
+  approval_updated: "更新审批证据",
+  action_executed: "记录 Action 执行证据"
 };
 
 export function buildWorkbenchViewModel(snapshot: AgentRunSnapshot | null): WorkbenchViewModel {
@@ -168,6 +180,7 @@ function collectArtifacts(events: AgentRunEvent[]): WorkbenchViewModel["artifact
     executionResult: artifactByKind("execution-result"),
     reasoningFact: artifactByKind("reasoning-fact"),
     narrative: artifactByKind("narrative"),
+    narrativeEnvelope: artifactByKind("narrative-envelope"),
     trace: artifactByKind("trace"),
     matchDecision: artifactByKind("match-decision"),
     agentTraceId: events.find((event) => event.agentTraceId)?.agentTraceId,
@@ -195,7 +208,7 @@ function buildResult(
       meta: `Failed at ${snapshot.error.stage}`
     };
   }
-  const narrative = textFromNarrative(artifacts.narrative);
+  const narrative = textFromNarrative(artifacts.narrativeEnvelope) ?? textFromNarrative(artifacts.narrative);
   if (narrative) {
     return {
       title: "库存查询结果",
@@ -217,6 +230,12 @@ function textFromNarrative(artifact?: RedactedArtifact): string | null {
   if (payload && typeof payload === "object" && !Array.isArray(payload) && typeof payload.text === "string") {
     return payload.text;
   }
+  if (payload && typeof payload === "object" && !Array.isArray(payload)) {
+    const data = payload.data;
+    if (data && typeof data === "object" && !Array.isArray(data) && typeof data.summary === "string") {
+      return data.summary;
+    }
+  }
   return null;
 }
 
@@ -229,6 +248,7 @@ function buildDetailGroups(artifacts: WorkbenchViewModel["artifacts"]): DetailGr
     artifacts.executionResult,
     artifacts.reasoningFact,
     artifacts.narrative,
+    artifacts.narrativeEnvelope,
     artifacts.trace
   ].filter((artifact): artifact is RedactedArtifact => Boolean(artifact));
 

@@ -1,0 +1,28 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "manual-evidence",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "sap-nexus-workbench-plan-evidence-experience",
+    "sourceRevision": 3,
+    "contractHash": "ca9f6af057f4330fd305eb4b350a68a9c1c75cccd94bb8ceea4a3460e38e6556",
+    "scopeHash": "d70cc0113ece1a262597a24c56a47f84eff009fe1f74aa9364484d1a497cfad6",
+    "snapshotHash": "4f1308b83dff29e44398ea0c7b740b2fdc9fe81ebe7c1ae8b8c1e0636cda5f6f",
+    "artifactHash": "1ff47d5db74f2f04aac0907035453e9f98ef238740a59e5674f6c958c277d8cd"
+  },
+  "acceptanceIds": [
+    "acceptance-e2b9e80aa172e553ab847ee97203dee9cc63fff8805c2cf0ed5b672ccb6e41f8"
+  ],
+  "actor": "native-runtime:manual-evidence",
+  "issuedAt": "2026-08-05T09:52:12.279Z",
+  "evidence": {
+    "steps": [
+      "Inspect Workbench at a 390 pixel viewport with the governed fixture states."
+    ],
+    "observations": [
+      "The document scrollWidth equaled 390 pixels, the eight sections stacked in semantic order, and plan, evidence, limitations, proposal, and trace content remained available."
+    ]
+  },
+  "receiptHash": "874da0f7b3f209f940656aa5d8e3e4ca93df3f7261a46da1df75bb3e29fdda19"
+}

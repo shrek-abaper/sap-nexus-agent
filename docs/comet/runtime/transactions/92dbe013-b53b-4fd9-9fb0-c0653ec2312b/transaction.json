@@ -1,0 +1,27 @@
+{
+  "schema": "comet.native.transaction.v2",
+  "id": "92dbe013-b53b-4fd9-9fb0-c0653ec2312b",
+  "kind": "archive",
+  "status": "committed",
+  "change": "sap-nexus-workbench-plan-evidence-experience",
+  "createdAt": "2026-08-05T10:05:23.579Z",
+  "preflightHash": "827454b96b9c0f86d9aeb3b80e0e1e777a625605df8c73f6781ade59114d409e",
+  "operations": [
+    {
+      "id": "spec-1-workbench-plan-evidence-experience",
+      "type": "write",
+      "target": "specs/workbench-plan-evidence-experience/spec.md",
+      "staged": "runtime/transactions/92dbe013-b53b-4fd9-9fb0-c0653ec2312b/staged/specs/workbench-plan-evidence-experience/spec.md",
+      "expectedTargetHash": null,
+      "stagedHash": "7eec19bb1fde0555c5010761fff5fe987a70dd98e900bc9613221ecb3fff5602"
+    },
+    {
+      "id": "archive-change",
+      "type": "move",
+      "source": "changes/sap-nexus-workbench-plan-evidence-experience",
+      "target": "archive/2026-08-05-sap-nexus-workbench-plan-evidence-experience",
+      "expectedSourceHash": "3e37338f9d7ec16ad645abcb7993a739ae7c66e458955b54656033ffd639f93e",
+      "expectedTargetHash": null
+    }
+  ]
+}

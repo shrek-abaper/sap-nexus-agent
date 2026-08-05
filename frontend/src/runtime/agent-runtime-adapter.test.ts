@@ -121,6 +121,20 @@ describe("agent-runtime-adapter durable integration", () => {
     expect(await getAgentRunEvents(runId, PLACEHOLDER_PRINCIPAL)).toEqual([]);
   });
 
+  it("treats a deliberately removed in-flight run as cancelled without orphan events", async () => {
+    let finishRunner: (() => void) | undefined;
+    setAgentRunnerForTests(async () => {
+      await new Promise<void>((resolve) => { finishRunner = resolve; });
+      return { status: "success", responseText: "late result" } as WorkbenchOutcome;
+    });
+    const { runId } = await createAgentRun({ query: "查询库存", principal: PLACEHOLDER_PRINCIPAL });
+    await runStore.clearAll();
+    finishRunner?.();
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(await runStore.load(runId)).toBeNull();
+  });
+
   it("resetAgentSessionsForTests clears durable sessions", async () => {
     const { runId } = await createAgentRun({ query: "查询库存", conversationId: "c1", principal: PLACEHOLDER_PRINCIPAL });
     await waitForRunSettled(runId);

@@ -1,0 +1,23 @@
+schema: comet.native.v3
+minimum_runtime_version: 3
+revision: 5
+verification_protocol: legacy-v1
+name: sap-nexus-workbench-plan-evidence-experience
+language: zh-CN
+phase: archive
+brief: brief.md
+approval: confirmed
+approved_contract_hash: ca9f6af057f4330fd305eb4b350a68a9c1c75cccd94bb8ceea4a3460e38e6556
+spec_changes:
+  - capability: workbench-plan-evidence-experience
+    operation: create
+    source: specs/workbench-plan-evidence-experience/spec.md
+    base_hash: null
+verification_result: pass
+verification_report: verification.md
+implementation_scope: runtime/evidence/scopes/d70cc0113ece1a262597a24c56a47f84eff009fe1f74aa9364484d1a497cfad6.json
+verification_evidence: runtime/evidence/verifications/b33a89c085fde9eb5d81de87cd670422b27eda9fdf167b58cd845211cea3b94b.json
+partial_allowance: null
+archived: true
+created_at: 2026-08-05
+run_id: fc4f2bbd-b7d9-44d2-af11-4a9be2fbfc08

@@ -1,0 +1,28 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "manual-evidence",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "sap-nexus-workbench-plan-evidence-experience",
+    "sourceRevision": 3,
+    "contractHash": "ca9f6af057f4330fd305eb4b350a68a9c1c75cccd94bb8ceea4a3460e38e6556",
+    "scopeHash": "d70cc0113ece1a262597a24c56a47f84eff009fe1f74aa9364484d1a497cfad6",
+    "snapshotHash": "4f1308b83dff29e44398ea0c7b740b2fdc9fe81ebe7c1ae8b8c1e0636cda5f6f",
+    "artifactHash": "1ff47d5db74f2f04aac0907035453e9f98ef238740a59e5674f6c958c277d8cd"
+  },
+  "acceptanceIds": [
+    "acceptance-0c341a275e390fa9b9adaa5df1977037fbc8ad2d71e336e64bc4303b9d969a93"
+  ],
+  "actor": "native-runtime:manual-evidence",
+  "issuedAt": "2026-08-05T09:52:11.191Z",
+  "evidence": {
+    "steps": [
+      "Replay the synthetic READ-to-WRITE proposal-only run in Workbench through its terminal event."
+    ],
+    "observations": [
+      "The stream consumed all 3 of 3 events, displayed pending proposal provenance, showed no approve, reject, or execute control, and issued no approval continuation."
+    ]
+  },
+  "receiptHash": "eab48236dacc50166a087959099e40d5769f82de5ac35d651bafba8f17f6724e"
+}
