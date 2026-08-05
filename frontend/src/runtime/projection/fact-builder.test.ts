@@ -193,6 +193,66 @@ describe("material supply fact builders", () => {
     expect(facts?.[0]?.asOf).toBe("2026-08-04T00:00:01Z");
   });
 
+  it.each([
+    "1900-02-29T00:00:00Z",
+    "2025-02-29T00:00:00+08:00",
+    "2026-02-30T00:00:00Z",
+    "2026-00-01T00:00:00Z",
+    "2026-13-01T00:00:00Z",
+    "2026-01-00T00:00:00Z",
+    "2026-01-01T24:00:00Z",
+    "2026-01-01T00:60:00Z",
+    "2026-01-01T00:00:60Z",
+    "2026-01-01T00:00:00+24:00",
+    "2026-01-01T00:00:00-23:60",
+  ])("falls back for invalid ISO-8601 calendar freshness: %s", (dataAsOf) => {
+    const builder = createMaterialSupplyFactBuilderRegistry().resolve(
+      "MM.Inventory.GetAvailability",
+    );
+    const facts = builder?.build(record({
+      executeData: { availableQuantity: 7, dataAsOf },
+    }));
+
+    expect(facts?.[0]?.asOf).toBe("2026-08-04T00:00:01Z");
+  });
+
+  it.each([
+    "2000-02-29T23:59:59Z",
+    "2024-02-29T23:59:59.123+08:30",
+    "2024-02-29T23:59:59-23:59",
+  ])("preserves valid leap-day and offset freshness: %s", (dataAsOf) => {
+    const builder = createMaterialSupplyFactBuilderRegistry().resolve(
+      "MM.Inventory.GetAvailability",
+    );
+    const facts = builder?.build(record({
+      executeData: { availableQuantity: 7, dataAsOf },
+    }));
+
+    expect(facts?.[0]?.asOf).toBe(dataAsOf);
+  });
+
+  it("preserves purchase-order item identity in fact evidence", () => {
+    const builder = createMaterialSupplyFactBuilderRegistry().resolve("MM.PurchaseOrder.GetList");
+    const build = (purchaseOrderItem: string) => builder?.build(record({
+      nodeId: "node.po",
+      capabilityId: "MM.PurchaseOrder.GetList",
+      producesFactTypes: ["PurchaseOrder"],
+      executeData: {
+        purchaseOrders: [{
+          purchaseOrder: "4500001",
+          purchaseOrderItem,
+          material: "MAT-1",
+          plant: "P1",
+          orderQuantity: 1,
+          purchaseOrderUnit: "EA",
+        }],
+      },
+    }));
+
+    expect(build("10")?.[0]?.evidence[0]?.purchaseOrderItem).toBe("10");
+    expect(build("10")).not.toEqual(build("20"));
+  });
+
   it("produces identical facts when tied business-key rows arrive in reverse order", () => {
     const builder = createMaterialSupplyFactBuilderRegistry().resolve("MM.PurchaseOrder.GetList");
     const rows = [

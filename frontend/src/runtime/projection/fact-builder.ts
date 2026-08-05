@@ -17,13 +17,66 @@ export class FactBuilderRegistry {
   }
 }
 
-const TIMEZONE_AWARE_ISO_8601 = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/;
+const TIMEZONE_AWARE_ISO_8601 = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(?:Z|[+-](\d{2}):(\d{2}))$/;
+
+function isLeapYear(year: number): boolean {
+  return year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+}
+
+function daysInMonth(year: number, month: number): number {
+  const days = [
+    31,
+    isLeapYear(year) ? 29 : 28,
+    31,
+    30,
+    31,
+    30,
+    31,
+    31,
+    30,
+    31,
+    30,
+    31,
+  ];
+  return days[month - 1] ?? 0;
+}
+
+function isValidTimezoneAwareIso8601(value: string): boolean {
+  const match = TIMEZONE_AWARE_ISO_8601.exec(value);
+  if (!match) return false;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const hour = Number(match[4]);
+  const minute = Number(match[5]);
+  const second = Number(match[6]);
+  const offsetHour = match[7] === undefined ? 0 : Number(match[7]);
+  const offsetMinute = match[8] === undefined ? 0 : Number(match[8]);
+
+  return year >= 0
+    && year <= 9999
+    && month >= 1
+    && month <= 12
+    && day >= 1
+    && day <= daysInMonth(year, month)
+    && hour >= 0
+    && hour <= 23
+    && minute >= 0
+    && minute <= 59
+    && second >= 0
+    && second <= 59
+    && offsetHour >= 0
+    && offsetHour <= 23
+    && offsetMinute >= 0
+    && offsetMinute <= 59
+    && Number.isFinite(Date.parse(value));
+}
 
 function freshness(record: TraceableNodeFactRecord, field = "dataAsOf"): string {
   const value = record.executeData[field];
   return typeof value === "string"
-    && TIMEZONE_AWARE_ISO_8601.test(value)
-    && Number.isFinite(Date.parse(value))
+    && isValidTimezoneAwareIso8601(value)
     ? value
     : record.nodeExecutedAt;
 }
@@ -205,6 +258,7 @@ const purchaseOrderBuilder: FactBuilderDeclaration = {
       source: source(record, "PurchaseOrder"),
       evidence: [{
         purchaseOrder: row.purchaseOrder,
+        purchaseOrderItem: row.purchaseOrderItem,
         supplier: row.supplier,
         material: row.material,
         plant: row.plant,
