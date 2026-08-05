@@ -1,0 +1,28 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "manual-evidence",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "sap-nexus-recommendation-decision-plan",
+    "sourceRevision": 3,
+    "contractHash": "953c6fd2c288628d1631d93fffc2ae506aa7a8325edfec20d777d33750ddbcf3",
+    "scopeHash": "6ac321ee750b8cbebf2721dfee3b5aa0d96c32f559f9fd2e63a232ad75ae75a5",
+    "snapshotHash": "a359c50e5fde19f0357ad9e79a674e15b67b55d2d70b0bd3344d0d46cb31f7bc",
+    "artifactHash": "73adead9cfd579257dcc158011165a7c3a1430471941cc472b455546328b2f7a"
+  },
+  "acceptanceIds": [
+    "acceptance-b5b227ce06c52c6b516e9b9f0b7a33a0c93ffe9d434dbcb40f67523f971d4664"
+  ],
+  "actor": "native-runtime:manual-evidence",
+  "issuedAt": "2026-08-05T05:34:23.029Z",
+  "evidence": {
+    "steps": [
+      "Review component authority boundary against brief and complete target spec"
+    ],
+    "observations": [
+      "ActionProposal is a returned data object restricted to pending_approval. The component creates no ApprovalRecord and provides no API that can execute the proposal; user confirmation was used only for Native Shape and is not represented as Human Approval or SAP WRITE evidence."
+    ]
+  },
+  "receiptHash": "2fca3db49fa63bd6e8b9a789b07cf1a3dca8fae41cee783c5a2d31251d16c199"
+}

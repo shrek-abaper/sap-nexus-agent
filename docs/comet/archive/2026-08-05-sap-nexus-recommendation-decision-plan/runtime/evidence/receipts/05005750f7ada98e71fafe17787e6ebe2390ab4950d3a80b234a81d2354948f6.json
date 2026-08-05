@@ -1,0 +1,28 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "manual-evidence",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "sap-nexus-recommendation-decision-plan",
+    "sourceRevision": 3,
+    "contractHash": "953c6fd2c288628d1631d93fffc2ae506aa7a8325edfec20d777d33750ddbcf3",
+    "scopeHash": "6ac321ee750b8cbebf2721dfee3b5aa0d96c32f559f9fd2e63a232ad75ae75a5",
+    "snapshotHash": "a359c50e5fde19f0357ad9e79a674e15b67b55d2d70b0bd3344d0d46cb31f7bc",
+    "artifactHash": "73adead9cfd579257dcc158011165a7c3a1430471941cc472b455546328b2f7a"
+  },
+  "acceptanceIds": [
+    "acceptance-40d73c715f39ecbcd62129d2afb0c9208de657c8a272159cb6289b108dcfb5b8"
+  ],
+  "actor": "native-runtime:manual-evidence",
+  "issuedAt": "2026-08-05T05:34:22.745Z",
+  "evidence": {
+    "steps": [
+      "Inspect recommendation production imports, public methods, and proposal creation path"
+    ],
+    "observations": [
+      "RecommendationDecisionEngine exposes only synchronous decide(request): RecommendationPlan; production files import only pure canonical/hash, projection normalization/types, and RuleSetRegistry. No orchestrator, Gateway, JCo, OData, SAP, approval store, commit/rollback, network, persistence, or execution API is referenced."
+    ]
+  },
+  "receiptHash": "05005750f7ada98e71fafe17787e6ebe2390ab4950d3a80b234a81d2354948f6"
+}

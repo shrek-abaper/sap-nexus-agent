@@ -1,0 +1,23 @@
+schema: comet.native.v3
+minimum_runtime_version: 3
+revision: 5
+verification_protocol: legacy-v1
+name: sap-nexus-recommendation-decision-plan
+language: zh-CN
+phase: archive
+brief: brief.md
+approval: confirmed
+approved_contract_hash: 953c6fd2c288628d1631d93fffc2ae506aa7a8325edfec20d777d33750ddbcf3
+spec_changes:
+  - capability: recommendation-decision-plan
+    operation: create
+    source: specs/recommendation-decision-plan/spec.md
+    base_hash: null
+verification_result: pass
+verification_report: verification.md
+implementation_scope: runtime/evidence/scopes/6ac321ee750b8cbebf2721dfee3b5aa0d96c32f559f9fd2e63a232ad75ae75a5.json
+verification_evidence: runtime/evidence/verifications/d573d4e492b3d1ea2607fff768fc26635aa336bc04d60df6babcd24b4cfe9788.json
+partial_allowance: null
+archived: true
+created_at: 2026-08-05
+run_id: 938b2caf-0270-49d7-b26d-a196bbd67d06

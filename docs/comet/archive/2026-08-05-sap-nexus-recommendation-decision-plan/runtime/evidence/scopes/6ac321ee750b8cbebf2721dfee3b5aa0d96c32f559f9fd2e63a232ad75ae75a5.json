@@ -1,0 +1,301 @@
+{
+  "schema": "comet.native.implementation-scope.v2",
+  "contractHash": "953c6fd2c288628d1631d93fffc2ae506aa7a8325edfec20d777d33750ddbcf3",
+  "baselineProjectionRef": "runtime/evidence/snapshots/0833c8ce4cb1fa78939d9d32c514b89407fd57491c2011b1d1d52ad84b57312e.json",
+  "baselineProjectionHash": "0833c8ce4cb1fa78939d9d32c514b89407fd57491c2011b1d1d52ad84b57312e",
+  "currentProjectionRef": "runtime/evidence/snapshots/a359c50e5fde19f0357ad9e79a674e15b67b55d2d70b0bd3344d0d46cb31f7bc.json",
+  "currentProjectionHash": "a359c50e5fde19f0357ad9e79a674e15b67b55d2d70b0bd3344d0d46cb31f7bc",
+  "complete": true,
+  "declaredArtifacts": [
+    {
+      "path": "docs/runbooks/18-recommendation-decision-plan.md",
+      "kind": "file"
+    },
+    {
+      "path": "docs/runbooks/README.md",
+      "kind": "file"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-08-05-sap-nexus-recommendation-decision-plan.md",
+      "kind": "file"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-08-03-sap-nexus-complete-agent-roadmap-design.md",
+      "kind": "file"
+    },
+    {
+      "path": "docs/wiki/sap-nexus-agent-implementation-roadmap.md",
+      "kind": "file"
+    },
+    {
+      "path": "docs/wiki/sap-nexus-agent-technical-architecture.md",
+      "kind": "file"
+    },
+    {
+      "path": "docs/wiki/sap-nexus-agent-technology-selection.md",
+      "kind": "file"
+    },
+    {
+      "path": "evals/recommendation_decision_cases.json",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/runtime/recommendation/decision-engine.test.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/runtime/recommendation/decision-engine.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/runtime/recommendation/recommendation-eval.test.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/runtime/recommendation/rule-set-registry.test.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/runtime/recommendation/rule-set-registry.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/runtime/recommendation/types.ts",
+      "kind": "file"
+    }
+  ],
+  "changes": [
+    {
+      "path": "docs/runbooks/18-recommendation-decision-plan.md",
+      "kind": "modified",
+      "before": {
+        "hash": "959816c1d315415bea1d86d29a406ffa80002e517015a64d50d5617ba3e2e40a",
+        "size": 3180
+      },
+      "after": {
+        "hash": "ef88fc37fd9c60d52f8e38eb8605d047b1a617318d9c6d7e64c9a0988bbfdbf3",
+        "size": 5150
+      },
+      "attributedTo": [
+        {
+          "path": "docs/runbooks/18-recommendation-decision-plan.md",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "docs/runbooks/README.md",
+      "kind": "modified",
+      "before": {
+        "hash": "9620d16b6c5a20e4e3e3e6b90eaf917db330bbbfebcd929f92259e9ceccd7995",
+        "size": 22627
+      },
+      "after": {
+        "hash": "b576946fd11d87eafe67fc50e7a76ffcdf47b7fe3c9cfe2310ff632c09c0b7b0",
+        "size": 23154
+      },
+      "attributedTo": [
+        {
+          "path": "docs/runbooks/README.md",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "docs/superpowers/plans/2026-08-05-sap-nexus-recommendation-decision-plan.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "fec19df012f1693f38e335984417cc989180edd0457eff2adf66c89038462a4a",
+        "size": 12900
+      },
+      "attributedTo": [
+        {
+          "path": "docs/superpowers/plans/2026-08-05-sap-nexus-recommendation-decision-plan.md",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "docs/superpowers/specs/2026-08-03-sap-nexus-complete-agent-roadmap-design.md",
+      "kind": "modified",
+      "before": {
+        "hash": "8b3be88610b0c0b9f3b4e5081fc063b824f3c1b376997cf12d196c7608a110ae",
+        "size": 11637
+      },
+      "after": {
+        "hash": "06968fbd99599fa7072adb5add0dfcc34ee478f20e7577d0b4ab4fe51b5f0cc6",
+        "size": 11637
+      },
+      "attributedTo": [
+        {
+          "path": "docs/superpowers/specs/2026-08-03-sap-nexus-complete-agent-roadmap-design.md",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "docs/wiki/sap-nexus-agent-implementation-roadmap.md",
+      "kind": "modified",
+      "before": {
+        "hash": "edd53e045e28c431799a3ca3350d1d212b9c93c8424c8cb7820327164960384e",
+        "size": 98667
+      },
+      "after": {
+        "hash": "9471558fbda21ee7f461da37e0bd30ff1c7b5c3b7b990ea91a6d4996c1bf7abb",
+        "size": 99388
+      },
+      "attributedTo": [
+        {
+          "path": "docs/wiki/sap-nexus-agent-implementation-roadmap.md",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "docs/wiki/sap-nexus-agent-technical-architecture.md",
+      "kind": "modified",
+      "before": {
+        "hash": "7bfc3d9d432fb2cd7bb8be69158f00b8203f542c43b4f011f59c147c8152c721",
+        "size": 86413
+      },
+      "after": {
+        "hash": "fc68473223c1778e5b058d156b250c79fcf865bc4132d3b1d031b6cdb21ecb45",
+        "size": 87082
+      },
+      "attributedTo": [
+        {
+          "path": "docs/wiki/sap-nexus-agent-technical-architecture.md",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "docs/wiki/sap-nexus-agent-technology-selection.md",
+      "kind": "modified",
+      "before": {
+        "hash": "3e31857933cb76ca38b0ff4d52bf35dd1f9254ec08fe95acfb56d24cced824ef",
+        "size": 40529
+      },
+      "after": {
+        "hash": "8b4fe247a1472f61300385079b84ffecf1fc0b02dc8b58925f3acfca869b64f7",
+        "size": 40941
+      },
+      "attributedTo": [
+        {
+          "path": "docs/wiki/sap-nexus-agent-technology-selection.md",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "evals/recommendation_decision_cases.json",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "c059ba10b623cf096a745c7a4f185a42f73cc501cc74b91c46bc4ecc02c34144",
+        "size": 4269
+      },
+      "attributedTo": [
+        {
+          "path": "evals/recommendation_decision_cases.json",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/recommendation/decision-engine.test.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "d72cd40643f0c8a4318bd79a45b7dde70777f539005dd32acbdaf78b4f833526",
+        "size": 16311
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/recommendation/decision-engine.test.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/recommendation/decision-engine.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "72433067a910f936760a322ff9f0d63cf40191a2a7b338c3308d3adb5e2b7af4",
+        "size": 16578
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/recommendation/decision-engine.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/recommendation/recommendation-eval.test.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "9626062c3a00dc75302acb92b9d5cdde800580aee4b5722d87ebc961d955c005",
+        "size": 7584
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/recommendation/recommendation-eval.test.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/recommendation/rule-set-registry.test.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "399fe645ddd90f53907a598d5e05c05635ad7eefbd6e6491b8a0a7927eda0eba",
+        "size": 5375
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/recommendation/rule-set-registry.test.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/recommendation/rule-set-registry.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "783d0d8879ea52608f01ab6b758460d502d061ab3e57b7f970e508ee9aef5f34",
+        "size": 3589
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/recommendation/rule-set-registry.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/recommendation/types.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "b7d7500ec0b5a99b059a9d06ad9325c8868e84211f42533de30dfc4c076164e7",
+        "size": 3018
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/recommendation/types.ts",
+          "kind": "file"
+        }
+      ]
+    }
+  ],
+  "unattributed": [],
+  "unresolvedScopes": [],
+  "noCodeReason": null,
+  "scopeHash": "6ac321ee750b8cbebf2721dfee3b5aa0d96c32f559f9fd2e63a232ad75ae75a5"
+}

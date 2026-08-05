@@ -1,0 +1,27 @@
+{
+  "schema": "comet.native.transaction.v2",
+  "id": "ea745fb3-114d-4f60-bb8a-cbf38c5cc5c5",
+  "kind": "archive",
+  "status": "committed",
+  "change": "sap-nexus-recommendation-decision-plan",
+  "createdAt": "2026-08-05T05:49:37.534Z",
+  "preflightHash": "1a027410ea916af7b81056056b4e01562fbb588799d93416123db8d0b84c33ed",
+  "operations": [
+    {
+      "id": "spec-1-recommendation-decision-plan",
+      "type": "write",
+      "target": "specs/recommendation-decision-plan/spec.md",
+      "staged": "runtime/transactions/ea745fb3-114d-4f60-bb8a-cbf38c5cc5c5/staged/specs/recommendation-decision-plan/spec.md",
+      "expectedTargetHash": null,
+      "stagedHash": "25a697da5cc7170d267fd4dc0147a282f33d7fca0e68b8cff06bd879cf8ccd85"
+    },
+    {
+      "id": "archive-change",
+      "type": "move",
+      "source": "changes/sap-nexus-recommendation-decision-plan",
+      "target": "archive/2026-08-05-sap-nexus-recommendation-decision-plan",
+      "expectedSourceHash": "637c0862645f0f491ccb14b2ed534af22f59c7360bbe0a3653445b79e9e6593f",
+      "expectedTargetHash": null
+    }
+  ]
+}

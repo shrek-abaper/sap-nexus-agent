@@ -1,0 +1,40 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "static-inspection",
+  "role": "required-check",
+  "status": "passed",
+  "bindings": {
+    "change": "sap-nexus-recommendation-decision-plan",
+    "sourceRevision": 3,
+    "contractHash": "953c6fd2c288628d1631d93fffc2ae506aa7a8325edfec20d777d33750ddbcf3",
+    "scopeHash": "6ac321ee750b8cbebf2721dfee3b5aa0d96c32f559f9fd2e63a232ad75ae75a5",
+    "snapshotHash": "a359c50e5fde19f0357ad9e79a674e15b67b55d2d70b0bd3344d0d46cb31f7bc",
+    "artifactHash": "73adead9cfd579257dcc158011165a7c3a1430471941cc472b455546328b2f7a"
+  },
+  "acceptanceIds": [],
+  "actor": "native-runtime:scoped-text-safety",
+  "issuedAt": "2026-08-05T05:48:51.905Z",
+  "evidence": {
+    "subjects": [
+      "docs/runbooks/18-recommendation-decision-plan.md",
+      "docs/runbooks/README.md",
+      "docs/superpowers/plans/2026-08-05-sap-nexus-recommendation-decision-plan.md",
+      "docs/superpowers/specs/2026-08-03-sap-nexus-complete-agent-roadmap-design.md",
+      "docs/wiki/sap-nexus-agent-implementation-roadmap.md",
+      "docs/wiki/sap-nexus-agent-technical-architecture.md",
+      "docs/wiki/sap-nexus-agent-technology-selection.md",
+      "evals/recommendation_decision_cases.json",
+      "frontend/src/runtime/recommendation/decision-engine.test.ts",
+      "frontend/src/runtime/recommendation/decision-engine.ts",
+      "frontend/src/runtime/recommendation/recommendation-eval.test.ts",
+      "frontend/src/runtime/recommendation/rule-set-registry.test.ts",
+      "frontend/src/runtime/recommendation/rule-set-registry.ts",
+      "frontend/src/runtime/recommendation/types.ts"
+    ],
+    "rule": "scoped-text-safety",
+    "resultSummary": "The built-in scoped inspection passed without skipped or blocking input.",
+    "checkReceiptRef": "runtime/evidence/check-receipts/e107fe504c4a8a199c20ecf1855f7196bd78f409c38329e4fc6a7785acc6fb81.json",
+    "checkReceiptHash": "e107fe504c4a8a199c20ecf1855f7196bd78f409c38329e4fc6a7785acc6fb81"
+  },
+  "receiptHash": "d2f570fb5fb6ccd188ea1424b208578fe416608c9f8f908df257b7297590f9ce"
+}

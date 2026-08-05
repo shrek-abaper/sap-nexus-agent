@@ -178,4 +178,4 @@ Runbook 20 可提前做静态 UI contract spike，但正式集成必须等待 16
 
 ## 12. 实施决策
 
-本文件只固化目标设计和原始实施顺序，不作为当前状态入口。原始序列从 Runbook 13 开始；截至 `2026-08-05`，Runbooks 13-17 已按独立 OpenSpec/Comet changes 实施并归档，当前入口由 `docs/runbooks/README.md` 指向 Runbook 18。每个后续 Runbook 完成后仍须重新评估后续契约，而不是预先锁死全部代码结构。
+本文件只固化目标设计和原始实施顺序，不作为当前状态入口。原始序列从 Runbook 13 开始；截至 `2026-08-05`，Runbooks 13-18 已按独立 OpenSpec/Comet changes 实施并归档，当前入口由 `docs/runbooks/README.md` 指向 Runbook 19。每个后续 Runbook 完成后仍须重新评估后续契约，而不是预先锁死全部代码结构。

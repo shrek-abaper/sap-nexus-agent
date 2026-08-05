@@ -74,7 +74,8 @@ Current completed change = sap-nexus-governed-intent-capability-recall (Runbook 
 Current completed change = sap-nexus-semantic-plan-authoring-v2 (Runbook 15 archived 2026-08-04): deterministic PlanGraph v2 with parameter provenance and READ/WRITE partition; 330 focused pytest / 953+1 skipped full pytest / 18 openspec pass
 Current completed change = sap-nexus-read-plan-executor (Runbook 16 archived 2026-08-04 at openspec/changes/archive/2026-08-04-sap-nexus-read-plan-executor/): READ-only PlanExecutor consuming validated PlanGraph v2 readPartition; PlanGraphV2Parser + NodeStateMachine + DurableNodeLedger + DagScheduler + FakeGateway + SseEmitter + PlanExecutor with timeout/cancel/restart-recovery/idempotent-replay/dependency-blocking/lease-conflict-fail-closed; Action nodes BLOCKED_APPROVAL; 954 pytest / 174 frontend tests / 19 openspec pass
 Current completed change = sap-nexus-output-projection-registry (Runbook 17 archived 2026-08-05 at openspec/changes/archive/2026-08-05-sap-nexus-output-projection-registry/): versioned OutputProjectionRegistry, ProjectionInputAssembler, capability FactBuilder, MaterialSupplySnapshot, deterministic completeness/freshness/lineage/limitations/hash and executor projection payload recovery; 251 frontend tests / production build / 20 openspec pass; production orchestrator and projectionRef wiring remain deferred
-Planned sequence = runbooks 13-17 implemented and archived -> runbooks 18-22 complete Recommendation, Narrative, Workbench, governed Action and release-gate delivery
+Current completed change = sap-nexus-recommendation-decision-plan (Runbook 18 Native archived 2026-08-05): snapshot-bound exact RuleSetRegistry, deterministic RecommendationDecisionEngine, input sufficiency/freshness/governance gates, replayable RecommendationPlan and at most one pending_approval ActionProposal; 316 frontend tests / production build / 954+1 skipped Agent tests / PR Eval 9/9 / call-plan Eval 7/7 / 20 openspec pass; component/Eval only, no orchestrator or SAP WRITE
+Planned sequence = runbooks 13-18 implemented and archived -> runbooks 19-22 complete Narrative, Workbench, governed Action and release-gate delivery
 S3 scheduling input = borrow ready-node/concurrency/timeout/cancel/ledger/trace mechanics only after PlanGraph validation; never infer execution from LLM Tool Calls
 S3 output foundation = deterministic OutputProjection with freshness, completeness, limitations and Fact lineage implemented at component/Eval scope; partial failure remains incomplete
 Completed platform gate = sap-nexus-trusted-durable-runtime-foundation; all four P0B changes archived 2026-08-02
@@ -82,7 +83,7 @@ Triggered memory candidate = sap-nexus-governed-user-memory-pilot; user preferen
 Live blocker = none for PO OData read; SAP SICF was reactivated and PO live smoke passed
 Deferred Phase 3+ workstream = sap-nexus-capability-matching-contract
 Reserved executor workstream = sap-nexus-sql-read-executor-contract
-Current composition runtime = PlanExecutor and deterministic OutputProjection implemented at component/Eval scope; production orchestrator/projectionRef wiring, Recommendation and end-to-end multi-capability business composition are not yet live; next implementation entrypoint is Runbook 18
+Current composition runtime = PlanExecutor, deterministic OutputProjection and RecommendationDecision implemented at component/Eval scope; production orchestrator/projectionRef wiring, grounded Narrative and end-to-end multi-capability business composition are not yet live; next implementation entrypoint is Runbook 19
 Complete Agent target = runbooks 13-22: governed context -> LLM-first recall -> PlanGraph v2 -> READ executor -> projection -> recommendation -> grounded narrative -> Workbench -> single approved Action -> release gate
 MVP Knowledge/RAG = reserved interface only; no knowledge source, vector store, embedding retrieval or cross-session similar-question retrieval
 Reserved composition scope = general Dynamic Planner, multi-WRITE/Saga, automatic compensation and free LLM Tool Calling
@@ -102,14 +103,14 @@ No branch creation unless user explicitly asks
 | `Completed Capability` | `sap-nexus-agent-conversational-context`、`sap-nexus-multi-value-batch-query` | 即时多轮对话上下文和 READ-only 多值批量查询已实现；durable Run/Session 已由 P0B 接管；详见 runbook 12 |
 | `Completed Foundation` | P0B trusted/durable runtime four-part delivery | durable Run/Session、trusted principal、durable approval、ownership/lease、incremental SSE + reconnect 均已归档；它们是完整 Agent 的运行基础，不等于多能力执行 |
 | `Completed Foundation` | `sap-nexus-governed-context-registry-snapshot` (Runbook 13) | GovernedContext/SnapshotLease/VisibleCapabilitySet/PlannerFailure 数据结构、同 snapshotId 端到端绑定、principal 透传 + visibility pre-filter、CapabilityCard 安全投影、5 种 PlannerFailure error_type 结构化 fail-closed 已实现、验证并归档到 `openspec/changes/archive/2026-08-03-sap-nexus-governed-context-registry-snapshot/`；不执行多能力 PlanExecutor |
-| `Completed Foundation` | 完整 Agent Runbooks 14-17 | LLM-first recall、PlanGraph v2、READ PlanExecutor 与 deterministic OutputProjection 已实现、验证并归档；projection 仅完成 component/Eval 范围，生产 orchestrator 接线仍未完成 |
-| `Planned` | 完整 Agent Runbooks 18-22 | RecommendationPlan、grounded narrative、Workbench、单 Action 人审闭环和 E2E release gate |
+| `Completed Foundation` | 完整 Agent Runbooks 14-18 | LLM-first recall、PlanGraph v2、READ PlanExecutor、deterministic OutputProjection 与 RecommendationDecision 已实现、验证并归档；composition/recommendation 仅完成 component/Eval 范围，生产 orchestrator 接线仍未完成 |
+| `Planned` | 完整 Agent Runbooks 19-22 | grounded narrative、Workbench、单 Action 人审闭环和 E2E release gate |
 | `Reserved` | Knowledge/RAG、跨会话相似问题检索、Phase 3+ embedding retrieval/rerank、Graph Registry、通用 Dynamic Planner、多 WRITE/Saga | 保留接口和安全边界，不进入本轮 MVP；不得将预留描述为已实现 |
 | `Not In Scope` | 任意 RFC / URL / SQL 执行、生产 write action 自动提交、GraphDB / OWL 运行时主链路 | 明确拒绝或另立 change |
 
 近期约束：
 
-- 第二条 live read capability、sandbox write pilot、S1、S2-A/S2-B、会话/批量能力、P0B 和 Runbooks 13-17 均已完成；下一实施入口固定为 Runbook 18，不直接跳到 Narrative、Workbench 或 WRITE。
+- 第二条 live read capability、sandbox write pilot、S1、S2-A/S2-B、会话/批量能力、P0B 和 Runbooks 13-18 均已完成；下一实施入口固定为 Runbook 19，不直接跳到 Workbench 或 WRITE。
 - 版本记录和路线图优先体现能力落地、评测回归和 write 纵切，而不是继续增加低成本架构占位。
 - 已有 reserved executor 只保留 fail-closed 边界，不能被解读为当前实现承诺。
 
@@ -138,8 +139,8 @@ Runbooks are numbered by workstream creation order, not by roadmap row or calend
 | `15` | `15-semantic-plan-authoring-v2.md` | `v0.2.0` | Implemented / Archived | `2026-08-04` | Compile advisory goals into deterministic PlanGraph v2 with parameter provenance and READ/WRITE partition; 330 pytest (v1 298 + v2 32) / 18 openspec pass |
 | `16` | `16-read-plan-executor.md` | `v0.1.0` | Implemented / Archived | `2026-08-04` | Execute validated READ nodes with ready-node scheduling and durable ledger; archived change `openspec/changes/archive/2026-08-04-sap-nexus-read-plan-executor/`; 954 pytest / 174 frontend tests / 19 openspec pass |
 | `17` | `17-composite-fact-output-projection.md` | `v0.2.0` | Implemented / Archived | `2026-08-05` | Versioned deterministic OutputProjection and MaterialSupplySnapshot at component/Eval scope; archived `sap-nexus-output-projection-registry`; 251 frontend tests / build / 20 openspec pass |
-| `18` | `18-recommendation-decision-plan.md` | `v0.1.1` | Planned / Current Entry | `2026-08-05` | Consume the archived MaterialSupplySnapshot contract through a registered RuleSet to produce RecommendationPlan and at most one ActionProposal |
-| `19` | `19-grounded-narrative-orchestration.md` | `v0.1.0` | Planned | `2026-08-03` | Claims/evidence/limitations narrative envelope with template fallback |
+| `18` | `18-recommendation-decision-plan.md` | `v0.2.0` | Implemented / Archived | `2026-08-05` | Snapshot-bound RuleSet + deterministic input sufficiency -> replayable RecommendationPlan and at most one pending ActionProposal; component/Eval only |
+| `19` | `19-grounded-narrative-orchestration.md` | `v0.1.0` | Planned / Current Entry | `2026-08-03` | Claims/evidence/limitations narrative envelope with template fallback |
 | `20` | `20-workbench-plan-evidence-experience.md` | `v0.1.0` | Planned | `2026-08-03` | Full plan, node, fact, recommendation, narrative, approval and replay UX |
 | `21` | `21-read-to-write-action-governance.md` | `v0.1.0` | Planned | `2026-08-03` | Human-approved, exactly-once single Action after multi-READ reasoning |
 | `22` | `22-end-to-end-agent-eval-release-gate.md` | `v0.1.0` | Planned | `2026-08-03` | L1 single-capability, L2 multi-READ and L3 READ-to-WRITE release gates |

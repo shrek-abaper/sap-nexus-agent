@@ -1,0 +1,44 @@
+{
+  "schema": "comet.native.check-receipt.v1",
+  "change": "sap-nexus-recommendation-decision-plan",
+  "sourceRevision": 3,
+  "checker": {
+    "policy": "scoped-text-safety",
+    "version": 1,
+    "hash": "859ac9d93d19ac346e5e0c6dfca376112da6b0c9caeb9d7d7aa68393c73e0eaf",
+    "limits": {
+      "maxFiles": 256,
+      "maxFileBytes": 2097152,
+      "maxTotalBytes": 8388608,
+      "maxIssues": 128
+    }
+  },
+  "inputHash": "94a36a3f46b60ce1e289840a06c96dbf38a79866598408fef33b663846455b28",
+  "status": "passed",
+  "startedAt": "2026-08-05T05:48:50.939Z",
+  "endedAt": "2026-08-05T05:48:51.905Z",
+  "contract": {
+    "expectedHash": "953c6fd2c288628d1631d93fffc2ae506aa7a8325edfec20d777d33750ddbcf3",
+    "beforeHash": "953c6fd2c288628d1631d93fffc2ae506aa7a8325edfec20d777d33750ddbcf3",
+    "afterHash": "953c6fd2c288628d1631d93fffc2ae506aa7a8325edfec20d777d33750ddbcf3"
+  },
+  "implementation": {
+    "scopeHash": "6ac321ee750b8cbebf2721dfee3b5aa0d96c32f559f9fd2e63a232ad75ae75a5",
+    "expectedSnapshotHash": "a359c50e5fde19f0357ad9e79a674e15b67b55d2d70b0bd3344d0d46cb31f7bc",
+    "beforeSnapshotHash": "a359c50e5fde19f0357ad9e79a674e15b67b55d2d70b0bd3344d0d46cb31f7bc",
+    "afterSnapshotHash": "a359c50e5fde19f0357ad9e79a674e15b67b55d2d70b0bd3344d0d46cb31f7bc"
+  },
+  "counts": {
+    "filesSelected": 14,
+    "filesScanned": 14,
+    "binaryFilesSkipped": 0,
+    "bytesScanned": 336976,
+    "issueCount": 0,
+    "recordedIssueCount": 0
+  },
+  "issues": [],
+  "issuesTruncated": false,
+  "stale": false,
+  "staleReasons": [],
+  "receiptHash": "e107fe504c4a8a199c20ecf1855f7196bd78f409c38329e4fc6a7785acc6fb81"
+}

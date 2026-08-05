@@ -1,0 +1,8 @@
+{"sequence":1,"timestamp":"2026-08-05T05:49:39.094Z","type":"prepared"}
+{"sequence":2,"timestamp":"2026-08-05T05:49:40.281Z","type":"operation-started","operationId":"spec-1-recommendation-decision-plan"}
+{"sequence":3,"timestamp":"2026-08-05T05:49:40.394Z","type":"operation-completed","operationId":"spec-1-recommendation-decision-plan"}
+{"sequence":4,"timestamp":"2026-08-05T05:49:41.726Z","type":"operation-started","operationId":"archive-change"}
+{"sequence":5,"timestamp":"2026-08-05T05:49:42.194Z","type":"operation-completed","operationId":"archive-change"}
+{"sequence":6,"timestamp":"2026-08-05T05:49:42.430Z","type":"archive-finalization-started"}
+{"sequence":7,"timestamp":"2026-08-05T05:49:42.508Z","type":"archive-finalized"}
+{"sequence":8,"timestamp":"2026-08-05T05:49:42.553Z","type":"commit"}

@@ -1,0 +1,11 @@
+{
+  "schema": "comet.native.archive-cas.v1",
+  "operationId": "spec-1-recommendation-decision-plan",
+  "role": "post",
+  "hash": "25a697da5cc7170d267fd4dc0147a282f33d7fca0e68b8cff06bd879cf8ccd85",
+  "identity": {
+    "dev": 2096,
+    "ino": 358305,
+    "birthtimeMs": 1785908980306.357
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "sap-nexus-recommendation-decision-plan",
+    "sourceRevision": 3,
+    "contractHash": "953c6fd2c288628d1631d93fffc2ae506aa7a8325edfec20d777d33750ddbcf3",
+    "scopeHash": "6ac321ee750b8cbebf2721dfee3b5aa0d96c32f559f9fd2e63a232ad75ae75a5",
+    "snapshotHash": "a359c50e5fde19f0357ad9e79a674e15b67b55d2d70b0bd3344d0d46cb31f7bc",
+    "artifactHash": "73adead9cfd579257dcc158011165a7c3a1430471941cc472b455546328b2f7a"
+  },
+  "acceptanceIds": [
+    "acceptance-62d256c7977bde04c2e15686b7130c5810337fc755b58a31e0e20c68ea661e87"
+  ],
+  "actor": "native-runtime:command:.venv/bin/python",
+  "issuedAt": "2026-08-05T05:35:55.876Z",
+  "evidence": {
+    "executable": ".venv/bin/python",
+    "args": [
+      "-m",
+      "pytest",
+      "agent/tests",
+      "-q"
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 120000,
+    "startedAt": "2026-08-05T05:35:41.853Z",
+    "endedAt": "2026-08-05T05:35:55.876Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "684e58c4a12e16b9134131230f676c2dd8485c2e",
+      "afterCommit": "684e58c4a12e16b9134131230f676c2dd8485c2e"
+    },
+    "afterFence": {
+      "snapshotHash": "a359c50e5fde19f0357ad9e79a674e15b67b55d2d70b0bd3344d0d46cb31f7bc",
+      "scopeHash": "6ac321ee750b8cbebf2721dfee3b5aa0d96c32f559f9fd2e63a232ad75ae75a5",
+      "matched": true
+    },
+    "outputHash": "14a6c4a3f78a557ed5dc498c25b37858278753f63593c781c6a1b4a4a3075af6",
+    "outputSummary": "........................................................................ [  7%]\n........................................................................ [ 15%]\n........................................................................ [ 22%]\n........................................................................ [ 30%]\n..................................................s..................... [ 37%]\n........................................................................ [ 45%]\n........................................................................ [ 52%]\n........................................................................ [ 60%]\n........................................................................ [ 67%]\n........................................................................ [ 75%]\n........................................................................ [ 82%]\n........................................................................ [ 90%]\n........................................................................ [ 98%]\n...................                                                      [100%]\n954 passed, 1 skipped in 13.67s",
+    "outputTruncated": false
+  },
+  "receiptHash": "15c15100d3c802f1c2afe501eed9c4593960bf31b7b8623d61e859572595709e"
+}

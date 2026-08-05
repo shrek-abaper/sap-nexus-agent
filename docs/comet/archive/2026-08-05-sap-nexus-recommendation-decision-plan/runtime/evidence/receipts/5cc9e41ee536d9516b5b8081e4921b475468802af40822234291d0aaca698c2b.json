@@ -1,0 +1,48 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "sap-nexus-recommendation-decision-plan",
+    "sourceRevision": 3,
+    "contractHash": "953c6fd2c288628d1631d93fffc2ae506aa7a8325edfec20d777d33750ddbcf3",
+    "scopeHash": "6ac321ee750b8cbebf2721dfee3b5aa0d96c32f559f9fd2e63a232ad75ae75a5",
+    "snapshotHash": "a359c50e5fde19f0357ad9e79a674e15b67b55d2d70b0bd3344d0d46cb31f7bc",
+    "artifactHash": "73adead9cfd579257dcc158011165a7c3a1430471941cc472b455546328b2f7a"
+  },
+  "acceptanceIds": [
+    "acceptance-62d256c7977bde04c2e15686b7130c5810337fc755b58a31e0e20c68ea661e87"
+  ],
+  "actor": "native-runtime:command:bash",
+  "issuedAt": "2026-08-05T05:39:08.314Z",
+  "evidence": {
+    "executable": "bash",
+    "args": [
+      "-c",
+      "scripts/verify-agent-callplan-evidence.sh > /tmp/sap-nexus-recommendation-callplan.log"
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 120000,
+    "startedAt": "2026-08-05T05:38:16.916Z",
+    "endedAt": "2026-08-05T05:39:08.314Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "684e58c4a12e16b9134131230f676c2dd8485c2e",
+      "afterCommit": "684e58c4a12e16b9134131230f676c2dd8485c2e"
+    },
+    "afterFence": {
+      "snapshotHash": "a359c50e5fde19f0357ad9e79a674e15b67b55d2d70b0bd3344d0d46cb31f7bc",
+      "scopeHash": "6ac321ee750b8cbebf2721dfee3b5aa0d96c32f559f9fd2e63a232ad75ae75a5",
+      "matched": true
+    },
+    "outputHash": "0a92961bbeb723549f6b856d1e4f0bbaf088e4dd5c9ed41ea43c97425cf25e28",
+    "outputSummary": "SKIP (pending): dry-run-missing-producer: 无法用真实 registry 构造 missing_capability 场景 - 所有 active capability 均有 produces_fact_types；需扩展 registry 或注入 fake sources 才能覆盖。已在 agent/tests/test_planner_plan_compiler.py 单测中覆盖该分支。",
+    "outputTruncated": false
+  },
+  "receiptHash": "5cc9e41ee536d9516b5b8081e4921b475468802af40822234291d0aaca698c2b"
+}

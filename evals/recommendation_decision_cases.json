@@ -1,0 +1,136 @@
+{
+  "schema": "sap-nexus.recommendation-decision-eval.v1",
+  "cases": [
+    {
+      "id": "shortage-proposal",
+      "expectedStatus": "RECOMMEND",
+      "expectedProposalQuantity": 3,
+      "expectedProposalCount": 1,
+      "replayWithReorderedFacts": true,
+      "assertNoExecutionEvidence": true
+    },
+    {
+      "id": "sufficient-stock-no-action",
+      "requiredQuantity": 7,
+      "expectedStatus": "NO_ACTION",
+      "expectedProposalCount": 0
+    },
+    {
+      "id": "missing-required-quantity",
+      "omitConstraint": "requiredQuantity",
+      "expectedStatus": "CLARIFY",
+      "expectedLimitationCode": "MISSING_CONSTRAINT_REQUIRED_QUANTITY",
+      "expectedProposalCount": 0
+    },
+    {
+      "id": "missing-target-date",
+      "omitConstraint": "targetDate",
+      "expectedStatus": "CLARIFY",
+      "expectedLimitationCode": "MISSING_CONSTRAINT_TARGET_DATE",
+      "expectedProposalCount": 0
+    },
+    {
+      "id": "missing-purchasing-group",
+      "omitConstraint": "purchasingGroup",
+      "expectedStatus": "CLARIFY",
+      "expectedLimitationCode": "MISSING_CONSTRAINT_PURCHASING_GROUP",
+      "expectedProposalCount": 0
+    },
+    {
+      "id": "partial-projection",
+      "completeness": "partial",
+      "expectedStatus": "INSUFFICIENT_INPUT",
+      "expectedLimitationCode": "PROJECTION_NOT_COMPLETE",
+      "expectedProposalCount": 0
+    },
+    {
+      "id": "incomplete-projection",
+      "completeness": "incomplete",
+      "expectedStatus": "INSUFFICIENT_INPUT",
+      "expectedLimitationCode": "PROJECTION_NOT_COMPLETE",
+      "expectedProposalCount": 0
+    },
+    {
+      "id": "stale-projection",
+      "projectionAgeMs": 86400001,
+      "expectedStatus": "INSUFFICIENT_INPUT",
+      "expectedLimitationCode": "PROJECTION_STALE",
+      "expectedProposalCount": 0
+    },
+    {
+      "id": "unknown-rule-set",
+      "ruleSetId": "unknown",
+      "expectedStatus": "INSUFFICIENT_INPUT",
+      "expectedLimitationCode": "RULESET_NOT_REGISTERED",
+      "expectedProposalCount": 0
+    },
+    {
+      "id": "conflicting-rule-set",
+      "conflictingRuleSet": true,
+      "expectedRegistryError": "RULESET_CONFLICT"
+    },
+    {
+      "id": "snapshot-mismatch",
+      "snapshotId": "snapshot-2",
+      "expectedStatus": "INSUFFICIENT_INPUT",
+      "expectedLimitationCode": "SNAPSHOT_MISMATCH",
+      "expectedProposalCount": 0
+    },
+    {
+      "id": "unregistered-action",
+      "actionCapabilityState": "missing",
+      "expectedStatus": "INSUFFICIENT_INPUT",
+      "expectedLimitationCode": "ACTION_CAPABILITY_UNSUPPORTED",
+      "expectedProposalCount": 0
+    },
+    {
+      "id": "inactive-action",
+      "actionCapabilityState": "inactive",
+      "expectedStatus": "INSUFFICIENT_INPUT",
+      "expectedLimitationCode": "ACTION_CAPABILITY_UNSUPPORTED",
+      "expectedProposalCount": 0
+    },
+    {
+      "id": "wrong-action-kind",
+      "actionCapabilityState": "wrong-kind",
+      "expectedStatus": "INSUFFICIENT_INPUT",
+      "expectedLimitationCode": "ACTION_CAPABILITY_UNSUPPORTED",
+      "expectedProposalCount": 0
+    },
+    {
+      "id": "action-missing-required-parameters",
+      "actionCapabilityState": "missing-parameters",
+      "expectedStatus": "INSUFFICIENT_INPUT",
+      "expectedLimitationCode": "ACTION_CAPABILITY_UNSUPPORTED",
+      "expectedProposalCount": 0
+    },
+    {
+      "id": "missing-availability-fact",
+      "availabilityMode": "missing",
+      "expectedStatus": "INSUFFICIENT_INPUT",
+      "expectedLimitationCode": "AVAILABILITY_FACT_MISSING",
+      "expectedProposalCount": 0
+    },
+    {
+      "id": "ambiguous-availability-facts",
+      "availabilityMode": "ambiguous",
+      "expectedStatus": "INSUFFICIENT_INPUT",
+      "expectedLimitationCode": "AVAILABILITY_FACT_AMBIGUOUS",
+      "expectedProposalCount": 0
+    },
+    {
+      "id": "invalid-availability-unit",
+      "availabilityMode": "invalid-unit",
+      "expectedStatus": "INSUFFICIENT_INPUT",
+      "expectedLimitationCode": "AVAILABILITY_FACT_INVALID",
+      "expectedProposalCount": 0
+    },
+    {
+      "id": "conflicting-availability-fact",
+      "availabilityMode": "conflict",
+      "expectedStatus": "INSUFFICIENT_INPUT",
+      "expectedLimitationCode": "AVAILABILITY_FACT_INVALID",
+      "expectedProposalCount": 0
+    }
+  ]
+}

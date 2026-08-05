@@ -1,0 +1,74 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "sap-nexus-recommendation-decision-plan",
+    "sourceRevision": 3,
+    "contractHash": "953c6fd2c288628d1631d93fffc2ae506aa7a8325edfec20d777d33750ddbcf3",
+    "scopeHash": "6ac321ee750b8cbebf2721dfee3b5aa0d96c32f559f9fd2e63a232ad75ae75a5",
+    "snapshotHash": "a359c50e5fde19f0357ad9e79a674e15b67b55d2d70b0bd3344d0d46cb31f7bc",
+    "artifactHash": "73adead9cfd579257dcc158011165a7c3a1430471941cc472b455546328b2f7a"
+  },
+  "acceptanceIds": [
+    "acceptance-0a6784cf311204e2b0188552ae68c2bc4cd364cebc52e79be3d848c8e28cf1fb",
+    "acceptance-13b47170b2e658e88037f7aa98be3d90f929c90fef2c9778e44df1c3fceebc17",
+    "acceptance-18c6c445931b31cef32907eeaacb541bb133aac792e454a8c6639e63538ab3f8",
+    "acceptance-3b021c09fe7dde137b9acb0328ddd523ff7bd0531afcca96fb1d8c885e97c34c",
+    "acceptance-592e2475ad01282c8050f19acb96fe2c9014e457e233fb0c81b59551b25acaf8",
+    "acceptance-5ef9e47ee7744148112585c391ed8f3f33f807496d0d4ab133826a30102f2ba3",
+    "acceptance-62d256c7977bde04c2e15686b7130c5810337fc755b58a31e0e20c68ea661e87",
+    "acceptance-638852fe9aef80ae42d78d7b51bacccfb7166a632e00496c5202e0319c186c1e",
+    "acceptance-64cc06cf74e1975b02011c693e1a85f4c0203efa6c16c5f8d3178d0859c45847",
+    "acceptance-791cfd5f22b5009d3af98c68a455acaa5ae36df59069c3ae8c47f1ec71792914",
+    "acceptance-7b333df199ac8be2ae7e0d55d6f07b2406190f5fd1ad5c196ff55ae2cdeaf1f2",
+    "acceptance-863df9f4f5cb213165b15702ab31284a87c70e3b435d8469276200fc4665bdef",
+    "acceptance-8c2ecb35d727cdca179609fcfc2eeec5d250160f6d803364a1bdcb5b3970bf87",
+    "acceptance-8fa1bacefd2c77a5b52ffe4c2c42aa2fb435fa6049f12d35ee44ab07cd03b3c8",
+    "acceptance-93c7d3c28d0f0659b0211c2025ad384c08fb5770338f0ae7c241b568f55f0400",
+    "acceptance-95674b55072d3a99bd53abd4aa38effed0cb44f3d46ea05da5813b916db060f2",
+    "acceptance-9e3d9e7bb5932987f6c2d70de14babe173d25ecfc09ec28731e449ec6c5a68be",
+    "acceptance-ddbfdb8333c0c590aca4762ecaf809f34aace61eda584e798c70e03b95002126",
+    "acceptance-e19de58b43fc6131757ba35c41b5e520f66ec9fcf0dd81f70f2448240fed24ca",
+    "acceptance-eda28ccb699e603d7ae81d9f50a00e2e1b1ea1ee00399b8a75d516c652870eea",
+    "acceptance-f199bc0a07aa7f125668f45092ffcdb183facba6555e6797358e4689e0a68f5a",
+    "acceptance-f2cc6f0012970d43fb515debc5ae4e57579a5a371a263c31c71901fb35801aee"
+  ],
+  "actor": "native-runtime:command:npm",
+  "issuedAt": "2026-08-05T05:34:07.320Z",
+  "evidence": {
+    "executable": "npm",
+    "args": [
+      "--prefix",
+      "frontend",
+      "test",
+      "--",
+      "src/runtime/recommendation/rule-set-registry.test.ts",
+      "src/runtime/recommendation/decision-engine.test.ts",
+      "src/runtime/recommendation/recommendation-eval.test.ts"
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 120000,
+    "startedAt": "2026-08-05T05:34:06.452Z",
+    "endedAt": "2026-08-05T05:34:07.320Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "684e58c4a12e16b9134131230f676c2dd8485c2e",
+      "afterCommit": "684e58c4a12e16b9134131230f676c2dd8485c2e"
+    },
+    "afterFence": {
+      "snapshotHash": "a359c50e5fde19f0357ad9e79a674e15b67b55d2d70b0bd3344d0d46cb31f7bc",
+      "scopeHash": "6ac321ee750b8cbebf2721dfee3b5aa0d96c32f559f9fd2e63a232ad75ae75a5",
+      "matched": true
+    },
+    "outputHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "outputSummary": "(exit 0)",
+    "outputTruncated": false
+  },
+  "receiptHash": "792bfe317c66474035c2251ec305ae2b5f279ee90c9ccfaffcf4d297c97d7be2"
+}
