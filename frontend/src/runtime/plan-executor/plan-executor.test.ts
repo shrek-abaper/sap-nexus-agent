@@ -143,7 +143,7 @@ describe("PlanExecutor", () => {
   it.each([
     { label: "missing", traceId: undefined },
     { label: "blank", traceId: "   " },
-  ])("keeps fresh success but omits projection data when Gateway trace is $label", async ({ traceId }) => {
+  ])("keeps fresh success projection data with a nullable Gateway trace when trace is $label", async ({ traceId }) => {
     const store = new JsonlRunStore(dir, "worker-A");
     await store.save("run-1", seed("run-1"));
     const gateway = new FakeGateway();
@@ -161,7 +161,14 @@ describe("PlanExecutor", () => {
 
     expect(result.succeeded).toEqual(["node.inv"]);
     expect(result.nodeLedger["node.inv"].state).toBe(NodeState.SUCCEEDED);
-    expect(result.succeededNodeResults).toEqual([]);
+    expect(result.succeededNodeResults).toEqual([
+      expect.objectContaining({
+        nodeId: "node.inv",
+        agentTraceId: "run-1",
+        gatewayTraceId: null,
+        executeData: { availableQuantity: 7 },
+      }),
+    ]);
     expect(result.failed).toEqual([]);
     expect(result.timedOut).toEqual([]);
   });

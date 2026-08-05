@@ -218,7 +218,7 @@ describe("PlanExecutor recovery", () => {
   it.each([
     { label: "missing", gatewayTraceId: undefined },
     { label: "blank", gatewayTraceId: "   " },
-  ])("keeps cached success without hydrating projection data when Gateway trace is $label", async ({ gatewayTraceId }) => {
+  ])("hydrates cached and existing success with a nullable Gateway trace when trace is $label", async ({ gatewayTraceId }) => {
     const store = new JsonlRunStore(dir, "worker-A");
     await store.save("run-1", seed("run-1"));
     await store.markExecuted("run-1:node.inv:0:material=M1", {
@@ -247,8 +247,18 @@ describe("PlanExecutor recovery", () => {
     expect(second.succeeded).toContain("node.inv");
     expect(first.nodeLedger["node.inv"].state).toBe(NodeState.SUCCEEDED);
     expect(second.nodeLedger["node.inv"].state).toBe(NodeState.SUCCEEDED);
-    expect(first.succeededNodeResults.map((record) => record.nodeId)).not.toContain("node.inv");
-    expect(second.succeededNodeResults.map((record) => record.nodeId)).not.toContain("node.inv");
+    expect(first.succeededNodeResults).toContainEqual(expect.objectContaining({
+      nodeId: "node.inv",
+      agentTraceId: "run-1",
+      gatewayTraceId: null,
+      executeData: { availableQuantity: 7 },
+    }));
+    expect(second.succeededNodeResults).toContainEqual(expect.objectContaining({
+      nodeId: "node.inv",
+      agentTraceId: "run-1",
+      gatewayTraceId: null,
+      executeData: { availableQuantity: 7 },
+    }));
     expect(gateway.executeCalls.map((call) => call.capabilityId)).not.toContain(
       "MM.Inventory.GetAvailability"
     );

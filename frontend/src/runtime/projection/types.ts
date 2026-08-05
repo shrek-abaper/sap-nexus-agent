@@ -69,6 +69,8 @@ export type ProjectionInput = {
   facts: ReasoningFact[];
 };
 
+export type TraceableNodeFactRecord = NodeFactRecord & { gatewayTraceId: string };
+
 export type OutputProjectionDeclaration = {
   projectionId: string;
   version: string;
@@ -83,5 +85,5 @@ export type OutputProjectionDeclaration = {
 export type FactBuilderDeclaration = {
   capabilityId: string;
   freshnessField?: string;
-  build(record: NodeFactRecord): ReasoningFact[];
+  build(record: TraceableNodeFactRecord): ReasoningFact[];
 };

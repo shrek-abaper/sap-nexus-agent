@@ -90,7 +90,7 @@ export type NodeFactRecord = {
   capabilityId: string;
   parameters: Record<string, string>;
   producesFactTypes: string[];
-  gatewayTraceId: string;
+  gatewayTraceId: string | null;
   executeData: Record<string, unknown>;
   nodeExecutedAt: string;
 };

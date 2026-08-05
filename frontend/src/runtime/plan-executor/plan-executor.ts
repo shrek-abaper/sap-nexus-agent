@@ -259,18 +259,16 @@ export class PlanExecutor {
       executeResult.traceId ?? null
     );
     const executeData = executeResult.data ?? {};
-    if (this.hasProjectionGatewayTrace(executeResult.traceId)) {
-      nodeResults.set(nodeId, {
-        nodeId,
-        agentTraceId: runId,
-        capabilityId: node.capabilityId,
-        parameters,
-        producesFactTypes: [...node.producesFactTypes],
-        gatewayTraceId: executeResult.traceId,
-        executeData,
-        nodeExecutedAt: succeededEntry.updatedAt,
-      });
-    }
+    nodeResults.set(nodeId, {
+      nodeId,
+      agentTraceId: runId,
+      capabilityId: node.capabilityId,
+      parameters,
+      producesFactTypes: [...node.producesFactTypes],
+      gatewayTraceId: this.projectionGatewayTraceId(executeResult.traceId),
+      executeData,
+      nodeExecutedAt: succeededEntry.updatedAt,
+    });
 
     // Record idempotency: future replay with same key skips Gateway calls (Task 10)
     await this.store.markExecuted(idempotencyKey, {
@@ -339,8 +337,7 @@ export class PlanExecutor {
       !cachedResult.parameters ||
       typeof cachedResult.capabilityId !== "string" ||
       !Array.isArray(cachedResult.producesFactTypes) ||
-      typeof cachedResult.nodeExecutedAt !== "string" ||
-      !this.hasProjectionGatewayTrace(cachedResult.gatewayTraceId)
+      typeof cachedResult.nodeExecutedAt !== "string"
     ) {
       return null;
     }
@@ -350,14 +347,14 @@ export class PlanExecutor {
       capabilityId: cachedResult.capabilityId,
       parameters: cachedResult.parameters,
       producesFactTypes: cachedResult.producesFactTypes,
-      gatewayTraceId: cachedResult.gatewayTraceId,
+      gatewayTraceId: this.projectionGatewayTraceId(cachedResult.gatewayTraceId),
       executeData: cachedResult.data,
       nodeExecutedAt: cachedResult.nodeExecutedAt,
     };
   }
 
-  private hasProjectionGatewayTrace(traceId: string | null | undefined): traceId is string {
-    return typeof traceId === "string" && traceId.trim().length > 0;
+  private projectionGatewayTraceId(traceId: string | null | undefined): string | null {
+    return typeof traceId === "string" && traceId.trim().length > 0 ? traceId : null;
   }
 
   private resolveParameters(bindings: ParameterBinding[]): Record<string, string> {

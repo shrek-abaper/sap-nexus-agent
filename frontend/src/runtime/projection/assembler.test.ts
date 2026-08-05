@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { NodeState, type NodeFactRecord, type PlanExecutorResult } from "../plan-executor/types";
 import { ProjectionInputAssembler } from "./assembler";
-import { createMaterialSupplyFactBuilderRegistry } from "./fact-builder";
+import { FactBuilderRegistry, createMaterialSupplyFactBuilderRegistry } from "./fact-builder";
 
 const dataAsOf = "2026-08-04T00:00:00Z";
 const nodeExecutedAt = "2026-08-04T00:00:01Z";
@@ -94,7 +94,7 @@ describe("ProjectionInputAssembler", () => {
     expect(input.planExecutionRecord).toMatchObject({
       runId: "run-1",
       snapshotId: "snapshot-1",
-      asOf: dataAsOf,
+      asOf: "2026-08-04T00:00:00.000Z",
       succeededNodes: ["node.inventory", "node.po"],
       failedNodes: ["node.failed"],
       missingFacts: [],
@@ -137,6 +137,34 @@ describe("ProjectionInputAssembler", () => {
     ]);
   });
 
+  it("records missing facts without invoking a builder when Gateway trace is absent", () => {
+    let buildCalls = 0;
+    const builders = new FactBuilderRegistry();
+    builders.register({
+      capabilityId: "MM.Inventory.GetAvailability",
+      build: () => {
+        buildCalls += 1;
+        return [];
+      },
+    });
+    const inventory = nodeRecord({ gatewayTraceId: null });
+    const input = new ProjectionInputAssembler().assemble(
+      result({
+        nodeLedger: { "node.inventory": result().nodeLedger["node.inventory"] },
+        succeeded: ["node.inventory"],
+        succeededNodeResults: [inventory],
+        failed: [],
+      }),
+      builders,
+    );
+
+    expect(buildCalls).toBe(0);
+    expect(input.facts).toEqual([]);
+    expect(input.planExecutionRecord.missingFacts).toEqual([
+      { factType: "InventoryAvailability", reason: "missing_gateway_trace" },
+    ]);
+  });
+
   it("falls back to node execution time when Gateway freshness is absent", () => {
     const inventory = nodeRecord({ executeData: { availableQuantity: 7, unit: "EA" } });
     const input = new ProjectionInputAssembler().assemble(
@@ -150,7 +178,63 @@ describe("ProjectionInputAssembler", () => {
     );
 
     expect(input.facts[0]?.asOf).toBe(nodeExecutedAt);
-    expect(input.planExecutionRecord.asOf).toBe(nodeExecutedAt);
+    expect(input.planExecutionRecord.asOf).toBe("2026-08-04T00:00:01.000Z");
+  });
+
+  it("aggregates freshness by earliest epoch across timezone offsets", () => {
+    const input = new ProjectionInputAssembler().assemble(
+      result({
+        succeededNodeResults: [
+          nodeRecord({
+            nodeId: "node.po",
+            capabilityId: "MM.PurchaseOrder.GetList",
+            producesFactTypes: ["PurchaseOrder"],
+            gatewayTraceId: "gw-po",
+            executeData: {
+              purchaseOrders: [{ purchaseOrder: "4500001", orderQuantity: 2 }],
+              dataAsOf: "2026-08-04T00:00:00Z",
+            },
+          }),
+          nodeRecord({
+            executeData: {
+              availableQuantity: 7,
+              dataAsOf: "2026-08-04T00:30:00+01:00",
+            },
+          }),
+        ],
+      }),
+      createMaterialSupplyFactBuilderRegistry(),
+    );
+
+    expect(input.planExecutionRecord.asOf).toBe("2026-08-03T23:30:00.000Z");
+  });
+
+  it("normalizes equivalent freshness instants to the same UTC aggregate", () => {
+    const input = new ProjectionInputAssembler().assemble(
+      result({
+        succeededNodeResults: [
+          nodeRecord({
+            nodeId: "node.po",
+            capabilityId: "MM.PurchaseOrder.GetList",
+            producesFactTypes: ["PurchaseOrder"],
+            gatewayTraceId: "gw-po",
+            executeData: {
+              purchaseOrders: [{ purchaseOrder: "4500001", orderQuantity: 2 }],
+              dataAsOf: "2026-08-04T00:00:00Z",
+            },
+          }),
+          nodeRecord({
+            executeData: {
+              availableQuantity: 7,
+              dataAsOf: "2026-08-04T08:00:00+08:00",
+            },
+          }),
+        ],
+      }),
+      createMaterialSupplyFactBuilderRegistry(),
+    );
+
+    expect(input.planExecutionRecord.asOf).toBe("2026-08-04T00:00:00.000Z");
   });
 
   it("keeps the assembler boundary limited to executor result and builder registry", () => {

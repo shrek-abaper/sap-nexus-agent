@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
-import type { NodeFactRecord } from "../plan-executor/types";
+import type { TraceableNodeFactRecord } from "./types";
 import {
   FactBuilderRegistry,
   createMaterialSupplyFactBuilderRegistry,
 } from "./fact-builder";
 
-function record(overrides: Partial<NodeFactRecord> = {}): NodeFactRecord {
+function record(
+  overrides: Partial<TraceableNodeFactRecord> = {},
+): TraceableNodeFactRecord {
   return {
     nodeId: "node.inventory",
     agentTraceId: "run-1",
@@ -154,6 +156,41 @@ describe("material supply fact builders", () => {
       Number.POSITIVE_INFINITY,
       "not-a-decimal",
     ]);
+  });
+
+  it("preserves an invalid item quantity instead of falling back to the header quantity", () => {
+    const builder = createMaterialSupplyFactBuilderRegistry().resolve("MM.PurchaseOrder.GetList");
+    const facts = builder?.build(record({
+      nodeId: "node.po",
+      capabilityId: "MM.PurchaseOrder.GetList",
+      producesFactTypes: ["PurchaseOrder"],
+      executeData: {
+        purchaseOrders: [{
+          purchaseOrder: "4500001",
+          orderQuantity: 12,
+          items: [{ purchaseOrderItem: "10", orderQuantity: "" }],
+        }],
+      },
+    }));
+
+    expect(facts).toHaveLength(1);
+    expect(facts?.[0]?.value).toBeNull();
+    expect(facts?.[0]?.evidence[0]?.orderQuantity).toBe("");
+    expect(facts?.[0]?.evidence[0]?.orderQuantity).not.toBe("12");
+  });
+
+  it.each([
+    { label: "malformed", dataAsOf: "not-a-timestamp" },
+    { label: "timezone-less", dataAsOf: "2026-08-04T00:00:00" },
+  ])("falls back to node execution time for $label freshness", ({ dataAsOf }) => {
+    const builder = createMaterialSupplyFactBuilderRegistry().resolve(
+      "MM.Inventory.GetAvailability",
+    );
+    const facts = builder?.build(record({
+      executeData: { availableQuantity: 7, dataAsOf },
+    }));
+
+    expect(facts?.[0]?.asOf).toBe("2026-08-04T00:00:01Z");
   });
 
   it("produces identical facts when tied business-key rows arrive in reverse order", () => {

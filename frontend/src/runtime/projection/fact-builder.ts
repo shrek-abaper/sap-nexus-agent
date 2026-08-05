@@ -1,5 +1,6 @@
-import type { NodeFactRecord } from "../plan-executor/types";
 import type { FactBuilderDeclaration, ReasoningFact } from "./types";
+
+type TraceableNodeFactRecord = Parameters<FactBuilderDeclaration["build"]>[0];
 
 export class FactBuilderRegistry {
   private readonly builders = new Map<string, FactBuilderDeclaration>();
@@ -16,16 +17,22 @@ export class FactBuilderRegistry {
   }
 }
 
-function freshness(record: NodeFactRecord, field = "dataAsOf"): string {
+const TIMEZONE_AWARE_ISO_8601 = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/;
+
+function freshness(record: TraceableNodeFactRecord, field = "dataAsOf"): string {
   const value = record.executeData[field];
-  return typeof value === "string" && value.length > 0 ? value : record.nodeExecutedAt;
+  return typeof value === "string"
+    && TIMEZONE_AWARE_ISO_8601.test(value)
+    && Number.isFinite(Date.parse(value))
+    ? value
+    : record.nodeExecutedAt;
 }
 
 function optionalText(value: unknown): string | null {
   return typeof value === "string" && value.length > 0 ? value : null;
 }
 
-function source(record: NodeFactRecord, factType: string): Record<string, unknown> {
+function source(record: TraceableNodeFactRecord, factType: string): Record<string, unknown> {
   return { nodeId: record.nodeId, capabilityId: record.capabilityId, factType };
 }
 
@@ -88,17 +95,12 @@ function orderQuantity(
   item: Record<string, unknown>,
   header: Record<string, unknown>,
 ): { value: number | null; evidence: string | number | null } {
-  const itemValue = finiteDecimal(item.orderQuantity);
-  if (itemValue !== null) {
-    return { value: itemValue, evidence: quantityEvidence(item.orderQuantity) };
-  }
-  const headerValue = finiteDecimal(header.orderQuantity);
-  if (headerValue !== null) {
-    return { value: headerValue, evidence: quantityEvidence(header.orderQuantity) };
-  }
+  const selected = Object.prototype.hasOwnProperty.call(item, "orderQuantity")
+    ? item.orderQuantity
+    : header.orderQuantity;
   return {
-    value: null,
-    evidence: quantityEvidence(item.orderQuantity) ?? quantityEvidence(header.orderQuantity),
+    value: finiteDecimal(selected),
+    evidence: quantityEvidence(selected),
   };
 }
 
@@ -109,7 +111,7 @@ function objectRecord(value: unknown): Record<string, unknown> | null {
 }
 
 function purchaseOrderRow(
-  record: NodeFactRecord,
+  record: TraceableNodeFactRecord,
   header: Record<string, unknown>,
   item: Record<string, unknown>,
 ): PurchaseOrderRow {
@@ -132,7 +134,7 @@ function purchaseOrderRow(
   };
 }
 
-function purchaseOrderRows(record: NodeFactRecord): PurchaseOrderRow[] {
+function purchaseOrderRows(record: TraceableNodeFactRecord): PurchaseOrderRow[] {
   const purchaseOrders = record.executeData.purchaseOrders;
   if (!Array.isArray(purchaseOrders)) return [];
 
