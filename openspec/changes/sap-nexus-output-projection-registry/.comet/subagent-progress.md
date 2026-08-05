@@ -16,7 +16,7 @@
   - `4.3 assembler 隔离 raw/conversation/model input`
   - `4.4 assembler 单测`
   - `Missing FactBuilder graceful degradation`
-- Stage: `blocked` (awaiting written-spec review before the user-authorized extra fix round)
+- Stage: `implementing` (user-confirmed extra fix/re-review round)
 - Implementer status: `DONE` (review-fix round 1 committed by fixer)
 - Base commit: `010a4500aad2ac47e01326262413f2d7d3899f43`
 - Implementation commit: `40d295563e8adadb0e0de6101180a40b736ba160`
@@ -31,7 +31,7 @@
 - Review-fix round 2 GREEN evidence: the same focused suites passed (4 files, 41 tests); full frontend verify passed (26 files, 200 tests + production build), and `git diff --check` passed.
 - Task review: needs fixes (0 Critical, 3 Important, 0 Minor)
 - Re-review round 1: fresh reviewer `task4_rereview1` reviewed `010a450..78b542b`; result needs fixes (0 Critical, 1 Important, 0 Minor). Report: `.superpowers/sdd/task-4-rereview-1.md`.
-- Review/fix round: 2/2
+- Review/fix round: 3/3 (user-authorized exception after the original 2/2 budget)
 - Unresolved feedback:
   - Select PO item quantity by field presence before parsing, so an invalid item value cannot fall back to a valid header value.
   - Preserve successful-node projection observability when Gateway trace is missing: either fail closed at the success contract or add explicit projection-missing metadata; silent omission is not acceptable.
@@ -41,5 +41,6 @@
 - Review budget: the original 2/2 budget was exhausted; the user explicitly authorized one extra fix/re-review round to implement the approved medium spec increment. Task 4 remains unchecked and Task 5 has not been dispatched.
 - Extra-round design decision: retain every complete `SUCCEEDED` `NodeFactRecord` with nullable `gatewayTraceId`; assembler records `missing_gateway_trace` and emits no fact. PO item quantity uses field-presence precedence. Valid source freshness is preserved per fact; aggregate `asOf` uses earliest epoch normalized to UTC.
 - Design decision: user selected and confirmed Option A; committed as `c1e302d`. `NodeFactRecord.agentTraceId` is derived from executor `runId`, never from `gatewayTraceId`.
-- Updated plan: Task 4 Steps 7-11 define RED/GREEN, allowed files, full frontend verification, and the review-fix commit.
+- Written spec review: explicitly confirmed by the user after commit `6456476`; strict OpenSpec validation passed 20/20.
+- Updated plan: Task 4 Steps 12-16 define the extra-round RED/GREEN cases, nullable trace and freshness implementation, full frontend/OpenSpec verification, allowed files, and exact commit.
 - Risk signals: cross-module, Gateway-data security boundary, public API changes, diff >200, and process-only DONE_WITH_CONCERNS; no implementation concern.

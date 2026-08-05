@@ -494,6 +494,56 @@ git add frontend/src/runtime/plan-executor/types.ts frontend/src/runtime/plan-ex
 git commit -m "fix(projection): preserve fact correlation and ordering"
 ```
 
+- [ ] **Step 12: 写第三轮 reviewer-fix RED tests，锁定显式降级、PO precedence 与 freshness epoch**
+
+在 executor fresh/cache/existing-`SUCCEEDED` tests 中分别覆盖 missing 与 blank Gateway trace，断言成功节点仍保留 nullable record、cache 路径不重调 Gateway；在 assembler/builder tests 中覆盖 `missing_gateway_trace`、item 字段存在优先、非法 freshness 回退及跨 offset epoch 排序：
+
+```typescript
+expect(result.succeeded).toEqual(["node.inv"]);
+expect(result.succeededNodeResults).toEqual([
+  expect.objectContaining({ nodeId: "node.inv", gatewayTraceId: null }),
+]);
+expect(gateway.executeCalls).toHaveLength(0);
+
+expect(input.facts).toEqual([]);
+expect(input.planExecutionRecord.missingFacts).toEqual([
+  { factType: "InventoryAvailability", reason: "missing_gateway_trace" },
+]);
+
+expect(itemQuantityFact.value).toBeNull();
+expect(itemQuantityFact.evidence[0].orderQuantity).toBe("");
+expect(itemQuantityFact.evidence[0].orderQuantity).not.toBe("12");
+
+expect(malformedFreshnessFact.asOf).toBe(nodeExecutedAt);
+expect(offsetInput.planExecutionRecord.asOf).toBe("2026-08-03T23:30:00.000Z");
+expect(equivalentInstantInput.planExecutionRecord.asOf).toBe("2026-08-04T00:00:00.000Z");
+```
+
+- [ ] **Step 13: 运行第三轮 reviewer-fix tests 确认目标行为失败**
+
+Run: `npm --prefix frontend test -- src/runtime/plan-executor/plan-executor.test.ts src/runtime/plan-executor/plan-executor-recovery.test.ts src/runtime/projection/fact-builder.test.ts src/runtime/projection/assembler.test.ts`
+
+Expected: FAIL；旧实现会丢弃 missing/blank Gateway trace 的成功 record、允许 item 非法 quantity 回退 header、接受无时区或 malformed `dataAsOf`，或按字符串而非 epoch 选择 aggregate `asOf`。RED 报告必须逐项记录命令和失败摘要。
+
+- [ ] **Step 14: 实现 nullable Gateway trace、field-presence precedence 与 ISO-8601 epoch aggregation**
+
+将 `NodeFactRecord.gatewayTraceId` 改为 `string | null`。fresh、cache replay 与 existing-`SUCCEEDED` hydration 对缺失/纯空白 trace 统一写 `null`，但仍保留完整 record，且不改变 `SUCCEEDED`、不重调 Gateway、不用 `runId` 替代。assembler 在 trace 为 `null` 时跳过 builder，并对每个 `producesFactTypes` 写入 `{ reason: "missing_gateway_trace" }`；通过类型收窄使 builder 继续只接收非空 trace record，`ReasoningFact.gatewayTraceId` 保持 `string`。
+
+PO builder 使用 `Object.prototype.hasOwnProperty.call(item, "orderQuantity")` 先选择 item/header 原值，再只归一一次；item 值非法或为空时保留 item evidence、`value = null`，不得回退 header。freshness helper 只接受带 `Z` 或 `+/-HH:mm` 显式时区且 `Date.parse()` 为有限 epoch 的 ISO-8601 string，否则回退 `nodeExecutedAt`；fact 保留选中来源字符串，assembler 按 epoch 取最早 instant，并用 `new Date(minEpoch).toISOString()` 输出 aggregate `asOf`。
+
+- [ ] **Step 15: 运行第三轮 GREEN、完整 frontend 与严格 OpenSpec 验证**
+
+Run: `npm --prefix frontend test -- src/runtime/plan-executor/plan-executor.test.ts src/runtime/plan-executor/plan-executor-recovery.test.ts src/runtime/projection/fact-builder.test.ts src/runtime/projection/assembler.test.ts && npm --prefix frontend run verify && git diff --check && comet classic openspec -- validate --all --strict`
+
+Expected: focused tests PASS；frontend typecheck、全部 Vitest 与 production build PASS；diff check PASS；OpenSpec strict validation 20/20 PASS。报告必须包含 RED/GREEN 命令、测试数量、完整验证结果和风险信号。
+
+- [ ] **Step 16: Commit Task 4 explicit degradation fixes**
+
+```bash
+git add frontend/src/runtime/plan-executor/types.ts frontend/src/runtime/plan-executor/plan-executor.ts frontend/src/runtime/plan-executor/plan-executor.test.ts frontend/src/runtime/plan-executor/plan-executor-recovery.test.ts frontend/src/runtime/projection/types.ts frontend/src/runtime/projection/fact-builder.ts frontend/src/runtime/projection/fact-builder.test.ts frontend/src/runtime/projection/assembler.ts frontend/src/runtime/projection/assembler.test.ts
+git commit -m "fix(projection): preserve succeeded-node degradation"
+```
+
 ---
 
 ### Task 5: 实现确定性 hash 与 MaterialSupplySnapshot projection
