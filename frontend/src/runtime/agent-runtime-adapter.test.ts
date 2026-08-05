@@ -108,7 +108,7 @@ describe("agent-runtime-adapter durable integration", () => {
     const target = runs[runs.length - 1];
     setAgentRunnerForTests(async () => ({ status: "success", responseText: "已执行", approvalRecord: { id: "apr-1", status: "executed" } } as WorkbenchOutcome));
     const eventsBeforeApprove = await getAgentRunEvents(target.runId, PLACEHOLDER_PRINCIPAL);
-    await decideAgentRunApproval(target.runId, "approve", PLACEHOLDER_PRINCIPAL);
+    await decideAgentRunApproval(target.runId, "apr-1", "approve", PLACEHOLDER_PRINCIPAL);
     await waitForRunSettled(target.runId, 5000, eventsBeforeApprove.length);
     const events = await getAgentRunEvents(target.runId, PLACEHOLDER_PRINCIPAL);
     expect(events.some((e) => e.hitlState === "approved")).toBe(true);
@@ -156,9 +156,9 @@ describe("agent-runtime-adapter durable integration", () => {
     const { runId } = await createAgentRun({ query: "查询库存", conversationId: "c-idem", principal: PLACEHOLDER_PRINCIPAL });
     await waitForRunSettled(runId);
     const eventsBeforeApprove = await getAgentRunEvents(runId, PLACEHOLDER_PRINCIPAL);
-    await decideAgentRunApproval(runId, "approve", PLACEHOLDER_PRINCIPAL);
+    await decideAgentRunApproval(runId, "apr-1", "approve", PLACEHOLDER_PRINCIPAL);
     await waitForRunSettled(runId, 5000, eventsBeforeApprove.length);
-    await decideAgentRunApproval(runId, "approve", PLACEHOLDER_PRINCIPAL); // duplicate
+    await decideAgentRunApproval(runId, "apr-1", "approve", PLACEHOLDER_PRINCIPAL); // duplicate
     expect(calls).toBe(1);
   });
 
@@ -234,7 +234,7 @@ describe("agent-runtime-adapter durable integration", () => {
       role: "operator",
       dataScope: { tenantId: "evil" }
     };
-    await expect(decideAgentRunApproval(runId, "reject", attacker)).rejects.toThrow(/not found/);
+    await expect(decideAgentRunApproval(runId, "apr-1", "reject", attacker)).rejects.toThrow(/not found/);
   });
 
   it("confirmAgentRunBatch throws not-found for cross-principal access", async () => {
@@ -276,7 +276,7 @@ describe("agent-runtime-adapter durable integration", () => {
     const { runId } = await createAgentRun({ query: "创建采购申请", conversationId: "c-reject", principal: PLACEHOLDER_PRINCIPAL });
     await waitForRunSettled(runId);
     const eventsBefore = await getAgentRunEvents(runId, PLACEHOLDER_PRINCIPAL);
-    await decideAgentRunApproval(runId, "reject", PLACEHOLDER_PRINCIPAL);
+    await decideAgentRunApproval(runId, "apr-1", "reject", PLACEHOLDER_PRINCIPAL);
     // §1.3: continuation now runs in background; wait for rejection events
     await waitForRunSettled(runId, 5000, eventsBefore.length);
     const events = await getAgentRunEvents(runId, PLACEHOLDER_PRINCIPAL);
@@ -317,7 +317,7 @@ describe("agent-runtime-adapter durable integration", () => {
     await waitForRunSettled(runId);
     expect(continuationResolved).toBe(false);
     const eventsBefore = await getAgentRunEvents(runId, PLACEHOLDER_PRINCIPAL);
-    await decideAgentRunApproval(runId, "approve", PLACEHOLDER_PRINCIPAL);
+    await decideAgentRunApproval(runId, "apr-1", "approve", PLACEHOLDER_PRINCIPAL);
     // decideAgentRunApproval returns immediately; continuation not yet done
     expect(continuationResolved).toBe(false);
     const settled = await waitForRunSettled(runId, 5000, eventsBefore.length);

@@ -1,0 +1,23 @@
+schema: comet.native.v3
+minimum_runtime_version: 3
+revision: 5
+verification_protocol: legacy-v1
+name: sap-nexus-read-to-write-action-governance
+language: zh-CN
+phase: archive
+brief: brief.md
+approval: confirmed
+approved_contract_hash: adda16949da898e64f56b2e7ecf9d0e1e264377cbf74331dc9d258e59e91d7d4
+spec_changes:
+  - capability: read-to-write-action-governance
+    operation: create
+    source: specs/read-to-write-action-governance/spec.md
+    base_hash: null
+verification_result: pass
+verification_report: verification.md
+implementation_scope: runtime/evidence/scopes/088d3a5d76e5c8ad8ed7f01748b934d02266b96b46fa4c9e6853920ce22c1b0e.json
+verification_evidence: runtime/evidence/verifications/5ca5ffa9fcf0d948ad3cf2788852e581a28ea2d13a8cd87d3ab95333941712e9.json
+partial_allowance: null
+archived: true
+created_at: 2026-08-05
+run_id: f17b1472-7b64-4072-8f7e-6227600d1ee1

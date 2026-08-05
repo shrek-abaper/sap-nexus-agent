@@ -224,7 +224,7 @@ describe("agent runtime adapter", () => {
     setAgentRunnerForTests(runner);
 
     const run = await createAgentRun({ query: "创建采购申请", principal: PLACEHOLDER_PRINCIPAL });
-    await decideAgentRunApproval(run.runId, "approve", PLACEHOLDER_PRINCIPAL);
+    await decideAgentRunApproval(run.runId, "appr-pr", "approve", PLACEHOLDER_PRINCIPAL);
 
     expect(runner).toHaveBeenNthCalledWith(2, {
       query: "创建采购申请",
@@ -241,7 +241,7 @@ describe("agent runtime adapter", () => {
     expect(events.some((event) => event.type === "gateway_execute_completed")).toBe(true);
     expect(events.at(-1)?.state).toBe("completed");
 
-    await expect(decideAgentRunApproval(run.runId, "approve", PLACEHOLDER_PRINCIPAL)).rejects.toThrow("already decided");
+    await expect(decideAgentRunApproval(run.runId, "appr-pr", "approve", PLACEHOLDER_PRINCIPAL)).rejects.toThrow("already decided");
     expect(runner).toHaveBeenCalledTimes(2);
   });
 
@@ -288,7 +288,7 @@ describe("agent runtime adapter", () => {
     setAgentRunnerForTests(runner);
 
     const run = await createAgentRun({ query: "创建采购申请", principal: PLACEHOLDER_PRINCIPAL });
-    await decideAgentRunApproval(run.runId, "reject", PLACEHOLDER_PRINCIPAL);
+    await decideAgentRunApproval(run.runId, "appr-pr", "reject", PLACEHOLDER_PRINCIPAL);
     const events = await getAgentRunEvents(run.runId, PLACEHOLDER_PRINCIPAL);
 
     expect(events.some((event) => event.type === "gateway_execute_started")).toBe(false);
@@ -336,7 +336,7 @@ describe("agent runtime adapter", () => {
     setAgentRunnerForTests(runner);
 
     const run = await createAgentRun({ query: "创建采购申请", principal: PLACEHOLDER_PRINCIPAL });
-    await decideAgentRunApproval(run.runId, "approve", PLACEHOLDER_PRINCIPAL);
+    await decideAgentRunApproval(run.runId, "appr-pr", "approve", PLACEHOLDER_PRINCIPAL);
     const events = await getAgentRunEvents(run.runId, PLACEHOLDER_PRINCIPAL);
 
     expect(events.some((event) => event.hitlState === "approved")).toBe(false);
@@ -453,7 +453,7 @@ describe("agent runtime adapter", () => {
     setAgentRunnerForTests(runner);
 
     const run1 = await createAgentRun({ query: "建PR 物料X", conversationId: "conv-decided", principal: PLACEHOLDER_PRINCIPAL });
-    await decideAgentRunApproval(run1.runId, "approve", PLACEHOLDER_PRINCIPAL);
+    await decideAgentRunApproval(run1.runId, "a1", "approve", PLACEHOLDER_PRINCIPAL);
 
     // After approval is decided, a new query on the same conversation must
     // NOT be rejected by Q2 and must invoke the runner.

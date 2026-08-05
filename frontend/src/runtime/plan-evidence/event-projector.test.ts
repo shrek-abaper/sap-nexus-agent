@@ -143,4 +143,66 @@ describe("projectPlanEvidenceEvents", () => {
     expect(events.some((event) => event.type === "approval_updated")).toBe(false);
     expect(events.some((event) => event.type === "action_executed")).toBe(false);
   });
+
+  it("projects the complete redacted approval and Action audit chain", () => {
+    const bundle = completeBundle();
+    bundle.objects.push(
+      object("proposal-1", "proposal", {
+        proposalId: "proposal-1",
+        capabilityId: "MM.PR.CreateDraft",
+        status: "pending_approval",
+        proposalHash: "sha256:proposal",
+      }, ["fact-1", "recommendation-1"]),
+      object("approval-1", "approval", {
+        approvalId: "approval-1",
+        planId: "plan-1",
+        actionNodeId: "action-1",
+        snapshotId: "snapshot-1",
+        status: "pending",
+        capabilityId: "MM.PR.CreateDraft",
+        capabilityVersion: "2.1.0",
+        principalId: "run-owner",
+        confirmingPrincipalId: null,
+        parameterSnapshotHash: "sha256:parameters",
+        factSetHash: "sha256:facts",
+        projectionHash: "sha256:projection",
+        ruleSetHash: "sha256:rules",
+        proposalHash: "sha256:proposal",
+        subjectHash: "sha256:subject",
+        parameters: { material: "M001", plant: "1000" },
+        separationOfDutyResult: "not_applicable",
+        expiresAt: "2026-08-05T08:10:00.000Z",
+        revokedAt: null,
+      }, ["proposal-1", "projection-1", "fact-1"]),
+      object("action-1", "action", {
+        actionId: "action-1",
+        approvalId: "approval-1",
+        proposalId: "proposal-1",
+        snapshotId: "snapshot-1",
+        status: "executed",
+        capabilityId: "MM.PR.CreateDraft",
+        resultSummary: { success: true, prNumber: "10000021", token: "secret-token" },
+        gatewayTraceId: "gateway-trace-21",
+        idempotencyKey: "plan-action:approval-1",
+        executionHash: "sha256:execution",
+      }, ["approval-1"]),
+    );
+
+    const events = projectPlanEvidenceEvents(bundle);
+    const approval = events.find((event) => event.type === "approval_updated");
+    const action = events.find((event) => event.type === "action_executed");
+    const serialized = JSON.stringify(events);
+
+    expect(approval?.artifact?.kind).toBe("approval-record");
+    expect(action?.artifact?.kind).toBe("action-result");
+    expect(serialized).toContain("not_applicable");
+    expect(serialized).toContain("sha256:subject");
+    expect(serialized).toContain("[REDACTED]");
+    expect(serialized).not.toContain("secret-token");
+    expect(events.map((event) => event.type).slice(-3)).toEqual([
+      "action_proposed",
+      "approval_updated",
+      "action_executed",
+    ]);
+  });
 });

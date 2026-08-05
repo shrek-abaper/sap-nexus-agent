@@ -1,0 +1,27 @@
+{
+  "schema": "comet.native.transaction.v2",
+  "id": "58690fe8-1375-47e5-8354-f6f1fa75b1b3",
+  "kind": "archive",
+  "status": "committed",
+  "change": "sap-nexus-read-to-write-action-governance",
+  "createdAt": "2026-08-05T14:44:41.611Z",
+  "preflightHash": "3e17920c6017df080040e5d63475077978e453be3e15e0e64976c33be3596a7f",
+  "operations": [
+    {
+      "id": "spec-1-read-to-write-action-governance",
+      "type": "write",
+      "target": "specs/read-to-write-action-governance/spec.md",
+      "staged": "runtime/transactions/58690fe8-1375-47e5-8354-f6f1fa75b1b3/staged/specs/read-to-write-action-governance/spec.md",
+      "expectedTargetHash": null,
+      "stagedHash": "47a2a084c9a123dcc74ba584fbf6dd38d1c67bf19da6a9ef8a8994f4f85e5ba1"
+    },
+    {
+      "id": "archive-change",
+      "type": "move",
+      "source": "changes/sap-nexus-read-to-write-action-governance",
+      "target": "archive/2026-08-05-sap-nexus-read-to-write-action-governance",
+      "expectedSourceHash": "cb8ec7d81bbc6a339639c23aa3fc1f979051b0e5a6e63dabc30ef01d198c8147",
+      "expectedTargetHash": null
+    }
+  ]
+}

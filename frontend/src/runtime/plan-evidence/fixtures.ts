@@ -135,6 +135,38 @@ const proposalObjects = (): PlanEvidenceObject[] => [
   }, ["fact-inventory", "fact-po", "recommendation-supply"]),
 ];
 
+function pendingApprovalSnapshot(): AgentRunSnapshot {
+  const value = snapshot("run-pending-approval", [
+    ...proposalObjects(),
+    object("approval-fixture-1", "approval", {
+      approvalId: "approval-fixture-1",
+      planId: "plan-supply",
+      actionNodeId: "action-pr",
+      snapshotId,
+      status: "pending",
+      capabilityId: "MM.PR.CreateDraft",
+      capabilityVersion: "2.1.0",
+      principalId: "local-user-0001",
+      confirmingPrincipalId: null,
+      parameterSnapshotHash: "sha256:parameters",
+      factSetHash: "sha256:facts",
+      projectionHash: "sha256:projection",
+      ruleSetHash: "sha256:rules",
+      proposalHash: "proposal-hash-1",
+      subjectHash: "sha256:subject",
+      parameters: { material: "DEMOA1", plant: "1000", quantity: "3", unit: "EA" },
+      separationOfDutyResult: "not_applicable",
+      expiresAt: "2026-08-05T08:10:00.000Z",
+      revokedAt: null,
+    }, ["proposal-pr", "projection-supply", "fact-inventory", "fact-po"]),
+  ]);
+  return {
+    ...value,
+    state: "awaiting_approval",
+    hitlState: "awaiting_human_approval",
+  };
+}
+
 const singleCapability: AgentRunSnapshot = {
   runId: "run-single",
   state: "completed",
@@ -190,4 +222,5 @@ export const planEvidenceFixtures = {
   multiRead: snapshot("run-multi-read", multiReadObjects()),
   partialFailure: snapshot("run-partial", partialObjects()),
   readToWriteProposal: snapshot("run-proposal", proposalObjects()),
+  readToWritePendingApproval: pendingApprovalSnapshot(),
 };

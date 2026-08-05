@@ -86,6 +86,52 @@ def test_execute_post_body_includes_parameter_snapshot_hash_when_approval_presen
     )
 
 
+def test_execute_post_body_includes_complete_plan_aware_guard_bindings(monkeypatch):
+    captured = {}
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self):
+            return (
+                b'{"traceId":"gw-exec","capabilityId":"MM.PR.CreateDraft",'
+                b'"success":true,"errorType":"NONE","returnMessages":[]}'
+            )
+
+    class FakeOpener:
+        def open(self, http_request, timeout):
+            captured["body"] = json.loads(http_request.data.decode("utf-8"))
+            return FakeResponse()
+
+    monkeypatch.setattr(
+        "sap_nexus_agent.gateway_client.request.build_opener",
+        lambda handler: FakeOpener(),
+    )
+
+    GatewayClient("http://127.0.0.1:8080").execute(
+        "MM.PR.CreateDraft",
+        {"material": "M001"},
+        approval_id="appr-plan-21",
+        parameter_snapshot_hash="sha256:parameters",
+        registry_snapshot_id="snapshot-21",
+        capability_version="2.1.0",
+        approval_subject_hash="sha256:subject-21",
+    )
+
+    assert captured["body"] == {
+        "parameters": {"material": "M001"},
+        "approvalId": "appr-plan-21",
+        "parameterSnapshotHash": "sha256:parameters",
+        "registrySnapshotId": "snapshot-21",
+        "capabilityVersion": "2.1.0",
+        "approvalSubjectHash": "sha256:subject-21",
+    }
+
+
 def test_approve_sends_service_token_only_in_header(monkeypatch):
     captured = {}
 

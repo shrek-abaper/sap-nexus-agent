@@ -402,3 +402,55 @@ def test_create_approval_record_accepts_registry_snapshot_id():
         registry_snapshot_id="sha256:snap-3",
     )
     assert record.registry_snapshot_id == "sha256:snap-3"
+
+
+def test_approval_record_round_trips_complete_plan_aware_gateway_bindings():
+    now = datetime(2026, 8, 5, 8, 0, 0, tzinfo=timezone.utc)
+    record = ApprovalRecord(
+        approval_id="appr-plan-21",
+        capability_id="MM.PR.CreateDraft",
+        parameter_snapshot_hash="sha256:parameters",
+        parameters={"material": "M001"},
+        approver="run-owner",
+        approved_at=now,
+        expires_at=now + timedelta(minutes=10),
+        status=ApprovalState.approved,
+        registry_snapshot_id="snapshot-21",
+        capability_version="2.1.0",
+        approval_subject_hash="sha256:subject-21",
+    )
+
+    restored = ApprovalRecord.from_dict(record.to_dict())
+
+    assert restored == record
+    assert restored.to_dict() | {} == {
+        "approvalId": "appr-plan-21",
+        "capabilityId": "MM.PR.CreateDraft",
+        "parameterSnapshotHash": "sha256:parameters",
+        "parameters": {"material": "M001"},
+        "approver": "run-owner",
+        "approvedAt": "2026-08-05T08:00:00+00:00",
+        "expiresAt": "2026-08-05T08:10:00+00:00",
+        "status": "approved",
+        "registrySnapshotId": "snapshot-21",
+        "capabilityVersion": "2.1.0",
+        "approvalSubjectHash": "sha256:subject-21",
+    }
+
+
+def test_approval_record_legacy_payload_defaults_new_plan_bindings_to_empty():
+    payload = {
+        "approvalId": "appr-legacy",
+        "capabilityId": "MM.PR.CreateDraft",
+        "parameterSnapshotHash": "sha256:parameters",
+        "parameters": {"material": "M001"},
+        "approver": "run-owner",
+        "approvedAt": "2026-08-05T08:00:00+00:00",
+        "expiresAt": "2026-08-05T08:10:00+00:00",
+        "status": "approved",
+    }
+
+    restored = ApprovalRecord.from_dict(payload)
+
+    assert restored.capability_version == ""
+    assert restored.approval_subject_hash == ""

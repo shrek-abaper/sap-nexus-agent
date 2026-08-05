@@ -1,0 +1,49 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "sap-nexus-read-to-write-action-governance",
+    "sourceRevision": 3,
+    "contractHash": "adda16949da898e64f56b2e7ecf9d0e1e264377cbf74331dc9d258e59e91d7d4",
+    "scopeHash": "088d3a5d76e5c8ad8ed7f01748b934d02266b96b46fa4c9e6853920ce22c1b0e",
+    "snapshotHash": "27d9d024ea05d9317f373d417893c3a3844f507bf39d2a626bcbd7c3ff60488c",
+    "artifactHash": "f9d8425d07978de723b29ed9f8afc38b44ba57f4472182349df105b52fd54026"
+  },
+  "acceptanceIds": [
+    "acceptance-aaa2108029b62874efdce64a9f63482d4bfe6342eb1ad714c7ed7517a8f26421",
+    "acceptance-ded14a57da88b01ec9ccd9a5962495cce64393d9568c3fda6c1ae42fc251ab25"
+  ],
+  "actor": "native-runtime:command:bash",
+  "issuedAt": "2026-08-05T14:29:07.533Z",
+  "evidence": {
+    "executable": "bash",
+    "args": [
+      "-c",
+      "bash scripts/verify-agent-callplan-evidence.sh > /tmp/sap-nexus-runbook21-callplan.log 2>&1 && tail -n 25 /tmp/sap-nexus-runbook21-callplan.log"
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 120000,
+    "startedAt": "2026-08-05T14:28:33.396Z",
+    "endedAt": "2026-08-05T14:29:07.533Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "5aa6071780fcf1c014d492cb5d8e5cb8903bfeae",
+      "afterCommit": "5aa6071780fcf1c014d492cb5d8e5cb8903bfeae"
+    },
+    "afterFence": {
+      "snapshotHash": "27d9d024ea05d9317f373d417893c3a3844f507bf39d2a626bcbd7c3ff60488c",
+      "scopeHash": "088d3a5d76e5c8ad8ed7f01748b934d02266b96b46fa4c9e6853920ce22c1b0e",
+      "matched": true
+    },
+    "outputHash": "2cc74dd683b727abe228d585dffba6622f402113d40c0f598103b6256164f8cb",
+    "outputSummary": "Eval passed: 10/10\nSKIP (pending): dry-run-missing-producer: 无法用真实 registry 构造 missing_capability 场景 - 所有 active capability 均有 produces_fact_types；需扩展 registry 或注入 fake sources 才能覆盖。已在 agent/tests/test_planner_plan_compiler.py 单测中覆盖该分支。\nEval passed: 3/3\n- Validating...\n✓ spec/agent-callplan-evidence\n✓ spec/agent-workbench-console\n✓ spec/capability-registry-gateway\n✓ spec/conversational-context\n✓ spec/durable-approval-store\n✓ spec/durable-run-state\n✓ spec/gateway-execution-contract\n✓ spec/governed-context-registry-snapshot\n✓ spec/governed-intent-envelope-recall\n✓ spec/odata-gateway-read\n✓ spec/output-projection\n✓ spec/planner-dry-run\n✓ spec/pr-create-action\n✓ spec/read-plan-executor\n✓ spec/registry-ontology-contract\n✓ spec/semantic-match-decision\n✓ spec/semantic-plan-authoring-v2\n✓ spec/semantic-planning-foundation\n✓ spec/sse-cursor-reconnect\n✓ spec/trusted-principal-scope\nTotals: 20 passed, 0 failed (20 items)",
+    "outputTruncated": false
+  },
+  "receiptHash": "4d6acf45b70ee9d470c951fc73b5212221e3025a629ada6a17f2893d1a039b4a"
+}

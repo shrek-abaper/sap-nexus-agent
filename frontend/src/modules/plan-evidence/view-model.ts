@@ -45,6 +45,12 @@ export type PlanEvidenceView = {
     ruleSetRefs: string[];
     readOnly: boolean;
   } & Record<string, unknown>) | null;
+  approval: (Record<string, JsonValue> & {
+    approvalId: string;
+    status: string;
+    capabilityVersion: string;
+    separationOfDutyResult: string;
+  }) | null;
   canDecideApproval: boolean;
   replayMessage: string | null;
 };
@@ -104,7 +110,19 @@ export function buildPlanEvidenceView(snapshot: AgentRunSnapshot | null, loading
     .flatMap((object) => parseClaims(object.data, byRef));
   const limitations = unique(objects.flatMap((object) => readLimitationDetails(object.data)));
   const proposalObject = objects.find((object) => object.kind === "action-proposal");
-  const approvalExists = objects.some((object) => object.kind === "approval" || object.kind === "approval-record");
+  const approvalObject = [...objects].reverse().find(
+    (object) => object.kind === "approval" || object.kind === "approval-record",
+  );
+  const approvalData = approvalObject ? objectRecord(approvalObject.data) : null;
+  const approval = approvalData
+    ? {
+        ...approvalData,
+        approvalId: text(approvalData.approvalId) || text(approvalData.id),
+        status: text(approvalData.status),
+        capabilityVersion: text(approvalData.capabilityVersion),
+        separationOfDutyResult: text(approvalData.separationOfDutyResult),
+      }
+    : null;
   const proposalData = proposalObject ? objectRecord(proposalObject.data) : null;
   const proposal = proposalObject && proposalData
     ? {
@@ -116,7 +134,7 @@ export function buildPlanEvidenceView(snapshot: AgentRunSnapshot | null, loading
         parameterSources: (proposalData.parameterSources ?? {}) as JsonValue,
         factsUsed: stringArray(proposalData.factsUsed),
         ruleSetRefs: stringArray(proposalData.ruleSetRefs),
-        readOnly: !approvalExists,
+        readOnly: approval?.status !== "pending",
       }
     : null;
   const replayStatus = snapshot.replayIntegrity?.status ?? "consistent";
@@ -137,7 +155,12 @@ export function buildPlanEvidenceView(snapshot: AgentRunSnapshot | null, loading
     claims,
     limitations,
     proposal,
-    canDecideApproval: approvalExists && snapshot.hitlState === "awaiting_human_approval",
+    approval,
+    canDecideApproval: Boolean(
+      approval?.approvalId
+      && approval.status === "pending"
+      && snapshot.hitlState === "awaiting_human_approval",
+    ),
     replayMessage: snapshot.replayIntegrity?.message ?? null,
   };
 }
@@ -171,6 +194,7 @@ function emptyView(mode: "loading" | "empty"): PlanEvidenceView {
     claims: [],
     limitations: [],
     proposal: null,
+    approval: null,
     canDecideApproval: false,
     replayMessage: null,
   };

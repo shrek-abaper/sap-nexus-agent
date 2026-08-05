@@ -7,10 +7,21 @@ import java.util.Set;
 public record CapabilityRequest(
         Map<String, Object> parameters,
         String approvalId,
-        String parameterSnapshotHash
+        String parameterSnapshotHash,
+        String registrySnapshotId,
+        String capabilityVersion,
+        String approvalSubjectHash
 ) {
     public CapabilityRequest(Map<String, Object> parameters) {
-        this(parameters, null, null);
+        this(parameters, null, null, null, null, null);
+    }
+
+    public CapabilityRequest(
+            Map<String, Object> parameters,
+            String approvalId,
+            String parameterSnapshotHash
+    ) {
+        this(parameters, approvalId, parameterSnapshotHash, null, null, null);
     }
 
     public Map<String, Object> safeParameters() {

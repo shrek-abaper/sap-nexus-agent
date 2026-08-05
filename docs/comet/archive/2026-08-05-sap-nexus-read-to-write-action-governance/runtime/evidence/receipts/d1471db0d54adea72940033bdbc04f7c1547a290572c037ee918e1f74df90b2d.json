@@ -1,0 +1,80 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "sap-nexus-read-to-write-action-governance",
+    "sourceRevision": 3,
+    "contractHash": "adda16949da898e64f56b2e7ecf9d0e1e264377cbf74331dc9d258e59e91d7d4",
+    "scopeHash": "088d3a5d76e5c8ad8ed7f01748b934d02266b96b46fa4c9e6853920ce22c1b0e",
+    "snapshotHash": "27d9d024ea05d9317f373d417893c3a3844f507bf39d2a626bcbd7c3ff60488c",
+    "artifactHash": "f9d8425d07978de723b29ed9f8afc38b44ba57f4472182349df105b52fd54026"
+  },
+  "acceptanceIds": [
+    "acceptance-0f4117616eed1a1dde7094cbb3627101b8363ed94f1201a7577077e094f49ebe",
+    "acceptance-2ddb411ac433a9185d2a3c3686da97fa8ad3cae79a4236d28f4088b7532c5fb3",
+    "acceptance-3699487ae1c9c7b30c5f3bebe422fd2e9ff52c43534626165e9f7ea79ad7aee2",
+    "acceptance-3ad32839464a13441088ac244ddc9cf949e5874567f0b1ac2648bf61e6d9d82a",
+    "acceptance-569622e2ace76dd9ff6c4171b1266eb4d05cc54f9d0a245118858b1efe44903e",
+    "acceptance-5ba7cd60f0517e83740b25e37fd42c301855815a7e148a33a81a4baaa73178f4",
+    "acceptance-5e9db708bbe0aaa14aa962f958cde234beb37c9169fe3946536727e4b3308875",
+    "acceptance-664e2c6843b9f5f76c1cca00e50ed50af24dd02b487a33e7786cb273e72b8841",
+    "acceptance-6736785270f0f5a0c60d764ca55f015b6188502742efc6ef7234310ec228e97c",
+    "acceptance-6e559f1c33eb1d1f18a352c277060ca6db278c20d5279f7c5858fc869c31be78",
+    "acceptance-70cea63de7b29219e28e92a8a2debcfa7efbcd5954db2ce00f701ad4df57ce62",
+    "acceptance-7137a9bd8058b945e7b25bc054a3dde06c35c9cb21488c31c9c0ac5fc512c41f",
+    "acceptance-71b8438f19b2cec3d2eb3c7c673ab528db38cd33fc8319b959e0eb097262269c",
+    "acceptance-732e0a338cc42ceb830ed455448fab3f7e8c8a4d57eb43dfb664f0d402b73aca",
+    "acceptance-7828f244d5ae9d3e93494eb1f86b05e7f1bc95c00f78f525dd4c76bcfb437ec5",
+    "acceptance-81707d115109074d52897794bf8dff374086a8dce11c406789a6e3273469c4f9",
+    "acceptance-8ee10ecb09cebf6ae349f44b5b9fb449f9542912808553740f94054adb3d8c82",
+    "acceptance-9814489f21a815ab2fb482553eaaba4deb098733eb1160c440b73180ff91adcb",
+    "acceptance-9ba5a99ad2d64918f1e67aa1900235f77c775306632e1cfbe52c10e981e1ed81",
+    "acceptance-a6fdfb20f32fee1c939644e60d676e0c420cc2138706e6d52832791cf0daeda4",
+    "acceptance-b8cbf522568dd496deab4fc5134a7b6235a2bc8828d7e6e77bfa43a3dc6a3099",
+    "acceptance-ce66fd6c41e88369c8eb03903c662acee203c917f267daa2f3a544d2a40ac49f",
+    "acceptance-cefb6c9edcf25af30eb828d1b3683ecad20a7506124beae2ace869559477713e",
+    "acceptance-d1416132eb6e6b6e2f3b220c2e19dc3b6e85509e8b7eb9c6d4cdcdcaae742468",
+    "acceptance-d75db5147f8c0e6a20341e475d03e547021ba0dad0532db0087c8806ce685fa6",
+    "acceptance-daedc1da16a74ee23a4a5e17f272f9a43ab2f0489279e4e9d11035e99dc1ecf3",
+    "acceptance-debab357d15f9e58656e9c50884c15b7931599691d603d7f4c5a482993bfe3df",
+    "acceptance-ded14a57da88b01ec9ccd9a5962495cce64393d9568c3fda6c1ae42fc251ab25",
+    "acceptance-e032385e7847c526045ab967906eada8909dbef9f06ddcef17425cd94d33222d",
+    "acceptance-e4afdd3c096da5923bff2a3e542bc8b697c13f726da5099710a532e0b8b0c749",
+    "acceptance-fdcf9dad6fa1c60acd0835bb756a2e974c28446c76592ba58dcb4fa2ef47a1e9"
+  ],
+  "actor": "native-runtime:command:npm",
+  "issuedAt": "2026-08-05T14:25:06.382Z",
+  "evidence": {
+    "executable": "npm",
+    "args": [
+      "--prefix",
+      "frontend",
+      "run",
+      "verify"
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 120000,
+    "startedAt": "2026-08-05T14:24:40.464Z",
+    "endedAt": "2026-08-05T14:25:06.382Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "5aa6071780fcf1c014d492cb5d8e5cb8903bfeae",
+      "afterCommit": "5aa6071780fcf1c014d492cb5d8e5cb8903bfeae"
+    },
+    "afterFence": {
+      "snapshotHash": "27d9d024ea05d9317f373d417893c3a3844f507bf39d2a626bcbd7c3ff60488c",
+      "scopeHash": "088d3a5d76e5c8ad8ed7f01748b934d02266b96b46fa4c9e6853920ce22c1b0e",
+      "matched": true
+    },
+    "outputHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "outputSummary": "(exit 0)",
+    "outputTruncated": false
+  },
+  "receiptHash": "d1471db0d54adea72940033bdbc04f7c1547a290572c037ee918e1f74df90b2d"
+}

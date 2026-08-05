@@ -23,6 +23,9 @@ class GatewayClientProtocol(Protocol):
         parameters: dict[str, str],
         approval_id: str | None = None,
         parameter_snapshot_hash: str | None = None,
+        registry_snapshot_id: str | None = None,
+        capability_version: str | None = None,
+        approval_subject_hash: str | None = None,
     ) -> ExecutionResult:
         ...
 
@@ -66,12 +69,18 @@ class GatewayClient:
         parameters: dict[str, str],
         approval_id: str | None = None,
         parameter_snapshot_hash: str | None = None,
+        registry_snapshot_id: str | None = None,
+        capability_version: str | None = None,
+        approval_subject_hash: str | None = None,
     ) -> ExecutionResult:
         payload = self._post(
             f"/capabilities/{capability_id}/execute",
             parameters,
             approval_id,
             parameter_snapshot_hash,
+            registry_snapshot_id,
+            capability_version,
+            approval_subject_hash,
         )
         return ExecutionResult.from_dict(payload)
 
@@ -81,12 +90,21 @@ class GatewayClient:
         parameters: dict[str, str],
         approval_id: str | None = None,
         parameter_snapshot_hash: str | None = None,
+        registry_snapshot_id: str | None = None,
+        capability_version: str | None = None,
+        approval_subject_hash: str | None = None,
     ) -> dict[str, object]:
         body_dict: dict[str, object] = {"parameters": dict(parameters)}
         if approval_id is not None:
             body_dict["approvalId"] = approval_id
         if parameter_snapshot_hash is not None:
             body_dict["parameterSnapshotHash"] = parameter_snapshot_hash
+        if registry_snapshot_id is not None:
+            body_dict["registrySnapshotId"] = registry_snapshot_id
+        if capability_version is not None:
+            body_dict["capabilityVersion"] = capability_version
+        if approval_subject_hash is not None:
+            body_dict["approvalSubjectHash"] = approval_subject_hash
         body = json.dumps(body_dict).encode("utf-8")
         http_request = request.Request(
             f"{self.base_url}{path}",

@@ -122,6 +122,7 @@ public class CapabilityController {
                 || record.parameterSnapshotHash() == null
                 || !record.parameterSnapshotHash().equals(
                         parameterSnapshotHasher.hash(record.parameters()))
+                || !hasCompletePlanBinding(record)
                 || record.expiresAt().isBefore(record.approvedAt())) {
             return false;
         }
@@ -131,6 +132,20 @@ public class CapabilityController {
                 && ttlSeconds <= 600
                 && !record.approvedAt().isAfter(now.plusSeconds(5))
                 && record.expiresAt().isAfter(now);
+    }
+
+    private boolean hasCompletePlanBinding(ApprovalRecord record) {
+        boolean planAware = hasText(record.registrySnapshotId())
+                || hasText(record.capabilityVersion())
+                || hasText(record.approvalSubjectHash());
+        return !planAware
+                || hasText(record.registrySnapshotId())
+                && hasText(record.capabilityVersion())
+                && hasText(record.approvalSubjectHash());
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 
 
@@ -179,7 +194,14 @@ public class CapabilityController {
             String parameterHash = request.parameterSnapshotHash();
             ApprovalRecord record = approvalId == null ? null : approvalStore.find(approvalId).orElse(null);
             ApprovalGuardResult guardResult = approvalGuard.check(
-                    record, capabilityId, parameters, parameterHash, Instant.now());
+                    record,
+                    capabilityId,
+                    parameters,
+                    parameterHash,
+                    request.registrySnapshotId(),
+                    request.capabilityVersion(),
+                    request.approvalSubjectHash(),
+                    Instant.now());
             if (guardResult.rejected()) {
                 String executorType = capability.executor() != null
                         ? capability.executor().type() : capability.executorBinding().type();

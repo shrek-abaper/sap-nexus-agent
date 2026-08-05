@@ -1,0 +1,705 @@
+{
+  "schema": "comet.native.implementation-scope.v2",
+  "contractHash": "adda16949da898e64f56b2e7ecf9d0e1e264377cbf74331dc9d258e59e91d7d4",
+  "baselineProjectionRef": "runtime/evidence/snapshots/91a0a6fee2017fb2c284639d2787a5d5344fa42fe9df274fb5c61edaaeace818.json",
+  "baselineProjectionHash": "91a0a6fee2017fb2c284639d2787a5d5344fa42fe9df274fb5c61edaaeace818",
+  "currentProjectionRef": "runtime/evidence/snapshots/27d9d024ea05d9317f373d417893c3a3844f507bf39d2a626bcbd7c3ff60488c.json",
+  "currentProjectionHash": "27d9d024ea05d9317f373d417893c3a3844f507bf39d2a626bcbd7c3ff60488c",
+  "complete": true,
+  "declaredArtifacts": [
+    {
+      "path": "agent",
+      "kind": "directory"
+    },
+    {
+      "path": "frontend",
+      "kind": "directory"
+    },
+    {
+      "path": "schemas/approval-record.schema.json",
+      "kind": "file"
+    },
+    {
+      "path": "services/gateway",
+      "kind": "directory"
+    }
+  ],
+  "changes": [
+    {
+      "path": "agent/sap_nexus_agent/approval.py",
+      "kind": "modified",
+      "before": {
+        "hash": "1a28afa55d3118832ecff9c6a8ae197525e2987a4e78ed598d74d5f4140d308b",
+        "size": 5956
+      },
+      "after": {
+        "hash": "cb7c345366ef532a239b805ac3b02c0d8b3015f50be3f184f3985f3c953ce9de",
+        "size": 6636
+      },
+      "attributedTo": [
+        {
+          "path": "agent",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "agent/sap_nexus_agent/eval.py",
+      "kind": "modified",
+      "before": {
+        "hash": "3b69395d5d2b0171038dc3e57df09b3117b1a85aaa02a7b033bef0713b9a8cb6",
+        "size": 19251
+      },
+      "after": {
+        "hash": "f4ac3f19b875e440a4563845afa8b1c244bc9775a0e847b21a0cbd5c8050d02d",
+        "size": 19397
+      },
+      "attributedTo": [
+        {
+          "path": "agent",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "agent/sap_nexus_agent/gateway_client.py",
+      "kind": "modified",
+      "before": {
+        "hash": "5e8d0d405765958e4b71f0fd925711097f425267d60a2b4eb8bd1a840164ce22",
+        "size": 4115
+      },
+      "after": {
+        "hash": "dab11dd50751700a6314f262da10e0105db2da15d46bdbda2dc487da144164ae",
+        "size": 4988
+      },
+      "attributedTo": [
+        {
+          "path": "agent",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_approval.py",
+      "kind": "modified",
+      "before": {
+        "hash": "b2fd53b56305f4abfdefd49f58290f6e9a9c891b2ff7104035a039e13a90ed5c",
+        "size": 13741
+      },
+      "after": {
+        "hash": "718983c1d1aaee4ddff5fb32ddc79bba1b48c006322408143b767b18ca3343fa",
+        "size": 15569
+      },
+      "attributedTo": [
+        {
+          "path": "agent",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_contract_files.py",
+      "kind": "modified",
+      "before": {
+        "hash": "538d30e929d385b6cb03df90bb9db95f08fb91f80af347e3e02aca13f25817bc",
+        "size": 19025
+      },
+      "after": {
+        "hash": "28d1b0e3a5a4f2810ff30716edfc3cf190817337e43d7b8968af722d01720739",
+        "size": 20314
+      },
+      "attributedTo": [
+        {
+          "path": "agent",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_gateway_client_proxy.py",
+      "kind": "modified",
+      "before": {
+        "hash": "ec4fad991b47b6718a28bed1f694c033eca15ef1835a9997d8cd822af81bfe27",
+        "size": 4635
+      },
+      "after": {
+        "hash": "7d32cb5ecffe58dea741b63bd958ffee57e62b8fbcdd7a656d433e5a9caede3e",
+        "size": 6064
+      },
+      "attributedTo": [
+        {
+          "path": "agent",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/app/api/agent-runs/[runId]/approval/route.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "735ae6323cc10c0c6414eb81aa2ccad88965de0ed22ce8db53ba3efec2d8c57d",
+        "size": 1813
+      },
+      "after": {
+        "hash": "f8df1e3c51d00c19d4c92223c726fbdcd21083440bf16a16b9fd39401aea6d99",
+        "size": 2625
+      },
+      "attributedTo": [
+        {
+          "path": "frontend",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/modules/agent-console/AgentConsole.tsx",
+      "kind": "modified",
+      "before": {
+        "hash": "c7ddb9e5c9c53c0745586ce8ae2d3eb236b6b4d091dd3dd0e47d30a85d1c9dec",
+        "size": 13535
+      },
+      "after": {
+        "hash": "7eeb047a7ff0d11b36883a0879770403c5300e5dfa5e85816f6b2eccf2548022",
+        "size": 13607
+      },
+      "attributedTo": [
+        {
+          "path": "frontend",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/modules/agent-console/ChatStream.tsx",
+      "kind": "modified",
+      "before": {
+        "hash": "9ed5044ba763d9542696afe3a6881aec4e0688c09cd27832505f234ded78cf0b",
+        "size": 18271
+      },
+      "after": {
+        "hash": "fdc907de0507718d8549e80638be888f98a70a5fffb84b9ab676ece21f9e9fab",
+        "size": 19073
+      },
+      "attributedTo": [
+        {
+          "path": "frontend",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/modules/human-approval/HumanApprovalPanel.test.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "1f451e4663b3d0b6a6e473fc34f31fac0b8fe9e582ba04dfbef0610484d22556",
+        "size": 2235
+      },
+      "attributedTo": [
+        {
+          "path": "frontend",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/modules/human-approval/HumanApprovalPanel.tsx",
+      "kind": "modified",
+      "before": {
+        "hash": "351e71b1c0ee38a009db7d74f3bf872c3680238bd5f85ebe175bdaa75b3d1f7c",
+        "size": 3187
+      },
+      "after": {
+        "hash": "a990c4faaa3eec0786a7175865413d753601f519bf2efa3c0d6aad29c8b1c929",
+        "size": 5983
+      },
+      "attributedTo": [
+        {
+          "path": "frontend",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/modules/plan-evidence/view-model.test.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "fc0d689449b4d2ceca50c502c144ae1a37dbd46f98d6a0d334bb0f4ec9f622ae",
+        "size": 5931
+      },
+      "after": {
+        "hash": "6d0319d5262c5d016c8e2f3cd783b88b57f56d849d1808b42e0ffb8cff4d6c76",
+        "size": 6909
+      },
+      "attributedTo": [
+        {
+          "path": "frontend",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/modules/plan-evidence/view-model.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "9cda3a8ed1cec3ba28a6935071c4fe4f396253209437ba58ea2fbe8298ed8608",
+        "size": 9103
+      },
+      "after": {
+        "hash": "0f26129cd18f344d381fe67e209155e4e3cd2670c420fc93d145ee4b19176012",
+        "size": 9842
+      },
+      "attributedTo": [
+        {
+          "path": "frontend",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/action-governance/action-governance.test.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "20792977e9ae5e00f030dce79eac74204a1fe4b53e13fcb26ddb873d5b5ceeca",
+        "size": 15988
+      },
+      "attributedTo": [
+        {
+          "path": "frontend",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/action-governance/action-governance.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "5810beba81a35db342d055cb05594e415a2c67bbf4f7484dcdbbbfdb1a8216ad",
+        "size": 36727
+      },
+      "attributedTo": [
+        {
+          "path": "frontend",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/action-governance/plan-action-runtime.test.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "9d31735ddfac58b8f609fcfffa615d4a2ab0be62f37b3e63666aab1fdddfa5fa",
+        "size": 15796
+      },
+      "attributedTo": [
+        {
+          "path": "frontend",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/action-governance/server-action-gateway.test.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "c656c8bc38d58192296fb268e0f6048dc39700ab04c70c8e4642e229dab8e98c",
+        "size": 6250
+      },
+      "attributedTo": [
+        {
+          "path": "frontend",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/action-governance/server-action-gateway.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "44140bdb96bb90fc4e0bd1094f00a07f41439ad76311548f0bab8c29290234b3",
+        "size": 4670
+      },
+      "attributedTo": [
+        {
+          "path": "frontend",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/agent-runtime-adapter.test.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "2a197e9cb37e96a121bd5da2ed1150bf3d02c5bd945a2b951542227c179ffb3f",
+        "size": 16043
+      },
+      "after": {
+        "hash": "c0eea50ebf4ce748af4b3c9ea474d056c46d200156fc4cd6f4491d75aa3557af",
+        "size": 16097
+      },
+      "attributedTo": [
+        {
+          "path": "frontend",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/agent-runtime-adapter.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "9b53c70e03699712e78cadac49a22b7fd278800acb94481e970735464be84a11",
+        "size": 29098
+      },
+      "after": {
+        "hash": "7f94adc29bfadbfaf44d7d5757ffd7fc40f243aed267e23c2a9dd07431646fb2",
+        "size": 30959
+      },
+      "attributedTo": [
+        {
+          "path": "frontend",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/durable/types.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "63ab731366b3cb15e8c975d0d11b8f00d54078ffcdc3254d340f0de7182075fd",
+        "size": 3866
+      },
+      "after": {
+        "hash": "4e416505045dd82ec5c1d1dd840a08c35cfbf6da4e155be5bcf54984a06c87c4",
+        "size": 3915
+      },
+      "attributedTo": [
+        {
+          "path": "frontend",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/plan-action-adapter.test.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "4cca439c3b7dedf58dc6301d06b176d87fff9931c2f7373d96ca471057017f64",
+        "size": 5186
+      },
+      "attributedTo": [
+        {
+          "path": "frontend",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/plan-evidence/event-projector.test.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "bced03baf42ea5b44082daadbec618646885ea29001a23722393322470050d63",
+        "size": 5554
+      },
+      "after": {
+        "hash": "08711d0ff075ce5424da73b5c3f1b3761eefaeb8002738eb222b3321503249db",
+        "size": 8000
+      },
+      "attributedTo": [
+        {
+          "path": "frontend",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/plan-evidence/event-projector.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "b1397716cb0b8b028fd3575223f025cde85650b0ff8fdd6c347dc124cf5f9df7",
+        "size": 9360
+      },
+      "after": {
+        "hash": "9e9a658d10235542305ec47a3795fb0f3484c24dda4f41b1497726b7e114addb",
+        "size": 10649
+      },
+      "attributedTo": [
+        {
+          "path": "frontend",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/plan-evidence/fixtures.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "e4bd7ba6613671172c8eda8911e9faf915417dc42ae89a1ec37cff6996269ecc",
+        "size": 7675
+      },
+      "after": {
+        "hash": "396a614058d08503cb526ba884fc35b80b1621451d7b184b4ec5fbcc75176964",
+        "size": 8835
+      },
+      "attributedTo": [
+        {
+          "path": "frontend",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/tests/agent-console/human-approval.test.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "14aaf1b06fc335f4dbb4934c69bb424b3a3e710cd517ea2ab2b04177b452096a",
+        "size": 1446
+      },
+      "after": {
+        "hash": "672d13f565b122450b97a356f303d5fd9a4a824a8ea6d42a3e0a8d62183a3a1f",
+        "size": 2960
+      },
+      "attributedTo": [
+        {
+          "path": "frontend",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/tests/runtime/agent-runtime-adapter.test.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "c697e720c2c24378876bce3558ef8510fa578a8eb4641911e4a5ccc6f3e4951b",
+        "size": 24895
+      },
+      "after": {
+        "hash": "f39896c33b067b9ae4cb70d21a1409bd22c75616c0dd896eae1f573355d01b1b",
+        "size": 24945
+      },
+      "attributedTo": [
+        {
+          "path": "frontend",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/tests/runtime/approval-route.test.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "5069016ab32932ba0828edde662239056d7f146882be71c8732cee8248aed85b",
+        "size": 3921
+      },
+      "after": {
+        "hash": "167771f3462b4b92c319e40239c442b687a775f7857701bb1bceb2bf6a4e59cb",
+        "size": 5339
+      },
+      "attributedTo": [
+        {
+          "path": "frontend",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "schemas/approval-record.schema.json",
+      "kind": "modified",
+      "before": {
+        "hash": "b84dd16e5a2d5741b9cb433fce1bf2be0da0aae58f23a33aed5203ea2b869a9c",
+        "size": 1007
+      },
+      "after": {
+        "hash": "21eccef086b78ce8341af0a5a50d42de1b8264564b21bd79ce16875b03a72b25",
+        "size": 1489
+      },
+      "attributedTo": [
+        {
+          "path": "schemas/approval-record.schema.json",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "services/gateway/app/src/test/java/com/sapnexus/gateway/api/CapabilityWriteExecutionApiTest.java",
+      "kind": "modified",
+      "before": {
+        "hash": "25809fb747e1adb8d7a050e2b8f6492cd7751395eccdcdf4f69068d7e3539967",
+        "size": 18770
+      },
+      "after": {
+        "hash": "def4ba30be32eda33d86d1c5f1a1e6f29533f64a9dacce67ef03a9cbcdf7778b",
+        "size": 22717
+      },
+      "attributedTo": [
+        {
+          "path": "services/gateway",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "services/gateway/core/src/main/java/com/sapnexus/gateway/api/CapabilityController.java",
+      "kind": "modified",
+      "before": {
+        "hash": "1a3b9d65e70e9f87b9cf35ddab85e8abc12277cc3c1167c59fe657fc33625877",
+        "size": 15593
+      },
+      "after": {
+        "hash": "60275bca1b2ec8b5ebda284d685b0c26446a41716c83e9c7322c71a58b73fdec",
+        "size": 16423
+      },
+      "attributedTo": [
+        {
+          "path": "services/gateway",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "services/gateway/core/src/main/java/com/sapnexus/gateway/api/CapabilityRequest.java",
+      "kind": "modified",
+      "before": {
+        "hash": "721120571f8f65f65b57eaba43279a08a5a6f775e30bbff564a728c85fdb5d21",
+        "size": 2964
+      },
+      "after": {
+        "hash": "ee434f48340fbe16448dfb489eb1d171934b7d2242fb164427f6f5175ec229a7",
+        "size": 3327
+      },
+      "attributedTo": [
+        {
+          "path": "services/gateway",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "services/gateway/core/src/main/java/com/sapnexus/gateway/approval/ApprovalGuard.java",
+      "kind": "modified",
+      "before": {
+        "hash": "310fe1d36ff23859c2fbcc1efba5748b99c8498c927cec4d440380b2f59ad2ee",
+        "size": 1782
+      },
+      "after": {
+        "hash": "dc3dfce8cb6654dc188d550838aa81b4e48a3fb06a815c85a8e283418bc587ca",
+        "size": 3167
+      },
+      "attributedTo": [
+        {
+          "path": "services/gateway",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "services/gateway/core/src/main/java/com/sapnexus/gateway/approval/ApprovalRecord.java",
+      "kind": "modified",
+      "before": {
+        "hash": "c9739dd66f70807c443b122c029af407277e8c38bfebcb7eaf8127572e374be0",
+        "size": 1158
+      },
+      "after": {
+        "hash": "53d19dbea22a980454aee26760018469d65b0a6a86604382a7f09fe4128b9c7a",
+        "size": 1884
+      },
+      "attributedTo": [
+        {
+          "path": "services/gateway",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "services/gateway/core/src/main/java/com/sapnexus/gateway/approval/FileDurableApprovalStore.java",
+      "kind": "modified",
+      "before": {
+        "hash": "d93506bd49322cf8ffc76f4df1d686e8835bf900cb2b2ca411469cf7971c4ba1",
+        "size": 15385
+      },
+      "after": {
+        "hash": "648f47e7fc1e7b46738a4f69c814004529b5b44fc96f04bf84435d1792e075eb",
+        "size": 15526
+      },
+      "attributedTo": [
+        {
+          "path": "services/gateway",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "services/gateway/core/src/main/java/com/sapnexus/gateway/approval/InMemoryApprovalStore.java",
+      "kind": "modified",
+      "before": {
+        "hash": "829bb60f1163f3b195356861ee20aff51309b930c9d98f4f329545fb06fb0dd5",
+        "size": 2254
+      },
+      "after": {
+        "hash": "1049cff544399bd41a4900e2afb873940d7e5cffc9744e47ba2fdede2fe08509",
+        "size": 2395
+      },
+      "attributedTo": [
+        {
+          "path": "services/gateway",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "services/gateway/core/src/test/java/com/sapnexus/gateway/api/CapabilityRequestPlanApprovalTest.java",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "963d3dd12b40d48d373997b1ef9c2cb3a587fc8d6245febf8c579df8dc1d22f2",
+        "size": 1575
+      },
+      "attributedTo": [
+        {
+          "path": "services/gateway",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "services/gateway/core/src/test/java/com/sapnexus/gateway/approval/PlanApprovalGuardTest.java",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "bc653b63fd71577fad0a26b4fc4f437893d745af7ab374f850bff436431a4b71",
+        "size": 4239
+      },
+      "attributedTo": [
+        {
+          "path": "services/gateway",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "services/gateway/core/src/test/java/com/sapnexus/gateway/approval/PlanApprovalStoreTest.java",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "9c9383a3b5ade6f0112563ee630ed04fbd47a3c799adc04cd29cbc09e5433d3d",
+        "size": 2572
+      },
+      "attributedTo": [
+        {
+          "path": "services/gateway",
+          "kind": "directory"
+        }
+      ]
+    }
+  ],
+  "unattributed": [],
+  "unresolvedScopes": [],
+  "noCodeReason": null,
+  "scopeHash": "088d3a5d76e5c8ad8ed7f01748b934d02266b96b46fa4c9e6853920ce22c1b0e"
+}

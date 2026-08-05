@@ -46,7 +46,11 @@ const matchDecisionTypeLabel: Record<MatchDecisionView["decisionType"], string> 
 interface ChatStreamProps {
   turns: ChatTurn[];
   activeIndex: ActiveTurnIndex;
-  onApprovalDecision: (serverRunId: string, decision: "approve" | "reject") => void;
+  onApprovalDecision: (
+    serverRunId: string,
+    approvalId: string,
+    decision: "approve" | "reject"
+  ) => void;
 }
 
 /**
@@ -75,8 +79,11 @@ export function ChatStream({ turns, activeIndex, onApprovalDecision }: ChatStrea
         const view = buildWorkbenchViewModel(turn.snapshot);
         const bubble = buildChatBubbleState(turn);
         const approvalArtifact = turn.snapshot
-          ? [...turn.snapshot.events].reverse().find((event) => event.artifact?.kind === "approval")?.artifact
+          ? [...turn.snapshot.events].reverse().find(
+              (event) => event.artifact?.kind === "approval" || event.artifact?.kind === "approval-record"
+            )?.artifact
           : undefined;
+        const approvalId = approvalIdentity(approvalArtifact);
         return (
           <div
             className={`chat-turn chat-turn--card ${activeIndex === turnIndex ? "chat-turn--active" : ""}`}
@@ -126,7 +133,9 @@ export function ChatStream({ turns, activeIndex, onApprovalDecision }: ChatStrea
                   state={turn.snapshot.hitlState}
                   artifact={approvalArtifact}
                   disabled={turn.isRunning}
-                  onDecision={(decision) => onApprovalDecision(turn.snapshot!.runId, decision)}
+                  onDecision={approvalId
+                    ? (decision) => onApprovalDecision(turn.snapshot!.runId, approvalId, decision)
+                    : undefined}
                 />
               ) : null}
 
@@ -141,6 +150,17 @@ export function ChatStream({ turns, activeIndex, onApprovalDecision }: ChatStrea
       <div ref={endRef} />
     </div>
   );
+}
+
+function approvalIdentity(artifact: import("@/shared/types/artifacts").RedactedArtifact | undefined): string {
+  const envelope = artifact?.payload && typeof artifact.payload === "object" && !Array.isArray(artifact.payload)
+    ? artifact.payload as Record<string, unknown>
+    : undefined;
+  const data = envelope?.data && typeof envelope.data === "object" && !Array.isArray(envelope.data)
+    ? envelope.data as Record<string, unknown>
+    : envelope;
+  const value = data?.approvalId ?? data?.id;
+  return typeof value === "string" ? value : "";
 }
 
 /**

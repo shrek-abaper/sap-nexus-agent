@@ -71,7 +71,14 @@ const ALLOWED_PAYLOAD_KEYS: Record<PlanEvidenceObjectKind, ReadonlySet<string>> 
   recommendation: new Set(["recommendationId", "planHash", "status", "summaryCode", "snapshotId", "projectionRef", "ruleSetRefs", "facts", "rules", "assumptions", "limitations", "rejectedAlternatives", "actionProposal"]),
   narrative: new Set(["summary", "claims", "evidenceRefs", "limitations", "recommendationRef", "proposalRef", "approvalState", "completeness", "templateFallbackUsed"]),
   proposal: new Set(["proposalId", "snapshotId", "projectionRef", "capabilityId", "status", "parameters", "parameterSources", "factsUsed", "ruleSetRefs", "proposalHash"]),
-  approval: new Set(["id", "approvalId", "proposalId", "snapshotId", "status", "principalId", "parameterSnapshotHash", "proposalHash", "parameters", "expiresAt", "decidedAt", "traceId"]),
+  approval: new Set([
+    "id", "approvalId", "runId", "traceId", "planId", "planHash", "actionNodeId",
+    "proposalId", "snapshotId", "status", "capabilityId", "capabilityVersion",
+    "principalId", "confirmingPrincipalId", "parameterSnapshotHash", "factSetHash",
+    "factRefs", "projectionHash", "projectionRef", "ruleSetRefs", "ruleSetHash", "proposalHash", "subjectHash",
+    "parameters", "parameterSources", "limitations", "separationOfDutyResult", "createdAt", "expiresAt", "decidedAt",
+    "revokedAt", "revocationReason",
+  ]),
   action: new Set(["actionId", "proposalId", "approvalId", "snapshotId", "status", "capabilityId", "resultSummary", "gatewayTraceId", "traceId", "executedAt", "idempotencyKey", "executionHash"]),
 };
 
@@ -104,6 +111,7 @@ export function projectPlanEvidenceEvents(bundle: PlanEvidenceBundle): AgentRunE
   const timestamp = new Date().toISOString();
   return ordered.map((object, index) => {
     const descriptor = DESCRIPTORS[object.kind];
+    const lifecycle = approvalLifecycle(object, descriptor);
     return {
       runId: bundle.runId,
       traceId: bundle.traceId,
@@ -111,7 +119,8 @@ export function projectPlanEvidenceEvents(bundle: PlanEvidenceBundle): AgentRunE
       sequence: bundle.startSequence + index,
       timestamp,
       type: descriptor.eventType,
-      state: descriptor.state,
+      state: lifecycle.state,
+      hitlState: lifecycle.hitlState,
       objectRefs: [{ kind: object.kind, ref: object.ref }],
       artifact: redactArtifact({
         label: descriptor.label,
@@ -125,6 +134,22 @@ export function projectPlanEvidenceEvents(bundle: PlanEvidenceBundle): AgentRunE
       }),
     };
   });
+}
+
+function approvalLifecycle(
+  object: PlanEvidenceObject,
+  descriptor: EventDescriptor,
+): Pick<AgentRunEvent, "state" | "hitlState"> {
+  if (object.kind !== "approval") return { state: descriptor.state };
+  const status = jsonRecord(object.payload)?.status;
+  if (status === "pending") return { state: "awaiting_approval", hitlState: "awaiting_human_approval" };
+  if (status === "rejected") return { state: "rejected", hitlState: "rejected" };
+  if (status === "expired") return { state: "approval_checked", hitlState: "expired" };
+  if (status === "revoked") return { state: "approval_checked", hitlState: "rejected" };
+  if (status === "approved" || status === "executing" || status === "executed" || status === "failed") {
+    return { state: "approval_checked", hitlState: "approved" };
+  }
+  return { state: descriptor.state };
 }
 
 function assertAllowedPayload(object: PlanEvidenceObject): void {

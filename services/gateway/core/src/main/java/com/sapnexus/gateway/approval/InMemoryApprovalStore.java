@@ -60,7 +60,10 @@ public class InMemoryApprovalStore implements ApprovalStore {
                 existing.approver(),
                 existing.approvedAt(),
                 existing.expiresAt(),
-                status
+                status,
+                existing.registrySnapshotId(),
+                existing.capabilityVersion(),
+                existing.approvalSubjectHash()
         );
     }
 }

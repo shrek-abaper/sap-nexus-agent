@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { POST } from "../../app/api/agent-runs/[runId]/approval/route";
 import {
   createAgentRun,
+  getAgentRunEvents,
   resetAgentRunsForTests,
   setAgentRunnerForTests
 } from "../../src/runtime/agent-runtime-adapter";
@@ -45,6 +46,15 @@ function request(body: unknown) {
   });
 }
 
+async function waitForApproval(runId: string) {
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    const events = await getAgentRunEvents(runId, PLACEHOLDER_PRINCIPAL);
+    if (events.some((event) => event.hitlState === "awaiting_human_approval")) return;
+    await new Promise((resolve) => setTimeout(resolve, 5));
+  }
+  throw new Error(`Run ${runId} did not reach awaiting_human_approval`);
+}
+
 describe("agent run approval route", () => {
   beforeEach(() => resetAgentRunsForTests());
   afterEach(() => {
@@ -64,8 +74,9 @@ describe("agent run approval route", () => {
       });
     setAgentRunnerForTests(runner);
     const run = await createAgentRun({ query: "创建采购申请", principal: PLACEHOLDER_PRINCIPAL });
+    await waitForApproval(run.runId);
 
-    const response = await POST(request({ decision: "reject" }), {
+    const response = await POST(request({ approvalId: "appr-pr", decision: "reject" }), {
       params: Promise.resolve({ runId: run.runId })
     });
 
@@ -77,8 +88,10 @@ describe("agent run approval route", () => {
     const runner = vi.fn().mockResolvedValueOnce(pendingOutcome);
     setAgentRunnerForTests(runner);
     const run = await createAgentRun({ query: "创建采购申请", principal: PLACEHOLDER_PRINCIPAL });
+    await waitForApproval(run.runId);
 
     const response = await POST(request({
+      approvalId: "appr-pr",
       decision: "approve",
       parameters: { quantity: "999" },
       parameterSnapshotHash: "sha256:forged"
@@ -88,8 +101,26 @@ describe("agent run approval route", () => {
     expect(runner).toHaveBeenCalledTimes(1);
   });
 
-  it("maps missing runs and duplicate decisions to 404 and 409", async () => {
+  it("requires the exact server-owned approval identity", async () => {
+    const runner = vi.fn().mockResolvedValueOnce(pendingOutcome);
+    setAgentRunnerForTests(runner);
+    const run = await createAgentRun({ query: "创建采购申请", principal: PLACEHOLDER_PRINCIPAL });
+    await waitForApproval(run.runId);
+
     const missing = await POST(request({ decision: "approve" }), {
+      params: Promise.resolve({ runId: run.runId })
+    });
+    const mismatched = await POST(request({ approvalId: "appr-forged", decision: "approve" }), {
+      params: Promise.resolve({ runId: run.runId })
+    });
+
+    expect(missing.status).toBe(400);
+    expect(mismatched.status).toBe(400);
+    expect(runner).toHaveBeenCalledTimes(1);
+  });
+
+  it("maps missing runs to 404 and completed duplicate decisions to idempotent success", async () => {
+    const missing = await POST(request({ approvalId: "appr-pr", decision: "approve" }), {
       params: Promise.resolve({ runId: "missing" })
     });
     expect(missing.status).toBe(404);
@@ -105,13 +136,14 @@ describe("agent run approval route", () => {
       });
     setAgentRunnerForTests(runner);
     const run = await createAgentRun({ query: "创建采购申请", principal: PLACEHOLDER_PRINCIPAL });
-    await POST(request({ decision: "reject" }), {
+    await waitForApproval(run.runId);
+    await POST(request({ approvalId: "appr-pr", decision: "reject" }), {
       params: Promise.resolve({ runId: run.runId })
     });
 
-    const duplicate = await POST(request({ decision: "reject" }), {
+    const duplicate = await POST(request({ approvalId: "appr-pr", decision: "reject" }), {
       params: Promise.resolve({ runId: run.runId })
     });
-    expect(duplicate.status).toBe(409);
+    expect(duplicate.status).toBe(200);
   });
 });

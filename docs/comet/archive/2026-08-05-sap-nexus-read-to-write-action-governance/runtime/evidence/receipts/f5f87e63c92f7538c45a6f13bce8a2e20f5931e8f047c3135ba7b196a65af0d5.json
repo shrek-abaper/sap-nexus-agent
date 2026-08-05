@@ -1,0 +1,49 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "sap-nexus-read-to-write-action-governance",
+    "sourceRevision": 3,
+    "contractHash": "adda16949da898e64f56b2e7ecf9d0e1e264377cbf74331dc9d258e59e91d7d4",
+    "scopeHash": "088d3a5d76e5c8ad8ed7f01748b934d02266b96b46fa4c9e6853920ce22c1b0e",
+    "snapshotHash": "27d9d024ea05d9317f373d417893c3a3844f507bf39d2a626bcbd7c3ff60488c",
+    "artifactHash": "f9d8425d07978de723b29ed9f8afc38b44ba57f4472182349df105b52fd54026"
+  },
+  "acceptanceIds": [
+    "acceptance-aaa2108029b62874efdce64a9f63482d4bfe6342eb1ad714c7ed7517a8f26421"
+  ],
+  "actor": "native-runtime:command:openspec",
+  "issuedAt": "2026-08-05T14:29:25.398Z",
+  "evidence": {
+    "executable": "openspec",
+    "args": [
+      "validate",
+      "--all",
+      "--strict"
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 30000,
+    "startedAt": "2026-08-05T14:29:24.299Z",
+    "endedAt": "2026-08-05T14:29:25.398Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "5aa6071780fcf1c014d492cb5d8e5cb8903bfeae",
+      "afterCommit": "5aa6071780fcf1c014d492cb5d8e5cb8903bfeae"
+    },
+    "afterFence": {
+      "snapshotHash": "27d9d024ea05d9317f373d417893c3a3844f507bf39d2a626bcbd7c3ff60488c",
+      "scopeHash": "088d3a5d76e5c8ad8ed7f01748b934d02266b96b46fa4c9e6853920ce22c1b0e",
+      "matched": true
+    },
+    "outputHash": "9491c9a5503ba3a1b58f63f119abe06d96ed05ff46a36593a0aee0f52177315f",
+    "outputSummary": "- Validating...\n✓ spec/agent-callplan-evidence\n✓ spec/agent-workbench-console\n✓ spec/capability-registry-gateway\n✓ spec/conversational-context\n✓ spec/durable-approval-store\n✓ spec/durable-run-state\n✓ spec/gateway-execution-contract\n✓ spec/governed-context-registry-snapshot\n✓ spec/governed-intent-envelope-recall\n✓ spec/odata-gateway-read\n✓ spec/output-projection\n✓ spec/planner-dry-run\n✓ spec/pr-create-action\n✓ spec/read-plan-executor\n✓ spec/registry-ontology-contract\n✓ spec/semantic-match-decision\n✓ spec/semantic-plan-authoring-v2\n✓ spec/semantic-planning-foundation\n✓ spec/sse-cursor-reconnect\n✓ spec/trusted-principal-scope\nTotals: 20 passed, 0 failed (20 items)",
+    "outputTruncated": false
+  },
+  "receiptHash": "f5f87e63c92f7538c45a6f13bce8a2e20f5931e8f047c3135ba7b196a65af0d5"
+}

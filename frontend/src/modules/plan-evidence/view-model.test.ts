@@ -63,6 +63,27 @@ describe("buildPlanEvidenceView", () => {
     expect(view.canDecideApproval).toBe(false);
   });
 
+  it("allows a decision only for a real pending PlanApprovalRecord", () => {
+    const pending = structuredClone(planEvidenceFixtures.readToWritePendingApproval);
+    const view = buildPlanEvidenceView(pending);
+
+    expect(view.approval).toMatchObject({
+      approvalId: "approval-fixture-1",
+      status: "pending",
+      capabilityVersion: "2.1.0",
+      separationOfDutyResult: "not_applicable",
+    });
+    expect(view.canDecideApproval).toBe(true);
+
+    const terminal = structuredClone(pending);
+    const event = terminal.events.find((candidate) => candidate.artifact?.kind === "approval-record");
+    if (event?.artifact && event.artifact.payload && typeof event.artifact.payload === "object" && !Array.isArray(event.artifact.payload)) {
+      const data = event.artifact.payload.data;
+      if (data && typeof data === "object" && !Array.isArray(data)) data.status = "revoked";
+    }
+    expect(buildPlanEvidenceView(terminal).canDecideApproval).toBe(false);
+  });
+
   it("surfaces replay gaps and unsupported claims as non-authoritative evidence", () => {
     const snapshot = {
       ...structuredClone(planEvidenceFixtures.multiRead),

@@ -21,10 +21,37 @@ public record ApprovalRecord(
         String approver,
         Instant approvedAt,
         Instant expiresAt,
-        String status
+        String status,
+        String registrySnapshotId,
+        String capabilityVersion,
+        String approvalSubjectHash
 ) {
     public ApprovalRecord {
         parameters = parameters == null ? Map.of() : Map.copyOf(parameters);
+    }
+
+    public ApprovalRecord(
+            String approvalId,
+            String capabilityId,
+            String parameterSnapshotHash,
+            Map<String, String> parameters,
+            String approver,
+            Instant approvedAt,
+            Instant expiresAt,
+            String status
+    ) {
+        this(
+                approvalId,
+                capabilityId,
+                parameterSnapshotHash,
+                parameters,
+                approver,
+                approvedAt,
+                expiresAt,
+                status,
+                null,
+                null,
+                null);
     }
 
     public boolean isExpired(Instant now) {

@@ -1,0 +1,50 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "sap-nexus-read-to-write-action-governance",
+    "sourceRevision": 3,
+    "contractHash": "adda16949da898e64f56b2e7ecf9d0e1e264377cbf74331dc9d258e59e91d7d4",
+    "scopeHash": "088d3a5d76e5c8ad8ed7f01748b934d02266b96b46fa4c9e6853920ce22c1b0e",
+    "snapshotHash": "27d9d024ea05d9317f373d417893c3a3844f507bf39d2a626bcbd7c3ff60488c",
+    "artifactHash": "f9d8425d07978de723b29ed9f8afc38b44ba57f4472182349df105b52fd54026"
+  },
+  "acceptanceIds": [
+    "acceptance-aaa2108029b62874efdce64a9f63482d4bfe6342eb1ad714c7ed7517a8f26421",
+    "acceptance-ded14a57da88b01ec9ccd9a5962495cce64393d9568c3fda6c1ae42fc251ab25"
+  ],
+  "actor": "native-runtime:command:.venv/bin/python",
+  "issuedAt": "2026-08-05T14:27:00.166Z",
+  "evidence": {
+    "executable": ".venv/bin/python",
+    "args": [
+      "-m",
+      "sap_nexus_agent.eval",
+      "evals/pr_create_cases.json"
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 30000,
+    "startedAt": "2026-08-05T14:26:59.816Z",
+    "endedAt": "2026-08-05T14:27:00.166Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "5aa6071780fcf1c014d492cb5d8e5cb8903bfeae",
+      "afterCommit": "5aa6071780fcf1c014d492cb5d8e5cb8903bfeae"
+    },
+    "afterFence": {
+      "snapshotHash": "27d9d024ea05d9317f373d417893c3a3844f507bf39d2a626bcbd7c3ff60488c",
+      "scopeHash": "088d3a5d76e5c8ad8ed7f01748b934d02266b96b46fa4c9e6853920ce22c1b0e",
+      "matched": true
+    },
+    "outputHash": "72b7935a60f32c4f839b5896c37397b313efb06fe9d8422ed76964cc4a9f91b8",
+    "outputSummary": "Eval passed: 9/9",
+    "outputTruncated": false
+  },
+  "receiptHash": "4f4ada0cb848c081cc9a55fc03a2b5926ea1e8a0b5a274b7d05f8fa45c24f3af"
+}

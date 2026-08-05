@@ -1,0 +1,11 @@
+{
+  "schema": "comet.native.archive-cas.v1",
+  "operationId": "spec-1-read-to-write-action-governance",
+  "role": "post",
+  "hash": "47a2a084c9a123dcc74ba584fbf6dd38d1c67bf19da6a9ef8a8994f4f85e5ba1",
+  "identity": {
+    "dev": 2096,
+    "ino": 404970,
+    "birthtimeMs": 1785941084866.6616
+  }
+}

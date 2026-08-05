@@ -17,6 +17,19 @@ public class ApprovalGuard {
             String requestParameterHash,
             Instant now
     ) {
+        return check(record, capabilityId, currentParameters, requestParameterHash, null, null, null, now);
+    }
+
+    public ApprovalGuardResult check(
+            ApprovalRecord record,
+            String capabilityId,
+            Map<String, Object> currentParameters,
+            String requestParameterHash,
+            String registrySnapshotId,
+            String capabilityVersion,
+            String approvalSubjectHash,
+            Instant now
+    ) {
         if (record == null) {
             return ApprovalGuardResult.rejected(ErrorType.APPROVAL_REQUIRED);
         }
@@ -39,6 +52,24 @@ public class ApprovalGuard {
                 || !recordHash.equals(requestParameterHash)) {
             return ApprovalGuardResult.rejected(ErrorType.APPROVAL_VERSION_MISMATCH);
         }
+        boolean planAware = hasText(record.registrySnapshotId())
+                || hasText(record.capabilityVersion())
+                || hasText(record.approvalSubjectHash())
+                || hasText(registrySnapshotId)
+                || hasText(capabilityVersion)
+                || hasText(approvalSubjectHash);
+        if (planAware && (!hasText(record.registrySnapshotId())
+                || !hasText(record.capabilityVersion())
+                || !hasText(record.approvalSubjectHash())
+                || !record.registrySnapshotId().equals(registrySnapshotId)
+                || !record.capabilityVersion().equals(capabilityVersion)
+                || !record.approvalSubjectHash().equals(approvalSubjectHash))) {
+            return ApprovalGuardResult.rejected(ErrorType.APPROVAL_VERSION_MISMATCH);
+        }
         return new ApprovalGuardResult(ErrorType.NONE, false);
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 }

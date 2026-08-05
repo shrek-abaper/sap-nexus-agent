@@ -32,6 +32,7 @@ export type WorkbenchOutcome = {
   callPlan?: Record<string, unknown> | null;
   validationResult?: Record<string, unknown> | null;
   executionResult?: Record<string, unknown> | null;
+  actionResult?: Record<string, unknown> | null;
   fact?: Record<string, unknown> | null;
   gatewayTraceId?: string | null;
   errorType?: string | null;

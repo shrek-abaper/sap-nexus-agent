@@ -5,7 +5,7 @@
 | 字段 | 内容 |
 |---|---|
 | 文档名称 | `SAP Nexus Agent 技术选型与工程路线决策` |
-| 当前版本 | `v0.2.16` |
+| 当前版本 | `v0.2.17` |
 | 状态 | `Decision Baseline Draft` |
 | 创建日期 | `2026-06-19` |
 | 最近更新 | `2026-08-05` |
@@ -20,6 +20,7 @@
 
 | 版本 | 日期 | 变更摘要 | 决策状态 |
 |---|---|---|---|
+| `v0.2.17` | `2026-08-05` | 同步 Runbook 21 已归档事实：plan-aware single-user HITL、完整 subject revalidation、durable exactly-once continuation 与 Gateway atomic claim 已完成 fake/sandbox 验证；未执行 live SAP WRITE，production orchestration 与 L1/L2/L3 release gate 仍由 Runbook 22 证明；当前入口转为 Runbook 22 | 当前技术基线 |
 | `v0.2.16` | `2026-08-05` | 同步 Runbook 20 已归档事实：governed event allowlist/redaction projection、strict durable replay 与 responsive Workbench component/UI integration 已验证；proposal-only 不构成 Human Approval，生产 orchestrator 与 SAP WRITE 未接入；当前入口转为 Runbook 21 | 当前技术基线 |
 | `v0.2.15` | `2026-08-05` | 同步 Runbook 19 已归档事实：TypeScript deterministic NarrativeInputProjection、strict lossless LLM JSON rewrite validation、timeout/invalid template fallback、traceable NarrativeEnvelope 与 grounding Eval 已验证；不接生产 orchestrator、不创建 Human Approval、不执行 SAP WRITE；当前入口转为 Runbook 20 | 当前技术基线 |
 | `v0.2.14` | `2026-08-05` | 同步 Runbook 18 已归档事实：TypeScript snapshot-bound RuleSetRegistry 与 deterministic RecommendationDecision component/Eval 已验证，可形成单个 `pending_approval` proposal；不接生产 orchestrator、不构成 Human Approval、不执行 SAP WRITE；当前入口转为 Runbook 19 | 当前技术基线 |
@@ -44,10 +45,10 @@
 
 ## 1. 结论先行
 
-可以继续开发，但不应裸写代码。Registry / OWL Contract、Gateway execution、第二条 Read capability、sandbox write vertical slice、S1、S2-A/S2-B、P0B 和 Runbooks 13-20 均已完成并归档。当前已具备 PlanGraph v2、READ PlanExecutor、component/Eval OutputProjection、RecommendationDecision、grounded Narrative，以及 Workbench event/replay component/UI integration，但生产 orchestrator 尚未形成 live 多能力链路；下一实施入口固定为 Runbook 21：
+可以继续开发，但不应裸写代码。Registry / OWL Contract、Gateway execution、第二条 Read capability、sandbox write vertical slice、S1、S2-A/S2-B、P0B 和 Runbooks 13-21 均已完成并归档。当前已具备 PlanGraph v2、READ PlanExecutor、component/Eval OutputProjection、RecommendationDecision、grounded Narrative、Workbench event/replay integration，以及 fake/sandbox boundary 的 plan-aware single-user HITL Action continuation，但生产 orchestrator 尚未形成 live 多能力链路；下一实施入口固定为 Runbook 22：
 
 ```text
-docs/runbooks/21-read-to-write-action-governance.md
+docs/runbooks/22-end-to-end-agent-eval-release-gate.md
 ```
 
 推荐默认选型：
@@ -682,7 +683,7 @@ sap-nexus-capability-registry-gateway
 | DeerFlow 是否作为 runtime 依赖 | 否；只借鉴 progressive discovery、task lifecycle、durable context 和受限 memory 机制 |
 | Durable Runtime Store 何时选型 | P0B 本地 durable 实现已归档；multi-worker / HA 或量产部署前再选择共享 store，且保持现有接口与一致性契约 |
 | UserPreferenceMemory 何时试点 | 身份、tenant、retention、查看/更正/删除和审计契约成熟后；不进入 S2/S3 |
-| 首个多能力组合场景 | 已确认“物料库存 + 采购订单供给概览”；Runbooks 13-20 已交付受治理 recall、PlanGraph v2、READ execution、组合事实、recommendation、grounded narrative component/Eval 与 Workbench event/replay experience；Runbook 21 继续交付真实 Human Approval 与 exactly-once single Action |
+| 首个多能力组合场景 | 已确认“物料库存 + 采购订单供给概览”；Runbooks 13-21 已交付受治理 recall、PlanGraph v2、READ execution、组合事实、recommendation、grounded narrative、Workbench event/replay 与 fake/sandbox single-user HITL Action continuation；Runbook 22 继续交付 production orchestration 与 L1/L2/L3 release gate |
 
 ---
 

@@ -208,6 +208,71 @@ class CapabilityWriteExecutionApiTest {
     }
 
     @Test
+    void executeActionRejectsEveryPlanAwareBindingMismatchBeforeDispatch() {
+        List<CapabilityRequest> mismatchedRequests = List.of(
+                planAwareRequest("appr-snapshot", "snapshot-changed", "2.1.0", "sha256:subject"),
+                planAwareRequest("appr-version", "snapshot-21", "2.2.0", "sha256:subject"),
+                planAwareRequest("appr-subject", "snapshot-21", "2.1.0", "sha256:changed"));
+        approvalStore.save(planAwareRecord("appr-snapshot"));
+        approvalStore.save(planAwareRecord("appr-version"));
+        approvalStore.save(planAwareRecord("appr-subject"));
+
+        for (CapabilityRequest request : mismatchedRequests) {
+            var response = controller.execute(PR_CAPABILITY_ID, request);
+            ActionResult body = (ActionResult) response.getBody();
+
+            assertEquals(ErrorType.APPROVAL_VERSION_MISMATCH, body.errorType());
+        }
+        assertEquals(0, dispatchCount.get(), "plan approval drift must be rejected before dispatch");
+    }
+
+    @Test
+    void executeActionDispatchesOnceWhenEveryPlanAwareBindingMatches() {
+        ApprovalRecord approved = planAwareRecord("appr-plan-match");
+        approvalStore.save(approved);
+
+        var response = controller.execute(
+                PR_CAPABILITY_ID,
+                planAwareRequest(
+                        approved.approvalId(),
+                        approved.registrySnapshotId(),
+                        approved.capabilityVersion(),
+                        approved.approvalSubjectHash()));
+        ActionResult body = (ActionResult) response.getBody();
+
+        assertTrue(body.success());
+        assertEquals(ErrorType.NONE, body.errorType());
+        assertEquals(1, dispatchCount.get());
+    }
+
+    @Test
+    void approveRejectsPartialPlanAwareBindingBeforeItReachesTheStore() {
+        Map<String, Object> parameters = prParams();
+        String hash = new ParameterSnapshotHasher().hash(parameters);
+        ApprovalRecord incomplete = new ApprovalRecord(
+                "appr-plan-incomplete",
+                PR_CAPABILITY_ID,
+                hash,
+                parameters.entrySet().stream().collect(java.util.stream.Collectors.toMap(
+                        Map.Entry::getKey, entry -> String.valueOf(entry.getValue()))),
+                "run-owner",
+                Instant.now(),
+                Instant.now().plusSeconds(600),
+                "approved",
+                "snapshot-21",
+                null,
+                "sha256:subject");
+
+        var response = controller.approve(
+                PR_CAPABILITY_ID,
+                "test-approval-token",
+                incomplete);
+
+        assertEquals(org.springframework.http.HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertTrue(approvalStore.find(incomplete.approvalId()).isEmpty());
+    }
+
+    @Test
     void executeActionDuplicateReturnsDuplicate() {
         ApprovalRecord executed = new ApprovalRecord(
                 "appr-003", PR_CAPABILITY_ID, "sha256:abc",
@@ -346,6 +411,37 @@ class CapabilityWriteExecutionApiTest {
                 "quantity", "10",
                 "unit", "EA",
                 "delivery_date", "2026-08-01");
+    }
+
+    private static CapabilityRequest planAwareRequest(
+            String approvalId,
+            String registrySnapshotId,
+            String capabilityVersion,
+            String subjectHash
+    ) {
+        return new CapabilityRequest(
+                prParams(),
+                approvalId,
+                new ParameterSnapshotHasher().hash(prParams()),
+                registrySnapshotId,
+                capabilityVersion,
+                subjectHash);
+    }
+
+    private static ApprovalRecord planAwareRecord(String approvalId) {
+        return new ApprovalRecord(
+                approvalId,
+                PR_CAPABILITY_ID,
+                new ParameterSnapshotHasher().hash(prParams()),
+                prParams().entrySet().stream().collect(java.util.stream.Collectors.toMap(
+                        Map.Entry::getKey, entry -> String.valueOf(entry.getValue()))),
+                "run-owner",
+                Instant.now(),
+                Instant.now().plusSeconds(600),
+                "approved",
+                "snapshot-21",
+                "2.1.0",
+                "sha256:subject");
     }
 
     private static CapabilityDefinition prCreateDraft() {

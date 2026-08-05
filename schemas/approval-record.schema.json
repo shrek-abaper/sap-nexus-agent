@@ -26,6 +26,14 @@
     "approver": { "type": "string", "minLength": 1 },
     "approvedAt": { "type": "string", "format": "date-time" },
     "expiresAt": { "type": "string", "format": "date-time" },
-    "status": { "type": "string", "enum": ["pending", "approved", "executed", "rejected"] }
+    "status": { "type": "string", "enum": ["pending", "approved", "executing", "executed", "rejected", "expired", "revoked", "failed"] },
+    "registrySnapshotId": { "type": "string", "minLength": 1 },
+    "capabilityVersion": { "type": "string", "minLength": 1 },
+    "approvalSubjectHash": { "type": "string", "minLength": 1 }
+  },
+  "dependentRequired": {
+    "registrySnapshotId": ["capabilityVersion", "approvalSubjectHash"],
+    "capabilityVersion": ["registrySnapshotId", "approvalSubjectHash"],
+    "approvalSubjectHash": ["registrySnapshotId", "capabilityVersion"]
   }
 }

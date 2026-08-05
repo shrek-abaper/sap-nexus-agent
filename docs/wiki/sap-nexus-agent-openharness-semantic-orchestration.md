@@ -5,7 +5,7 @@
 | 字段 | 内容 |
 |---|---|
 | 文档名称 | `SAP Nexus Agent OpenHarness 对比与语义智能编排路线` |
-| 当前版本 | `v0.1.6` |
+| 当前版本 | `v0.1.7` |
 | 状态 | `Decision Baseline` |
 | 创建日期 | `2026-07-18` |
 | 最近更新 | `2026-08-05` |
@@ -14,12 +14,13 @@
 | 关联技术架构 | `docs/wiki/sap-nexus-agent-technical-architecture.md` |
 | 关联技术选型 | `docs/wiki/sap-nexus-agent-technology-selection.md` |
 | 关联实施路线 | `docs/wiki/sap-nexus-agent-implementation-roadmap.md` |
-| 关联 Runbook | 当前 `docs/runbooks/21-read-to-write-action-governance.md`；历史 `docs/runbooks/10-capability-composition-contract.md` |
+| 关联 Runbook | 当前 `docs/runbooks/22-end-to-end-agent-eval-release-gate.md`；历史 `docs/runbooks/10-capability-composition-contract.md` |
 
 ## 版本记录
 
 | 版本 | 日期 | 变更摘要 | 决策状态 |
 |---|---|---|---|
+| `v0.1.7` | `2026-08-05` | 同步 Runbooks 13-21 已归档及当前 Runbook 22 入口；OpenHarness 仍仅作机制参考，Runbook 21 fake/sandbox Action evidence 不等于 production orchestrator 或 live release gate | 当前决策基线 |
 | `v0.1.6` | `2026-08-05` | 同步 Runbooks 13-20 已归档及当前 Runbook 21 入口；OpenHarness 仍仅作机制参考，生产 orchestrator 未因 Workbench event/replay component/UI integration 自动成为 live | 当前决策基线 |
 | `v0.1.5` | `2026-08-05` | 同步 Runbooks 13-19 已归档及当前 Runbook 20 入口；OpenHarness 仍仅作机制参考，生产 orchestrator 未因 component PlanExecutor/OutputProjection/Recommendation/Narrative 自动成为 live | 当前决策基线 |
 | `v0.1.4` | `2026-08-05` | 同步 Runbooks 13-17 已归档及当前 Runbook 18 入口；OpenHarness 仍仅作机制参考，生产 orchestrator 未因 component PlanExecutor/OutputProjection 自动成为 live | 当前决策基线 |
@@ -424,4 +425,4 @@ Dynamic Planner 仍只能在已发布关系图内工作；它不能生成任意 
 | Dynamic Planner | Phase 3+ / Reserved |
 | Write composition | Reserved；保持逐节点审批和事务边界 |
 
-P0A、S2-A/S2-B、P0B 和 Runbooks 13-20 均已完成并归档。当前从 Runbook 21 开始，按 `21 -> 22` 完整交付；OpenHarness 继续只提供机制参考，不成为 runtime、执行权威或自由 Tool Calling 入口。
+P0A、S2-A/S2-B、P0B 和 Runbooks 13-21 均已完成并归档。当前从 Runbook 22 开始建立 production orchestration 与 L1/L2/L3 release gate；OpenHarness 继续只提供机制参考，不成为 runtime、执行权威或自由 Tool Calling 入口。

@@ -190,6 +190,43 @@ def test_approval_record_schema_rejects_missing_hash():
         pass
 
 
+def test_approval_record_schema_accepts_complete_plan_aware_binding():
+    schema = _load_schema("approval-record.schema.json")
+    record = {
+        "approvalId": "appr-plan-21",
+        "capabilityId": "MM.PR.CreateDraft",
+        "parameterSnapshotHash": "sha256:parameters",
+        "parameters": {"material": "M001"},
+        "approver": "run-owner",
+        "approvedAt": "2026-08-05T08:00:00Z",
+        "expiresAt": "2026-08-05T08:10:00Z",
+        "status": "approved",
+        "registrySnapshotId": "snapshot-21",
+        "capabilityVersion": "2.1.0",
+        "approvalSubjectHash": "sha256:subject-21",
+    }
+
+    jsonschema.validate(record, schema)
+
+
+def test_approval_record_schema_rejects_partial_plan_aware_binding():
+    schema = _load_schema("approval-record.schema.json")
+    record = {
+        "approvalId": "appr-plan-21",
+        "capabilityId": "MM.PR.CreateDraft",
+        "parameterSnapshotHash": "sha256:parameters",
+        "parameters": {"material": "M001"},
+        "approver": "run-owner",
+        "approvedAt": "2026-08-05T08:00:00Z",
+        "expiresAt": "2026-08-05T08:10:00Z",
+        "status": "approved",
+        "registrySnapshotId": "snapshot-21",
+    }
+
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.validate(record, schema)
+
+
 def test_action_result_schema_accepts_success():
     schema = _load_schema("action-result.schema.json")
     result = {

@@ -5,21 +5,24 @@
 | Field | Value |
 |---|---|
 | Runbook | `21-read-to-write-action-governance` |
-| Version | `v0.1.1` |
-| Status | `Planned / Current Entry` |
+| Version | `v0.2.0` |
+| Status | `Completed / Archived` |
 | Created / Updated | `2026-08-03 / 2026-08-05` |
 | Depends On | Runbooks 13, 15-20; archived sandbox write and durable approval foundations |
 | Unblocks | Runbook 22 |
+| Archive | `docs/comet/archive/2026-08-05-sap-nexus-read-to-write-action-governance/` |
 
 ## 1. Goal
 
 在多个 READ capability 形成事实和建议后，允许生成一个已注册 WRITE `ActionProposal`，经 Human Approval 后按批准快照 exactly-once 执行。
 
-## 2. Current Baseline
+## 2. Delivered Baseline
 
 - `MM.PR.CreateDraft` sandbox Action 已具备 approval、参数 snapshot hash、anti-replay、atomic claim、commit/rollback 和 trace。
-- durable approval store、trusted principal 和 SSE continuation 已实现。
-- 当前审批只覆盖原子 Action，尚未绑定多 READ plan、projection、facts 和 RuleSet。
+- `PlanApprovalRecord` 已将同一 run 的 plan、snapshot、Action node、capability/version、canonical parameters、facts、projection、RuleSets、proposal、owner、expiry/revocation 与 subject hash 绑定到既有 durable approval authority。
+- Human Approval 是 run owner 对所展示不可变 Action subject 的单用户 Human-in-the-loop confirmation，不是多人协同审批流；`confirmingPrincipal == runOwner`，`separationOfDutyResult=not_applicable`。
+- approved continuation 会从 durable authoritative state 重新加载并校验全部受治理绑定，再通过 continuation lease、Gateway atomic claim 与 durable result lookup 保证跨重试/重启 exactly-once。
+- Workbench 只在服务端 durable pending evidence 存在时显示确认操作；浏览器只提交 `approvalId` 和 decision，身份与授权上下文来自 trusted server context。
 
 ## 3. Contracts and Data Flow
 
@@ -64,8 +67,10 @@ scripts/verify-agent-callplan-evidence.sh
 openspec validate --all --strict
 ```
 
-本 runbook 的实现与测试默认使用 fake/sandbox boundary；任何新的真实 SAP WRITE 都需要用户另行明确确认。
+归档验证结果：frontend 42 files / 405 tests 与 production build 通过；Agent 959 passed / 1 skipped；PR Eval 9/9；Gateway `BUILD SUCCESSFUL`；call-plan evidence 通过；OpenSpec 20 passed / 0 failed；Native acceptance 35/35 passed。
+
+本 runbook 的实现与测试仅使用 fake/sandbox boundary，没有执行新的真实 SAP WRITE；任何 live SAP WRITE 仍需要用户针对精确 capability 与不可变参数快照另行明确确认。
 
 ## 8. Next Start Here
 
-复用现有 sandbox Action contract，不新建第二套 approval/Gateway。完成后由 Runbook 22 做三等级端到端 release gate。
+从 `22-end-to-end-agent-eval-release-gate.md` 开始建立 L1/L2/L3 三等级端到端 release gate。Runbook 21 的归档不能替代 Runbook 22 的 production orchestration、live smoke 或发布成熟度证明。

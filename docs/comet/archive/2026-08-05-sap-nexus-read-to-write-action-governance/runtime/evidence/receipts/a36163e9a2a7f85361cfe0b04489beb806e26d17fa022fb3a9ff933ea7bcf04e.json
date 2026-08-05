@@ -1,0 +1,28 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "manual-evidence",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "sap-nexus-read-to-write-action-governance",
+    "sourceRevision": 3,
+    "contractHash": "adda16949da898e64f56b2e7ecf9d0e1e264377cbf74331dc9d258e59e91d7d4",
+    "scopeHash": "088d3a5d76e5c8ad8ed7f01748b934d02266b96b46fa4c9e6853920ce22c1b0e",
+    "snapshotHash": "27d9d024ea05d9317f373d417893c3a3844f507bf39d2a626bcbd7c3ff60488c",
+    "artifactHash": "f9d8425d07978de723b29ed9f8afc38b44ba57f4472182349df105b52fd54026"
+  },
+  "acceptanceIds": [
+    "acceptance-aaa2108029b62874efdce64a9f63482d4bfe6342eb1ad714c7ed7517a8f26421"
+  ],
+  "actor": "native-runtime:manual-evidence",
+  "issuedAt": "2026-08-05T14:29:42.113Z",
+  "evidence": {
+    "steps": [
+      "Review every Verify command and execution boundary for live SAP side effects"
+    ],
+    "observations": [
+      "All Verify commands were automated unit/integration tests, fake Gateway or sandbox contract validation. No live SAP WRITE, approval token use against a live system, or real PR creation was executed."
+    ]
+  },
+  "receiptHash": "a36163e9a2a7f85361cfe0b04489beb806e26d17fa022fb3a9ff933ea7bcf04e"
+}

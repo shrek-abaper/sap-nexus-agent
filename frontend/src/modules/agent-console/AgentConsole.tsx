@@ -112,7 +112,11 @@ export function AgentConsole() {
     };
   }
 
-  async function decideApproval(serverRunId: string, decision: "approve" | "reject") {
+  async function decideApproval(
+    serverRunId: string,
+    approvalId: string,
+    decision: "approve" | "reject"
+  ) {
     const target = turns.find((turn) => turn.snapshot?.runId === serverRunId);
     if (!target?.snapshot) {
       return;
@@ -126,7 +130,7 @@ export function AgentConsole() {
       const response = await fetch(`/api/agent-runs/${serverRunId}/approval`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ decision })
+        body: JSON.stringify({ approvalId, decision })
       });
       if (!response.ok) {
         const body = (await response.json().catch(() => null)) as { message?: string } | null;
@@ -342,7 +346,7 @@ export function AgentConsole() {
               <ChatStream
                 turns={turns}
                 activeIndex={activeIndex}
-                onApprovalDecision={(serverRunId, decision) => void decideApproval(serverRunId, decision)}
+                onApprovalDecision={(serverRunId, approvalId, decision) => void decideApproval(serverRunId, approvalId, decision)}
               />
               <ChatComposer
                 value={query}

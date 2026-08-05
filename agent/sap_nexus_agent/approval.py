@@ -34,6 +34,8 @@ class ApprovalRecord:
     expires_at: datetime
     status: ApprovalState
     registry_snapshot_id: str = ""
+    capability_version: str = ""
+    approval_subject_hash: str = ""
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "ApprovalRecord":
@@ -50,10 +52,12 @@ class ApprovalRecord:
             expires_at=datetime.fromisoformat(str(payload.get("expiresAt", ""))),
             status=ApprovalState(str(payload.get("status", ""))),
             registry_snapshot_id=str(payload.get("registrySnapshotId", "")),
+            capability_version=str(payload.get("capabilityVersion", "")),
+            approval_subject_hash=str(payload.get("approvalSubjectHash", "")),
         )
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        payload = {
             "approvalId": self.approval_id,
             "capabilityId": self.capability_id,
             "parameterSnapshotHash": self.parameter_snapshot_hash,
@@ -62,8 +66,14 @@ class ApprovalRecord:
             "approvedAt": self.approved_at.isoformat(),
             "expiresAt": self.expires_at.isoformat(),
             "status": self.status.value,
-            "registrySnapshotId": self.registry_snapshot_id,
         }
+        if self.registry_snapshot_id:
+            payload["registrySnapshotId"] = self.registry_snapshot_id
+        if self.capability_version:
+            payload["capabilityVersion"] = self.capability_version
+        if self.approval_subject_hash:
+            payload["approvalSubjectHash"] = self.approval_subject_hash
+        return payload
 
 
 def compute_parameter_hash(parameters: dict[str, str]) -> str:
@@ -128,6 +138,8 @@ def create_approval_record(
     approver: str,
     ttl_seconds: int | None = None,
     registry_snapshot_id: str = "",
+    capability_version: str = "",
+    approval_subject_hash: str = "",
 ) -> ApprovalRecord:
     now = datetime.now(timezone.utc)
     record = ApprovalRecord(
@@ -140,6 +152,8 @@ def create_approval_record(
         expires_at=now + timedelta(seconds=_resolve_ttl(ttl_seconds)),
         status=ApprovalState.pending,
         registry_snapshot_id=registry_snapshot_id,
+        capability_version=capability_version,
+        approval_subject_hash=approval_subject_hash,
     )
     _append_trace_event(record, None, ApprovalState.pending)
     return record

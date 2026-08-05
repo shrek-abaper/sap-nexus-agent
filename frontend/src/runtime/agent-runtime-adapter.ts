@@ -19,6 +19,14 @@ import { canonicalJson, sha256Hex } from "./durable/canonical-json";
 import { idempotencyKey } from "./durable/idempotency";
 import type { ContinuationType } from "./durable/types";
 import type { TrustedPrincipal } from "./principal/types";
+import {
+  PlanActionContinuation,
+  hasDurablePlanActionEnvelope,
+  planApprovalOwnership,
+  type ActionGovernanceInput,
+  type PlanApprovalRecord,
+} from "./action-governance/action-governance";
+import { createServerActionGateway } from "./action-governance/server-action-gateway";
 
 export type { ApprovalDecision } from "./durable/types";
 
@@ -192,11 +200,19 @@ export async function getAgentRunEvents(
 ): Promise<AgentRunEvent[]> {
   const run = await runStore.load(runId);
   if (!run || run.principalId !== principal.principalId) return [];
+  if (planApprovalOwnership(run.pendingOutcome, principal) === false) return [];
   return run.events;
+}
+
+export async function prepareAgentRunPlanAction(
+  input: ActionGovernanceInput,
+): Promise<PlanApprovalRecord> {
+  return planActionRuntime().prepare(input);
 }
 
 export async function decideAgentRunApproval(
   runId: string,
+  approvalId: string,
   decision: ApprovalDecision,
   principal: TrustedPrincipal
 ): Promise<void> {
@@ -205,14 +221,27 @@ export async function decideAgentRunApproval(
     throw new Error("Agent run not found");
   }
 
+  const approvalRecordForIdem = objectOrNull(record.pendingOutcome?.approvalRecord);
+  const serverApprovalId = textValue(approvalRecordForIdem?.approvalId)
+    ?? textValue(approvalRecordForIdem?.id);
+  if (!serverApprovalId || serverApprovalId !== approvalId) {
+    throw new Error("Agent run approval identity does not match the pending record");
+  }
+
+  if (hasDurablePlanActionEnvelope(record.pendingOutcome)) {
+    const runtime = planActionRuntime();
+    const outcome = await runtime.recordDecision(runId, approvalId, decision, principal, new Date().toISOString());
+    if (decision === "approve" && outcome.status === "approved") {
+      void executePlanActionInBackground(runtime, runId, approvalId, principal);
+    }
+    return;
+  }
+
   // idempotency: a retried continuation returns the already-recorded result
   // without re-executing. Checked before the pendingOutcome/decision guards so
   // a duplicate request is a no-op rather than an "already decided" error.
   const continuationType: ContinuationType = decision === "approve" ? "approval_approve" : "approval_reject";
-  const approvalRecordForIdem = objectOrNull(record.pendingOutcome?.approvalRecord);
-  const approvalRecordId =
-    textValue(approvalRecordForIdem?.id) ?? sha256Hex(canonicalJson(approvalRecordForIdem)).slice(0, 16);
-  const idemKey = idempotencyKey(runId, continuationType, { decision, approvalRecordId });
+  const idemKey = idempotencyKey(runId, continuationType, { decision, approvalRecordId: serverApprovalId });
   if (await runStore.lookupExecuted(idemKey)) {
     return;
   }
@@ -723,6 +752,33 @@ function buildRuntimeFailureEventsTail(runId: string, baseSequence: number, time
   const safeMessage = error instanceof Error ? error.message : "Agent runtime failed";
   return [{ runId, sequence: baseSequence + 1, timestamp, type: "run_failed", state: "failed",
     error: { errorType: "AGENT_RUNTIME_ERROR", message: safeMessage, stage: "running" } }];
+}
+
+function planActionRuntime(): PlanActionContinuation {
+  return new PlanActionContinuation(runStore, createServerActionGateway(), workerId);
+}
+
+async function executePlanActionInBackground(
+  runtime: PlanActionContinuation,
+  runId: string,
+  approvalId: string,
+  principal: TrustedPrincipal,
+): Promise<void> {
+  try {
+    await runtime.executeDurable(runId, approvalId, principal, new Date().toISOString());
+  } catch (error) {
+    const record = await runStore.load(runId);
+    const events = buildRuntimeFailureEventsTail(
+      runId,
+      record?.events.length ?? 0,
+      new Date().toISOString(),
+      error,
+    );
+    for (const event of events) {
+      await runStore.appendEvent(runId, event);
+    }
+    await runStore.release(runId, workerId);
+  }
 }
 
 async function runLocalPythonAgent(input: AgentRunnerInput): Promise<WorkbenchOutcome> {

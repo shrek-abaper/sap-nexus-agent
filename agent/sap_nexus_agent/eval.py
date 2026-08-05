@@ -108,6 +108,9 @@ class FakeGatewayClient:
         parameters: dict[str, str],
         approval_id: str | None = None,
         parameter_snapshot_hash: str | None = None,
+        registry_snapshot_id: str | None = None,
+        capability_version: str | None = None,
+        approval_subject_hash: str | None = None,
     ) -> ExecutionResult:
         self.execute_calls.append((capability_id, dict(parameters)))
         return ExecutionResult.from_dict(self.execution_payload)

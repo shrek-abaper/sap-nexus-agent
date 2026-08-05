@@ -1,0 +1,57 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "sap-nexus-read-to-write-action-governance",
+    "sourceRevision": 3,
+    "contractHash": "adda16949da898e64f56b2e7ecf9d0e1e264377cbf74331dc9d258e59e91d7d4",
+    "scopeHash": "088d3a5d76e5c8ad8ed7f01748b934d02266b96b46fa4c9e6853920ce22c1b0e",
+    "snapshotHash": "27d9d024ea05d9317f373d417893c3a3844f507bf39d2a626bcbd7c3ff60488c",
+    "artifactHash": "f9d8425d07978de723b29ed9f8afc38b44ba57f4472182349df105b52fd54026"
+  },
+  "acceptanceIds": [
+    "acceptance-569622e2ace76dd9ff6c4171b1266eb4d05cc54f9d0a245118858b1efe44903e",
+    "acceptance-6e559f1c33eb1d1f18a352c277060ca6db278c20d5279f7c5858fc869c31be78",
+    "acceptance-7970a069db695e4fe249d75f1f07e6c9b073cef42d6dc3a385986c70fe6fbbbf",
+    "acceptance-9381860a2a92e5941a987c4e0c0159c66ec7857006228f76ea8ed6a20f0bae7e",
+    "acceptance-aaa2108029b62874efdce64a9f63482d4bfe6342eb1ad714c7ed7517a8f26421",
+    "acceptance-cf7e9a1be631051295d9f42be4cbc292c459171f5152598f49d744aee29b00a0",
+    "acceptance-d1416132eb6e6b6e2f3b220c2e19dc3b6e85509e8b7eb9c6d4cdcdcaae742468",
+    "acceptance-debab357d15f9e58656e9c50884c15b7931599691d603d7f4c5a482993bfe3df",
+    "acceptance-ded14a57da88b01ec9ccd9a5962495cce64393d9568c3fda6c1ae42fc251ab25",
+    "acceptance-e032385e7847c526045ab967906eada8909dbef9f06ddcef17425cd94d33222d",
+    "acceptance-e4afdd3c096da5923bff2a3e542bc8b697c13f726da5099710a532e0b8b0c749"
+  ],
+  "actor": "native-runtime:command:bash",
+  "issuedAt": "2026-08-05T14:25:49.940Z",
+  "evidence": {
+    "executable": "bash",
+    "args": [
+      "scripts/comet-verify-gateway.sh"
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 120000,
+    "startedAt": "2026-08-05T14:25:39.030Z",
+    "endedAt": "2026-08-05T14:25:49.940Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "5aa6071780fcf1c014d492cb5d8e5cb8903bfeae",
+      "afterCommit": "5aa6071780fcf1c014d492cb5d8e5cb8903bfeae"
+    },
+    "afterFence": {
+      "snapshotHash": "27d9d024ea05d9317f373d417893c3a3844f507bf39d2a626bcbd7c3ff60488c",
+      "scopeHash": "088d3a5d76e5c8ad8ed7f01748b934d02266b96b46fa4c9e6853920ce22c1b0e",
+      "matched": true
+    },
+    "outputHash": "56d40990e93a023bfa030159392bc747760c91f7884add82fe727e041076ed86",
+    "outputSummary": "To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.8/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.\nDaemon will be stopped at the end of the build \n> Task :core:compileJava UP-TO-DATE\n> Task :core:processResources NO-SOURCE\n> Task :core:classes UP-TO-DATE\n> Task :core:jar UP-TO-DATE\n> Task :jco:compileJava UP-TO-DATE\n> Task :jco:processResources NO-SOURCE\n> Task :jco:classes UP-TO-DATE\n> Task :jco:jar UP-TO-DATE\n> Task :odata:compileJava UP-TO-DATE\n> Task :odata:processResources NO-SOURCE\n> Task :odata:classes UP-TO-DATE\n> Task :odata:jar UP-TO-DATE\n> Task :app:compileJava UP-TO-DATE\n> Task :app:processResources UP-TO-DATE\n> Task :app:classes UP-TO-DATE\n> Task :app:compileTestJava UP-TO-DATE\n> Task :app:processTestResources NO-SOURCE\n> Task :app:testClasses UP-TO-DATE\n> Task :app:test UP-TO-DATE\n> Task :core:compileTestJava UP-TO-DATE\n> Task :core:processTestResources NO-SOURCE\n> Task :core:testClasses UP-TO-DATE\n> Task :core:test UP-TO-DATE\n> Task :jco:compileTestJava UP-TO-DATE\n> Task :jco:processTestResources NO-SOURCE\n> Task :jco:testClasses UP-TO-DATE\n> Task :jco:test UP-TO-DATE\n> Task :odata:compileTestJava UP-TO-DATE\n> Task :odata:processTestResources NO-SOURCE\n> Task :odata:testClasses UP-TO-DATE\n> Task :odata:test UP-TO-DATE\n\nBUILD SUCCESSFUL in 10s\n16 actionable tasks: 16 up-to-date",
+    "outputTruncated": false
+  },
+  "receiptHash": "30e148705773f1f56a11b24e5741c4e18f82cfbbdb9771685d6cf3dcb8c153b2"
+}

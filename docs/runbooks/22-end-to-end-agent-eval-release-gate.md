@@ -5,9 +5,9 @@
 | Field | Value |
 |---|---|
 | Runbook | `22-end-to-end-agent-eval-release-gate` |
-| Version | `v0.1.0` |
-| Status | `Planned` |
-| Created / Updated | `2026-08-03` |
+| Version | `v0.1.1` |
+| Status | `Planned / Current Entry` |
+| Created / Updated | `2026-08-03 / 2026-08-05` |
 | Depends On | Runbooks 13-21 |
 | Unblocks | 完整 Agent MVP 发布与后续扩展评估 |
 
@@ -18,7 +18,8 @@
 ## 2. Current Baseline
 
 - 已有 inventory、seed、PO、matcher、dry-run、PR 与 narrative eval，以及 OpenSpec/verify script 门禁。
-- 缺少覆盖 PlanExecutor、OutputProjection、Recommendation、NarrativeEnvelope、plan-aware approval、reconnect/replay 的统一 release suite。
+- Runbooks 13-21 已归档；PlanExecutor、OutputProjection、Recommendation、NarrativeEnvelope、Workbench 与 plan-aware single-user HITL Action continuation 均有 component/runtime 证据。
+- 仍缺少把上述能力统一到 production orchestration、live smoke 与 L1/L2/L3 release decision 的端到端 suite。
 
 ## 3. Maturity Levels
 
