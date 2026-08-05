@@ -60,7 +60,7 @@ Build config: isolation=branch, build_mode=subagent-driven-development, tdd_mode
 - [x] Task 1: 冻结 projection 类型契约
 - [x] Task 2: 实现版本化 OutputProjectionRegistry
 - [x] Task 3: 扩展 PlanExecutor 保留并恢复成功节点数据
-- [ ] Task 4: 实现 FactBuilderRegistry 与 ProjectionInputAssembler
+- [x] Task 4: 实现 FactBuilderRegistry 与 ProjectionInputAssembler
 - [ ] Task 5: 实现确定性 hash 与 MaterialSupplySnapshot projection
 - [ ] Task 6: 完成端到端 Projection Eval 与隔离证明
 - [ ] Task 7: 全量相关验证与 OpenSpec 任务收口
@@ -70,6 +70,11 @@ Build config: isolation=branch, build_mode=subagent-driven-development, tdd_mode
 - Task 1: complete (commits efcbe61..aea5172, review clean: Spec compliant + Quality Approved, 0 Critical/Important/Minor). Projection type contracts + 1/1 focused test + typecheck clean.
 - Task 2: complete (commits 3d2662b..127d115, review clean: Spec compliant + Quality Approved, 0 Critical/Important/Minor). Exact version registry + structured fail-closed + duplicate rejection, 4/4 tests clean.
 - Task 3: complete (commits dc10caa..291f2c2, review clean: Spec compliant + Quality Approved, 0 Critical/Important/Minor). Fresh/cache/restart projection data retention, 27/27 executor tests + typecheck clean.
+- Task 4: complete (commits 010a450..b8147fd, final review: Spec compliant + Quality Approved, 0 Critical/Important, 1 Minor deferred). Fact builders + assembler + nullable trace degradation + strict freshness/calendar validation + PO item identity; focused 24/24, frontend 221/221, typecheck/build, diff check, OpenSpec strict 20/20.
+
+## Minor findings (deferred to final review)
+
+- Task 4 M1: `assembler.ts` uses `Math.min(...facts.map(...))`; extremely large fact arrays may hit the JavaScript argument limit. Final reviewer should triage replacing it with iteration/reduce.
 
 ## Current Blocker
 

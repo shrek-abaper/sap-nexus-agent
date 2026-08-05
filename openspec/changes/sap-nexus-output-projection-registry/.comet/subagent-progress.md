@@ -16,13 +16,14 @@
   - `4.3 assembler 隔离 raw/conversation/model input`
   - `4.4 assembler 单测`
   - `Missing FactBuilder graceful degradation`
-- Stage: `implementing` (user-authorized final round 4 exception)
+- Stage: `checkoff` (Task 4 review passed; targeted checkoff pending)
 - Implementer status: `DONE` (review-fix round 1 committed by fixer)
 - Base commit: `010a4500aad2ac47e01326262413f2d7d3899f43`
 - Implementation commit: `40d295563e8adadb0e0de6101180a40b736ba160`
 - Review-fix commit: `78b542b51a5a0d057312c0d64b2fa2e7cb1d70cc`
 - Review-fix round 2 commit: `2d6027733f90aacd2fd35f3f4e2dc6ae91c5ce31`
 - Review-fix round 3 commit: `53f2681219ae0604ae267389ef53fc328d5652bc`
+- Review-fix round 4 commit: `b8147fd44f0cd2b14e8607899d5bc3dd1c23154b`
 - Changed files: initial implementation changed `frontend/src/runtime/projection/types.ts`, `frontend/src/runtime/projection/fact-builder.ts`, `frontend/src/runtime/projection/fact-builder.test.ts`, `frontend/src/runtime/projection/assembler.ts`, `frontend/src/runtime/projection/assembler.test.ts`; review-fix round 1 changed `frontend/src/runtime/plan-executor/types.ts`, `frontend/src/runtime/plan-executor/plan-executor.ts`, `frontend/src/runtime/plan-executor/plan-executor.test.ts`, `frontend/src/runtime/plan-executor/plan-executor-recovery.test.ts`, `frontend/src/runtime/projection/fact-builder.ts`, `frontend/src/runtime/projection/fact-builder.test.ts`, `frontend/src/runtime/projection/assembler.test.ts`.
 - RED evidence: both focused suites failed with expected missing `./fact-builder` and `./assembler` modules.
 - GREEN evidence: focused suites passed (2 files, 8 tests), typecheck and diff check passed; full frontend verify passed (26 files, 194 tests + production build).
@@ -33,6 +34,14 @@
 - Task review: needs fixes (0 Critical, 3 Important, 0 Minor)
 - Re-review round 1: fresh reviewer `task4_rereview1` reviewed `010a450..78b542b`; result needs fixes (0 Critical, 1 Important, 0 Minor). Report: `.superpowers/sdd/task-4-rereview-1.md`.
 - Review/fix round: 4/4 (explicitly authorized by the user after the 3/3 blocker)
+- Round 4 dispatch: fresh fixer `task4_fix4`, model `gpt-5.6-sol` (high), implementing Task 4 Steps 17-21; report appends to `.superpowers/sdd/task-4-report.md`.
+- Round 4 RED evidence: focused fact-builder suite failed as intended (5 failed, 19 passed) for invalid calendar acceptance and missing PO item evidence identity.
+- Round 4 GREEN evidence: focused fact-builder suite passed 24/24; full frontend verify passed (26 files, 221 tests + production build), `git diff --check` passed, and strict OpenSpec validation passed 20/20.
+- Round 4 changed files: only `frontend/src/runtime/projection/fact-builder.ts` and `frontend/src/runtime/projection/fact-builder.test.ts`.
+- Round 4 re-review dispatch: fresh reviewer `task4_rereview4`, model `gpt-5.6-sol` (high), reviewing `.superpowers/sdd/review-010a450..b8147fd.diff`; report target `.superpowers/sdd/task-4-rereview-4.md`.
+- Round 4 re-review: Spec compliant + Quality Approved (0 Critical, 0 Important, 1 Minor). Report: `.superpowers/sdd/task-4-rereview-4.md`.
+- Deferred Minor for final review: replace `Math.min(...facts.map(...))` in `assembler.ts` with iteration/reduce to avoid an engine argument-limit edge on extremely large fact arrays.
+- Unresolved blocking feedback: none.
 - Round 3 fixer: fresh fixer `task4_fix3`, model `gpt-5.6-sol` (high), completed Task 4 Steps 12-16; report appended to `.superpowers/sdd/task-4-report.md`.
 - Round 3 RED evidence: focused executor/projection suites failed as intended (4 files failed, 10 tests failed, 37 passed) across nullable trace observability, PO item precedence, freshness validation, and epoch aggregation.
 - Round 3 GREEN evidence: the same focused suites passed (4 files, 47 tests); full frontend verify passed (26 files, 206 tests + production build), `git diff --check` passed, and strict OpenSpec validation passed 20/20.

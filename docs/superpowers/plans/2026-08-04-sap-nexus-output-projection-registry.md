@@ -369,7 +369,7 @@ git commit -m "feat(plan-executor): retain succeeded node projection data"
 - Consumes: `PlanExecutorResult.succeededNodeResults`
 - Produces: `FactBuilderRegistry.resolve()`、`createMaterialSupplyFactBuilderRegistry()`、`ProjectionInputAssembler.assemble(result, registry): ProjectionInput`
 
-- [ ] **Step 1: 写失败测试覆盖双 READ、freshness 回退、非成功排除和 missing builder**
+- [x] **Step 1: 写失败测试覆盖双 READ、freshness 回退、非成功排除和 missing builder**
 
 测试 fixture 固定两个 `NodeFactRecord`：inventory data 为 `{ availableQuantity: 7, unit: "EA", dataAsOf: "2026-08-04T00:00:00Z" }`，PO data 为 `{ purchaseOrders: [{ purchaseOrder: "4500001", orderQuantity: 2, purchaseOrderUnit: "EA" }], dataAsOf: "2026-08-04T00:00:00Z" }`。断言：
 
@@ -383,13 +383,13 @@ expect(input.facts.some((fact) => fact.source.nodeId === "node.failed")).toBe(fa
 
 另建 unknown capability 的 succeeded record，断言无 fact，且 `missingFacts` 为 `[{ factType: "InventoryAvailability", reason: "no_fact_builder" }]`；删除 `dataAsOf` 后断言 fact `asOf === nodeExecutedAt`。
 
-- [ ] **Step 2: 运行 builder/assembler 测试确认失败**
+- [x] **Step 2: 运行 builder/assembler 测试确认失败**
 
 Run: `npm --prefix frontend test -- src/runtime/projection/fact-builder.test.ts src/runtime/projection/assembler.test.ts`
 
 Expected: FAIL，两个模块均不存在。
 
-- [ ] **Step 3: 实现 registry 和两个 capability-specific builder**
+- [x] **Step 3: 实现 registry 和两个 capability-specific builder**
 
 `FactBuilderRegistry.register()` 拒绝重复 capability；`resolve()` 对未知 capability 返回 `null`。builder 统一用 `freshness(record, "dataAsOf")`，只读取白名单字段并产生稳定 factId `${nodeId}:${predicate}:${index}`；`source` 固定包含 `{ nodeId, capabilityId, factType }`，`gatewayTraceId` 来自 record。inventory builder 仅在 numeric `availableQuantity` 时产一条 `availableQuantity` fact；PO builder 遍历 `purchaseOrders`（含 header `items[]` 与 flat shape），稳定按 `purchaseOrder/material/plant` 排序后产 `purchaseOrderItem` facts。
 
@@ -418,7 +418,7 @@ function dataAsOf(record: NodeFactRecord, field = "dataAsOf"): string {
 
 `createMaterialSupplyFactBuilderRegistry()` 注册 `MM.Inventory.GetAvailability` 和 `MM.PurchaseOrder.GetList`，两项均显式声明 `freshnessField: "dataAsOf"`。
 
-- [ ] **Step 4: 实现 assembler，输入签名不允许 conversation/model/raw payload 参数**
+- [x] **Step 4: 实现 assembler，输入签名不允许 conversation/model/raw payload 参数**
 
 ```typescript
 export class ProjectionInputAssembler {
@@ -446,20 +446,20 @@ export class ProjectionInputAssembler {
 }
 ```
 
-- [ ] **Step 5: 运行 builder/assembler tests 与 typecheck**
+- [x] **Step 5: 运行 builder/assembler tests 与 typecheck**
 
 Run: `npm --prefix frontend test -- src/runtime/projection/fact-builder.test.ts src/runtime/projection/assembler.test.ts && npm --prefix frontend run typecheck`
 
 Expected: PASS；测试证明 only-succeeded、双时间戳回退、missing builder 和隔离签名。
 
-- [ ] **Step 6: Commit fact builders and assembler**
+- [x] **Step 6: Commit fact builders and assembler**
 
 ```bash
 git add frontend/src/runtime/projection/types.ts frontend/src/runtime/projection/fact-builder.ts frontend/src/runtime/projection/fact-builder.test.ts frontend/src/runtime/projection/assembler.ts frontend/src/runtime/projection/assembler.test.ts
 git commit -m "feat(projection): assemble normalized facts from executor results"
 ```
 
-- [ ] **Step 7: 写 reviewer-fix RED tests**
+- [x] **Step 7: 写 reviewer-fix RED tests**
 
 在 executor fresh/restart tests 断言 `NodeFactRecord.agentTraceId === runId` 且不等于 `gatewayTraceId`；在 builder tests 增加 decimal string、`NaN`、`Infinity`、非法 string，以及相同 `purchaseOrder/material/plant` 不同 item/quantity 的 reversed-input permutation：
 
@@ -471,30 +471,30 @@ expect(buildFacts([...rows].reverse())).toEqual(buildFacts(rows));
 expect(facts.every((fact) => fact.agentTraceId === "run-1" && fact.traceId === "run-1")).toBe(true);
 ```
 
-- [ ] **Step 8: 运行 reviewer-fix tests 确认失败**
+- [x] **Step 8: 运行 reviewer-fix tests 确认失败**
 
 Run: `npm --prefix frontend test -- src/runtime/plan-executor/plan-executor.test.ts src/runtime/plan-executor/plan-executor-recovery.test.ts src/runtime/projection/fact-builder.test.ts src/runtime/projection/assembler.test.ts`
 
 Expected: FAIL；缺 `agentTraceId`、空 fact traces、decimal string value 为 `null` 或 reversed permutation 不一致，且失败均对应 reviewer finding。
 
-- [ ] **Step 9: 实现 run correlation 与确定性 PO normalization**
+- [x] **Step 9: 实现 run correlation 与确定性 PO normalization**
 
 `NodeFactRecord.agentTraceId` 在 fresh、cache replay、existing-`SUCCEEDED` hydration 中统一使用当前 `execute(..., runId, ...)` 的 `runId`；无需新增 cache 字段。FactBuilder 将 `agentTraceId`/`traceId` 设为 record 的 agent trace。PO quantity 用显式 finite-decimal parser 归一，evidence 保留原始白名单 scalar；排序 key 包含 item、normalized quantity、unit 和 canonical whitelisted row，形成 total order。
 
-- [ ] **Step 10: 运行 reviewer-fix GREEN 与完整 frontend verify**
+- [x] **Step 10: 运行 reviewer-fix GREEN 与完整 frontend verify**
 
 Run: `npm --prefix frontend test -- src/runtime/plan-executor/plan-executor.test.ts src/runtime/plan-executor/plan-executor-recovery.test.ts src/runtime/projection/fact-builder.test.ts src/runtime/projection/assembler.test.ts && npm --prefix frontend run verify`
 
 Expected: focused tests PASS；frontend typecheck、全部 Vitest 和 production build PASS；无空 agent trace、raw payload leak 或 Runbook 16 回归。
 
-- [ ] **Step 11: Commit Task 4 review fixes**
+- [x] **Step 11: Commit Task 4 review fixes**
 
 ```bash
 git add frontend/src/runtime/plan-executor/types.ts frontend/src/runtime/plan-executor/plan-executor.ts frontend/src/runtime/plan-executor/plan-executor.test.ts frontend/src/runtime/plan-executor/plan-executor-recovery.test.ts frontend/src/runtime/projection/fact-builder.ts frontend/src/runtime/projection/fact-builder.test.ts frontend/src/runtime/projection/assembler.test.ts
 git commit -m "fix(projection): preserve fact correlation and ordering"
 ```
 
-- [ ] **Step 12: 写第三轮 reviewer-fix RED tests，锁定显式降级、PO precedence 与 freshness epoch**
+- [x] **Step 12: 写第三轮 reviewer-fix RED tests，锁定显式降级、PO precedence 与 freshness epoch**
 
 在 executor fresh/cache/existing-`SUCCEEDED` tests 中分别覆盖 missing 与 blank Gateway trace，断言成功节点仍保留 nullable record、cache 路径不重调 Gateway；在 assembler/builder tests 中覆盖 `missing_gateway_trace`、item 字段存在优先、非法 freshness 回退及跨 offset epoch 排序：
 
@@ -519,32 +519,32 @@ expect(offsetInput.planExecutionRecord.asOf).toBe("2026-08-03T23:30:00.000Z");
 expect(equivalentInstantInput.planExecutionRecord.asOf).toBe("2026-08-04T00:00:00.000Z");
 ```
 
-- [ ] **Step 13: 运行第三轮 reviewer-fix tests 确认目标行为失败**
+- [x] **Step 13: 运行第三轮 reviewer-fix tests 确认目标行为失败**
 
 Run: `npm --prefix frontend test -- src/runtime/plan-executor/plan-executor.test.ts src/runtime/plan-executor/plan-executor-recovery.test.ts src/runtime/projection/fact-builder.test.ts src/runtime/projection/assembler.test.ts`
 
 Expected: FAIL；旧实现会丢弃 missing/blank Gateway trace 的成功 record、允许 item 非法 quantity 回退 header、接受无时区或 malformed `dataAsOf`，或按字符串而非 epoch 选择 aggregate `asOf`。RED 报告必须逐项记录命令和失败摘要。
 
-- [ ] **Step 14: 实现 nullable Gateway trace、field-presence precedence 与 ISO-8601 epoch aggregation**
+- [x] **Step 14: 实现 nullable Gateway trace、field-presence precedence 与 ISO-8601 epoch aggregation**
 
 将 `NodeFactRecord.gatewayTraceId` 改为 `string | null`。fresh、cache replay 与 existing-`SUCCEEDED` hydration 对缺失/纯空白 trace 统一写 `null`，但仍保留完整 record，且不改变 `SUCCEEDED`、不重调 Gateway、不用 `runId` 替代。assembler 在 trace 为 `null` 时跳过 builder，并对每个 `producesFactTypes` 写入 `{ reason: "missing_gateway_trace" }`；通过类型收窄使 builder 继续只接收非空 trace record，`ReasoningFact.gatewayTraceId` 保持 `string`。
 
 PO builder 使用 `Object.prototype.hasOwnProperty.call(item, "orderQuantity")` 先选择 item/header 原值，再只归一一次；item 值非法或为空时保留 item evidence、`value = null`，不得回退 header。freshness helper 只接受带 `Z` 或 `+/-HH:mm` 显式时区且 `Date.parse()` 为有限 epoch 的 ISO-8601 string，否则回退 `nodeExecutedAt`；fact 保留选中来源字符串，assembler 按 epoch 取最早 instant，并用 `new Date(minEpoch).toISOString()` 输出 aggregate `asOf`。
 
-- [ ] **Step 15: 运行第三轮 GREEN、完整 frontend 与严格 OpenSpec 验证**
+- [x] **Step 15: 运行第三轮 GREEN、完整 frontend 与严格 OpenSpec 验证**
 
 Run: `npm --prefix frontend test -- src/runtime/plan-executor/plan-executor.test.ts src/runtime/plan-executor/plan-executor-recovery.test.ts src/runtime/projection/fact-builder.test.ts src/runtime/projection/assembler.test.ts && npm --prefix frontend run verify && git diff --check && comet classic openspec -- validate --all --strict`
 
 Expected: focused tests PASS；frontend typecheck、全部 Vitest 与 production build PASS；diff check PASS；OpenSpec strict validation 20/20 PASS。报告必须包含 RED/GREEN 命令、测试数量、完整验证结果和风险信号。
 
-- [ ] **Step 16: Commit Task 4 explicit degradation fixes**
+- [x] **Step 16: Commit Task 4 explicit degradation fixes**
 
 ```bash
 git add frontend/src/runtime/plan-executor/types.ts frontend/src/runtime/plan-executor/plan-executor.ts frontend/src/runtime/plan-executor/plan-executor.test.ts frontend/src/runtime/plan-executor/plan-executor-recovery.test.ts frontend/src/runtime/projection/types.ts frontend/src/runtime/projection/fact-builder.ts frontend/src/runtime/projection/fact-builder.test.ts frontend/src/runtime/projection/assembler.ts frontend/src/runtime/projection/assembler.test.ts
 git commit -m "fix(projection): preserve succeeded-node degradation"
 ```
 
-- [ ] **Step 17: 写第四轮 reviewer-fix RED tests，锁定 calendar validity 与 PO item identity**
+- [x] **Step 17: 写第四轮 reviewer-fix RED tests，锁定 calendar validity 与 PO item identity**
 
 在 `frontend/src/runtime/projection/fact-builder.test.ts` 增加非法日历日期回退和 item identity evidence 两组回归：
 
@@ -579,13 +579,13 @@ it("preserves purchase-order item identity in fact evidence", () => {
 });
 ```
 
-- [ ] **Step 18: 运行第四轮 reviewer-fix tests 确认两个 finding 均失败**
+- [x] **Step 18: 运行第四轮 reviewer-fix tests 确认两个 finding 均失败**
 
 Run: `npm --prefix frontend test -- src/runtime/projection/fact-builder.test.ts`
 
 Expected: FAIL；非法日期被旧 freshness helper 接受而未回退，且 PO evidence 缺 `purchaseOrderItem`，两组失败均直接对应 `.superpowers/sdd/task-4-rereview-3.md` 的 Important finding。
 
-- [ ] **Step 19: 实现严格 calendar validation 并保留 PO item evidence**
+- [x] **Step 19: 实现严格 calendar validation 并保留 PO item evidence**
 
 把 freshness regex 改为捕获 year/month/day/hour/minute/second/timezone 的形式；新增纯函数检查 month `1..12`、day 不超过该月天数（闰年规则：`year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0)`）、hour `0..23`、minute/second `0..59`、offset hour `0..23`、offset minute `0..59`，之后才允许 `Date.parse()` 的 finite epoch。不得把 parsed/canonical UTC 替换进 fact `asOf`；合法 source string 仍原样保留，非法值回退 `nodeExecutedAt`。
 
@@ -602,13 +602,13 @@ function daysInMonth(year: number, month: number): number {
 
 在 PO fact 的白名单 evidence 中加入 `purchaseOrderItem: row.purchaseOrderItem`；不 spread raw row，不改变既有 total-order、quantity precedence 或 factId 规则。
 
-- [ ] **Step 20: 运行第四轮 GREEN 与完整验证**
+- [x] **Step 20: 运行第四轮 GREEN 与完整验证**
 
 Run: `npm --prefix frontend test -- src/runtime/projection/fact-builder.test.ts && npm --prefix frontend run verify && git diff --check && comet classic openspec -- validate --all --strict`
 
 Expected: focused fact-builder tests PASS；frontend typecheck、全部 Vitest 与 production build PASS；diff check PASS；OpenSpec strict validation 20/20 PASS。报告必须包含第四轮 RED/GREEN 命令和数量，并确认合法 leap-day/offset freshness 仍保留 source string。
 
-- [ ] **Step 21: Commit Task 4 strict freshness and item identity fixes**
+- [x] **Step 21: Commit Task 4 strict freshness and item identity fixes**
 
 ```bash
 git add frontend/src/runtime/projection/fact-builder.ts frontend/src/runtime/projection/fact-builder.test.ts
