@@ -629,7 +629,7 @@ git commit -m "fix(projection): validate fact source identity"
 - Consumes: `ProjectionInput`、`canonicalJson`/`sha256Hex` from `../durable/canonical-json`
 - Produces: `computeOutputHash()`、`materialSupplySnapshotProjection`、`createOutputProjectionRegistry()`
 
-- [ ] **Step 1: 写 hash 失败测试**
+- [x] **Step 1: 写 hash 失败测试**
 
 构造两条 facts，分别交换数组顺序、改变 `value`、`version`、`snapshotId`：
 
@@ -644,7 +644,7 @@ expect(computeOutputHash([factA], "1.0.0", "snap-1"))
   .not.toBe(computeOutputHash([factA], "1.0.0", "snap-2"));
 ```
 
-- [ ] **Step 2: 运行 hash 测试确认失败，再实现稳定排序和精确拼接规则**
+- [x] **Step 2: 运行 hash 测试确认失败，再实现稳定排序和精确拼接规则**
 
 Run: `npm --prefix frontend test -- src/runtime/projection/hash.test.ts`
 
@@ -670,7 +670,7 @@ Run: `npm --prefix frontend test -- src/runtime/projection/hash.test.ts`
 
 Expected: PASS，same case 相同，三类 different case 均不同。
 
-- [ ] **Step 3: 写 projection 失败测试覆盖核心裁决**
+- [x] **Step 3: 写 projection 失败测试覆盖核心裁决**
 
 在 `material-supply-snapshot.test.ts` 使用纯 `ProjectionInput` fixtures，先写以下断言：
 
@@ -682,13 +682,13 @@ Expected: PASS，same case 相同，三类 different case 均不同。
 - 同分组同值：按 `factId` 留一条且无限制；异值：两条均 `conflict: true`、稳定排序、`conflict` limitation；required 时 `incomplete`。
 - assembler 的 `no_fact_builder` missing fact：`incomplete` + 同类 limitation。
 
-- [ ] **Step 4: 运行 projection 测试确认失败**
+- [x] **Step 4: 运行 projection 测试确认失败**
 
 Run: `npm --prefix frontend test -- src/runtime/projection/material-supply-snapshot.test.ts`
 
 Expected: FAIL，模块不存在。
 
-- [ ] **Step 5: 实现 declaration 和确定性 project pipeline**
+- [x] **Step 5: 实现 declaration 和确定性 project pipeline**
 
 `materialSupplySnapshotProjection` 固定：`projectionId="material-supply-snapshot"`、`version="1.0.0"`、`requiredFactTypes=["InventoryAvailability"]`、`optionalFactTypes=["PurchaseOrder"]`、`outputSchema="MaterialSupplySnapshot@1.0.0"`、`timeBasis="dataAsOf"`、`partialPolicy="complete-partial-incomplete"`。这样双 READ 可达 `complete`，inventory-only 可验证 optional 缺失的 `partial`，任一节点失败仍按 §6.1 降为 `incomplete`。`project()` 按此顺序处理：
 
@@ -710,13 +710,13 @@ export function createOutputProjectionRegistry(): OutputProjectionRegistry {
 }
 ```
 
-- [ ] **Step 6: 运行 projection/hash/registry tests**
+- [x] **Step 6: 运行 projection/hash/registry tests**
 
 Run: `npm --prefix frontend test -- src/runtime/projection/hash.test.ts src/runtime/projection/material-supply-snapshot.test.ts src/runtime/projection/registry.test.ts`
 
 Expected: PASS；所有输出数组在输入倒序时仍深相等，且 registry exact resolve 返回首个 projection。
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add frontend/src/runtime/projection/hash.ts frontend/src/runtime/projection/hash.test.ts frontend/src/runtime/projection/material-supply-snapshot.ts frontend/src/runtime/projection/material-supply-snapshot.test.ts

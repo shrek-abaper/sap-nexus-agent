@@ -61,7 +61,7 @@ Build config: isolation=branch, build_mode=subagent-driven-development, tdd_mode
 - [x] Task 2: 实现版本化 OutputProjectionRegistry
 - [x] Task 3: 扩展 PlanExecutor 保留并恢复成功节点数据
 - [x] Task 4: 实现 FactBuilderRegistry 与 ProjectionInputAssembler
-- [ ] Task 5: 实现确定性 hash 与 MaterialSupplySnapshot projection
+- [x] Task 5: 实现确定性 hash 与 MaterialSupplySnapshot projection
 - [ ] Task 6: 完成端到端 Projection Eval 与隔离证明
 - [ ] Task 7: 全量相关验证与 OpenSpec 任务收口
 
@@ -71,15 +71,8 @@ Build config: isolation=branch, build_mode=subagent-driven-development, tdd_mode
 - Task 2: complete (commits 3d2662b..127d115, review clean: Spec compliant + Quality Approved, 0 Critical/Important/Minor). Exact version registry + structured fail-closed + duplicate rejection, 4/4 tests clean.
 - Task 3: complete (commits dc10caa..291f2c2, review clean: Spec compliant + Quality Approved, 0 Critical/Important/Minor). Fresh/cache/restart projection data retention, 27/27 executor tests + typecheck clean.
 - Task 4: complete (commits 010a450..b8147fd, final review: Spec compliant + Quality Approved, 0 Critical/Important, 1 Minor deferred). Fact builders + assembler + nullable trace degradation + strict freshness/calendar validation + PO item identity; focused 24/24, frontend 221/221, typecheck/build, diff check, OpenSpec strict 20/20.
+- Task 5: complete (commits e48926e..bb49278, review clean: Spec compliant + Quality Approved, 0 Critical/Important/Minor). Deterministic hash + MaterialSupplySnapshot completeness/freshness/lineage/conflict policy; focused 15/15, frontend 232/232, typecheck/build, diff check, OpenSpec strict 20/20.
 
 ## Minor findings (deferred to final review)
 
 - Task 4 M1: `assembler.ts` uses `Math.min(...facts.map(...))`; extremely large fact arrays may hit the JavaScript argument limit. Final reviewer should triage replacing it with iteration/reduce.
-
-## Current Blocker
-
-- Task 4 review round 1: 3 Important findings. Decimal-string quantity normalization and deterministic PO tie-breaking are unambiguous fixes. Trace correlation needs a design choice because the frozen builder accepts only `NodeFactRecord`, while that record currently carries no agent-level trace.
-- User selected Option A. Written design/spec patch committed as c1e302d and strict OpenSpec validation passed 20/20; waiting for written-spec review confirmation before plan update and fixer dispatch.
-- Written spec confirmed. Existing plan updated with Task 4 review-fix Steps 7-11; dispatching fresh fixer for all three Important findings (review round 1/2).
-- Extra round 3 committed `53f2681` and passed focused 47/47, frontend 206/206, typecheck/build, diff check, and OpenSpec strict 20/20. Final fresh re-review still found 2 Important issues: strict invalid-calendar rejection and `purchaseOrderItem` evidence/lineage. Review budget 3/3 exhausted; Task 4 is BLOCKED pending explicit user direction. Report: `.superpowers/sdd/task-4-rereview-3.md`.
-- User selected continuation option 1 and authorized final round 4. Plan Steps 17-21 cover strict invalid-calendar rejection and `purchaseOrderItem` evidence identity; dispatching one fresh fixer, then one fresh final Task 4 reviewer.

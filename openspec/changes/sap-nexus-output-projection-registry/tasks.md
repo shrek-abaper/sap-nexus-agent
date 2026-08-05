@@ -33,15 +33,15 @@
 
 ## 5. MaterialSupplySnapshot 投影
 
-- [ ] 5.1 实现 `material-supply-snapshot` projection：产出组合事实束（facts + lineage + 元数据），不计算采购数量/日期/采购组
-- [ ] 5.2 实现 `completeness` 三态：`complete`（required 齐全 + 无失败节点）/ `partial`（可选缺失或 limitation）/ `incomplete`（缺 required 或节点失败/超时/取消）
-- [ ] 5.3 实现 `missingFacts` / `failedNodes` / `limitations` 填充
-- [ ] 5.4 实现 `lineage`：每个输出 fact 字段可追溯到 source fact / evidence
-- [ ] 5.5 实现 freshness mismatch：跨节点 `asOf` 不一致时保留各自时间到 `sourceFreshness` + 产生 limitation
-- [ ] 5.6 实现 unit incompatibility 确定性处理 + limitation（不计入 `complete`）
-- [ ] 5.7 实现 duplicate / conflicting fact（同 predicate 异值）确定性裁决 + limitation
-- [ ] 5.8 实现确定性 hash：normalized facts（排序）+ projection `version` + `snapshotId`
-- [ ] 5.9 注册 `material-supply-snapshot` 到 `OutputProjectionRegistry`
+- [x] 5.1 实现 `material-supply-snapshot` projection：产出组合事实束（facts + lineage + 元数据），不计算采购数量/日期/采购组
+- [x] 5.2 实现 `completeness` 三态：`complete`（required 齐全 + 无失败节点）/ `partial`（可选缺失或 limitation）/ `incomplete`（缺 required 或节点失败/超时/取消）
+- [x] 5.3 实现 `missingFacts` / `failedNodes` / `limitations` 填充
+- [x] 5.4 实现 `lineage`：每个输出 fact 字段可追溯到 source fact / evidence
+- [x] 5.5 实现 freshness mismatch：跨节点 `asOf` 不一致时保留各自时间到 `sourceFreshness` + 产生 limitation
+- [x] 5.6 实现 unit incompatibility 确定性处理 + limitation（不计入 `complete`）
+- [x] 5.7 实现 duplicate / conflicting fact（同 predicate 异值）确定性裁决 + limitation
+- [x] 5.8 实现确定性 hash：normalized facts（排序）+ projection `version` + `snapshotId`
+- [x] 5.9 注册 `material-supply-snapshot` 到 `OutputProjectionRegistry`
 
 ## 6. Projection Eval（frontend 测试）
 
