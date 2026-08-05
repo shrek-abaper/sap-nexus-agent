@@ -655,8 +655,11 @@ Expected: FAIL，模块不存在。
 import { canonicalJson, sha256Hex } from "../durable/canonical-json";
 import type { ReasoningFact } from "./types";
 export function normalizeFacts(facts: ReasoningFact[]): ReasoningFact[] {
-  return [...facts].sort((a, b) => [a.businessObject, a.predicate, a.material ?? "", a.plant ?? "", a.factId]
-    .join("\u0000").localeCompare([b.businessObject, b.predicate, b.material ?? "", b.plant ?? "", b.factId].join("\u0000")));
+  return [...facts].sort((a, b) => {
+    const left = [a.businessObject, a.predicate, a.material ?? "", a.plant ?? "", a.factId].join("\u0000");
+    const right = [b.businessObject, b.predicate, b.material ?? "", b.plant ?? "", b.factId].join("\u0000");
+    return left < right ? -1 : left > right ? 1 : 0;
+  });
 }
 export function computeOutputHash(facts: ReasoningFact[], version: string, snapshotId: string): string {
   return sha256Hex(canonicalJson(normalizeFacts(facts)) + version + snapshotId);
@@ -695,7 +698,7 @@ Expected: FAIL，模块不存在。
 4. lineage 为每条输出 fact 的 `factId`、`agentTraceId`、`traceId`、`gatewayTraceId`、`domain`、`businessObject`、`predicate`、`value`、`unit`、`deterministic`、`confidence`、`source`、`evidence`、`material`、`plant`、`asOf` 逐字段生成条目；conflicting fact 另覆盖派生的 `conflict` 字段。`evidence` 使用 `fact.evidence[0] ?? {}`，complete snapshot 的 `lineage.length === facts.length * 16`。
 5. failedNodes 只取 FAILED/TIMED_OUT/CANCELLED；blocked 不产 fact但不单独触发 failedNodes。
 6. required 缺失、failedNodes 非空、required conflict/unit incompatibility -> incomplete；否则 limitations 非空 -> partial；否则 complete。
-7. `asOf` 取所有保留 facts `asOf` 的字典序最小值；`outputHash` 严格调用 `computeOutputHash(normalizedInputFacts, version, snapshotId)`。
+7. snapshot 的 `asOf` 直接使用 assembler 已按 epoch 取最早并规范化 UTC 的 `planExecutionRecord.asOf`，不得再次按 fact source string 排序；`outputHash` 严格调用 `computeOutputHash(normalizedInputFacts, version, snapshotId)`。
 
 注册 factory 的完整接口：
 
