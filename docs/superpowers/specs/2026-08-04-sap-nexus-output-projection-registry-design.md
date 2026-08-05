@@ -18,7 +18,7 @@ status: final
 | Last Updated | 2026-08-05 (final review fixes) |
 | Depends On | Runbook 16 (READ PlanExecutor) |
 | Unblocks | Runbook 18 (Recommendation) |
-| Status | draft |
+| Status | final |
 
 ## 1. Context
 

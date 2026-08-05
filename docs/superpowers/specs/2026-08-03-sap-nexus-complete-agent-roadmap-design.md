@@ -4,15 +4,17 @@
 
 | Field | Value |
 |---|---|
-| Version | `v0.1.0` |
-| Status | `Approved Design / Implementation Planned` |
+| Version | `v0.1.1` |
+| Status | `Approved Design / Historical Implementation Baseline` |
 | Created | `2026-08-03` |
+| Updated | `2026-08-05` |
+| Current Progress | `docs/runbooks/README.md` |
 | Scope | 完整意图识别、已注册能力召回、多能力编排、事实投影、建议、grounded narrative、Workbench 展示和受审批的单 Action proposal |
 | Non-goal | 本轮不改代码；Knowledge/RAG、跨会话相似问题检索、自由 Tool Calling、多 WRITE/Saga 均不进入 MVP |
 
 ## 1. 结论
 
-当前 Agent 设计方向合理，但实现成熟度只到“LLM-first 意图识别 + 受治理五态匹配 + 多能力 PlanGraph dry-run”。完整 Agent 还缺少可信上下文与同快照交接、可执行 PlanGraph、确定性组合事实、规则化建议、证据约束叙事、Workbench 全链路展示，以及 READ-to-WRITE 的组合审批闭环。
+在本设计批准时（`2026-08-03`），Agent 实现成熟度只到“LLM-first 意图识别 + 受治理五态匹配 + 多能力 PlanGraph dry-run”。本节及下方代码事实表保留该时点基线；当前实施进度与下一入口统一见 `docs/runbooks/README.md`。
 
 目标架构不是让 LLM 自由调用工具，而是让 LLM 负责语义理解和表达，让 Registry、deterministic compiler/validator、PlanExecutor、RuleSet、Approval 与 Gateway 掌握执行权。建议按 10 个可独立验证的 Runbook 顺序实施，避免把“召回、规划、执行、计算、叙事、审批”混成一个大 change。
 
@@ -176,4 +178,4 @@ Runbook 20 可提前做静态 UI contract spike，但正式集成必须等待 16
 
 ## 12. 实施决策
 
-本文件只固化设计和未来实施顺序。当前不创建 OpenSpec change、不修改 runtime、不执行 SAP、不提交 git。下一次实施从 Runbook 13 开始，并在每个 Runbook 完成后重新评估后续契约，而不是预先锁死全部代码结构。
+本文件只固化目标设计和原始实施顺序，不作为当前状态入口。原始序列从 Runbook 13 开始；截至 `2026-08-05`，Runbooks 13-17 已按独立 OpenSpec/Comet changes 实施并归档，当前入口由 `docs/runbooks/README.md` 指向 Runbook 18。每个后续 Runbook 完成后仍须重新评估后续契约，而不是预先锁死全部代码结构。

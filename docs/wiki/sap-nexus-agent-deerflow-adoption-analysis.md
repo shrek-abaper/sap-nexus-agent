@@ -5,22 +5,23 @@
 | 字段 | 内容 |
 |---|---|
 | 文档名称 | `SAP Nexus Agent DeerFlow 借鉴与复用决策` |
-| 当前版本 | `v0.1.3` |
+| 当前版本 | `v0.1.4` |
 | 状态 | `Decision Baseline` |
 | 创建日期 | `2026-07-23` |
-| 最近更新 | `2026-08-03` |
+| 最近更新 | `2026-08-05` |
 | 维护目录 | `docs/wiki/` |
 | 文档定位 | 基于 DeerFlow 2.1.0 源码评估 SAP Nexus Agent 可借鉴机制、不可复用边界与触发式实施路线 |
 | 关联技术架构 | `docs/wiki/sap-nexus-agent-technical-architecture.md` |
 | 关联技术选型 | `docs/wiki/sap-nexus-agent-technology-selection.md` |
 | 关联实施路线 | `docs/wiki/sap-nexus-agent-implementation-roadmap.md` |
 | 关联语义编排路线 | `docs/wiki/sap-nexus-agent-openharness-semantic-orchestration.md` |
-| 关联 Runbook | 当前 `docs/runbooks/13-governed-context-registry-snapshot.md`；历史 `docs/runbooks/10-capability-composition-contract.md` |
+| 关联 Runbook | 当前 `docs/runbooks/18-recommendation-decision-plan.md`；历史 `docs/runbooks/10-capability-composition-contract.md` |
 
 ## 版本记录
 
 | 版本 | 日期 | 变更摘要 | 决策状态 |
 |---|---|---|---|
+| `v0.1.4` | `2026-08-05` | 同步 Runbooks 13-17 已归档及当前 Runbook 18 入口；DeerFlow 仍只提供 progressive discovery、task lifecycle、durable context 和受限 memory 参考，不成为第二 runtime | 当前决策基线 |
 | `v0.1.3` | `2026-08-03` | 同步 S2-A/S2-B/P0B 已归档事实和 Runbooks 13-22 当前路线；DeerFlow progressive discovery 与 task lifecycle 仍只作为后续 Runbooks 的机制参考，不再指向已完成的 planner-dry-run change | 当前决策基线 |
 | `v0.1.2` | `2026-07-24` | 校准 DeerFlow progressive discovery 的落点：S2-A 先补齐 SAP Nexus 自有五态 `MatchDecision`、多意图/歧义、visibility 和 matcher Eval，S2-B 再借鉴 metadata-first `CapabilityCard`；明确 DeerFlow Tool/Skill 发现不能替代基础语义决策，也不触发 SAP 执行 | 当前决策基线 |
 | `v0.1.1` | `2026-07-24` | 基于三方综合复盘把 durable runtime 从泛化触发式候选收敛为条件门禁：不阻塞本地 S2，但在共享 S3、长审批、multi-worker/HA 或非 sandbox WRITE 前必须完成 trusted identity、durable Run/Approval、ownership/lease 和真实增量 SSE；补充 deterministic OutputProjection 边界 | 当前决策基线 |
@@ -122,7 +123,7 @@ Natural Language
 - Dynamic Planner 和 Write composition 仍是 Phase 3+ / Reserved。
 - 当时 Workbench 使用进程内 run store；P0B 后已升级为本地 durable baseline，但仍不是 durable multi-worker runtime。
 
-当前状态与下一入口统一见 `docs/runbooks/README.md` 和 `docs/runbooks/13-governed-context-registry-snapshot.md`。
+当前状态与下一入口统一见 `docs/runbooks/README.md` 和 `docs/runbooks/18-recommendation-decision-plan.md`。
 
 本次文档只形成架构和路线决策，不声称 DeerFlow 与 SAP Nexus 已完成运行时集成或兼容性验证。
 
@@ -723,14 +724,14 @@ DeerFlow 使用 MIT License。未来若复制或修改 DeerFlow 代码：
 | 直接采用 DeerFlow runtime | 拒绝 |
 | 新增 DeerFlow production dependency | 拒绝 |
 | Baseline five-state MatchDecision | SAP Nexus S2-A 已完成并归档；不由 DeerFlow Tool/Skill selection 替代 |
-| Progressive capability disclosure | 已采纳为 S2-B 基线；Runbook 14 在受治理 recall 中继续演进 |
+| Progressive capability disclosure | 已采纳为 S2-B 基线；Runbook 14 受治理 recall 已实现并归档 |
 | DeerFlow Tool search 直接决定 SAP capability | 拒绝 |
-| 并发任务生命周期机制 | 采纳为 Runbook 16 PlanExecutor 设计输入 |
+| 并发任务生命周期机制 | 已采纳并在 Runbook 16 PlanExecutor 实现；不授予模型调度权 |
 | DeerFlow task/sub-agent 替代 PlanGraph | 拒绝 |
 | Durable thread/run/checkpoint | P0B 本地 durable 基线已完成；multi-worker/HA store 后续另行选型 |
 | Conversation summary 替代权威计划或事实 | 拒绝 |
 | Governed UserPreferenceMemory | 保留为 later pilot |
 | 模型自主写长期记忆 | 当前拒绝 |
-| 当前下一推荐 change | Runbook 13 `sap-nexus-governed-context-registry-snapshot`；完成归档后再进入 Runbook 14 |
+| 当前下一推荐 change | Runbook 18 `sap-nexus-recommendation-decision-plan`；Runbooks 13-17 已归档 |
 
 本决策与 OpenHarness 对比结论一致：通用 Agent Harness 的机制可以吸收，但不能引入第二执行权威。DeerFlow 补充了更成熟的 thread/run、checkpoint、context 和 memory 工程经验；SAP Nexus 继续以 Capability Registry、Semantic Planning、Approval、Gateway、Evidence 和 Eval 构成受治理业务闭环。

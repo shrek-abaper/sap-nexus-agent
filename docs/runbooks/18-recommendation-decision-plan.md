@@ -5,9 +5,9 @@
 | Field | Value |
 |---|---|
 | Runbook | `18-recommendation-decision-plan` |
-| Version | `v0.1.0` |
-| Status | `Planned` |
-| Created / Updated | `2026-08-03` |
+| Version | `v0.1.1` |
+| Status | `Planned / Current Entry` |
+| Created / Updated | `2026-08-03 / 2026-08-05` |
 | Depends On | Runbook 17 |
 | Unblocks | Runbooks 19 and 21 |
 
@@ -18,7 +18,9 @@
 ## 2. Current Baseline
 
 - 技术架构已有 `RecommendationPlan` 契约，sandbox `MM.PR.CreateDraft` Action 与 approval 纵切已验证。
+- Runbook 17 已实现并归档 versioned `OutputProjectionRegistry` 与 `MaterialSupplySnapshot` component/Eval 基线；completeness、limitations、lineage 和 output hash 可作为 RuleSet 输入门禁。
 - 当前多能力路径没有组合事实到建议的 runtime。
+- 生产 orchestrator / `projectionRef` 仍未接线；本 runbook 不得顺带把 component projection 描述为 live end-to-end composition。
 - 库存和 PO 事实不足以单独推导 PR 数量、交付日期和采购组。
 
 ## 3. Contracts and Data Flow
@@ -62,4 +64,4 @@ openspec validate --all --strict
 
 ## 8. Next Start Here
 
-先设计 RuleSet 与 input sufficiency bad cases，再接入已注册 Action。建议生成完成后进入 Runbook 19；Action 执行仍等待 Runbook 21。
+先基于已归档 `MaterialSupplySnapshot` 契约设计 RuleSet registry 与 input sufficiency bad cases，再形成可重放的 `RecommendationPlan` 和最多一个已注册 Action proposal。建议生成完成后进入 Runbook 19；Action 执行仍等待 Runbook 21。

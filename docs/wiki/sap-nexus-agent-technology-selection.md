@@ -5,10 +5,10 @@
 | 字段 | 内容 |
 |---|---|
 | 文档名称 | `SAP Nexus Agent 技术选型与工程路线决策` |
-| 当前版本 | `v0.2.12` |
+| 当前版本 | `v0.2.13` |
 | 状态 | `Decision Baseline Draft` |
 | 创建日期 | `2026-06-19` |
-| 最近更新 | `2026-08-03` |
+| 最近更新 | `2026-08-05` |
 | 维护目录 | `docs/wiki/` |
 | 文档定位 | 指导 SAP Nexus Agent 工程骨架、技术栈和 AI Native 工程产物组织的技术选型基线 |
 | 关联技术架构 | `docs/wiki/sap-nexus-agent-technical-architecture.md` |
@@ -20,6 +20,7 @@
 
 | 版本 | 日期 | 变更摘要 | 决策状态 |
 |---|---|---|---|
+| `v0.2.13` | `2026-08-05` | 同步 Runbooks 13-17 已归档事实：PlanGraph v2、READ PlanExecutor 与 deterministic OutputProjection 已完成 component/Eval 验证；生产 orchestrator 仍 deferred，当前实施入口转为 Runbook 18 | 当前技术基线 |
 | `v0.2.12` | `2026-08-03` | 完成跨 AI 开发交接状态收口：S2-A/S2-B 与 P0B 改为已归档事实，LLM fallback、SSE、durable store 和 PlanGraph 状态对齐当前代码；当前实施入口切换为 Runbook 13，历史 S2 checklist 不再作为活动入口 | 当前技术基线 |
 | `v0.2.11` | `2026-07-25` | 文档收敛：§5.6 OpenHarness 与 §5.7 DeerFlow 机制采纳矩阵压缩为指向权威文档（openharness-semantic-orchestration §3 / deerflow-adoption-analysis §9）的链接，保留技术选型专属边界与 deterministic 权威约束 | 当前技术基线 |
 | `v0.2.10` | `2026-07-24` | 显式拆分基础语义 matcher 与 Phase 3+ 规模化检索：S2-A 选择规则/alias/domain + 五态 `MatchDecision` + 多意图/歧义检测和 visibility pre-filter，S2-B 再实现 progressive `CapabilityCard` discovery 与 deterministic PlanCompiler dry-run；embedding、向量库、LLM rerank 和 DeerFlow runtime 继续延后 | 当前技术基线 |
@@ -40,10 +41,10 @@
 
 ## 1. 结论先行
 
-可以继续开发，但不应裸写代码。Registry / OWL Contract、Gateway execution、第二条 Read capability、sandbox write vertical slice、S1、S2-A/S2-B 和 P0B 均已完成并归档。当前多能力 runtime 只到 deterministic PlanGraph dry-run；下一实施入口固定为 Runbook 13：
+可以继续开发，但不应裸写代码。Registry / OWL Contract、Gateway execution、第二条 Read capability、sandbox write vertical slice、S1、S2-A/S2-B、P0B 和 Runbooks 13-17 均已完成并归档。当前已具备 PlanGraph v2、READ PlanExecutor 与 component/Eval OutputProjection，但生产 orchestrator 尚未形成 live 多能力链路；下一实施入口固定为 Runbook 18：
 
 ```text
-docs/runbooks/13-governed-context-registry-snapshot.md
+docs/runbooks/18-recommendation-decision-plan.md
 ```
 
 推荐默认选型：
@@ -66,15 +67,15 @@ docs/runbooks/13-governed-context-registry-snapshot.md
 | Formal Workflow | OpenSpec / Comet | feature 变更可追溯、可验证、可归档 |
 | Semantic Planner | 现有 Python Agent 内独立模块 | 复用 Registry、CallPlan、Fact、Eval 和 Trace，不引入第二 Agent runtime |
 | Planner Authority | LLM candidate + deterministic PlanCompiler | LLM 生成 GoalSpec/PlanDraft；编译器负责类型、依赖、绑定、排序和治理校验 |
-| Plan Contract | JSON Schema `GoalSpec` / `PlanGraph` + Registry Snapshot | S1 schema/validation 与 S2 deterministic dry-run 已落地；Runbook 15 形成 PlanGraph v2，Runbooks 16-17 再实现 execution ledger 与 OutputProjection |
+| Plan Contract | JSON Schema `GoalSpec` / `PlanGraph` + Registry Snapshot | S1/S2、Runbook 15 PlanGraph v2、Runbook 16 execution ledger 与 Runbook 17 OutputProjection 均已落地；生产 orchestrator 接线仍 deferred |
 | Knowledge Graph | Not runtime in MVP | 能力关系用三元组模型 + 文件存储（edge list）+ 内存图；图数据库为 Phase 8 触发式 Reserved 决策，引擎待 ROI spike（RDF store vs Neo4j） |
 | OpenHarness | 设计参考，不增加依赖 | 借鉴 Agent loop、Tool Schema、Permission/Hook、Dry-run、Memory/Resume；拒绝第二运行时和模型自由 SAP Tool Calling |
 | DeerFlow Runtime | 设计参考，不增加依赖 | 不引入 `deerflow-harness`、DeerFlow Gateway、默认 lead agent 或 frontend；避免第二 Agent runtime 和执行权威 |
 | Baseline Semantic Matcher | S2-A 已完成并归档 | 规则 + alias + domain/businessObject + deterministic parameter fit；五态 `MatchDecision`、多意图检测、`SHOW_OPTIONS` 和 `ESCALATE_TO_PLANNER` 已实现，不依赖 embedding |
 | Progressive Capability Disclosure | S2-B 内适配 | metadata-first `CapabilityCard` -> 小候选集合 -> optional LLM candidate；deterministic MatchDecision / PlanCompiler 最终裁决 |
 | Scale-stage Retrieval | Phase 3+ Triggered | 只在规模与 Eval bad case 触发后评估 semantic index、embedding/hybrid retrieval、跨域 router 和 LLM rerank |
-| PlanExecutor Lifecycle | S3 内适配 | 只借鉴 ready-node、并发上限、timeout、cancel、ledger、trace；并行权来自已验证 PlanGraph |
-| Durable Agent Runtime | Conditional production gate | 不阻塞本地 S2；共享 S3、跨重启、长审批、multi-worker / HA 或非 sandbox WRITE 前必须先落持久 Run/Approval、ownership/lease、event cursor 和幂等 continuation |
+| PlanExecutor Lifecycle | Implemented Foundation | ready-node、并发上限、timeout、cancel、ledger、trace 已在 Runbook 16 落地；并行权只来自已验证 PlanGraph |
+| Durable Agent Runtime | Completed Local Foundation / Shared-store Triggered | P0B 已落 durable Run/Approval、ownership/lease、event cursor 和幂等 continuation；multi-worker / HA 或量产前仍需共享 store 选型 |
 | Governed User Memory | Later / Triggered | 身份、tenant、retention、删除和审计契约成熟后再 pilot；不保存业务事实或执行权威 |
 | JCo RFC Executor | Java JCo | 当前已实现，适合 BAPI/RFC |
 | OData Executor | Python 微服务 + Java 薄反代 (HTTP client + CSRF/session/error normalization) | 已落地，Python + Java 双语言；详见 §5.4 |
@@ -678,13 +679,13 @@ sap-nexus-capability-registry-gateway
 | DeerFlow 是否作为 runtime 依赖 | 否；只借鉴 progressive discovery、task lifecycle、durable context 和受限 memory 机制 |
 | Durable Runtime Store 何时选型 | P0B 本地 durable 实现已归档；multi-worker / HA 或量产部署前再选择共享 store，且保持现有接口与一致性契约 |
 | UserPreferenceMemory 何时试点 | 身份、tenant、retention、查看/更正/删除和审计契约成熟后；不进入 S2/S3 |
-| 首个多能力组合场景 | 已确认“物料库存 + 采购订单供给概览”；dry-run 已完成，Runbooks 13-19 逐步交付受治理只读执行、组合事实、建议和叙事 |
+| 首个多能力组合场景 | 已确认“物料库存 + 采购订单供给概览”；Runbooks 13-17 已交付受治理 recall、PlanGraph v2、READ execution 与组合事实，Runbooks 18-19 继续交付建议和叙事 |
 
 ---
 
 ## 12. Historical S2 Design Checklist - Completed / Superseded
 
-本节保留 `sap-nexus-planner-dry-run` 启动前的历史验收条件。S2-A/S2-B 已于 `2026-07-25` 归档，不得从本节重新创建 change；当前从 Runbook 13 启动。
+本节保留 `sap-nexus-planner-dry-run` 启动前的历史验收条件。S2-A/S2-B 已于 `2026-07-25` 归档，不得从本节重新创建 change；当前入口统一见 `docs/runbooks/README.md`。
 
 - 本文档、`docs/wiki/sap-nexus-agent-openharness-semantic-orchestration.md` 和 `docs/wiki/sap-nexus-agent-deerflow-adoption-analysis.md` 作为技术基线已被接受。
 - 当前 OpenSpec state 已检查；S1 已实现、验证并归档到 `openspec/changes/archive/2026-07-19-sap-nexus-semantic-planning-foundation/`。
