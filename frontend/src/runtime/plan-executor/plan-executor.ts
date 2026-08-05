@@ -429,10 +429,10 @@ export class PlanExecutor {
     parameters: Record<string, string>
   ): Promise<{ success: boolean; data?: Record<string, unknown>; errorType?: string; timedOut: boolean; traceId?: string }> {
     try {
-      const result = await Promise.race([
+      const result = await this.withTimeout(
         this.gateway.execute(capabilityId, parameters),
-        this.timeoutPromise(this.nodeTimeoutMs),
-      ]);
+        this.nodeTimeoutMs,
+      );
       if (result === "TIMEOUT") return { success: false, timedOut: true, errorType: "TIMEOUT" };
       return { success: result.success, data: result.data, errorType: result.errorType, timedOut: false, traceId: result.traceId };
     } catch {
@@ -445,10 +445,10 @@ export class PlanExecutor {
     parameters: Record<string, string>
   ): Promise<{ valid: boolean; traceId?: string; errors?: string[]; timedOut: boolean }> {
     try {
-      const result = await Promise.race([
+      const result = await this.withTimeout(
         this.gateway.validate(capabilityId, parameters),
-        this.timeoutPromise(this.nodeTimeoutMs),
-      ]);
+        this.nodeTimeoutMs,
+      );
       if (result === "TIMEOUT") return { valid: false, timedOut: true };
       return { valid: result.valid, traceId: result.traceId, errors: result.errors, timedOut: false };
     } catch {
@@ -456,8 +456,16 @@ export class PlanExecutor {
     }
   }
 
-  private timeoutPromise(ms: number): Promise<"TIMEOUT"> {
-    return new Promise((resolve) => setTimeout(() => resolve("TIMEOUT"), ms));
+  private async withTimeout<T>(operation: Promise<T>, ms: number): Promise<T | "TIMEOUT"> {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<"TIMEOUT">((resolve) => {
+      timer = setTimeout(() => resolve("TIMEOUT"), ms);
+    });
+    try {
+      return await Promise.race([operation, timeout]);
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
   }
 
   private emptyResult(runId: string, snapshotId: string): PlanExecutorResult {

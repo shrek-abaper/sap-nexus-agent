@@ -1,0 +1,36 @@
+{
+  "schema": "sap-nexus.recorded-llm-fixtures.v1",
+  "version": "1.0.0",
+  "recordings": [
+    {
+      "recordingId": "recording-l1-select",
+      "provider": "recorded",
+      "model": "governed-intent-fixture",
+      "promptVersion": "intent-envelope-v1",
+      "responseSchema": "IntentEnvelope.v1",
+      "recordedAt": "2026-08-05T00:00:00Z",
+      "version": "1.0.0",
+      "normalizedResponse": { "decisionType": "SELECT", "capabilityIds": ["MM.Inventory.GetAvailability"] }
+    },
+    {
+      "recordingId": "recording-l2-escalate",
+      "provider": "recorded",
+      "model": "governed-intent-fixture",
+      "promptVersion": "intent-envelope-v1",
+      "responseSchema": "IntentEnvelope.v1",
+      "recordedAt": "2026-08-05T00:00:00Z",
+      "version": "1.0.0",
+      "normalizedResponse": { "decisionType": "ESCALATE_TO_PLANNER", "capabilityIds": ["MM.Inventory.GetAvailability", "MM.PurchaseOrder.GetList"] }
+    },
+    {
+      "recordingId": "recording-l3-action",
+      "provider": "recorded",
+      "model": "governed-intent-fixture",
+      "promptVersion": "intent-envelope-v1",
+      "responseSchema": "IntentEnvelope.v1",
+      "recordedAt": "2026-08-05T00:00:00Z",
+      "version": "1.0.0",
+      "normalizedResponse": { "decisionType": "ESCALATE_TO_PLANNER", "capabilityIds": ["MM.Inventory.GetAvailability", "MM.PurchaseOrder.GetList", "MM.PR.CreateDraft"] }
+    }
+  ]
+}

@@ -5,7 +5,7 @@
 | 字段 | 内容 |
 |---|---|
 | 文档名称 | `SAP Nexus Agent DeerFlow 借鉴与复用决策` |
-| 当前版本 | `v0.1.7` |
+| 当前版本 | `v0.1.8` |
 | 状态 | `Decision Baseline` |
 | 创建日期 | `2026-07-23` |
 | 最近更新 | `2026-08-05` |
@@ -15,12 +15,13 @@
 | 关联技术选型 | `docs/wiki/sap-nexus-agent-technology-selection.md` |
 | 关联实施路线 | `docs/wiki/sap-nexus-agent-implementation-roadmap.md` |
 | 关联语义编排路线 | `docs/wiki/sap-nexus-agent-openharness-semantic-orchestration.md` |
-| 关联 Runbook | 当前 `docs/runbooks/22-end-to-end-agent-eval-release-gate.md`；历史 `docs/runbooks/10-capability-composition-contract.md` |
+| 关联 Runbook | completed `docs/runbooks/22-end-to-end-agent-eval-release-gate.md`；历史 `docs/runbooks/10-capability-composition-contract.md` |
 
 ## 版本记录
 
 | 版本 | 日期 | 变更摘要 | 决策状态 |
 |---|---|---|---|
+| `v0.1.8` | `2026-08-05` | 同步 Runbook 22 已实现、验证并归档：现有 SAP Nexus coordinator/release gate 已接通并通过 fake/sandbox 验证；DeerFlow 仍只作机制参考，不成为第二 runtime，live SAP READ/WRITE 均 `not_run` | 当前决策基线 |
 | `v0.1.7` | `2026-08-05` | 同步 Runbooks 13-21 已归档及当前 Runbook 22 入口；DeerFlow 仍只提供 progressive discovery、task lifecycle、durable context 和受限 memory 参考，Runbook 21 不引入第二 runtime | 当前决策基线 |
 | `v0.1.6` | `2026-08-05` | 同步 Runbooks 13-20 已归档及当前 Runbook 21 入口；DeerFlow 仍只提供 progressive discovery、task lifecycle、durable context 和受限 memory 参考，不成为第二 runtime | 当前决策基线 |
 | `v0.1.5` | `2026-08-05` | 同步 Runbooks 13-19 已归档及当前 Runbook 20 入口；DeerFlow 仍只提供 progressive discovery、task lifecycle、durable context 和受限 memory 参考，不成为第二 runtime | 当前决策基线 |
@@ -735,6 +736,6 @@ DeerFlow 使用 MIT License。未来若复制或修改 DeerFlow 代码：
 | Conversation summary 替代权威计划或事实 | 拒绝 |
 | Governed UserPreferenceMemory | 保留为 later pilot |
 | 模型自主写长期记忆 | 当前拒绝 |
-| 当前下一推荐 change | Runbook 22 `end-to-end-agent-eval-release-gate`；Runbooks 13-21 已归档 |
+| 当前下一推荐 change | 无自动开启的新 change；Runbooks 13-22 已归档 |
 
 本决策与 OpenHarness 对比结论一致：通用 Agent Harness 的机制可以吸收，但不能引入第二执行权威。DeerFlow 补充了更成熟的 thread/run、checkpoint、context 和 memory 工程经验；SAP Nexus 继续以 Capability Registry、Semantic Planning、Approval、Gateway、Evidence 和 Eval 构成受治理业务闭环。

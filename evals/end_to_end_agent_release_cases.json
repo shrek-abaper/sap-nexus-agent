@@ -1,0 +1,108 @@
+{
+  "schema": "sap-nexus.agent-release-cases.v1",
+  "version": "1.0.0",
+  "cases": [
+    {
+      "caseId": "release-l1-deterministic-contract",
+      "level": "L1",
+      "stage": "matcher",
+      "fixtureKind": "deterministic",
+      "runner": "fixture-contract",
+      "expectedOutcome": "passed",
+      "evidenceRequirements": ["fixture-contract", "risk-matrix"],
+      "hardGateImpact": ["visibilityLeakageRate"],
+      "riskTags": ["unknown-capability", "invisible-capability", "prompt-injection", "missing-parameter"]
+    },
+    {
+      "caseId": "release-l1-recorded-intent",
+      "level": "L1",
+      "stage": "intent",
+      "fixtureKind": "recorded-llm",
+      "runner": "recorded-intent",
+      "recordingId": "recording-l1-select",
+      "expectedOutcome": "passed",
+      "evidenceRequirements": ["recording-metadata", "normalized-response"],
+      "hardGateImpact": ["visibilityLeakageRate"],
+      "riskTags": ["llm-first", "closed-set"]
+    },
+    {
+      "caseId": "release-l1-agent-e2e",
+      "level": "L1",
+      "stage": "single-capability",
+      "fixtureKind": "coordinator-e2e",
+      "runner": "python-agent-eval",
+      "expectedOutcome": "passed",
+      "evidenceRequirements": ["agent-eval-exit", "gateway-safe-result", "fact-and-narrative"],
+      "hardGateImpact": ["unsupportedNarrativeClaimRate", "factLineageCompleteness"],
+      "riskTags": ["callplan", "gateway", "fact", "narrative"]
+    },
+    {
+      "caseId": "release-l2-deterministic-failures",
+      "level": "L2",
+      "stage": "executor",
+      "fixtureKind": "deterministic",
+      "runner": "fixture-contract",
+      "expectedOutcome": "passed",
+      "evidenceRequirements": ["fixture-contract", "risk-matrix"],
+      "hardGateImpact": ["factLineageCompleteness"],
+      "riskTags": ["snapshot-drift", "node-timeout", "node-cancel", "node-recovery", "partial-fact", "freshness-mismatch", "unsupported-claim", "sse-reconnect", "event-replay"]
+    },
+    {
+      "caseId": "release-l2-recorded-planner",
+      "level": "L2",
+      "stage": "planner",
+      "fixtureKind": "recorded-llm",
+      "runner": "recorded-intent",
+      "recordingId": "recording-l2-escalate",
+      "expectedOutcome": "passed",
+      "evidenceRequirements": ["recording-metadata", "normalized-response"],
+      "hardGateImpact": ["visibilityLeakageRate"],
+      "riskTags": ["multi-intent", "plan-graph"]
+    },
+    {
+      "caseId": "release-l2-composition-e2e",
+      "level": "L2",
+      "stage": "composition",
+      "fixtureKind": "coordinator-e2e",
+      "runner": "composition-e2e",
+      "expectedOutcome": "passed",
+      "evidenceRequirements": ["run-ledger", "gateway-safe-result", "projection-lineage", "narrative-refs", "durable-replay"],
+      "hardGateImpact": ["unsupportedNarrativeClaimRate", "factLineageCompleteness"],
+      "riskTags": ["dag", "projection", "recommendation", "grounded-narrative", "workbench-replay"]
+    },
+    {
+      "caseId": "release-l3-deterministic-governance",
+      "level": "L3",
+      "stage": "approval",
+      "fixtureKind": "deterministic",
+      "runner": "fixture-contract",
+      "expectedOutcome": "passed",
+      "evidenceRequirements": ["fixture-contract", "risk-matrix"],
+      "hardGateImpact": ["writeApprovalBypassRate"],
+      "riskTags": ["missing-rule-input", "approval-bypass", "hash-drift", "duplicate-continuation", "cross-principal"]
+    },
+    {
+      "caseId": "release-l3-recorded-action",
+      "level": "L3",
+      "stage": "recommendation",
+      "fixtureKind": "recorded-llm",
+      "runner": "recorded-intent",
+      "recordingId": "recording-l3-action",
+      "expectedOutcome": "passed",
+      "evidenceRequirements": ["recording-metadata", "normalized-response"],
+      "hardGateImpact": ["writeApprovalBypassRate"],
+      "riskTags": ["single-action", "human-approval"]
+    },
+    {
+      "caseId": "release-l3-action-e2e",
+      "level": "L3",
+      "stage": "action",
+      "fixtureKind": "coordinator-e2e",
+      "runner": "action-e2e",
+      "expectedOutcome": "passed",
+      "evidenceRequirements": ["run-ledger", "approval-record", "write-execute-count", "durable-replay"],
+      "hardGateImpact": ["writeApprovalBypassRate", "factLineageCompleteness"],
+      "riskTags": ["exactly-once", "durable-replay", "gateway-atomic-claim"]
+    }
+  ]
+}

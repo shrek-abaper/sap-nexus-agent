@@ -1,5 +1,5 @@
 // frontend/src/runtime/plan-executor/plan-executor.test.ts
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -104,7 +104,10 @@ class ThrowingGateway implements GatewayClient {
 describe("PlanExecutor", () => {
   let dir: string;
   beforeEach(() => { dir = mkdtempSync(path.join(tmpdir(), "exec-")); });
-  afterEach(() => { rmSync(dir, { recursive: true, force: true }); });
+  afterEach(() => {
+    vi.useRealTimers();
+    rmSync(dir, { recursive: true, force: true });
+  });
 
   it("executes two independent READ nodes concurrently", async () => {
     const store = new JsonlRunStore(dir, "worker-A");
@@ -117,6 +120,18 @@ describe("PlanExecutor", () => {
     // Both nodes passed through validate -> execute
     expect(gateway.validateCalls).toHaveLength(2);
     expect(gateway.executeCalls).toHaveLength(2);
+  });
+
+  it("clears node timeout timers after a fast Gateway response", async () => {
+    vi.useFakeTimers();
+    const store = new JsonlRunStore(dir, "worker-A");
+    await store.save("run-1", seed("run-1"));
+    const executor = new PlanExecutor(store, new FakeGateway(), "worker-A");
+
+    const result = await executor.execute(singleReadNodeGraph(), "run-1", SNAP);
+
+    expect(result.succeeded).toEqual(["node.inv"]);
+    expect(vi.getTimerCount()).toBe(0);
   });
 
   it("evaluates a dual READ plan through assembler, registry, and projection", async () => {

@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| Version | `v0.1.1` |
+| Version | `v0.1.2` |
 | Status | `Approved Design / Historical Implementation Baseline` |
 | Created | `2026-08-03` |
 | Updated | `2026-08-05` |
@@ -178,4 +178,4 @@ Runbook 20 可提前做静态 UI contract spike，但正式集成必须等待 16
 
 ## 12. 实施决策
 
-本文件只固化目标设计和原始实施顺序，不作为当前状态入口。原始序列从 Runbook 13 开始；截至 `2026-08-05`，Runbooks 13-18 已按独立 OpenSpec/Comet changes 实施并归档，当前入口由 `docs/runbooks/README.md` 指向 Runbook 19。每个后续 Runbook 完成后仍须重新评估后续契约，而不是预先锁死全部代码结构。
+本文件只固化目标设计和原始实施顺序，不作为当前状态入口；§10 的 `Planned` 表保留 `2026-08-03` 设计批准时的历史状态。截至 `2026-08-05`，Runbooks 13-22 已按独立 OpenSpec/Comet changes 实施、验证并归档。当前 offline 最高连续等级为 `L3_ACTION_GOVERNED`，其证据仅来自 fake/sandbox；live SAP multi-READ 与 live SAP WRITE 均为 `not_run`。当前状态和后续入口仍以 `docs/runbooks/README.md` 为准，不能预先锁死 shared store/HA、real identity、observability 或 live-smoke policy 的代码结构。

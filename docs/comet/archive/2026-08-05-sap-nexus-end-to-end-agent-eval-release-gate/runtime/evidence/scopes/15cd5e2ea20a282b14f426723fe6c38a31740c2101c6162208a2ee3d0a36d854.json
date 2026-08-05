@@ -1,0 +1,639 @@
+{
+  "schema": "comet.native.implementation-scope.v2",
+  "contractHash": "73d75482f474a152226dc0c6acf2609f8146727d89289bd98077a020d82a2e40",
+  "baselineProjectionRef": "runtime/evidence/snapshots/623e9e861ef4b1fb4b026611d9c70da9d0c770e579d4b87d2cff7840d793243b.json",
+  "baselineProjectionHash": "623e9e861ef4b1fb4b026611d9c70da9d0c770e579d4b87d2cff7840d793243b",
+  "currentProjectionRef": "runtime/evidence/snapshots/fcfbe84e01e644fed1ec59f56297c6c55561749c494b7cc524aea3f797f50913.json",
+  "currentProjectionHash": "fcfbe84e01e644fed1ec59f56297c6c55561749c494b7cc524aea3f797f50913",
+  "complete": true,
+  "declaredArtifacts": [
+    {
+      "path": "README.md",
+      "kind": "file"
+    },
+    {
+      "path": "docs/runbooks",
+      "kind": "directory"
+    },
+    {
+      "path": "docs/superpowers",
+      "kind": "directory"
+    },
+    {
+      "path": "docs/wiki",
+      "kind": "directory"
+    },
+    {
+      "path": "evals",
+      "kind": "directory"
+    },
+    {
+      "path": "frontend/package.json",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/runtime",
+      "kind": "directory"
+    }
+  ],
+  "changes": [
+    {
+      "path": "README.md",
+      "kind": "modified",
+      "before": {
+        "hash": "fbdc9edc6420f61d2ac69cee2d95dbc95ba50dfafa42c46c31645f489b826468",
+        "size": 9239
+      },
+      "after": {
+        "hash": "742aeae49f9dab4f408e8e2595b423c3696d017dc553f7b00f41b63d15be8b07",
+        "size": 10405
+      },
+      "attributedTo": [
+        {
+          "path": "README.md",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "docs/runbooks/22-end-to-end-agent-eval-release-gate.md",
+      "kind": "modified",
+      "before": {
+        "hash": "fe0847bbe4b311c98db8198f15582b24b27b7690c0119757595bc5dccdf5dcb3",
+        "size": 3208
+      },
+      "after": {
+        "hash": "c85003ecc3e257eb128011b06d83138d0aa4aa19219c65a04b32c2d570d50412",
+        "size": 5598
+      },
+      "attributedTo": [
+        {
+          "path": "docs/runbooks",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "docs/runbooks/README.md",
+      "kind": "modified",
+      "before": {
+        "hash": "9580eb3c5d9b91e1b0357616d833d351a610a87bfa92ca5b1c02966ff9c4eb4b",
+        "size": 25556
+      },
+      "after": {
+        "hash": "2f63c0684999b6bd5f3a8cb051979fd757b5e3890e8c8f803c25ad165915bf85",
+        "size": 26064
+      },
+      "attributedTo": [
+        {
+          "path": "docs/runbooks",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "docs/superpowers/plans/2026-08-05-sap-nexus-end-to-end-agent-eval-release-gate.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "802b905b37ac4d7da2e8e6436d05a748d977b6f519a763f8437a202feaf49584",
+        "size": 14197
+      },
+      "attributedTo": [
+        {
+          "path": "docs/superpowers",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "docs/superpowers/reports/2026-08-05-sap-nexus-end-to-end-agent-eval-release-gate-verify.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "d9faf44dd69704037e5d7c5eae345193482256a53c563f1f22d929ff6ea0cac1",
+        "size": 3267
+      },
+      "attributedTo": [
+        {
+          "path": "docs/superpowers",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "docs/superpowers/specs/2026-08-03-sap-nexus-complete-agent-roadmap-design.md",
+      "kind": "modified",
+      "before": {
+        "hash": "06968fbd99599fa7072adb5add0dfcc34ee478f20e7577d0b4ab4fe51b5f0cc6",
+        "size": 11637
+      },
+      "after": {
+        "hash": "45b965c99e28063d43cb62d74bf452eb0fc4b63f810b1af1a18a6be5d35f131e",
+        "size": 12004
+      },
+      "attributedTo": [
+        {
+          "path": "docs/superpowers",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "docs/wiki/sap-nexus-agent-deerflow-adoption-analysis.md",
+      "kind": "modified",
+      "before": {
+        "hash": "fd57d478bb85d9a96a5566a41ae3e8259c3715eb149486e53589ab7b5ef5d3f0",
+        "size": 36200
+      },
+      "after": {
+        "hash": "88b65ea9964e86d96d2fb8246d30f45c8ddf79d524c7bc7ec9e8b07b15a69417",
+        "size": 36532
+      },
+      "attributedTo": [
+        {
+          "path": "docs/wiki",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "docs/wiki/sap-nexus-agent-implementation-roadmap.md",
+      "kind": "modified",
+      "before": {
+        "hash": "883d1117a93e63cff2be742c4e891b9de686b77397db94abe2c8a0c6be1a53f6",
+        "size": 101538
+      },
+      "after": {
+        "hash": "03f40b7211b9e4de265c807b38d44d59e097e4c18ffd2d117fc2ec9dcb7091b6",
+        "size": 102555
+      },
+      "attributedTo": [
+        {
+          "path": "docs/wiki",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "docs/wiki/sap-nexus-agent-openharness-semantic-orchestration.md",
+      "kind": "modified",
+      "before": {
+        "hash": "a2e675e724d51118d11903ef2e18fc9bef52e4d1c17d2df2ebfb5e104281d496",
+        "size": 21107
+      },
+      "after": {
+        "hash": "2e7c313d46213df42d64c4318096f8396db84903f8e8a4dd0954264df8b11266",
+        "size": 21486
+      },
+      "attributedTo": [
+        {
+          "path": "docs/wiki",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "docs/wiki/sap-nexus-agent-technical-architecture.md",
+      "kind": "modified",
+      "before": {
+        "hash": "ebe52f7c7535499f176f4ec460980eea8ec8fbabad8d7d468a188f06d42ed085",
+        "size": 88776
+      },
+      "after": {
+        "hash": "31038cd796af46fff201439071156cb1d6dc1cb73855159aa06a37b3c9ecd147",
+        "size": 89340
+      },
+      "attributedTo": [
+        {
+          "path": "docs/wiki",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "docs/wiki/sap-nexus-agent-technology-selection.md",
+      "kind": "modified",
+      "before": {
+        "hash": "09b848da8732cd700bb7a1ccd403c1b4dcca381b3c17ba62ceca7fbf4c6c4b90",
+        "size": 42297
+      },
+      "after": {
+        "hash": "9b1acc30193e7196692b680ef4c669bb854450e46696d5beada31928e7275a0c",
+        "size": 42545
+      },
+      "attributedTo": [
+        {
+          "path": "docs/wiki",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "evals/end_to_end_agent_release_cases.json",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "01faf111dd44064214f43b4a511afb8a88c51e7ae2884f9b0b8d0e73d24edee9",
+        "size": 4303
+      },
+      "attributedTo": [
+        {
+          "path": "evals",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "evals/end_to_end_agent_release_profiles.json",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "b35bdb4c2e31c087695c1676ac80a9eeb4ca4d98fdd65cdca5644d94edbc52ea",
+        "size": 582
+      },
+      "attributedTo": [
+        {
+          "path": "evals",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "evals/recorded_llm/end_to_end_agent_release.json",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "2465fc5e4176ea1c802685ffc1ecaa6f887fa26f7abc751c76926ea20d5a37a0",
+        "size": 1393
+      },
+      "attributedTo": [
+        {
+          "path": "evals",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/package.json",
+      "kind": "modified",
+      "before": {
+        "hash": "cec68201c493c3508caf1bf1c5be17f53b1b1697b64ca1a400d71100d0c2f3b7",
+        "size": 572
+      },
+      "after": {
+        "hash": "2fc777eba8c69cdaa0dab653b8c58ffbeadc4ea4522e0b0223d9da495d8dae40",
+        "size": 637
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/package.json",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/agent-runtime-adapter.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "7f94adc29bfadbfaf44d7d5757ffd7fc40f243aed267e23c2a9dd07431646fb2",
+        "size": 30959
+      },
+      "after": {
+        "hash": "768e5326c7cfa058f82fe7b24750c5e317ae5f6cc234f71fa26b84724e7dc964",
+        "size": 32726
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/composition/adapter-integration.test.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "9df7f2212907f18cf0ee104b916f1256f2e1d43e8d7b612547adb90722b9ffaf",
+        "size": 7572
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/composition/coordinator.test.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "d0ab61ea3af0f6609e9eae09b1dcabd2f53fb6d74a469c25d6903956f306c8e5",
+        "size": 7773
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/composition/coordinator.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "e0d86ece53b6340b722bd0f7eab5bec6023206e51f7c1f5bc81a41175003e4df",
+        "size": 6942
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/composition/evidence.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "36db93b616639b97bed255661adcf3401f50c8d2339d70bdb53a471671aa76e1",
+        "size": 5274
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/composition/handoff.test.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "0fa6885bd58f1b640a8424625117a2e81e49b9af91cb89e171ad46a6d865dbfa",
+        "size": 2597
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/composition/handoff.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "ae88b814d907375fe52b6be166452e201baaa787004e02d08770b0667f7a422f",
+        "size": 1973
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/composition/server-read-gateway.test.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "3b8d0f3e2348bfabbddc15f5bcd29247552b99207a2ad4059b900f4a62d07717",
+        "size": 2478
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/composition/server-read-gateway.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "17cd58241dd06afb49dea0dee65a613ba98c71ac4505bdf86c0ba40c5c341422",
+        "size": 2923
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/composition/types.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "1ea72e4dd5e2eaec931e553a3721aefc848bedd5690424db076394a2345f26be",
+        "size": 1083
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/plan-executor/plan-executor.test.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "d1c9fd962788701da985687121a4337095471cc551dce0f2fde4273bbd605d75",
+        "size": 27458
+      },
+      "after": {
+        "hash": "60fbb86435bc452fb42a803b5e54cc2fe411bb1311f7d374e1598100ced4084f",
+        "size": 27954
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/plan-executor/plan-executor.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "5929310e6f815b7173f08efa50fe7283500c8b4477ee43b740557d9b32e3d978",
+        "size": 18604
+      },
+      "after": {
+        "hash": "001e95607d7acb8b69d5018efbfdb06423214d4eeca4ed2c97b7643ea10ff9f8",
+        "size": 18825
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/release-gate/cli-entrypoint.test.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "0eb52c05b93664f4703c9b8c810a03652e53d944b1d5040a4bc722e40e84f167",
+        "size": 525
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/release-gate/cli-runner.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "018c16588eb27f98621196a8c34795bf4a8ab3be31f14a00641414dcf1cdee25",
+        "size": 3251
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/release-gate/cli.test.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "7114ae29ed52c0f0b6237b41127730249e82259d6a0f85133f174c645c1e2660",
+        "size": 3423
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/release-gate/cli.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "3e97dc1a334a0a6f521697ba6fb4fb2e6a7f9125719d0cb09e1a5bf286c92467",
+        "size": 362
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/release-gate/evaluator.test.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "640d7baf6a76359afbf604daf60d93e20cb6e6dfa476d992ef34ee66cfe03c8f",
+        "size": 3638
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/release-gate/evaluator.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "94074a5eb05384a2956192b06d1ec7b263b8313ed78a6b387cd1d8928d6b1593",
+        "size": 4781
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/release-gate/profiles.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "972cea434805c095fa8778222fee0005559b776f9fa1176df3340dc2a5ad9fe7",
+        "size": 237
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/release-gate/scenario-runner.test.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "9a449ad971e85ca38028d169aaa8f3a608adc3b7db64397c0674d7033ef07c0e",
+        "size": 2994
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/release-gate/scenario-runner.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "3bd20a09677a28478e032c7d7be5937b54b0b7c21bb6322259d135cb8e3d45a0",
+        "size": 21718
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/release-gate/types.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "e942a9bc950af6bc05e522a47af57a94a7a63d1b19298f9078cafb140220f5a5",
+        "size": 2160
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime",
+          "kind": "directory"
+        }
+      ]
+    }
+  ],
+  "unattributed": [],
+  "unresolvedScopes": [],
+  "noCodeReason": null,
+  "scopeHash": "15cd5e2ea20a282b14f426723fe6c38a31740c2101c6162208a2ee3d0a36d854"
+}

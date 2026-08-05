@@ -1,0 +1,454 @@
+{
+  "schema": "comet.native.verification-evidence.v2",
+  "change": "sap-nexus-end-to-end-agent-eval-release-gate",
+  "sourceRevision": 3,
+  "result": "pass",
+  "freshness": "complete",
+  "contractHash": "73d75482f474a152226dc0c6acf2609f8146727d89289bd98077a020d82a2e40",
+  "acceptanceCriteriaHash": "06107c616e051004e87c6854f0d846b71697791bcc53113e135bd61ced24d515",
+  "implementationScopeRef": "runtime/evidence/scopes/15cd5e2ea20a282b14f426723fe6c38a31740c2101c6162208a2ee3d0a36d854.json",
+  "implementationScopeHash": "15cd5e2ea20a282b14f426723fe6c38a31740c2101c6162208a2ee3d0a36d854",
+  "reportRef": "verification.md",
+  "reportHash": "145df684d53e634222faf109b753d69c3485c7e5b4961b35fc12224c39418624",
+  "acceptanceTrace": {
+    "schema": "comet.native.acceptance-trace.v2",
+    "nativeRootRef": "docs/comet",
+    "criteriaHash": "06107c616e051004e87c6854f0d846b71697791bcc53113e135bd61ced24d515",
+    "total": 42,
+    "evidenced": 42,
+    "skipped": 0,
+    "entries": [
+      {
+        "acceptanceId": "acceptance-063942724bf0cb6422ad470a3353762393d011279643db7bde0855b066fbff77",
+        "status": "passed",
+        "kind": "spec-scenario",
+        "source": "specs/production-agent-composition-orchestration/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/0267c73093cfdaf18eedc93b318c0e80872ffbff727944f6befc83bdc56cbfdf.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-1b03ffe210310de5c616d3f70328c80114226dac5229e42fc83bd1a862eabf67",
+        "status": "passed",
+        "kind": "spec-scenario",
+        "source": "specs/end-to-end-agent-release-gate/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/0267c73093cfdaf18eedc93b318c0e80872ffbff727944f6befc83bdc56cbfdf.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-1da5642dffb03f9f2b3e3c69fddf5c9f93079defe930cb5b9d5ec8d9611206f0",
+        "status": "passed",
+        "kind": "spec-scenario",
+        "source": "specs/end-to-end-agent-release-gate/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/0267c73093cfdaf18eedc93b318c0e80872ffbff727944f6befc83bdc56cbfdf.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-1eac818be3cdd509ab70c858a6ff89598ca5b137640e22e45b0017c98fdf48d5",
+        "status": "passed",
+        "kind": "spec-scenario",
+        "source": "specs/end-to-end-agent-release-gate/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/0267c73093cfdaf18eedc93b318c0e80872ffbff727944f6befc83bdc56cbfdf.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-28c086e7cc885cf17279e76e14003a706a1fb928d008d087320b711bf1741414",
+        "status": "passed",
+        "kind": "spec-scenario",
+        "source": "specs/production-agent-composition-orchestration/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/0267c73093cfdaf18eedc93b318c0e80872ffbff727944f6befc83bdc56cbfdf.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-2c8b2f62b48eb49749c078d218e44877772a7335d7da2457ed0fd031f7bee0e8",
+        "status": "passed",
+        "kind": "brief-example",
+        "source": "brief.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/0267c73093cfdaf18eedc93b318c0e80872ffbff727944f6befc83bdc56cbfdf.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-2d8279bf29e8bda22e87cb75c725eb7c8f21416a551aaea16d9b1f71c18928dc",
+        "status": "passed",
+        "kind": "spec-must",
+        "source": "specs/end-to-end-agent-release-gate/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/0267c73093cfdaf18eedc93b318c0e80872ffbff727944f6befc83bdc56cbfdf.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-2f073abbebd20dbfe145244de11af1f74859dfb94028ebe08cd1bbb501831578",
+        "status": "passed",
+        "kind": "brief-example",
+        "source": "brief.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/0267c73093cfdaf18eedc93b318c0e80872ffbff727944f6befc83bdc56cbfdf.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-3109283710233b6ff46c38e8fa195b0c32d1188e0325ef975809e26c2edfcdf8",
+        "status": "passed",
+        "kind": "spec-scenario",
+        "source": "specs/end-to-end-agent-release-gate/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/0267c73093cfdaf18eedc93b318c0e80872ffbff727944f6befc83bdc56cbfdf.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-3ae5c5030ed14111684f4b5bdf5d7b0810132c89f7234e8c1b48afd1ddd6a0f3",
+        "status": "passed",
+        "kind": "spec-must",
+        "source": "specs/end-to-end-agent-release-gate/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/0267c73093cfdaf18eedc93b318c0e80872ffbff727944f6befc83bdc56cbfdf.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-40822334d6bcafd239ae21006183037805937e791399e8664f5a251de9cd2c7f",
+        "status": "passed",
+        "kind": "spec-scenario",
+        "source": "specs/end-to-end-agent-release-gate/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/0267c73093cfdaf18eedc93b318c0e80872ffbff727944f6befc83bdc56cbfdf.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-49f3cdda42dfdf04f233664a8acb11256b2510e2272873b60cb1ddcc13e13ce7",
+        "status": "passed",
+        "kind": "spec-scenario",
+        "source": "specs/end-to-end-agent-release-gate/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/0267c73093cfdaf18eedc93b318c0e80872ffbff727944f6befc83bdc56cbfdf.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-4a047af99fd4429d901a399b175c08d5c51130cd1260f71724d2f753c10347e2",
+        "status": "passed",
+        "kind": "spec-must",
+        "source": "specs/end-to-end-agent-release-gate/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/0267c73093cfdaf18eedc93b318c0e80872ffbff727944f6befc83bdc56cbfdf.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-522cfd7d0e6645afd16287d72a132bfea71c1b2b06059bc6b6c432853373a2c5",
+        "status": "passed",
+        "kind": "spec-scenario",
+        "source": "specs/end-to-end-agent-release-gate/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/0267c73093cfdaf18eedc93b318c0e80872ffbff727944f6befc83bdc56cbfdf.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-54644f1e5ebde8ad194b89cc63658f5cbf5b446504c18bdbfdabfe7c8fab7bfd",
+        "status": "passed",
+        "kind": "spec-must",
+        "source": "specs/production-agent-composition-orchestration/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/0267c73093cfdaf18eedc93b318c0e80872ffbff727944f6befc83bdc56cbfdf.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-5a26f24ac8216036241990028122f8a55240066b8c7fa05bc523c27d56de2ca2",
+        "status": "passed",
+        "kind": "spec-scenario",
+        "source": "specs/production-agent-composition-orchestration/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/0267c73093cfdaf18eedc93b318c0e80872ffbff727944f6befc83bdc56cbfdf.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-611ad09b4c6e95b371583e48a4fc62fe76f30db38061e582f927d7fe7f9afc8f",
+        "status": "passed",
+        "kind": "spec-scenario",
+        "source": "specs/production-agent-composition-orchestration/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/0267c73093cfdaf18eedc93b318c0e80872ffbff727944f6befc83bdc56cbfdf.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-61b6a5d12c650bf5a74543e645d2f46c67e105335ac369ff8c13414ba56540fb",
+        "status": "passed",
+        "kind": "brief-example",
+        "source": "brief.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/0267c73093cfdaf18eedc93b318c0e80872ffbff727944f6befc83bdc56cbfdf.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-660e9baea4b8e49aa3c84d3b27971976f30048fbb3b9c729d6ef118666e05d26",
+        "status": "passed",
+        "kind": "spec-must",
+        "source": "specs/end-to-end-agent-release-gate/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/0267c73093cfdaf18eedc93b318c0e80872ffbff727944f6befc83bdc56cbfdf.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-6dcc528e14b8e54361e8713ea59654d310705ad181aa16d253bfcd0ef78bb6b8",
+        "status": "passed",
+        "kind": "spec-must",
+        "source": "specs/end-to-end-agent-release-gate/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/0267c73093cfdaf18eedc93b318c0e80872ffbff727944f6befc83bdc56cbfdf.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-6e3779ddaecc54cddfad74468a071b255449d237a8081774d65557669607e165",
+        "status": "passed",
+        "kind": "spec-must",
+        "source": "specs/end-to-end-agent-release-gate/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/0267c73093cfdaf18eedc93b318c0e80872ffbff727944f6befc83bdc56cbfdf.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-7aa53d997ecfc563d9c577cc1432c330919a11232808a0fe58e51c266c918372",
+        "status": "passed",
+        "kind": "brief-example",
+        "source": "brief.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/0267c73093cfdaf18eedc93b318c0e80872ffbff727944f6befc83bdc56cbfdf.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-816f1afe4fa57ff22d9d85cfd7a5b96c682b56be856355c3f1d3dfc4993df976",
+        "status": "passed",
+        "kind": "spec-scenario",
+        "source": "specs/end-to-end-agent-release-gate/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/0267c73093cfdaf18eedc93b318c0e80872ffbff727944f6befc83bdc56cbfdf.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-8961fc15cfe53f13de95a191b68bf2ea321e0e5360f1f6ea21bf68ed818d50b7",
+        "status": "passed",
+        "kind": "spec-scenario",
+        "source": "specs/production-agent-composition-orchestration/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/0267c73093cfdaf18eedc93b318c0e80872ffbff727944f6befc83bdc56cbfdf.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-89b911d5bf9f38bfe69d67974bdba8f314cabdb7f8f3bf34ebbb9769db4cbf75",
+        "status": "passed",
+        "kind": "spec-scenario",
+        "source": "specs/production-agent-composition-orchestration/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/0267c73093cfdaf18eedc93b318c0e80872ffbff727944f6befc83bdc56cbfdf.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-907b07f3ffd99e2db2356a731b70263d23b3ae90024675dd1351636701ddfebd",
+        "status": "passed",
+        "kind": "spec-must",
+        "source": "specs/production-agent-composition-orchestration/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/0267c73093cfdaf18eedc93b318c0e80872ffbff727944f6befc83bdc56cbfdf.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-9ff412512f50a599371987c9148d63dac1fbd269a394329bdc79838007185cb0",
+        "status": "passed",
+        "kind": "spec-scenario",
+        "source": "specs/production-agent-composition-orchestration/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/0267c73093cfdaf18eedc93b318c0e80872ffbff727944f6befc83bdc56cbfdf.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-a6624f2494cdca20eada73773d705b7c5d8872dab82a4eddc94d0dc95fb3007c",
+        "status": "passed",
+        "kind": "spec-scenario",
+        "source": "specs/production-agent-composition-orchestration/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/0267c73093cfdaf18eedc93b318c0e80872ffbff727944f6befc83bdc56cbfdf.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-a6a04b80dbbe0f8af5ccb8edbc567b6b21a112705220c4450e2538aa2a4f44e2",
+        "status": "passed",
+        "kind": "spec-scenario",
+        "source": "specs/end-to-end-agent-release-gate/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/0267c73093cfdaf18eedc93b318c0e80872ffbff727944f6befc83bdc56cbfdf.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-a77c788c11ea4e382fa4b64b4a4ade2f9f56d5f380db40b3279efc30718a449c",
+        "status": "passed",
+        "kind": "spec-scenario",
+        "source": "specs/end-to-end-agent-release-gate/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/0267c73093cfdaf18eedc93b318c0e80872ffbff727944f6befc83bdc56cbfdf.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-a8e226986df636c780721c02aee4f05cf6445c77fed0b106f3a2f8ccbd15fc3f",
+        "status": "passed",
+        "kind": "spec-scenario",
+        "source": "specs/end-to-end-agent-release-gate/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/0267c73093cfdaf18eedc93b318c0e80872ffbff727944f6befc83bdc56cbfdf.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-b1334ac72edf52fa76367441f92e8fb5bce85e1bf184d09ec616d709f95cd74b",
+        "status": "passed",
+        "kind": "spec-scenario",
+        "source": "specs/production-agent-composition-orchestration/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/0267c73093cfdaf18eedc93b318c0e80872ffbff727944f6befc83bdc56cbfdf.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-ba395464e5b9ec5395f06ad604565277fe4250fe86c30f1543a3da1a8032a2fc",
+        "status": "passed",
+        "kind": "spec-must",
+        "source": "specs/production-agent-composition-orchestration/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/0267c73093cfdaf18eedc93b318c0e80872ffbff727944f6befc83bdc56cbfdf.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-c0a27743c0e2bd1ec31f27a31c9db8eb601f08f38a58820b0b7634803cecb1cc",
+        "status": "passed",
+        "kind": "spec-scenario",
+        "source": "specs/production-agent-composition-orchestration/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/0267c73093cfdaf18eedc93b318c0e80872ffbff727944f6befc83bdc56cbfdf.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-c4dd6a50fe3c6e563645e0b8230a566f5e3d8bf9d9fa6062c34f3124f5497a90",
+        "status": "passed",
+        "kind": "brief-example",
+        "source": "brief.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/0267c73093cfdaf18eedc93b318c0e80872ffbff727944f6befc83bdc56cbfdf.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-cc4c1b3fce295c0c0d406bedfb3bcc7b437890b5166b5bbb4a52233011766313",
+        "status": "passed",
+        "kind": "spec-scenario",
+        "source": "specs/production-agent-composition-orchestration/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/0267c73093cfdaf18eedc93b318c0e80872ffbff727944f6befc83bdc56cbfdf.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-d4d411352629640522fe3bce9bf43451c8ef8426d4fc9f9307dbef3531f51731",
+        "status": "passed",
+        "kind": "spec-must",
+        "source": "specs/end-to-end-agent-release-gate/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/0267c73093cfdaf18eedc93b318c0e80872ffbff727944f6befc83bdc56cbfdf.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-ddee88fd434fed13fb02361436d623a3ed5a1d2a9fd73c6a2fa87fff7f62ad09",
+        "status": "passed",
+        "kind": "spec-must",
+        "source": "specs/production-agent-composition-orchestration/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/0267c73093cfdaf18eedc93b318c0e80872ffbff727944f6befc83bdc56cbfdf.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-e0b6d4f1af9b53925373541938c295f65288bd3b0e55e3d7691fcdd7717dab09",
+        "status": "passed",
+        "kind": "spec-must",
+        "source": "specs/production-agent-composition-orchestration/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/0267c73093cfdaf18eedc93b318c0e80872ffbff727944f6befc83bdc56cbfdf.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-e815430fe64af3d2048dcb0bfdb858e0eab3c8fb814459a0d6f1f1afa37db776",
+        "status": "passed",
+        "kind": "brief-example",
+        "source": "brief.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/0267c73093cfdaf18eedc93b318c0e80872ffbff727944f6befc83bdc56cbfdf.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-e9abac02370065ec0c33e4831f9da8ab1f4fbc04fc0f77a2392063f30ceaf25b",
+        "status": "passed",
+        "kind": "spec-must",
+        "source": "specs/production-agent-composition-orchestration/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/0267c73093cfdaf18eedc93b318c0e80872ffbff727944f6befc83bdc56cbfdf.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-f53bfe6b49da9f3206b31a2c776537106c2d50f88693ca06e2dd76221feb3c2b",
+        "status": "passed",
+        "kind": "spec-scenario",
+        "source": "specs/end-to-end-agent-release-gate/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/0267c73093cfdaf18eedc93b318c0e80872ffbff727944f6befc83bdc56cbfdf.json"
+        ],
+        "skippedReason": null
+      }
+    ],
+    "traceHash": "a7e4240735c6481500fa8f6fcd10bb555a01a855bb96db2d93d56643d6eeb97a"
+  },
+  "partialAllowanceRef": null,
+  "partialAllowanceHash": null,
+  "requiredReceiptRefs": [
+    "runtime/evidence/receipts/ac1940d778088e0600f8b44840f078feee949310d0a18f8fbf93427b91662960.json"
+  ],
+  "receiptRefs": [
+    "runtime/evidence/receipts/0267c73093cfdaf18eedc93b318c0e80872ffbff727944f6befc83bdc56cbfdf.json"
+  ],
+  "createdAt": "2026-08-05T16:34:51.515Z",
+  "envelopeHash": "8bf042fd8a90de6ce06059cd4fc50af82e60fdf4f1f7f90cd1b693b22d0ac69c"
+}

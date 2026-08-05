@@ -1,0 +1,35 @@
+{
+  "schema": "comet.native.transaction.v2",
+  "id": "e6b6ee1f-6693-4977-a9fe-e5c24ea1aed3",
+  "kind": "archive",
+  "status": "committed",
+  "change": "sap-nexus-end-to-end-agent-eval-release-gate",
+  "createdAt": "2026-08-05T16:35:28.291Z",
+  "preflightHash": "0d507073d19dd5e72f4984ae4a0896624838d33b3052b7bd10b23895eef97d27",
+  "operations": [
+    {
+      "id": "spec-1-end-to-end-agent-release-gate",
+      "type": "write",
+      "target": "specs/end-to-end-agent-release-gate/spec.md",
+      "staged": "runtime/transactions/e6b6ee1f-6693-4977-a9fe-e5c24ea1aed3/staged/specs/end-to-end-agent-release-gate/spec.md",
+      "expectedTargetHash": null,
+      "stagedHash": "96577c43292e5caedeb37c264499a548bb29b4bdeb8e5533b8b9f3941d1b9d6c"
+    },
+    {
+      "id": "spec-2-production-agent-composition-orchestration",
+      "type": "write",
+      "target": "specs/production-agent-composition-orchestration/spec.md",
+      "staged": "runtime/transactions/e6b6ee1f-6693-4977-a9fe-e5c24ea1aed3/staged/specs/production-agent-composition-orchestration/spec.md",
+      "expectedTargetHash": null,
+      "stagedHash": "889d4b19071d2a1ef4acf1564008a12c6d2790a763abd7e5465101051c384310"
+    },
+    {
+      "id": "archive-change",
+      "type": "move",
+      "source": "changes/sap-nexus-end-to-end-agent-eval-release-gate",
+      "target": "archive/2026-08-05-sap-nexus-end-to-end-agent-eval-release-gate",
+      "expectedSourceHash": "804017c7b7aee9bb6295fa796a226276935b9b2675ff5fece7311646e47dbeab",
+      "expectedTargetHash": null
+    }
+  ]
+}

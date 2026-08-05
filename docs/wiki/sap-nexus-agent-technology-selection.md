@@ -5,7 +5,7 @@
 | 字段 | 内容 |
 |---|---|
 | 文档名称 | `SAP Nexus Agent 技术选型与工程路线决策` |
-| 当前版本 | `v0.2.17` |
+| 当前版本 | `v0.2.18` |
 | 状态 | `Decision Baseline Draft` |
 | 创建日期 | `2026-06-19` |
 | 最近更新 | `2026-08-05` |
@@ -20,6 +20,7 @@
 
 | 版本 | 日期 | 变更摘要 | 决策状态 |
 |---|---|---|---|
+| `v0.2.18` | `2026-08-05` | Runbook 22 Native change 已归档：选择现有 Next.js/TypeScript server runtime 承载薄 composition coordinator，复用 Python Agent 的 LLM-first/PlanGraph authoring 与 Runbooks 16-21 的确定性组件；offline L1/L2/L3 gate `9/9`、Native acceptance 42/42，live SAP READ/WRITE `not_run` | 当前技术基线 |
 | `v0.2.17` | `2026-08-05` | 同步 Runbook 21 已归档事实：plan-aware single-user HITL、完整 subject revalidation、durable exactly-once continuation 与 Gateway atomic claim 已完成 fake/sandbox 验证；未执行 live SAP WRITE，production orchestration 与 L1/L2/L3 release gate 仍由 Runbook 22 证明；当前入口转为 Runbook 22 | 当前技术基线 |
 | `v0.2.16` | `2026-08-05` | 同步 Runbook 20 已归档事实：governed event allowlist/redaction projection、strict durable replay 与 responsive Workbench component/UI integration 已验证；proposal-only 不构成 Human Approval，生产 orchestrator 与 SAP WRITE 未接入；当前入口转为 Runbook 21 | 当前技术基线 |
 | `v0.2.15` | `2026-08-05` | 同步 Runbook 19 已归档事实：TypeScript deterministic NarrativeInputProjection、strict lossless LLM JSON rewrite validation、timeout/invalid template fallback、traceable NarrativeEnvelope 与 grounding Eval 已验证；不接生产 orchestrator、不创建 Human Approval、不执行 SAP WRITE；当前入口转为 Runbook 20 | 当前技术基线 |
@@ -45,7 +46,7 @@
 
 ## 1. 结论先行
 
-可以继续开发，但不应裸写代码。Registry / OWL Contract、Gateway execution、第二条 Read capability、sandbox write vertical slice、S1、S2-A/S2-B、P0B 和 Runbooks 13-21 均已完成并归档。当前已具备 PlanGraph v2、READ PlanExecutor、component/Eval OutputProjection、RecommendationDecision、grounded Narrative、Workbench event/replay integration，以及 fake/sandbox boundary 的 plan-aware single-user HITL Action continuation，但生产 orchestrator 尚未形成 live 多能力链路；下一实施入口固定为 Runbook 22：
+Registry / OWL Contract、Gateway execution、第二条 Read capability、sandbox write vertical slice、S1、S2-A/S2-B、P0B 和 Runbooks 13-21 均已完成并归档。Runbook 22 已选择现有 Next.js/TypeScript server runtime 作为薄 composition coordinator，复用 Python Agent 的 LLM-first/PlanGraph authoring 与既有 executor、projection、recommendation、narrative、durable replay 和 Action governance，形成 offline implementation candidate：
 
 ```text
 docs/runbooks/22-end-to-end-agent-eval-release-gate.md
@@ -67,11 +68,11 @@ docs/runbooks/22-end-to-end-agent-eval-release-gate.md
 | Runtime Adapter | Agent Runtime Adapter | 前端不直接调用 SAP / Gateway / raw RFC |
 | Runtime Store | 按状态职责分层 | 本地 trace/eval 可用 JSONL；Thread/Run、Approval、PlanExecution 和 Evidence 在共享/量产环境必须使用满足各自一致性与保留要求的 durable store |
 | Trusted Identity | Server-owned principal context | principal、tenant、role、data scope 和 ApprovalActor 只能由受信服务端注入；候选可见性与执行授权双重校验 |
-| Eval | YAML cases + Python runner | 能力命中、缺参拦截、事实一致性、叙事守卫 |
+| Eval | Python cases + TypeScript release-gate runner | Python harness 继续验证能力命中、缺参拦截与单能力事实/叙事；TypeScript runner 用版本化 deterministic/recorded/coordinator fixtures 评估 L1/L2/L3 hard gates 与 release decision |
 | Formal Workflow | OpenSpec / Comet | feature 变更可追溯、可验证、可归档 |
 | Semantic Planner | 现有 Python Agent 内独立模块 | 复用 Registry、CallPlan、Fact、Eval 和 Trace，不引入第二 Agent runtime |
 | Planner Authority | LLM candidate + deterministic PlanCompiler | LLM 生成 GoalSpec/PlanDraft；编译器负责类型、依赖、绑定、排序和治理校验 |
-| Plan Contract | JSON Schema `GoalSpec` / `PlanGraph` + Registry Snapshot | S1/S2、Runbook 15 PlanGraph v2、Runbook 16 execution ledger 与 Runbook 17 OutputProjection 均已落地；生产 orchestrator 接线仍 deferred |
+| Plan Contract | JSON Schema `GoalSpec` / `PlanGraph` + Registry Snapshot | S1/S2 与 Runbooks 15-17 已落地；Runbook 22 coordinator 只消费 schema-valid、同 snapshot、无 blocking gap 的 PlanGraph v2 handoff |
 | Knowledge Graph | Not runtime in MVP | 能力关系用三元组模型 + 文件存储（edge list）+ 内存图；图数据库为 Phase 8 触发式 Reserved 决策，引擎待 ROI spike（RDF store vs Neo4j） |
 | OpenHarness | 设计参考，不增加依赖 | 借鉴 Agent loop、Tool Schema、Permission/Hook、Dry-run、Memory/Resume；拒绝第二运行时和模型自由 SAP Tool Calling |
 | DeerFlow Runtime | 设计参考，不增加依赖 | 不引入 `deerflow-harness`、DeerFlow Gateway、默认 lead agent 或 frontend；避免第二 Agent runtime 和执行权威 |
@@ -683,7 +684,7 @@ sap-nexus-capability-registry-gateway
 | DeerFlow 是否作为 runtime 依赖 | 否；只借鉴 progressive discovery、task lifecycle、durable context 和受限 memory 机制 |
 | Durable Runtime Store 何时选型 | P0B 本地 durable 实现已归档；multi-worker / HA 或量产部署前再选择共享 store，且保持现有接口与一致性契约 |
 | UserPreferenceMemory 何时试点 | 身份、tenant、retention、查看/更正/删除和审计契约成熟后；不进入 S2/S3 |
-| 首个多能力组合场景 | 已确认“物料库存 + 采购订单供给概览”；Runbooks 13-21 已交付受治理 recall、PlanGraph v2、READ execution、组合事实、recommendation、grounded narrative、Workbench event/replay 与 fake/sandbox single-user HITL Action continuation；Runbook 22 继续交付 production orchestration 与 L1/L2/L3 release gate |
+| 首个多能力组合场景 | “物料库存 + 采购订单供给概览”已由 Runbook 22 production coordinator 完成 offline fake/sandbox 接线，并通过 L1/L2/L3 release gate；live SAP multi-READ/WRITE 均 `not_run` |
 
 ---
 

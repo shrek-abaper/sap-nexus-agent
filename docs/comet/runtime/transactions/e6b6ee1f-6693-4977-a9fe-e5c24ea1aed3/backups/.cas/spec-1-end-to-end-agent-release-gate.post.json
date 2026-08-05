@@ -1,0 +1,11 @@
+{
+  "schema": "comet.native.archive-cas.v1",
+  "operationId": "spec-1-end-to-end-agent-release-gate",
+  "role": "post",
+  "hash": "96577c43292e5caedeb37c264499a548bb29b4bdeb8e5533b8b9f3941d1b9d6c",
+  "identity": {
+    "dev": 2096,
+    "ino": 406785,
+    "birthtimeMs": 1785947731386.2605
+  }
+}

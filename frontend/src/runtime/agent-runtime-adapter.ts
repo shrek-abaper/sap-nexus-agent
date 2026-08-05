@@ -23,10 +23,15 @@ import {
   PlanActionContinuation,
   hasDurablePlanActionEnvelope,
   planApprovalOwnership,
+  type ActionGateway,
   type ActionGovernanceInput,
   type PlanApprovalRecord,
 } from "./action-governance/action-governance";
 import { createServerActionGateway } from "./action-governance/server-action-gateway";
+import type { GatewayClient } from "./plan-executor/types";
+import { CompositionCoordinator } from "./composition/coordinator";
+import { parseCompositionHandoff } from "./composition/handoff";
+import { createServerReadGateway } from "./composition/server-read-gateway";
 
 export type { ApprovalDecision } from "./durable/types";
 
@@ -74,9 +79,19 @@ const workerId = process.env.WORKER_ID ?? `worker-${process.pid}`;
 let runStore: DurableRunStore = new JsonlRunStore(durableDataDir, workerId);
 let conversationStore: DurableConversationStore = new JsonlConversationStore(durableDataDir);
 let runnerForTests: AgentRunner | null = null;
+let compositionGatewayForTests: GatewayClient | null = null;
+let planActionGatewayForTests: ActionGateway | null = null;
 
 export function setAgentRunnerForTests(runner: AgentRunner | null) {
   runnerForTests = runner;
+}
+
+export function setCompositionGatewayForTests(gateway: GatewayClient | null) {
+  compositionGatewayForTests = gateway;
+}
+
+export function setPlanActionGatewayForTests(gateway: ActionGateway | null) {
+  planActionGatewayForTests = gateway;
 }
 
 export function setDurableStoresForTests(run: DurableRunStore, conv: DurableConversationStore) {
@@ -163,21 +178,53 @@ async function executeRunnerInBackground(
     const runner = runnerForTests ?? runLocalPythonAgent;
     const context = conversationId ? buildContext(await getSession(conversationId, principalId)) : undefined;
     const outcome = await runner({ query, gatewayUrl: gatewayUrl(), intentMode: intentMode(), context, principal });
-    await emitEventsFromOutcome(runId, query, outcome, timestamp,
-      (event) => runStore.appendEvent(runId, event), 2);
+    const handoff = parseCompositionHandoff(outcome);
+    let sessionOutcome = outcome;
+    if (handoff) {
+      const composition = await new CompositionCoordinator({
+        store: runStore,
+        gateway: compositionGatewayForTests ?? createServerReadGateway(),
+        workerId,
+      }).execute({
+        runId,
+        traceId: `trace-${runId}`,
+        principal: principal ?? {
+          principalId,
+          role: "operator",
+          dataScope: { tenantId: "default" },
+        },
+        handoff,
+      });
+      if (composition.actionGovernanceInput) {
+        const approval = await planActionRuntime().prepare(composition.actionGovernanceInput);
+        sessionOutcome = {
+          status: "awaiting_approval",
+          responseText: composition.narrative.summary,
+          approvalRecord: approval as unknown as Record<string, unknown>,
+        };
+      } else {
+        sessionOutcome = {
+          status: "success",
+          responseText: composition.narrative.summary,
+        };
+      }
+    } else {
+      await emitEventsFromOutcome(runId, query, outcome, timestamp,
+        (event) => runStore.appendEvent(runId, event), 2);
 
-    if (outcome.status === "awaiting_approval" || outcome.status === "awaiting_batch_confirm") {
-      await runStore.appendPendingOutcome(runId, outcome);
+      if (outcome.status === "awaiting_approval" || outcome.status === "awaiting_batch_confirm") {
+        await runStore.appendPendingOutcome(runId, outcome);
+      }
     }
 
     if (conversationId) {
       const session = await getSession(conversationId, principalId);
       session.lastRunId = runId;
       session.history.push({ role: "user", content: query });
-      if (outcome.responseText) {
-        session.history.push({ role: "assistant", content: outcome.responseText });
+      if (sessionOutcome.responseText) {
+        session.history.push({ role: "assistant", content: sessionOutcome.responseText });
       }
-      session.lastContext = outcome.lastContext ?? null;
+      session.lastContext = sessionOutcome.lastContext ?? null;
       await conversationStore.save(conversationId, session);
     }
 
@@ -755,7 +802,11 @@ function buildRuntimeFailureEventsTail(runId: string, baseSequence: number, time
 }
 
 function planActionRuntime(): PlanActionContinuation {
-  return new PlanActionContinuation(runStore, createServerActionGateway(), workerId);
+  return new PlanActionContinuation(
+    runStore,
+    planActionGatewayForTests ?? createServerActionGateway(),
+    workerId,
+  );
 }
 
 async function executePlanActionInBackground(

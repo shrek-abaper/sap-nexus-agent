@@ -78,7 +78,8 @@ Current completed change = sap-nexus-recommendation-decision-plan (Runbook 18 Na
 Current completed change = sap-nexus-grounded-narrative-orchestration (Runbook 19 Native archived 2026-08-05): deterministic NarrativeInputProjection, strict lossless LLM JSON rewrite validation, timeout/invalid fallback, traceable NarrativeEnvelope, zh/en status rendering and grounding Eval; 352 frontend tests / production build / 45 narrator tests / 954+1 skipped Agent gate / 20 openspec pass; component/Eval only, no orchestrator, Human Approval or SAP WRITE
 Current completed change = sap-nexus-workbench-plan-evidence-experience (Runbook 20 Native archived 2026-08-05): governed plan/evidence event projection, strict JSONL sequence, side-effect-free replay integrity and responsive eight-part Workbench view; 380 frontend tests / production build / desktop+mobile browser verification; component/UI integration only, no production orchestrator, Human Approval or SAP WRITE
 Current completed change = sap-nexus-read-to-write-action-governance (Runbook 21 Native archived 2026-08-05 at docs/comet/archive/2026-08-05-sap-nexus-read-to-write-action-governance/): plan-aware single-user HITL confirmation, complete subject revalidation, durable exactly-once continuation, Gateway plan guards/atomic claim and replayable approval/action evidence; 405 frontend tests / 959+1 skipped Agent tests / PR Eval 9/9 / Gateway BUILD SUCCESSFUL / 20 OpenSpec / Native acceptance 35/35; fake/sandbox boundary only, no live SAP WRITE
-Planned sequence = runbooks 13-21 implemented and archived -> Runbook 22 completes the end-to-end release-gate delivery
+Current completed change = sap-nexus-end-to-end-agent-eval-release-gate (Runbook 22 Native archived 2026-08-05 at docs/comet/archive/2026-08-05-sap-nexus-end-to-end-agent-eval-release-gate/): governed Python-to-TypeScript handoff, production composition coordinator, L1/L2/L3 profiles, four hard gates and offline CLI report; frontend 428/428 + build, Agent 959+1 skipped, OpenSpec 20/20, release gate 9/9 with `L3_ACTION_GOVERNED`, Native acceptance 42/42; live SAP READ/WRITE both `not_run`
+Complete Agent sequence = runbooks 13-22 archived; there is no automatic next implementation entry
 S3 scheduling input = borrow ready-node/concurrency/timeout/cancel/ledger/trace mechanics only after PlanGraph validation; never infer execution from LLM Tool Calls
 S3 output foundation = deterministic OutputProjection with freshness, completeness, limitations and Fact lineage implemented at component/Eval scope; partial failure remains incomplete
 Completed platform gate = sap-nexus-trusted-durable-runtime-foundation; all four P0B changes archived 2026-08-02
@@ -86,7 +87,7 @@ Triggered memory candidate = sap-nexus-governed-user-memory-pilot; user preferen
 Live blocker = none for PO OData read; SAP SICF was reactivated and PO live smoke passed
 Deferred Phase 3+ workstream = sap-nexus-capability-matching-contract
 Reserved executor workstream = sap-nexus-sql-read-executor-contract
-Current composition runtime = PlanExecutor, deterministic OutputProjection, RecommendationDecision and grounded Narrative implemented at component/Eval scope, with governed event/replay, Workbench integration and Runbook 21 plan-aware single Action HITL continuation verified at the fake/sandbox boundary; production orchestrator/projectionRef wiring and end-to-end multi-capability business composition are not yet live; next implementation entrypoint is Runbook 22
+Current composition runtime = production TypeScript CompositionCoordinator wires validated PlanGraph v2 READ execution to deterministic OutputProjection, RecommendationDecision, grounded Narrative, durable event/replay, Workbench state and Runbook 21 plan-aware single Action HITL continuation; offline fake/sandbox L1/L2/L3 evidence passes, but live SAP composition and live WRITE remain `not_run`
 Complete Agent target = runbooks 13-22: governed context -> LLM-first recall -> PlanGraph v2 -> READ executor -> projection -> recommendation -> grounded narrative -> Workbench -> single approved Action -> release gate
 MVP Knowledge/RAG = reserved interface only; no knowledge source, vector store, embedding retrieval or cross-session similar-question retrieval
 Reserved composition scope = general Dynamic Planner, multi-WRITE/Saga, automatic compensation and free LLM Tool Calling
@@ -106,16 +107,16 @@ No branch creation unless user explicitly asks
 | `Completed Capability` | `sap-nexus-agent-conversational-context`、`sap-nexus-multi-value-batch-query` | 即时多轮对话上下文和 READ-only 多值批量查询已实现；durable Run/Session 已由 P0B 接管；详见 runbook 12 |
 | `Completed Foundation` | P0B trusted/durable runtime four-part delivery | durable Run/Session、trusted principal、durable approval、ownership/lease、incremental SSE + reconnect 均已归档；它们是完整 Agent 的运行基础，不等于多能力执行 |
 | `Completed Foundation` | `sap-nexus-governed-context-registry-snapshot` (Runbook 13) | GovernedContext/SnapshotLease/VisibleCapabilitySet/PlannerFailure 数据结构、同 snapshotId 端到端绑定、principal 透传 + visibility pre-filter、CapabilityCard 安全投影、5 种 PlannerFailure error_type 结构化 fail-closed 已实现、验证并归档到 `openspec/changes/archive/2026-08-03-sap-nexus-governed-context-registry-snapshot/`；不执行多能力 PlanExecutor |
-| `Completed Foundation` | 完整 Agent Runbooks 14-19 | LLM-first recall、PlanGraph v2、READ PlanExecutor、deterministic OutputProjection、RecommendationDecision 与 grounded Narrative 已实现、验证并归档；composition/recommendation/narrative 仅完成 component/Eval 范围，生产 orchestrator 接线仍未完成 |
+| `Completed Foundation` | 完整 Agent Runbooks 14-19 | LLM-first recall、PlanGraph v2、READ PlanExecutor、deterministic OutputProjection、RecommendationDecision 与 grounded Narrative 已实现、验证并归档；这些 runbook 各自仅交付 component/Eval，后由 Runbook 22 完成 offline coordinator 接线 |
 | `Completed Capability` | Runbook 20 Workbench plan/evidence experience | Governed event projection、durable replay integrity 与八分区 Workbench component/UI integration 已实现、验证并归档；fixtures/UI 不构成 live execution、Human Approval 或 SAP WRITE 证据 |
 | `Completed Capability` | Runbook 21 read-to-write Action governance | 单 run owner HITL confirmation、完整 subject revalidation、durable exactly-once continuation 与 Gateway atomic claim 已实现、验证并归档；仅证明 fake/sandbox boundary，未执行 live SAP WRITE |
-| `Planned` | Runbook 22 | L1/L2/L3 end-to-end eval 与 release gate；通过前不得升级为 live composition |
+| `Completed / Archived Offline` | Runbook 22 | production composition coordinator 与 L1/L2/L3 offline release gate 已实现、验证并归档；`9/9`、`42/42` Native acceptance、`L3_ACTION_GOVERNED`，但 live SAP READ/WRITE 均为 `not_run` |
 | `Reserved` | Knowledge/RAG、跨会话相似问题检索、Phase 3+ embedding retrieval/rerank、Graph Registry、通用 Dynamic Planner、多 WRITE/Saga | 保留接口和安全边界，不进入本轮 MVP；不得将预留描述为已实现 |
 | `Not In Scope` | 任意 RFC / URL / SQL 执行、生产 write action 自动提交、GraphDB / OWL 运行时主链路 | 明确拒绝或另立 change |
 
 近期约束：
 
-- 第二条 live read capability、sandbox write pilot、S1、S2-A/S2-B、会话/批量能力、P0B 和 Runbooks 13-21 均已完成；下一实施入口固定为 Runbook 22，live WRITE smoke 仍须针对精确 Action subject 另行取得 Human Approval。
+- 第二条 live read capability、sandbox write pilot、S1、S2-A/S2-B、会话/批量能力、P0B 和 Runbooks 13-22 均已完成并归档；live WRITE smoke 仍须针对精确 Action subject 另行取得 Human Approval。
 - 版本记录和路线图优先体现能力落地、评测回归和 write 纵切，而不是继续增加低成本架构占位。
 - 已有 reserved executor 只保留 fail-closed 边界，不能被解读为当前实现承诺。
 
@@ -148,7 +149,7 @@ Runbooks are numbered by workstream creation order, not by roadmap row or calend
 | `19` | `19-grounded-narrative-orchestration.md` | `v0.2.0` | Implemented / Archived | `2026-08-05` | Deterministic grounded NarrativeEnvelope, strict lossless LLM rewrite validator, timeout/invalid template fallback and grounding Eval; component/Eval only |
 | `20` | `20-workbench-plan-evidence-experience.md` | `v0.2.0` | Implemented / Archived | `2026-08-05` | Governed event/replay contract and responsive plan/evidence Workbench; proposal-only is read-only; no orchestrator, new approval or SAP WRITE |
 | `21` | `21-read-to-write-action-governance.md` | `v0.2.0` | Completed / Archived | `2026-08-05` | Human-approved, exactly-once single Action after multi-READ reasoning; fake/sandbox evidence only |
-| `22` | `22-end-to-end-agent-eval-release-gate.md` | `v0.1.1` | Planned / Current Entry | `2026-08-05` | L1 single-capability, L2 multi-READ and L3 READ-to-WRITE release gates |
+| `22` | `22-end-to-end-agent-eval-release-gate.md` | `v0.2.0` | Completed / Archived | `2026-08-05` | Production composition coordinator plus offline L1/L2/L3 release gates; Native archive `docs/comet/archive/2026-08-05-sap-nexus-end-to-end-agent-eval-release-gate/`; live SAP smoke not run |
 
 Versioning rules:
 

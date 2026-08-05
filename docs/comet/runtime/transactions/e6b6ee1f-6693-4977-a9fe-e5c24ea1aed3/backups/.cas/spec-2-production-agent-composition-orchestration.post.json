@@ -1,0 +1,11 @@
+{
+  "schema": "comet.native.archive-cas.v1",
+  "operationId": "spec-2-production-agent-composition-orchestration",
+  "role": "post",
+  "hash": "889d4b19071d2a1ef4acf1564008a12c6d2790a763abd7e5465101051c384310",
+  "identity": {
+    "dev": 2096,
+    "ino": 406807,
+    "birthtimeMs": 1785947731526.262
+  }
+}

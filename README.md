@@ -18,11 +18,19 @@ SAP Nexus Agent 是一个**基于能力本体建模的 SAP 治理型接入网关
 │  Python Agent 层                         │
 │  · 语义意图解析（LLM + Rule Hybrid）      │
 │  · 注册能力选择（基于能力本体匹配）         │
-│  · CallPlan 生成                         │
+│  · CallPlan / PlanGraph v2 authoring     │
 │  · 推理证据构建（ReasoningFact）          │
 │  · 中文叙述生成                           │
 └──────────────┬──────────────────────────┘
                │ capabilityId + 参数
+               ▼
+┌─────────────────────────────────────────┐
+│  TypeScript Composition Runtime          │
+│  · PlanExecutor + durable node ledger    │
+│  · Projection / Recommendation / Narrative│
+│  · Workbench replay + governed Action    │
+└──────────────┬──────────────────────────┘
+               │ registered capabilityId only
                ▼
 ┌─────────────────────────────────────────┐
 │  Java Gateway 执行层                      │
@@ -74,11 +82,12 @@ SAP Nexus Agent 是一个**基于能力本体建模的 SAP 治理型接入网关
 
 ### 当前运行成熟度
 
-- `FactType`、`CapabilityRelation`、`GoalSpec`、`PlanGraph` 和 `RegistrySnapshot` 契约已实现、验证并归档；当前产品 runtime 仍只执行单能力 `CallPlan`。
-- Workbench Run 与 Gateway Approval 当前使用进程内 Store；服务重启、长审批和多实例恢复尚未量产化。
-- 当前 `/stream` 返回完成后聚合的 SSE-formatted events，不是增量发布或断线续传。
-- 可信 principal、tenant、role、data scope 和 ApprovalActor 尚未接入；当前 WRITE 仅限 sandbox/dev 验证。
-- 共享 S3、长审批、multi-worker/HA 或非 sandbox WRITE 前，必须先完成 trusted/durable runtime 独立 change。
+- 单能力 `CallPlan` 主链保持可用；Python Agent 继续负责 LLM-first intent、closed-set recall、五态决策和 PlanGraph v2 authoring。
+- production TypeScript composition coordinator 已接通 PlanExecutor、OutputProjection、Recommendation、grounded Narrative、durable Workbench replay 与 plan-aware single Action continuation。
+- offline L1/L2/L3 gate 当前为 `9/9`，最高连续等级 `L3_ACTION_GOVERNED`；四项 hard gates 分别为 leakage `0`、approval bypass `0`、unsupported claim `0`、lineage `100%`。
+- Run/Session、principal ownership、approval、lease/idempotency 与 cursor SSE 已 durable 化；当前本地 JSONL/file store 和 placeholder principal 仍不是 shared multi-worker/HA store 或生产身份系统。
+- live SAP multi-READ 与 live SAP WRITE smoke 均为 `not_run`；fake/sandbox L3 证据不得描述为 live SAP，任何 live WRITE 仍需 exact-subject Human Approval。
+- Knowledge/RAG、自由 Tool Calling、通用 Dynamic Planner、多 WRITE/Saga 和自动补偿仍为 Reserved / Not In Scope。
 
 ---
 
@@ -141,9 +150,11 @@ scripts/comet-verify-gateway.sh
 .venv/bin/python -m pytest agent/tests/test_registry_contract.py -v
 PYTHONPATH=agent scripts/verify-agent-callplan-evidence.sh
 openspec validate --all --strict
+npm --prefix frontend run verify
+npm --prefix frontend run release-gate -- --profile all
 ```
 
-预期结果：所有命令退出码为 `0`；当前 Agent 基线为 `550 passed, 1 skipped`，Eval 为 `7/7 + 13/13 + 9/9`，OpenSpec 为 `8 passed, 0 failed`。仓库移动后如 editable install 仍指向旧路径，应重新安装本地 package；`PYTHONPATH=agent` 可用于验证当前源码。
+预期结果：所有命令退出码为 `0`；当前 Agent 基线为 `959 passed, 1 skipped`，frontend 为 `428 passed` + production build，call-plan Eval 为 `7/7 + 13/13 + 9/9 + 10/10 + 3/3`，OpenSpec 为 `20 passed, 0 failed`，offline release gate 为 `9/9` / `L3_ACTION_GOVERNED` / `liveSmoke=not_run`。仓库移动后如 editable install 仍指向旧路径，应重新安装本地 package；`PYTHONPATH=agent` 可用于验证当前源码。
 
 ### 启动服务
 

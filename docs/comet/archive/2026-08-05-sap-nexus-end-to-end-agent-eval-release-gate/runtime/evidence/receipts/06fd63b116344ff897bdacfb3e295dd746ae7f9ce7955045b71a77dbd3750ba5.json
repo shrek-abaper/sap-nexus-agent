@@ -1,0 +1,48 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "sap-nexus-end-to-end-agent-eval-release-gate",
+    "sourceRevision": 3,
+    "contractHash": "73d75482f474a152226dc0c6acf2609f8146727d89289bd98077a020d82a2e40",
+    "scopeHash": "15cd5e2ea20a282b14f426723fe6c38a31740c2101c6162208a2ee3d0a36d854",
+    "snapshotHash": "fcfbe84e01e644fed1ec59f56297c6c55561749c494b7cc524aea3f797f50913",
+    "artifactHash": "93d0cbf713e707c5cd940c2a8ed293a06250cc00c510b4ced79e60b3efab0473"
+  },
+  "acceptanceIds": [
+    "acceptance-1da5642dffb03f9f2b3e3c69fddf5c9f93079defe930cb5b9d5ec8d9611206f0"
+  ],
+  "actor": "native-runtime:command:git",
+  "issuedAt": "2026-08-05T16:28:15.632Z",
+  "evidence": {
+    "executable": "git",
+    "args": [
+      "diff",
+      "--check"
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 30000,
+    "startedAt": "2026-08-05T16:28:15.622Z",
+    "endedAt": "2026-08-05T16:28:15.632Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "d0fd2acc66f471a3f0d6e1c63c94f61d4fcaea77",
+      "afterCommit": "d0fd2acc66f471a3f0d6e1c63c94f61d4fcaea77"
+    },
+    "afterFence": {
+      "snapshotHash": "fcfbe84e01e644fed1ec59f56297c6c55561749c494b7cc524aea3f797f50913",
+      "scopeHash": "15cd5e2ea20a282b14f426723fe6c38a31740c2101c6162208a2ee3d0a36d854",
+      "matched": true
+    },
+    "outputHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "outputSummary": "(exit 0)",
+    "outputTruncated": false
+  },
+  "receiptHash": "06fd63b116344ff897bdacfb3e295dd746ae7f9ce7955045b71a77dbd3750ba5"
+}
