@@ -1,0 +1,50 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "sap-nexus-grounded-narrative-orchestration",
+    "sourceRevision": 3,
+    "contractHash": "fb3d9b3b97c4f22d73dd3e1ff1693fb3451f526d9cdb0bd25b1b77c452238f4d",
+    "scopeHash": "33dd50a3b0aeedc6607fbceba3612986839541d61cfa68490e98fb7b045329ac",
+    "snapshotHash": "db4469369d008cc9826db67f24c7cf6bca7ddc929e50cbf9fce220799a1b6ca8",
+    "artifactHash": "5da24bf219b6e35141378ce43e623b7a7bd4bab01e5399054aa21fcd0b03b367"
+  },
+  "acceptanceIds": [
+    "acceptance-397541422405f429ed9ce4cc5b107c70f179c53634818beea2897b787cc20c73"
+  ],
+  "actor": "native-runtime:command:.venv/bin/python",
+  "issuedAt": "2026-08-05T07:01:46.051Z",
+  "evidence": {
+    "executable": ".venv/bin/python",
+    "args": [
+      "-m",
+      "pytest",
+      "agent/tests/test_reasoning_narrator.py",
+      "-q"
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 180000,
+    "startedAt": "2026-08-05T07:01:44.943Z",
+    "endedAt": "2026-08-05T07:01:46.051Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "e32a31ab1eb4b9f21a6499dbfaabc649f59f45b9",
+      "afterCommit": "e32a31ab1eb4b9f21a6499dbfaabc649f59f45b9"
+    },
+    "afterFence": {
+      "snapshotHash": "db4469369d008cc9826db67f24c7cf6bca7ddc929e50cbf9fce220799a1b6ca8",
+      "scopeHash": "33dd50a3b0aeedc6607fbceba3612986839541d61cfa68490e98fb7b045329ac",
+      "matched": true
+    },
+    "outputHash": "652c0e01be37f47e480f410de6ac94bdd80b051176c406219ae8f5abfbbb6669",
+    "outputSummary": ".............................................                            [100%]\n45 passed in 0.51s",
+    "outputTruncated": false
+  },
+  "receiptHash": "5d823a8eb8fd592984e0439e7b60f8a9b87fb303ec5f9e0ca1f8703fb5dadc23"
+}

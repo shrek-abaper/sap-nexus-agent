@@ -5,7 +5,7 @@
 | 字段 | 内容 |
 |---|---|
 | 文档名称 | `SAP Nexus Agent 技术选型与工程路线决策` |
-| 当前版本 | `v0.2.14` |
+| 当前版本 | `v0.2.15` |
 | 状态 | `Decision Baseline Draft` |
 | 创建日期 | `2026-06-19` |
 | 最近更新 | `2026-08-05` |
@@ -20,6 +20,7 @@
 
 | 版本 | 日期 | 变更摘要 | 决策状态 |
 |---|---|---|---|
+| `v0.2.15` | `2026-08-05` | 同步 Runbook 19 已归档事实：TypeScript deterministic NarrativeInputProjection、strict lossless LLM JSON rewrite validation、timeout/invalid template fallback、traceable NarrativeEnvelope 与 grounding Eval 已验证；不接生产 orchestrator、不创建 Human Approval、不执行 SAP WRITE；当前入口转为 Runbook 20 | 当前技术基线 |
 | `v0.2.14` | `2026-08-05` | 同步 Runbook 18 已归档事实：TypeScript snapshot-bound RuleSetRegistry 与 deterministic RecommendationDecision component/Eval 已验证，可形成单个 `pending_approval` proposal；不接生产 orchestrator、不构成 Human Approval、不执行 SAP WRITE；当前入口转为 Runbook 19 | 当前技术基线 |
 | `v0.2.13` | `2026-08-05` | 同步 Runbooks 13-17 已归档事实：PlanGraph v2、READ PlanExecutor 与 deterministic OutputProjection 已完成 component/Eval 验证；生产 orchestrator 仍 deferred，当前实施入口转为 Runbook 18 | 当前技术基线 |
 | `v0.2.12` | `2026-08-03` | 完成跨 AI 开发交接状态收口：S2-A/S2-B 与 P0B 改为已归档事实，LLM fallback、SSE、durable store 和 PlanGraph 状态对齐当前代码；当前实施入口切换为 Runbook 13，历史 S2 checklist 不再作为活动入口 | 当前技术基线 |
@@ -42,10 +43,10 @@
 
 ## 1. 结论先行
 
-可以继续开发，但不应裸写代码。Registry / OWL Contract、Gateway execution、第二条 Read capability、sandbox write vertical slice、S1、S2-A/S2-B、P0B 和 Runbooks 13-18 均已完成并归档。当前已具备 PlanGraph v2、READ PlanExecutor、component/Eval OutputProjection 与 RecommendationDecision，但生产 orchestrator 尚未形成 live 多能力链路；下一实施入口固定为 Runbook 19：
+可以继续开发，但不应裸写代码。Registry / OWL Contract、Gateway execution、第二条 Read capability、sandbox write vertical slice、S1、S2-A/S2-B、P0B 和 Runbooks 13-19 均已完成并归档。当前已具备 PlanGraph v2、READ PlanExecutor、component/Eval OutputProjection、RecommendationDecision 与 grounded Narrative，但生产 orchestrator 尚未形成 live 多能力链路；下一实施入口固定为 Runbook 20：
 
 ```text
-docs/runbooks/19-grounded-narrative-orchestration.md
+docs/runbooks/20-workbench-plan-evidence-experience.md
 ```
 
 推荐默认选型：
@@ -680,7 +681,7 @@ sap-nexus-capability-registry-gateway
 | DeerFlow 是否作为 runtime 依赖 | 否；只借鉴 progressive discovery、task lifecycle、durable context 和受限 memory 机制 |
 | Durable Runtime Store 何时选型 | P0B 本地 durable 实现已归档；multi-worker / HA 或量产部署前再选择共享 store，且保持现有接口与一致性契约 |
 | UserPreferenceMemory 何时试点 | 身份、tenant、retention、查看/更正/删除和审计契约成熟后；不进入 S2/S3 |
-| 首个多能力组合场景 | 已确认“物料库存 + 采购订单供给概览”；Runbooks 13-18 已交付受治理 recall、PlanGraph v2、READ execution、组合事实与 recommendation component/Eval，Runbook 19 继续交付 grounded narrative |
+| 首个多能力组合场景 | 已确认“物料库存 + 采购订单供给概览”；Runbooks 13-19 已交付受治理 recall、PlanGraph v2、READ execution、组合事实、recommendation 与 grounded narrative component/Eval，Runbook 20 继续交付 Workbench 证据体验 |
 
 ---
 

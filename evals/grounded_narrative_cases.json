@@ -1,0 +1,95 @@
+{
+  "schema": "sap-nexus.grounded-narrative-eval.v1",
+  "cases": [
+    {
+      "id": "complete-template-zh",
+      "locale": "zh-CN",
+      "completeness": "complete",
+      "recommendationStatus": "NO_ACTION",
+      "proposalState": "none",
+      "modelMode": "none",
+      "expectedFallback": true,
+      "expectedStateText": "无 proposal"
+    },
+    {
+      "id": "partial-template-en",
+      "locale": "en",
+      "completeness": "partial",
+      "recommendationStatus": "INSUFFICIENT_INPUT",
+      "proposalState": "none",
+      "modelMode": "none",
+      "expectedFallback": true,
+      "expectedStateText": "partial"
+    },
+    {
+      "id": "clarify-template-zh",
+      "locale": "zh-CN",
+      "completeness": "complete",
+      "recommendationStatus": "CLARIFY",
+      "proposalState": "none",
+      "modelMode": "none",
+      "expectedFallback": true,
+      "expectedStateText": "需要澄清"
+    },
+    {
+      "id": "incomplete-template-zh",
+      "locale": "zh-CN",
+      "completeness": "incomplete",
+      "recommendationStatus": "INSUFFICIENT_INPUT",
+      "proposalState": "none",
+      "modelMode": "none",
+      "expectedFallback": true,
+      "expectedStateText": "数据不完整"
+    },
+    {
+      "id": "proposal-pending-valid-zh",
+      "locale": "zh-CN",
+      "completeness": "complete",
+      "recommendationStatus": "RECOMMEND",
+      "proposalState": "pending_approval",
+      "modelMode": "valid",
+      "expectedFallback": false,
+      "expectedStateText": "待审批"
+    },
+    {
+      "id": "proposal-approved-valid-en",
+      "locale": "en",
+      "completeness": "complete",
+      "recommendationStatus": "RECOMMEND",
+      "proposalState": "approved",
+      "modelMode": "valid",
+      "expectedFallback": false,
+      "expectedStateText": "approved"
+    },
+    {
+      "id": "proposal-executed-invalid-json-zh",
+      "locale": "zh-CN",
+      "completeness": "complete",
+      "recommendationStatus": "RECOMMEND",
+      "proposalState": "executed",
+      "modelMode": "invalid_json",
+      "expectedFallback": true,
+      "expectedStateText": "已执行"
+    },
+    {
+      "id": "proposal-failed-unavailable-en",
+      "locale": "en",
+      "completeness": "complete",
+      "recommendationStatus": "RECOMMEND",
+      "proposalState": "failed",
+      "modelMode": "unavailable",
+      "expectedFallback": true,
+      "expectedStateText": "failed"
+    },
+    {
+      "id": "unsupported-claim-fallback-zh",
+      "locale": "zh-CN",
+      "completeness": "complete",
+      "recommendationStatus": "RECOMMEND",
+      "proposalState": "pending_approval",
+      "modelMode": "unsupported_claim",
+      "expectedFallback": true,
+      "expectedStateText": "待审批"
+    }
+  ]
+}

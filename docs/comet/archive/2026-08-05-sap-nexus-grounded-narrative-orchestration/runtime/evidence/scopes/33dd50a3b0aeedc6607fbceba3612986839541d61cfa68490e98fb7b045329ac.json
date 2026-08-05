@@ -1,0 +1,266 @@
+{
+  "schema": "comet.native.implementation-scope.v2",
+  "contractHash": "fb3d9b3b97c4f22d73dd3e1ff1693fb3451f526d9cdb0bd25b1b77c452238f4d",
+  "baselineProjectionRef": "runtime/evidence/snapshots/94a8771b890b5e80080049aa39efbb4cf3281ada5bf0abdefc2c7678b2745d94.json",
+  "baselineProjectionHash": "94a8771b890b5e80080049aa39efbb4cf3281ada5bf0abdefc2c7678b2745d94",
+  "currentProjectionRef": "runtime/evidence/snapshots/db4469369d008cc9826db67f24c7cf6bca7ddc929e50cbf9fce220799a1b6ca8.json",
+  "currentProjectionHash": "db4469369d008cc9826db67f24c7cf6bca7ddc929e50cbf9fce220799a1b6ca8",
+  "complete": true,
+  "declaredArtifacts": [
+    {
+      "path": "docs/runbooks/19-grounded-narrative-orchestration.md",
+      "kind": "file"
+    },
+    {
+      "path": "docs/runbooks/README.md",
+      "kind": "file"
+    },
+    {
+      "path": "docs/wiki/sap-nexus-agent-deerflow-adoption-analysis.md",
+      "kind": "file"
+    },
+    {
+      "path": "docs/wiki/sap-nexus-agent-implementation-roadmap.md",
+      "kind": "file"
+    },
+    {
+      "path": "docs/wiki/sap-nexus-agent-openharness-semantic-orchestration.md",
+      "kind": "file"
+    },
+    {
+      "path": "docs/wiki/sap-nexus-agent-technical-architecture.md",
+      "kind": "file"
+    },
+    {
+      "path": "docs/wiki/sap-nexus-agent-technology-selection.md",
+      "kind": "file"
+    },
+    {
+      "path": "evals/grounded_narrative_cases.json",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/runtime/narrative/narrative-eval.test.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/runtime/narrative/narrative.test.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/runtime/narrative/narrative.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/runtime/narrative/types.ts",
+      "kind": "file"
+    }
+  ],
+  "changes": [
+    {
+      "path": "docs/runbooks/19-grounded-narrative-orchestration.md",
+      "kind": "modified",
+      "before": {
+        "hash": "33c2d13096f31640f9fcbf35e4d1f21b15af076300dcce34b78d19630f13ae98",
+        "size": 2563
+      },
+      "after": {
+        "hash": "22795fd2ca87121680780e7180982cb6d5311adac3db5fdc3e69a4b7f2485663",
+        "size": 5587
+      },
+      "attributedTo": [
+        {
+          "path": "docs/runbooks/19-grounded-narrative-orchestration.md",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "docs/runbooks/README.md",
+      "kind": "modified",
+      "before": {
+        "hash": "b576946fd11d87eafe67fc50e7a76ffcdf47b7fe3c9cfe2310ff632c09c0b7b0",
+        "size": 23154
+      },
+      "after": {
+        "hash": "52ccc7eedf5344b3dbbb832d4ba44cbe302098ddc65d16864881564b69016a9c",
+        "size": 23704
+      },
+      "attributedTo": [
+        {
+          "path": "docs/runbooks/README.md",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "docs/wiki/sap-nexus-agent-deerflow-adoption-analysis.md",
+      "kind": "modified",
+      "before": {
+        "hash": "9e64f769161992a2742dcee485d26b32a2423715aa633ab40b5a1c1bf72d081b",
+        "size": 35464
+      },
+      "after": {
+        "hash": "344dadc6453b81065c6b5ebbc898f34263b5b592caa1318761ab01931be8c5af",
+        "size": 35717
+      },
+      "attributedTo": [
+        {
+          "path": "docs/wiki/sap-nexus-agent-deerflow-adoption-analysis.md",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "docs/wiki/sap-nexus-agent-implementation-roadmap.md",
+      "kind": "modified",
+      "before": {
+        "hash": "9471558fbda21ee7f461da37e0bd30ff1c7b5c3b7b990ea91a6d4996c1bf7abb",
+        "size": 99388
+      },
+      "after": {
+        "hash": "ef175624b256ff91aa1aea2d63ebbd0c59f5b6302e0db7546208b09747f8c129",
+        "size": 100134
+      },
+      "attributedTo": [
+        {
+          "path": "docs/wiki/sap-nexus-agent-implementation-roadmap.md",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "docs/wiki/sap-nexus-agent-openharness-semantic-orchestration.md",
+      "kind": "modified",
+      "before": {
+        "hash": "96110275baa2c1fda2bb85708c0f2452bdf2912cc8d7e072612295c37c83497f",
+        "size": 20341
+      },
+      "after": {
+        "hash": "0279cc3c85c0148abff7c00791202c7ac49fa7284894f953deda48ff0fb7e3e6",
+        "size": 20601
+      },
+      "attributedTo": [
+        {
+          "path": "docs/wiki/sap-nexus-agent-openharness-semantic-orchestration.md",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "docs/wiki/sap-nexus-agent-technical-architecture.md",
+      "kind": "modified",
+      "before": {
+        "hash": "fc68473223c1778e5b058d156b250c79fcf865bc4132d3b1d031b6cdb21ecb45",
+        "size": 87082
+      },
+      "after": {
+        "hash": "f5d067343f096bffe03888876d5a805e531895d828896768e4bc815d18d96da1",
+        "size": 87538
+      },
+      "attributedTo": [
+        {
+          "path": "docs/wiki/sap-nexus-agent-technical-architecture.md",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "docs/wiki/sap-nexus-agent-technology-selection.md",
+      "kind": "modified",
+      "before": {
+        "hash": "8b4fe247a1472f61300385079b84ffecf1fc0b02dc8b58925f3acfca869b64f7",
+        "size": 40941
+      },
+      "after": {
+        "hash": "b9abcc1b7419cef4c1fb2ed747dd00bc27afadff84cbf459132166aa32f2b995",
+        "size": 41378
+      },
+      "attributedTo": [
+        {
+          "path": "docs/wiki/sap-nexus-agent-technology-selection.md",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "evals/grounded_narrative_cases.json",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "3598159dd5992bc014aedf48560389afafb5d2afb8fbd001252f5137ddb17863",
+        "size": 2715
+      },
+      "attributedTo": [
+        {
+          "path": "evals/grounded_narrative_cases.json",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/narrative/narrative-eval.test.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "e0446c06e2a1e2e8f828d00e184d05bf403ca0ae8ea061b70448f6920b311d83",
+        "size": 7988
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/narrative/narrative-eval.test.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/narrative/narrative.test.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "cd1ebc76490995341be54816385e87a36c944fcf614bdaa7c128b789909657e8",
+        "size": 17949
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/narrative/narrative.test.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/narrative/narrative.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "54997cf1439cce70d4899649d8483e6bb79ebf603524d5ad0d6825d41d5fb0c0",
+        "size": 17716
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/narrative/narrative.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/narrative/types.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "d1b3d3fcc317cae23d840cf75f36796b2906e627f87bc6d6bb81f1cd97bed94f",
+        "size": 2232
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/narrative/types.ts",
+          "kind": "file"
+        }
+      ]
+    }
+  ],
+  "unattributed": [],
+  "unresolvedScopes": [],
+  "noCodeReason": null,
+  "scopeHash": "33dd50a3b0aeedc6607fbceba3612986839541d61cfa68490e98fb7b045329ac"
+}

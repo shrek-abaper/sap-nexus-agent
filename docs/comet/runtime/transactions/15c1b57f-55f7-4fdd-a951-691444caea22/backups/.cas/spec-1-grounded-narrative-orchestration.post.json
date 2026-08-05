@@ -1,0 +1,11 @@
+{
+  "schema": "comet.native.archive-cas.v1",
+  "operationId": "spec-1-grounded-narrative-orchestration",
+  "role": "post",
+  "hash": "a1bdcb9dd0fe9275c84de092729c788fcd8b3503ea71d4dea4ccb1ddc212d226",
+  "identity": {
+    "dev": 2096,
+    "ino": 403664,
+    "birthtimeMs": 1785914079098.5947
+  }
+}

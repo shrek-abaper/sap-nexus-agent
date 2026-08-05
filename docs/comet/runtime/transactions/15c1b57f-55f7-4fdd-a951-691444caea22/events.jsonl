@@ -1,0 +1,8 @@
+{"sequence":1,"timestamp":"2026-08-05T07:14:37.294Z","type":"prepared"}
+{"sequence":2,"timestamp":"2026-08-05T07:14:39.060Z","type":"operation-started","operationId":"spec-1-grounded-narrative-orchestration"}
+{"sequence":3,"timestamp":"2026-08-05T07:14:39.191Z","type":"operation-completed","operationId":"spec-1-grounded-narrative-orchestration"}
+{"sequence":4,"timestamp":"2026-08-05T07:14:40.855Z","type":"operation-started","operationId":"archive-change"}
+{"sequence":5,"timestamp":"2026-08-05T07:14:41.575Z","type":"operation-completed","operationId":"archive-change"}
+{"sequence":6,"timestamp":"2026-08-05T07:14:41.971Z","type":"archive-finalization-started"}
+{"sequence":7,"timestamp":"2026-08-05T07:14:42.096Z","type":"archive-finalized"}
+{"sequence":8,"timestamp":"2026-08-05T07:14:42.170Z","type":"commit"}

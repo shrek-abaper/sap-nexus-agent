@@ -1,0 +1,23 @@
+schema: comet.native.v3
+minimum_runtime_version: 3
+revision: 5
+verification_protocol: legacy-v1
+name: sap-nexus-grounded-narrative-orchestration
+language: zh-CN
+phase: archive
+brief: brief.md
+approval: confirmed
+approved_contract_hash: fb3d9b3b97c4f22d73dd3e1ff1693fb3451f526d9cdb0bd25b1b77c452238f4d
+spec_changes:
+  - capability: grounded-narrative-orchestration
+    operation: create
+    source: specs/grounded-narrative-orchestration/spec.md
+    base_hash: null
+verification_result: pass
+verification_report: verification.md
+implementation_scope: runtime/evidence/scopes/33dd50a3b0aeedc6607fbceba3612986839541d61cfa68490e98fb7b045329ac.json
+verification_evidence: runtime/evidence/verifications/2fb55387a158700a2751fae3e9a74474ab5dec6707e738d9a1c5684d0aa8e894.json
+partial_allowance: null
+archived: true
+created_at: 2026-08-05
+run_id: 8603b967-cb8e-4f14-8de3-c215d4041ba5

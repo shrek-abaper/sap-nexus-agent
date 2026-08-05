@@ -1,0 +1,27 @@
+{
+  "schema": "comet.native.transaction.v2",
+  "id": "15c1b57f-55f7-4fdd-a951-691444caea22",
+  "kind": "archive",
+  "status": "committed",
+  "change": "sap-nexus-grounded-narrative-orchestration",
+  "createdAt": "2026-08-05T07:14:35.504Z",
+  "preflightHash": "1e4ae8ae16b7e62e3f65d6a792d0f647966fc6eacd843431e08699a461fd39b7",
+  "operations": [
+    {
+      "id": "spec-1-grounded-narrative-orchestration",
+      "type": "write",
+      "target": "specs/grounded-narrative-orchestration/spec.md",
+      "staged": "runtime/transactions/15c1b57f-55f7-4fdd-a951-691444caea22/staged/specs/grounded-narrative-orchestration/spec.md",
+      "expectedTargetHash": null,
+      "stagedHash": "a1bdcb9dd0fe9275c84de092729c788fcd8b3503ea71d4dea4ccb1ddc212d226"
+    },
+    {
+      "id": "archive-change",
+      "type": "move",
+      "source": "changes/sap-nexus-grounded-narrative-orchestration",
+      "target": "archive/2026-08-05-sap-nexus-grounded-narrative-orchestration",
+      "expectedSourceHash": "4d47f07d79a526eb33e609193ec04ced73efc6320dc09d2b7a1f4e58ec936ec0",
+      "expectedTargetHash": null
+    }
+  ]
+}

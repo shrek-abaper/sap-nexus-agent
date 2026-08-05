@@ -5,7 +5,7 @@
 | 字段 | 内容 |
 |---|---|
 | 文档名称 | `SAP Nexus Agent DeerFlow 借鉴与复用决策` |
-| 当前版本 | `v0.1.4` |
+| 当前版本 | `v0.1.5` |
 | 状态 | `Decision Baseline` |
 | 创建日期 | `2026-07-23` |
 | 最近更新 | `2026-08-05` |
@@ -15,12 +15,13 @@
 | 关联技术选型 | `docs/wiki/sap-nexus-agent-technology-selection.md` |
 | 关联实施路线 | `docs/wiki/sap-nexus-agent-implementation-roadmap.md` |
 | 关联语义编排路线 | `docs/wiki/sap-nexus-agent-openharness-semantic-orchestration.md` |
-| 关联 Runbook | 当前 `docs/runbooks/18-recommendation-decision-plan.md`；历史 `docs/runbooks/10-capability-composition-contract.md` |
+| 关联 Runbook | 当前 `docs/runbooks/20-workbench-plan-evidence-experience.md`；历史 `docs/runbooks/10-capability-composition-contract.md` |
 
 ## 版本记录
 
 | 版本 | 日期 | 变更摘要 | 决策状态 |
 |---|---|---|---|
+| `v0.1.5` | `2026-08-05` | 同步 Runbooks 13-19 已归档及当前 Runbook 20 入口；DeerFlow 仍只提供 progressive discovery、task lifecycle、durable context 和受限 memory 参考，不成为第二 runtime | 当前决策基线 |
 | `v0.1.4` | `2026-08-05` | 同步 Runbooks 13-17 已归档及当前 Runbook 18 入口；DeerFlow 仍只提供 progressive discovery、task lifecycle、durable context 和受限 memory 参考，不成为第二 runtime | 当前决策基线 |
 | `v0.1.3` | `2026-08-03` | 同步 S2-A/S2-B/P0B 已归档事实和 Runbooks 13-22 当前路线；DeerFlow progressive discovery 与 task lifecycle 仍只作为后续 Runbooks 的机制参考，不再指向已完成的 planner-dry-run change | 当前决策基线 |
 | `v0.1.2` | `2026-07-24` | 校准 DeerFlow progressive discovery 的落点：S2-A 先补齐 SAP Nexus 自有五态 `MatchDecision`、多意图/歧义、visibility 和 matcher Eval，S2-B 再借鉴 metadata-first `CapabilityCard`；明确 DeerFlow Tool/Skill 发现不能替代基础语义决策，也不触发 SAP 执行 | 当前决策基线 |
@@ -732,6 +733,6 @@ DeerFlow 使用 MIT License。未来若复制或修改 DeerFlow 代码：
 | Conversation summary 替代权威计划或事实 | 拒绝 |
 | Governed UserPreferenceMemory | 保留为 later pilot |
 | 模型自主写长期记忆 | 当前拒绝 |
-| 当前下一推荐 change | Runbook 18 `sap-nexus-recommendation-decision-plan`；Runbooks 13-17 已归档 |
+| 当前下一推荐 change | Runbook 20 `sap-nexus-workbench-plan-evidence-experience`；Runbooks 13-19 已归档 |
 
 本决策与 OpenHarness 对比结论一致：通用 Agent Harness 的机制可以吸收，但不能引入第二执行权威。DeerFlow 补充了更成熟的 thread/run、checkpoint、context 和 memory 工程经验；SAP Nexus 继续以 Capability Registry、Semantic Planning、Approval、Gateway、Evidence 和 Eval 构成受治理业务闭环。

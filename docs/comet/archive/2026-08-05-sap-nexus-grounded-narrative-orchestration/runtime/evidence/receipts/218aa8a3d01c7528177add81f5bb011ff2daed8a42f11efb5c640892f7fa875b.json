@@ -1,0 +1,38 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "static-inspection",
+  "role": "required-check",
+  "status": "passed",
+  "bindings": {
+    "change": "sap-nexus-grounded-narrative-orchestration",
+    "sourceRevision": 3,
+    "contractHash": "fb3d9b3b97c4f22d73dd3e1ff1693fb3451f526d9cdb0bd25b1b77c452238f4d",
+    "scopeHash": "33dd50a3b0aeedc6607fbceba3612986839541d61cfa68490e98fb7b045329ac",
+    "snapshotHash": "db4469369d008cc9826db67f24c7cf6bca7ddc929e50cbf9fce220799a1b6ca8",
+    "artifactHash": "5da24bf219b6e35141378ce43e623b7a7bd4bab01e5399054aa21fcd0b03b367"
+  },
+  "acceptanceIds": [],
+  "actor": "native-runtime:scoped-text-safety",
+  "issuedAt": "2026-08-05T07:13:37.747Z",
+  "evidence": {
+    "subjects": [
+      "docs/runbooks/19-grounded-narrative-orchestration.md",
+      "docs/runbooks/README.md",
+      "docs/wiki/sap-nexus-agent-deerflow-adoption-analysis.md",
+      "docs/wiki/sap-nexus-agent-implementation-roadmap.md",
+      "docs/wiki/sap-nexus-agent-openharness-semantic-orchestration.md",
+      "docs/wiki/sap-nexus-agent-technical-architecture.md",
+      "docs/wiki/sap-nexus-agent-technology-selection.md",
+      "evals/grounded_narrative_cases.json",
+      "frontend/src/runtime/narrative/narrative-eval.test.ts",
+      "frontend/src/runtime/narrative/narrative.test.ts",
+      "frontend/src/runtime/narrative/narrative.ts",
+      "frontend/src/runtime/narrative/types.ts"
+    ],
+    "rule": "scoped-text-safety",
+    "resultSummary": "The built-in scoped inspection passed without skipped or blocking input.",
+    "checkReceiptRef": "runtime/evidence/check-receipts/9de3508cf53f73424493bac408cd89b6c5096f7688a4312cf573c1ff2223fff9.json",
+    "checkReceiptHash": "9de3508cf53f73424493bac408cd89b6c5096f7688a4312cf573c1ff2223fff9"
+  },
+  "receiptHash": "218aa8a3d01c7528177add81f5bb011ff2daed8a42f11efb5c640892f7fa875b"
+}
