@@ -2,6 +2,7 @@
 change: sap-nexus-output-projection-registry
 design-doc: docs/superpowers/specs/2026-08-04-sap-nexus-output-projection-registry-design.md
 base-ref: 810a00edb70f1910758a16ece3092e26ce3eac5e
+archived-with: 2026-08-05-sap-nexus-output-projection-registry
 ---
 
 # Output Projection Registry Implementation Plan

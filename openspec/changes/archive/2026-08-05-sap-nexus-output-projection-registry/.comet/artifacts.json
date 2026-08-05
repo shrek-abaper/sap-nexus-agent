@@ -3,6 +3,7 @@
   "openspec_design": "openspec/changes/sap-nexus-output-projection-registry/design.md",
   "openspec_tasks": "openspec/changes/sap-nexus-output-projection-registry/tasks.md",
   "openspec_delta_spec": "openspec/changes/sap-nexus-output-projection-registry/specs/output-projection/spec.md",
-  "handoff_context": "openspec/changes/sap-nexus-output-projection-registry/.comet/handoff/design-context.json",
-  "handoff_markdown": "openspec/changes/sap-nexus-output-projection-registry/.comet/handoff/design-context.md"
+  "handoff_context": "openspec/changes/archive/2026-08-05-sap-nexus-output-projection-registry/.comet/handoff/design-context.json",
+  "handoff_markdown": "openspec/changes/archive/2026-08-05-sap-nexus-output-projection-registry/.comet/handoff/design-context.md",
+  "archive_directory": "openspec/changes/archive/2026-08-05-sap-nexus-output-projection-registry"
 }

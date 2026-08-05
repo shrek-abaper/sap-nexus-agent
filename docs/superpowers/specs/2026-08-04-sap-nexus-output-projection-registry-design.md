@@ -2,6 +2,8 @@
 comet_change: sap-nexus-output-projection-registry
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-08-05-sap-nexus-output-projection-registry
+status: final
 ---
 
 # Output Projection Registry 技术设计（sap-nexus-output-projection-registry）
