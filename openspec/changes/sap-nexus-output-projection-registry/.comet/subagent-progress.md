@@ -9,30 +9,26 @@
 
 ## Current Task
 
-- Plan task: `Task 6: 完成端到端 Projection Eval 与隔离证明`
+- Plan task: `Task 7: 全量相关验证与 OpenSpec 任务收口`
 - OpenSpec mapping:
-  - `6.1 complete snapshot 场景`
-  - `6.2 incomplete 场景`
-  - `6.3 partial 场景`
-  - `6.4 freshness mismatch bad case`
-  - `6.5 unit incompatibility bad case`
-  - `6.6 duplicate / conflict fact bad case`
-  - `6.7 deterministic hash cases`
-  - `6.8 projection isolation test`
+  - `7.1 frontend verify`
+  - `7.2 strict OpenSpec validation`
+  - review of `1.1-6.8` evidence coverage
 - Stage: `done`
-- Implementer status: `DONE` from fresh agent `task6_impl`
-- Reviewer status: `PASSED` by fresh agent `task6_review`
-- Current dispatch model: `gpt-5.6-sol` (high)
-- Report target: `.superpowers/sdd/task-6-report.md`
-- Review report target: `.superpowers/sdd/task-6-review.md`
-- Review package: `.superpowers/sdd/review-54b3d27..4ef7764.diff`
-- Review verdict: `Spec compliant` + `Quality Approved`; Critical 0 / Important 0 / Minor 0.
-- Implementation commit: `4ef77645e03157507e65a86e2fb0837072151316`
-- Changed files: `assembler.test.ts`, `material-supply-snapshot.test.ts`, and `plan-executor.test.ts` only.
-- RED evidence: compile-time isolation initially produced three expected `TS2353` excess-property failures.
-- GREEN evidence: projection/executor regression passed 152/152; typecheck and three-file diff check passed.
-- Base commit: `54b3d27`
+- Implementer status: `DONE_WITH_CONCERNS` from fresh verification agent `task7_verify`; concerns are expected coordinator-owned checkoff and exclusion of unrelated Comet update files.
+- Reviewer status: `PASSED` by fresh agent `task7_review`
+- Current dispatch model: `gpt-5.6-terra` (high)
+- Report target: `.superpowers/sdd/task-7-report.md`
+- Review report target: `.superpowers/sdd/task-7-review.md`
+- Review package: `.superpowers/sdd/review-7eb7267..7eb7267.diff` (verification-only, zero commits)
+- Review verdict: `Spec compliant` + `Quality Approved`; Critical 0 / Important 0 / Minor 2; coordinator checkoff ready.
+- Minor disposition: resolved in coordinator checkoff by correcting plan coverage count/protocol commands and clarifying report 6.7 attribution to Task 5 dedicated hash tests.
+- Implementation commit: `N/A`; verification-only task, coordinator owns checkoff.
+- Changed files: none authorized.
+- RED evidence: `N/A`; verification-only task must not manufacture a failure.
+- GREEN evidence: frontend verify passed 28/28 files and 240/240 tests plus typecheck/build; Classic OpenSpec strict passed 20/20; committed range diff check passed; coverage audit 40/40.
+- Base commit: `7eb7267`
 - Review/fix round: 0/2
-- Dependencies: Task 5 implementation `bb49278` and checkoff `54b3d27` completed; all 7 plan and 9 mapped OpenSpec checkoffs passed.
+- Dependencies: Task 6 implementation `4ef7764` and checkoff `7eb7267` completed; all 5 plan and 8 mapped OpenSpec checkoffs passed.
 - Carried Minor for final review: `assembler.ts` uses `Math.min(...facts.map(...))`, which may hit the JavaScript argument limit for extremely large fact arrays.
-- Risk signals: cross-module test evidence only; no security/concurrency/migration/public API/DONE_WITH_CONCERNS/diff >200 signal.
+- Risk signals: `DONE_WITH_CONCERNS` due workflow ownership/dirty-file exclusion only; no failing code, security, schema, concurrency, or boundary concern.

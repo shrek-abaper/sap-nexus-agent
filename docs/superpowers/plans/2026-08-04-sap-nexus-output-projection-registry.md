@@ -784,34 +784,34 @@ git commit -m "test(projection): cover output projection evaluation matrix"
 
 ### Task 7: 全量相关验证与 OpenSpec 任务收口
 
-**Covers:** 7.1、7.2；并复核 1.1-6.8 共 32 项
+**Covers:** 复核 1.1-7.2 共 40 项
 
 **Files:**
 - Modify: `openspec/changes/sap-nexus-output-projection-registry/tasks.md`
 
-- [ ] **Step 1: 运行项目规定的 frontend verify**
+- [x] **Step 1: 运行项目规定的 frontend verify**
 
 Run: `npm --prefix frontend run verify`
 
 Expected: `tsc --noEmit`、全部 Vitest、Next.js production build 均 PASS；输出不得有 failed test 或 build error。
 
-- [ ] **Step 2: 运行严格 OpenSpec 验证**
+- [x] **Step 2: 运行严格 OpenSpec 验证**
 
-Run: `openspec validate --all --strict`
+Run: `comet classic openspec -- validate --all --strict`
 
 Expected: exit code 0，authoritative validation summary 无 error；非阻塞 telemetry DNS/flush 信息不算 spec failure。
 
-- [ ] **Step 3: 检查 diff 与边界**
+- [x] **Step 3: 检查 diff 与边界**
 
-Run: `git diff --check && git status --short && git diff --name-only`
+Run: `git diff --check 810a00edb70f1910758a16ece3092e26ce3eac5e..HEAD && git status --short && git diff --name-only 810a00edb70f1910758a16ece3092e26ce3eac5e..HEAD`
 
 Expected: `git diff --check` 无输出；改动仅包含本计划列出的 projection、plan-executor、durable type、test 与当前 change 文件，不含 `.env`、runtime trace、生产 orchestrator 或 `projectionRef` 接线。
 
-- [ ] **Step 4: 在 tasks.md 勾选已由命令和测试证明的全部 32 项**
+- [x] **Step 4: 在 tasks.md 勾选已由命令和测试证明的全部 40 项**
 
 把 `openspec/changes/sap-nexus-output-projection-registry/tasks.md` 中 1.1-7.2 的 `- [ ]` 全部改为 `- [x]`；若任一项没有对应 PASS evidence，保留未勾选并回到对应任务修复。
 
-- [ ] **Step 5: Commit OpenSpec task closeout**
+- [x] **Step 5: Commit OpenSpec task closeout**
 
 ```bash
 git add openspec/changes/sap-nexus-output-projection-registry/tasks.md

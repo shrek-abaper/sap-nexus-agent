@@ -63,7 +63,7 @@ Build config: isolation=branch, build_mode=subagent-driven-development, tdd_mode
 - [x] Task 4: 实现 FactBuilderRegistry 与 ProjectionInputAssembler
 - [x] Task 5: 实现确定性 hash 与 MaterialSupplySnapshot projection
 - [x] Task 6: 完成端到端 Projection Eval 与隔离证明
-- [ ] Task 7: 全量相关验证与 OpenSpec 任务收口
+- [x] Task 7: 全量相关验证与 OpenSpec 任务收口
 
 ## Completed
 
@@ -73,6 +73,7 @@ Build config: isolation=branch, build_mode=subagent-driven-development, tdd_mode
 - Task 4: complete (commits 010a450..b8147fd, final review: Spec compliant + Quality Approved, 0 Critical/Important, 1 Minor deferred). Fact builders + assembler + nullable trace degradation + strict freshness/calendar validation + PO item identity; focused 24/24, frontend 221/221, typecheck/build, diff check, OpenSpec strict 20/20.
 - Task 5: complete (commits e48926e..bb49278, review clean: Spec compliant + Quality Approved, 0 Critical/Important/Minor). Deterministic hash + MaterialSupplySnapshot completeness/freshness/lineage/conflict policy; focused 15/15, frontend 232/232, typecheck/build, diff check, OpenSpec strict 20/20.
 - Task 6: complete (commits 54b3d27..4ef7764, review clean: Spec compliant + Quality Approved, 0 Critical/Important/Minor). Real executor-to-projection component Eval, six-case bad-path matrix, and compile-time raw/model-input isolation; regression 152/152, typecheck and diff check clean.
+- Task 7: complete (verification-only at 7eb7267, review: Spec compliant + Quality Approved, 0 Critical/Important, 2 documentation Minor resolved in coordinator checkoff). Frontend verify 28/28 files and 240/240 tests plus typecheck/build; Classic OpenSpec strict 20/20; evidence audit 40/40; committed-range boundary clean.
 
 ## Minor findings (deferred to final review)
 

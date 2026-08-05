@@ -56,5 +56,5 @@
 
 ## 7. 验证
 
-- [ ] 7.1 `npm --prefix frontend run verify` 通过（含 projection Eval + executor 回归）
-- [ ] 7.2 `openspec validate --all --strict` 通过
+- [x] 7.1 `npm --prefix frontend run verify` 通过（含 projection Eval + executor 回归）
+- [x] 7.2 `openspec validate --all --strict` 通过
