@@ -16,7 +16,7 @@
   - `4.3 assembler 隔离 raw/conversation/model input`
   - `4.4 assembler 单测`
   - `Missing FactBuilder graceful degradation`
-- Stage: `blocked` (user-authorized 3/3 review-fix budget exhausted)
+- Stage: `implementing` (user-authorized final round 4 exception)
 - Implementer status: `DONE` (review-fix round 1 committed by fixer)
 - Base commit: `010a4500aad2ac47e01326262413f2d7d3899f43`
 - Implementation commit: `40d295563e8adadb0e0de6101180a40b736ba160`
@@ -32,7 +32,7 @@
 - Review-fix round 2 GREEN evidence: the same focused suites passed (4 files, 41 tests); full frontend verify passed (26 files, 200 tests + production build), and `git diff --check` passed.
 - Task review: needs fixes (0 Critical, 3 Important, 0 Minor)
 - Re-review round 1: fresh reviewer `task4_rereview1` reviewed `010a450..78b542b`; result needs fixes (0 Critical, 1 Important, 0 Minor). Report: `.superpowers/sdd/task-4-rereview-1.md`.
-- Review/fix round: 3/3 (user-authorized exception after the original 2/2 budget)
+- Review/fix round: 4/4 (explicitly authorized by the user after the 3/3 blocker)
 - Round 3 fixer: fresh fixer `task4_fix3`, model `gpt-5.6-sol` (high), completed Task 4 Steps 12-16; report appended to `.superpowers/sdd/task-4-report.md`.
 - Round 3 RED evidence: focused executor/projection suites failed as intended (4 files failed, 10 tests failed, 37 passed) across nullable trace observability, PO item precedence, freshness validation, and epoch aggregation.
 - Round 3 GREEN evidence: the same focused suites passed (4 files, 47 tests); full frontend verify passed (26 files, 206 tests + production build), `git diff --check` passed, and strict OpenSpec validation passed 20/20.
@@ -45,9 +45,10 @@
   - Include `purchaseOrderItem` in PO fact evidence so item identity, lineage, and output hash remain observable.
 - Review-fix round 2: fresh fixer `task4_fix2` completed and committed; final Task 4 re-review is pending.
 - Final Task 4 re-review: fresh reviewer `task4_rereview2` reviewed `010a450..2d60277`; result needs fixes (0 Critical, 3 Important, 0 Minor). Report: `.superpowers/sdd/task-4-rereview-2.md`.
-- Review budget: the original 2/2 budget plus the user-authorized 3/3 exception are exhausted. Per thorough review policy, Task 4 is BLOCKED and remains unchecked; Task 5 has not been dispatched. Continuing requires an explicit additional exception or a user decision on the findings.
+- Review budget: the user selected continuation option 1 and explicitly authorized one final round 4 fix/re-review for the two remaining Important findings. Task 4 remains unchecked and Task 5 has not been dispatched until that review passes.
 - Extra-round design decision: retain every complete `SUCCEEDED` `NodeFactRecord` with nullable `gatewayTraceId`; assembler records `missing_gateway_trace` and emits no fact. PO item quantity uses field-presence precedence. Valid source freshness is preserved per fact; aggregate `asOf` uses earliest epoch normalized to UTC.
 - Design decision: user selected and confirmed Option A; committed as `c1e302d`. `NodeFactRecord.agentTraceId` is derived from executor `runId`, never from `gatewayTraceId`.
 - Written spec review: explicitly confirmed by the user after commit `6456476`; strict OpenSpec validation passed 20/20.
 - Updated plan: Task 4 Steps 12-16 define the extra-round RED/GREEN cases, nullable trace and freshness implementation, full frontend/OpenSpec verification, allowed files, and exact commit.
+- Final-round plan: Task 4 Steps 17-21 define RED/GREEN for strict invalid-calendar rejection and `purchaseOrderItem` evidence identity, with exact two-file scope and commit.
 - Risk signals: cross-module, Gateway-data security boundary, public API changes, diff >200, and process-only DONE_WITH_CONCERNS; no implementation concern.

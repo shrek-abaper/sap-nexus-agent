@@ -544,6 +544,77 @@ git add frontend/src/runtime/plan-executor/types.ts frontend/src/runtime/plan-ex
 git commit -m "fix(projection): preserve succeeded-node degradation"
 ```
 
+- [ ] **Step 17: 写第四轮 reviewer-fix RED tests，锁定 calendar validity 与 PO item identity**
+
+在 `frontend/src/runtime/projection/fact-builder.test.ts` 增加非法日历日期回退和 item identity evidence 两组回归：
+
+```typescript
+it.each([
+  "2026-02-30T00:00:00Z",
+  "2025-02-29T00:00:00+08:00",
+  "2026-13-01T00:00:00Z",
+])("falls back for invalid ISO-8601 calendar freshness: %s", (dataAsOf) => {
+  const builder = createMaterialSupplyFactBuilderRegistry().resolve(
+    "MM.Inventory.GetAvailability",
+  );
+  const facts = builder?.build(record({
+    executeData: { availableQuantity: 7, dataAsOf },
+  }));
+  expect(facts?.[0]?.asOf).toBe("2026-08-04T00:00:01Z");
+});
+
+it("preserves purchase-order item identity in fact evidence", () => {
+  const builder = createMaterialSupplyFactBuilderRegistry().resolve("MM.PurchaseOrder.GetList");
+  const build = (purchaseOrderItem: string) => builder?.build(record({
+    nodeId: "node.po",
+    capabilityId: "MM.PurchaseOrder.GetList",
+    producesFactTypes: ["PurchaseOrder"],
+    executeData: { purchaseOrders: [{
+      purchaseOrder: "4500001", purchaseOrderItem,
+      material: "MAT-1", plant: "P1", orderQuantity: 1, purchaseOrderUnit: "EA",
+    }] },
+  }));
+  expect(build("10")?.[0]?.evidence[0]?.purchaseOrderItem).toBe("10");
+  expect(build("10")).not.toEqual(build("20"));
+});
+```
+
+- [ ] **Step 18: 运行第四轮 reviewer-fix tests 确认两个 finding 均失败**
+
+Run: `npm --prefix frontend test -- src/runtime/projection/fact-builder.test.ts`
+
+Expected: FAIL；非法日期被旧 freshness helper 接受而未回退，且 PO evidence 缺 `purchaseOrderItem`，两组失败均直接对应 `.superpowers/sdd/task-4-rereview-3.md` 的 Important finding。
+
+- [ ] **Step 19: 实现严格 calendar validation 并保留 PO item evidence**
+
+把 freshness regex 改为捕获 year/month/day/hour/minute/second/timezone 的形式；新增纯函数检查 month `1..12`、day 不超过该月天数（闰年规则：`year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0)`）、hour `0..23`、minute/second `0..59`、offset hour `0..23`、offset minute `0..59`，之后才允许 `Date.parse()` 的 finite epoch。不得把 parsed/canonical UTC 替换进 fact `asOf`；合法 source string 仍原样保留，非法值回退 `nodeExecutedAt`。
+
+```typescript
+function isLeapYear(year: number): boolean {
+  return year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+}
+
+function daysInMonth(year: number, month: number): number {
+  const days = [31, isLeapYear(year) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  return days[month - 1] ?? 0;
+}
+```
+
+在 PO fact 的白名单 evidence 中加入 `purchaseOrderItem: row.purchaseOrderItem`；不 spread raw row，不改变既有 total-order、quantity precedence 或 factId 规则。
+
+- [ ] **Step 20: 运行第四轮 GREEN 与完整验证**
+
+Run: `npm --prefix frontend test -- src/runtime/projection/fact-builder.test.ts && npm --prefix frontend run verify && git diff --check && comet classic openspec -- validate --all --strict`
+
+Expected: focused fact-builder tests PASS；frontend typecheck、全部 Vitest 与 production build PASS；diff check PASS；OpenSpec strict validation 20/20 PASS。报告必须包含第四轮 RED/GREEN 命令和数量，并确认合法 leap-day/offset freshness 仍保留 source string。
+
+- [ ] **Step 21: Commit Task 4 strict freshness and item identity fixes**
+
+```bash
+git add frontend/src/runtime/projection/fact-builder.ts frontend/src/runtime/projection/fact-builder.test.ts
+git commit -m "fix(projection): validate fact source identity"
+```
+
 ---
 
 ### Task 5: 实现确定性 hash 与 MaterialSupplySnapshot projection
