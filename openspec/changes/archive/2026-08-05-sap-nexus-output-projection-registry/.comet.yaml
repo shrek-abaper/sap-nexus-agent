@@ -15,7 +15,7 @@ design_doc: docs/superpowers/specs/2026-08-04-sap-nexus-output-projection-regist
 plan: docs/superpowers/plans/2026-08-04-sap-nexus-output-projection-registry.md
 verify_result: pass
 verification_report: docs/superpowers/reports/2026-08-05-sap-nexus-output-projection-registry-verify.md
-branch_status: pending
+branch_status: handled
 created_at: 2026-08-04
 verified_at: 2026-08-05
 archived: true
@@ -25,6 +25,6 @@ handoff_hash: 23910c6316e2d011a3e719f5455d742417a243c29508d93dafeaeccd64a8e059
 classic_profile: full
 classic_migration: 1
 run_id: c790dd19-ef38-4411-8f33-59150748b1b7
-bound_branch: feature/20260804/sap-nexus-output-projection-registry
+bound_branch: main
 verify_failures: 0
 archive_confirmation: confirmed

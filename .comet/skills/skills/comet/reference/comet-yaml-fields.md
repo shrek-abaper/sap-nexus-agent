@@ -1,14 +1,15 @@
-# .comet.yaml 字段说明
+# .comet.yaml Field Reference
 
-规范路径：`comet/reference/comet-yaml-fields.md`
+Canonical path: `comet/reference/comet-yaml-fields.md`
 
-本文件是 `.comet.yaml` 状态文件的字段参考。按需查阅，不随 skill 一次性加载。
+This file is the field reference for each change-level `.comet.yaml` state file under `<classic-change-dir>/`. `<classic-change-dir>` comes from the resolver binding in `comet/reference/classic-layout.md`.
+Consult on demand; not loaded inline with skills. Project defaults live in `.comet/config.yaml`, global defaults live in `~/.comet/config.yaml`, and project values take precedence.
 
-## 示例
+## Example
 
 ```yaml
 workflow: full
-language: zh-CN
+language: en
 phase: build
 design_doc: docs/superpowers/specs/YYYY-MM-DD-topic-design.md
 plan: docs/superpowers/plans/YYYY-MM-DD-feature.md
@@ -20,56 +21,61 @@ tdd_mode: tdd
 review_mode: standard
 auto_transition: true
 isolation: branch
+bound_branch: null
 verify_mode: light
 verify_result: pending
+verify_failures: 0
 verification_report: null
 branch_status: pending
 created_at: 2026-05-26
 verified_at: null
+archive_confirmation: null
 archived: false
 ```
 
-## 必需字段
+## Required Fields
 
-| 字段 | 含义 |
-|------|------|
-| `workflow` | `full`、`hotfix` 或 `tweak` |
-| `language` | 产物语言，仅支持 `en` 或 `zh-CN`。由 `comet init` 的初始化语言写入 `.comet/config.yaml`，创建 change 时快照到 `.comet.yaml`，用于约束 OpenSpec / Superpowers 产物主语言 |
-| `phase` | 当前阶段：`open`、`design`、`build`、`verify`、`archive`（init 统一设为 `open`，guard 负责过渡） |
-| `design_doc` | 关联的 Superpowers Design Doc 路径，可为空 |
-| `plan` | 关联的 Superpowers Plan 路径，可为空 |
-| `base_ref` | init 时记录的 git commit SHA，用于 scale 评估。无 plan 时作为改动文件数统计基准 |
-| `build_mode` | 已选择的执行方式，可为空。取值：`subagent-driven-development`（隔离后台 subagent 逐任务实现并审查）、`executing-plans`（主会话按计划顺序执行）、`direct`（主会话直接编码，默认仅 hotfix/tweak 允许，full workflow 需 `direct_override: true`） |
-| `build_pause` | build 阶段内部暂停点。`null` 表示无暂停，`plan-ready` 表示 plan 已生成，用户选择切换模型后暂停 |
-| `subagent_dispatch` | `null` 或 `confirmed`。仅当已确认当前平台存在真实后台 subagent / Task / multi-agent 调度能力时，`build_mode: subagent-driven-development` 才能写入并用于离开 build 阶段 |
-| `tdd_mode` | `tdd` 或 `direct`。full workflow 离开 build 阶段前必须已选择。`tdd` 强制每个任务先写失败测试再实现；`direct` 不强制 TDD。hotfix/tweak 默认 `direct` |
-| `review_mode` | `off`、`standard` 或 `thorough`。full workflow 离开 build 阶段前必须已选择；hotfix/tweak 默认 `off` |
-| `isolation` | `branch` 或 `worktree`，工作区隔离方式。full 初始化可为 `null`，但只允许持续到 `/comet-build` Step 3 前；hotfix/tweak 默认 `branch` |
-| `verify_mode` | `light` 或 `full`，可为空 |
-| `auto_transition` | `true` 或 `false`。只控制阶段守卫推进 phase 后是否自动调用下一个 skill；`false` 时由 `comet-state next` 输出 `manual`，暂停下一 skill 调用，但不阻止 phase 字段更新 |
-| `verify_result` | `pending`、`pass` 或 `fail` |
-| `verification_report` | 验证报告文件路径，verify 通过前必须指向已存在文件 |
-| `branch_status` | `pending` 或 `handled`，分支处理完成后设为 `handled` |
-| `created_at` | change 创建日期（init 时自动写入），格式 `YYYY-MM-DD` |
-| `verified_at` | 验证通过时间，可为空 |
-| `archived` | change 是否已归档 |
+| Field | Meaning |
+|-------|---------|
+| `workflow` | `full`, `hotfix`, or `tweak` |
+| `language` | Artifact language, `en` or `zh-CN`. Written to `classic.language` in the project or global `.comet/config.yaml` according to install scope, snapshotted into `.comet.yaml` with project-over-global precedence when a change is created, and used as the main-language constraint for OpenSpec / Superpowers artifacts |
+| `phase` | Current phase: `open`, `design`, `build`, `verify`, `archive` (init sets `open`; guard handles transitions) |
+| `design_doc` | Associated Superpowers Design Doc path; may be empty |
+| `plan` | Associated Superpowers Plan path; may be empty |
+| `base_ref` | Git commit SHA recorded at init for scale assessment. Used as baseline for changed-file counting when no plan exists |
+| `build_mode` | Selected execution mode; may be empty. Values: `subagent-driven-development` (isolated background subagents implement and review each task), `executing-plans` (main session executes sequentially by plan), `direct` (main session codes directly; allowed by default only for hotfix/tweak, full workflow requires `direct_override: true`) |
+| `build_pause` | Build phase internal pause point. `null` = no pause, `plan-ready` = plan generated, paused for user model switch |
+| `subagent_dispatch` | `null` or `confirmed`. `confirmed` records that the user selected `subagent-driven-development`; this mode may leave build only with that record |
+| `tdd_mode` | `tdd` or `direct`. Full workflow must select before leaving build. `tdd` forces write-failing-test-first per task; `direct` skips per-task TDD but still requires relevant tests and bug-regression evidence. hotfix/tweak default to `direct` |
+| `review_mode` | `off`, `standard`, or `thorough`. Full workflow must select before leaving build; hotfix/tweak default to `off` |
+| `isolation` | `current`, `branch`, or `worktree`. Full init may be `null`, but before leaving build the user must explicitly select `current`, create/select a real `branch`, or create/select a real `worktree`; hotfix/tweak may also truthfully use all three modes after the entry user decision point, and must not claim branch isolation before creating one |
+| `bound_branch` | Workspace branch binding record; may be empty. `isolation: current` / `branch` / `worktree` records the current Git branch of the directory the command runs in on first setting or entry check (for worktree mode, run set/check/guard inside that worktree, or the wrong branch gets bound/compared); switching `isolation` between workspace modes re-binds to the current branch, while repeating the same mode keeps the existing binding. Later `comet state select` / `comet state check` must confirm the bound branch still matches the current branch. On drift, `select` refuses and checks return `BLOCKED`; follow the decision-point protocol so the user chooses whether to switch back to the bound branch or explicitly confirm and run `comet state rebind <change-name>`. Clearing `isolation` clears this field |
+| `verify_mode` | `light` or `full`; may be empty |
+| `auto_transition` | `true` or `false`. Only controls whether to automatically invoke the next skill after phase guard advances phase; `false` outputs `manual` from `comet-state next`, pausing next-skill invocation but not blocking phase field updates |
+| `verify_result` | `pending`, `pass`, or `fail` |
+| `verify_failures` | Machine-owned consecutive verification failure count. `verify-fail` increments it; `verify-pass` or `archive-reopen` resets it to `0`. At `3`, the next failure requires the retry-limit strategy decision |
+| `verification_report` | Verification report file path; must point to an existing file before verify passes |
+| `branch_status` | `pending` or `handled`; keep `pending` through verify. After the user confirms immediate remote delivery before archive, set `handled` when archive finishes and include it in the only archive commit. `handled` means only that the delivery method is confirmed, not that push or PR creation succeeded; clear current selection and report workflow completion only after remote operations succeed |
+| `created_at` | Change creation date (auto-written at init), format `YYYY-MM-DD` |
+| `verified_at` | Verification pass timestamp; may be empty |
+| `archive_confirmation` | `null`, `pending`, or `confirmed`. `verify-pass` writes `pending` when entering the archive phase; after the user selects either "confirm archive and deliver remotely now" choice in `/comet-archive`, the `archive-confirm` transition writes `confirmed`; `archive-reopen` clears the field so an earlier confirmation cannot be reused |
+| `archived` | Whether the change has been archived |
 
-## 可选字段
+## Optional Fields
 
-| 字段 | 含义 |
-|------|------|
-| `direct_override` | `true`/`false`。full workflow 如需使用 `build_mode: direct`，必须显式设为 `true` |
-| `build_command` | 项目构建命令。guard 优先运行；支持命令词、引号、路径和 `&&` 顺序步骤；拒绝 `;`、管道、裸 `&`、`$` 和反引号 |
-| `verify_command` | 项目验证命令。verify guard 优先运行；使用与 `build_command` 相同的受限命令语法，未配置时回退到构建命令 |
+| Field | Meaning |
+|-------|---------|
+| `direct_override` | `true`/`false`. Full workflow must explicitly set to `true` to use `build_mode: direct` |
 
-## 状态机硬约束
+## State Machine Hard Constraints
 
-- `build → verify` 前，`isolation` 必须是 `branch` 或 `worktree`
-- `build → verify` 前，`build_mode` 必须已选择
-- `build_mode: subagent-driven-development` 必须同时有 `subagent_dispatch: confirmed`
-- full workflow 离开 build 阶段前 `tdd_mode` 必须已选择为 `tdd` 或 `direct`
-- full workflow 离开 build 阶段前 `review_mode` 必须已选择为 `off`、`standard` 或 `thorough`
-- `build_mode: direct` 默认只允许 `hotfix` / `tweak`；full workflow 需要 `direct_override: true`
-- `build_pause` 不是执行方式，不得写入 `build_mode`
-- 这些约束同时存在于 `comet-guard.mjs build --apply` 和 `comet-state.mjs transition <name> build-complete`
-- `preset-escalate` 事件：仅允许 `hotfix`/`tweak` workflow 在 `phase: build` 时调用，原子地把 `workflow`/`classic_profile` 置为 `full`、`phase` 回退到 `design`、清空 `design_doc`（满足 comet-design 入口要求）。这是预设升级到 full 的唯一合法通道——直接 `set phase design` 会被状态机硬拦截，`set classic_profile` 属于 machine-owned 字段不可手动设置
+- Before `build → verify`, `isolation` must be `current`, `branch`, or `worktree`
+- Before `build → verify`, `build_mode` must be selected
+- `build_mode: subagent-driven-development` requires `subagent_dispatch: confirmed`
+- Full workflow must select `tdd_mode` as `tdd` or `direct` before leaving build
+- Full workflow must select `review_mode` as `off`, `standard`, or `thorough` before leaving build
+- `build_mode: direct` defaults to `hotfix`/`tweak` only; full workflow requires `direct_override: true`
+- `build_pause` is not an execution mode; must not be written to `build_mode`
+- These constraints exist in both `comet-guard.mjs build --apply` and `comet-state.mjs transition <name> build-complete`
+- `archive_confirmation` is machine-owned and can only be updated by the `verify-pass`, `archive-confirm`, and `archive-reopen` transitions; it cannot be forged with `set`, and both the `archived` transition and the mutating archive command require `confirmed`
+- `preset-escalate` event: only allows `hotfix`/`tweak` workflow at `phase: build`; atomically sets `workflow`/`classic_profile` to `full`, rewinds `phase` to `design`, and clears `design_doc` (satisfying the comet-design entry requirement). This is the only legal channel for a preset → full upgrade — direct `set phase design` is hard-blocked by the state machine, and `set classic_profile` is a machine-owned field that cannot be set manually

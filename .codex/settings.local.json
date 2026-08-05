@@ -3,12 +3,7 @@
     "PreToolUse": [
       {
         "matcher": "Write|Edit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"./.codex/skills/comet/scripts/comet-hook-guard.mjs\" --project-root \".\""
-          }
-        ]
+        "hooks": []
       }
     ]
   }

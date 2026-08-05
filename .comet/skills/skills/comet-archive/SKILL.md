@@ -1,110 +1,153 @@
 ---
 name: comet-archive
-description: "Use when Comet change 验证已通过，需要用户确认归档、合并 delta spec，或恢复 archive 阶段。"
+description: "Use only when explicitly invoked as /comet-archive or routed by the root Comet skill/runtime to the archive phase; confirm archive, merge delta specs, and finish the branch."
 ---
 
-# Comet 阶段 5：归档（Archive）
+# Comet Phase 5: Archive (Archive)
 
-## 前置条件
+Before starting or recovering, read and follow `comet/reference/classic-layout.md`. Every OpenSpec CLI call in this file must use the adapter, and every file path must use the `<classic-*>` logical roots bound by that protocol.
 
-- 验证已通过（阶段 4 完成）
-- 分支已处理
-- `openspec/changes/<name>/.comet.yaml` 中 `verify_result: pass`
+## Prerequisites
 
-## 步骤
+- Verification passed (Phase 4 complete)
+- Archive commit and branch handling are still pending (`branch_status: pending`)
+- `verify_result: pass` in `<classic-change-dir>/.comet.yaml`
 
-### 0. 输出语言约束
+## Steps
 
-归档摘要和生命周期闭环说明必须使用 `"$COMET_BASH" "$COMET_STATE" get <name> language` 读取到的 Comet 配置产物语言。
+### 0. Output Language Constraint
 
-### 0b. 入口状态验证（Entry Check）
+Archive summaries and lifecycle closure notes must use the configured Comet artifact language from `comet state get <name> language`.
 
-按 `comet/reference/scripts.md` 定位脚本（定位 `comet-env.mjs`），然后执行入口验证；从任意入口恢复时先按 `comet/reference/context-recovery.md` 运行恢复检查：
+### 0. Entry State Verification (Entry Check)
 
-```bash
-node "$COMET_STATE" check <name> archive
-```
-
-验证通过后继续 Step 1。验证失败时脚本会输出具体失败原因。
-
-### 1. 归档前最终确认（阻塞点）
-
-入口验证通过后，**必须按 `comet/reference/decision-point.md` 的协议暂停并等待用户确认是否立即归档**。不得在用户确认前运行 `node "$COMET_ARCHIVE" "<change-name>"`。
-
-确认前必须向用户展示简短摘要：
-- change 名称
-- 验证报告路径和结论
-- 分支处理状态
-- 本次归档将执行的不可逆动作：按 OpenSpec delta 语义合并主 spec、标注 design doc / plan、移动 change 到 archive 目录
-
-用户确认问题必须以单选题形式呈现，包含以下选项：
-- 「确认归档」— 立即执行归档脚本，完成 spec 合并和 change 移动
-- 「需要调整或重新验证」— 不执行归档；运行 `node "$COMET_STATE" transition <change-name> archive-reopen` 回到 `phase: verify`，再调用 `/comet-verify`。若验证阶段确认需要修复，再按 `/comet-verify` 的验证失败决策回到 `/comet-build`
-- 「暂不归档」— 不执行归档，保留当前 `phase: archive` 状态，等待用户稍后再次调用 `/comet-archive`
-
-只有用户选择「确认归档」后，才允许继续 Step 2。用户选择「需要调整或重新验证」后，必须先执行 `archive-reopen` 状态回退，不得手动编辑 `.comet.yaml`。
-
-### 2. 执行归档
-
-运行归档脚本，自动完成以下全部步骤：
+Use the stable `comet` CLI described in `comet/reference/scripts.md`, then run entry verification. When resuming from any entry point, first run the recovery check in `comet/reference/context-recovery.md`:
 
 ```bash
-node "$COMET_ARCHIVE" "<change-name>"
+comet state select <change-name>
+comet state check <name> archive
 ```
 
-脚本自动执行：
-1. 入口状态验证（phase=archive, verify_result=pass, archived=false）
-2. Design doc 前置元数据标注（archived-with, status）
-3. Plan 前置元数据标注（archived-with）
-4. 调用 OpenSpec archive 按 delta 语义合并主 spec 并移动 change 到归档目录
-5. 校验主 spec 未残留 delta-only section 标题
-6. 在 OpenSpec 实际归档目录中更新 archived 状态，并协调 pending recovery 元数据
+Proceed to Step 1 after verification passes. The script outputs specific failure reasons when verification fails.
 
-如脚本返回非零退出码，报告错误并停止。
-如脚本返回零退出码，归档完成。
-脚本摘要中的 `X/Y steps succeeded` 以真实执行步骤计数，不会因 delta spec 同步或文档标注重复累计。
+If the `select` / `check` output is `BLOCKED` because `bound_branch` does not match the current branch, immediately pause under `comet/reference/decision-point.md` and let the user choose one option: switch back to the bound branch and rerun entry verification, or run `comet state rebind <change-name>` after the user explicitly confirms the current branch should take over this change, then rerun entry verification. Do not switch branches or rebind on your own.
 
-脚本会调用 OpenSpec 归档能力按 `ADDED/MODIFIED/REMOVED/RENAMED` 语义合并主 spec，并在归档后校验主 spec 中没有残留 delta-only section 标题。
+### 1. Final Archive and Delivery Confirmation (Blocking Point)
 
-如需预览而不实际执行，使用 `--dry-run` 参数。
+After entry verification passes, first read `comet state get <change-name> isolation`, then **follow the `comet/reference/decision-point.md` protocol to pause and wait for the user to confirm whether to archive and deliver remotely now**. Must not run `comet state transition <change-name> archive-confirm` or `comet archive "<change-name>"` before user confirmation.
 
-### 3. 生命周期闭环
+Before confirmation, show the user a brief summary:
+- Change name
+- Verification report path and result
+- Current branch/workspace and attribution summary for pre-existing dirty changes
+- Irreversible actions this archive will perform: merge main specs with OpenSpec delta semantics, annotate design doc / plan, and move the change to the archive directory
+- Remote delivery to perform after archive: push the current bound branch only, or push and then create a PR
 
-Spec 生命周期在此完成：
-```
-brainstorming → delta spec → 实施 → 验证 → 主 spec 合并 → design doc 标注 → 归档
-```
+The user confirmation question must be presented as a single-select question with these options:
+- "Confirm archive and push now" — complete archive, create the only archive commit, and push the current bound branch
+- "Confirm archive, push now, and create a PR" — complete archive, create the only archive commit, push the current bound branch, and create a PR
+- "Needs adjustment or re-verification" — do not archive; run `comet state transition <change-name> archive-reopen` to return to `phase: verify`, then invoke `/comet-verify`. If verification confirms fixes are needed, follow `/comet-verify`'s verification-failure decision flow back to `/comet-build`
+- "Do not archive yet" — do not run `archive-confirm` or the archive command; keep the active change, `phase: archive`, and `branch_status: pending`, then wait for the user to invoke `/comet-archive` again later
 
-### 4. 提交归档改动
-
-归档脚本只移动文件和合并 spec，不会自动提交。归档完成后工作区会有以下未提交改动：
-- change 目录从 `openspec/changes/<name>/` 移动到 `openspec/changes/archive/YYYY-MM-DD-<name>/`
-- 主 spec 按 delta 语义合并的内容
-- design doc / plan 的归档元数据标注
-
-**必须提示用户提交这些归档改动**，否则归档成果会停留在工作区。展示待提交文件后建议执行：
+Only after the user selects one of the first two immediate-delivery choices, record that choice and immediately run:
 
 ```bash
-git add -A
+comet state transition <change-name> archive-confirm
+```
+
+If the transition returns a non-zero exit code, report the error and stop. Only after the transition succeeds may Step 2 continue. After the user selects "Needs adjustment or re-verification", must first run the `archive-reopen` state transition; do not edit `.comet.yaml` manually. After the user selects "Do not archive yet", stop immediately; do not archive, commit, push, or set `branch_status` to `handled`.
+
+### 2. Execute Archive
+
+Run the archive script:
+
+```bash
+comet archive "<change-name>"
+```
+
+The script automatically executes:
+1. Entry state validation (phase=archive, verify_result=pass, archive_confirmation=confirmed, archived=false)
+2. Design doc frontmatter annotation (archived-with, status)
+3. Plan frontmatter annotation (archived-with)
+4. OpenSpec archive for delta-merge semantics and moving the change to the archive directory
+5. Main spec guard against leaked delta-only section headings
+6. Update archived state in the actual OpenSpec archive directory and reconcile pending recovery metadata
+
+If script returns non-zero exit code, report error and stop.
+If script returns zero exit code, archive is complete.
+
+The summary `X/Y steps succeeded` counts real executed steps and does not double-count delta spec sync or document annotation.
+
+The script calls OpenSpec archive to merge `ADDED/MODIFIED/REMOVED/RENAMED` delta semantics into main specs, then verifies main specs do not contain delta-only section headings.
+
+Use `--dry-run` flag to preview without executing.
+
+### 3. Lifecycle Closed Loop
+
+Spec lifecycle completes here:
+```
+brainstorming → delta spec → implementation → verification → main spec merge → design doc annotation → archive
+```
+
+### 4. Commit Archive Changes with Exact Paths
+
+The archive script only moves files and merges the spec; it does not commit. After archiving, the worktree holds these uncommitted changes:
+- The change directory moved from `<classic-change-dir>/` to `<classic-archive-root>/YYYY-MM-DD-<name>/`
+- The main spec content merged via delta semantics
+- Archive metadata annotations on the design doc / plan
+
+First persist the confirmed delivery choice into archived state, then run the final archive guard:
+
+```bash
+comet state set <change-name> branch_status handled
+comet guard <change-name> archive
+```
+
+Here, `handled` means only that the user confirmed how to deliver this complete archive commit remotely. It does not mean that push or PR creation has succeeded. Stop without committing or performing remote operations if the state write or guard fails.
+
+After archive, read `git status --short` and compare it with the pre-archive dirty-worktree attribution baseline. Stage only paths attributable to this change: the original active path, actual archive path printed by the command, the archived `.comet.yaml` updated to `branch_status: handled`, main specs changed by this delta, and archive metadata on this Design Doc/Plan. Stop if any path cannot be attributed.
+
+Use explicit pathspecs, then inspect the staged diff. Never stage the whole repository or mix the user's pre-existing changes into the archive commit:
+
+```bash
+git add -- <individually verified archive paths...>
+git diff --cached --stat
 git commit -m "chore: archive <change-name>"
 ```
 
-如分支处理（阶段 4）选择尚未合并到主分支，提交后按所选方式（合并 / PR / 保持分支）一并收尾。
+Stop if the commit fails or the staged diff contains unrelated paths.
 
-## 退出条件
+### 5. Deliver the Archive Commit and Complete
 
-- 归档脚本执行成功（退出码 0）
-- 归档目录 `openspec/changes/archive/YYYY-MM-DD-<change-name>/` 存在
-- 归档后的 `.comet.yaml` 中 `archived: true`
+After the archive commit succeeds, perform only the remote delivery method the user confirmed in Step 1:
 
-归档脚本会把 `openspec/changes/<name>/` 移动到 `openspec/changes/archive/YYYY-MM-DD-<name>/`。
+- "Confirm archive and push now": push the current bound branch once.
+- "Confirm archive, push now, and create a PR": push the current bound branch once, then create a PR through the configured GitHub integration. The explicit Step 1 choice authorizes PR creation; do not substitute another branch disposition.
 
-> **WARNING**: 归档成功后**不要再对原 change 名运行** `node "$COMET_GUARD" <change-name> archive`，因为原活跃目录已经不存在。误调会导致 guard 报错"change directory not found"。归档完整性以脚本退出码和归档目录状态为准。
+If push fails, report the error and retain the current selection record; do not clear selection or report completion. Within the current task, retry only that same push. If PR creation fails, the branch already contains the complete archive commit; report the error and retain the current selection record. Within the current task, retry only PR creation. Do not automatically switch, delete, rebase, or rewrite branches after failure.
 
-## 完成
+Only after every remote delivery operation selected by the user succeeds may you run `comet state clear-selection` and report the Classic workflow complete.
 
-Comet 流程全部完成。如需开始新工作，调用 `/comet` 或 `/comet-open`。
+Archive no longer invokes Superpowers `finishing-a-development-branch`. Local merge, keeping a branch for later, or postponing push does not immediately produce final remote state, so the user must choose "Do not archive yet" in Step 1 rather than choosing it after archive.
 
-## 上下文压缩恢复
+## Exit Conditions
 
-按 `comet/reference/context-recovery.md` 执行，phase 参数为 `archive`。若 `archived: true` 且归档目录存在，归档已完成，无需再次执行归档操作。
+- Archive script executed successfully (exit code 0)
+- Archive directory `<classic-archive-root>/YYYY-MM-DD-<change-name>/` exists
+- Archived `.comet.yaml` contains `archived: true`
+- Archived `branch_status: handled` is included in the only archive commit
+- `comet guard <change-name> archive` passes
+- The only archive commit was pushed successfully using the delivery method confirmed before archive; if the user selected PR creation, the PR was created successfully
+- Current selection was cleared after remote delivery succeeded
+
+The archive script moves `<classic-change-dir>/` to `<classic-archive-root>/YYYY-MM-DD-<name>/`.
+
+`comet guard <change-name> archive` resolves the actual archive directory from the original change name; do not construct a dated archive path manually.
+
+## Complete
+
+Comet Classic workflow complete. To start new Classic work, invoke `/comet-classic` or `/comet-open`.
+
+## Context Compression Recovery
+
+Follow `comet/reference/context-recovery.md` with phase set to `archive`. If `archived: true` and the archive directory exists, do not re-execute archive operations. Retry the same push or PR creation only when the current task context explicitly records the remote delivery method selected in Step 1. This Skill does not promise automatic recovery after the user leaves the flow and changes branch topology independently.

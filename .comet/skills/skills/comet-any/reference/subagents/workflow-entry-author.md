@@ -1,98 +1,101 @@
-# Workflow Entry 作者 subagent
+# Workflow Entry Author Subagent
 
-本文件是 portable lane brief，不是 platform-native custom agent；如需 Claude Code custom agent，必须另行生成平台 agent 资源和 frontmatter。
+This file is a portable lane brief, not a platform-native custom agent. If you need a Claude Code custom agent, generate a separate platform agent resource with frontmatter.
 
-## 职责
+## Responsibilities
 
-编写生成 Skill 的 entry `SKILL.md`。entry 只负责入口、恢复、主路由说明和用户停顿点；不得把阶段路线写成会立即触发多个 Skill 的执行清单。
+Write the generated Skill's entry `SKILL.md`. The entry owns the entry point, recovery, main router explanation, and user pause points; it must not turn the Node route table into an execution checklist that immediately triggers multiple Skills.
 
-必须覆盖：
+Must cover:
 
 - entry Skill
-- workflow-state / workflow-guard / workflow-handoff 的入口说明
+- Entry guidance for workflow-state / workflow-guard / workflow-handoff
 - `workflow-entry` claim
 
-## 创作区（你写什么）
+## Authored Zone (what you write)
 
-生成器把 entry SKILL.md 组装成确定性 **Auto 区**（frontmatter、Workflow Nodes 路由表、Skill Bindings、Guardrails And Evidence、Runtime And Recovery）+ 由你编写的 **Authored 区**（`## Decision Core`）。**你只写 Decision Core 正文，不写整个文件**。主会话通过 `comet creator authoring-record <name> --lane workflow-entry --file <out.json>` 记录；artifact `SKILL.md` 的 `content` 即 Decision Core 正文。
+The generator composes the entry SKILL.md from a deterministic **Auto zone** (frontmatter, Workflow Nodes route table, Skill Bindings, Guardrails And Evidence, Runtime And Recovery) plus an **Authored zone** (`## Decision Core`) that YOU write. You do NOT write the whole file — only the Decision Core body. The main session records your output via `comet creator authoring-record <name> --lane workflow-entry --file <out.json>`; the artifact `content` for `SKILL.md` is the Decision Core body.
 
-质量标尺：`comet/SKILL.md` 的 Decision Core（完整 entry Decision Core 范例见 `reference/authored-zone-example.md`）。写 agent 可读的决策规则——机械路由已由 Auto 区的 `workflow-state.mjs next` 处理，所以聚焦判断：
+Quality bar: the `comet/SKILL.md` Decision Core (see `reference/authored-zone-example.md` for a full entry Decision Core example at the expected level). Author agent-readable decision rules — the Auto zone already handles mechanical routing via `workflow-state.mjs next`, so focus on judgment:
 
-- **语义化当前节点检测** — 如何判断用户在哪个 Node，而非只跑脚本。建模 comet 的 Step 0（从用户消息检测意图，检查 Node 顺序，处理"属于前序/后序 Node"的冲突）+ Step 1（读状态，文件优先于过期状态）。
-- **Resume 与 drift 规则** — 上下文恢复时怎么办（从头重新检测，永远不信任对话历史），状态说 DONE 但 artifact 缺失时怎么办，用户在 Node 中途换话题时怎么办。
-- **决策点** — 必须暂停等用户确认的情况的显式表格（首次调用确认范围、Node 歧义、用户确认、guard 失败）。
-- **Red flags** — "agent 想法 → 实际风险"模式，抓自欺（如"用户提到了主题所以研究已确认" → 提到 ≠ 确认）。
+- **Semantic current-Node detection** — how to determine which Node the user is in, beyond just running the script. Model comet's Step 0 (detect intent from user message, check Node order, handle "belongs to earlier/later Node" conflicts) + Step 1 (read state, trust files over stale state).
+- **Resume and drift rules** — what to do when context resumes (re-detect from scratch, never trust conversation history), when state says DONE but artifacts are missing, when the user's topic shifts mid-Node.
+- **Decision classification and decision points** — first distinguish user decisions, automatic handling, stop conditions, and manual handoffs, then tabulate only genuine user choices. A clear first invocation, an objectively repairable guard failure, a sole valid next action, and `NEXT: manual` must not manufacture confirmation.
+- **Red flags** — the "agent thought → actual risk" pattern that catches self-deception (e.g., "user mentioned the topic so research is confirmed" → mentioning ≠ confirming).
 
-没有这四个子节的 Decision Core 是 stub，不是 Decision Core。entry 是每次调用最先读取的文件——它决定了 Skill 感觉"智能"还是"机械"。
+A Decision Core without these four sections is a stub, not a Decision Core. The entry is the most-loaded file — it is what makes the Skill feel intelligent or mechanical.
 
-Auto 区的 Node 路由表仅供参考——不要复制成执行清单，不要发出多个立即 Skill 加载。
+The Node route table in the Auto zone is reference only — do not duplicate it as an execution checklist, and do not issue multiple immediate Skill loads.
 
-## 输入
+## Inputs
 
-读取主会话提供的通用输入，尤其关注：
+Read the common input from the main session, especially:
 
-- 用户确认的目标、语言和阶段名。
-- `reference/workflow-protocol.json` 的阶段顺序、插槽、`requiredSkillCalls` 和恢复路径。
-- 脚本作者返回的 `status`、`init`、`next`、`NEXT:`、`SKILL:` 和 guard 契约。
-- `/comet` 定制场景下必须保留的 open / design / build / verify / archive 边界。
+- The user-confirmed goal, language, and Node labels.
+- Node order, Required Skill Calls, and recovery paths from
+  `reference/workflow-protocol.json`.
+- The script author's `status`, `init`, `next`, `NEXT:`, `SKILL:`, and guard contracts.
+- The open / design / build / verify / archive boundary that must be preserved when users customize `/comet-classic`.
 
-使用文件交接：主会话提供路径，不粘贴大段全文。不要继承主会话历史；只使用本 brief、通用输入、脚本契约和 reference 证据。
+Use file handoff: the main session provides paths instead of pasting large bodies of text. Do not inherit main-session history; use only this brief, common input, script contracts, and reference evidence.
 
-## 派发模板
+## Dispatch Template
 
-主会话派发时使用当前平台的 subagent 机制，形状应包含：
+Use the current platform's subagent mechanism. The shape should include:
 
 ```text
-description: "编写 <bundle-name> 的 workflow entry"
-model: <必须显式指定 model>
+description: "Write the workflow entry for <bundle-name>"
+model: <must explicitly specify model>
 prompt:
-  你是 workflow entry 作者 subagent。
-  先读取本 brief、通用输入路径、脚本契约路径、workflow protocol 路径和报告文件路径。
-  开始前先提出问题：如果启动路由、恢复路径、当前阶段判定或用户停顿点不清楚，先返回 NEEDS_CONTEXT。
-  不要猜测或自行补全缺失流程。
-  只写 entry SKILL.md 草稿，不写 internal Node Skill，不写 Bundle state，不执行候选脚本。
-  Decision Core 必须包含四个子节：### 自动节点检测（Step 0 意图检测 + Step 1 状态读取 + Resume 规则）、### 决策点（显式暂停表格）、### Red Flags（agent 想法 → 实际风险表格）。没有这些子节的 Decision Core 是 stub。
-  把完整 entry 草稿写入报告文件路径，并只返回 15 行以内状态摘要。
+  You are the workflow entry author subagent.
+  First read this brief, the common input path, script contract path, workflow protocol path, and report file path.
+  First classify user decisions, automatic handling, stop conditions, and manual handoffs. If startup routing, recovery paths, current-Node detection, or genuine user choices are unclear, return NEEDS_CONTEXT.
+  Do not guess or fill in missing flow details.
+  Only write the entry SKILL.md draft; do not write internal Node Skills, Bundle state, or execute candidate scripts.
+  The Decision Core MUST include four subsections: ### Automatic Node Detection (Step 0 intent detection + Step 1 state read + resume rules), ### Decision Classification And Decision Points (genuine user choices only), ### Red Flags (agent thought → actual risk table). Do not list guard failures, deterministic repair, a sole valid action, or manual handoff as a user decision. A Decision Core without these is a stub.
+  Write the full entry draft to the report file path and return only a status summary of 15 lines or fewer.
 ```
 
-## 输出要求
+## Output Requirements
 
-entry 草稿必须体现：
+The entry draft must show:
 
-- 进入 Skill 后先读取 workflow 状态，不直接加载Node Skill。
-- 未启动时先初始化状态，再查询 `next`。
-- 只有脚本输出 `NEXT: auto` 和 `SKILL: <node-skill>` 后，才加载这一个 Node Skill。
-- 阶段路线只能作为参考表，不能使用“立即执行”或“必须加载”这类执行指令。
-- 对 `/comet` 定制，entry 必须列出必调槽位 Skill，但只能作为阶段内义务说明，不能变成 entry 立即执行清单。
-- 用户停顿点、恢复路径和参考文件清楚可见。
-- 对 `/comet` 定制，说明保留 open / design / build / verify / archive 主路径和阶段守卫。
+- On entry, first read workflow state instead of directly loading a Node Skill.
+- If not started, initialize state before querying `next`.
+- Only after scripts output `NEXT: auto` and `SKILL: <node-skill>` should the agent load that single Node Skill.
+- The Node route table is reference only; it must not use "immediately execute" or "must load" execution directives.
+- When users customize `/comet-classic`, the entry must list Required Skill Calls as Node-local obligations,
+  not as an immediate execution checklist.
+- User decisions, automatic handling, stop conditions, manual handoffs, recovery paths, and reference files are visible. Pause only when at least two real valid options remain, and merge adjacent choices.
+- When users customize `/comet-classic`, preserve the open / design / build / verify / archive main path and Guardrails.
 
-禁止：
+Forbidden:
 
-- 在 entry `SKILL.md` 中写多个 `**立即执行：**` Node Skill。
-- 复制粘贴原 Skill 全文。
-- 写 provider 前缀。
-- 把审计报告、source hash、内部 metadata 泄漏到用户可见 `SKILL.md`。
+- Multiple `**Immediate:**` or `**Execute now:**` generated Node Skill loads in entry `SKILL.md`.
+- Copying full source Skill bodies.
+- Provider prefixes.
+- Leaking audit reports, source hashes, or internal metadata into user-visible `SKILL.md`.
 
-## 自检
+## Self-Check
 
-返回前逐项检查：
+Before returning, check:
 
-- Decision Core 包含全部四个必须子节：自动节点检测、决策点、Red Flags、Error Handling 或 Resume Rules。
-- entry 只有一个主路由启动协议。
-- entry 没有立即加载Node Skill 的清单。
-- 阶段路线是参考，不是执行步骤。
-- 自动推进引用脚本输出的 `NEXT:` 和 `SKILL:`。
-- 中文用户可见文案没有混入英文流程句。
+- The Decision Core has all four required subsections: Automatic Node Detection, Decision Points, Red Flags, and either Error Handling or Resume Rules.
+- The entry has exactly one main router startup protocol.
+- The entry has no immediate-load checklist for Node Skills.
+- The Node route is reference, not execution steps.
+- Automatic advancement references script outputs `NEXT:` and `SKILL:`.
+- A clear first invocation initializes directly, guard failures are diagnosed automatically or reported as stop conditions, and `NEXT: manual` only returns control; none is presented as a fabricated user decision.
+- User-visible English prose is consistent and does not mix in Chinese process sentences.
 
-## 必须返回的 claim
+## Required Claim
 
 - `workflow-entry`
 
-缺少该 claim 时，Skill 审查必须阻塞。
+Missing this claim must block Skill review.
 
-## 状态返回
+## Status Return
 
-状态必须是 `DONE`、`DONE_WITH_CONCERNS`、`NEEDS_CONTEXT`、`BLOCKED`。
+Status must be one of `DONE`, `DONE_WITH_CONCERNS`, `NEEDS_CONTEXT`, or `BLOCKED`.
 
-完整报告写入报告文件路径。返回给主会话的摘要只返回 15 行以内状态摘要，包含状态、报告文件路径、claim 列表、未解决疑虑和建议返工点。若状态是 `BLOCKED` 或 `NEEDS_CONTEXT`，必须直接说明缺什么上下文、尝试过什么、需要主会话如何处理。
+Write the full report to the report file path. The summary returned to the main session must be 15 lines or fewer and include status, report path, claims, unresolved concerns, and recommended rework. If status is `BLOCKED` or `NEEDS_CONTEXT`, state exactly what context is missing, what was tried, and what the main session should do.

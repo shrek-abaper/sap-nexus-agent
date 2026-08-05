@@ -1,183 +1,211 @@
 ---
 name: comet-tweak
-description: "Use when 用户要进行可收敛为单一 OpenSpec change 的轻量或中等变更，且不需要完整设计；也用于恢复 tweak workflow。"
+description: "Use only when explicitly invoked as /comet-tweak or routed by the root Comet skill/runtime to the tweak preset; handle a lightweight or medium change that fits one OpenSpec change."
 ---
 
-# Comet 预设路径：Tweak
+# Comet Preset Path: Tweak
 
-Tweak 是 Comet 五阶段能力的预设工作流，不是独立的平行流程。它串联 OpenSpec 的核心流程，复用 open、build、verify、archive 能力，仅跳过 Superpowers brainstorming 和完整 plan。
+Before starting or recovering, read and follow `comet/reference/classic-layout.md`. Every OpenSpec CLI call in this file must use the adapter, and every file path must use the `<classic-*>` logical roots bound by that protocol.
 
-适用于串联 OpenSpec 的轻量改动，例如配置调整、文档或 prompt 优化，以及需 spec 驱动（含 delta spec）但不需要完整 `/comet` 深度设计流程的中等变更。delta spec 在 tweak 中是一等公民正常产物，需要 delta spec 本身不构成升级理由。
+Tweak is a preset workflow of Comet's five-phase capabilities, not an independent parallel process. It chains OpenSpec's core flow, reusing open, build, verify, archive capabilities, only skipping Superpowers brainstorming and full plan.
 
-**适用条件**（必须全部满足）：
-1. 可收敛为**单一 OpenSpec change**
-2. 不需要 Superpowers Design Doc 和完整 plan 才能澄清方案
-3. 不涉及跨模块、跨层级的架构协调
-4. 任务规模可预估（文件数和任务数仅作提示，不作为硬性升级条件，见下方升级判定）
+Applicable for OpenSpec-chained lightweight changes, such as configuration adjustments, documentation or prompt optimization, and spec-driven (including delta spec) medium changes that do not need the full `/comet-classic` deep design workflow. Delta spec is a first-class normal artifact in tweak; needing delta spec alone does not constitute an upgrade reason.
 
-**不适用**：如变更过程中命中质变信号（见「升级判定」章节），由用户决定是否升级为完整 `/comet` 流程。
+**Applicable conditions** (all must be met):
+1. Can fit a **single OpenSpec change**
+2. Does not need a Superpowers Design Doc and full plan to clarify the approach
+3. Does not involve cross-module or cross-layer architecture coordination
+4. Task scope is estimable (file count and task count are hints only, not hard upgrade conditions; see Upgrade Assessment below)
+
+**Not applicable**: If the change process hits a qualitative-change signal (see "Upgrade Assessment" section), the user decides whether to upgrade to the full `/comet-classic` workflow.
 
 ---
 
-## 流程（预设流程，4 阶段）
+## Process (preset workflow, 4 phases)
 
-### 0. 输出语言约束
+### 0. Output Language Constraint
 
-精简版 OpenSpec 产物必须使用 Comet 配置产物语言。`.comet.yaml` 尚不存在时读取 `.comet/config.yaml` 的 `language`，初始化后使用 `"$COMET_BASH" "$COMET_STATE" get <name> language` 读取。
+Streamlined OpenSpec artifacts must use the configured Comet artifact language. Before `.comet.yaml` exists, read `classic.language` from project `.comet/config.yaml`, then fall back to global `~/.comet/config.yaml`; after initialization, use `comet state get <name> language`.
 
-执行链路：open → OpenSpec apply → verify → archive。Tweak 为每个阶段提供默认决策：精简开启、通过 OpenSpec apply 直接构建、按规模与 delta spec 判定验证轻重、验证通过后进入归档前最终确认。
+Execution chain: open → OpenSpec apply → verify → archive. Tweak provides default decisions for each phase: streamlined open, direct build through OpenSpec apply, scale- and delta-spec-driven verification weight, and final archive confirmation after verification passes.
 
-开始前按 `comet/reference/scripts.md` 定位 Comet 脚本（定位 `comet-env.mjs`）；从任意入口恢复时先按 `comet/reference/context-recovery.md` 确认 phase/workflow。
+Before starting, use `comet/reference/scripts.md` to run the public Comet CLI command. When resuming from any entry point, first use `comet/reference/context-recovery.md` to check phase/workflow.
 
-### 1. 快速开启（预设 open）
+When resuming an existing tweak change, the first state operation must be `comet state select <change-name>`. For a new change, run the command immediately after `.comet.yaml` initialization and before source writes.
 
-复用 Comet open 能力创建 change，但使用 tweak 默认值：不执行 `openspec-explore` 长探索，直接进入精简 change 创建。
+### 1. Quick Open (preset open)
 
-**立即执行：** 使用 Skill 工具加载 `openspec-new-change` 技能。禁止跳过此步骤。
+Reuse Comet open capability to create change, but use tweak defaults: do not execute `openspec-explore` long exploration, directly enter streamlined change creation.
 
-技能加载后，按其指引创建精简版产物：
-  - `proposal.md` — 变更动机 + 目标 + 范围
-  - `design.md` — 简短实现说明（无需方案对比）
-  - `tasks.md` — 任务清单（建议控制在合理规模，数量本身不触发升级，见「升级判定」）
-  - `delta spec`（可选）— 若变更影响已有 spec 的验收场景，作为正常产物创建（仅含 `## MODIFIED Requirements` 或 `## ADDED Requirements`）。delta spec 是 OpenSpec brownfield 改动的核心产物，需要 delta spec 本身不构成升级理由
+**Immediately execute:** Use the Skill tool to load the `openspec-new-change` skill. Skipping this step is prohibited.
 
-初始化 Comet 状态文件：
+<!-- external-openspec-skill-override -->
+**External OpenSpec Skill override:** Do not execute its direct official CLI, fixed-cwd, or fixed physical OpenSpec path instructions. Route every OpenSpec command through `comet classic openspec -- <args...>` and use the `<classic-*>` logical roots bound for this run for every change and artifact path.
 
-```bash
-node "$COMET_STATE" init <name> tweak
-```
+After the skill loads, follow its guidance to create streamlined artifacts:
+  - `proposal.md` — change motivation + goals + scope
+  - `design.md` — brief implementation description (no solution comparison needed)
+  - `tasks.md` — task list (keep to a reasonable size; count itself does not trigger upgrade, see "Upgrade Assessment")
+  - `delta spec` (optional) — if the change affects existing spec acceptance scenarios, create it as a normal artifact (only `## MODIFIED Requirements` or `## ADDED Requirements`). Delta spec is the core artifact of OpenSpec brownfield changes; needing delta spec alone does not constitute an upgrade reason
 
-初始化后验证状态：
-
-```bash
-node "$COMET_STATE" check <name> open
-```
-
-阶段守卫完成 open → build 过渡：
+Initialize Comet state file:
 
 ```bash
-node "$COMET_GUARD" <change-name> open --apply
+comet state init <name> tweak
+comet state select <name>
 ```
 
-### 2. OpenSpec apply 构建（tweak 专用预设 build）
+Verify initialized state:
 
-使用 tweak 默认值：`build_mode: direct`。跳过 Superpowers `brainstorming` 和 `writing-plans`，改由 OpenSpec 的 apply action 执行当前 change 的 tasks。
+```bash
+comet state check <name> open
+```
+
+If the `select` / `check` output is `BLOCKED` because `bound_branch` does not match the current branch, immediately pause under `comet/reference/decision-point.md` and let the user choose one option: switch back to the bound branch and rerun entry verification, or run `comet state rebind <change-name>` after the user explicitly confirms the current branch should take over this change, then rerun entry verification. Do not switch branches or rebind on your own.
+
+Entry workspace isolation is a user decision point; do not use `current` as the default isolation mode. Pause under `comet/reference/decision-point.md` and let the user choose one option:
+
+- A. Work directly on the current branch: run `comet state set <name> isolation current` to truthfully bind the current branch
+- B. Create a branch: create and switch to `tweak/YYYYMMDD/<change-name>`, then run `comet state set <name> isolation branch`
+- C. Create a worktree: first use the Skill tool to load Superpowers `using-git-worktrees`; let that skill create the isolated workspace, then run `comet state set <name> isolation worktree` inside the worktree
+
+After B/C, rerun this in the actual execution branch or worktree:
+
+```bash
+comet state select <name>
+```
+
+Run phase guard to transition open → build:
+
+```bash
+comet guard <change-name> open --apply
+```
+
+### 2. OpenSpec Apply Build (tweak-only preset build)
+
+Use tweak defaults: `build_mode: direct`. `isolation` must keep the entry workspace isolation the user confirmed in Step 1; do not change it back to `current` on your own. Skip Superpowers `brainstorming` and `writing-plans`, and let OpenSpec's apply action execute the current change's tasks.
 
 <IMPORTANT>
-这条 apply 路径只属于 tweak。完整 `/comet` 或 `workflow: full` 不得套用 tweak 的 `openspec-apply-change` 构建路径；full 仍必须先通过 `/comet-design` 生成 Design Doc，再由 `/comet-build` 通过 Superpowers `writing-plans`、执行方式选择和对应执行技能完成构建。
+This apply path belongs only to tweak. Full `/comet-classic` or `workflow: full` must not use tweak's `openspec-apply-change` build path; full must still generate a Design Doc through `/comet-design`, then let `/comet-build` use Superpowers `writing-plans`, execution-method selection, and the corresponding execution skill to build.
 </IMPORTANT>
 
-继续或开始修改前，按 `comet/reference/dirty-worktree.md` 协议处理未提交改动。若归因后发现命中质变信号或文件数 tripwire，按本文件「升级判定」处理。
+Before continuing or starting changes, handle uncommitted changes through `comet/reference/dirty-worktree.md`. If attribution shows a qualitative-change signal or file-count tripwire is hit, handle it through this file's "Upgrade Assessment".
 
-**立即执行：** 使用 Skill 工具加载 `openspec-apply-change` 技能。禁止跳过此步骤。
+**Immediately execute:** Use the Skill tool to load the `openspec-apply-change` skill. Skipping this step is prohibited.
 
-技能加载后，以当前 `<change-name>` 作为输入，按 `openspec-apply-change` 的指引执行 OpenSpec apply 流程：
+<!-- external-openspec-skill-override -->
+**External OpenSpec Skill override:** Use only its apply semantics. Replace every direct official CLI, fixed-cwd, or fixed physical OpenSpec path instruction with `comet classic openspec -- <args...>` and the `<classic-*>` logical roots.
 
-1. 运行或遵循 `openspec status --change "<name>" --json`，确认 schema 和任务 artifact
-2. 运行或遵循 `openspec instructions apply --change "<name>" --json`，读取 OpenSpec 返回的 apply 指令、`contextFiles`、任务进度和动态 instruction
-3. 读取 apply 指令列出的所有 context files，不得只凭旧对话或手写 tasks 循环实现
-4. 按 apply 指令逐个完成未勾选任务，保持改动最小且聚焦
-5. 每完成一个任务后：
-   - 运行项目格式化命令（如 `mvn spotless:apply`、`npm run format` 等）
-   - 运行相关测试确认通过
-   - 按 `openspec-apply-change` 规则将对应 task 勾选为完成
-   - 提交代码，commit message 格式：`tweak: <简述变更>`
-6. 全部任务完成后，显式运行项目相关测试和构建命令
-7. 运行阶段守卫完成 build → verify 过渡
+After the skill loads, use the current `<change-name>` as input and follow `openspec-apply-change` to execute the OpenSpec apply flow:
 
-执行 tweak 期间，只要运行程序、测试、构建或手动验证时出现崩溃、异常行为、测试失败或构建失败，必须使用 Skill 工具加载 Superpowers `systematic-debugging` 技能。在完成根因调查前，不得提出或实施源码修复。
+1. Run or follow `comet classic openspec -- status --change "<name>" --json` to confirm the schema and task artifact
+2. Run or follow `comet classic openspec -- instructions apply --change "<name>" --json` to read OpenSpec's apply instructions, `contextFiles`, task progress, and dynamic instruction
+3. Read every context file listed by the apply instructions; do not implement from stale conversation context or a handwritten tasks loop alone
+4. Complete unchecked tasks one by one according to the apply instructions, keeping changes minimal and focused
+5. After each completed task:
+   - Run the project formatter (e.g., `mvn spotless:apply`, `npm run format`)
+   - Run related tests to confirm pass
+   - Mark the corresponding task complete according to `openspec-apply-change`
+   - Commit code, commit message format: `tweak: <brief change description>`
+6. After all tasks complete, explicitly run relevant project tests and build commands
 
-具体调查、最小失败测试、修复验证和保持当前 change 验证闭环的要求，按 `comet/reference/debug-gate.md` 执行。
+During tweak execution, whenever running programs, tests, builds, or manual verification results in crashes, abnormal behavior, test failures, or build failures, you must use the Skill tool to load the Superpowers `systematic-debugging` skill. Do not propose or implement source code fixes before completing root cause investigation.
 
-**升级判定检查**：build 全程持续判断，并在 build→verify 守卫执行前做一次集中复核。判定采用三层分工（详见「升级判定」章节）：质变信号靠 agent 语义识别、文件数仅作提示交用户拍板、scale 脚本仅管验证轻重。命中质变信号或文件数超提示阈值时，**不得自行升级或自行判定可继续**，必须按 `comet/reference/decision-point.md` 暂停并把决策权交给用户：继续 tweak 轻量流程，还是升级为完整 `/comet`。
+For specific investigation, minimal failing test, fix verification, and keeping the current change verification loop, follow `comet/reference/debug-gate.md`.
 
-运行阶段守卫完成 build → verify 过渡：
+**Upgrade assessment check**: Continuously judge throughout build, and do a consolidated re-check before running the build→verify guard. Assessment uses a three-layer division of labor (see "Upgrade Assessment" section): qualitative-change signals rely on agent semantic recognition, file count is only a hint delegated to the user, and the scale script only governs verification weight. When a qualitative-change signal or file-count tripwire is hit, **do not upgrade on your own or decide to continue on your own** — must pause per `comet/reference/decision-point.md` and delegate the decision to the user: continue the tweak lightweight flow, or upgrade to the full `/comet-classic`.
 
-```bash
-node "$COMET_GUARD" <change-name> build --apply
-```
-
-状态文件自动更新为 `phase: verify`、`verify_result: pending`，然后进入验证。
-
-### 3. 验证（预设 verify）
-
-复用 `/comet-verify`，由 comet-verify 的规模评估决定轻量或完整验证。
-
-**立即执行：** 使用 Skill 工具加载 `comet-verify` 技能。禁止跳过此步骤。
-
-**带 delta spec 的验证分流**：tweak 接受 delta spec 作为正常产物。若本次 change 创建了 delta spec，进入 comet-verify 前显式设置完整验证模式，走 OpenSpec 原生验证（`openspec-verify-change`）以覆盖 delta spec 一致性：
+7. Run phase guard to transition build → verify:
 
 ```bash
-node "$COMET_STATE" set <change-name> verify_mode full
+comet guard <change-name> build --apply
 ```
 
-无 delta spec 的 tweak 通常满足轻量验证条件（≤ 3 tasks、改动文件数低于 scale 阈值），由 comet-verify 的规模评估选择轻量验证路径（6 项快速检查）。若用户希望增加审查，可在验证前运行 `node "$COMET_STATE" set <name> review_mode standard` 或 `thorough`。
+State automatically updates to `phase: verify`, `verify_result: pending`, then enter verification.
 
-验证通过后，按 `/comet-verify` 的规则将 `.comet.yaml` 的 `verify_result` 记录为 `pass`，归档前不得跳过该状态。验证通过后仍必须进入 `/comet-archive` 的归档前最终确认，不得自动运行归档脚本。
+### 3. Verification (preset verify)
 
-### 4. 归档（预设 archive）
+Reuse `/comet-verify`; let comet-verify's scale assessment decide lightweight or full verification.
 
-复用 `/comet-archive`。归档前必须满足 `.comet.yaml` 中 `verify_result: pass`，并等待 `/comet-archive` 的归档前最终确认。
+**Immediately execute:** Use the Skill tool to load the `comet-verify` skill. Skipping this step is prohibited.
 
-**立即执行：** 使用 Skill 工具加载 `comet-archive` 技能进行归档。禁止跳过此步骤。
+**Delta-spec verification routing**: tweak accepts delta spec as a normal artifact. If this change created a delta spec, explicitly set full verification mode before entering comet-verify, to run OpenSpec-native verification (`openspec-verify-change`) covering delta-spec consistency:
+
+```bash
+comet state set <change-name> verify_mode full
+```
+
+A tweak without delta spec usually meets lightweight verification conditions (≤ 3 tasks, changed files below the scale threshold); comet-verify's scale assessment selects the lightweight verification path (6 quick checks). If the user wants to add review, run `comet state set <name> review_mode standard` or `thorough` before verification.
+
+After verification passes, record `.comet.yaml` `verify_result` as `pass` according to `/comet-verify` rules, must not skip this status before archiving. After verification passes, still enter `/comet-archive`'s final archive confirmation; do not automatically run the archive script.
+
+### 4. Archive (preset archive)
+
+Reuse `/comet-archive`. Must satisfy `verify_result: pass` in `.comet.yaml` before archiving, and wait for `/comet-archive`'s final archive confirmation.
+
+**Immediately execute:** Use the Skill tool to load the `comet-archive` skill to archive. Skipping this step is prohibited.
 
 ---
 
-## 连续执行模式
+## Continuous Execution Mode
 
 <IMPORTANT>
-Tweak 流程默认 **一次性连续执行**。调用 `/comet-tweak` 后，agent 在 tweak 自有步骤间自动推进，不主动停顿。**例外**：若 `auto_transition: false`，则在每个 phase 边界（build/verify/archive 之间）停下，由用户手动运行下一阶段命令——此时连续执行降级为逐阶段手动推进，详见下方「自动衔接下一阶段」。但无论 `auto_transition` 取何值，以下情况都必须暂停等待用户确认：
+Tweak workflow is **one-time continuous execution**. After invoking `/comet-tweak`, agent must automatically advance through tweak steps, without pausing to wait for user input mid-way.
 
-1. 遇到升级判定信号（见「升级判定」章节），**必须使用当前平台可用的用户输入/确认机制暂停并等待用户明确选择**：继续 tweak 轻量流程，还是升级为完整 `/comet` 流程
-2. 验证阶段（comet-verify）的验证失败决策和分支处理决策
-3. 归档前最终确认（comet-archive 执行归档脚本前）
+Exception: when `.comet.yaml` has `auto_transition: false`, end the current invocation at each phase boundary and return control with `HINT`; the user may run the next phase later. This is a manual handoff, not a new confirmation point.
 
-执行顺序：快速开启 → 构建（含升级判定检查）→ 验证 → 归档 → 完成
+The following genuine user decisions still pause:
 
-每个阶段完成后立即进入下一阶段。阶段内部仍必须按上文要求调用对应 Comet/OpenSpec/Superpowers skill，被调用的 skill 如有自己的用户决策点，按该 skill 规则执行。
+1. Encountering an upgrade-assessment signal (see "Upgrade Assessment" section). **Pause, present the choices, and wait for the user to explicitly choose**: continue the tweak lightweight flow, or upgrade to the full `/comet-classic` workflow
+2. Verify-phase acceptance of WARNING/SUGGESTION deviations, Spec drift handling, or strategy after the automatic repair limit; the first 3 clearly repairable failures close automatically
+3. Final archive confirmation and the branch-handling decision after the archive commit
+
+Execution order: quick open → build (with upgrade assessment) → verification → archive → complete
+
+After each phase completes, immediately enter next phase. Within each phase, must still call corresponding Comet/OpenSpec/Superpowers skill according to above requirements; if the called skill has its own user decision points, follow that skill's rules.
 </IMPORTANT>
 
 ---
 
-## 升级判定
+## Upgrade Assessment
 
-tweak 的升级判定只决定是否从轻量预设转为 full；delta spec 本身不是升级理由，文件数不自动升级，`comet-state scale` 只决定验证轻重。
+Tweak upgrade assessment only decides whether to move from the lightweight preset to full; delta spec alone is not an upgrade reason, file count never upgrades automatically, and `comet state scale` only decides verification weight.
 
-若由 `/comet` 入口传入 intent frame，tweak 在 build 前只复核 `risk_signal` 和升级信号：新增 capability、public API、schema 变更、跨模块协调或深层架构问题。命中时进入现有升级决策点；delta spec 仍是 tweak 的正常产物，不因存在 delta spec 自动升级；不得重新实现入口意图识别。
+If `/comet-classic` passes an intent frame from the entry, tweak must recheck `risk_signal` and escalation signals only before build: new capability, public API, schema change, cross-module coordination, or deep architecture work. When any signal matches, enter the existing escalation decision point. Delta spec remains a normal tweak artifact and must not trigger escalation by itself; do not reimplement entry intent recognition.
 
-持续检查以下质变信号：跨模块协调修改、需要新增 capability、数据库 schema 变更、引入新的 public API、触及深层架构问题；以及 tweak 特有信号：需要拆分为多个 OpenSpec changes。命中任一信号时，agent **不得自行升级或自行判定可继续**。
+Continuously check these qualitative-change signals: cross-module coordination, needing a new capability, database schema changes, introducing a new public API, or touching a deep architecture problem; plus the tweak-specific signal: needing to split into multiple OpenSpec changes. If any signal appears, the agent **must not self-upgrade or self-decide to continue**.
 
-文件数 tripwire 仅作提示：改动文件数超过提示阈值（如 > 6 个文件）时，也交给用户决定继续 tweak 还是升级 full；文件数多不等于质变。tweak 常伴随 delta spec 或配置调整，波及面天然比 bug 修复宽，故提示阈值高于 hotfix。
+The file-count tripwire is only a prompt: when changed files exceed the hint threshold (for example > 6 files), ask the user whether to continue tweak or upgrade full. More files do not necessarily mean qualitative change. Tweaks often come with delta spec or config changes, so their reach is naturally wider than a bug fix, hence the higher threshold than hotfix.
 
-命中质变信号或文件数 tripwire 时，**必须按 `comet/reference/decision-point.md` 的协议暂停并等待用户明确选择**。不得直接进入 `/comet-design`，不得自动补充 Design Doc。
+When a qualitative-change signal or file-count tripwire is hit, **must pause under the `comet/reference/decision-point.md` protocol and wait for the user's explicit choice**. Do not directly enter `/comet-design`; do not automatically add a Design Doc.
 
-用户选择升级（选项 B）后，使用状态机合法的升级通道，单条命令完成预设流程 → full 转换并回退到 design 阶段：
+After the user chooses upgrade (option B), use the legal state-machine upgrade channel, a single command that converts the preset workflow to full and rolls back to design:
 
 ```bash
-node "$COMET_STATE" transition <name> preset-escalate
+comet state transition <name> preset-escalate
 ```
 
-该命令原子地把 `workflow`/`classic_profile` 置为 `full`、`phase` 回退到 `design`、清空 `design_doc`（满足 comet-design 入口要求）。然后在当前 change 基础上补充 Design Doc：**立即使用 Skill 工具加载 `comet-design` skill**，后续正常走完整流程。
+This command atomically sets `workflow`/`classic_profile` to `full`, rolls `phase` back to `design`, clears `design_doc`, and clears preset-only `build_mode`, `tdd_mode`, `review_mode`, `isolation`, and `verify_mode`. Then add the Design Doc on the current change: **immediately use the Skill tool to load the `comet-design` skill**. On entering build, run the full joint workflow-configuration decision again.
 
-用户选择继续（选项 A）时，继续 tweak 流程，并记录用户确认继续的原因。
+When the user chooses continue (option A), continue the tweak workflow and record the user's reason for continuing.
 
 ---
 
-## 退出条件
+## Exit Conditions
 
-- 变更已完成，测试通过
-- change 已归档
-- 如有 spec 变更，已同步到 main spec
-- **阶段守卫**：build → verify 前运行 `node "$COMET_GUARD" <change-name> build --apply`，verify → archive 前按 `/comet-verify` 规则运行 `node "$COMET_GUARD" <change-name> verify --apply`
+- Change completed, tests pass
+- Change archived
+- If spec changed, synced to main spec
+- **Phase guard**: Before build → verify run `comet guard <change-name> build --apply`; before verify → archive follow `/comet-verify` and run `comet guard <change-name> verify --apply`
 
-## 自动衔接下一阶段
+## Automatic Handoff to Next Phase
 
-按 `comet/reference/auto-transition.md` 执行。关键命令：
+Follow `comet/reference/auto-transition.md`. Key command:
 
 ```bash
-node "$COMET_STATE" next <name>
+comet state next <name>
 ```
 
-- `NEXT: auto` → 调用 `SKILL` 指向的 skill 继续 tweak 流程（`phase: build` 返回 `comet-tweak`，`verify` 返回 `comet-verify`，`archive` 返回 `comet-archive`）
-- `NEXT: manual` → 不要调用下一 skill，按 `HINT` 提示用户手动运行 `/<SKILL>`
-- `NEXT: done` → 流程已完成，无需继续
+- `NEXT: auto` → invoke the skill pointed to by `SKILL` to continue tweak workflow (`phase: build` returns `comet-tweak`, `verify` returns `comet-verify`, `archive` returns `comet-archive`)
+- `NEXT: manual` → do not invoke the next skill; return control with `HINT`, end the invocation, and do not create another confirmation point
+- `NEXT: done` → workflow is complete, no further action needed

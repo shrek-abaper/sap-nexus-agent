@@ -1,69 +1,71 @@
-# 脚本定位与命令
+# Stable Public CLI Contract
 
-规范路径：`comet/reference/scripts.md`
+Canonical path: `comet/reference/scripts.md`
 
-本文件是 Comet 脚本定位和 state/guard/handoff/archive 命令面的单一事实来源。每会话加载一次，然后复用缓存的环境变量。
+This file is the single source of truth for Classic Skill calls into the Comet Runtime. Skills use only the public `comet` CLI on PATH. The packaged `comet/scripts/*.mjs` files are internal installation and Runtime assets; Skills do not search for or invoke them directly.
 
-## 引导（每会话运行一次）
+## CLI bootstrap
 
-Comet 脚本随 skill 包分发在 `comet/scripts/` 下。**不硬编码路径** — 定位一次，缓存到环境变量。子 Skill 可以直接引用本节，只有需要完全自包含执行时才内联此块；修改时以本文件为单一事实源：
+When entering a workflow, run the required public `comet` command below directly. If it returns `command not found`, `executable not found`, or `ENOENT`, stop and explain that the Comet CLI installation is incomplete. Do not search for Skill files, enumerate platform directories, or invoke an internal bundle directly. If the CLI starts but exits nonzero, report the original error and do not retry through an internal script.
+
+## Public workflow contract
+
+Everyday workflows use the public CLI:
 
 ```bash
-COMET_ENV="${COMET_ENV:-$(find . "$HOME"/.*/skills "$HOME/.config" "$HOME/.gemini" -path '*/comet/scripts/comet-env.mjs' -type f -print -quit 2>/dev/null)}"
-if [ -z "$COMET_ENV" ]; then
-  echo "ERROR: comet-env.mjs not found. Ensure the comet skill is installed." >&2
-  return 1
-fi
-COMET_SCRIPTS_DIR="$(node "$COMET_ENV")"
-COMET_STATE="$COMET_SCRIPTS_DIR/comet-state.mjs"
-COMET_GUARD="$COMET_SCRIPTS_DIR/comet-guard.mjs"
-COMET_HANDOFF="$COMET_SCRIPTS_DIR/comet-handoff.mjs"
-COMET_ARCHIVE="$COMET_SCRIPTS_DIR/comet-archive.mjs"
-COMET_INTENT="$COMET_SCRIPTS_DIR/comet-intent.mjs"
-
-# 脚本定位失败时停止流程
-if [ -z "$COMET_SCRIPTS_DIR" ]; then
-  echo "ERROR: Comet scripts not found. Ensure the comet skill is installed." >&2
-  return 1
-fi
+comet state select <change-name>
+comet state current
+comet state clear-selection
+comet state check <change-name> <phase>
+comet guard <change-name> <phase> --apply
+comet handoff <change-name>
+comet archive <change-name>
+comet resume-probe . --stdin --json
+comet classic intent route --stdin
 ```
 
-加载 comet 后，agent 应执行以上变量赋值一次，后续全程复用 `$COMET_GUARD`、`$COMET_STATE`、`$COMET_HANDOFF`、`$COMET_ARCHIVE`、`$COMET_INTENT`。
+When multiple active changes coexist, run `comet state select <change-name>` after resolving the intended change. Ordinary source writes are governed only by that selection; without one, the hook blocks and asks for a choice. A single active change retains automatic routing. Select again after switching branch/worktree or when the recorded selection becomes stale.
 
-## 自动状态更新
+Guard `--apply` advances state after checks pass. Use `comet state transition` when expressing a state event directly, and `comet state next` after phase advancement to determine whether to invoke the next Skill automatically.
 
-guard 支持 `--apply` 参数，验证通过后自动更新 `.comet.yaml` 状态字段：
+## Automatic state updates
+
+Guard supports `--apply`, which updates `.comet.yaml` state fields after checks pass:
 
 ```bash
-node "$COMET_GUARD" <change-name> <phase> --apply
+comet guard <change-name> <phase> --apply
 ```
 
-`--apply` 内部委托给 `comet-state transition`。需要直接表达状态事件时使用：
+`--apply` delegates to the state-machine transition. Use these semantic events when state changes need to be expressed directly:
 
 ```bash
-node "$COMET_STATE" transition <change-name> open-complete
-node "$COMET_STATE" transition <change-name> design-complete
-node "$COMET_STATE" transition <change-name> build-complete
-node "$COMET_STATE" transition <change-name> verify-pass
-node "$COMET_STATE" transition <change-name> verify-fail
+comet state transition <change-name> open-complete
+comet state transition <change-name> design-complete
+comet state transition <change-name> build-complete
+comet state transition <change-name> verify-pass
+comet state transition <change-name> verify-fail
+comet state transition <change-name> archive-confirm
+comet state transition <change-name> archive-reopen
+comet state transition <change-name> archived
+comet state transition <change-name> preset-escalate
 ```
 
-归档完成由 `node "$COMET_ARCHIVE" <change-name>` 负责；OpenSpec 会把 change 移到带日期前缀的归档目录，不要手动 transition 一个 `<archive-name>`。
+Archive completion is handled by `comet archive <change-name>` after OpenSpec moves the change into its date-prefixed archive directory. Use `archive-confirm` or `archive-reopen` for the pre-archive decision, and do not manually run the `archived` transition outside that flow.
 
-## 解析下一步
+## Resolve the next action
 
-阶段守卫推进 phase 后，用 `next` 子命令解析是否自动调用下一个 skill：
+After guard-based phase advancement, use the `next` subcommand to determine whether to invoke the next Skill automatically:
 
 ```bash
-node "$COMET_STATE" next <change-name>
+comet state next <change-name>
 ```
 
-输出 `NEXT: auto|manual|done` + `SKILL: <skill-name>`（`done` 时省略）+ `HINT`（仅 `manual` 时）。`auto_transition: false` 时输出 `manual`，只暂停下一 skill 调用，不影响已发生的 phase 推进。
+Output format: `NEXT: auto|manual|done` + `SKILL: <skill-name>` (omitted for `done`) + `HINT` (for `manual` only). With `auto_transition: false`, output is `manual`, which pauses only the next Skill invocation and does not block phase updates.
 
-## 归档脚本
+## Archive command
 
-一键完成归档全部步骤：
+Complete all archive steps with:
 
 ```bash
-node "$COMET_ARCHIVE" <change-name>
+comet archive <change-name>
 ```

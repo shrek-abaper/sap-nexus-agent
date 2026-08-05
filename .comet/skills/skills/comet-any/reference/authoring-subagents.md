@@ -1,34 +1,29 @@
-# Authoring Subagents 总览
+# Authoring Subagents Overview
 
-## 核心原则
+## Core Principles
 
-`/comet-any` 的创作成果应由平台原生 subagent 分工产出，再交给主会话组装和后端 CLI 记录状态。
-Claude Code、Codex、Gemini、Copilot 等平台的 subagent 调用方式不同，本参考只定义职责、输入和输出；
-具体派发方式使用当前平台提供的原生 subagent 机制。
+`/comet-any` authoring outputs should be drafted by platform-native subagents, then assembled and recorded by the main session through the backend CLI. Claude Code, Codex, Gemini, Copilot, and other platforms expose subagents differently; this reference defines responsibilities, inputs, and outputs, not a provider-specific dispatch API.
 
-`reference/subagents/*.md` 是跨平台 lane brief；Claude Code custom agent 必须单独生成到平台 agent 资源，并带 `name`、`description`、`tools`、`model` frontmatter。不要把这些 portable lane brief 直接当作 platform-native custom agent 安装。
+`reference/subagents/*.md` are portable lane briefs; Claude Code custom agents must be generated separately as platform agent resources with `name`, `description`, `tools`, and `model` frontmatter. Do not install these portable lane briefs directly as platform-native custom agent resources.
 
-先读取本总览，再只把对应角色 brief 交给对应 subagent。不要把六个角色 brief 合并成一个大 prompt；
-主会话负责保留全局上下文、汇总成果、调用 `comet bundle` 和 `comet publish`，subagent 只产出可审查草稿。
+Read this overview first, then give only the matching role brief to each subagent. Do not merge the six role briefs into one large prompt. The main session keeps global context, aggregates outputs, and calls `comet bundle` and `comet publish`; subagents only produce reviewable drafts.
 
-平台支持 subagent 时必须调度。没有平台 subagent 能力时，主会话可以使用同一份 brief 以内联方式完成，
-但必须在用户可读摘要和 `reference/authoring-lanes.json` 中标记为 fallback。
+When the platform supports subagents, dispatch is required. If no platform subagent capability exists, the main session may execute the same briefs inline, but must mark that path as fallback in the user-facing summary and `reference/authoring-lanes.json`.
 
-所有 subagent 只返回 Markdown 成果和结构化审查结论，不得直接写入 Bundle state，不得执行候选 Skill 的脚本，
-不得运行发布、安装或分发命令。CLI 状态仍由主会话维护。
+All subagents only return Markdown outputs and structured review findings. They must not write Bundle state directly, execute candidate Skill scripts, or run publish, install, or distribution commands. CLI state remains owned by the main session.
 
-## 角色 brief
+## Role Briefs
 
-在用户确认 Skill Creator 方案后、运行 `comet creator generate` 或生成源码前，主会话按以下顺序读取并派发：
+After the user confirms the Skill Creator proposal, and before `comet creator generate` or source generation, the main session reads and dispatches these briefs in order:
 
-1. 脚本作者 subagent：`comet-any/reference/subagents/script-author.md`
-2. reference 作者 subagent：`comet-any/reference/subagents/reference-author.md`
-3. workflow entry 作者 subagent：`comet-any/reference/subagents/workflow-entry-author.md`
-4. Skill 核心作者 subagent：`comet-any/reference/subagents/skill-core-author.md`
-5. 停顿点作者 subagent：`comet-any/reference/subagents/pause-points-author.md`
-6. Skill 审查 subagent：`comet-any/reference/subagents/skill-reviewer.md`
+1. Script author subagent: `comet-any/reference/subagents/script-author.md`
+2. Reference author subagent: `comet-any/reference/subagents/reference-author.md`
+3. Workflow entry author subagent: `comet-any/reference/subagents/workflow-entry-author.md`
+4. Skill core author subagent: `comet-any/reference/subagents/skill-core-author.md`
+5. Pause point author subagent: `comet-any/reference/subagents/pause-points-author.md`
+6. Skill review subagent: `comet-any/reference/subagents/skill-reviewer.md`
 
-角色文件在本 Skill 内的相对路径是：
+The relative paths inside this Skill are:
 
 - `reference/subagents/script-author.md`
 - `reference/subagents/reference-author.md`
@@ -37,38 +32,38 @@ Claude Code、Codex、Gemini、Copilot 等平台的 subagent 调用方式不同�
 - `reference/subagents/pause-points-author.md`
 - `reference/subagents/skill-reviewer.md`
 
-这些 subagent 的成果先落为可审查草稿，再进入 `reference/authoring-lanes.json`、`reference/skill-review.md`
-和最终 Bundle draft。若任一 subagent 报告 blocking finding，必须停在草稿修复，不得继续 ready。
+Subagent outputs first become reviewable drafts, then flow into `reference/authoring-lanes.json`, `reference/skill-review.md`, and the final Bundle draft. If any subagent reports a blocking finding, stop in draft repair and do not continue to ready.
 
-## 按 DAG 派发
+## Dispatch by DAG
 
-上面的角色 brief 顺序只是创作 DAG 的线性展开，并非要求严格串行。权威 DAG 在 `reference/authoring-protocol.json` 与 `comet creator authoring-plan <name> --depth quick|full --json`：
+The Role Briefs order above is a linearization of the authoring DAG, not a mandate to run strictly sequential. The authoritative DAG lives in `reference/authoring-protocol.json` and `comet creator authoring-plan <name> --depth quick|full --json`:
 
-- **wave1**（`script`、`reference`、`pause-points`）：彼此无依赖。在支持子代理的平台上并发派发这三个。每个只拿到自己的角色 brief、通用输入和 protocol/resolved-skills 路径（文件交接，不共享历史）。
-- **wave2**（`workflow-entry`、`skill-core`）：依赖 script 契约（`NEXT:`/`SKILL:` 输出）。仅在 script lane DONE 后开始。两者之间可并发。
-- **barrier**（`skill-review`）：唯一同步点。仅在 wave1 与 wave2 全部 DONE 后运行；审查者必须读取所有 artifact 与 claim。
+- **wave1** (`script`, `reference`, `pause-points`): no dependencies on each other. On platforms that expose subagents, dispatch these three concurrently. Each gets only its own role brief, common input, and the protocol/resolved-skills paths (file handoff, no shared history).
+- **wave2** (`workflow-entry`, `skill-core`): depend on the script contract (`NEXT:`/`SKILL:` outputs). Start only after the script lane is DONE. The two may run concurrently with each other.
+- **barrier** (`skill-review`): the single synchronization point. Run only after wave1 and wave2 are all DONE; the reviewer must read every artifact and claim.
 
-无论平台如何：
+Regardless of platform:
 
-- 编排遵循 DAG 依赖；只有 barrier 真正等待此前所有 lane。
-- 不支持子代理的平台，主会话按依赖顺序内联执行同样的 lane——语义完全一致，仅延迟不同。在 `reference/authoring-lanes.json` 中按 lane 记录 `dispatchMode: "subagent"` 或 `"inline"`。
-- Claude Code 可把某个 wave 的扇出委托给其 `Workflow` 工具作为可选加速器；这是实现选择，不是契约的一部分。契约是 protocol + schemas + DAG，任何平台都能解释。
-- 每个 lane 产出在下一个依赖 wave 开始前，必须经 `comet creator authoring-record <name> --lane <id> --file <out.json> --json` 校验并记录。
+- Sequencing follows DAG dependencies; only the barrier truly waits for all prior lanes.
+- On platforms without subagent capability, the main session runs the same lanes inline in dependency order — semantics are identical, only latency changes. Record `dispatchMode: "subagent"` or `"inline"` per lane in `reference/authoring-lanes.json`.
+- Claude Code may delegate a wave's fan-out to its `Workflow` tool as an optional accelerator; this is an implementation choice, not part of the contract. The contract is the protocol + schemas + DAG, which every platform can interpret.
+- Every lane output is validated and recorded via `comet creator authoring-record <name> --lane <id> --file <out.json> --json` before the next dependent wave begins.
 
-## 通用输入
+## Common Inputs
 
-每个 subagent 都必须拿到同一组上下文：
+Every subagent must receive the same common context:
 
-- 用户确认的目标、起点和语言。
-- `plan.json` 中的 `goal`、`workflow.kind`、`workflow.nodes`、`engineMode`、`runnerMode`，以及规范化后的 `workflow-protocol.json`。
-- `reference/resolved-skills.json` 或等价的真实 Skill 来源摘要。
-- `reference/workflow-protocol.json` 或即将写入该文件的 workflow protocol。
-- `/comet` 定制场景下的受保护边界：`open / design / build / verify / archive`、`.comet.yaml`、decision point、verify-result-transition、archive-delta-sync。
-- 项目级偏好、缺失/歧义候选处理结果、偏离原因、scripts/hooks 可执行披露。
+- The user-confirmed goal, starting point, and language.
+- `goal`, `workflow.kind`, `workflow.nodes`, `engineMode`, and `runnerMode` from `plan.json`, plus
+  the derived internal `callChain` source inventory from Skill Creator metadata.
+- `reference/resolved-skills.json` or an equivalent real Skill source summary.
+- `reference/workflow-protocol.json` or the workflow protocol that will be written there.
+- For `/comet-classic` customization, the protected boundary is `open / design / build / verify / archive`, `.comet.yaml`, decision point, verify-result-transition, and archive-delta-sync.
+- Project preferences, missing or ambiguous candidate decisions, deviation reasons, and scripts/hooks executable disclosures.
 
-## 输出格式
+## Output Format
 
-每个 subagent 返回：
+Each subagent returns:
 
 ```json
 {
@@ -85,23 +80,23 @@ Claude Code、Codex、Gemini、Copilot 等平台的 subagent 调用方式不同�
       "id": "reference:example",
       "kind": "reference",
       "paths": ["reference/example.md"],
-      "summary": "说明该成果保证了什么"
+      "summary": "What this output guarantees"
     }
   ],
   "findings": []
 }
 ```
 
-`claims` 是审查依据，不是装饰字段。缺少关键 claim 时，Skill 审查 subagent 必须阻塞。
+`claims` are review evidence, not decoration. Missing critical claims must block in the Skill review subagent.
 
-## 派发注意事项
+## Dispatch Notes
 
-- 每次派发必须创建新的 subagent，不得继承主会话历史。主会话只提供该角色需要的 brief、输入路径和必要背景。
-- 必须显式指定 model；平台不支持 model 选择时，在 `reference/authoring-lanes.json` 记录为 platform-default。
-- 使用文件交接：主会话提供路径，不粘贴大段全文。通用输入、来源 Skill 摘要、草稿 artifact 和报告都应以路径交接。
-- 每个 subagent 只接收自己的角色 brief、通用输入和必要 artifact，不接收其他角色的完整 brief。
-- Skill 审查 subagent 必须在其他五个作者角色产出后运行，并读取所有 artifacts 与 claims。
-- 主会话可以要求某个角色返工，但返工结果仍必须回到 `reference/authoring-lanes.json` 和 `reference/skill-review.md`。
-- subagent 不能调用 `comet bundle`、`comet publish`、`comet skill`，也不能执行候选 Skill 的脚本。
-- 如果状态是 `BLOCKED` 或 `NEEDS_CONTEXT`，主会话必须补上下文、拆小任务、换更强模型或询问用户；不得继续组装。
-- 没有平台 subagent 能力时，内联 fallback 必须保留相同的 lane、claim 和 finding 结构。
+- Create a fresh subagent for every dispatch; do not inherit main-session history. The main session provides only the role brief, input paths, and necessary background for that role.
+- Explicitly specify a model. If the platform does not support model selection, record `platform-default` in `reference/authoring-lanes.json`.
+- Use file handoff: provide paths instead of pasting large bodies of text. Common input, resolved Skill summaries, draft artifacts, and reports should move by path.
+- Each subagent receives only its role brief, common input, and necessary artifacts, not every other role's full brief.
+- The Skill review subagent must run after the other five author roles and must read all artifacts and claims.
+- The main session may ask a role to rework its output, but the rework still returns to `reference/authoring-lanes.json` and `reference/skill-review.md`.
+- Subagents cannot call `comet bundle`, `comet publish`, or `comet skill`, and cannot execute candidate Skill scripts.
+- If a status is `BLOCKED` or `NEEDS_CONTEXT`, the main session must add context, split the task, switch to a stronger model, or ask the user; it must not continue assembly.
+- Without platform subagent capability, inline fallback must preserve the same lane, claim, and finding structure.

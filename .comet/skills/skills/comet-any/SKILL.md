@@ -1,70 +1,70 @@
 ---
 name: comet-any
-description: "Use when 用户想定制 Comet 五阶段 Skill、创建 workflow Skill、整理已有 Skill，或用 Workflow Node / Skill Binding / Output Schema 编排 Skill。"
+description: "Use only when explicitly invoked as /comet-any or when the user explicitly wants to customize the /comet-classic five-phase workflow or create/upgrade a workflow Skill managed by Comet Creator. Do not use for general Skill authoring, cleanup, or review."
 ---
 
 # Comet Any - Skill Creator
 
-`/comet-any` 是 Comet 的 Skill 创建向导。用户只需要描述想要的工作流；本 Skill 负责读取真实 Skill、提出方案、等待确认、生成可验证的 Comet-native Skill Bundle，并通过内部 CLI 完成 eval、review、publish readiness 和安装预览。
+`/comet-any` is the Comet Skill creation guide. The user describes the workflow they want; this Skill resolves real Skills, proposes a plan, waits for confirmation, generates a verifiable Comet-native Skill Bundle, and internally drives eval, review, publish readiness, and install preview.
 
-普通用户第一层只看到三种起点：
+Ordinary users see three starting points:
 
-- `基于 Comet 现有 Skill 的五阶段定制`：覆盖 `open / design / build / verify / archive` 五阶段的 Skill 编排，但不修改 `/comet` 命令本身。
-- `创建全新 workflow Skill`：从目标和候选 Skills 生成新的 `workflow-kernel`。
-- `整理已有 Skill`：读取已有 Skill，补齐 Workflow Node、Skill Binding、Output Schema、Guardrail、Handoff、eval 和 readiness。
+- `customize /comet-classic five-phase Skills`: overlay the existing `open / design / build / verify / archive` Skills without modifying the permanent `/comet-classic` entry itself.
+- `create a new workflow Skill`: generate a new `workflow-kernel` from the goal and candidate Skills.
+- `upgrade an existing Skill`: read existing Skills and add Workflow Nodes, Skill Bindings, Output Schemas, Guardrails, Handoffs, eval, and readiness.
 
-后端 Bundle、Factory、composition 仍是内部审计词；不要把它们作为普通用户的第一屏概念。
+Bundle, Factory, and composition are backend audit terms, not the first-screen user model.
 
-## 核心模型
+## Core Model
 
-所有路径都必须编译到同一种 Workflow Contract：
+Every path compiles to one Workflow Contract:
 
-- `Workflow Node`：流程中的可恢复节点，例如 `open`、`design`、`plan`、`execute`、`subagent-execute`、`review`、`verify`、`archive`。
-- `Node Responsibility`：该 Node 在 Agent workflow 中承担的职责，用来解释它为什么存在、需要产出什么、能否替换。
-- `Skill Binding`：某个 Node 的实现 Skill 或辅助 Skill。
-- `Required Skill Call`：要求 Node 内必须调用某个 Skill，不替换 Node implementation。例如 `execute` 和 `subagent-execute` 必须调用 `elementui`，`review` 必须调用 `whitebox-code-standard`。
-- `Output Schema`：Node 必须产出的文件、状态或 evidence。Output Schema 必须挂到具体 Workflow Node 才算生效；只定义在 `workflow.outputSchemas` 里不会触发 guard、eval 或 readiness。脚本、eval、readiness 只依赖挂到 Node 的 Output Schema，不依赖 Skill 名称。
-- `Guardrail`：阻断或放行 Node 推进的检查。
-- `Handoff`：子代理或跨 Node 交接时必须带回的 evidence。
-- `workflow-protocol.json`：生成包的唯一运行事实源，kind 为 `comet-five-phase-overlay` 或 `workflow-kernel`。
+- `Workflow Node`: a resumable workflow node such as `open`, `design`, `plan`, `execute`, `subagent-execute`, `review`, `verify`, or `archive`.
+- `Node Responsibility`: the responsibility this Node owns in the Agent workflow, explaining why it exists, what it must produce, and whether it can be replaced.
+- `Skill Binding`: the implementation or helper Skill bound to a Node.
+- `Required Skill Call`: a Skill that must be called inside a Node without replacing the Node implementation. For example, `execute` and `subagent-execute` may require `elementui`, while `review` may require `whitebox-code-standard`.
+- `Output Schema`: the artifacts, state, or evidence a Node must produce. Output Schema must be attached to a concrete Workflow Node before it is effective; defining it only in `workflow.outputSchemas` does not trigger guard, eval, or readiness. Scripts, eval, and readiness depend on Node-attached Output Schemas, not Skill names.
+- `Guardrail`: a check that blocks or allows Node advancement.
+- `Handoff`: evidence returned by a subagent or cross-Node delegation.
+- `workflow-protocol.json`: the package's single runtime source of truth, with kind `comet-five-phase-overlay` or `workflow-kernel`.
 
-## 受保护边界
+## Protected Boundary
 
-`comet-five-phase-overlay` 保留 Comet 主流程和 `.comet.yaml` 状态语义。普通模式下：
+`comet-five-phase-overlay` preserves the Comet Classic five-phase control flow and `.comet.yaml` state semantics. In ordinary mode:
 
-- `comet-five-phase-overlay` 的主状态只来自 `openspec/changes/<name>/.comet.yaml`；没有 active change 或多个 active changes 时必须阻塞并请用户选择。
-- 不得创建 `.comet/runs/<workflow>/state.json` 作为 Comet overlay 主状态。Bundle 草稿、eval evidence 和 publish readiness 可以有自己的证据文件，但不能替代 `.comet.yaml`。
-- `control` Node 不允许 override：`open`、`execute`、`verify`、`archive`。
-- `producer` Node 可以 override：`design`、`plan`，但必须满足对应 Output Schema。
-- `handoff` 和 `guardrail` Node 可以 require / augment。
-- 用户坚持替换 control Node 时，改走高级 `workflow-kernel`，并要求重新声明 state、Output Schema 和 Guardrail。
-- 所有 Node 都必须用 responsibility 说明职责，不使用内部坐标作为用户理解流程的方式。
+- `comet-five-phase-overlay` primary state comes only from `<classic-change-dir>/.comet.yaml` bound by the Classic layout resolver; no active change or multiple active changes must block and ask the user to choose.
+- The overlay must not create `.comet/runs/<workflow>/state.json` as the Comet overlay primary state. Bundle drafts, eval evidence, and publish readiness may keep their own evidence files, but they cannot replace `.comet.yaml`.
+- `control` Nodes cannot be overridden: `open`, `execute`, `verify`, `archive`.
+- `producer` Nodes may be overridden: `design`, `plan`, but only when the replacement satisfies the matching Output Schema.
+- `handoff` and `guardrail` Nodes may require or augment Skills.
+- If the user insists on replacing a control Node, switch to advanced `workflow-kernel` and require a new state model, Output Schemas, and Guardrails.
+- Every Node must explain its responsibility; internal coordinates are not part of the user-facing workflow model.
 
-## 工作步骤
+## Steps
 
-1. 恢复现有状态：先运行 `comet creator guide --project . --json`，展示恢复摘要和下一步。
-2. 读取项目偏好：读取 `.comet/skill-preferences.yaml`，用 `comet creator candidates --json` 发现真实本地 Skill，再用 `comet skill show <name> --json` 读取候选的真实内容与 hash。不得只按名字推测能力。
-3. 生成方案：把用户目标表达为 Workflow Nodes、Skill Bindings、Output Schemas、Guardrails、Handoffs 和 Evidence。
-4. 展示确认页：说明每个 Node 的职责、绑定 Skill、Required Skill Call、Output Schema、可执行披露和 readiness 影响。确认页必须为每个新增 binding 或 schema 显示 enforcement：`guarded`、`handoff-guarded`、`evidence-only` 或 `advisory`。
-5. 等待用户确认：未确认前不得写 Bundle draft；存在 missing / ambiguous Skill 时必须暂停。
-6. 初始化后端状态：确认后调用 `comet creator init <name> --file <plan.json> --confirmed-proposal --json`。
-7. 运行创作管线并生成 Bundle：先运行 `comet creator authoring-plan <name> --depth quick|full --json` 取得 lane DAG。按 DAG 派发 lane——wave1（`script`、`reference`、`pause-points`）在支持子代理的平台可并发（否则按依赖顺序内联），wave2（`workflow-entry`、`skill-core`）在 script 契约之后，`skill-review` 作为汇聚 barrier。每个 lane 的产出用 `comet creator authoring-record <name> --lane <id> --file <out.json> --json` 记录（经 schema 校验；BLOCKED/NEEDS_CONTEXT 会被拒绝）。随后运行 `comet creator generate <name> --json`：把记录的内容叶子草稿（entry/node SKILL.md、decision-points、recovery）合并进包，而确定性脊梁（protocol/scripts/manifest）保持模板化，并渲染真实审查证据。产出 entry Skill、Node Skills、`reference/workflow-protocol.json`、六个 scripts、rules、hooks 与 `comet/eval.yaml`。
-8. 验证：展示 quick/full eval 工作量，运行或记录当前 draft hash 的 eval evidence；失败、skip 或证据 hash 过期时不得进入 ready。
-9. Review / readiness：读取 `comet publish review <name> --platform <reference-platform> --json`，展示 `Readiness:`、`Blockers:`、`Warnings:`、`Evidence:`。
-10. Publish / install preview：人工批准后才能 publish；安装前必须先运行 preview，并展示 `No files were written`。
+1. Resume state: run `comet creator guide --project . --json` and show a resume summary.
+2. Read preferences: load `.comet/skill-preferences.yaml`, then use `comet creator candidates --json` to discover real local Skills and `comet skill show <name> --json` to read each candidate's real content and hash. Do not guess capability from a Skill name.
+3. Build proposal: express the goal as Workflow Nodes, Skill Bindings, Output Schemas, Guardrails, Handoffs, and Evidence.
+4. Show confirmation: list each Node, bound Skill, Required Skill Call, Output Schema, executable disclosure, and readiness impact. The confirmation must show enforcement for each new binding or schema: `guarded`, `handoff-guarded`, `evidence-only`, or `advisory`.
+5. Wait for confirmation: do not write a Bundle draft before confirmation; pause for missing or ambiguous Skills.
+6. Initialize backend state: after confirmation, call `comet creator init <name> --file <plan.json> --confirmed-proposal --json`.
+7. Run the authoring pipeline and generate the Bundle: run `comet creator authoring-plan <name> --depth quick|full --json` for the lane DAG. Dispatch lanes by the DAG — wave1 (`script`, `reference`, `pause-points`) in parallel where the platform supports subagents (otherwise inline, in dependency order), wave2 (`workflow-entry`, `skill-core`) after the script contract, and `skill-review` as the barrier. Record each lane via `comet creator authoring-record <name> --lane <id> --file <out.json> --json` (schema-validated; BLOCKED/NEEDS_CONTEXT is rejected). Then run `comet creator generate <name> --json`; it merges recorded content-leaf drafts (entry/node SKILL.md, decision-points, recovery) into the package while the deterministic backbone (protocol/scripts/manifest) stays templated, and renders real review evidence. Outputs entry Skill, Node Skills, `reference/workflow-protocol.json`, the six scripts, rules, hooks, and `comet/eval.yaml`.
+8. Validate: show quick/full eval workload and run or record current draft hash eval evidence; failed eval, skipped eval, or stale-hash evidence cannot become ready.
+9. Review readiness: read `comet publish review <name> --platform <reference-platform> --json` and show `Readiness:`, `Blockers:`, `Warnings:`, and `Evidence:`.
+10. Publish and install preview: publish only after human approval; installation must start with preview and show `No files were written`.
 
-## 方案示例
+## Plan Example
 
-组件库和白盒审查场景应生成类似 plan：
+Component-library and whitebox-review requirements should produce a plan like:
 
 ```json
 {
-  "goal": "基于 Comet 现有 Skill 的五阶段定制，要求组件库和白盒审查。",
+  "goal": "Customize /comet-classic five-phase Skills with component and whitebox review requirements.",
   "skillCreatorIntent": "customize-comet",
   "workflow": {
     "kind": "comet-five-phase-overlay",
     "name": "team-comet",
-    "goal": "要求组件库和白盒审查。",
+    "goal": "Require component and whitebox review Skills.",
     "nodes": {
       "execute": {
         "requiredSkillCalls": [
@@ -95,21 +95,21 @@ description: "Use when 用户想定制 Comet 五阶段 Skill、创建 workflow S
 }
 ```
 
-## 硬性规则
+## Hard Rules
 
-- 必须先展示方案确认页，再生成。
-- 确认页必须为每个新增 binding 或 schema 显示 enforcement：`guarded`、`handoff-guarded`、`evidence-only` 或 `advisory`。
-- Required Skill Call 不替换 Node implementation。
-- producer override 必须声明 `satisfies` 的 Output Schema。
-- Output Schema 必须挂到具体 Workflow Node 才算生效；只定义在 `workflow.outputSchemas` 里不会触发 guard、eval 或 readiness。
-- control Node 普通模式不得 override。
-- eval、review、publish readiness 必须读取同一份 `workflow-protocol.json`。
-- readiness blockers 必须阻止 publish：缺少当前 draft hash 的 eval evidence、人工 approval、required capability 或 executable disclosure 任一项都不能进入 ready。
-- 子代理 Handoff 必须要求子代理加载 Required Skill Call 并回传 evidence。
-- 脚本只读取 protocol 和 state，不把 Skill 名称当成校验依据。
-- 安装前必须询问用户，不得自动安装。
+- Show the proposal confirmation page before generation.
+- The confirmation must show enforcement for each new binding or schema: `guarded`, `handoff-guarded`, `evidence-only`, or `advisory`.
+- A Required Skill Call does not replace Node implementation.
+- A producer override must declare the Output Schema it satisfies.
+- Output Schema must be attached to a concrete Workflow Node before it is effective; defining it only in `workflow.outputSchemas` does not trigger guard, eval, or readiness.
+- Ordinary mode must not override control Nodes.
+- Eval, review, and publish readiness must read the same `workflow-protocol.json`.
+- Readiness blockers must stop publish: missing current draft hash eval evidence, missing human approval, required capability gaps, or unconfirmed executable disclosures cannot become ready.
+- Handoff must require subagents to load Required Skill Calls and return evidence.
+- Scripts read protocol and state; they do not use Skill names as validation authority.
+- Ask before installation. Never install automatically.
 
-## 参考资料
+## References
 
 - `comet-any/reference/authoring-protocol.json`
 - `comet-any/reference/authored-zone-example.md`

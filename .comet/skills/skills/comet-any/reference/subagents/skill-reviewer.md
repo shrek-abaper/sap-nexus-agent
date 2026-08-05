@@ -1,107 +1,109 @@
-# Skill 审查 subagent
+# Skill Review Subagent
 
-本文件是 portable lane brief，不是 platform-native custom agent；如需 Claude Code custom agent，必须另行生成平台 agent 资源和 frontmatter。
+This file is a portable lane brief, not a platform-native custom agent. If you need a Claude Code custom agent, generate a separate platform agent resource with frontmatter.
 
-## 职责
+## Responsibilities
 
-审查其他 subagent 的 artifacts 和 claims，判断候选 Skill 是否已经像 Comet 一样可用。
-审查必须给出明确结论：`Review passed` 或 blocking findings。
+Review the other subagents' artifacts and claims, then decide whether the candidate Skill is usable like Comet. The review must give a clear conclusion: `Review passed` or blocking findings.
 
-必须覆盖：
+Must cover:
 
 - `reference/skill-review.md`
 - `reference/authoring-lanes.json`
 
-## 输入
+## Inputs
 
-读取主会话提供的通用输入，以及其他五个作者角色返回的全部 artifacts、claims 和 findings。
+Read the common input from the main session, plus all artifacts, claims, and findings returned by the other five author roles.
 
-使用文件交接：主会话提供路径，不粘贴大段全文。读取总览、通用输入、五个作者报告文件、artifact 路径和
-claims。不得读取主会话历史来替代 artifact 证据。
+Use file handoff: the main session provides paths instead of pasting large bodies of text. Read the overview, common input, five author report files, artifact paths, and claims. Do not use main-session history as a substitute for artifact evidence.
 
-## 派发模板
+## Dispatch Template
 
-主会话派发时使用当前平台的 subagent 机制，形状应包含：
+Use the current platform's subagent mechanism. The shape should include:
 
 ```text
-description: "审查 <bundle-name> 的 Comet-like Skill 产物"
-model: <必须显式指定 model>
+description: "Review the Comet-like Skill outputs for <bundle-name>"
+model: <must explicitly specify model>
 prompt:
-  你是 Skill 审查 subagent。
-  先读取本 brief、通用输入路径、五个作者报告路径、artifact 路径、claim 清单和报告文件路径。
-  审查不信任作者报告；作者报告只是 claim，必须用 artifact 和 claim 交叉验证。
-  不要告诉审查者不要标记某问题，也不要预设某问题只能是 Minor。
-  审查是只读任务，不得修改工作树、索引、HEAD 或分支状态。
-  把完整审查写入报告文件路径，并返回两个 verdict。
+  You are the Skill review subagent.
+  First read this brief, the common input path, five author report paths, artifact paths, claim list, and report file path.
+  Do not trust author reports; author reports are claims that must be cross-checked against artifacts and claims.
+  Do not tell the reviewer not to flag an issue, and do not pre-classify any issue as Minor.
+  Review is read-only. Do not modify the working tree, index, HEAD, or branch state.
+  Write the full review to the report file path and return both verdicts.
 ```
 
-## 审查方法
+## Review Method
 
-审查不信任作者报告。先看 artifact 和 claim，再判断作者声称是否成立。不得用“作者说这是刻意设计”
-来降低问题严重性。
+Do not trust author reports. Inspect artifacts and claims first, then decide whether the authors' claims hold. Do not downgrade severity because "the author says this is intentional."
 
-审查必须给两个 verdict：
+The review must provide two verdicts:
 
-- Skill 契约符合度：是否满足用户确认的目标、workflow protocol、`requiredSkillCalls`、claim、阶段推进、脚本守卫、停顿点和恢复要求。
-- 可用性质量：是否像 Comet 一样好用，是否清晰、可恢复、可审计、不会过度暴露内部 metadata。
+- Skill contract fit: whether the output satisfies the user-confirmed goal, workflow protocol,
+  `requiredSkillCalls`, claims, Node advancement, script guards, pause points, and recovery
+  requirements.
+- Usability quality: whether it is as usable as Comet: clear, recoverable, auditable, and not overexposing internal metadata.
 
-证据必须引用 artifact 路径和 claim。不能只写“看起来可以”。
+Evidence must cite artifact paths and claims. Do not write only "looks fine."
 
-## 阻塞条件
+## Blocking Conditions
 
-出现以下任一情况必须给出 blocking findings：
+Any of these must produce blocking findings:
 
-- 缺少 `reference/skill-review.md`。
-- 缺少 `reference/authoring-lanes.json`。
-- 缺少 workflow entry 作者、脚本作者、reference 作者、Skill 核心作者或停顿点作者的关键 claim。
-- entry Skill 把阶段路线写成多个 `**立即执行：**` Node Skill，而不是通过状态脚本只路由当前阶段。
-- 缺少 `workflow-state.mjs`、`workflow-guard.mjs` 或 `workflow-handoff.mjs` 契约。
-- 包内缺少六个生成脚本中的任何一个（`workflow-state`、`workflow-guard`、`workflow-handoff`、`comet-plan`、`comet-check`、`comet-hook-guard`）。
-- workflow entry 缺失，或 Skill 核心没有 internal Node Skill。
-- 阶段推进没有通过脚本输出 `NEXT:` 和 `SKILL:` 表达。
-- workflow protocol 声明的 `requiredSkillCalls` 没有在对应Node Skill 中明确要求加载，或 subagent 槽位没有要求子代理任务提示加载该 Skill。
-- 用户停顿点缺失，或停顿点可被默认值绕过。
-- 中文 Skill 混入英文流程句。
-- 嵌套 Skill 调用使用 provider 前缀。
-- 用户可见 `SKILL.md` 泄漏生成审计章节、source hash 或内部 metadata。
-- `/comet` 定制替换或删除了 `open / design / build / verify / archive`、`.comet.yaml`、decision point、verify-result-transition 或 archive-delta-sync。
-- 任意 Skill 组合缺少自动推进、脚本守卫、用户停顿点、恢复或当前 draft hash 的 eval evidence。
+- Missing `reference/skill-review.md`.
+- Missing `reference/authoring-lanes.json`.
+- Missing critical claims from the workflow entry author, script author, reference author, Skill core author, or pause point author.
+- Entry Skill writes Node routes as multiple immediate Node Skill loads instead of routing only the current Node through state scripts.
+- Missing `workflow-state.mjs`, `workflow-guard.mjs`, or `workflow-handoff.mjs` contract.
+- Missing any of the six generated scripts (`workflow-state`, `workflow-guard`, `workflow-handoff`, `comet-plan`, `comet-check`, `comet-hook-guard`) in the package.
+- Missing workflow entry, or Skill core has no internal Node Skill.
+- Node advancement is not expressed through script outputs `NEXT:` and `SKILL:`.
+- `requiredSkillCalls` declared by the workflow protocol are not clearly required in the matching
+  Node Skill, or a subagent handoff Node does not require the implementation subagent prompt to load that
+  Skill.
+- User pause points are missing, or can be bypassed by defaults.
+- Deterministic repair, guard failure, state reconciliation, a capability gap, a sole valid action, or `NEXT: manual` is treated as a user pause by default; or adjacent choices that can be answered together are split into serial confirmations.
+- The entry Skill frontmatter description does not identify it as the managed workflow entry/resume router, or an internal Node Skill description allows ordinary tasks to trigger it without explicit invocation or entry/runtime routing.
+- English Skills mix in Chinese process sentences.
+- Nested Skill calls use provider prefixes.
+- User-visible `SKILL.md` leaks generated audit sections, source hashes, or internal metadata.
+- Customizing `/comet-classic` replaces or removes `open / design / build / verify / archive`, `.comet.yaml`, decision point, verify-result-transition, or archive-delta-sync.
+- Arbitrary Skill composition is missing automatic advancement, script guards, user pause points, recovery, or current draft hash eval evidence.
 
-## 严重级别
+## Severity
 
-- Critical：会让生成 Skill 不可用、不可恢复、不可审计，或破坏 `/comet` 受保护语义。
-- Important：会让阶段流程、脚本守卫、停顿点、Skill 调用或证据链不可信；必须修复后才能 ready。
-- Minor：不阻塞 ready 的清晰度、命名或维护性改进。
+- Critical: makes the generated Skill unusable, unrecoverable, unauditable, or breaks protected `/comet-classic` semantics.
+- Important: makes the Node flow, script guards, pause points, Skill calls, or evidence chain untrustworthy; must be fixed before ready.
+- Minor: clarity, naming, or maintainability improvements that do not block ready.
 
-## 输出要求
+## Output Requirements
 
-返回：
+Return:
 
 - `reference/skill-review.md`
 - `reference/authoring-lanes.json`
 - `review:skill-review`
-- 最终 `Review passed` 或 blocking findings。
+- Final `Review passed` or blocking findings.
 
-输出必须包含：
+Output must include:
 
-- 两个 verdict：Skill 契约符合度、可用性质量。
-- Strengths：具体说明做得好的 artifact。
-- Issues：按 Critical、Important、Minor 分组。
-- 每个 finding 的 artifact 路径、claim、问题、影响和建议修复方式。
-- `Review passed` 或 blocking findings。
+- Two verdicts: Skill contract fit and usability quality.
+- Strengths: concrete artifacts that work well.
+- Issues grouped by Critical, Important, and Minor.
+- For every finding: artifact path, claim, problem, impact, and recommended fix.
+- `Review passed` or blocking findings.
 
-如果存在 Critical 或 Important，不得给出 `Review passed`。如果作者状态是 `BLOCKED` 或 `NEEDS_CONTEXT`，
-必须返回 blocking findings，主会话必须补上下文、拆小任务、换更强模型或询问用户；不得继续组装。
+If any Critical or Important issue exists, do not return `Review passed`. If an author status is `BLOCKED` or `NEEDS_CONTEXT`, return blocking findings; the main session must add context, split the task, switch to a stronger model, or ask the user, and must not continue assembly.
 
-## 多视角审查（按 depth）
+## Multi-vote Review (depth-aware)
 
-skill-review lane 是 DAG 的 barrier，在所有创作 lane 之后运行。其裁决用 `comet creator authoring-record <name> --lane skill-review --file <review.json>` 记录，成为真实的 `skill-review.md` / `authoring-lanes.json` 证据——绝不是硬编码的批准。
+The skill-review lane is the DAG barrier and runs after every author lane. Its verdict is recorded with `comet creator authoring-record <name> --lane skill-review --file <review.json>` and becomes the real `skill-review.md` / `authoring-lanes.json` evidence — it is NOT a hardcoded approval.
 
-- `depth: full`：派发 N=3 个独立审查者，每人只持一个 lens（`contract-fit`、`usability`、`evidence-trace`、`self-consistency`），互不见彼此结论。跨审查者的 findings 去重后，仅多数确认才成立。重复直到连续 `dryThreshold` 轮无新的 Critical/Important（上限 `maxRounds`）。`self-consistency` 必须交叉校验：引用的命令可解析、声明产物 == 实际产物、无幽灵命令引用（未注册的命令名）残留。
-- `depth: quick`：单审查者、单轮。
-- 仅当无 Critical/Important 残留时 `passed` 为 `true`。Minor 记录但不阻塞。
+- `depth: full` → dispatch N=3 independent reviewers, each holding exactly one lens (`contract-fit`, `usability`, `evidence-trace`, `self-consistency`), none seeing the others' conclusions. Cross-voter findings are de-duplicated, then a finding is confirmed only by majority. Repeat until `dryThreshold` consecutive rounds find no new Critical/Important (capped by `maxRounds`). `self-consistency` must cross-check that referenced commands resolve, the declared package matches the generated package, and no phantom command reference (a name that is not a registered command) remains.
+- `depth: quick` → a single reviewer, single round.
+- `passed` is `true` only when zero Critical/Important findings remain. Minor findings are recorded but do not block.
 
-记录的 review 对象必须符合此形状（由 `authoring-record` 校验）：
+The recorded review object must match this shape (validated by `authoring-record`):
 
 ```json
 {
@@ -114,11 +116,11 @@ skill-review lane 是 DAG 的 barrier，在所有创作 lane 之后运行。其�
     "lenses": ["contract-fit", "usability", "evidence-trace", "self-consistency"],
     "rounds": 2,
     "findings": [
-      { "severity": "minor", "path": "SKILL.md", "problem": "措辞小问题。", "fix": "改写。" }
+      { "severity": "minor", "path": "SKILL.md", "problem": "Wording nit.", "fix": "Rephrase." }
     ],
     "reviewedAt": "2026-06-28T00:00:00.000Z"
   }
 }
 ```
 
-`passed: false` 的审查是 readiness blocker（不得 publish）；缺失审查是 warning（包仍带诚实的 `deterministic-check-only` 占位，绝不伪造批准）。
+A `passed: false` review is a readiness blocker (publish cannot proceed); a missing review is a warning (the package still carries an honest `deterministic-check-only` placeholder, never a fabricated approval).

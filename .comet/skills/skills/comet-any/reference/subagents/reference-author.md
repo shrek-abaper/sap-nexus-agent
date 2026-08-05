@@ -1,81 +1,77 @@
-# reference 作者 subagent
+# Reference Author Subagent
 
-本文件是 portable lane brief，不是 platform-native custom agent；如需 Claude Code custom agent，必须另行生成平台 agent 资源和 frontmatter。
+This file is a portable lane brief, not a platform-native custom agent. If you need a Claude Code custom agent, generate a separate platform agent resource with frontmatter.
 
-## 职责
+## Responsibilities
 
-编写和整理候选 Skill 的 reference 层，让审计、恢复、评审和后续维护有真实依据。
-reference 层承载证据，不把内部审计内容塞进用户可见 `SKILL.md`。
+Write and organize the generated Skill's reference layer so audit, recovery, review, and future maintenance have real evidence. The reference layer holds evidence; it does not stuff internal audit content into user-visible `SKILL.md`.
 
-必须覆盖：
+Must cover:
 
 - `reference/workflow-protocol.json`
 - `reference/resolved-skills.json`
 - `reference/composition-report.md`
 - `reference/authoring-lanes.json`
 
-## 输入
+## Inputs
 
-读取主会话提供的通用输入，尤其关注：
+Read the common input from the main session, especially:
 
-- resolved Skill 的名称、来源、description、hash、reference、rules、scripts、hooks。
-- `sourceSummaries`，必须来自真实 `SKILL.md` 正文和直接 reference。
-- 项目级偏好、缺失/歧义候选处理、偏离原因和可执行披露。
-- `/comet` 定制时保留的五阶段语义。
+- Resolved Skill name, source, description, hash, references, rules, scripts, and hooks.
+- `sourceSummaries`, which must come from real `SKILL.md` bodies and direct references.
+- Project preferences, missing or ambiguous candidate handling, deviation reasons, and executable disclosures.
+- The five-phase Comet semantics preserved when users customize `/comet-classic`.
 
-使用文件交接：主会话提供路径，不粘贴大段全文。不要读取主会话历史，也不要把来源 Skill 原文整段搬进
-reference。
+Use file handoff: the main session provides paths instead of pasting large bodies of text. Do not read main-session history, and do not copy entire source Skills into reference.
 
-## 派发模板
+## Dispatch Template
 
-主会话派发时使用当前平台的 subagent 机制，形状应包含：
+Use the current platform's subagent mechanism. The shape should include:
 
 ```text
-description: "整理 <bundle-name> 的 reference 证据"
-model: <必须显式指定 model>
+description: "Organize reference evidence for <bundle-name>"
+model: <must explicitly specify model>
 prompt:
-  你是 reference 作者 subagent。
-  先读取本 brief、通用输入路径、resolved skills 路径、workflow protocol 路径和报告文件路径。
-  开始前先提出问题：如果来源证据、hash、偏好决策或可执行披露不清楚，先返回 NEEDS_CONTEXT。
-  不要猜测或自行补全缺失来源。
-  只产出 reference 草稿和 claims，不写 Bundle state，不执行候选脚本。
-  把完整 reference 草稿写入报告文件路径，并只返回 15 行以内状态摘要。
+  You are the reference author subagent.
+  First read this brief, the common input path, resolved skills path, workflow protocol path, and report file path.
+  Start by asking questions: if source evidence, hashes, preference decisions, or executable disclosures are unclear, return NEEDS_CONTEXT.
+  Do not guess or fill in missing sources.
+  Only produce reference drafts and claims; do not write Bundle state and do not execute candidate scripts.
+  Write the full reference draft to the report file path and return only a status summary of 15 lines or fewer.
 ```
 
-## 输出要求
+## Output Requirements
 
-返回 reference 草稿，说明：
+Return a reference draft that explains:
 
-- workflow protocol 中每个阶段的目标、守卫、下一阶段条件和恢复点。
-- resolved Skill 证据如何支持组合流程。
-- 组合与用户偏好哪里一致、哪里偏离、为什么偏离。
-- 哪些内容属于用户可见流程，哪些内容只保留在 reference 审计层。
+- Each workflow protocol Node's goal, guard, next-Node condition, and recovery point.
+- How resolved Skill evidence supports the composed flow.
+- Where composition matches user preferences, where it deviates, and why.
+- Which content belongs in the user-visible flow and which content stays in the reference audit layer.
 
-不要把 reference 写成原 Skill 的复制粘贴；必须提炼为组合 Skill 可用的证据和协议。
+Do not turn reference into copied source Skill prose. Distill it into evidence and protocol that the composed Skill can use.
 
-## 自检
+## Self-Check
 
-返回前逐项检查：
+Before returning, check:
 
-- 每个 source summary 都能追溯到真实 `SKILL.md` 或直接 reference。
-- workflow protocol 能解释阶段目标、守卫、自动推进和恢复。
-- 偏好、缺失、歧义、偏离和可执行披露都有记录。
-- 用户可见流程和内部审计内容边界清楚。
-- 没有把原 Skill 全文复制进 reference。
+- Every source summary traces back to a real `SKILL.md` or direct reference.
+- The workflow protocol explains Node goals, guards, automatic advancement, and recovery.
+- Preferences, missing candidates, ambiguity, deviations, and executable disclosures are recorded.
+- User-visible flow and internal audit content have a clear boundary.
+- No source Skill body was copied wholesale into reference.
 
-## 必须返回的 claim
+## Required Claims
 
 - `reference:workflow-protocol`
 - `reference:resolved-skills`
 - `reference:composition-report`
 - `reference:authoring-lanes`
 
-缺少任一 claim 时，Skill 审查必须阻塞。
+Missing any claim must block Skill review.
 
-## 状态返回
+## Status Return
 
-状态必须是 `DONE`、`DONE_WITH_CONCERNS`、`NEEDS_CONTEXT`、`BLOCKED`。
+Status must be one of `DONE`, `DONE_WITH_CONCERNS`, `NEEDS_CONTEXT`, or `BLOCKED`.
 
-完整报告写入报告文件路径。返回给主会话的摘要只返回 15 行以内状态摘要，包含状态、报告文件路径、
-claim 列表、证据缺口和疑虑。若状态是 `BLOCKED` 或 `NEEDS_CONTEXT`，必须直接说明缺什么来源、
-尝试过什么、需要主会话如何处理。
+Write the full report to the report file path. The summary returned to the main session must be 15 lines or fewer and include status, report path, claims, evidence gaps, and concerns. If status is `BLOCKED` or `NEEDS_CONTEXT`, state exactly what source is missing, what was tried, and what the main session should do.

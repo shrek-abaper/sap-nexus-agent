@@ -1,28 +1,28 @@
-# 文件结构参考
+# File Structure Reference
 
-规范路径：`comet/reference/file-structure.md`
+Canonical path: `comet/reference/file-structure.md`
 
-本文件是 Comet 项目文件结构参考。按需查阅，不随 skill 一次性加载。
+This file is the Comet project file structure reference. Consult on demand; not loaded inline with skills.
 
 ```text
-openspec/                              # OpenSpec — WHAT
+<classic-open-spec-root>/              # OpenSpec — WHAT; returned by the Classic layout resolver
 ├── config.yaml
 ├── changes/
-│   ├── <name>/                        # 活跃 change
+│   ├── <name>/                        # Active change
 │   │   ├── .openspec.yaml
 │   │   ├── .comet.yaml
 │   │   ├── proposal.md                # Why + What
-│   │   ├── design.md                  # 高层架构决策
-│   │   ├── specs/<capability>/spec.md # Delta 能力规格
-│   │   ├── .comet/handoff/            # 脚本生成的阶段交接包
-│   │   └── tasks.md                   # 任务清单
-│   └── archive/YYYY-MM-DD-<name>/     # 已归档
-└── specs/<capability>/spec.md         # 主 specs（归档时按 OpenSpec delta 语义合并）
+│   │   ├── design.md                  # High-level architecture decisions
+│   │   ├── specs/<capability>/spec.md # Delta capability spec
+│   │   ├── .comet/handoff/            # Script-generated phase handoff packages
+│   │   └── tasks.md                   # Task checklist
+│   └── archive/YYYY-MM-DD-<name>/     # Archived
+└── specs/<capability>/spec.md         # Main specs (merged on archive via OpenSpec delta semantics)
 
-docs/superpowers/                      # Superpowers — HOW
-├── specs/YYYY-MM-DD-<topic>-design.md # 设计文档（技术 RFC，归档时标注状态）
-└── plans/YYYY-MM-DD-<feature>.md      # 实施计划（文件头含 change 关联元数据）
+<classic-superpowers-root>/            # Superpowers — HOW; returned by the Classic layout resolver
+├── specs/YYYY-MM-DD-<topic>-design.md # Design doc (technical RFC; annotated on archive)
+└── plans/YYYY-MM-DD-<feature>.md      # Implementation plan (file header contains change metadata)
 
 .comet/
-└── config.yaml                        # Comet 项目配置（context_compression 默认 off，可设 beta）
+└── config.yaml                        # Comet project config (context_compression defaults to off; set to beta to enable)
 ```

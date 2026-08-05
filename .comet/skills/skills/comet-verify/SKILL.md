@@ -1,230 +1,222 @@
 ---
 name: comet-verify
-description: "Use when Comet change 已完成 build 阶段，需要验证实现、处理验证失败决策或完成分支收尾。"
+description: "Use only when explicitly invoked as /comet-verify or routed by the root Comet skill/runtime to the verify phase; verify a Comet change, record evidence, and manage repair loops."
 ---
 
-# Comet 阶段 4：验证与收尾（Verify）
+# Comet Phase 4: Verify
 
-## 前置条件
+Before starting or recovering, read and follow `comet/reference/classic-layout.md`. Every OpenSpec CLI call in this file must use the adapter, and every file path must use the `<classic-*>` logical roots bound by that protocol.
 
-- 代码已提交（阶段 3 完成）
-- tasks.md 全部任务已完成
+## Prerequisites
 
-## 步骤
+- Code committed (Phase 3 complete)
+- All tasks.md tasks completed
 
-### 0a. 输出语言约束
+## Steps
 
-验证报告和分支处理说明必须使用 `"$COMET_BASH" "$COMET_STATE" get <name> language` 读取到的 Comet 配置产物语言。
+### 0a. Output Language Constraint
 
-### 0b. 入口状态验证（Entry Check）
+Verification reports must use the configured Comet artifact language from `comet state get <name> language`.
 
-按 `comet/reference/scripts.md` 定位脚本（定位 `comet-env.mjs`），然后执行入口验证；从任意入口恢复时先按 `comet/reference/context-recovery.md` 运行恢复检查：
+### 0b. Entry State Verification (Entry Check)
 
-```bash
-node "$COMET_STATE" check <change-name> verify
-```
-
-验证通过后继续 Step 1。验证失败时脚本会输出具体失败原因。
-
-**幂等性**：verify 阶段所有检查可安全重复执行。如 `verify_result` 已为 `pass` 且 `branch_status` 已为 `handled`，说明验证已完成，直接执行 guard 流转。如 `verify_result` 为 `pending`，从头开始验证。
-
-### 1. 改动规模评估
-
-执行规模评估：
+Use the stable `comet` CLI described in `comet/reference/scripts.md`, then run entry verification. When resuming from any entry point, first run the recovery check in `comet/reference/context-recovery.md`:
 
 ```bash
-node "$COMET_STATE" scale <change-name>
+comet state select <change-name>
+comet state check <change-name> verify
 ```
 
-脚本自动统计任务数、增量规格数、变更文件数，判断使用 light 或 full 验证模式，并设置 verify_mode 字段。判定规则（满足任一即 full）：任务数 > 3、delta spec 能力数 > 1、变更文件数 > 8。
+Proceed to Step 1 after verification passes. The script outputs specific failure reasons when verification fails.
 
-验证开始前，按 `comet/reference/dirty-worktree.md` 协议检查并处理未提交改动。verify 阶段的特殊处理：
+If the `select` / `check` output is `BLOCKED` because `bound_branch` does not match the current branch, immediately pause under `comet/reference/decision-point.md` and let the user choose one option: switch back to the bound branch and rerun entry verification, or run `comet state rebind <change-name>` after the user explicitly confirms the current branch should take over this change, then rerun entry verification. Do not switch branches or rebind on your own.
 
-1. 若 dirty diff 属于当前 change 且涉及实现、测试、tasks、delta spec 或 design doc 变更，不在 verify 阶段直接修复或提交；报告失败项并进入 Step 1b 的验证失败决策阻塞点
-2. 若 dirty diff 只是 verify 本阶段产物（例如验证报告草稿、分支处理记录），可继续在 verify 阶段完成并记录状态
-3. 若 dirty diff 已实现但 tasks.md 未勾选，视为 build 状态滞后；报告失败项并进入 Step 1b，由用户决定回退修复或接受偏差
+**Idempotency**: All verify checks are safe to repeat. If `verify_result` is already `pass`, verification is complete and archive should continue; keep `branch_status: pending` until archive changes are committed and final branch handling finishes. If `verify_result` is `pending`, start verification from the beginning.
 
-用户选择修复后，才允许回退到 build 阶段：
+### 1. Scale Assessment
+
+Execute scale assessment:
 
 ```bash
-# 仅在用户确认修复后执行
-node "$COMET_STATE" transition <change-name> verify-fail
+comet state scale <change-name>
 ```
 
-注意：verify-fail 回退到 build 时 `branch_status` 不会被重置。如果首次 verify 已完成分支处理，修复后再次进入 verify 时跳过已完成的分支处理步骤，直接使用 `node "$COMET_STATE" set <change-name> branch_status handled` 保留原有分支处理结果。
+The script automatically counts tasks, delta spec count, changed file count, determines light or full verification mode, and sets the verify_mode field. Decision rule (any condition triggers full): tasks > 3, delta spec capabilities > 1, changed files > 8.
 
-注意：如果 build 阶段每个任务都已提交，脚本基于工作区 diff 的文件数可能低估改动规模。此时必须读取 plan 文件头的 `base-ref` 并用提交区间复核：
+Before verification begins, handle uncommitted changes through `comet/reference/dirty-worktree.md` protocol. Verify phase special handling:
+
+1. If dirty diff clearly belongs to the current change, it is verification input. Continue verification, but do not modify or commit implementation, tests, tasks, delta specs, or the Design Doc in verify
+2. If dirty diff is only a verify phase artifact such as a verification report draft, may continue and record state in verify phase
+3. If dirty diff shows implementation but tasks.md remains unchecked, treat it as lagging build state. This has one valid next action: run `verify-fail`, return to build, verify evidence, and update task state without asking whether to accept incomplete tasks
+4. If dirty diff cannot be attributed or belongs to another change, report a stop condition through the dirty-worktree protocol. Do not disguise attribution failure as a continue/ignore choice
+
+When repair or state reconciliation must return to build, run:
 
 ```bash
-PLAN=$(node "$COMET_STATE" get <change-name> plan)
-BASE_REF=$(grep '^base-ref:' "$PLAN" 2>/dev/null | head -1 | sed 's/^base-ref: *//')
-git diff --stat "$BASE_REF"...HEAD
+comet state transition <change-name> verify-fail
 ```
 
-若提交区间显示改动超过轻量阈值（> 8 个文件、跨模块协调、或 delta spec 超过 1 个 capability），手动设置为完整验证：
+Note: If every task in build phase was committed, the script's file count based on working tree diff may underestimate change scale. In this case, must read plan file header `base-ref` and verify with commit range:
 
 ```bash
-node "$COMET_STATE" set <change-name> verify_mode full
+comet state get <change-name> plan
+git diff --stat <base-ref read from plan frontmatter>...HEAD
 ```
 
-**覆盖机制**：如 agent 或用户认为自动评估结果不合适，可随时通过 `node "$COMET_STATE" set <change-name> verify_mode <light|full>` 手动覆盖。
+The first command returns the plan path. Use the file-reading tool to parse the single `base-ref` frontmatter field, validate it as a commit, then substitute it into the second command. Do not depend on POSIX text pipelines.
 
-### 1b. 验证失败决策（阻塞点）
-
-验证不通过时**必须按 `comet/reference/decision-point.md` 的协议暂停并等待用户决定修复或接受偏差**。不得自动运行 `node "$COMET_STATE" transition <change-name> verify-fail`，也不得自动调用 `/comet-build`。
-
-暂停时必须列出：
-- 失败项
-- 是否属于 CRITICAL 或 IMPORTANT（构建失败、测试失败、安全问题、核心验收场景失败、简化代码审查发现的正确性/安全/边界问题）
-- 推荐处理方式
-
-**不确定性原则**：无法确定严重程度时，降级处理（SUGGESTION > WARNING > CRITICAL）。仅对构建失败、测试失败、安全问题使用 CRITICAL；模糊或不确定的问题标为 WARNING 或 SUGGESTION。
-
-用户选择后按以下方式继续：
-- **全部修复**：运行 `node "$COMET_STATE" transition <change-name> verify-fail`，然后调用 `/comet-build` 修复
-- **逐项处理**：CRITICAL 或 IMPORTANT 失败项必须修复；WARNING/SUGGESTION 失败项可选择接受偏差，但必须在验证报告中记录接受原因和影响范围。若存在任何 CRITICAL 或 IMPORTANT 失败项，不允许跳过修复直接全部接受
-
-**重试上限**：连续 3 次 verify-fail 循环后，第 4 次失败时代理不得自动选择继续修复；**必须使用当前平台可用的用户输入/确认机制暂停**，仅给出两个选项：「接受所有偏差并记录」或「继续修复」，由用户明确决定。
-
-### 2. 产物上下文加载（Hash 按需读）
-
-验证需要读取 OpenSpec 产物时，先检查产物是否自 design 阶段以来发生变化：
+If commit range shows changes exceed lightweight threshold (> 8 files, cross-module coordination, or delta spec spans more than 1 capability), manually set to full verification:
 
 ```bash
-RECORDED_HASH=$(node "$COMET_STATE" get <change-name> handoff_hash)
-CURRENT_HASH=$(node "$COMET_HANDOFF" <change-name> --hash-only 2>/dev/null || echo "")
+comet state set <change-name> verify_mode full
 ```
 
-- 若 `RECORDED_HASH` = `CURRENT_HASH` 且均非空且均非 `null`：OpenSpec 产物未变化，**tasks.md 无需重新读取全文**（用 `grep -c '\- \[ \]' tasks.md` 确认完成数即可）。proposal.md、design.md、delta spec 仍需读取用于对照检查。
-- 若 `RECORDED_HASH` 为空、为 `null`、或与 `CURRENT_HASH` 不一致：产物已变化或 hash 未记录，正常读取所有所需文件全文。
+**Override mechanism**: If the agent or user believes the automated assessment is inappropriate, override at any time with `comet state set <change-name> verify_mode <light|full>`.
 
-此优化仅跳过 tasks.md 的重复全文读取。proposal.md 和 design.md 包含验证检查项所需的完整上下文，不得因 hash 匹配而跳过。
+### 1b. Automatic Verification Repair and Exception Decisions
 
-**立即执行：** 使用 Skill 工具加载 Superpowers `verification-before-completion` 技能。禁止跳过此步骤。
+Run `comet state get <change-name> verify_failures` first to read the persisted consecutive failure count. Automatically return to build for the first 3 repairable failures: report the failures, run `comet state transition <change-name> verify-fail`, then invoke `/comet-build` without asking for confirmation.
 
-技能加载后，按 verify_mode 分支执行：
+The report must list:
+- Failed items
+- Whether CRITICAL or IMPORTANT (build failure, test failure, security issues, core acceptance scenario failure, lightweight code review correctness/security/edge-case issue)
+- Recommended handling approach
 
-### 2a. 轻量验证（小改动）
+**Uncertainty principle**: Use a lower severity when evidence is unclear. Reserve CRITICAL for build failures, test failures, and security issues; use IMPORTANT for confirmed core-acceptance or correctness failures; mark ambiguous findings WARNING or SUGGESTION.
 
-按以下 6 项进行检查：
+Handle failures as follows:
+- **CRITICAL/IMPORTANT or objectively repairable in-scope issues**: automatically return to build below the retry limit. Do not manufacture a "whether to fix" decision, and never accept these as deviations
+- **WARNING/SUGGESTION whose fix introduces a behavior, scope, or risk tradeoff**: use `comet/reference/decision-point.md` to ask whether to fix or accept. Record the reason and impact scope when accepted
+- **WARNING/SUGGESTION with a safe, local, tradeoff-free fix**: repair automatically below the retry limit; low severity alone does not justify a pause
 
-1. tasks.md 全部任务已完成 `[x]`
-2. 改动文件与 tasks.md 描述一致（`git diff --stat` / `git diff --cached --stat` / `git diff --stat <base-ref>...HEAD` 对照 tasks 内容）
-3. 编译通过（执行项目对应的构建命令，如 `npm run build`、`mvn compile`、`cargo build` 等）
-4. 相关测试通过
-5. 无明显安全问题（无硬编码密钥、无新增 unsafe 操作）
-6. 代码审查策略：当 `review_mode: standard` 或 `thorough` 时，必须使用 Skill 工具加载 Superpowers `requesting-code-review` 技能，请求只检查正确性、安全、边界条件的轻量代码审查；当 `review_mode: off` 时跳过自动代码审查，并在验证报告中记录跳过原因
+Only accepting WARNING/SUGGESTION deviations or choosing a strategy after the 4th failure is a user decision point. When `verify_failures >= 3`, do not automatically execute another `verify-fail`. Offer only "Continue fixing" or "Stop this workflow and seek an external decision" under the decision protocol. Record the next failure and return to build only after the user chooses continue. CRITICAL/IMPORTANT findings are never waivable.
 
-简化代码审查的输入应限定为本次改动 diff、tasks.md 和必要的测试结果；审查范围只覆盖实现正确性、安全风险和边界条件，不执行 spec 覆盖率、Design Doc 一致性或漂移检查。若审查发现 CRITICAL 或 IMPORTANT 问题，按验证失败处理并进入 Step 1b。`review_mode: off` 只跳过自动 code review，不跳过构建、测试、安全检查或异常调试协议。
+### 2. Artifact Context Loading (Hash On-Demand Read)
 
-**与 build 阶段审查的去重**：若 build 阶段（`executing-plans` 或 `subagent-driven-development`）已按 `review_mode` 对同一 diff 完成最终代码审查，verify 的这次轻量审查聚焦「实现是否符合 spec/tasks 的正确性」与「build 之后新增的改动」，不重复评审 build 已审过且未变化的 diff。
-
-**通过标准**：6 项全部 OK，无 CRITICAL 或 IMPORTANT 问题。
-
-**不通过时**：报告失败项，进入 Step 1b 的验证失败决策阻塞点。用户选择修复后，才执行以下命令记录失败并回退到 build 阶段，然后调用 `/comet-build` 修复：
+When verification needs to read OpenSpec artifacts, first check whether they have changed since the design phase:
 
 ```bash
-# 仅在用户确认修复后执行
-node "$COMET_STATE" transition <change-name> verify-fail
+comet state get <change-name> handoff_hash
+comet handoff <change-name> --hash-only
 ```
 
-**报告格式**：简表列出 6 项检查结果 + PASS/FAIL。
+- Read the two standard outputs separately. If they match and both are non-empty and non-`null`, OpenSpec artifacts are unchanged. **tasks.md does not need to be re-read in full**; parse its checkboxes to confirm none remain unchecked. proposal.md, design.md, and delta specs must still be read for comparison checks.
+- If `RECORDED_HASH` is empty, is `null`, or differs from `CURRENT_HASH`: artifacts have changed or hash was never recorded. Read all required files in full normally.
 
-**跳过项**（不在轻量验证中检查）：
-- spec scenario 覆盖率
-- design doc 一致性深度比对
-- 不影响正确性、安全、边界条件的 code pattern consistency 建议
-- delta spec 与 design doc 漂移检测
+This optimization only skips re-reading tasks.md in full. proposal.md and design.md contain the full context needed for verification checks and must not be skipped due to hash match.
 
-### 2b. 完整验证（大改动）
+**Immediately execute:** Use the Skill tool to load the Superpowers `verification-before-completion` skill. Skipping this step is prohibited.
 
-当规模评估结果为"大"时：
+After the skill loads, follow the `verify_mode` branch:
 
-**立即执行：** 使用 Skill 工具加载 `openspec-verify-change` 技能。禁止跳过此步骤。
+### 2a. Lightweight Verification (Small Changes)
 
-技能加载后，按其指引验证。检查项：
-1. tasks.md 全部任务已完成（`[x]`）
-2. 实现符合 `openspec/changes/<name>/design.md` 高层设计决策
-3. 实现符合 Design Doc（`docs/superpowers/specs/` 下的技术设计文档）
-4. 能力规格场景全部通过
-5. proposal.md 目标已满足
-6. delta spec 与 design doc 无矛盾（若 Build 阶段有增量修改 spec，检查 design doc 是否有对应记录）
-7. `docs/superpowers/specs/` 关联的设计文档可定位（文件存在且与当前 change 相关）
+Run these 6 checks:
 
-验证不通过时：报告缺失项，进入 Step 1b 的验证失败决策阻塞点。用户选择修复后，才执行以下命令记录失败并回退到 build 阶段，然后调用 `/comet-build` 补充：
+1. All tasks.md tasks completed `[x]`
+2. Changed files match tasks.md descriptions (`git diff --stat` / `git diff --cached --stat` / `git diff --stat <base-ref>...HEAD` compared against tasks content)
+3. Build passes (run project-specific build command, e.g., `npm run build`, `mvn compile`, `cargo build`, etc.)
+4. Related tests pass
+5. No obvious security issues (no hardcoded keys, no new unsafe operations)
+6. Code review strategy: when `review_mode: standard` or `thorough`, use the Skill tool to load the Superpowers `requesting-code-review` skill and request a lightweight review that checks only correctness, security, and edge cases; when `review_mode: off`, skip automatic code review and record the skip reason in the verification report
+
+The lightweight code review input should be limited to this change's diff, tasks.md, and necessary test results; the review scope covers implementation correctness, security risk, and edge cases only, and does not perform spec coverage, Design Doc consistency, or drift checks. If the review finds CRITICAL or IMPORTANT issues, follow Step 1b automatic repair and retry handling. `review_mode: off` only skips automatic code review, not build, test, security checks, or debug gate protocol.
+
+If the project has no automatically inferred verification command, the user or Agent must run the real verification command first, then record its evidence separately:
 
 ```bash
-# 仅在用户确认修复后执行
-node "$COMET_STATE" transition <change-name> verify-fail
+comet state record-check <change-name> verify --command "<actual verification command>" --exit-code 0
 ```
 
-**Spec 漂移处理**（用户决策点）：
-- 若检查项 6 发现矛盾（delta spec 有内容但 design doc 未体现），**必须使用当前平台可用的用户输入/确认机制以单选题形式暂停并等待用户选择处理方式**，不得自动选择。选项：
-  - 选项 A：在 design doc 追加 "Implementation Divergence" 节记录偏差原因。选项 A 属于 verify 阶段允许产物；写入后不得因该 design doc 变更再次触发 Step 1b dirty-worktree 决策
-  - 选项 B：用户选择 B 后，运行 `node "$COMET_STATE" transition <change-name> verify-fail`，然后调用 `/comet-build`；由 `/comet-build` 的 Spec 增量更新规则加载 Superpowers `brainstorming` 更新 Design Doc + delta spec
-  - 选项 C：确认偏差可接受，继续验证（归档时 design doc 将标记为 `superseded-by-main-spec`）
+`--command` records command text only; Comet **never executes it**. Verify and build evidence are separate and cannot substitute for each other. Even when a compatibility workflow uses `COMET_SKIP_BUILD=1`, that bypass cannot be treated as auditable verification or build evidence.
 
-### 3. 收尾（Superpowers）
+**Dedup with build-phase review**: if the build phase (`executing-plans` or `subagent-driven-development`) already completed a final code review of the same diff under `review_mode`, this lightweight verify review focuses on "whether the implementation is correct against spec/tasks" and "changes added after build", and does not re-review the diff that build already reviewed and that has not changed.
 
-**立即执行：** 使用 Skill 工具加载 Superpowers `finishing-a-development-branch` 技能。禁止跳过此步骤。
+**Pass criteria**: All 6 items OK, no CRITICAL or IMPORTANT issues.
 
-如 Superpowers `finishing-a-development-branch` 技能不可用，停止流程并提示安装或启用 Superpowers 技能，不要用普通对话替代该步骤。
-
-技能加载后，按其指引收尾。分支处理选项：
-1. 本地合并到主分支
-2. 推送并创建 PR
-3. 保持分支（稍后处理）
-4. 丢弃工作
-
-这是用户决策点。**必须按 `comet/reference/decision-point.md` 的协议暂停并等待用户选择分支处理方式**，不得根据推荐、默认值或当前分支状态自行选择。只有在用户完成选择且对应操作完成后，才允许写入 `branch_status: handled`。
-
-**确认项**：
-- 全部测试通过
-- 无硬编码密钥或安全问题
-
-### 4. 记录验证证据
-
-验证报告必须落盘，并在 `.comet.yaml` 中记录；分支处理完成后也必须写入状态字段。不要手动设置 `verify_result: pass`，由阶段守卫 `--apply` 推进。
+**When not passing**: Report failures and classify them under Step 1b. Below the automatic retry limit, when an issue must or should be repaired, run the following command directly and invoke `/comet-build`:
 
 ```bash
-mkdir -p docs/superpowers/reports
-# 将本次验证结论写入报告文件，例如：
-# docs/superpowers/reports/YYYY-MM-DD-<change-name>-verify.md
-
-node "$COMET_STATE" set <change-name> verification_report docs/superpowers/reports/YYYY-MM-DD-<change-name>-verify.md
-node "$COMET_STATE" set <change-name> branch_status handled
+comet state transition <change-name> verify-fail
 ```
 
-## 退出条件
+**Report format**: Brief table listing 6 check results + PASS/FAIL.
 
-- 验证报告通过
-- 分支已处理
-- `.comet.yaml` 中 `verification_report` 指向已存在的验证报告文件
-- `.comet.yaml` 中 `branch_status: handled`
-- **阶段守卫**：运行 `node "$COMET_GUARD" <change-name> verify --apply`，全部 PASS 后由守卫通过 `comet-state transition verify-pass` 推进到 `phase: archive`（此步骤更新 `phase` 字段，与 `auto_transition` 无关）
+**Skipped items** (not checked in lightweight verification):
+- spec scenario coverage
+- design doc consistency deep comparison
+- code pattern consistency suggestions that do not affect correctness, security, or edge cases
+- delta spec and design doc drift detection
 
-验证和分支处理均完成后，运行阶段守卫推进 phase（此步骤与 `auto_transition` 无关）：
+### 2b. Full Verification (Large Changes)
+
+When scale assessment result is "large":
+
+**Immediately execute:** Use the Skill tool to load the `openspec-verify-change` skill. Skipping this step is prohibited.
+
+<!-- external-openspec-skill-override -->
+**External OpenSpec Skill override:** Use only its verification semantics. Replace every direct official CLI, fixed-cwd, or fixed physical OpenSpec path instruction with `comet classic openspec -- <args...>` and the resolver-returned `<classic-*>` logical roots.
+
+After the skill loads, follow its guidance to verify. Check items:
+1. All tasks.md tasks completed (`[x]`)
+2. Implementation matches `<classic-change-dir>/design.md` high-level design decisions
+3. Implementation matches Design Doc (technical design documents under `docs/superpowers/specs/`)
+4. All capability spec scenarios pass
+5. proposal.md goals are satisfied
+6. No contradictions between delta spec and design doc (if Build phase had incremental spec modifications, check if design doc has corresponding records)
+7. Associated design documents under `docs/superpowers/specs/` are locatable (file exists and is related to current change)
+
+When verification does not pass, report missing items and classify them under Step 1b. Below the automatic retry limit, when the current change can supply the missing evidence, run the following command directly and invoke `/comet-build`:
 
 ```bash
-node "$COMET_GUARD" <change-name> verify --apply
+comet state transition <change-name> verify-fail
 ```
 
-状态文件自动更新为 `phase: archive`、`verify_result: pass`、`verified_at: YYYY-MM-DD`。
+**Spec Drift Handling** (user decision point):
+- If check item 6 finds contradictions (delta spec has content but design doc does not reflect it), **pause, present the handling methods as a single-select question, and wait for the user to choose**; must not select automatically. Options:
+  - Option A: Append "Implementation Divergence" section to design doc recording deviation reason. Option A is a verify phase allowed artifact; after writing, must not re-trigger Step 1b dirty-worktree decision due to that design doc change
+  - Option B: After user selects B, run `comet state transition <change-name> verify-fail`, then invoke `/comet-build`; `/comet-build`'s Spec Incremental Update rules will load the Superpowers `brainstorming` skill to update Design Doc + delta spec
+  - Option C: Confirm deviation is acceptable, continue verification (design doc will be marked as `superseded-by-main-spec` during archiving)
 
-## 上下文压缩恢复
+### 3. Record Verification Evidence
 
-按 `comet/reference/context-recovery.md` 执行，phase 参数为 `verify`。
-
-## 自动衔接下一阶段
-
-按 `comet/reference/auto-transition.md` 执行。关键命令：
+Save the verification report and record it in `.comet.yaml`. Do not handle, merge, or discard branches in verify and do not write `branch_status: handled`: archive creates spec and metadata changes that belong in the final commit, so `/comet-archive` owns branch finishing after that commit. Do not set `verify_result: pass` manually; use the phase guard.
 
 ```bash
-node "$COMET_STATE" next <change-name>
+comet state set <change-name> verification_report docs/superpowers/reports/YYYY-MM-DD-<change-name>-verify.md
 ```
 
-- `NEXT: auto` → 调用 `SKILL` 指向的 skill 进入下一阶段
-- `NEXT: manual` → 不要调用下一 skill，按 `HINT` 提示用户手动运行 `/<SKILL>`
-- `NEXT: done` → 流程已完成，无需继续
+Use the file tool to create `docs/superpowers/reports/` and the report file; do not depend on a POSIX-only directory command.
 
-注意：无论 `NEXT` 为 `auto` 还是 `manual`，`comet-archive` 进入后必须先执行归档前最终确认阻塞点，等待用户明确选择「确认归档」后才允许运行归档脚本。不得因为验证已通过就自动归档。
+## Exit Conditions
+
+- Verification report passed
+- `verification_report` in `.comet.yaml` points to an existing verification report file
+- `branch_status` remains `pending`
+- **Phase guard**: Run `comet guard <change-name> verify --apply`; after all PASS, auto-transitions to `phase: archive` through `comet state transition verify-pass`
+
+After verification evidence is complete, run guard for auto-transition:
+
+```bash
+comet guard <change-name> verify --apply
+```
+
+State file auto-updates to `phase: archive`, `verify_result: pass`, `verified_at: YYYY-MM-DD`.
+
+## Context Compression Recovery
+
+Follow `comet/reference/context-recovery.md` with phase set to `verify`.
+
+## Automatic Handoff to Next Phase
+
+Follow `comet/reference/auto-transition.md`. Key command:
+
+```bash
+comet state next <change-name>
+```
+
+- `NEXT: auto` → invoke the skill pointed to by `SKILL` to enter the next phase
+- `NEXT: manual` → do not invoke the next skill; return control with `HINT`, end the invocation, and do not create another confirmation point
+- `NEXT: done` → workflow is complete, no further action needed
+
+Note: after `comet-archive` starts, it must first execute the final archive confirmation blocking point and wait for the user to explicitly choose "Confirm archive" before running the archive script. Must not automatically archive just because verification passed.

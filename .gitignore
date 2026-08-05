@@ -78,3 +78,10 @@ libsapjco3.*
 # OS files
 .DS_Store
 Thumbs.db
+
+# AI Tools
+.agents/skills/
+.claude/skills/
+.codex/hooks.json
+.codex/skills/
+.comet/skills/

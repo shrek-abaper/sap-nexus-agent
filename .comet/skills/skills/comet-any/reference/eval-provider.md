@@ -1,61 +1,77 @@
-# Eval Evidence 参考
+# Eval Evidence Reference
 
-## Eval 选择
+## Eval choices
 
-在任何验证动作前，必须展示：
+Before any verification action, show:
 
-- `quick` 的预计运行次数、覆盖组件和 token 消耗。
-- `full` 的预计运行次数、覆盖组件和 token 消耗。
-- `skip / quick / full eval` 三个选择。
+- `quick` estimated runs, covered components, and token workload.
+- `full` estimated runs, covered components, and token workload.
+- the three choices: `skip / quick / full eval`.
 
-skip、eval 失败或证据 hash 过期时不得进入 ready；也不得 publish 或 distribute。
+If eval is skipped, fails, or records stale-hash evidence, do not enter ready; do not publish or distribute.
 
-普通用户的验证路径保持单一：日常评估统一走 `comet eval`。`/comet-any` 可以在内部登记 eval evidence，但不要把内部登记步骤包装成面向普通用户的替代命令。对普通用户，解释时优先使用“验证”，不要把 `Publish readiness:` 当成第一层概念。
+For ordinary users, the verification path remains single-purpose: daily evaluation goes through
+`comet eval`. `/comet-any` may internally record eval evidence, but must not present the internal
+recording step as a replacement user-facing command.
+For ordinary users, prefer the word "verify" when explaining; do not surface `Publish readiness:`
+as a first-class concept.
 
-## 结果记录
+## Result recording
 
-eval evidence 必须输出结构化 JSON，至少包含：
+Eval evidence must produce structured JSON with at least:
 
-- 当前 draft hash。
-- 覆盖的 entry Skill 和 internal Node Skill。
-- `workflow-protocol.json` hash。
-- quick 或 full 的选择、token 消耗和结果摘要。
-- Bundle 编译、安全检查和 capability evidence。
+- the current draft hash.
+- covered entry Skill and internal Node Skills.
+- `workflow-protocol.json` hash.
+- quick or full choice, token workload, and result summary.
+- Bundle compile, safety check, and capability evidence.
 
-只有当前 draft hash 的 eval evidence 可以推进状态。旧 hash 证据可以保留在磁盘用于审计，但不能让当前 draft 进入 ready。
+Only current draft hash eval evidence can advance state. Stale eval evidence may remain on disk for
+audit, but cannot make the current draft ready.
 
-## 人工评审
+## Human review
 
-eval 通过后仍必须人工批准。评审摘要至少包含：
+Passing eval still requires human approval. The review summary must include at least:
 
-先运行 `comet publish review <name> --platform <reference-platform> --json`，再基于其输出展示：
+First run `comet publish review <name> --platform <reference-platform> --json`, then use its
+output to show:
 
-- Bundle 名称、版本、hash。
-- 多个 entry 与 internal Skill 列表。
-- `planHash`、`preferenceHash` 与 `reference/resolved-skills.json` 真实 Skill 证据，包括项目级偏好模式、required Skill、`sourceSummaries` 与“整理后的工作方式”摘要。
-- 推荐调用顺序与 `preferenceIndex`。
-- 偏离偏好顺序的项和原因。
-- `.comet/skill-preferences.yaml` 是否在 Factory 初始化后发生漂移；`advisory` 模式给出 warning，`strict` 模式阻塞。
-- 稳定组合 Skill Bundle 的 required capability set（必需能力集合）`skills/scripts/rules/hooks/references` 是否声明完整，且 `scripts/rules/hooks` 是否继续作为 required control plane。
-- 是否生成 `comet/skill.yaml`、`comet/guardrails.yaml`、`comet/checks.yaml` 与 `comet/eval.yaml`。
-- `hooks/*.yaml` 是否仅被当作 portable hook descriptor，等待 `comet publish distribute` 编译到目标平台。
-- 能力缺口和可执行披露。
-- eval 选择、token 消耗和结果摘要。
-- `Validate this Skill` 与下一步提示，让用户知道 readiness 为什么可发布或被阻塞。
+- Bundle name, version, and hash.
+- Multiple entry and internal Skill lists.
+- `planHash`, `preferenceHash`, and `reference/resolved-skills.json` real Skill evidence,
+  including project-level preference mode, required Skills, `sourceSummaries`, and the composed
+  workflow summary.
+- Recommended call order and `preferenceIndex`.
+- Every item that deviates from the preferred order, plus the reason.
+- Whether `.comet/skill-preferences.yaml` drifted after Factory initialization; `advisory` mode
+  warns, while `strict` mode blocks.
+- Whether the stable composed Skill Bundle required capability set
+  `skills/scripts/rules/hooks/references` is complete, and whether `scripts/rules/hooks` remain
+  the required control plane.
+- Whether `comet/skill.yaml`, `comet/guardrails.yaml`, `comet/checks.yaml`, and `comet/eval.yaml`
+  were generated.
+- Whether `hooks/*.yaml` are treated only as portable hook descriptors until
+  `comet publish distribute` compiles them for the target platform.
+- Capability gaps and executable disclosures.
+- eval choice, token workload, and result summary.
+- `Validate this Skill` and the next action so the user knows why the candidate can become ready
+  or is blocked.
 
-readiness blockers 会阻止 publish。只要存在当前 draft hash 的 eval evidence 缺失、人工 approval 缺失、required capability gap 或 executable disclosure 未确认，就必须停在评审阶段，不能继续发布。
+Readiness blockers stop publishing. If missing current draft hash eval evidence, missing human
+approval, required capability gaps, or unconfirmed executable disclosures remain, the flow must stop
+in review and cannot continue to publish.
 
-只有用户显式批准后，才能运行 `comet publish approve` 并发布。
+Only after explicit user approval may the agent run `comet publish approve` and publish.
 
-## 分发预览
+## Install preview
 
-执行真实分发前，必须先跑 preview：
+Before real distribution, preview is mandatory:
 
 ```bash
 comet publish distribute <name> --platform <id> --scope project --preview --json
 ```
 
-preview 是强制检查，不是可选附加项。它应向用户展示：
+Preview is a required check, not an optional extra. It should show:
 
 - `Install preview`
 - planned files
@@ -63,4 +79,5 @@ preview 是强制检查，不是可选附加项。它应向用户展示：
 - executable disclosures
 - `No files were written`
 
-只有当用户确认 preview 结果后，才可以移除 `--preview` 执行真实分发。
+Only after the user confirms the preview result may the Skill remove `--preview` and execute real
+distribution.

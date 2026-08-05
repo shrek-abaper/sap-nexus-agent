@@ -1,33 +1,33 @@
-# 异常调试协议
+# Debug Gate Protocol
 
-规范路径：`comet/reference/debug-gate.md`
+Canonical path: `comet/reference/debug-gate.md`
 
-本协议由 build、hotfix、tweak 等会直接修改代码的 comet 子 skill 共享。当运行程序、测试、构建或手动验证时出现崩溃、异常行为、测试失败或构建失败，必须进入异常调试协议。
+This protocol is shared by comet sub-skills that directly modify code, including build, hotfix, and tweak. Enter the Debug Gate when a crash, unexpected behavior, test failure, or build failure appears while running the program, tests, build, or manual verification.
 
-## 核心规则
+## Core Rules
 
-- 立即使用 Skill 工具加载 Superpowers `systematic-debugging` 技能
-- 在完成根因调查前，不得提出或实施源码修复
+- Immediately use the Skill tool to load the Superpowers `systematic-debugging` skill
+- Do not propose or implement source fixes before the root cause investigation is complete
 
-## 四阶段流程
+## Four-Stage Flow
 
-1. 先复现并定位根因，读取完整错误、检查近期变更、追踪数据流
-2. 若根因指向源码 bug，先补充能复现该崩溃/异常的最小失败测试，再修改源码
-3. 修复后运行该失败测试、相关测试和项目构建/验证命令，确认全部通过
-4. 将测试、源码修复和 tasks.md 勾选保留在当前 change 内；不得通过另起一个“写测试用例”的 change 来替代当前 change 的验证闭环
+1. Reproduce and locate the root cause first by reading the full error, checking recent changes, and tracing data flow
+2. If the root cause is a source bug, first add a minimal failing test that reproduces the crash or unexpected behavior, then modify the source
+3. After the fix, run that failing test, related tests, and the project's build or verification commands until all pass
+4. Keep the test, the source fix, and the tasks.md checkoff in the current change; do not replace the current change verification loop by starting a separate “write test cases” change
 
-## 多失败并发调查
+## Parallel Investigation of Multiple Failures
 
-进入四阶段流程前，先做一次失败独立性评估，决定串行还是并发调查：
+Before entering the four-stage flow, run a failure-independence assessment to decide serial vs. parallel investigation:
 
-- **不并发（维持现有串行 `systematic-debugging`）**：失败 ≤ 2 个；失败之间相关（改一个可能修好其他）；共享状态；会改动同一批文件；尚未识别出失败是否独立
-- **并发（加载 Superpowers `dispatching-parallel-agents` 技能）**：≥ 3 个失败，且来自不同问题域（不同测试文件不同根因、不同子系统独立损坏），互不依赖、互不干扰
+- **No parallelism (keep existing serial `systematic-debugging`)**: ≤ 2 failures; failures are related (fixing one might fix others); shared state; would touch the same set of files; failure independence not yet established
+- **Parallel (load the Superpowers `dispatching-parallel-agents` skill)**: ≥ 3 failures from distinct problem domains (different test files with different root causes, different subsystems broken independently), mutually independent and non-interfering
 
-当满足并发条件时：
+When parallel conditions are met:
 
-1. 立即使用 Skill 工具加载 Superpowers `dispatching-parallel-agents` 技能
-2. 按问题域为每个独立失败派发一个后台调查 agent，所有派发放在同一次回复里以并发执行；每个 agent 的 prompt 必须自包含（具体失败、错误信息、允许的调查范围、不得改动其他问题域的代码）
-3. 所有 agent 都受本协议“根因未明前不得动源码”的约束；它们只负责定位根因并返回调查结论，**不直接提交修复**
-4. 调查全部返回后，由主会话串行整合结论、串行执行修复，修复仍走当前 `review_mode` 的验证与评审闭环
+1. Immediately use the Skill tool to load the Superpowers `dispatching-parallel-agents` skill
+2. Dispatch one background investigation agent per independent failure, grouped by problem domain, with all dispatches in a single response for concurrent execution. Each agent prompt must be self-contained (specific failure, error messages, allowed investigation scope, prohibition on touching other problem domains' code)
+3. All agents remain bound by this protocol's "no source changes before the root cause is identified" constraint; they only locate the root cause and return findings — **they do not submit fixes directly**
+4. Once all investigations return, the main session serially consolidates findings and performs fixes; fixes still go through the current `review_mode` verification and review loop
 
-> 并发只用于**调查**阶段。修复始终串行，避免多个 agent 同时改同一批文件冲突——这与 `subagent-driven-development` “禁止并行派发多个实现 agent”的红线一致。
+> Parallelism applies only to **investigation**. Fixes are always serial, avoiding conflicts from multiple agents editing the same set of files at once — consistent with the `subagent-driven-development` red flag of "never dispatch multiple implementation subagents in parallel."

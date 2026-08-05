@@ -1,31 +1,41 @@
-# 用户决策点协议
+# Decision Point Protocol
 
-规范路径：`comet/reference/decision-point.md`
+Canonical path: `comet/reference/decision-point.md`
 
-本协议由所有包含用户决策点的 comet 子 skill 共享。凡标注为“阻塞点”或“用户决策点”的步骤，都必须按本协议处理。
+This protocol is shared by all comet sub-skills that contain user decision points. Any step labeled as a blocking point or user decision point must follow this protocol.
 
-## 核心规则
+## First Decide Whether User Input Is Actually Required
 
-- 决策点是阻塞点。到达决策点时必须暂停，等待用户明确选择后才能继续
-- 必须使用当前平台可用的用户输入/确认机制获取选择；Claude Code 等平台提供 `AskUserQuestion` 时，优先使用 `AskUserQuestion` 展示单选/多选选项
-- 若当前工具列表没有 `AskUserQuestion`，或第一次调用 `AskUserQuestion` 失败，则判定本会话结构化提问不可用；本会话后续决策点不得反复重试 `AskUserQuestion`，直接使用文本选项降级模式
-- 若当前平台没有结构化提问工具，则必须在对话中提出明确选项并停止流程，等待用户回复
-- 不得用推荐规则、默认值、历史偏好或“用户应该会同意”的推断代替当前确认
-- 用户明确选择前，不得写入对应状态字段、执行对应分支操作或自动继续下一阶段
+Distinguish user decisions, automatic handling, and stop conditions:
 
-## `AskUserQuestion` 优先策略
+- **User decision**: two or more valid options change scope, behavior, accepted risk, or an irreversible outcome; the user must choose
+- **Automatic handling**: exactly one safe next action remains within the request, such as repairing an objective failure, reconciling verifiable state, retrying an idempotent check, or following persisted configuration; execute and report it without manufacturing confirmation
+- **Stop condition**: a missing dependency, corrupt state, path escape, or unavailable external command leaves no valid next action; report the blocker and recovery condition without inventing choices
+- **Manual handoff**: `NEXT: manual` returns control; it is not a new user decision point. Print `HINT`, end the current invocation, and do not ask whether to continue
 
-使用结构化提问时：
+Only the first category uses this protocol. Merge adjacent choices that can be answered together, and do not re-ask persisted choices that remain valid. Do not preflight, infer, or filter an option based on whether a later tool or operation may succeed. Present every workflow-supported choice; after the user selects one, run the requested action and stop with its original error if it fails. If a field has only one workflow-valid value, explain why and apply it without creating a separate pause.
 
-- 单选决策点用 `AskUserQuestion` 的单选问题；多选决策点用多选问题
-- 选项必须携带简短标签和影响说明；推荐项只能作为说明，不能自动选择
-- 若工具调用成功，等待用户通过该问题作答；不得同时再输出一套文本选项
-- 若工具不存在、工具调用失败或宿主报错，记录“本会话结构化提问不可用”，然后进入文本选项降级模式
+## Core Rules
 
-## 最低呈现要求
+- Decision points are blocking points. Pause and wait for an explicit user choice before continuing
+- Use `AskUserQuestion` for single-select or multi-select choices when it is present; otherwise ask clear options in the conversation and wait for the reply
+- When `AskUserQuestion` cannot be used, treat structured questions as unavailable for this session; do not repeatedly retry it for later decision points, and use the text-options fallback directly
+- Never substitute recommendation rules, defaults, historical preferences, or “the user would probably agree” for current confirmation
+- Do not write state fields, execute the chosen branch, or auto-continue before the user explicitly chooses
 
-- 说明当前决策点正在决定什么
-- 给出清晰可选项；需要用户单选时，选项必须互斥且可执行
-- 文本降级模式必须明确写出“单选”或“多选”、编号选项、每项影响，并要求用户回复编号；随后停止流程，等待用户回复
-- 如有推荐，只能作为说明，不能替代用户确认
-- 用户选择后，再执行对应命令或状态更新
+## `AskUserQuestion` Priority Strategy
+
+When using structured questions:
+
+- Use a single-select `AskUserQuestion` question for single-choice decision points, and a multi-select question for multi-choice decision points
+- Each option must include a short label and impact description; recommendations may explain tradeoffs but must not auto-select
+- If the tool call succeeds, wait for the user to answer through that question; do not also print a duplicate text option list
+- If the tool is missing or the call fails, record that structured questions are unavailable for this session, then use the text-options fallback
+
+## Minimum Presentation Requirements
+
+- State what the current decision point is deciding
+- Present clear options; when the user must pick one option, keep the options mutually exclusive and actionable
+- In text-options fallback mode, explicitly state "single-select" or "multi-select", number the options, describe each option's impact, ask the user to reply with the option number(s), then stop until the user replies
+- Recommendations may explain tradeoffs, but may not replace user confirmation
+- Only execute the corresponding commands or state updates after the user chooses

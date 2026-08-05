@@ -3,24 +3,24 @@ kind: Skill
 metadata:
   name: comet-classic
   version: "1"
-  description: Comet 经典 full、hotfix、tweak 工作流的内部兼容编排
+  description: Internal compatibility orchestration for classic Comet full, hotfix, and tweak workflows
 goal:
-  statement: 在不改变用户命令面的前提下稳定推进或恢复经典 Comet Run
+  statement: Advance or restore a classic Comet Run without changing the user command surface
   inputs:
     - name: classic-state
-      description: 已校验且与 Run 投影一致的 ClassicState
+      description: Validated ClassicState consistent with the Run projection
       required: true
     - name: evidence
-      description: Classic Evidence 收集器生成的结构化证据
+      description: Structured evidence produced by the Classic Evidence collector
       required: true
   outputs:
     - name: run-state
-      description: 原子同步后的 Classic 与 Run 状态
+      description: Atomically synchronized Classic and Run state
       required: true
   success:
-    - 旧字段与 Run 字段保持一致
-    - 每个步骤只调用声明的公开 Comet Skill
-    - completed 状态通过 completion eval
+    - Legacy fields and Run fields remain consistent
+    - Every step invokes only a declared public Comet Skill
+    - The completed state passes its completion eval
 orchestration:
   mode: deterministic
   entry: full.open

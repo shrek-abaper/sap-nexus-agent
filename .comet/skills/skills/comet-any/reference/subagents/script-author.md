@@ -1,84 +1,81 @@
-# 脚本作者 subagent
+# Script Author Subagent
 
-本文件是 portable lane brief，不是 platform-native custom agent；如需 Claude Code custom agent，必须另行生成平台 agent 资源和 frontmatter。
+This file is a portable lane brief, not a platform-native custom agent. If you need a Claude Code custom agent, generate a separate platform agent resource with frontmatter.
 
-## 职责
+## Responsibilities
 
-设计候选 Skill 的脚本契约，而不是复制 Comet Classic 的脚本。脚本必须根据当前 workflow protocol、
-用户选择的阶段名和组合 Skill 的真实产物，定义自动推进、退出检查、断点恢复和证据记录。
+Design the generated Skill's script contract instead of copying Comet Classic scripts. Scripts must use the current workflow protocol, user-selected Node labels, and real composed Skill outputs to define automatic advancement, exit checks, recovery, and evidence recording.
 
-必须覆盖：
+Must cover:
 
 - `scripts/workflow-state.mjs`
 - `scripts/workflow-guard.mjs`
 - `scripts/workflow-handoff.mjs`
 
-factory 还会从同一份 `workflow-protocol.json` 确定性生成 `scripts/comet-plan.mjs`、`scripts/comet-check.mjs`、`scripts/comet-hook-guard.mjs`。不要重复设计这三个脚本；你的契约只针对 skill-core 作者与 entry 作者引用的 `workflow-*.mjs`。
+The factory also deterministically generates `scripts/comet-plan.mjs`, `scripts/comet-check.mjs`, and `scripts/comet-hook-guard.mjs` from the same `workflow-protocol.json`. Do not duplicate or redesign those three; your contract is for the `workflow-*.mjs` scripts that the Skill core author and entry author reference.
 
-## 输入
+## Inputs
 
-读取主会话提供的通用输入，尤其关注：
+Read the common input from the main session, especially:
 
 - `reference/workflow-protocol.json`
-- `plan.json` 的 `workflow.kind`、`workflow.nodes`、`engineMode`、`runnerMode`，以及规范化后的 `workflow-protocol.json`
+- `workflow.kind`, `workflow.nodes`, `engineMode`, and `runnerMode` from `plan.json`, plus the
+  derived internal `callChain` source inventory from Skill Creator metadata
 - `reference/resolved-skills.json`
-- `/comet` 定制时的 `.comet.yaml` 受保护语义；`comet-five-phase-overlay` 的主状态只来自 `openspec/changes/<name>/.comet.yaml`，不得创建 `.comet/runs/<workflow>/state.json` 作为 Comet overlay 主状态
+- Protected `.comet.yaml` semantics when users customize `/comet-classic`; `comet-five-phase-overlay` primary state comes only from `<classic-change-dir>/.comet.yaml` bound by the Classic layout resolver and must not create `.comet/runs/<workflow>/state.json` as the Comet overlay primary state.
 
-使用文件交接：主会话提供路径，不粘贴大段全文。不要读取主会话历史，也不要要求用户重新解释已经写入
-artifact 的内容。
+Use file handoff: the main session provides paths instead of pasting large bodies of text. Do not read main-session history or ask the user to restate content already written to artifacts.
 
-## 派发模板
+## Dispatch Template
 
-主会话派发时使用当前平台的 subagent 机制，形状应包含：
+Use the current platform's subagent mechanism. The shape should include:
 
 ```text
-description: "编写 <bundle-name> 的脚本契约"
-model: <必须显式指定 model>
+description: "Write the script contract for <bundle-name>"
+model: <must explicitly specify model>
 prompt:
-  你是脚本作者 subagent。
-  先读取本 brief、通用输入路径、workflow protocol 路径、resolved skills 路径和报告文件路径。
-  开始前先提出问题：如果脚本边界、Node 完成条件、状态写入或恢复语义不清楚，先返回 NEEDS_CONTEXT。
-  不要猜测或自行补全缺失协议。
-  不要调用 comet bundle、comet publish、comet skill，也不要执行候选 Skill 的脚本。
-  把完整脚本契约写入报告文件路径，并只返回 15 行以内状态摘要。
+  You are the script author subagent.
+  First read this brief, the common input path, workflow protocol path, resolved skills path, and report file path.
+  Start by asking questions: if script boundaries, Node completion conditions, state writes, or recovery semantics are unclear, return NEEDS_CONTEXT.
+  Do not guess or fill in missing protocol details.
+  Do not call comet bundle, comet publish, or comet skill, and do not execute candidate Skill scripts.
+  Write the full script contract to the report file path and return only a status summary of 15 lines or fewer.
 ```
 
-## 输出要求
+## Output Requirements
 
-返回脚本契约草稿，说明每个脚本：
+Return a script contract draft that explains, for each script:
 
-- 读取哪些状态。
-- 写入哪些状态和 evidence。
-- 对 `comet-five-phase-overlay`，如何在没有 active change 或多个 active changes 时阻塞并请用户选择。
-- 如何判断当前阶段目标是否完成。
-- 如何输出 `NEXT:`、`SKILL:` 和阻塞原因。
-- 如何在阶段未完成时继续停留，而不是强制退出。
-- 如何支持跨设备断点恢复。
+- Which state it reads.
+- Which state and evidence it writes.
+- How it decides whether the current Node goal is complete.
+- How it outputs `NEXT:`, `SKILL:`, and blocking reasons.
+- How it stays in the current Node when the Node is incomplete instead of forcing an exit.
+- How it supports cross-device recovery.
+- For `comet-five-phase-overlay`, how it blocks when there is no active change or multiple active changes and asks the user to choose.
 
-退出检查必须来自当前 workflow protocol 和组合 Skill 的目标，不得照搬 Comet Classic 脚本。
+Exit checks must come from the current workflow protocol and composed Skill goal, not copied Comet Classic scripts.
 
-## 自检
+## Self-Check
 
-返回前逐项检查：
+Before returning, check:
 
-- 每个脚本都有输入、输出、状态读写、evidence 写入和失败行为。
-- Node 完成条件来自 workflow protocol，而不是来自固定阶段名。
-- `NEXT:` 和 `SKILL:` 的输出条件可被 Skill 核心作者直接引用。
-- 跨设备恢复不依赖当前会话记忆。
-- 没有执行候选脚本，也没有写入 Bundle state。
+- Every script has inputs, outputs, state reads/writes, evidence writes, and failure behavior.
+- Node completion conditions come from the workflow protocol, not fixed Node labels.
+- `NEXT:` and `SKILL:` output conditions can be directly referenced by the Skill core author.
+- Cross-device recovery does not rely on current-session memory.
+- No candidate script was executed and no Bundle state was written.
 
-## 必须返回的 claim
+## Required Claims
 
 - `script:workflow-state`
 - `script:workflow-guard`
 - `script:workflow-handoff`
 
-缺少任一 claim 时，Skill 审查必须阻塞。
+Missing any claim must block Skill review.
 
-## 状态返回
+## Status Return
 
-状态必须是 `DONE`、`DONE_WITH_CONCERNS`、`NEEDS_CONTEXT`、`BLOCKED`。
+Status must be one of `DONE`, `DONE_WITH_CONCERNS`, `NEEDS_CONTEXT`, or `BLOCKED`.
 
-完整报告写入报告文件路径。返回给主会话的摘要只返回 15 行以内状态摘要，包含状态、报告文件路径、
-claim 列表、测试/校验说明和疑虑。若状态是 `BLOCKED` 或 `NEEDS_CONTEXT`，必须直接说明缺什么上下文、
-尝试过什么、需要主会话如何处理。
+Write the full report to the report file path. The summary returned to the main session must be 15 lines or fewer and include status, report path, claims, test/check notes, and concerns. If status is `BLOCKED` or `NEEDS_CONTEXT`, state exactly what context is missing, what was tried, and what the main session should do.

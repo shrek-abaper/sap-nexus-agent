@@ -1,100 +1,105 @@
-# Authored 区质量标尺（样例）
+# Authored Zone Quality Bar (example)
 
-这是你编写的 **Authored 区**（entry 的 `## Decision Core`、node 的 `## Guidance`）的具体质量标尺。生成器把你的 Authored 区组装到确定性 **Auto 区**（frontmatter、路由表、Entry/Exit Check、证据格式、Recovery）之上。**你只写 Authored 区**。请按本样例校准，而不是写一行套话。
+This is a concrete quality bar for the **Authored zone** you write (`## Decision Core` for the entry, `## Guidance` for nodes). The generator composes your Authored zone onto a deterministic **Auto zone** (frontmatter, route table, Entry/Exit checks, evidence format, recovery). You write ONLY the Authored zone. Calibrate against this example, not against a one-line boilerplate node.
 
-## "Auto" 与 "Authored" 的含义
+## What "Auto" vs "Authored" means
 
-- **Auto 区（模板，不要重写）**：不变的控制面。node 的 Auto 区包括 `## Node Goal`、`## Entry Check`、`## Skill Implementation`、`## Required Skill Calls`、`## Output Schemas`、`## Evidence Record`、`## Guardrails`、`## Exit Check`、`## Recovery`。entry 的 Auto 区包括 `## Workflow Nodes`、`## Skill Bindings`、`## Guardrails And Evidence`、`## Runtime And Recovery`。
-- **Authored 区（你写）**：Auto 区无法得知的领域决策。这是让 Skill "好用"而非"只是能跑"的关键。
+- **Auto zone (template, do not rewrite)**: the invariant control plane. For a node: `## Node Goal`, `## Entry Check`, `## Skill Implementation`, `## Required Skill Calls`, `## Output Schemas`, `## Evidence Record`, `## Guardrails`, `## Exit Check`, `## Recovery`. For the entry: `## Workflow Nodes`, `## Skill Bindings`, `## Guardrails And Evidence`, `## Runtime And Recovery`.
+- **Authored zone (you write)**: the domain decisions the Auto zone cannot know. This is what makes the Skill usable, not just runnable.
 
-## 样例：`substance` 节点的 Guidance 区（workflow-kernel）
+## Example: a `substance` node Guidance zone (workflow-kernel)
 
-下面是 research-writer workflow 中"Research"生产者节点的 `## Guidance` 正文。注意它是**决策内容**：前提、有序的领域步骤、超出机械 Exit Check 的完成判断、Red flags。它按名引用绑定的 Skill，但不复制其正文。
+This is the `## Guidance` body for a "Research" producer node in a research-writer workflow. Notice it is **decision content**: prerequisites, ordered domain steps, completion judgment beyond the mechanical Exit Check, and red flags. It references the bound Skill by name without copying its body.
 
 ```markdown
 ## Prerequisites
 
-- entry 的 Decision Core 已确认研究主题与范围。
-- `research-skill` 在项目 Skill 池中可解析；若缺失，先停下询问用户，不要临时替代。
+- The entry Decision Core has confirmed the research topic and scope.
+- `research-skill` is resolvable in the project Skill pool; if missing, stop and ask the user before improvising.
 
 ## Steps
 
-1. 加载 `research-skill` 并按其发现方法处理已确认主题。当项目 Skill 定义了特定来源顺序时，不要用通用网络搜索替代。
-2. 按优先级收集来源；为每个来源记录来源、日期和你要复用的论点。不通过项目可信度门槛的来源应直接剔除，而不是标注为"偏弱"。
-3. 把发现提炼到 `notes/*.md` 笔记文件——每条独立论点一份，含逐字引用与来源指针。综合写在 writer 节点，不在这里。
-4. 记录 `research.notes.v1` 的 `summary` evidence：一段提炼 + 产出的笔记数量。
+1. Load `research-skill` and follow its discovery method for the confirmed topic. Do not substitute a generic web search when the project Skill defines a specific source order.
+2. Gather sources in priority order; for each source, capture origin, date, and the claim you will reuse. Reject sources that fail the project's credibility bar rather than noting them as "weak".
+3. Distill findings into note files under `notes/*.md` — one note per distinct claim, with a verbatim quote and the source pointer. Synthesis happens in the writer node, not here.
+4. Record the `research.notes.v1` `summary` evidence with a one-paragraph distillation and the count of notes produced.
 
 ## Completion reasoning
 
-本节点完成当且仅当两条同时成立：(a) 已记录 `summary` evidence；(b) 至少一个 artifact 匹配 `notes/*.md`。不要仅仅因为步骤清单走完就退出——如果相对主题范围笔记仍偏稀疏，应继续研究而非宣布完成。Exit Check 脚本会机械地强制 artifact + evidence 要求；你的职责是判断研究是否真正充分。
+This node is complete ONLY when both hold: (a) the `summary` evidence is recorded, and (b) at least one artifact matches `notes/*.md`. Do not exit merely because the step list is exhausted — if notes are sparse relative to the topic scope, continue researching rather than declaring done. The Exit Check script enforces the artifact + evidence requirement mechanically; your job is to judge whether the research is genuinely sufficient.
 
 ## Red flags
 
-- 记录了 `summary` 却没有产出任何 `notes/*.md` 就退出（guardrail 会阻塞——不要试图绕过）。
-- 把来源原文复制进笔记却不加引用标记或来源指针。
-- 某来源仍"待核实"就推进到 Write 节点——核实属于本节点。
-- 对需要多视角的主题，仅凭单一来源就认为充分。
+- Exiting after recording `summary` but producing zero `notes/*.md` files (the guardrail will block this — do not attempt to bypass).
+- Copying source text into notes without a quote marker or source pointer.
+- Advancing to the Write node while a source is still "to be verified" — verification belongs in this node.
+- Treating a single source as sufficient for a multi-perspective topic.
 ```
 
-用 `###` 子标题，使其嵌套在 `## Guidance` 之下。上述四段（Prerequisites / Steps / Completion reasoning / Red flags）是 `substance` 节点的预期形态。
+Use `###` subsections so they nest under `## Guidance`. The four sections above (Prerequisites / Steps / Completion reasoning / Red flags) are the expected shape for a `substance` node.
 
-## 样例：entry Decision Core（workflow-entry）
+## Example: an entry Decision Core (workflow-entry)
 
-下面是 entry SKILL.md 的 `## Decision Core` 正文。entry 是**每次调用最先读取的文件**——一个薄 Decision Core（"跑 next，照做"）会让整个 Skill 感觉机械。一个富 Decision Core 是 comet 级 Skill "好用"的核心。
+This is the `## Decision Core` body for the entry SKILL.md. The entry is the **most-loaded file** — every invocation reads it first. A thin Decision Core ("run next, load what it says") makes the entire Skill feel mechanical. A rich Decision Core is what makes comet-level Skills feel intelligent.
 
-Decision Core 应建模 Auto 区不处理的三件事：(1) **语义化当前节点检测**（如何判断用户在哪个 Node，而非只看脚本输出），(2) **resume 与 drift 规则**（上下文恢复或状态与文件冲突时怎么办），(3) **决策点与 Red flags**（何时暂停等用户，以及什么是假进展）。
+The Decision Core should model three concerns that the Auto zone does NOT handle: (1) **semantic current-Node detection** (how to determine which Node the user is in, beyond script output), (2) **resume and drift rules** (what to do when context resumes or state conflicts with files), and (3) **decision points and red flags** (where to pause for the user, and what false progress looks like).
 
 ```markdown
-### 自动节点检测
+### Automatic Node Detection
 
-**Step 0：确定当前节点与意图**
+**Step 0: Determine the current Node and intent**
 
-1. 检查 workflow protocol 的有序 Node 列表。第一个未完成（无 Exit evidence 记录）的 Node 是候选当前节点。
-2. 若用户描述的工作明显属于更后面的 Node（如"验证结果"但研究尚未完成），暂停并说明：前序 Node 必须先完成。不要跳过。
-3. 若用户描述的工作属于已标记完成的更早 Node，视为纠正——重置该 Node 的完成状态并重新进入。
+1. Check the workflow protocol for the ordered Node list. The first incomplete Node (no recorded Exit evidence) is the candidate current Node.
+2. If the user's message describes work that clearly belongs to a later Node (e.g., "verify the results" when research is not complete), pause and explain: the earlier Node must finish before the later one starts. Do not skip ahead.
+3. If the user's message describes work that belongs to an earlier Node that is already marked complete, treat this as a correction — reset that Node's completion and re-enter it.
 
-**Step 1：读取 workflow 状态**
+**Step 1: Read workflow state**
 
-运行 `node "$WORKFLOW_STATE" status` 确认检测到的节点。若脚本的 `NEXT:` 输出与文件证据冲突（如脚本说 DONE 但无 artifact），以文件为准，先纠正状态再继续。
+Run `node "$WORKFLOW_STATE" status` to confirm the detected Node. If the script's `NEXT:` output conflicts with file evidence (e.g., script says DONE but no artifacts exist), trust file evidence and correct state before continuing.
 
-**Resume 规则**：
-- 每次上下文恢复，重新执行 Step 0 和 Step 1。不要信任对话历史做节点检测。
-- 若状态显示某 Node 已完成但预期 artifact 缺失，视为未完成并重新进入。
-- 若用户在某个 Node 中途恢复但话题变了，确认是继续当前 Node 还是开始新的。
+**Resume rules**:
+- On every context resume, rerun Step 0 and Step 1. Do not trust conversation history for Node detection.
+- If workflow state shows a Node as complete but its expected artifacts are missing, treat the Node as incomplete and re-enter it.
+- If the user resumes mid-Node with a different topic, confirm whether to continue the current Node or start a new one.
 
-### 决策点（必须暂停）
+### Decision Classification And Decision Points
 
-| 情况 | 处理 |
-|------|------|
-| 首次调用，无 workflow 状态 | 初始化状态，在开始第一个 Node 前与用户确认主题/范围 |
-| 用户输入在两个 Node 间有歧义 | 询问用户指哪个 Node；不要猜测 |
-| Node 需要用户确认输出才能推进 | 记录 evidence 后停下；等待明确确认 |
-| Node guard 失败且原因不明 | 展示 guard 输出，询问用户如何继续 |
+Classify before acting: a user decision has two or more valid options that change scope, behavior, accepted risk, or an irreversible outcome; a sole safe next action is automatic handling; a missing dependency, corrupt state, or guard failure with no valid continuation is a stop condition; `NEXT: manual` only returns control. Only the first category must pause.
+
+| Situation | Action |
+|-----------|--------|
+| First invocation with an unambiguous topic and scope | Initialize state automatically and enter the first Node; do not pause to approve known information |
+| Topic, scope, or target Node has two or more mutually exclusive valid interpretations | Merge them into one question and let the user choose; do not guess |
+| Node requires user approval of output before advancing | Stop after recording evidence; wait for explicit confirmation |
+| Accepting a WARNING/deviation or performing an irreversible publish has a real tradeoff | Show only currently executable options and persist the choice |
+
+When a Node guard fails, inspect evidence and perform the sole safe repair first. If a missing dependency or corrupt state prevents progress, report the stop condition and recovery requirement. Escalate to the decision table only when multiple valid recovery options would change scope or risk.
 
 ### Red Flags
 
-| Agent 想法 | 实际风险 |
-|-----------|---------|
-| "用户提到了主题，所以研究隐式确认" | 提到 ≠ 确认。在第一个 Node 边界暂停并确认范围。 |
-| "脚本返回 NEXT: auto，应该立即加载下一个 Skill" | `NEXT: auto` 表示 Node 完成，不是跳过确认。检查下一个 Node 是否有决策点。 |
-| "看起来和上次一样的话题，从上次断点继续" | 始终重新读取状态。对话记忆在上下文压缩后不可靠。 |
-| "Exit Check 通过了，所以工作够好了" | Exit Check 是机械的。你的职责是判断检查之外的质量——稀疏笔记、浅层分析、缺失视角，脚本抓不到。 |
+| Agent Thought | Actual Risk |
+|--------------|-------------|
+| "Every first invocation needs another confirmation" | Clear input does not need duplicate approval; ask only when mutually exclusive interpretations still change scope. |
+| "The script returned NEXT: auto, so I should immediately load the next Skill" | `NEXT: auto` means the Node is done, not that you should skip confirmation. Check if the next Node has a decision point. |
+| "The guard failed, so ask the user what to do" | Diagnose automatically and apply the sole safe repair first; if no valid action exists, report a stop condition instead of inventing options. |
+| "This looks like the same topic as last time, resume from where we left off" | Always re-read state. Conversation memory is unreliable after context compaction. |
+| "The exit check passed, so the work is good enough" | Exit checks are mechanical. Your job is to judge quality beyond the check — sparse notes, shallow analysis, or missing perspectives are not caught by scripts. |
 ```
 
-此样例以精简形式建模了 comet 的 Decision Core：语义检测（Step 0 读 Node 顺序，非只看脚本输出）、状态忠实（文件优先于过期状态）、resume 规则（每次恢复重新检测）、阻塞决策点（显式表格）、Red flags（"想法 → 风险"模式，抓 agent 自欺）。
+This example models comet's Decision Core in miniature: semantic detection (Step 0 reads Node order, not just script output), state-fidelity (trust files over stale state), resume rules (re-detect on every resume), blocking decision points (explicit table), and red flags (the "thought → risk" pattern that catches agent self-deception).
 
-## substance 与 delegates
+## substance vs delegates
 
-- **substance** 节点（workflow-kernel）：上面的样例就是标尺。必须有富 Guidance；缺失时该节点渲染为 `AUTHORING PENDING`，Bundle 不得 ready。
-- **delegates** 节点（comet-five-phase-overlay，委托给已安装的富 Skill）：富执行内容由被委托 Skill 承载，**不要复制**。但如果该节点声明了 **Required Skill Calls**（如 execute 节点要求 `elementui`），请写一段聚焦的整合说明——在被委托流程的什么时机必须加载该 Skill、它补充什么 evidence——而不是泛泛一句"加载 X"。例如要求 `elementui` 的 delegates execute 节点：
+- **substance** node (workflow-kernel): the example above is the bar. Rich Guidance is mandatory; without it the node renders `AUTHORING PENDING` and the Bundle cannot become ready.
+- **delegates** node (comet-five-phase-overlay, delegating to an installed rich Skill): the delegate carries the execution richness, so do NOT duplicate it. But if the node declares **Required Skill Calls** (e.g. require `elementui` at the execute node), author a focused integration note — when, during the delegate's flow, the required Skill must be loaded and what evidence it adds — rather than a generic "load X" line. Example for a delegates execute node requiring `elementui`:
 
 ```markdown
-本节点用 `comet-build` 执行。在其流程之外，每当改动涉及组件库时加载 `elementui`，并在记录 `required-skill:execute.elementui` 检查前确认改动使用了项目认可的组件。不要重复实现 `comet-build` 已做的事。
+This node runs `comet-build` for execution. In addition to that flow, load `elementui` whenever a change touches the component library, and confirm the change uses project-approved components before recording the `required-skill:execute.elementui` check. Do not re-implement what `comet-build` already does.
 ```
 
-## 反模式（不要写）
+## Anti-patterns (do not write)
 
-- 一行式 Guidance，如"运行本节点并记录 evidence。"——Auto 区已隐含此意，毫无增量。
-- 整段复制被绑定 Skill 的正文。
-- 重述路由表或 Output Schema 列表（Auto 区已有）。
-- substance 节点没有 `### Red flags`——Red flags 是大部分真实价值所在。
+- A one-line Guidance like "Run this node and record evidence." — that is what the Auto zone already implies; it adds nothing.
+- Copying the bound Skill's body verbatim.
+- Restating the route table or the Output Schema list (already in the Auto zone).
+- No `### Red flags` section on a substance node — red flags are where most of the real-world value lives.

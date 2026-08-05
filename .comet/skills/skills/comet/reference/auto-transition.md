@@ -1,27 +1,27 @@
-# 自动衔接下一阶段协议
+# Automatic Handoff to Next Phase Protocol
 
-规范路径：`comet/reference/auto-transition.md`
+Canonical path: `comet/reference/auto-transition.md`
 
-本协议由所有 comet 子 skill 共享，定义阶段守卫推进后的自动衔接规则。
+This protocol is shared by all comet sub-skills. It defines the automatic handoff rules after phase guard advancement.
 
-## 术语区分
+## Terminology Distinction
 
-「阶段守卫推进」由 guard `--apply` 完成，更新 `.comet.yaml` 的 `phase` 字段——这一步**始终发生**，与 `auto_transition` 无关。本协议的「自动衔接」只决定**是否自动调用下一个 skill**，由 `auto_transition` 控制。
+"Phase advancement" is performed by guard `--apply`, which updates the `phase` field in `.comet.yaml` — this **always happens** and is independent of `auto_transition`. This protocol's "automatic handoff" only determines **whether to automatically invoke the next skill**, controlled by `auto_transition`.
 
-## 执行方式
+## Execution
 
-退出条件满足且阶段守卫推进 phase 后，运行：
+After exit conditions are met and the phase guard has advanced phase, run:
 
 ```bash
-node "$COMET_STATE" next <change-name>
+comet state next <change-name>
 ```
 
-脚本根据 `phase`、`workflow`、`auto_transition` 输出确定性的下一步：
+The script outputs a deterministic next step based on `phase`, `workflow`, and `auto_transition`:
 
-- `NEXT: auto` → 调用 `SKILL` 指向的 skill 进入下一阶段
-- `NEXT: manual` → 不要调用下一 skill，按 `HINT` 提示用户手动运行 `/<SKILL>`
-- `NEXT: done` → 流程已完成，无需继续
+- `NEXT: auto` → invoke the skill pointed to by `SKILL` to enter the next phase
+- `NEXT: manual` → do not invoke the next skill; prompt user to manually run `/<SKILL>` per `HINT`
+- `NEXT: done` → workflow is complete, no further action needed
 
-## 预设路由
+## Preset Routing
 
-`workflow: hotfix` 时，`phase: build` 返回 `comet-hotfix`；`workflow: tweak` 时返回 `comet-tweak`。其余 phase（`verify`、`archive`）按标准 Skill 名称返回（`comet-verify`、`comet-archive`），不受 workflow 类型影响。预设 Skill 内部的"连续执行模式"可能覆盖 `auto_transition` 行为——详见对应预设的 `<IMPORTANT>` 块。
+When `workflow: hotfix`, `phase: build` returns `comet-hotfix`; when `workflow: tweak`, it returns `comet-tweak`. All other phases (`verify`, `archive`) return standard skill names (`comet-verify`, `comet-archive`) regardless of workflow type. The "continuous execution mode" within preset skills may override `auto_transition` behavior — see the corresponding preset's `<IMPORTANT>` block.
