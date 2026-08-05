@@ -4,6 +4,9 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { JsonlRunStore } from "../durable/jsonl-run-store";
+import { ProjectionInputAssembler } from "../projection/assembler";
+import { createMaterialSupplyFactBuilderRegistry } from "../projection/fact-builder";
+import { createOutputProjectionRegistry } from "../projection/material-supply-snapshot";
 import type { AgentRunEvent } from "../run-event-schema";
 import type { AgentRunRecord } from "../durable/types";
 import { FakeGateway } from "./fake-gateway";
@@ -103,6 +106,52 @@ describe("PlanExecutor", () => {
     // Both nodes passed through validate -> execute
     expect(gateway.validateCalls).toHaveLength(2);
     expect(gateway.executeCalls).toHaveLength(2);
+  });
+
+  it("evaluates a dual READ plan through assembler, registry, and projection", async () => {
+    const runId = "run-projection-eval";
+    const store = new JsonlRunStore(dir, "worker-A");
+    await store.save(runId, seed(runId));
+    const gateway = new FakeGateway();
+    const dataAsOf = "2026-08-04T00:00:00Z";
+    gateway.setExecuteResult("MM.Inventory.GetAvailability", {
+      success: true,
+      traceId: "gw-inventory",
+      data: { availableQuantity: 7, unit: "EA", dataAsOf },
+    });
+    gateway.setExecuteResult("MM.PurchaseOrder.GetList", {
+      success: true,
+      traceId: "gw-po",
+      data: {
+        purchaseOrders: [
+          {
+            purchaseOrder: "4500001",
+            purchaseOrderItem: "10",
+            orderQuantity: 2,
+            purchaseOrderUnit: "EA",
+          },
+        ],
+        dataAsOf,
+      },
+    });
+    const executor = new PlanExecutor(store, gateway, "worker-A");
+
+    const result = await executor.execute(dualReadGraph(), runId, SNAP);
+    const projectionInput = new ProjectionInputAssembler().assemble(
+      result,
+      createMaterialSupplyFactBuilderRegistry(),
+    );
+    const projection = createOutputProjectionRegistry().resolve(
+      "material-supply-snapshot",
+      "1.0.0",
+    );
+    const snapshot = projection.project(projectionInput);
+
+    expect(snapshot.completeness).toBe("complete");
+    expect(snapshot.limitations).toEqual([]);
+    expect(new Set(snapshot.lineage.map((item) => item.factId))).toEqual(
+      new Set(snapshot.facts.map((fact) => fact.factId)),
+    );
   });
 
   it("exposes succeeded node data without changing legacy result semantics", async () => {

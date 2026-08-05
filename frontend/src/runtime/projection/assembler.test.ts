@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { NodeState, type NodeFactRecord, type PlanExecutorResult } from "../plan-executor/types";
 import { ProjectionInputAssembler } from "./assembler";
 import { FactBuilderRegistry, createMaterialSupplyFactBuilderRegistry } from "./fact-builder";
+import { createOutputProjectionRegistry } from "./material-supply-snapshot";
 
 const dataAsOf = "2026-08-04T00:00:00Z";
 const nodeExecutedAt = "2026-08-04T00:00:01Z";
@@ -239,5 +240,28 @@ describe("ProjectionInputAssembler", () => {
 
   it("keeps the assembler boundary limited to executor result and builder registry", () => {
     expect(ProjectionInputAssembler.prototype.assemble.length).toBe(2);
+  });
+
+  it("keeps raw Gateway and model inputs outside the projection boundary", () => {
+    const assembled = new ProjectionInputAssembler().assemble(
+      result(),
+      createMaterialSupplyFactBuilderRegistry(),
+    );
+    const { planExecutionRecord, facts } = assembled;
+    const projection = createOutputProjectionRegistry().resolve(
+      "material-supply-snapshot",
+      "1.0.0",
+    );
+
+    expect(projection.project({ planExecutionRecord, facts }).snapshotId).toBe("snapshot-1");
+
+    if (false) {
+      // @ts-expect-error raw payload is outside the projection boundary
+      projection.project({ planExecutionRecord, facts, rawGatewayPayload: {} });
+      // @ts-expect-error conversation text is outside the projection boundary
+      projection.project({ planExecutionRecord, facts, conversationText: "raw user input" });
+      // @ts-expect-error model output is outside the projection boundary
+      projection.project({ planExecutionRecord, facts, modelOutput: {} });
+    }
   });
 });

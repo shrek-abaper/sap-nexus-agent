@@ -314,4 +314,84 @@ describe("materialSupplySnapshotProjection", () => {
     }));
     expect(snapshot.completeness).toBe("incomplete");
   });
+
+  it.each([
+    {
+      label: "missing required fact is incomplete",
+      facts: [purchaseOrderFact()],
+      planOverrides: {},
+      expectedCompleteness: "incomplete",
+      expectedFactIds: ["po-1"],
+      expectedLimitationKinds: [],
+    },
+    {
+      label: "missing optional fact is partial",
+      facts: [inventoryFact()],
+      planOverrides: {},
+      expectedCompleteness: "partial",
+      expectedFactIds: ["inventory-1"],
+      expectedLimitationKinds: ["missing_optional"],
+    },
+    {
+      label: "freshness mismatch is partial",
+      facts: [
+        inventoryFact({ asOf: "2026-08-04T00:30:00+01:00" }),
+        purchaseOrderFact(),
+      ],
+      planOverrides: { asOf: "2026-08-03T23:30:00.000Z" },
+      expectedCompleteness: "partial",
+      expectedFactIds: ["inventory-1", "po-1"],
+      expectedLimitationKinds: ["freshness_mismatch"],
+    },
+    {
+      label: "required unit incompatibility is incomplete",
+      facts: [
+        inventoryFact({ factId: "inventory-ea", unit: "EA" }),
+        inventoryFact({ factId: "inventory-kg", unit: "KG" }),
+        purchaseOrderFact(),
+      ],
+      planOverrides: {},
+      expectedCompleteness: "incomplete",
+      expectedFactIds: ["inventory-ea", "inventory-kg", "po-1"],
+      expectedLimitationKinds: ["unit_incompatibility"],
+    },
+    {
+      label: "equal duplicate facts are deduplicated",
+      facts: [
+        inventoryFact({ factId: "inventory-z" }),
+        inventoryFact({ factId: "inventory-a" }),
+        purchaseOrderFact(),
+      ],
+      planOverrides: {},
+      expectedCompleteness: "complete",
+      expectedFactIds: ["inventory-a", "po-1"],
+      expectedLimitationKinds: [],
+    },
+    {
+      label: "required conflicting facts are incomplete",
+      facts: [
+        inventoryFact({ factId: "inventory-z", value: 8 }),
+        inventoryFact({ factId: "inventory-a", value: 7 }),
+        purchaseOrderFact(),
+      ],
+      planOverrides: {},
+      expectedCompleteness: "incomplete",
+      expectedFactIds: ["inventory-a", "inventory-z", "po-1"],
+      expectedLimitationKinds: ["conflict"],
+    },
+  ])("evaluates bad-case matrix: $label", ({
+    facts,
+    planOverrides,
+    expectedCompleteness,
+    expectedFactIds,
+    expectedLimitationKinds,
+  }) => {
+    const snapshot = materialSupplySnapshotProjection.project(input(facts, planOverrides));
+
+    expect(snapshot.completeness).toBe(expectedCompleteness);
+    expect(snapshot.facts.map((fact) => fact.factId)).toEqual(expectedFactIds);
+    expect(snapshot.limitations.map((limitation) => limitation.kind)).toEqual(
+      expectedLimitationKinds,
+    );
+  });
 });
