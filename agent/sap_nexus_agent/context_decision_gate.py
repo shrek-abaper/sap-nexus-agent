@@ -2,18 +2,103 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import hashlib
+import hmac
+import json
+import secrets
+from dataclasses import asdict, dataclass, field
 from types import MappingProxyType
-from typing import Literal, Mapping
+from typing import Iterable, Literal, Mapping
 
 from sap_nexus_agent.context_reducer import ContextResolution
 from sap_nexus_agent.governed_context import VisibleCapabilitySet
 from sap_nexus_agent.match_decision import MatchDecision, MatchedIntent
+from sap_nexus_agent.planner.capability_card import CapabilityCard
+from sap_nexus_agent.semantic_planning import SemanticSourceDocuments
 
 CandidatePurpose = Literal["AMBIGUITY", "MULTI_GOAL"]
 _DECISION_TYPES = frozenset(
     {"SELECT", "CLARIFY", "REJECT", "SHOW_OPTIONS", "ESCALATE_TO_PLANNER"}
 )
+_EXECUTION_PROJECTION_KEY = secrets.token_bytes(32)
+
+
+@dataclass(frozen=True)
+class ExecutionVisibilityProjection:
+    """Server-issued proof of execution eligibility for one governed view."""
+
+    capability_ids: frozenset[str]
+    snapshot_id: str
+    principal_id: str
+    visible_context_binding: str
+    _proof: bytes = field(repr=False)
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "capability_ids", frozenset(self.capability_ids))
+
+
+def _build_execution_visibility_projection(
+    *,
+    cards: Iterable[CapabilityCard],
+    visible: VisibleCapabilitySet,
+    current_snapshot_id: str,
+    sources: SemanticSourceDocuments,
+) -> ExecutionVisibilityProjection:
+    """Issue a projection only from current Registry and governed card facts."""
+    raw_capabilities = _unique_registry_index(
+        sources.capabilities.get("capabilities", ()), "capabilityId"
+    )
+    bindings = _unique_registry_index(
+        sources.executor_bindings.get("bindings", ()), "bindingId"
+    )
+
+    from sap_nexus_agent.visibility import filter_visible
+
+    execution_cards = _unique_card_index(filter_visible(list(cards), for_execution=True))
+    visible_cards = _unique_card_index(visible.cards)
+    eligible_ids: set[str] = set()
+    if visible.snapshot_id == current_snapshot_id:
+        for capability_id, card in execution_cards.items():
+            if (
+                visible_cards.get(capability_id) != card
+                or card.registry_snapshot_id != current_snapshot_id
+                or card.governance.requires_approval
+            ):
+                continue
+            capability = raw_capabilities.get(capability_id)
+            if not isinstance(capability, Mapping) or capability.get("status") != "active":
+                continue
+            executor_binding = capability.get("executorBinding")
+            if not isinstance(executor_binding, Mapping):
+                continue
+            binding_id = executor_binding.get("bindingId")
+            binding = bindings.get(binding_id)
+            if (
+                not isinstance(binding_id, str)
+                or not binding_id
+                or not isinstance(binding, Mapping)
+                or executor_binding.get("type") != binding.get("type")
+            ):
+                continue
+            constraints = binding.get("constraints")
+            if isinstance(constraints, Mapping) and constraints.get("sideEffect") == "none":
+                eligible_ids.add(capability_id)
+
+    capability_ids = frozenset(eligible_ids)
+    visible_context_binding = _visible_context_binding(visible)
+    proof = _execution_projection_proof(
+        capability_ids,
+        current_snapshot_id,
+        visible.principal_id,
+        visible_context_binding,
+    )
+    return ExecutionVisibilityProjection(
+        capability_ids=capability_ids,
+        snapshot_id=current_snapshot_id,
+        principal_id=visible.principal_id,
+        visible_context_binding=visible_context_binding,
+        _proof=proof,
+    )
 
 
 @dataclass(frozen=True)
@@ -102,21 +187,21 @@ def decide_read_context(
     visible: VisibleCapabilitySet,
     current_snapshot_id: str,
     capability_candidates: ReadCapabilityCandidates | None = None,
-    execution_visible_capability_ids: frozenset[str] | None = None,
+    execution_visibility: ExecutionVisibilityProjection | None = None,
 ) -> ContextDecisionResult:
     """Map one reduced frame to a closed-set READ decision without side effects."""
     report = _resolution_report(resolution)
     if not current_snapshot_id or visible.snapshot_id != current_snapshot_id:
         return _reject(report, "CONTEXT_SNAPSHOT_DRIFT", "当前 Registry 快照不匹配。")
-    executable_ids = (
-        execution_visible_capability_ids
-        if execution_visible_capability_ids is not None
-        else frozenset(
-            card.capability_id
-            for card in visible.cards
-            if card.visibility == "VISIBLE_EXECUTION"
-        )
+    executable_ids = _validated_execution_ids(
+        execution_visibility, visible, current_snapshot_id
     )
+    if executable_ids is None:
+        return _reject(
+            report,
+            "EXECUTION_VISIBILITY_INVALID",
+            "READ 执行可见性投影无效或不属于当前受信上下文。",
+        )
 
     candidate_decision = _candidate_decision(
         capability_candidates, visible, current_snapshot_id, report, executable_ids
@@ -238,6 +323,125 @@ def _is_current_executable_read(
         and not card.governance.requires_approval
         and card.governance.data_classification == "internal"
     )
+
+
+def _projection_allows_execution(
+    projection: ExecutionVisibilityProjection,
+    *,
+    visible: VisibleCapabilitySet,
+    current_snapshot_id: str,
+    capability_id: str,
+) -> bool:
+    executable_ids = _validated_execution_ids(
+        projection, visible, current_snapshot_id
+    )
+    return executable_ids is not None and capability_id in executable_ids
+
+
+def _validated_execution_ids(
+    projection: ExecutionVisibilityProjection | None,
+    visible: VisibleCapabilitySet,
+    current_snapshot_id: str,
+) -> frozenset[str] | None:
+    if projection is None:
+        return frozenset(
+            card.capability_id
+            for card in visible.cards
+            if card.visibility == "VISIBLE_EXECUTION"
+        )
+    if not isinstance(projection, ExecutionVisibilityProjection):
+        return None
+    try:
+        visible_context_binding = _visible_context_binding(visible)
+        expected_proof = _execution_projection_proof(
+            projection.capability_ids,
+            projection.snapshot_id,
+            projection.principal_id,
+            projection.visible_context_binding,
+        )
+    except (AttributeError, TypeError, ValueError):
+        return None
+    if (
+        projection.snapshot_id != current_snapshot_id
+        or projection.principal_id != visible.principal_id
+        or projection.visible_context_binding != visible_context_binding
+        or not isinstance(projection._proof, bytes)
+        or not hmac.compare_digest(projection._proof, expected_proof)
+    ):
+        return None
+    for capability_id in projection.capability_ids:
+        matches = [card for card in visible.cards if card.capability_id == capability_id]
+        if len(matches) != 1 or not _is_current_executable_read(
+            matches[0], current_snapshot_id, projection.capability_ids
+        ):
+            return None
+    return projection.capability_ids
+
+
+def _unique_registry_index(
+    values: object, identity_field: str
+) -> dict[str, Mapping[str, object]]:
+    if not isinstance(values, (tuple, list)):
+        return {}
+    index: dict[str, Mapping[str, object]] = {}
+    duplicates: set[str] = set()
+    for value in values:
+        if not isinstance(value, Mapping):
+            continue
+        identity = value.get(identity_field)
+        if not isinstance(identity, str) or not identity:
+            continue
+        if identity in index or identity in duplicates:
+            index.pop(identity, None)
+            duplicates.add(identity)
+            continue
+        index[identity] = value
+    return index
+
+
+def _unique_card_index(cards: Iterable[CapabilityCard]) -> dict[str, CapabilityCard]:
+    index: dict[str, CapabilityCard] = {}
+    duplicates: set[str] = set()
+    for card in cards:
+        capability_id = card.capability_id
+        if capability_id in index or capability_id in duplicates:
+            index.pop(capability_id, None)
+            duplicates.add(capability_id)
+            continue
+        index[capability_id] = card
+    return index
+
+
+def _visible_context_binding(visible: VisibleCapabilitySet) -> str:
+    payload = {
+        "cards": [asdict(card) for card in visible.cards],
+        "principalId": visible.principal_id,
+        "snapshotId": visible.snapshot_id,
+    }
+    canonical = json.dumps(
+        payload, ensure_ascii=True, separators=(",", ":"), sort_keys=True
+    ).encode("utf-8")
+    return "sha256:" + hashlib.sha256(canonical).hexdigest()
+
+
+def _execution_projection_proof(
+    capability_ids: frozenset[str],
+    snapshot_id: str,
+    principal_id: str,
+    visible_context_binding: str,
+) -> bytes:
+    payload = json.dumps(
+        {
+            "capabilityIds": sorted(capability_ids),
+            "principalId": principal_id,
+            "snapshotId": snapshot_id,
+            "visibleContextBinding": visible_context_binding,
+        },
+        ensure_ascii=True,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode("utf-8")
+    return hmac.digest(_EXECUTION_PROJECTION_KEY, payload, "sha256")
 
 
 def _clarification_fields(inputs, slots) -> list[str]:

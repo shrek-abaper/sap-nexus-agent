@@ -12,9 +12,12 @@ from sap_nexus_agent.planner.capability_card import (
 from sap_nexus_agent.read_context import ConversationReadState, ReadContextFrame, SlotBinding
 
 from sap_nexus_agent.context_decision_gate import (
+    ExecutionVisibilityProjection,
     ReadCapabilityCandidates,
+    _build_execution_visibility_projection,
     decide_read_context,
 )
+from sap_nexus_agent.semantic_planning import SemanticSourceDocuments
 
 
 INVENTORY_ID = "MM.Inventory.GetAvailability"
@@ -89,6 +92,45 @@ def _candidates(*capability_ids: str, purpose: str = "AMBIGUITY") -> ReadCapabil
     )
 
 
+def _sources(
+    *,
+    capabilities: tuple[dict[str, object], ...] | None = None,
+    bindings: tuple[dict[str, object], ...] | None = None,
+) -> SemanticSourceDocuments:
+    capability = {
+        "capabilityId": INVENTORY_ID,
+        "status": "active",
+        "executorBinding": {
+            "type": "JCO_RFC",
+            "bindingId": "inventory-binding",
+        },
+    }
+    binding = {
+        "bindingId": "inventory-binding",
+        "type": "JCO_RFC",
+        "constraints": {"sideEffect": "none"},
+    }
+    return SemanticSourceDocuments(
+        capabilities={"capabilities": capabilities or (capability,)},
+        executor_bindings={"bindings": bindings or (binding,)},
+        fact_types={},
+        relations={},
+    )
+
+
+def _production_projection(
+    visible: VisibleCapabilitySet,
+    *,
+    sources: SemanticSourceDocuments | None = None,
+) -> ExecutionVisibilityProjection:
+    return _build_execution_visibility_projection(
+        cards=visible.cards,
+        visible=visible,
+        current_snapshot_id=SNAPSHOT_ID,
+        sources=sources or _sources(),
+    )
+
+
 @pytest.mark.parametrize("status", ["COLLECTING", "CONFLICTED", "STALE"])
 def test_non_ready_frame_cannot_select(status: str) -> None:
     result = decide_read_context(
@@ -146,6 +188,251 @@ def test_one_current_visible_read_candidate_preserves_single_frame_selection() -
     )
 
     assert result.decision.decision_type == "SELECT"
+
+
+def test_valid_production_projection_can_prove_a_bound_dry_run_card() -> None:
+    visible = _visible()
+    visible = dataclasses.replace(
+        visible,
+        cards=(dataclasses.replace(visible.cards[0], visibility="VISIBLE_DRY_RUN"),),
+    )
+
+    result = decide_read_context(
+        _resolution(),
+        visible=visible,
+        current_snapshot_id=SNAPSHOT_ID,
+        capability_candidates=_candidates(INVENTORY_ID),
+        execution_visibility=_production_projection(visible),
+    )
+
+    assert result.decision.decision_type == "SELECT"
+
+
+def test_execution_projection_with_changed_snapshot_fails_closed() -> None:
+    visible = dataclasses.replace(
+        _visible(),
+        cards=(dataclasses.replace(_visible().cards[0], visibility="VISIBLE_DRY_RUN"),),
+    )
+    projection = dataclasses.replace(
+        _production_projection(visible), snapshot_id="sha256:forged"
+    )
+
+    result = decide_read_context(
+        _resolution(),
+        visible=visible,
+        current_snapshot_id=SNAPSHOT_ID,
+        capability_candidates=_candidates(INVENTORY_ID),
+        execution_visibility=projection,
+    )
+
+    assert result.decision.decision_type == "REJECT"
+    assert result.call_plan_parameters is None
+
+
+def test_execution_projection_cannot_cross_visible_contexts() -> None:
+    visible = dataclasses.replace(
+        _visible(),
+        cards=(dataclasses.replace(_visible().cards[0], visibility="VISIBLE_DRY_RUN"),),
+    )
+    projection = _production_projection(visible)
+    other_visible = dataclasses.replace(visible, principal_id="user-2")
+
+    result = decide_read_context(
+        _resolution(),
+        visible=other_visible,
+        current_snapshot_id=SNAPSHOT_ID,
+        capability_candidates=_candidates(INVENTORY_ID),
+        execution_visibility=projection,
+    )
+
+    assert result.decision.decision_type == "REJECT"
+    assert result.call_plan_parameters is None
+
+
+def test_execution_projection_cannot_be_expanded_with_unproven_ids() -> None:
+    visible = _visible()
+    purchase_orders = dataclasses.replace(
+        visible.cards[0],
+        capability_id="MM.PurchaseOrder.GetList",
+        visibility="VISIBLE_DRY_RUN",
+    )
+    visible = dataclasses.replace(
+        visible,
+        cards=(
+            dataclasses.replace(visible.cards[0], visibility="VISIBLE_DRY_RUN"),
+            purchase_orders,
+        ),
+    )
+    projection = dataclasses.replace(
+        _production_projection(visible),
+        capability_ids=frozenset({INVENTORY_ID, "MM.PurchaseOrder.GetList"}),
+    )
+
+    result = decide_read_context(
+        _resolution(),
+        visible=visible,
+        current_snapshot_id=SNAPSHOT_ID,
+        capability_candidates=_candidates(INVENTORY_ID, "MM.PurchaseOrder.GetList"),
+        execution_visibility=projection,
+    )
+
+    assert result.decision.decision_type == "REJECT"
+    assert result.call_plan_parameters is None
+
+
+def test_raw_execution_id_set_is_not_an_authority_override() -> None:
+    visible = _visible()
+    visible = dataclasses.replace(
+        visible,
+        cards=(dataclasses.replace(visible.cards[0], visibility="VISIBLE_DRY_RUN"),),
+    )
+
+    result = decide_read_context(
+        _resolution(),
+        visible=visible,
+        current_snapshot_id=SNAPSHOT_ID,
+        capability_candidates=_candidates(INVENTORY_ID),
+        execution_visibility=frozenset({INVENTORY_ID}),
+    )
+
+    assert result.decision.decision_type == "REJECT"
+    assert result.call_plan_parameters is None
+
+
+def test_malformed_typed_projection_fails_closed() -> None:
+    visible = _visible()
+    visible = dataclasses.replace(
+        visible,
+        cards=(dataclasses.replace(visible.cards[0], visibility="VISIBLE_DRY_RUN"),),
+    )
+    forged = dataclasses.replace(
+        _production_projection(visible),
+        _proof="request-controlled",  # type: ignore[arg-type]
+    )
+
+    result = decide_read_context(
+        _resolution(),
+        visible=visible,
+        current_snapshot_id=SNAPSHOT_ID,
+        capability_candidates=_candidates(INVENTORY_ID),
+        execution_visibility=forged,
+    )
+
+    assert result.decision.decision_type == "REJECT"
+    assert result.call_plan_parameters is None
+
+
+@pytest.mark.parametrize(
+    "duplicate",
+    [
+        {
+            "bindingId": "inventory-binding",
+            "type": "JCO_RFC",
+            "constraints": {"sideEffect": "sap_write"},
+        },
+        {
+            "bindingId": "inventory-binding",
+            "type": "ODATA",
+            "constraints": {"sideEffect": "none"},
+        },
+    ],
+)
+@pytest.mark.parametrize("reverse", [False, True])
+def test_duplicate_binding_ids_never_grant_shadow_selection(
+    duplicate: dict[str, object], reverse: bool
+) -> None:
+    visible = _visible()
+    visible = dataclasses.replace(
+        visible,
+        cards=(dataclasses.replace(visible.cards[0], visibility="VISIBLE_DRY_RUN"),),
+    )
+    read_binding = {
+        "bindingId": "inventory-binding",
+        "type": "JCO_RFC",
+        "constraints": {"sideEffect": "none"},
+    }
+    bindings = (duplicate, read_binding) if reverse else (read_binding, duplicate)
+
+    result = decide_read_context(
+        _resolution(),
+        visible=visible,
+        current_snapshot_id=SNAPSHOT_ID,
+        capability_candidates=_candidates(INVENTORY_ID),
+        execution_visibility=_production_projection(
+            visible, sources=_sources(bindings=bindings)
+        ),
+    )
+
+    assert result.decision.decision_type == "REJECT"
+    assert result.call_plan_parameters is None
+
+
+@pytest.mark.parametrize("reverse", [False, True])
+def test_duplicate_capability_ids_never_grant_shadow_options(reverse: bool) -> None:
+    visible = _visible()
+    purchase_orders = dataclasses.replace(
+        visible.cards[0],
+        capability_id="MM.PurchaseOrder.GetList",
+        visibility="VISIBLE_DRY_RUN",
+    )
+    visible = dataclasses.replace(
+        visible,
+        cards=(
+            dataclasses.replace(visible.cards[0], visibility="VISIBLE_DRY_RUN"),
+            purchase_orders,
+        ),
+    )
+    inventory = {
+        "capabilityId": INVENTORY_ID,
+        "status": "active",
+        "executorBinding": {"type": "JCO_RFC", "bindingId": "inventory-binding"},
+    }
+    duplicate = {
+        "capabilityId": INVENTORY_ID,
+        "status": "active",
+        "executorBinding": {"type": "ODATA", "bindingId": "other-binding"},
+    }
+    purchase_order = {
+        "capabilityId": "MM.PurchaseOrder.GetList",
+        "status": "active",
+        "executorBinding": {"type": "JCO_RFC", "bindingId": "po-binding"},
+    }
+    capabilities = (
+        (duplicate, inventory, purchase_order)
+        if reverse
+        else (inventory, duplicate, purchase_order)
+    )
+    bindings = (
+        {
+            "bindingId": "inventory-binding",
+            "type": "JCO_RFC",
+            "constraints": {"sideEffect": "none"},
+        },
+        {
+            "bindingId": "other-binding",
+            "type": "ODATA",
+            "constraints": {"sideEffect": "none"},
+        },
+        {
+            "bindingId": "po-binding",
+            "type": "JCO_RFC",
+            "constraints": {"sideEffect": "none"},
+        },
+    )
+
+    result = decide_read_context(
+        _resolution(),
+        visible=visible,
+        current_snapshot_id=SNAPSHOT_ID,
+        capability_candidates=_candidates(INVENTORY_ID, "MM.PurchaseOrder.GetList"),
+        execution_visibility=_production_projection(
+            visible,
+            sources=_sources(capabilities=capabilities, bindings=bindings),
+        ),
+    )
+
+    assert result.decision.decision_type == "REJECT"
+    assert result.call_plan_parameters is None
 
 
 @pytest.mark.parametrize(
