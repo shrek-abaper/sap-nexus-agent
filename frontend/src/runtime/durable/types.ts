@@ -14,6 +14,8 @@ export type Turn = { role: "user" | "assistant"; content: string };
 export type ConversationContext = {
   lastContext: LastContext | null;
   history: Turn[] | null;
+  schemaVersion?: 2;
+  readState?: ConversationReadState | null;
 };
 
 export type SessionState = {
@@ -65,6 +67,24 @@ export type PendingInteraction = {
   expiresAt: string;
 };
 
+export type ConversationReadState = {
+  activeFrame: ReadContextFrame | null;
+  recentFrames: ReadContextFrame[];
+  pendingInteraction: PendingInteraction | null;
+  stateVersion: number;
+};
+
+export type ReadExecutionBinding = {
+  turnId: string;
+  frameId: string;
+  stateVersion: number;
+  registrySnapshotId: string;
+  principalId: string;
+  capabilityVersion: string;
+  callPlanHash: string;
+  readState: ConversationReadState;
+};
+
 export type SessionStateV2 = {
   schemaVersion: 2;
   stateVersion: number;
@@ -102,6 +122,14 @@ export type WorkbenchOutcome = {
   capabilityId?: string;
   producesFactTypes?: string[];
   nodeExecutedAt?: string;
+  turnId?: string | null;
+  frameId?: string | null;
+  stateVersion?: number | null;
+  registrySnapshotId?: string | null;
+  conversationReadState?: ConversationReadState | null;
+  resolutionReport?: Record<string, unknown> | null;
+  decision?: Record<string, unknown> | null;
+  readExecutionBinding?: ReadExecutionBinding | null;
 };
 
 export type AgentRunRecord = {

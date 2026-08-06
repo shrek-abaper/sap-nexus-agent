@@ -16,6 +16,8 @@ callers can adopt it with zero changes.
 from __future__ import annotations
 
 import dataclasses
+import hashlib
+import json
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -23,6 +25,7 @@ if TYPE_CHECKING:
     # Type-only import: avoids a circular import at runtime
     # (conversation_context -> match_decision -> capability_selector).
     from sap_nexus_agent.match_decision import EscalationHandoff, MatchedIntent
+    from sap_nexus_agent.call_plan import CallPlan
     from sap_nexus_agent.read_context import ConversationReadState
 
 
@@ -171,6 +174,99 @@ class ConversationContext:
         """Clear all pending states."""
         return dataclasses.replace(
             self, pending_show_options=None, pending_escalate=None
+        )
+
+
+@dataclass(frozen=True)
+class ReadExecutionBinding:
+    """Server-owned identity binding for one persisted READY READ plan."""
+
+    turn_id: str
+    frame_id: str
+    state_version: int
+    registry_snapshot_id: str
+    principal_id: str
+    capability_version: str
+    call_plan_hash: str
+    read_state: "ConversationReadState"
+
+    @classmethod
+    def create(
+        cls,
+        *,
+        turn_id: str,
+        principal_id: str,
+        call_plan: "CallPlan",
+        read_state: "ConversationReadState",
+    ) -> "ReadExecutionBinding":
+        frame = read_state.active_frame
+        if frame is None:
+            raise ValueError("READ execution binding requires an active frame")
+        return cls(
+            turn_id=turn_id,
+            frame_id=frame.frame_id,
+            state_version=read_state.state_version,
+            registry_snapshot_id=frame.registry_snapshot_id,
+            principal_id=principal_id,
+            capability_version=frame.capability_version,
+            call_plan_hash=cls.hash_call_plan(call_plan),
+            read_state=read_state,
+        )
+
+    @staticmethod
+    def hash_call_plan(call_plan: "CallPlan") -> str:
+        encoded = json.dumps(
+            call_plan.to_dict(), ensure_ascii=True, sort_keys=True, separators=(",", ":")
+        ).encode("utf-8")
+        return hashlib.sha256(encoded).hexdigest()
+
+    def validates(self, call_plan: "CallPlan") -> bool:
+        frame = self.read_state.active_frame
+        return bool(
+            self.turn_id
+            and self.principal_id
+            and frame is not None
+            and frame.status == "READY"
+            and frame.updated_turn_id == self.turn_id
+            and frame.frame_id == self.frame_id
+            and frame.registry_snapshot_id == self.registry_snapshot_id
+            and frame.capability_version == self.capability_version
+            and self.read_state.state_version == self.state_version
+            and self.read_state.pending_interaction is None
+            and call_plan.kind == "Function"
+            and not call_plan.requires_approval
+            and call_plan.capability_id == frame.capability_id
+            and self.hash_call_plan(call_plan) == self.call_plan_hash
+        )
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "turnId": self.turn_id,
+            "frameId": self.frame_id,
+            "stateVersion": self.state_version,
+            "registrySnapshotId": self.registry_snapshot_id,
+            "principalId": self.principal_id,
+            "capabilityVersion": self.capability_version,
+            "callPlanHash": self.call_plan_hash,
+            "readState": self.read_state.to_dict(),
+        }
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, object]) -> "ReadExecutionBinding":
+        from sap_nexus_agent.read_context import ConversationReadState
+
+        read_state = payload.get("readState")
+        if not isinstance(read_state, dict):
+            raise ValueError("ReadExecutionBinding.readState must be an object")
+        return cls(
+            turn_id=str(payload["turnId"]),
+            frame_id=str(payload["frameId"]),
+            state_version=int(payload["stateVersion"]),
+            registry_snapshot_id=str(payload["registrySnapshotId"]),
+            principal_id=str(payload["principalId"]),
+            capability_version=str(payload["capabilityVersion"]),
+            call_plan_hash=str(payload["callPlanHash"]),
+            read_state=ConversationReadState.from_dict(read_state),
         )
 
 

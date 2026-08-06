@@ -8,6 +8,7 @@ import type {
   ConversationContext,
   DurableConversationStore,
   DurableRunStore,
+  ReadExecutionBinding,
   SessionStateV2,
   WorkbenchOutcome
 } from "./durable/types";
@@ -71,12 +72,16 @@ type BatchContinuation = {
 };
 
 type AgentRunnerInput = {
+  mode: "query" | "resolve-read" | "continue-read";
   query: string;
   gatewayUrl: string;
   intentMode: string;
   continuation?: ApprovalContinuation | BatchContinuation;
   context?: ConversationContext;
   principal?: TrustedPrincipal;
+  turnId?: string;
+  callPlan?: Record<string, unknown>;
+  readExecutionBinding?: ReadExecutionBinding;
 };
 
 type AgentRunner = (input: AgentRunnerInput) => Promise<WorkbenchOutcome>;
@@ -91,12 +96,18 @@ const CONVERSATION_LEASE_HEARTBEAT_MS = 20_000;
 
 let runStore: DurableRunStore = new JsonlRunStore(durableDataDir, workerId);
 let conversationStore: DurableConversationStore = new JsonlConversationStore(durableDataDir);
+let durableStoresInjectedForTests = false;
 let runnerForTests: AgentRunner | null = null;
+let readRunnerForTests: AgentRunner | null = null;
 let compositionGatewayForTests: GatewayClient | null = null;
 let planActionGatewayForTests: ActionGateway | null = null;
 
 export function setAgentRunnerForTests(runner: AgentRunner | null) {
   runnerForTests = runner;
+}
+
+export function setReadAgentRunnerForTests(runner: AgentRunner | null) {
+  readRunnerForTests = runner;
 }
 
 export function setCompositionGatewayForTests(gateway: GatewayClient | null) {
@@ -110,6 +121,7 @@ export function setPlanActionGatewayForTests(gateway: ActionGateway | null) {
 export function setDurableStoresForTests(run: DurableRunStore, conv: DurableConversationStore) {
   runStore = run;
   conversationStore = conv;
+  durableStoresInjectedForTests = true;
 }
 
 export function resetAgentRunsForTests() {
@@ -138,15 +150,21 @@ function newSession(principalId: string): SessionStateV2 {
   };
 }
 
-function buildContext(session: SessionStateV2): ConversationContext | undefined {
+function buildContext(session: SessionStateV2): ConversationContext {
   // Align with Python llm_intent.py `context.history[-6:]`: 近 3 轮 =
   // user+assistant = 6 条 Turn (Concern 3).
   const recent = session.history.slice(-6);
-  if (recent.length === 0) return undefined;
   return {
     // Persisted legacy context is never promoted back into execution authority.
     lastContext: null,
-    history: recent,
+    history: recent.length > 0 ? recent : null,
+    schemaVersion: 2,
+    readState: {
+      activeFrame: session.activeFrame,
+      recentFrames: session.recentFrames,
+      pendingInteraction: session.pendingInteraction,
+      stateVersion: session.stateVersion,
+    },
   };
 }
 
@@ -212,30 +230,25 @@ export async function createAgentRun(input: CreateAgentRunInput): Promise<Create
     }
 
     const runId = `run-${crypto.randomUUID()}`;
-    const nextSession: SessionStateV2 = {
-      ...session,
-      stateVersion: session.stateVersion + 1,
-      history: [...session.history, { role: "user", content: input.query }],
-      lastAppliedTurnId: turnId,
-      lastRunId: runId,
-    };
-    const saved = await conversationStore.compareAndSwap(
-      conversationId,
-      session.stateVersion,
-      nextSession,
-      { workerId: conversationLeaseOwner, fenceToken: lease.fenceToken },
-    );
-    if (saved.status === "lease-lost") {
-      throw new ConversationProtocolError(
-        "CONVERSATION_BUSY",
-        `Conversation lease ownership was lost${saved.holder ? ` to ${saved.holder}` : ""}`,
+    const authoritativeRead = readRunnerForTests !== null
+      || (runnerForTests === null && !durableStoresInjectedForTests);
+    let expectedSessionVersion = session.stateVersion;
+    if (!authoritativeRead) {
+      const nextSession: SessionStateV2 = {
+        ...session,
+        stateVersion: session.stateVersion + 1,
+        history: [...session.history, { role: "user", content: input.query }],
+        lastAppliedTurnId: turnId,
+        lastRunId: runId,
+      };
+      await saveConversationState(
+        conversationId,
+        session.stateVersion,
+        nextSession,
+        conversationLeaseOwner,
+        lease.fenceToken,
       );
-    }
-    if (saved.status === "conflict") {
-      throw new ConversationProtocolError(
-        "CONTEXT_VERSION_CONFLICT",
-        `Conversation state changed from version ${session.stateVersion} to ${saved.actualVersion}`,
-      );
+      expectedSessionVersion = nextSession.stateVersion;
     }
 
     const timestamp = new Date().toISOString();
@@ -250,10 +263,11 @@ export async function createAgentRun(input: CreateAgentRunInput): Promise<Create
       input.principal.principalId,
       input.principal,
       turnId,
-      nextSession.stateVersion,
+      expectedSessionVersion,
       conversationLeaseOwner,
       lease.fenceToken,
       context,
+      authoritativeRead,
     );
 
     return { runId, turnId };
@@ -301,6 +315,7 @@ async function executeRunnerInBackground(
   conversationLeaseOwner?: string,
   conversationFenceToken?: string,
   context?: ConversationContext,
+  authoritativeRead = false,
 ): Promise<void> {
   let heartbeat: ReturnType<typeof startConversationLeaseHeartbeat> | null = null;
   try {
@@ -309,7 +324,145 @@ async function executeRunnerInBackground(
       : null;
     if (heartbeat) await heartbeat.assertOwned();
     const runner = runnerForTests ?? runLocalPythonAgent;
-    const outcome = await runner({ query, gatewayUrl: gatewayUrl(), intentMode: intentMode(), context, principal });
+    const readRunner = readRunnerForTests ?? runLocalPythonAgent;
+    let outcome: WorkbenchOutcome;
+    let resultPersistenceRequired = Boolean(
+      conversationId && turnId && expectedSessionVersion !== undefined && !authoritativeRead,
+    );
+    if (authoritativeRead && conversationId && turnId && expectedSessionVersion !== undefined) {
+      const resolution = await readRunner({
+        mode: "resolve-read",
+        query,
+        gatewayUrl: gatewayUrl(),
+        intentMode: intentMode(),
+        context,
+        principal,
+        turnId,
+      });
+      if (heartbeat) await heartbeat.assertOwned();
+      const current = await getSession(conversationId, principalId);
+      if (current.stateVersion !== expectedSessionVersion) {
+        throw new ConversationProtocolError(
+          "CONTEXT_VERSION_CONFLICT",
+          `Conversation state changed from version ${expectedSessionVersion} to ${current.stateVersion}`,
+        );
+      }
+
+      const readState = resolution.conversationReadState;
+      const decisionType = textValue(resolution.decision?.decisionType)
+        ?? textValue(resolution.matchDecision?.decisionType);
+      const isReadResolution = readState !== null && readState !== undefined
+        && resolution.turnId === turnId
+        && resolution.stateVersion === readState.stateVersion
+        && typeof decisionType === "string";
+      if (isReadResolution) {
+        validateReadResolution(
+          resolution,
+          current,
+          turnId,
+          principalId,
+          expectedSessionVersion + 1,
+          decisionType,
+        );
+        const nextHistory = [...current.history, { role: "user" as const, content: query }];
+        if (decisionType !== "SELECT" && resolution.responseText) {
+          nextHistory.push({ role: "assistant", content: resolution.responseText });
+        }
+        const nextSession: SessionStateV2 = {
+          ...current,
+          stateVersion: readState.stateVersion,
+          activeFrame: readState.activeFrame,
+          recentFrames: readState.recentFrames,
+          pendingInteraction: readState.pendingInteraction,
+          history: nextHistory,
+          lastAppliedTurnId: turnId,
+          lastRunId: runId,
+        };
+        await saveConversationState(
+          conversationId,
+          current.stateVersion,
+          nextSession,
+          conversationLeaseOwner!,
+          conversationFenceToken!,
+        );
+        expectedSessionVersion = nextSession.stateVersion;
+
+        if (decisionType === "SELECT") {
+          if (!resolution.callPlan || !resolution.readExecutionBinding) {
+            throw new ConversationProtocolError(
+              "CONTEXT_VERSION_CONFLICT",
+              "SELECT resolution is missing its immutable READ continuation binding",
+            );
+          }
+          const continued = await readRunner({
+            mode: "continue-read",
+            query,
+            gatewayUrl: gatewayUrl(),
+            intentMode: intentMode(),
+            principal,
+            turnId,
+            callPlan: resolution.callPlan,
+            readExecutionBinding: resolution.readExecutionBinding,
+          });
+          outcome = {
+            ...continued,
+            matchDecision: resolution.matchDecision,
+            decision: resolution.decision,
+            turnId: resolution.turnId,
+            frameId: resolution.frameId,
+            stateVersion: resolution.stateVersion,
+            registrySnapshotId: resolution.registrySnapshotId,
+            conversationReadState: resolution.conversationReadState,
+            resolutionReport: resolution.resolutionReport,
+          };
+          resultPersistenceRequired = true;
+        } else {
+          outcome = resolution;
+        }
+      } else {
+        const nextSession: SessionStateV2 = {
+          ...current,
+          stateVersion: current.stateVersion + 1,
+          history: [...current.history, { role: "user", content: query }],
+          lastAppliedTurnId: turnId,
+          lastRunId: runId,
+        };
+        await saveConversationState(
+          conversationId,
+          current.stateVersion,
+          nextSession,
+          conversationLeaseOwner!,
+          conversationFenceToken!,
+        );
+        expectedSessionVersion = nextSession.stateVersion;
+        if (resolution.status === "read_not_applicable") {
+          outcome = await runner({
+            mode: "query",
+            query,
+            gatewayUrl: gatewayUrl(),
+            intentMode: intentMode(),
+            context,
+            principal,
+            turnId,
+          });
+        } else {
+          // Test runners and older internal runners may already return the
+          // legacy final outcome from the resolve entry.
+          outcome = resolution;
+        }
+        resultPersistenceRequired = true;
+      }
+    } else {
+      outcome = await runner({
+        mode: "query",
+        query,
+        gatewayUrl: gatewayUrl(),
+        intentMode: intentMode(),
+        context,
+        principal,
+        turnId,
+      });
+    }
     if (heartbeat) await heartbeat.assertOwned();
     const handoff = parseCompositionHandoff(outcome);
     let sessionOutcome = outcome;
@@ -343,7 +496,12 @@ async function executeRunnerInBackground(
       }
     }
 
-    if (conversationId && turnId && expectedSessionVersion !== undefined) {
+    if (
+      resultPersistenceRequired
+      && conversationId
+      && turnId
+      && expectedSessionVersion !== undefined
+    ) {
       if (!heartbeat) {
         throw new ConversationProtocolError(
           "CONVERSATION_BUSY",
@@ -417,6 +575,103 @@ async function executeRunnerInBackground(
         conversationFenceToken,
       );
     }
+  }
+}
+
+function validateReadResolution(
+  outcome: WorkbenchOutcome,
+  current: SessionStateV2,
+  turnId: string,
+  principalId: string,
+  expectedVersion: number,
+  decisionType: string,
+): void {
+  const state = outcome.conversationReadState!;
+  const frame = state.activeFrame;
+  if (
+    state.stateVersion !== expectedVersion
+    || outcome.stateVersion !== expectedVersion
+    || outcome.turnId !== turnId
+    || current.principalId !== principalId
+  ) {
+    throw new ConversationProtocolError(
+      "CONTEXT_VERSION_CONFLICT",
+      "Resolved READ state does not match the claimed conversation turn",
+    );
+  }
+  if (frame && (
+    frame.frameId !== outcome.frameId
+    || frame.updatedTurnId !== turnId
+    || frame.registrySnapshotId !== outcome.registrySnapshotId
+  )) {
+    throw new ConversationProtocolError(
+      "CONTEXT_VERSION_CONFLICT",
+      "Resolved READ frame binding does not match the turn",
+    );
+  }
+  const pending = state.pendingInteraction;
+  if (pending && (
+    pending.frameId !== outcome.frameId
+    || pending.stateVersion !== expectedVersion
+    || pending.registrySnapshotId !== outcome.registrySnapshotId
+  )) {
+    throw new ConversationProtocolError(
+      "CONTEXT_VERSION_CONFLICT",
+      "Resolved READ pending interaction is not bound to the next state",
+    );
+  }
+  if (decisionType !== "SELECT") return;
+
+  const binding = outcome.readExecutionBinding;
+  const capabilityId = textValue(outcome.callPlan?.capabilityId);
+  if (
+    !frame
+    || frame.status !== "READY"
+    || pending !== null
+    || !binding
+    || binding.turnId !== turnId
+    || binding.frameId !== frame.frameId
+    || binding.stateVersion !== expectedVersion
+    || binding.registrySnapshotId !== frame.registrySnapshotId
+    || binding.principalId !== principalId
+    || binding.capabilityVersion !== frame.capabilityVersion
+    || binding.readState.stateVersion !== state.stateVersion
+    || binding.readState.activeFrame?.frameId !== frame.frameId
+    || capabilityId !== frame.capabilityId
+    || outcome.callPlan?.kind !== "Function"
+    || outcome.callPlan?.requiresApproval !== false
+  ) {
+    throw new ConversationProtocolError(
+      "CONTEXT_VERSION_CONFLICT",
+      "Resolved READ continuation binding is incomplete or mismatched",
+    );
+  }
+}
+
+async function saveConversationState(
+  conversationId: string,
+  expectedVersion: number,
+  next: SessionStateV2,
+  leaseOwner: string,
+  fenceToken: string,
+): Promise<void> {
+  const saved = await conversationStore.compareAndSwap(
+    conversationId,
+    expectedVersion,
+    next,
+    { workerId: leaseOwner, fenceToken },
+  );
+  if (saved.status === "lease-lost") {
+    throw new ConversationProtocolError(
+      "CONVERSATION_BUSY",
+      `Conversation lease ownership was lost${saved.holder ? ` to ${saved.holder}` : ""}`,
+    );
+  }
+  if (saved.status === "conflict") {
+    throw new ConversationProtocolError(
+      "CONTEXT_VERSION_CONFLICT",
+      `Conversation state changed from version ${expectedVersion} to ${saved.actualVersion}`,
+    );
   }
 }
 
@@ -562,6 +817,7 @@ async function executeApprovalInBackground(
   try {
     const runner = runnerForTests ?? runLocalPythonAgent;
     const outcome = await runner({
+      mode: "query",
       query: record.query,
       gatewayUrl: gatewayUrl(),
       intentMode: intentMode(),
@@ -636,6 +892,7 @@ async function executeBatchInBackground(
   try {
     const runner = runnerForTests ?? runLocalPythonAgent;
     const outcome = await runner({
+      mode: "query",
       query: record.query,
       gatewayUrl: gatewayUrl(),
       intentMode: intentMode(),
@@ -1075,7 +1332,41 @@ async function runLocalPythonAgent(input: AgentRunnerInput): Promise<WorkbenchOu
   let args: string[];
   let stdinPayload: string | undefined;
 
-  if (input.continuation) {
+  if (input.mode === "resolve-read") {
+    if (!input.context || !input.turnId) {
+      throw new Error("Authoritative READ resolution requires context and turnId.");
+    }
+    args = [
+      "-m",
+      "sap_nexus_agent.cli",
+      input.query,
+      "--resolve-read-turn",
+      "--turn-id",
+      input.turnId,
+      "--gateway-url",
+      input.gatewayUrl,
+      "--intent-mode",
+      input.intentMode,
+      "--json",
+    ];
+    stdinPayload = JSON.stringify(input.context);
+  } else if (input.mode === "continue-read") {
+    if (!input.callPlan || !input.readExecutionBinding) {
+      throw new Error("Authoritative READ continuation requires a server-owned binding.");
+    }
+    args = [
+      "-m",
+      "sap_nexus_agent.cli",
+      "--continue-read",
+      "--gateway-url",
+      input.gatewayUrl,
+      "--json",
+    ];
+    stdinPayload = JSON.stringify({
+      callPlan: input.callPlan,
+      binding: input.readExecutionBinding,
+    });
+  } else if (input.continuation) {
     const isBatch = input.continuation.type === "batch";
     args = [
       "-m",

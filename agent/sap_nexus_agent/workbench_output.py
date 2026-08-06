@@ -71,6 +71,24 @@ def outcome_to_workbench_dict(outcome: AgentOutcome) -> dict[str, object]:
             if isinstance(outcome.context_shadow, ContextShadow)
             else None
         ),
+        "turnId": outcome.turn_id,
+        "frameId": outcome.frame_id,
+        "stateVersion": outcome.state_version,
+        "registrySnapshotId": outcome.registry_snapshot_id,
+        "conversationReadState": (
+            outcome.read_state.to_dict() if outcome.read_state is not None else None
+        ),
+        "resolutionReport": (
+            dict(outcome.resolution_report)
+            if outcome.resolution_report is not None
+            else None
+        ),
+        "decision": _match_decision_to_dict(outcome.match_decision),
+        "readExecutionBinding": (
+            outcome.read_execution_binding.to_dict()
+            if outcome.read_execution_binding is not None
+            else None
+        ),
         # Conversational context (Task 5): LastContext for the next turn,
         # derived from the outcome's match_decision. The backend records this
         # on the session so the next utterance can continue slot-fill (CLARIFY)

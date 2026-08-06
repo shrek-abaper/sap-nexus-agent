@@ -333,6 +333,41 @@ def test_capability_registry_v2_declares_fact_binding_contract():
         assert [item["factTypeRef"] for item in primary] == [fact_type_id]
 
 
+def test_capability_schema_accepts_current_registry_input_patterns():
+    registry = _load_yaml("registry/capabilities.yaml")
+
+    jsonschema.validate(registry, _load_schema("capability.schema.json"))
+
+    patterns = [
+        input_["pattern"]
+        for capability in registry["capabilities"]
+        for input_ in capability["inputs"]
+        if "pattern" in input_
+    ]
+    assert patterns == ["^[A-Z0-9]{4}$", "^[A-Z0-9]{4}$"]
+
+
+@pytest.mark.parametrize(
+    ("pattern", "expected_validator"),
+    [("", "minLength"), (7, "type")],
+)
+def test_capability_schema_rejects_invalid_input_pattern(pattern, expected_validator):
+    registry = _load_yaml("registry/capabilities.yaml")
+    registry["capabilities"][0]["inputs"][1]["pattern"] = pattern
+    validator = jsonschema.Draft202012Validator(
+        _load_schema("capability.schema.json")
+    )
+
+    errors = list(validator.iter_errors(registry))
+
+    pattern_errors = [
+        error
+        for error in errors
+        if tuple(error.absolute_path) == ("capabilities", 0, "inputs", 1, "pattern")
+    ]
+    assert [error.validator for error in pattern_errors] == [expected_validator]
+
+
 def test_initial_fact_type_and_relation_catalogs_validate():
     fact_types = _load_yaml("ontology/fact-types.yaml")
     relations = _load_yaml("ontology/capability-relations.yaml")

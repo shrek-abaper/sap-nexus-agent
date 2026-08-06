@@ -6,11 +6,17 @@ import sys
 
 from sap_nexus_agent.approval import ApprovalRecord
 from sap_nexus_agent.call_plan import CallPlan
-from sap_nexus_agent.conversation_context import ConversationContext
+from sap_nexus_agent.conversation_context import ConversationContext, ReadExecutionBinding
 from sap_nexus_agent.execution_result import ValidationResult
 from sap_nexus_agent.gateway_client import GatewayClient
 from sap_nexus_agent.llm_intent import build_intent_adapter
-from sap_nexus_agent.orchestrator import continue_action, continue_batch, run_query
+from sap_nexus_agent.orchestrator import (
+    continue_action,
+    continue_batch,
+    continue_resolved_read,
+    resolve_read_turn,
+    run_query,
+)
 from sap_nexus_agent.registry_loader import load_intent_catalog
 from sap_nexus_agent.workbench_output import outcome_to_workbench_dict
 from sap_nexus_agent.governed_context import load_principal_from_env
@@ -81,10 +87,95 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Read a ConversationContext JSON payload from stdin for multi-turn continuation",
     )
+    parser.add_argument(
+        "--resolve-read-turn",
+        action="store_true",
+        help="Resolve a server-owned READ turn without constructing a Gateway client",
+    )
+    parser.add_argument(
+        "--continue-read",
+        action="store_true",
+        help="Continue one server-owned, persisted READ resolution",
+    )
+    parser.add_argument("--turn-id", help="Server-owned conversation turn identifier")
     args = parser.parse_args(argv)
 
-    gateway = GatewayClient(args.gateway_url)
+    if args.resolve_read_turn:
+        if not args.query:
+            parser.error("query is required for --resolve-read-turn")
+        if not args.turn_id:
+            parser.error("--turn-id is required for --resolve-read-turn")
+        try:
+            payload = json.load(sys.stdin)
+            if not isinstance(payload, dict):
+                raise ValueError("context must be an object")
+            context = ConversationContext.from_dict(payload)
+            intent_adapter, principal, snapshot, sources = _build_adapter_and_principal(
+                args.intent_mode
+            )
+            if snapshot is None or sources is None:
+                raise ValueError("Registry snapshot is unavailable")
+            outcome = resolve_read_turn(
+                args.query,
+                context=context,
+                intent_adapter=intent_adapter,
+                principal=principal,
+                snapshot=snapshot,
+                sources=sources,
+                turn_id=args.turn_id,
+            )
+        except (json.JSONDecodeError, KeyError, TypeError, ValueError, AttributeError):
+            if args.json:
+                print(json.dumps({
+                    "status": "failure",
+                    "errorType": "INVALID_CONTEXT_PAYLOAD",
+                    "message": "Invalid authoritative READ context payload.",
+                }))
+            return 2
+        if args.json:
+            print(json.dumps(outcome_to_workbench_dict(outcome), ensure_ascii=False))
+        else:
+            print(outcome.response_text or outcome.message or "未生成响应。")
+        return 0 if outcome.status in {
+            "resolved_read", "clarification", "match_decision", "read_not_applicable"
+        } else 1
+
+    if args.continue_read:
+        try:
+            payload = json.load(sys.stdin)
+            if not isinstance(payload, dict):
+                raise ValueError("continuation must be an object")
+            call_plan = CallPlan.from_dict(dict(payload["callPlan"]))
+            binding = ReadExecutionBinding.from_dict(dict(payload["binding"]))
+            if not binding.validates(call_plan):
+                raise ValueError("READ execution binding mismatch")
+            principal = load_principal_from_env()
+            repo_root = _resolve_repo_root()
+            sources = load_semantic_sources(repo_root)
+            snapshot = build_registry_snapshot(sources)
+            if (
+                binding.principal_id != principal.principal_id
+                or binding.registry_snapshot_id != snapshot.snapshot_id
+            ):
+                raise ValueError("READ execution authority drift")
+        except (json.JSONDecodeError, KeyError, TypeError, ValueError, AttributeError):
+            if args.json:
+                print(json.dumps({
+                    "status": "failure",
+                    "errorType": "READ_EXECUTION_BINDING_MISMATCH",
+                    "message": "Invalid or stale READ execution binding.",
+                }))
+            return 2
+        gateway = GatewayClient(args.gateway_url)
+        outcome = continue_resolved_read(call_plan, binding, gateway)
+        if args.json:
+            print(json.dumps(outcome_to_workbench_dict(outcome), ensure_ascii=False))
+        else:
+            print(outcome.response_text or outcome.message or "未生成响应。")
+        return 0 if outcome.status == "success" else 1
+
     if args.continue_action:
+        gateway = GatewayClient(args.gateway_url)
         try:
             payload = json.load(sys.stdin)
             outcome = continue_action(
@@ -109,6 +200,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0 if outcome.status in {"success", "rejected"} else 1
 
     if args.continue_batch:
+        gateway = GatewayClient(args.gateway_url)
         try:
             payload = json.load(sys.stdin)
             outcome = continue_batch(
@@ -144,6 +236,7 @@ def main(argv: list[str] | None = None) -> int:
                     "message": "Invalid conversation context payload.",
                 }))
             return 2
+        gateway = GatewayClient(args.gateway_url)
         intent_adapter, principal, snapshot, sources = _build_adapter_and_principal(args.intent_mode)
         outcome = run_query(
             args.query,
@@ -164,6 +257,7 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("query is required unless --continue-action is used")
 
     intent_adapter, principal, snapshot, sources = _build_adapter_and_principal(args.intent_mode)
+    gateway = GatewayClient(args.gateway_url)
     outcome = run_query(
         args.query,
         gateway,

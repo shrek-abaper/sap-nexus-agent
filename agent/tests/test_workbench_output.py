@@ -279,3 +279,68 @@ def test_non_batch_outcome_combinations_is_none():
     result = outcome_to_workbench_dict(outcome)
 
     assert result["combinations"] is None
+
+
+def test_workbench_output_serializes_authoritative_read_resolution():
+    from sap_nexus_agent.call_plan import create_call_plan
+    from sap_nexus_agent.conversation_context import ReadExecutionBinding
+    from sap_nexus_agent.read_context import (
+        ConversationReadState,
+        ReadContextFrame,
+        SlotBinding,
+    )
+
+    slots = {
+        name: SlotBinding(name, value, (value,), "RESOLVED", "EXPLICIT", "turn-7", None, ())
+        for name, value in {"material": "DEMOA2", "plant": "1000"}.items()
+    }
+    frame = ReadContextFrame(
+        "frame-7",
+        "MM.Inventory.GetAvailability",
+        slots,
+        "READY",
+        "turn-7",
+        "turn-7",
+        "snapshot-7",
+        "1",
+    )
+    state = ConversationReadState(frame, None, 7)
+    plan = create_call_plan(
+        "MM.Inventory.GetAvailability",
+        {"material": "DEMOA2", "plant": "1000", "unit": "EA"},
+    )
+    binding = ReadExecutionBinding.create(
+        turn_id="turn-7",
+        principal_id="principal-7",
+        call_plan=plan,
+        read_state=state,
+    )
+    decision = MatchDecision(
+        decision_type="SELECT",
+        capability_id=plan.capability_id,
+        parameters={"material": "DEMOA2", "plant": "1000"},
+        rationale="ready",
+    )
+    outcome = AgentOutcome(
+        status="resolved_read",
+        call_plan=plan,
+        match_decision=decision,
+        read_state=state,
+        resolution_report={"frameStatus": "READY"},
+        read_execution_binding=binding,
+        turn_id="turn-7",
+        frame_id="frame-7",
+        state_version=7,
+        registry_snapshot_id="snapshot-7",
+    )
+
+    payload = outcome_to_workbench_dict(outcome)
+
+    assert payload["turnId"] == "turn-7"
+    assert payload["frameId"] == "frame-7"
+    assert payload["stateVersion"] == 7
+    assert payload["registrySnapshotId"] == "snapshot-7"
+    assert payload["conversationReadState"] == state.to_dict()
+    assert payload["resolutionReport"] == {"frameStatus": "READY"}
+    assert payload["decision"]["decisionType"] == "SELECT"
+    assert payload["readExecutionBinding"] == binding.to_dict()

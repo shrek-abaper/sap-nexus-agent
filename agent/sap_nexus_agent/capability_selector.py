@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
+import re
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -27,6 +28,78 @@ INTENT_TO_CAPABILITY = {
 # Inventory capability id, retained for the LLM path (still inventory-only until
 # the orchestrator unified-entry refactor in Plan Task 10).
 CAPABILITY_ID = "MM.Inventory.GetAvailability"
+
+
+def build_read_context_candidates(utterance, descriptor, envelope):
+    """Combine Frame v2 extraction with independent deterministic rule evidence."""
+    from sap_nexus_agent.context_candidates import (
+        ContextCandidate,
+        ContextCandidateSet,
+        SlotCandidates,
+        extract_context_candidates,
+        is_semantically_valid,
+    )
+    from sap_nexus_agent.intent import parse_intent
+
+    extracted = extract_context_candidates(utterance, descriptor, envelope)
+    deterministic = parse_intent(utterance)
+    slots = dict(extracted.slots)
+    inputs = {input_.name: input_ for input_ in descriptor.inputs}
+    for name, value in deterministic.parameters.items():
+        input_ = inputs.get(name)
+        if input_ is None or not is_semantically_valid(input_, value):
+            continue
+        current = slots.get(name, SlotCandidates(name, ()))
+        candidate = ContextCandidate(name, value, "DETERMINISTIC_LABEL", None)
+        candidates = current.candidates
+        if candidate not in candidates:
+            candidates = (*candidates, candidate)
+        slots[name] = SlotCandidates(name, candidates)
+    _prefer_explicit_plant_suffix(utterance, descriptor, slots)
+    return ContextCandidateSet(
+        slots=slots,
+        clear_slots=extracted.clear_slots,
+        discard_reasons=extracted.discard_reasons,
+    )
+
+
+def _prefer_explicit_plant_suffix(utterance, descriptor, slots):
+    """Do not reuse a token labeled as a plant as an unlabeled material."""
+    from sap_nexus_agent.context_candidates import SlotCandidates
+
+    plant_names = {
+        input_.name
+        for input_ in descriptor.inputs
+        if input_.semantic_type.lower().endswith("plant")
+    }
+    for plant_name in plant_names:
+        plant_candidates = slots.get(plant_name)
+        if plant_candidates is None:
+            continue
+        labeled = {
+            (candidate.value, candidate.source_span)
+            for candidate in plant_candidates.candidates
+            if candidate.source_span is not None
+            and re.match(
+                r"\s*(?:工厂|plant)",
+                utterance[candidate.source_span[1] :],
+                flags=re.IGNORECASE,
+            )
+        }
+        if not labeled:
+            continue
+        for name, slot in tuple(slots.items()):
+            if name == plant_name:
+                continue
+            slots[name] = SlotCandidates(
+                name,
+                tuple(
+                    candidate
+                    for candidate in slot.candidates
+                    if candidate.source == "MODEL_CANDIDATE"
+                    or (candidate.value, candidate.source_span) not in labeled
+                ),
+            )
 
 
 @dataclass(frozen=True)

@@ -90,3 +90,97 @@ def test_cli_without_context_backward_compatible(capsys, monkeypatch):
     exit_code = main(["库存 DEMOA2 1000", "--json"])
     assert exit_code == 0
     assert captured["context"] is None
+
+
+def test_cli_resolve_read_turn_never_constructs_gateway(capsys, monkeypatch):
+    from sap_nexus_agent.orchestrator import AgentOutcome
+
+    context_payload = {
+        "lastContext": None,
+        "history": None,
+        "schemaVersion": 2,
+        "readState": {
+            "activeFrame": None,
+            "pendingInteraction": None,
+            "stateVersion": 0,
+            "recentFrames": [],
+        },
+    }
+    monkeypatch.setattr("sys.stdin", io.StringIO(json.dumps(context_payload)))
+    captured = {}
+
+    def fake_resolve(text, **kwargs):
+        captured.update(text=text, **kwargs)
+        return AgentOutcome(
+            status="clarification",
+            response_text="请提供物料",
+            turn_id=kwargs["turn_id"],
+            frame_id="frame-cli",
+            state_version=1,
+            registry_snapshot_id="snapshot-cli",
+        )
+
+    marker = object()
+    monkeypatch.setattr(
+        "sap_nexus_agent.cli._build_adapter_and_principal",
+        lambda _mode: (marker, marker, marker, marker),
+    )
+    monkeypatch.setattr("sap_nexus_agent.cli.resolve_read_turn", fake_resolve)
+
+    def forbidden_gateway(_url):
+        raise AssertionError("resolve-read-turn constructed GatewayClient")
+
+    monkeypatch.setattr("sap_nexus_agent.cli.GatewayClient", forbidden_gateway)
+
+    exit_code = main([
+        "查库存",
+        "--resolve-read-turn",
+        "--turn-id",
+        "turn-cli-1",
+        "--json",
+    ])
+
+    assert exit_code == 0
+    assert captured["turn_id"] == "turn-cli-1"
+    assert captured["context"].read_state.state_version == 0
+    output = json.loads(capsys.readouterr().out)
+    assert output["turnId"] == "turn-cli-1"
+
+
+def test_cli_continue_read_binding_mismatch_has_no_gateway(capsys, monkeypatch):
+    from sap_nexus_agent.call_plan import create_call_plan
+    from sap_nexus_agent.conversation_context import ReadExecutionBinding
+    from sap_nexus_agent.read_context import ConversationReadState, ReadContextFrame, SlotBinding
+
+    slot = SlotBinding(
+        "material", "DEMOA2", ("DEMOA2",), "RESOLVED", "EXPLICIT",
+        "turn-cli", None, (),
+    )
+    frame = ReadContextFrame(
+        "frame-cli", "MM.Inventory.GetAvailability", {"material": slot}, "READY",
+        "turn-cli", "turn-cli", "snapshot-cli", "1",
+    )
+    state = ConversationReadState(frame, None, 1)
+    plan = create_call_plan("MM.Inventory.GetAvailability", {"material": "DEMOA2"})
+    binding = ReadExecutionBinding.create(
+        turn_id="turn-cli",
+        principal_id="local-user-0001",
+        call_plan=plan,
+        read_state=state,
+    ).to_dict()
+    binding["turnId"] = "turn-tampered"
+    monkeypatch.setattr(
+        "sys.stdin",
+        io.StringIO(json.dumps({"callPlan": plan.to_dict(), "binding": binding})),
+    )
+
+    def forbidden_gateway(_url):
+        raise AssertionError("binding mismatch constructed GatewayClient")
+
+    monkeypatch.setattr("sap_nexus_agent.cli.GatewayClient", forbidden_gateway)
+
+    exit_code = main(["--continue-read", "--json"])
+
+    assert exit_code == 2
+    output = json.loads(capsys.readouterr().out)
+    assert output["errorType"] == "READ_EXECUTION_BINDING_MISMATCH"

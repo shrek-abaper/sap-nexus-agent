@@ -10,6 +10,7 @@ import {
   resetAgentRunsForTests,
   resetAgentSessionsForTests,
   setAgentRunnerForTests,
+  setReadAgentRunnerForTests,
   setDurableStoresForTests
 } from "./agent-runtime-adapter";
 import { JsonlConversationStore } from "./durable/jsonl-conversation-store";
@@ -27,6 +28,97 @@ function awaitingOutcome(runId: string): WorkbenchOutcome {
     approvalRecord: { id: "apr-1", status: "pending" },
     responseText: "待审批"
   };
+}
+
+function resolvedReadOutcome(turnId: string, stateVersion = 1): WorkbenchOutcome {
+  const readState = {
+    activeFrame: {
+      frameId: "frame-read-1",
+      capabilityId: "MM.Inventory.GetAvailability",
+      slots: {
+        material: {
+          name: "material", value: "DEMOA2", candidates: ["DEMOA2"],
+          state: "RESOLVED" as const, provenance: "EXPLICIT" as const,
+          sourceTurnId: turnId, sourceSpan: null, issues: [],
+        },
+        plant: {
+          name: "plant", value: "1000", candidates: ["1000"],
+          state: "RESOLVED" as const, provenance: "EXPLICIT" as const,
+          sourceTurnId: turnId, sourceSpan: null, issues: [],
+        },
+      },
+      status: "READY" as const,
+      createdTurnId: turnId,
+      updatedTurnId: turnId,
+      registrySnapshotId: "snapshot-read-1",
+      capabilityVersion: "1",
+    },
+    recentFrames: [],
+    pendingInteraction: null,
+    stateVersion,
+  };
+  const callPlan = {
+    agentTraceId: "agent-read-1",
+    capabilityId: "MM.Inventory.GetAvailability",
+    kind: "Function",
+    parameters: { material: "DEMOA2", plant: "1000", unit: "EA" },
+    validationPolicy: "validate_before_execute",
+    createdBy: "agent",
+    requiresApproval: false,
+  };
+  return {
+    status: "resolved_read",
+    callPlan,
+    matchDecision: { decisionType: "SELECT", capabilityId: callPlan.capabilityId },
+    decision: { decisionType: "SELECT", capabilityId: callPlan.capabilityId },
+    conversationReadState: readState,
+    resolutionReport: { frameStatus: "READY" },
+    turnId,
+    frameId: "frame-read-1",
+    stateVersion,
+    registrySnapshotId: "snapshot-read-1",
+    readExecutionBinding: {
+      turnId,
+      frameId: "frame-read-1",
+      stateVersion,
+      registrySnapshotId: "snapshot-read-1",
+      principalId: PLACEHOLDER_PRINCIPAL.principalId,
+      capabilityVersion: "1",
+      callPlanHash: "bound-hash",
+      readState,
+    },
+    responseText: "ready",
+  };
+}
+
+function clarifyReadOutcome(turnId: string, stateVersion = 1): WorkbenchOutcome {
+  const resolved = resolvedReadOutcome(turnId, stateVersion);
+  const frame = resolved.conversationReadState!.activeFrame!;
+  frame.status = "COLLECTING";
+  frame.slots.material = {
+    ...frame.slots.material,
+    value: null,
+    candidates: [],
+    state: "CLEARED",
+  };
+  resolved.status = "clarification";
+  resolved.callPlan = null;
+  resolved.matchDecision = {
+    decisionType: "CLARIFY",
+    capabilityId: "MM.Inventory.GetAvailability",
+    missingParameters: ["material"],
+  };
+  resolved.decision = resolved.matchDecision;
+  resolved.readExecutionBinding = null;
+  resolved.conversationReadState!.pendingInteraction = {
+    kind: "SLOT_CLARIFICATION",
+    frameId: "frame-read-1",
+    expectedFields: ["material"],
+    stateVersion,
+    registrySnapshotId: "snapshot-read-1",
+    expiresAt: "2099-01-01T00:00:00Z",
+  };
+  return resolved;
 }
 
 async function waitForRunSettled(runId: string, timeoutMs = 5000, minEventCount = 0): Promise<AgentRunEvent[]> {
@@ -60,6 +152,7 @@ describe("agent-runtime-adapter durable integration", () => {
   });
   afterEach(() => {
     setAgentRunnerForTests(null);
+    setReadAgentRunnerForTests(null);
     setDurableStoresForTests(
       new JsonlRunStore(mkdtempSync(path.join(tmpdir(), "teardown-"))),
       new JsonlConversationStore(mkdtempSync(path.join(tmpdir(), "teardown-")))
@@ -93,6 +186,90 @@ describe("agent-runtime-adapter durable integration", () => {
     expect(supplied.turnId).toBe("client-turn-1");
     expect(generated.turnId).toMatch(/^turn-/);
     expect(generated.turnId).not.toBe(supplied.turnId);
+  });
+
+  it("persists resolved Frame v2 before continuing a SELECT", async () => {
+    const phases: string[] = [];
+    setReadAgentRunnerForTests(async (input) => {
+      phases.push(input.mode);
+      if (input.mode === "resolve-read") {
+        return resolvedReadOutcome(input.turnId!);
+      }
+      if (input.mode === "continue-read") {
+        const persisted = await convStore.load("c-read-order", PLACEHOLDER_PRINCIPAL.principalId);
+        expect(persisted?.stateVersion).toBe(1);
+        expect(persisted?.activeFrame?.status).toBe("READY");
+        expect(persisted?.lastAppliedTurnId).toBe("turn-read-order");
+        return { status: "success", responseText: "库存 7 EA" };
+      }
+      throw new Error(`unexpected runner mode ${input.mode}`);
+    });
+
+    const { runId } = await createAgentRun({
+      query: "查库存",
+      conversationId: "c-read-order",
+      turnId: "turn-read-order",
+      principal: PLACEHOLDER_PRINCIPAL,
+    });
+    await waitForRunSettled(runId);
+
+    expect(phases).toEqual(["resolve-read", "continue-read"]);
+  });
+
+  it("persists bound READ pending interaction across restart without continuation", async () => {
+    let continuationCalls = 0;
+    setReadAgentRunnerForTests(async (input) => {
+      if (input.mode === "continue-read") continuationCalls++;
+      return clarifyReadOutcome(input.turnId!);
+    });
+    const { runId } = await createAgentRun({
+      query: "换个物料能查吗",
+      conversationId: "c-read-pending",
+      turnId: "turn-read-pending",
+      principal: PLACEHOLDER_PRINCIPAL,
+    });
+    await waitForRunSettled(runId);
+
+    const reopened = new JsonlConversationStore(dir);
+    const session = await reopened.load("c-read-pending", PLACEHOLDER_PRINCIPAL.principalId);
+    expect(session?.pendingInteraction).toEqual({
+      kind: "SLOT_CLARIFICATION",
+      frameId: "frame-read-1",
+      expectedFields: ["material"],
+      stateVersion: 1,
+      registrySnapshotId: "snapshot-read-1",
+      expiresAt: "2099-01-01T00:00:00Z",
+    });
+    expect(continuationCalls).toBe(0);
+  });
+
+  it("CAS conflict prevents READ continuation", async () => {
+    let continuationCalls = 0;
+    const conflictStore = {
+      load: convStore.load.bind(convStore),
+      claim: convStore.claim.bind(convStore),
+      compareAndSwap: vi.fn(async () => ({ status: "conflict" as const, actualVersion: 9 })),
+      renew: convStore.renew.bind(convStore),
+      release: convStore.release.bind(convStore),
+      lookupTurn: convStore.lookupTurn.bind(convStore),
+      clear: convStore.clear.bind(convStore),
+      clearAll: convStore.clearAll.bind(convStore),
+    };
+    setDurableStoresForTests(runStore, conflictStore);
+    setReadAgentRunnerForTests(async (input) => {
+      if (input.mode === "continue-read") continuationCalls++;
+      return resolvedReadOutcome(input.turnId!);
+    });
+
+    const { runId } = await createAgentRun({
+      query: "查库存",
+      conversationId: "c-read-conflict",
+      turnId: "turn-read-conflict",
+      principal: PLACEHOLDER_PRINCIPAL,
+    });
+    await waitForRunSettled(runId);
+
+    expect(continuationCalls).toBe(0);
   });
 
   it("getAgentRunEvents returns [] for unknown run", async () => {
