@@ -2,103 +2,50 @@
 
 from __future__ import annotations
 
-import hashlib
-import hmac
-import json
-import secrets
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass
+from datetime import UTC, datetime
 from types import MappingProxyType
 from typing import Iterable, Literal, Mapping
 
 from sap_nexus_agent.context_reducer import ContextResolution
-from sap_nexus_agent.governed_context import VisibleCapabilitySet
+from sap_nexus_agent.governed_context import (
+    GovernedContext,
+    SnapshotLease,
+    TrustedPrincipal,
+    VisibleCapabilitySet,
+)
 from sap_nexus_agent.match_decision import MatchDecision, MatchedIntent
 from sap_nexus_agent.planner.capability_card import CapabilityCard
 from sap_nexus_agent.semantic_planning import SemanticSourceDocuments
+from sap_nexus_agent.semantic_planning import validation as semantic_validation
 
 CandidatePurpose = Literal["AMBIGUITY", "MULTI_GOAL"]
+__all__ = [
+    "ContextDecisionResult",
+    "ContextShadow",
+    "ReadCapabilityCandidates",
+    "decide_read_context",
+    "evaluate_context_shadow",
+]
 _DECISION_TYPES = frozenset(
     {"SELECT", "CLARIFY", "REJECT", "SHOW_OPTIONS", "ESCALATE_TO_PLANNER"}
 )
-_EXECUTION_PROJECTION_KEY = secrets.token_bytes(32)
 
 
-@dataclass(frozen=True)
-class ExecutionVisibilityProjection:
-    """Server-issued proof of execution eligibility for one governed view."""
+@dataclass(frozen=True, repr=False)
+class _ServerReadAuthority:
+    """Ephemeral eligibility derived and consumed inside this service boundary."""
 
+    visible: VisibleCapabilitySet
     capability_ids: frozenset[str]
+    sources: SemanticSourceDocuments
     snapshot_id: str
-    principal_id: str
-    visible_context_binding: str
-    _proof: bytes = field(repr=False)
 
-    def __post_init__(self) -> None:
-        object.__setattr__(self, "capability_ids", frozenset(self.capability_ids))
+    def __reduce__(self) -> object:
+        raise TypeError("server READ authority is not serializable")
 
-
-def _build_execution_visibility_projection(
-    *,
-    cards: Iterable[CapabilityCard],
-    visible: VisibleCapabilitySet,
-    current_snapshot_id: str,
-    sources: SemanticSourceDocuments,
-) -> ExecutionVisibilityProjection:
-    """Issue a projection only from current Registry and governed card facts."""
-    raw_capabilities = _unique_registry_index(
-        sources.capabilities.get("capabilities", ()), "capabilityId"
-    )
-    bindings = _unique_registry_index(
-        sources.executor_bindings.get("bindings", ()), "bindingId"
-    )
-
-    from sap_nexus_agent.visibility import filter_visible
-
-    execution_cards = _unique_card_index(filter_visible(list(cards), for_execution=True))
-    visible_cards = _unique_card_index(visible.cards)
-    eligible_ids: set[str] = set()
-    if visible.snapshot_id == current_snapshot_id:
-        for capability_id, card in execution_cards.items():
-            if (
-                visible_cards.get(capability_id) != card
-                or card.registry_snapshot_id != current_snapshot_id
-                or card.governance.requires_approval
-            ):
-                continue
-            capability = raw_capabilities.get(capability_id)
-            if not isinstance(capability, Mapping) or capability.get("status") != "active":
-                continue
-            executor_binding = capability.get("executorBinding")
-            if not isinstance(executor_binding, Mapping):
-                continue
-            binding_id = executor_binding.get("bindingId")
-            binding = bindings.get(binding_id)
-            if (
-                not isinstance(binding_id, str)
-                or not binding_id
-                or not isinstance(binding, Mapping)
-                or executor_binding.get("type") != binding.get("type")
-            ):
-                continue
-            constraints = binding.get("constraints")
-            if isinstance(constraints, Mapping) and constraints.get("sideEffect") == "none":
-                eligible_ids.add(capability_id)
-
-    capability_ids = frozenset(eligible_ids)
-    visible_context_binding = _visible_context_binding(visible)
-    proof = _execution_projection_proof(
-        capability_ids,
-        current_snapshot_id,
-        visible.principal_id,
-        visible_context_binding,
-    )
-    return ExecutionVisibilityProjection(
-        capability_ids=capability_ids,
-        snapshot_id=current_snapshot_id,
-        principal_id=visible.principal_id,
-        visible_context_binding=visible_context_binding,
-        _proof=proof,
-    )
+    def __reduce_ex__(self, _protocol: int) -> object:
+        raise TypeError("server READ authority is not serializable")
 
 
 @dataclass(frozen=True)
@@ -184,27 +131,49 @@ class ContextDecisionResult:
 def decide_read_context(
     resolution: ContextResolution | None,
     *,
-    visible: VisibleCapabilitySet,
-    current_snapshot_id: str,
+    governed_context: GovernedContext | None = None,
+    lease: SnapshotLease | None = None,
     capability_candidates: ReadCapabilityCandidates | None = None,
-    execution_visibility: ExecutionVisibilityProjection | None = None,
 ) -> ContextDecisionResult:
-    """Map one reduced frame to a closed-set READ decision without side effects."""
+    """Derive current server authority and decide without exposing it.
+
+    ``governed_context`` and ``lease`` are server-owned orchestration inputs.
+    Request/model/Session fields may influence ``resolution`` or candidates,
+    but cannot provide visibility, Registry sources, or execution eligibility.
+    The derived authority exists only for this call and is never returned.
+    """
     report = _resolution_report(resolution)
-    if not current_snapshot_id or visible.snapshot_id != current_snapshot_id:
-        return _reject(report, "CONTEXT_SNAPSHOT_DRIFT", "当前 Registry 快照不匹配。")
-    executable_ids = _validated_execution_ids(
-        execution_visibility, visible, current_snapshot_id
-    )
-    if executable_ids is None:
+    authority = _derive_server_read_authority(governed_context, lease)
+    if authority is None:
         return _reject(
             report,
             "EXECUTION_VISIBILITY_INVALID",
-            "READ 执行可见性投影无效或不属于当前受信上下文。",
+            "READ 执行权威缺失、无效或不属于当前服务端上下文。",
         )
+    return _decide_read_context(
+        resolution,
+        authority=authority,
+        capability_candidates=capability_candidates,
+    )
+
+
+def _decide_read_context(
+    resolution: ContextResolution | None,
+    *,
+    authority: _ServerReadAuthority,
+    capability_candidates: ReadCapabilityCandidates | None,
+) -> ContextDecisionResult:
+    """Pure decision core; callers cannot inject execution eligibility."""
+    report = _resolution_report(resolution)
+    visible = authority.visible
+    current_snapshot_id = authority.snapshot_id
 
     candidate_decision = _candidate_decision(
-        capability_candidates, visible, current_snapshot_id, report, executable_ids
+        capability_candidates,
+        visible,
+        current_snapshot_id,
+        report,
+        authority.capability_ids,
     )
     if candidate_decision is not None:
         return candidate_decision
@@ -219,7 +188,9 @@ def decide_read_context(
     if len(cards) != 1:
         return _reject(report, "VISIBILITY_DENIED", "上下文能力不在当前可见闭集内。")
     card = cards[0]
-    if not _is_current_executable_read(card, current_snapshot_id, executable_ids):
+    if not _is_current_executable_read(
+        card, current_snapshot_id, authority.capability_ids
+    ):
         return _reject(
             report,
             "READ_CONTEXT_VISIBILITY_DENIED",
@@ -325,57 +296,302 @@ def _is_current_executable_read(
     )
 
 
-def _projection_allows_execution(
-    projection: ExecutionVisibilityProjection,
-    *,
-    visible: VisibleCapabilitySet,
-    current_snapshot_id: str,
-    capability_id: str,
-) -> bool:
-    executable_ids = _validated_execution_ids(
-        projection, visible, current_snapshot_id
-    )
-    return executable_ids is not None and capability_id in executable_ids
-
-
-def _validated_execution_ids(
-    projection: ExecutionVisibilityProjection | None,
-    visible: VisibleCapabilitySet,
-    current_snapshot_id: str,
-) -> frozenset[str] | None:
-    if projection is None:
-        return frozenset(
-            card.capability_id
-            for card in visible.cards
-            if card.visibility == "VISIBLE_EXECUTION"
-        )
-    if not isinstance(projection, ExecutionVisibilityProjection):
-        return None
-    try:
-        visible_context_binding = _visible_context_binding(visible)
-        expected_proof = _execution_projection_proof(
-            projection.capability_ids,
-            projection.snapshot_id,
-            projection.principal_id,
-            projection.visible_context_binding,
-        )
-    except (AttributeError, TypeError, ValueError):
-        return None
+def _derive_server_read_authority(
+    governed_context: GovernedContext | None,
+    lease: SnapshotLease | None,
+) -> _ServerReadAuthority | None:
+    """Bind current immutable sources, snapshot, principal and READ bindings."""
     if (
-        projection.snapshot_id != current_snapshot_id
-        or projection.principal_id != visible.principal_id
-        or projection.visible_context_binding != visible_context_binding
-        or not isinstance(projection._proof, bytes)
-        or not hmac.compare_digest(projection._proof, expected_proof)
+        not isinstance(governed_context, GovernedContext)
+        or not isinstance(governed_context.principal, TrustedPrincipal)
+        or not isinstance(lease, SnapshotLease)
+        or not isinstance(lease.sources, SemanticSourceDocuments)
     ):
         return None
-    for capability_id in projection.capability_ids:
-        matches = [card for card in visible.cards if card.capability_id == capability_id]
-        if len(matches) != 1 or not _is_current_executable_read(
-            matches[0], current_snapshot_id, projection.capability_ids
+    try:
+        contracts = semantic_validation.build_semantic_contracts(lease.sources)
+        if (
+            not contracts.report.valid
+            or contracts.snapshot != lease.snapshot
+            or not governed_context.principal.principal_id
+            or governed_context.snapshot_id != lease.snapshot_id
+            or governed_context.registry_version != lease.registry_version
         ):
             return None
-    return projection.capability_ids
+        return _project_server_read_authority(governed_context, lease)
+    except Exception:
+        # Malformed Registry data or projection failures never grant authority.
+        return None
+
+
+def _project_server_read_authority(
+    governed_context: GovernedContext,
+    lease: SnapshotLease,
+) -> _ServerReadAuthority:
+    from sap_nexus_agent.planner.capability_card import discover_cards
+    from sap_nexus_agent.visibility import filter_visible
+
+    all_cards = discover_cards(lease.snapshot, lease.sources)
+    visible_cards = filter_visible(all_cards, for_execution=False)
+    visible = VisibleCapabilitySet(
+        cards=tuple(visible_cards),
+        snapshot_id=lease.snapshot_id,
+        principal_id=governed_context.principal.principal_id,
+    )
+    raw_capabilities = _unique_registry_index(
+        lease.sources.capabilities.get("capabilities", ()), "capabilityId"
+    )
+    bindings = _unique_registry_index(
+        lease.sources.executor_bindings.get("bindings", ()), "bindingId"
+    )
+    execution_cards = _unique_card_index(
+        filter_visible(all_cards, for_execution=True)
+    )
+    unique_visible_cards = _unique_card_index(visible_cards)
+    eligible_ids: set[str] = set()
+    for capability_id, card in execution_cards.items():
+        if (
+            unique_visible_cards.get(capability_id) != card
+            or card.registry_snapshot_id != lease.snapshot_id
+            or card.governance.requires_approval
+        ):
+            continue
+        capability = raw_capabilities.get(capability_id)
+        if not isinstance(capability, Mapping) or capability.get("status") != "active":
+            continue
+        executor_binding = capability.get("executorBinding")
+        if not isinstance(executor_binding, Mapping):
+            continue
+        binding_id = executor_binding.get("bindingId")
+        binding = bindings.get(binding_id)
+        if (
+            not isinstance(binding_id, str)
+            or not binding_id
+            or not isinstance(binding, Mapping)
+            or executor_binding.get("type") != binding.get("type")
+        ):
+            continue
+        constraints = binding.get("constraints")
+        if isinstance(constraints, Mapping) and constraints.get("sideEffect") == "none":
+            eligible_ids.add(capability_id)
+
+    return _ServerReadAuthority(
+        visible=visible,
+        capability_ids=frozenset(eligible_ids),
+        sources=lease.sources,
+        snapshot_id=lease.snapshot_id,
+    )
+
+
+def evaluate_context_shadow(
+    *,
+    decision: MatchDecision,
+    envelope: object,
+    prior_state: object | None,
+    governed_context: GovernedContext | None,
+    lease: SnapshotLease | None,
+) -> ContextShadow | None:
+    """Resolve and decide one shadow turn inside the trusted service boundary."""
+    authority = _derive_server_read_authority(governed_context, lease)
+    if authority is None:
+        return None
+    capability_candidates = _shadow_capability_candidates(
+        envelope, decision, authority.snapshot_id
+    )
+    if capability_candidates is None:
+        return None
+    if capability_candidates.purpose == "MULTI_GOAL" or len(
+        capability_candidates.capability_ids
+    ) > 1:
+        frame_decision = _decide_read_context(
+            None,
+            authority=authority,
+            capability_candidates=capability_candidates,
+        )
+        return _to_context_shadow(decision, frame_decision, ())
+
+    capability_id = capability_candidates.capability_ids[0]
+    descriptor = _current_read_descriptor(authority, capability_id)
+    if descriptor is None:
+        return None
+
+    from sap_nexus_agent.context_candidates import extract_context_candidates
+    from sap_nexus_agent.context_reducer import ContextReductionRequest, reduce_context
+    from sap_nexus_agent.read_context import ConversationReadState
+
+    if prior_state is None:
+        current_state = ConversationReadState(None, None, 0)
+    elif isinstance(prior_state, ConversationReadState):
+        current_state = prior_state
+    else:
+        return None
+    resolution = reduce_context(
+        ContextReductionRequest(
+            prior_state=current_state,
+            candidates=extract_context_candidates(
+                envelope.utterance, descriptor, envelope
+            ),
+            descriptor=descriptor,
+            registry_snapshot_id=authority.snapshot_id,
+            capability_version=_capability_version(
+                authority.sources, descriptor.capability_id
+            ),
+            turn_id="shadow-read-context",
+            server_time=datetime.now(UTC),
+        )
+    )
+    frame_decision = _decide_read_context(
+        resolution,
+        authority=authority,
+        capability_candidates=capability_candidates,
+    )
+    legacy_parameters = decision.parameters or {}
+    frame_parameters = frame_decision.call_plan_parameters or {}
+    slot_diff = tuple(
+        input_.name
+        for input_ in descriptor.inputs
+        if legacy_parameters.get(input_.name) != frame_parameters.get(input_.name)
+    )
+    return _to_context_shadow(decision, frame_decision, slot_diff)
+
+
+def _shadow_capability_candidates(
+    envelope: object,
+    decision: MatchDecision,
+    snapshot_id: str,
+) -> ReadCapabilityCandidates | None:
+    goals = getattr(envelope, "goals", None)
+    if not isinstance(goals, tuple):
+        return None
+    if len(goals) > 1:
+        capability_ids = tuple(
+            goal.capability_hint
+            for goal in goals
+            if isinstance(getattr(goal, "capability_hint", None), str)
+            and goal.capability_hint
+        )
+        return ReadCapabilityCandidates(
+            capability_ids=capability_ids,
+            snapshot_id=snapshot_id,
+            purpose="MULTI_GOAL",
+            goal_count=len(goals),
+        )
+    if len(goals) != 1:
+        return None
+
+    recall_candidates = tuple(decision.recall_candidates)
+    if len(recall_candidates) > 1:
+        return ReadCapabilityCandidates(
+            capability_ids=recall_candidates,
+            snapshot_id=snapshot_id,
+            purpose="AMBIGUITY",
+        )
+    capability_id = getattr(goals[0], "capability_hint", None)
+    if not isinstance(capability_id, str) or not capability_id:
+        return None
+    return ReadCapabilityCandidates(
+        capability_ids=(capability_id,),
+        snapshot_id=snapshot_id,
+        purpose="AMBIGUITY",
+    )
+
+
+def _current_read_descriptor(
+    authority: _ServerReadAuthority,
+    capability_id: str,
+):
+    cards = [
+        card
+        for card in authority.visible.cards
+        if card.capability_id == capability_id
+    ]
+    if len(cards) != 1:
+        return None
+    card = cards[0]
+    if not _is_current_executable_read(
+        card, authority.snapshot_id, authority.capability_ids
+    ):
+        return None
+
+    raw_capabilities = authority.sources.capabilities.get("capabilities")
+    if not isinstance(raw_capabilities, (tuple, list)):
+        return None
+    matches = [
+        raw
+        for raw in raw_capabilities
+        if isinstance(raw, Mapping)
+        and raw.get("capabilityId") == capability_id
+        and raw.get("status") == "active"
+    ]
+    if len(matches) != 1:
+        return None
+
+    from sap_nexus_agent.registry_loader import CapabilityDescriptor, InputDescriptor
+
+    raw = matches[0]
+    raw_inputs = raw.get("inputs")
+    if not isinstance(raw_inputs, (tuple, list)):
+        return None
+    inputs = []
+    for input_ in raw_inputs:
+        if not isinstance(input_, Mapping) or not isinstance(input_.get("name"), str):
+            return None
+        inputs.append(
+            InputDescriptor(
+                name=input_["name"],
+                semantic_name=str(input_.get("semanticName", input_["name"])),
+                semantic_type=str(input_.get("semanticType", "")),
+                binding_kind=(
+                    str(input_["bindingKind"])
+                    if input_.get("bindingKind") is not None
+                    else None
+                ),
+                required=bool(input_.get("required", False)),
+                type=str(input_.get("type", "string")),
+                min_length=input_.get("minLength"),
+                max_length=input_.get("maxLength"),
+                pattern=input_.get("pattern"),
+            )
+        )
+    return CapabilityDescriptor(
+        capability_id=capability_id,
+        name=str(raw.get("name", "")),
+        description=str(raw.get("description", "")),
+        domain=str(raw.get("domain", "")),
+        business_object=str(raw.get("businessObject", "")),
+        inputs=tuple(inputs),
+        aliases=(),
+        examples=(),
+        side_effect=card.governance.side_effect,
+    )
+
+
+def _capability_version(
+    sources: SemanticSourceDocuments, capability_id: str
+) -> str:
+    capabilities = _unique_registry_index(
+        sources.capabilities.get("capabilities", ()), "capabilityId"
+    )
+    capability = capabilities.get(capability_id)
+    return str(capability.get("version", "1")) if capability is not None else "1"
+
+
+def _to_context_shadow(
+    legacy_decision: MatchDecision,
+    frame_decision: ContextDecisionResult,
+    slot_diff: tuple[str, ...],
+) -> ContextShadow:
+    frame_decision_type = frame_decision.decision.decision_type
+    return ContextShadow(
+        legacy_decision=legacy_decision.decision_type,
+        frame_v2_decision=frame_decision_type,
+        slot_diff=slot_diff,
+        would_block_legacy_execution=(
+            legacy_decision.decision_type == "SELECT"
+            and frame_decision_type != "SELECT"
+        ),
+        would_clarify=frame_decision_type == "CLARIFY",
+    )
 
 
 def _unique_registry_index(
@@ -410,38 +626,6 @@ def _unique_card_index(cards: Iterable[CapabilityCard]) -> dict[str, CapabilityC
             continue
         index[capability_id] = card
     return index
-
-
-def _visible_context_binding(visible: VisibleCapabilitySet) -> str:
-    payload = {
-        "cards": [asdict(card) for card in visible.cards],
-        "principalId": visible.principal_id,
-        "snapshotId": visible.snapshot_id,
-    }
-    canonical = json.dumps(
-        payload, ensure_ascii=True, separators=(",", ":"), sort_keys=True
-    ).encode("utf-8")
-    return "sha256:" + hashlib.sha256(canonical).hexdigest()
-
-
-def _execution_projection_proof(
-    capability_ids: frozenset[str],
-    snapshot_id: str,
-    principal_id: str,
-    visible_context_binding: str,
-) -> bytes:
-    payload = json.dumps(
-        {
-            "capabilityIds": sorted(capability_ids),
-            "principalId": principal_id,
-            "snapshotId": snapshot_id,
-            "visibleContextBinding": visible_context_binding,
-        },
-        ensure_ascii=True,
-        separators=(",", ":"),
-        sort_keys=True,
-    ).encode("utf-8")
-    return hmac.digest(_EXECUTION_PROJECTION_KEY, payload, "sha256")
 
 
 def _clarification_fields(inputs, slots) -> list[str]:

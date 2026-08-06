@@ -2,9 +2,7 @@ from __future__ import annotations
 
 import itertools
 import os
-from collections.abc import Mapping
 from dataclasses import dataclass
-from datetime import UTC, datetime
 from pathlib import Path
 from typing import Callable
 
@@ -272,18 +270,6 @@ def run_query(
         snapshot_id=lease.snapshot_id,
         principal_id=effective_principal.principal_id,
     )
-    # Bind shadow eligibility to this snapshot's Registry and governed view.
-    # Legacy dry-run card labels remain unchanged and authoritative for legacy.
-    from sap_nexus_agent.context_decision_gate import (
-        _build_execution_visibility_projection,
-    )
-
-    shadow_execution_visibility = _build_execution_visibility_projection(
-        cards=all_cards,
-        visible=visible_capability_set,
-        current_snapshot_id=lease.snapshot_id,
-        sources=sources,
-    )
 
     # Runbook 14 bridge: if the adapter returned an IntentEnvelope, dispatch
     # through recall -> rerank -> select_capability_from_envelope. Otherwise
@@ -306,10 +292,8 @@ def run_query(
         decision=decision,
         envelope=envelope,
         context=context,
-        visible=visible_capability_set,
-        execution_visibility=shadow_execution_visibility,
-        snapshot_id=lease.snapshot_id,
-        sources=sources,
+        governed_context=governed_context,
+        lease=lease,
     )
 
     # REJECT (technical override / unsupported intent): no Gateway.
@@ -843,231 +827,22 @@ def _context_shadow(
     decision: MatchDecision,
     envelope: "IntentEnvelope | None",
     context: "ConversationContext | None",
-    visible: VisibleCapabilitySet,
-    execution_visibility: "ExecutionVisibilityProjection",
-    snapshot_id: str,
-    sources: SemanticSourceDocuments,
+    governed_context: GovernedContext,
+    lease: SnapshotLease,
 ) -> "ContextShadow | None":
-    """Compare legacy selection with a local v2 reduction, without execution."""
+    """Enter the combined server-owned shadow decision service."""
     if mode != "shadow" or envelope is None:
         return None
 
-    from sap_nexus_agent.context_decision_gate import (
-        ContextShadow,
-        ReadCapabilityCandidates,
-        decide_read_context,
+    from sap_nexus_agent.context_decision_gate import evaluate_context_shadow
+
+    return evaluate_context_shadow(
+        decision=decision,
+        envelope=envelope,
+        prior_state=context.read_state if context is not None else None,
+        governed_context=governed_context,
+        lease=lease,
     )
-
-    capability_candidates = _shadow_capability_candidates(
-        envelope, decision, snapshot_id
-    )
-    if capability_candidates is None:
-        return None
-    if capability_candidates.purpose == "MULTI_GOAL" or len(
-        capability_candidates.capability_ids
-    ) > 1:
-        frame_decision = decide_read_context(
-            None,
-            visible=visible,
-            current_snapshot_id=snapshot_id,
-            capability_candidates=capability_candidates,
-            execution_visibility=execution_visibility,
-        )
-        return ContextShadow(
-            legacy_decision=decision.decision_type,
-            frame_v2_decision=frame_decision.decision.decision_type,
-            slot_diff=(),
-            would_block_legacy_execution=(
-                decision.decision_type == "SELECT"
-                and frame_decision.decision.decision_type != "SELECT"
-            ),
-            would_clarify=frame_decision.decision.decision_type == "CLARIFY",
-        )
-
-    capability_id = capability_candidates.capability_ids[0]
-
-    descriptor = _current_read_descriptor(
-        capability_id=capability_id,
-        visible=visible,
-        execution_visibility=execution_visibility,
-        snapshot_id=snapshot_id,
-        sources=sources,
-    )
-    if descriptor is None:
-        return None
-
-    from sap_nexus_agent.context_candidates import extract_context_candidates
-    from sap_nexus_agent.context_reducer import ContextReductionRequest, reduce_context
-    from sap_nexus_agent.read_context import ConversationReadState
-
-    prior_state = (
-        context.read_state
-        if context is not None and context.read_state is not None
-        else ConversationReadState(None, None, 0)
-    )
-    resolution = reduce_context(
-        ContextReductionRequest(
-            prior_state=prior_state,
-            candidates=extract_context_candidates(envelope.utterance, descriptor, envelope),
-            descriptor=descriptor,
-            registry_snapshot_id=snapshot_id,
-            capability_version=_capability_version(sources, descriptor.capability_id),
-            turn_id="shadow-read-context",
-            server_time=datetime.now(UTC),
-        )
-    )
-    frame_decision = decide_read_context(
-        resolution,
-        visible=visible,
-        current_snapshot_id=snapshot_id,
-        capability_candidates=capability_candidates,
-        execution_visibility=execution_visibility,
-    )
-    legacy_parameters = decision.parameters or {}
-    frame_parameters = frame_decision.call_plan_parameters or {}
-    slot_order = [input_.name for input_ in descriptor.inputs]
-    all_slots = slot_order
-    slot_diff = [
-        name for name in all_slots if legacy_parameters.get(name) != frame_parameters.get(name)
-    ]
-    return ContextShadow(
-        legacy_decision=decision.decision_type,
-        frame_v2_decision=frame_decision.decision.decision_type,
-        slot_diff=tuple(slot_diff),
-        would_block_legacy_execution=(
-            decision.decision_type == "SELECT"
-            and frame_decision.decision.decision_type != "SELECT"
-        ),
-        would_clarify=frame_decision.decision.decision_type == "CLARIFY",
-    )
-
-
-def _shadow_capability_candidates(
-    envelope: "IntentEnvelope", decision: MatchDecision, snapshot_id: str
-) -> "ReadCapabilityCandidates | None":
-    """Derive bounded shadow candidates without upgrading advisory evidence."""
-    from sap_nexus_agent.context_decision_gate import ReadCapabilityCandidates
-
-    if len(envelope.goals) > 1:
-        capability_ids = tuple(
-            goal.capability_hint for goal in envelope.goals if goal.capability_hint
-        )
-        return ReadCapabilityCandidates(
-            capability_ids=capability_ids,
-            snapshot_id=snapshot_id,
-            purpose="MULTI_GOAL",
-            goal_count=len(envelope.goals),
-        )
-
-    if len(envelope.goals) != 1:
-        return None
-
-    recall_candidates = tuple(decision.recall_candidates)
-    if len(recall_candidates) > 1:
-        return ReadCapabilityCandidates(
-            capability_ids=recall_candidates,
-            snapshot_id=snapshot_id,
-            purpose="AMBIGUITY",
-        )
-
-    capability_id = envelope.goals[0].capability_hint
-    if not capability_id:
-        return None
-    return ReadCapabilityCandidates(
-        capability_ids=(capability_id,),
-        snapshot_id=snapshot_id,
-        purpose="AMBIGUITY",
-    )
-
-
-def _current_read_descriptor(
-    *,
-    capability_id: str,
-    visible: VisibleCapabilitySet,
-    execution_visibility: "ExecutionVisibilityProjection",
-    snapshot_id: str,
-    sources: SemanticSourceDocuments,
-):
-    """Return one trusted READ descriptor from the already-bound snapshot."""
-    cards = [card for card in visible.cards if card.capability_id == capability_id]
-    if len(cards) != 1:
-        return None
-    card = cards[0]
-    from sap_nexus_agent.context_decision_gate import _projection_allows_execution
-
-    if (
-        card.registry_snapshot_id != snapshot_id
-        or not _projection_allows_execution(
-            execution_visibility,
-            visible=visible,
-            current_snapshot_id=snapshot_id,
-            capability_id=card.capability_id,
-        )
-        or card.governance.side_effect != "none"
-        or card.governance.requires_approval
-        or card.governance.data_classification != "internal"
-    ):
-        return None
-
-    raw_capabilities = sources.capabilities.get("capabilities")
-    if not isinstance(raw_capabilities, (tuple, list)):
-        return None
-    matches = [
-        raw
-        for raw in raw_capabilities
-        if isinstance(raw, Mapping)
-        and raw.get("capabilityId") == capability_id
-        and raw.get("status") == "active"
-    ]
-    if len(matches) != 1:
-        return None
-
-    from sap_nexus_agent.registry_loader import CapabilityDescriptor, InputDescriptor
-
-    raw = matches[0]
-    raw_inputs = raw.get("inputs")
-    if not isinstance(raw_inputs, (tuple, list)):
-        return None
-    inputs = []
-    for input_ in raw_inputs:
-        if not isinstance(input_, Mapping) or not isinstance(input_.get("name"), str):
-            return None
-        inputs.append(
-            InputDescriptor(
-                name=input_["name"],
-                semantic_name=str(input_.get("semanticName", input_["name"])),
-                semantic_type=str(input_.get("semanticType", "")),
-                binding_kind=(
-                    str(input_["bindingKind"]) if input_.get("bindingKind") is not None else None
-                ),
-                required=bool(input_.get("required", False)),
-                type=str(input_.get("type", "string")),
-                min_length=input_.get("minLength"),
-                max_length=input_.get("maxLength"),
-                pattern=input_.get("pattern"),
-            )
-        )
-    return CapabilityDescriptor(
-        capability_id=capability_id,
-        name=str(raw.get("name", "")),
-        description=str(raw.get("description", "")),
-        domain=str(raw.get("domain", "")),
-        business_object=str(raw.get("businessObject", "")),
-        inputs=tuple(inputs),
-        aliases=(),
-        examples=(),
-        side_effect=card.governance.side_effect,
-    )
-
-
-def _capability_version(sources: SemanticSourceDocuments, capability_id: str) -> str:
-    """Use the bound registry source's version as the local shadow binding."""
-    raw_capabilities = sources.capabilities.get("capabilities")
-    if isinstance(raw_capabilities, (tuple, list)):
-        for raw in raw_capabilities:
-            if isinstance(raw, Mapping) and raw.get("capabilityId") == capability_id:
-                return str(raw.get("version", "1"))
-    return "1"
 
 
 def _message_text(message: object) -> str:

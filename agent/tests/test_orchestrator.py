@@ -46,6 +46,154 @@ class FakeGatewayClient:
         return self.execution
 
 
+def test_shadow_adapter_has_only_one_cross_module_gate_call():
+    import ast
+    import inspect
+    import textwrap
+
+    from sap_nexus_agent import orchestrator
+
+    tree = ast.parse(textwrap.dedent(inspect.getsource(orchestrator._context_shadow)))
+    imports = [
+        node for node in ast.walk(tree) if isinstance(node, (ast.Import, ast.ImportFrom))
+    ]
+    calls = [node for node in ast.walk(tree) if isinstance(node, ast.Call)]
+
+    assert len(imports) == 1
+    assert isinstance(imports[0], ast.ImportFrom)
+    assert imports[0].module == "sap_nexus_agent.context_decision_gate"
+    assert [(alias.name, alias.asname) for alias in imports[0].names] == [
+        ("evaluate_context_shadow", None)
+    ]
+    assert len(calls) == 1
+    assert isinstance(calls[0].func, ast.Name)
+    assert calls[0].func.id == "evaluate_context_shadow"
+
+
+def test_shadow_orchestration_calls_the_combined_trusted_facade(monkeypatch):
+    from sap_nexus_agent import context_decision_gate
+    from sap_nexus_agent.conversation_context import ConversationContext
+    from sap_nexus_agent.context_decision_gate import ContextShadow
+    from sap_nexus_agent.governed_context import GovernedContext, SnapshotLease
+    from sap_nexus_agent.intent_envelope import IntentEnvelope, IntentGoal
+
+    calls = []
+    expected_shadow = ContextShadow(
+        legacy_decision="ESCALATE_TO_PLANNER",
+        frame_v2_decision="ESCALATE_TO_PLANNER",
+        slot_diff=(),
+        would_block_legacy_execution=False,
+        would_clarify=False,
+    )
+
+    def combined_facade(**kwargs):
+        calls.append(kwargs)
+        return expected_shadow
+
+    monkeypatch.setattr(context_decision_gate, "evaluate_context_shadow", combined_facade)
+    monkeypatch.setenv("READ_CONTEXT_MODE", "shadow")
+
+    outcome = run_query(
+        "查库存和采购订单",
+        FakeGatewayClient(),
+        intent_adapter=lambda _text, _context=None: IntentEnvelope(
+            envelope_id="env-trusted-boundary",
+            utterance="查库存和采购订单",
+            goals=(
+                IntentGoal(
+                    "库存",
+                    "MM.Inventory.GetAvailability",
+                    {},
+                    ["material", "plant"],
+                ),
+                IntentGoal(
+                    "采购订单",
+                    "MM.PurchaseOrder.GetList",
+                    {},
+                    ["vendor"],
+                ),
+            ),
+            user_constraints={},
+            ambiguities=[],
+            reference_turn_id=None,
+            model_evidence={},
+            snapshot_id="model-controlled",
+            discard_reasons=[],
+            created_by="llm",
+        ),
+        context=ConversationContext(
+            None,
+            None,
+            read_state=ConversationReadState(None, None, 0),
+        ),
+    )
+
+    assert outcome.context_shadow is expected_shadow
+    assert len(calls) == 1
+    assert set(calls[0]) == {
+        "decision",
+        "envelope",
+        "prior_state",
+        "governed_context",
+        "lease",
+    }
+    assert isinstance(calls[0]["governed_context"], GovernedContext)
+    assert isinstance(calls[0]["lease"], SnapshotLease)
+
+
+def test_shadow_semantic_validation_failure_keeps_legacy_authoritative(monkeypatch):
+    from sap_nexus_agent.conversation_context import ConversationContext
+    from sap_nexus_agent.intent_envelope import IntentEnvelope, IntentGoal
+    from sap_nexus_agent.semantic_planning import validation as semantic_validation
+
+    def fail_validation(_sources):
+        raise RuntimeError("validation unavailable")
+
+    monkeypatch.setattr(
+        semantic_validation, "build_semantic_contracts", fail_validation
+    )
+    monkeypatch.setenv("READ_CONTEXT_MODE", "shadow")
+
+    outcome = run_query(
+        "查库存和采购订单",
+        FakeGatewayClient(),
+        intent_adapter=lambda _text, _context=None: IntentEnvelope(
+            envelope_id="env-shadow-validation-failure",
+            utterance="查库存和采购订单",
+            goals=(
+                IntentGoal(
+                    "库存",
+                    "MM.Inventory.GetAvailability",
+                    {},
+                    ["material", "plant"],
+                ),
+                IntentGoal(
+                    "采购订单",
+                    "MM.PurchaseOrder.GetList",
+                    {},
+                    ["vendor"],
+                ),
+            ),
+            user_constraints={},
+            ambiguities=[],
+            reference_turn_id=None,
+            model_evidence={},
+            snapshot_id="model-controlled",
+            discard_reasons=[],
+            created_by="llm",
+        ),
+        context=ConversationContext(
+            None,
+            None,
+            read_state=ConversationReadState(None, None, 0),
+        ),
+    )
+
+    assert outcome.match_decision is not None
+    assert outcome.match_decision.decision_type == "ESCALATE_TO_PLANNER"
+    assert outcome.context_shadow is None
+
+
 def test_shadow_context_keeps_legacy_authoritative_and_redacts_comparison(monkeypatch):
     """A bad model envelope is compared once, without changing legacy execution."""
     from sap_nexus_agent.conversation_context import ConversationContext
