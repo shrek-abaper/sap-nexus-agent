@@ -235,6 +235,24 @@ def test_awaiting_batch_confirm_serializes_combinations():
     assert result["callPlan"]["capabilityId"] == "MM.Inventory.GetAvailability"
 
 
+def test_workbench_output_serializes_only_redacted_context_shadow():
+    outcome = AgentOutcome(
+        status="success",
+        context_shadow={
+            "legacyDecision": "SELECT",
+            "frameV2Decision": "CLARIFY",
+            "slotDiff": ["material", "plant"],
+            "wouldBlockLegacyExecution": True,
+            "wouldClarify": True,
+        },
+    )
+
+    payload = outcome_to_workbench_dict(outcome)
+
+    assert payload["contextShadow"] == outcome.context_shadow
+    assert "rawPayload" not in payload["contextShadow"]
+
+
 def test_non_batch_outcome_combinations_is_none():
     outcome = AgentOutcome(
         status="success",

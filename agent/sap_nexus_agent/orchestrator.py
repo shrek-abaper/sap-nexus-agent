@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import itertools
+import os
+from collections.abc import Mapping
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Callable
 
@@ -99,6 +102,9 @@ class AgentOutcome:
     # and when a non-pending decision clears prior pending state. None when
     # run_query was called without a context (single-turn; no continuation).
     updated_context: "ConversationContext | None" = None
+    # Task 4 shadow rollout evidence. This is a redacted comparison only;
+    # it never contains a shadow CallPlan, session state, or model payload.
+    context_shadow: dict[str, object] | None = None
 
 
 IntentAdapter = Callable[[str, "ConversationContext | None"], IntentParseResult]
@@ -283,6 +289,16 @@ def run_query(
         decision = select_capability(parsed, visible=visible_capability_set)
         envelope = None
 
+    context_shadow = _context_shadow(
+        mode=_read_context_mode(),
+        decision=decision,
+        envelope=envelope,
+        context=context,
+        visible=visible_capability_set,
+        snapshot_id=lease.snapshot_id,
+        sources=sources,
+    )
+
     # REJECT (technical override / unsupported intent): no Gateway.
     if decision.decision_type == "REJECT":
         return AgentOutcome(
@@ -292,6 +308,7 @@ def run_query(
             error_type=decision.error_type,
             match_decision=decision,
             updated_context=_clear_pending_if_present(context),
+            context_shadow=context_shadow,
         )
 
     # CLARIFY (single intent missing required params): no Gateway.
@@ -303,6 +320,7 @@ def run_query(
             missing_parameters=decision.missing_parameters,
             match_decision=decision,
             updated_context=_clear_pending_if_present(context),
+            context_shadow=context_shadow,
         )
 
     # SHOW_OPTIONS / ESCALATE_TO_PLANNER: handoff to workbench/planner, no Gateway.
@@ -350,6 +368,7 @@ def run_query(
             dry_run=dry_run,
             planner_failure=planner_failure,
             updated_context=updated_context,
+            context_shadow=context_shadow,
         )
 
     # SELECT -> CallPlan -> Gateway validate/execute (existing path).
@@ -393,6 +412,7 @@ def run_query(
                 response_text=f"组合数 {len(combinations)} 过多，请缩小范围（如减少物料或工厂）。",
                 match_decision=decision,
                 updated_context=_clear_pending_if_present(context),
+                context_shadow=context_shadow,
             )
         kind = "Action" if is_action else "Function"
         call_plan = create_call_plan(capability_id, parameters, kind=kind)
@@ -406,6 +426,7 @@ def run_query(
             combinations=combinations,
             match_decision=decision,
             updated_context=_clear_pending_if_present(context),
+            context_shadow=context_shadow,
         )
 
     kind = "Action" if is_action else "Function"
@@ -422,6 +443,7 @@ def run_query(
             error_type=validation.error_type,
             match_decision=decision,
             updated_context=_clear_pending_if_present(context),
+            context_shadow=context_shadow,
         )
 
     is_action = call_plan.kind == "Action"
@@ -442,6 +464,7 @@ def run_query(
             approval_record=pending,
             match_decision=decision,
             updated_context=_clear_pending_if_present(context),
+            context_shadow=context_shadow,
         )
     execution = gateway.execute(call_plan.capability_id, call_plan.parameters)
     if not execution.success:
@@ -457,16 +480,19 @@ def run_query(
             error_type=execution.error_type,
             match_decision=decision,
             updated_context=_clear_pending_if_present(context),
+            context_shadow=context_shadow,
         )
 
     if capability_id == INVENTORY_CAPABILITY_ID:
         return _finalize_inventory(
             call_plan, validation, execution, decision=decision,
             updated_context=_clear_pending_if_present(context),
+            context_shadow=context_shadow,
         )
     return _finalize_purchase_order(
         call_plan, validation, execution, decision=decision,
         updated_context=_clear_pending_if_present(context),
+        context_shadow=context_shadow,
     )
 
 
@@ -702,6 +728,7 @@ def _finalize_inventory(
     *,
     decision: MatchDecision | None = None,
     updated_context: "ConversationContext | None" = None,
+    context_shadow: dict[str, object] | None = None,
 ) -> AgentOutcome:
     fact = build_availability_fact(call_plan.agent_trace_id, execution, call_plan.parameters)
     if fact is None:
@@ -716,6 +743,7 @@ def _finalize_inventory(
             error_type="NARRATIVE_GUARD_ERROR",
             match_decision=decision,
             updated_context=updated_context,
+            context_shadow=context_shadow,
         )
     try:
         response_text = narrate_fact(fact, capability_id="MM.Inventory.GetAvailability")
@@ -732,6 +760,7 @@ def _finalize_inventory(
             error_type="NARRATIVE_GUARD_ERROR",
             match_decision=decision,
             updated_context=updated_context,
+            context_shadow=context_shadow,
         )
     return AgentOutcome(
         status="success",
@@ -743,6 +772,7 @@ def _finalize_inventory(
         gateway_trace_id=execution.trace_id,
         match_decision=decision,
         updated_context=updated_context,
+        context_shadow=context_shadow,
     )
 
 
@@ -753,6 +783,7 @@ def _finalize_purchase_order(
     *,
     decision: MatchDecision | None = None,
     updated_context: "ConversationContext | None" = None,
+    context_shadow: dict[str, object] | None = None,
 ) -> AgentOutcome:
     facts = build_purchase_order_facts(call_plan.agent_trace_id, execution, call_plan.parameters)
     total_count = execution.data.get("totalCount")
@@ -771,6 +802,7 @@ def _finalize_purchase_order(
             error_type="NARRATIVE_GUARD_ERROR",
             match_decision=decision,
             updated_context=updated_context,
+            context_shadow=context_shadow,
         )
     return AgentOutcome(
         status="success",
@@ -782,7 +814,163 @@ def _finalize_purchase_order(
         gateway_trace_id=execution.trace_id,
         match_decision=decision,
         updated_context=updated_context,
+        context_shadow=context_shadow,
     )
+
+
+def _read_context_mode() -> str:
+    """Read the rollout mode from server process configuration only."""
+    mode = os.environ.get("READ_CONTEXT_MODE", "legacy")
+    return mode if mode in {"legacy", "shadow", "v2"} else "legacy"
+
+
+def _context_shadow(
+    *,
+    mode: str,
+    decision: MatchDecision,
+    envelope: "IntentEnvelope | None",
+    context: "ConversationContext | None",
+    visible: VisibleCapabilitySet,
+    snapshot_id: str,
+    sources: SemanticSourceDocuments,
+) -> dict[str, object] | None:
+    """Compare legacy selection with a local v2 reduction, without execution."""
+    if mode != "shadow" or envelope is None or decision.capability_id is None:
+        return None
+
+    descriptor = _current_read_descriptor(
+        capability_id=decision.capability_id,
+        visible=visible,
+        snapshot_id=snapshot_id,
+        sources=sources,
+    )
+    if descriptor is None:
+        return None
+
+    from sap_nexus_agent.context_candidates import extract_context_candidates
+    from sap_nexus_agent.context_decision_gate import decide_read_context
+    from sap_nexus_agent.context_reducer import ContextReductionRequest, reduce_context
+    from sap_nexus_agent.read_context import ConversationReadState
+
+    prior_state = (
+        context.read_state
+        if context is not None and context.read_state is not None
+        else ConversationReadState(None, None, 0)
+    )
+    resolution = reduce_context(
+        ContextReductionRequest(
+            prior_state=prior_state,
+            candidates=extract_context_candidates(envelope.utterance, descriptor, envelope),
+            descriptor=descriptor,
+            registry_snapshot_id=snapshot_id,
+            capability_version=_capability_version(sources, descriptor.capability_id),
+            turn_id="shadow-read-context",
+            server_time=datetime.now(UTC),
+        )
+    )
+    frame_decision = decide_read_context(
+        resolution, visible=visible, current_snapshot_id=snapshot_id
+    )
+    legacy_parameters = decision.parameters or {}
+    frame_parameters = frame_decision.call_plan_parameters or {}
+    slot_order = [input_.name for input_ in descriptor.inputs]
+    all_slots = slot_order + sorted(
+        (set(legacy_parameters) | set(frame_parameters)) - set(slot_order)
+    )
+    slot_diff = [
+        name for name in all_slots if legacy_parameters.get(name) != frame_parameters.get(name)
+    ]
+    return {
+        "legacyDecision": decision.decision_type,
+        "frameV2Decision": frame_decision.decision.decision_type,
+        "slotDiff": slot_diff,
+        "wouldBlockLegacyExecution": (
+            decision.decision_type == "SELECT"
+            and frame_decision.decision.decision_type != "SELECT"
+        ),
+        "wouldClarify": frame_decision.decision.decision_type == "CLARIFY",
+    }
+
+
+def _current_read_descriptor(
+    *,
+    capability_id: str,
+    visible: VisibleCapabilitySet,
+    snapshot_id: str,
+    sources: SemanticSourceDocuments,
+):
+    """Return one trusted READ descriptor from the already-bound snapshot."""
+    cards = [card for card in visible.cards if card.capability_id == capability_id]
+    if len(cards) != 1:
+        return None
+    card = cards[0]
+    if (
+        card.registry_snapshot_id != snapshot_id
+        or card.governance.side_effect != "none"
+        or card.governance.requires_approval
+        or card.governance.data_classification != "internal"
+    ):
+        return None
+
+    raw_capabilities = sources.capabilities.get("capabilities")
+    if not isinstance(raw_capabilities, (tuple, list)):
+        return None
+    matches = [
+        raw
+        for raw in raw_capabilities
+        if isinstance(raw, Mapping)
+        and raw.get("capabilityId") == capability_id
+        and raw.get("status") == "active"
+    ]
+    if len(matches) != 1:
+        return None
+
+    from sap_nexus_agent.registry_loader import CapabilityDescriptor, InputDescriptor
+
+    raw = matches[0]
+    raw_inputs = raw.get("inputs")
+    if not isinstance(raw_inputs, (tuple, list)):
+        return None
+    inputs = []
+    for input_ in raw_inputs:
+        if not isinstance(input_, Mapping) or not isinstance(input_.get("name"), str):
+            return None
+        inputs.append(
+            InputDescriptor(
+                name=input_["name"],
+                semantic_name=str(input_.get("semanticName", input_["name"])),
+                semantic_type=str(input_.get("semanticType", "")),
+                binding_kind=(
+                    str(input_["bindingKind"]) if input_.get("bindingKind") is not None else None
+                ),
+                required=bool(input_.get("required", False)),
+                type=str(input_.get("type", "string")),
+                min_length=input_.get("minLength"),
+                max_length=input_.get("maxLength"),
+                pattern=input_.get("pattern"),
+            )
+        )
+    return CapabilityDescriptor(
+        capability_id=capability_id,
+        name=str(raw.get("name", "")),
+        description=str(raw.get("description", "")),
+        domain=str(raw.get("domain", "")),
+        business_object=str(raw.get("businessObject", "")),
+        inputs=tuple(inputs),
+        aliases=(),
+        examples=(),
+        side_effect=card.governance.side_effect,
+    )
+
+
+def _capability_version(sources: SemanticSourceDocuments, capability_id: str) -> str:
+    """Use the bound registry source's version as the local shadow binding."""
+    raw_capabilities = sources.capabilities.get("capabilities")
+    if isinstance(raw_capabilities, (tuple, list)):
+        for raw in raw_capabilities:
+            if isinstance(raw, Mapping) and raw.get("capabilityId") == capability_id:
+                return str(raw.get("version", "1"))
+    return "1"
 
 
 def _message_text(message: object) -> str:

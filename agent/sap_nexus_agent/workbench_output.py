@@ -63,6 +63,9 @@ def outcome_to_workbench_dict(outcome: AgentOutcome) -> dict[str, object]:
         # planner encounters snapshot drift / source load error / visibility
         # denial. None for all non-ESCALATE paths and successful dry-runs.
         "plannerFailure": _planner_failure_to_dict(outcome.planner_failure),
+        # Shadow rollout evidence is intentionally limited to decisions and
+        # slot names; raw history and model payloads never leave the server.
+        "contextShadow": dict(outcome.context_shadow) if outcome.context_shadow else None,
         # Conversational context (Task 5): LastContext for the next turn,
         # derived from the outcome's match_decision. The backend records this
         # on the session so the next utterance can continue slot-fill (CLARIFY)

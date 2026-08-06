@@ -10,6 +10,7 @@ from sap_nexus_agent.orchestrator import (
 )
 from sap_nexus_agent.registry_loader import load_intent_catalog
 from sap_nexus_agent.governed_context import PLACEHOLDER_PRINCIPAL, TrustedPrincipal
+from sap_nexus_agent.read_context import ConversationReadState
 
 
 class FakeGatewayClient:
@@ -43,6 +44,63 @@ class FakeGatewayClient:
         self.execute_calls.append((capability_id, parameters))
         assert "rfcName" not in parameters
         return self.execution
+
+
+def test_shadow_context_keeps_legacy_authoritative_and_redacts_comparison(monkeypatch):
+    """A bad model envelope is compared once, without changing legacy execution."""
+    from sap_nexus_agent.conversation_context import ConversationContext
+    from sap_nexus_agent.intent_envelope import IntentEnvelope, IntentGoal
+
+    calls = []
+
+    def adapter(text, _context=None):
+        calls.append(text)
+        return IntentEnvelope(
+            envelope_id="env-bad-model",
+            utterance=text,
+            goals=(
+                IntentGoal(
+                    goal_text="查库存",
+                    capability_hint="MM.Inventory.GetAvailability",
+                    parameters={"material": "1000", "plant": "工厂"},
+                    missing=[],
+                ),
+            ),
+            user_constraints={},
+            ambiguities=[],
+            reference_turn_id=None,
+            model_evidence={"rawPayload": {"plant": "工厂"}},
+            snapshot_id="model-controlled",
+            discard_reasons=[],
+            created_by="llm",
+        )
+
+    monkeypatch.setenv("READ_CONTEXT_MODE", "shadow")
+    gateway = FakeGatewayClient()
+    context = ConversationContext(
+        last_context=None,
+        history=None,
+        read_state=ConversationReadState(None, None, 0),
+        schema_version=2,
+    )
+
+    outcome = run_query("查库存", gateway, intent_adapter=adapter, context=context)
+
+    assert calls == ["查库存"]
+    assert outcome.match_decision is not None
+    assert outcome.match_decision.decision_type == "SELECT"
+    assert gateway.validate_calls == [
+        ("MM.Inventory.GetAvailability", {"material": "1000", "plant": "工厂", "unit": "EA"})
+    ]
+    assert len(gateway.execute_calls) == 1
+    assert outcome.context_shadow == {
+        "legacyDecision": "SELECT",
+        "frameV2Decision": "CLARIFY",
+        "slotDiff": ["material", "plant"],
+        "wouldBlockLegacyExecution": True,
+        "wouldClarify": True,
+    }
+    assert context.read_state == ConversationReadState(None, None, 0)
 
 
 def test_complete_request_creates_call_plan_and_calls_validate_then_execute():
