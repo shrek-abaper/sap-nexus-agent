@@ -40,7 +40,8 @@ class SlotCandidates:
         return tuple(
             candidate.value
             for candidate in self.candidates
-            if candidate.source == "DETERMINISTIC_LABEL"
+            if candidate.source
+            in {"DETERMINISTIC_LABEL", "EXPLICIT_CORRECTION", "CONFIRMATION"}
         )
 
     @property
@@ -79,8 +80,8 @@ def extract_context_candidates(
     discards: list[str] = list(envelope.discard_reasons) if envelope is not None else []
 
     for input_ in descriptor.inputs:
-        for value, span in _deterministic_values(utterance, input_):
-            _append_if_valid(by_slot, discards, input_, value, "DETERMINISTIC_LABEL", span)
+        for value, span, source in _deterministic_values(utterance, input_):
+            _append_if_valid(by_slot, discards, input_, value, source, span)
 
     if envelope is not None:
         for goal in envelope.goals:
@@ -114,38 +115,49 @@ def _find_input(inputs: tuple[InputDescriptor, ...], name: str) -> InputDescript
     return None
 
 
-def _deterministic_values(utterance: str, input_: InputDescriptor) -> tuple[tuple[str, tuple[int, int]], ...]:
+def _deterministic_values(
+    utterance: str, input_: InputDescriptor
+) -> tuple[tuple[str, tuple[int, int], str], ...]:
     kind = _semantic_kind(input_)
     if kind == "plant":
         patterns = (
-            r"(?:工厂|plant)\s*(?:改成|是指|为|是|:|：)?\s*([A-Za-z0-9]+)",
-            r"([A-Za-z0-9]+)\s*(?:是|为)\s*(?:工厂|plant)",
-            r"([A-Za-z0-9]+)\s*(?:工厂|plant)",
+            (r"(?:工厂|plant)\s*(?:改成|是指)\s*([A-Za-z0-9]+)", "EXPLICIT_CORRECTION"),
+            (r"(?:对\s*，?\s*就是)\s*(?:工厂|plant)\s*([A-Za-z0-9]+)", "CONFIRMATION"),
+            (r"([A-Za-z0-9]+)\s*(?:是|为)\s*(?:工厂|plant)", "EXPLICIT_CORRECTION"),
+            (r"(?:工厂|plant)\s*(?:是|为|:|：)?\s*([A-Za-z0-9]+)", "DETERMINISTIC_LABEL"),
+            (r"([A-Za-z0-9]+)\s*(?:工厂|plant)", "DETERMINISTIC_LABEL"),
         )
     elif kind == "material":
         patterns = (
-            r"(?:物料|material)\s*(?:改成|是指|为|是|:|：)\s*(?:上面的)?\s*([A-Za-z0-9-]+)",
-            r"([A-Za-z0-9-]+)\s*(?:是|为)\s*(?:物料|material)",
+            (
+                r"(?:物料|material)\s*(?:改成|是指)\s*(?:上面的)?\s*([A-Za-z0-9-]+)",
+                "EXPLICIT_CORRECTION",
+            ),
+            (r"(?:对\s*，?\s*就是)\s*(?:物料|material)\s*([A-Za-z0-9-]+)", "CONFIRMATION"),
+            (r"([A-Za-z0-9-]+)\s*(?:是|为)\s*(?:物料|material)", "EXPLICIT_CORRECTION"),
+            (r"(?:物料|material)\s*(?:是|为|:|：)?\s*([A-Za-z0-9-]+)", "DETERMINISTIC_LABEL"),
         )
     else:
         patterns = _generic_label_patterns(input_)
 
-    values: list[tuple[str, tuple[int, int]]] = []
-    for pattern in patterns:
+    values: list[tuple[str, tuple[int, int], str]] = []
+    for pattern, source in patterns:
         for match in re.finditer(pattern, utterance, flags=re.IGNORECASE):
-            values.append((match.group(1), match.span(1)))
+            values.append((match.group(1), match.span(1), source))
     return tuple(values)
 
 
-def _generic_label_patterns(input_: InputDescriptor) -> tuple[str, ...]:
+def _generic_label_patterns(input_: InputDescriptor) -> tuple[tuple[str, str], ...]:
     labels = _input_labels(input_)
     if not labels:
         return ()
     label_group = "|".join(re.escape(label) for label in labels)
     return (
-        rf"(?:{label_group})\s*(?:改成|是指|为|是|:|：)?\s*([A-Za-z0-9_-]+)",
-        rf"([A-Za-z0-9_-]+)\s*(?:是|为)\s*(?:{label_group})",
-        rf"([A-Za-z0-9_-]+)\s*(?:{label_group})",
+        (rf"(?:{label_group})\s*(?:改成|是指)\s*([A-Za-z0-9_-]+)", "EXPLICIT_CORRECTION"),
+        (rf"(?:对\s*，?\s*就是)\s*(?:{label_group})\s*([A-Za-z0-9_-]+)", "CONFIRMATION"),
+        (rf"([A-Za-z0-9_-]+)\s*(?:是|为)\s*(?:{label_group})", "EXPLICIT_CORRECTION"),
+        (rf"(?:{label_group})\s*(?:是|为|:|：)?\s*([A-Za-z0-9_-]+)", "DETERMINISTIC_LABEL"),
+        (rf"([A-Za-z0-9_-]+)\s*(?:{label_group})", "DETERMINISTIC_LABEL"),
     )
 
 
@@ -185,7 +197,7 @@ def _append_if_valid(
     source: str,
     source_span: tuple[int, int] | None,
 ) -> None:
-    if not isinstance(value, str) or not value.strip() or not _is_semantically_valid(input_, value):
+    if not isinstance(value, str) or not value.strip() or not is_semantically_valid(input_, value):
         _append_unique(discards, f"invalid_semantic_value:{input_.name}:{value}")
         return
     candidate = ContextCandidate(input_.name, value.strip(), source, source_span)
@@ -193,7 +205,9 @@ def _append_if_valid(
         by_slot[input_.name].append(candidate)
 
 
-def _is_semantically_valid(input_: InputDescriptor, value: str) -> bool:
+def is_semantically_valid(input_: InputDescriptor, value: object) -> bool:
+    if not isinstance(value, str):
+        return False
     normalized = value.strip()
     if input_.min_length is not None and len(normalized) < input_.min_length:
         return False

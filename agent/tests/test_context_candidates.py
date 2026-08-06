@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from sap_nexus_agent.context_candidates import extract_context_candidates
 from sap_nexus_agent.intent_envelope import IntentEnvelope, IntentGoal
 from sap_nexus_agent.registry_loader import load_intent_catalog
@@ -87,6 +89,20 @@ def test_explicit_confirmation_binds_each_labeled_value_deterministically():
 
     assert candidates.for_slot("material").deterministic_values == ("DEMOA2",)
     assert candidates.for_slot("plant").deterministic_values == ("1000",)
+
+
+@pytest.mark.parametrize(
+    "utterance,source",
+    (
+        ("工厂改成 1000", "EXPLICIT_CORRECTION"),
+        ("物料是指 DEMOA2", "EXPLICIT_CORRECTION"),
+        ("对，就是物料 DEMOA2", "CONFIRMATION"),
+    ),
+)
+def test_correction_and_confirmation_sources_are_distinguished(utterance, source):
+    candidates = extract_context_candidates(utterance, inventory_descriptor(), None)
+
+    assert source in candidates.for_slot("material").sources + candidates.for_slot("plant").sources
 
 
 def test_change_material_only_marks_the_slot_for_clearance():

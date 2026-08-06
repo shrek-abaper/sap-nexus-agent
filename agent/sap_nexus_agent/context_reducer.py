@@ -7,7 +7,11 @@ from datetime import UTC, datetime, timedelta
 from collections.abc import Iterable
 from typing import Literal, Mapping
 
-from sap_nexus_agent.context_candidates import ContextCandidate, ContextCandidateSet
+from sap_nexus_agent.context_candidates import (
+    ContextCandidate,
+    ContextCandidateSet,
+    is_semantically_valid,
+)
 from sap_nexus_agent.read_context import (
     ConversationReadState,
     PendingInteraction,
@@ -82,16 +86,18 @@ def reduce_context(request: ContextReductionRequest) -> ContextResolution:
         evidence.append(ResolutionEvidence(None, None, "DETERMINISTIC_LABEL", "capability_switch"))
 
     stale = False
+    snapshot_mismatch = False
     if active is not None:
         if active.capability_version != request.capability_version:
             stale = True
             pending = None
             _append_unique(issues, "capability_version_mismatch")
         elif active.registry_snapshot_id != request.registry_snapshot_id:
-            evidence.append(ResolutionEvidence(None, None, "SYSTEM", "snapshot_rebound"))
+            snapshot_mismatch = True
 
     rejected_pending = pending is not None and not _pending_is_current(pending, active, prior, request)
     rejected_pending_fields = pending.expected_fields if rejected_pending and pending is not None else ()
+    replacement_pending_fields = rejected_pending_fields
     if rejected_pending:
         pending = None
         _append_unique(issues, "pending_binding_invalid")
@@ -107,8 +113,15 @@ def reduce_context(request: ContextReductionRequest) -> ContextResolution:
         name = input_.name
         prior_slot = slots.get(name)
         slot_candidates = request.candidates.for_slot(name)
-        deterministic = _unique_deterministic_values(slot_candidates.candidates)
-        model_values = _unique_model_values(slot_candidates.candidates)
+        valid_candidates = _validated_candidates(input_, slot_candidates.candidates, issues, evidence)
+        explicit = _values_for_sources(valid_candidates, {"EXPLICIT_CORRECTION", "CONFIRMATION"})
+        pending_values = (
+            _values_for_sources(valid_candidates, {"DETERMINISTIC_LABEL"})
+            if pending is not None and name in pending.expected_fields
+            else ()
+        )
+        deterministic = _values_for_sources(valid_candidates, {"DETERMINISTIC_LABEL"})
+        model_values = _values_for_sources(valid_candidates, {"MODEL_CANDIDATE"})
 
         if name in rejected_pending_fields:
             evidence.append(ResolutionEvidence(name, None, "SYSTEM", "stale_pending_answer_discarded"))
@@ -118,6 +131,12 @@ def reduce_context(request: ContextReductionRequest) -> ContextResolution:
             evidence.append(ResolutionEvidence(name, value, "MODEL_CANDIDATE", "advisory_only"))
 
         if name in request.candidates.clear_slots:
+            if not input_.required:
+                if prior_slot is not None:
+                    slots.pop(name, None)
+                    changed_slots.append(name)
+                evidence.append(ResolutionEvidence(name, None, "EXPLICIT", "optional_slot_cleared"))
+                continue
             replacement = SlotBinding(
                 name=name,
                 value=None,
@@ -134,11 +153,20 @@ def reduce_context(request: ContextReductionRequest) -> ContextResolution:
             evidence.append(ResolutionEvidence(name, None, "EXPLICIT", "slot_cleared"))
             continue
 
-        if len(deterministic) > 1:
+        selected_values = explicit or pending_values or deterministic
+        selected_source = (
+            "EXPLICIT_CORRECTION"
+            if explicit
+            else "CONFIRMATION"
+            if any(candidate.source == "CONFIRMATION" for candidate in valid_candidates)
+            and not any(candidate.source == "EXPLICIT_CORRECTION" for candidate in valid_candidates)
+            else "DETERMINISTIC_LABEL"
+        )
+        if len(selected_values) > 1:
             replacement = SlotBinding(
                 name=name,
                 value=None,
-                candidates=deterministic,
+                candidates=selected_values,
                 state="CONFLICTED",
                 provenance="EXPLICIT",
                 source_turn_id=request.turn_id,
@@ -151,11 +179,11 @@ def reduce_context(request: ContextReductionRequest) -> ContextResolution:
             evidence.append(ResolutionEvidence(name, None, "DETERMINISTIC_LABEL", "conflict"))
             continue
 
-        if deterministic:
-            value = deterministic[0]
+        if selected_values:
+            value = selected_values[0]
             was_cleared = prior_slot is not None and prior_slot.state == "CLEARED"
             pending_answer = pending is not None and name in pending.expected_fields
-            provenance = "CONFIRMED" if was_cleared or pending_answer else "EXPLICIT"
+            provenance = "CONFIRMED" if was_cleared or pending_answer or selected_source == "CONFIRMATION" else "EXPLICIT"
             replacement = SlotBinding(
                 name=name,
                 value=value,
@@ -163,14 +191,14 @@ def reduce_context(request: ContextReductionRequest) -> ContextResolution:
                 state="RESOLVED",
                 provenance=provenance,
                 source_turn_id=request.turn_id,
-                source_span=_source_span(slot_candidates.candidates, value),
+                source_span=_source_span(valid_candidates, value),
                 issues=(),
             )
             if replacement != prior_slot:
                 slots[name] = replacement
                 changed_slots.append(name)
                 deterministic_changed = True
-            evidence.append(ResolutionEvidence(name, value, "DETERMINISTIC_LABEL", provenance.lower()))
+            evidence.append(ResolutionEvidence(name, value, selected_source, provenance.lower()))
             if pending_answer:
                 confirmed_pending = True
             continue
@@ -183,6 +211,12 @@ def reduce_context(request: ContextReductionRequest) -> ContextResolution:
             continue
 
         if prior_slot is not None and prior_slot.state == "RESOLVED":
+            if prior_slot.value is None or not is_semantically_valid(input_, prior_slot.value):
+                slots.pop(name, None)
+                changed_slots.append(name)
+                _append_unique(issues, f"invalid_semantic_value:{name}:{prior_slot.value}")
+                evidence.append(ResolutionEvidence(name, prior_slot.value, "INHERITED", "invalid_semantic_value"))
+                continue
             inherited = SlotBinding(
                 name=name,
                 value=prior_slot.value,
@@ -206,12 +240,29 @@ def reduce_context(request: ContextReductionRequest) -> ContextResolution:
     elif deterministic_changed and active is not None and not switching and operation == "CONTINUE_FRAME":
         operation = "REPLACE_SLOT"
 
+    if snapshot_mismatch:
+        if _snapshot_can_rebind(descriptor, slots, pending):
+            evidence.append(ResolutionEvidence(None, None, "SYSTEM", "snapshot_rebound"))
+        else:
+            stale = True
+            pending = None
+            _append_unique(issues, "snapshot_revalidation_required")
+
     if active is None:
         frame_id = _frame_id(descriptor.capability_id, request.turn_id)
         created_turn_id = request.turn_id
     else:
         frame_id = active.frame_id
         created_turn_id = active.created_turn_id
+
+    if replacement_pending_fields:
+        pending = PendingInteraction.slot_clarification(
+            frame_id=frame_id,
+            expected_fields=replacement_pending_fields,
+            state_version=prior.state_version + 1,
+            registry_snapshot_id=request.registry_snapshot_id,
+            expires_at=_expires_at(request.server_time),
+        )
 
     status = _derive_status(descriptor, slots, stale, pending)
     frame = ReadContextFrame(
@@ -318,12 +369,26 @@ def _frame_id(capability_id: str, turn_id: str) -> str:
     return f"{capability_id}:{turn_id}"
 
 
-def _unique_deterministic_values(candidates: tuple[ContextCandidate, ...]) -> tuple[str, ...]:
-    return _unique_values(candidate for candidate in candidates if candidate.source == "DETERMINISTIC_LABEL")
+def _validated_candidates(
+    input_,
+    candidates: tuple[ContextCandidate, ...],
+    issues: list[str],
+    evidence: list[ResolutionEvidence],
+) -> tuple[ContextCandidate, ...]:
+    valid: list[ContextCandidate] = []
+    for candidate in candidates:
+        if is_semantically_valid(input_, candidate.value):
+            valid.append(candidate)
+            continue
+        _append_unique(issues, f"invalid_semantic_value:{input_.name}:{candidate.value}")
+        evidence.append(ResolutionEvidence(input_.name, candidate.value, candidate.source, "invalid_semantic_value"))
+    return tuple(valid)
 
 
-def _unique_model_values(candidates: tuple[ContextCandidate, ...]) -> tuple[str, ...]:
-    return _unique_values(candidate for candidate in candidates if candidate.source == "MODEL_CANDIDATE")
+def _values_for_sources(
+    candidates: Iterable[ContextCandidate], sources: set[str]
+) -> tuple[str, ...]:
+    return _unique_values(candidate for candidate in candidates if candidate.source in sources)
 
 
 def _unique_values(candidates: Iterable[ContextCandidate]) -> tuple[str, ...]:
@@ -334,9 +399,9 @@ def _unique_values(candidates: Iterable[ContextCandidate]) -> tuple[str, ...]:
     return tuple(values)
 
 
-def _source_span(candidates: tuple[ContextCandidate, ...], value: str) -> tuple[int, int] | None:
+def _source_span(candidates: Iterable[ContextCandidate], value: str) -> tuple[int, int] | None:
     for candidate in candidates:
-        if candidate.source == "DETERMINISTIC_LABEL" and candidate.value == value:
+        if candidate.source != "MODEL_CANDIDATE" and candidate.value == value:
             return candidate.source_span
     return None
 
@@ -344,3 +409,29 @@ def _source_span(candidates: tuple[ContextCandidate, ...], value: str) -> tuple[
 def _append_unique(values: list[str], value: str) -> None:
     if value not in values:
         values.append(value)
+
+
+def _snapshot_can_rebind(
+    descriptor: CapabilityDescriptor,
+    slots: Mapping[str, SlotBinding],
+    pending: PendingInteraction | None,
+) -> bool:
+    inputs = {input_.name: input_ for input_ in descriptor.inputs}
+    if pending is not None or any(name not in inputs for name in slots):
+        return False
+    for name, slot in slots.items():
+        if (
+            slot.state != "RESOLVED"
+            or slot.value is None
+            or slot.provenance == "INHERITED_LEGACY"
+            or not is_semantically_valid(inputs[name], slot.value)
+        ):
+            return False
+    return all(
+        input_.name in slots
+        and slots[input_.name].state == "RESOLVED"
+        and slots[input_.name].value is not None
+        and is_semantically_valid(input_, slots[input_.name].value)
+        for input_ in descriptor.inputs
+        if input_.required
+    )

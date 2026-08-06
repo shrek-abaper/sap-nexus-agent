@@ -6,12 +6,22 @@
         {
           "turnId": "turn-1",
           "utterance": "DEMOA2 在工厂 5100 还有多少可用库存",
-          "expectedStatus": "READY"
+          "candidates": {"deterministic": {"material": "DEMOA2", "plant": "5100"}},
+          "expected": {
+            "operation": "CONTINUE_FRAME",
+            "status": "READY",
+            "slots": {"material": "DEMOA2", "plant": "5100"}
+          }
         },
         {
           "turnId": "turn-2",
           "utterance": "查下这个物料 1000 工厂库存",
-          "expectedStatus": "READY"
+          "candidates": {"deterministic": {"plant": "1000"}},
+          "expected": {
+            "operation": "REPLACE_SLOT",
+            "status": "READY",
+            "slots": {"material": "DEMOA2", "plant": "1000"}
+          }
         }
       ],
       "expectedParameters": {"material": "DEMOA2", "plant": "1000"}
@@ -22,23 +32,44 @@
         {
           "turnId": "turn-1",
           "utterance": "DEMOA2 在工厂 5100 还有多少可用库存",
-          "expectedStatus": "READY"
+          "candidates": {"deterministic": {"material": "DEMOA2", "plant": "5100"}},
+          "expected": {"operation": "CONTINUE_FRAME", "status": "READY"}
         },
         {
           "turnId": "turn-2",
           "utterance": "换个物料能查吗",
-          "expectedStatus": "COLLECTING"
+          "candidates": {"clearSlots": ["material"]},
+          "expected": {
+            "operation": "CLEAR_SLOT",
+            "status": "COLLECTING",
+            "slots": {"material": null, "plant": "5100"}
+          }
         },
         {
           "turnId": "turn-3",
           "utterance": "查下这个物料 1000 工厂库存",
-          "recordedModel": {"material": "1000", "plant": "工厂"},
-          "expectedStatus": "COLLECTING"
+          "candidates": {
+            "deterministic": {"plant": "1000"},
+            "model": {"material": "1000", "plant": "工厂"}
+          },
+          "expected": {
+            "operation": "REPLACE_SLOT",
+            "status": "COLLECTING",
+            "slots": {"material": null, "plant": "1000"},
+            "issues": ["invalid_semantic_value:plant:工厂"]
+          }
         },
         {
           "turnId": "turn-4",
           "utterance": "这个物料是指上面的 DEMOA2，1000 是工厂",
-          "expectedStatus": "READY"
+          "candidates": {
+            "explicit": {"material": "DEMOA2", "plant": "1000"}
+          },
+          "expected": {
+            "operation": "CONFIRM_PENDING",
+            "status": "READY",
+            "slots": {"material": "DEMOA2", "plant": "1000"}
+          }
         }
       ],
       "expectedParameters": {"material": "DEMOA2", "plant": "1000"}
