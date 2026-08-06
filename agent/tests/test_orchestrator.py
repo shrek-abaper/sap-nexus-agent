@@ -13,6 +13,26 @@ from sap_nexus_agent.governed_context import PLACEHOLDER_PRINCIPAL, TrustedPrinc
 from sap_nexus_agent.read_context import ConversationReadState
 
 
+def _use_execution_visible_cards(monkeypatch):
+    """Supply a trusted execution projection without changing orchestration."""
+    from dataclasses import replace
+    from sap_nexus_agent.planner import capability_card
+
+    original = capability_card.discover_cards
+
+    def discover(snapshot, sources):
+        return [
+            replace(card, visibility="VISIBLE_EXECUTION")
+            if card.governance.side_effect == "none"
+            and not card.governance.requires_approval
+            and card.governance.data_classification == "internal"
+            else card
+            for card in original(snapshot, sources)
+        ]
+
+    monkeypatch.setattr(capability_card, "discover_cards", discover)
+
+
 class FakeGatewayClient:
     def __init__(self, validation=None, execution=None):
         self.validation = validation or ValidationResult(
@@ -75,6 +95,7 @@ def test_shadow_context_keeps_legacy_authoritative_and_redacts_comparison(monkey
             created_by="llm",
         )
 
+    _use_execution_visible_cards(monkeypatch)
     monkeypatch.setenv("READ_CONTEXT_MODE", "shadow")
     gateway = FakeGatewayClient()
     context = ConversationContext(
@@ -128,6 +149,7 @@ def test_shadow_context_escalates_multiple_visible_read_goals_without_side_effec
             created_by="llm",
         )
 
+    _use_execution_visible_cards(monkeypatch)
     monkeypatch.setenv("READ_CONTEXT_MODE", "shadow")
     gateway = FakeGatewayClient()
     context = ConversationContext(
@@ -154,8 +176,8 @@ def test_shadow_context_escalates_multiple_visible_read_goals_without_side_effec
     assert context.read_state == ConversationReadState(None, None, 0)
 
 
-def test_shadow_context_shows_options_for_bounded_ambiguous_read_goals(monkeypatch):
-    """Envelope ambiguity is advisory, while Registry visibility bounds options."""
+def test_shadow_context_keeps_multiple_goals_as_planner_routing_when_ambiguous(monkeypatch):
+    """Model ambiguity cannot downgrade multiple goals into capability options."""
     from sap_nexus_agent.conversation_context import ConversationContext
     from sap_nexus_agent.intent_envelope import IntentEnvelope, IntentGoal
 
@@ -179,6 +201,7 @@ def test_shadow_context_shows_options_for_bounded_ambiguous_read_goals(monkeypat
             created_by="llm",
         )
 
+    _use_execution_visible_cards(monkeypatch)
     monkeypatch.setenv("READ_CONTEXT_MODE", "shadow")
     gateway = FakeGatewayClient()
     context = ConversationContext(
@@ -193,6 +216,89 @@ def test_shadow_context_shows_options_for_bounded_ambiguous_read_goals(monkeypat
     assert calls == ["查库存或采购订单"]
     assert outcome.context_shadow.to_dict() == {
         "legacyDecision": "ESCALATE_TO_PLANNER",
+        "frameV2Decision": "ESCALATE_TO_PLANNER",
+        "slotDiff": [],
+        "wouldBlockLegacyExecution": False,
+        "wouldClarify": False,
+    }
+    assert gateway.validate_calls == []
+    assert gateway.execute_calls == []
+    assert context.read_state == ConversationReadState(None, None, 0)
+
+
+def test_shadow_dry_run_card_is_not_upcast_to_an_execution_candidate(monkeypatch):
+    """A genuine VISIBLE_DRY_RUN card cannot produce shadow comparison evidence."""
+    from sap_nexus_agent.conversation_context import ConversationContext
+    from sap_nexus_agent.intent_envelope import IntentEnvelope, IntentGoal
+
+    def adapter(text, _context=None):
+        return IntentEnvelope(
+            envelope_id="env-dry-run",
+            utterance=text,
+            goals=(
+                IntentGoal("库存", "MM.Inventory.GetAvailability", {"material": "1000", "plant": "1000"}, []),
+            ),
+            user_constraints={},
+            ambiguities=[],
+            reference_turn_id=None,
+            model_evidence={},
+            snapshot_id="model-controlled",
+            discard_reasons=[],
+            created_by="llm",
+        )
+
+    monkeypatch.setenv("READ_CONTEXT_MODE", "shadow")
+    gateway = FakeGatewayClient()
+    outcome = run_query(
+        "查库存",
+        gateway,
+        intent_adapter=adapter,
+        context=ConversationContext(None, None, read_state=ConversationReadState(None, None, 0)),
+    )
+
+    assert outcome.match_decision.decision_type == "SELECT"
+    assert outcome.context_shadow is None
+    assert len(gateway.validate_calls) == 1
+    assert len(gateway.execute_calls) == 1
+
+
+def test_shadow_single_goal_uses_deterministic_recall_candidates_for_options(monkeypatch):
+    """A single goal can show only current execution-visible recall options."""
+    from sap_nexus_agent.conversation_context import ConversationContext
+    from sap_nexus_agent.intent_envelope import IntentEnvelope, IntentGoal
+    from sap_nexus_agent import recall as recall_module
+
+    _use_execution_visible_cards(monkeypatch)
+    monkeypatch.setattr(
+        recall_module,
+        "recall",
+        lambda _text, _visible, _catalog: [
+            "MM.Inventory.GetAvailability",
+            "MM.PurchaseOrder.GetList",
+        ],
+    )
+
+    def adapter(text, _context=None):
+        return IntentEnvelope(
+            envelope_id="env-single-goal",
+            utterance=text,
+            goals=(IntentGoal("查询", "MM.Inventory.GetAvailability", {}, ["material", "plant"]),),
+            user_constraints={},
+            ambiguities=["advisory-only"],
+            reference_turn_id=None,
+            model_evidence={},
+            snapshot_id="model-controlled",
+            discard_reasons=[],
+            created_by="llm",
+        )
+
+    monkeypatch.setenv("READ_CONTEXT_MODE", "shadow")
+    gateway = FakeGatewayClient()
+    context = ConversationContext(None, None, read_state=ConversationReadState(None, None, 0))
+    outcome = run_query("查询", gateway, intent_adapter=adapter, context=context)
+
+    assert outcome.context_shadow.to_dict() == {
+        "legacyDecision": "CLARIFY",
         "frameV2Decision": "SHOW_OPTIONS",
         "slotDiff": [],
         "wouldBlockLegacyExecution": False,

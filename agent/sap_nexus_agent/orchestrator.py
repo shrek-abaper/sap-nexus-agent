@@ -3,7 +3,7 @@ from __future__ import annotations
 import itertools
 import os
 from collections.abc import Mapping
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Callable
@@ -276,8 +276,9 @@ def run_query(
     # existing dry-run visibility projection and remains authoritative.
     shadow_visible_capability_set = VisibleCapabilitySet(
         cards=tuple(
-            replace(card, visibility="VISIBLE_EXECUTION")
+            card
             for card in filter_visible(all_cards, for_execution=True)
+            if card.visibility == "VISIBLE_EXECUTION"
         ),
         snapshot_id=lease.snapshot_id,
         principal_id=effective_principal.principal_id,
@@ -854,7 +855,9 @@ def _context_shadow(
         decide_read_context,
     )
 
-    capability_candidates = _shadow_capability_candidates(envelope, snapshot_id)
+    capability_candidates = _shadow_capability_candidates(
+        envelope, decision, snapshot_id
+    )
     if capability_candidates is None:
         return None
     if len(capability_candidates.capability_ids) > 1:
@@ -932,26 +935,41 @@ def _context_shadow(
 
 
 def _shadow_capability_candidates(
-    envelope: "IntentEnvelope", snapshot_id: str
+    envelope: "IntentEnvelope", decision: MatchDecision, snapshot_id: str
 ) -> "ReadCapabilityCandidates | None":
-    """Preserve envelope goal count while binding IDs to the current snapshot later."""
+    """Derive bounded shadow candidates without upgrading advisory evidence."""
     from sap_nexus_agent.context_decision_gate import ReadCapabilityCandidates
 
-    capability_ids = tuple(
-        goal.capability_hint for goal in envelope.goals if goal.capability_hint
-    )
-    if not capability_ids:
+    if len(envelope.goals) > 1:
+        capability_ids = tuple(
+            goal.capability_hint for goal in envelope.goals if goal.capability_hint
+        )
+        if not capability_ids:
+            return None
+        return ReadCapabilityCandidates(
+            capability_ids=capability_ids,
+            snapshot_id=snapshot_id,
+            purpose="MULTI_GOAL",
+        )
+
+    if len(envelope.goals) != 1:
+        return None
+
+    recall_candidates = tuple(decision.recall_candidates)
+    if len(recall_candidates) > 1:
+        return ReadCapabilityCandidates(
+            capability_ids=recall_candidates,
+            snapshot_id=snapshot_id,
+            purpose="AMBIGUITY",
+        )
+
+    capability_id = envelope.goals[0].capability_hint
+    if not capability_id:
         return None
     return ReadCapabilityCandidates(
-        capability_ids=capability_ids,
+        capability_ids=(capability_id,),
         snapshot_id=snapshot_id,
-        purpose=(
-            "AMBIGUITY"
-            if len(capability_ids) > 1 and envelope.ambiguities
-            else "MULTI_GOAL"
-            if len(capability_ids) > 1
-            else "AMBIGUITY"
-        ),
+        purpose="AMBIGUITY",
     )
 
 
