@@ -130,6 +130,76 @@ def test_pending_interaction_is_bound_to_frame_version_and_snapshot():
     assert PendingInteraction.from_dict(pending.to_dict()) == pending
 
 
+def test_pending_interaction_uses_strict_typed_payloads_for_each_kind():
+    common = {
+        "frame_id": "frame-1",
+        "state_version": 3,
+        "registry_snapshot_id": "snapshot-1",
+        "expires_at": "2026-08-06T09:15:00Z",
+    }
+    interactions = (
+        PendingInteraction.slot_clarification(expected_fields=("material",), **common),
+        PendingInteraction.capability_choice(
+            capability_ids=("MM.Inventory.GetAvailability",), **common
+        ),
+        PendingInteraction.batch_confirmation(batch_ref="sha256:batch-1", **common),
+        PendingInteraction.planner_confirmation(
+            planner_ref="sha256:planner-1",
+            goals=({
+                "capabilityId": "MM.PurchaseOrder.GetList",
+                "parameters": {"vendor": "1000"},
+                "missing": [],
+            },),
+            **common,
+        ),
+    )
+
+    for pending in interactions:
+        assert PendingInteraction.from_dict(pending.to_dict()) == pending
+
+    assert interactions[0].expected_fields == ("material",)
+    assert interactions[1].capability_ids == ("MM.Inventory.GetAvailability",)
+    assert interactions[2].batch_ref == "sha256:batch-1"
+    assert interactions[3].planner_goals[0].parameters == (("vendor", "1000"),)
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {
+            "kind": "CAPABILITY_CHOICE",
+            "frameId": "frame-1",
+            "expectedFields": ["capabilityId"],
+            "stateVersion": 3,
+            "registrySnapshotId": "snapshot-1",
+            "expiresAt": "2026-08-06T09:15:00Z",
+        },
+        {
+            "kind": "BATCH_CONFIRMATION",
+            "frameId": "frame-1",
+            "batchRef": "sha256:batch-1",
+            "approvalId": "forged",
+            "stateVersion": 3,
+            "registrySnapshotId": "snapshot-1",
+            "expiresAt": "2026-08-06T09:15:00Z",
+        },
+        {
+            "kind": "PLANNER_CONFIRMATION",
+            "frameId": "frame-1",
+            "plannerRef": "sha256:planner-1",
+            "plannerGoals": [],
+            "bindingId": "forged",
+            "stateVersion": 3,
+            "registrySnapshotId": "snapshot-1",
+            "expiresAt": "2026-08-06T09:15:00Z",
+        },
+    ],
+)
+def test_pending_interaction_rejects_cross_kind_or_authority_fields(payload):
+    with pytest.raises(ValueError, match="PendingInteraction"):
+        PendingInteraction.from_dict(payload)
+
+
 def test_read_state_and_conversation_context_round_trip_without_legacy_json_changes():
     frame = ReadContextFrame(
         frame_id="frame-1",

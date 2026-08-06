@@ -314,6 +314,7 @@ def test_workbench_output_serializes_authoritative_read_resolution():
         principal_id="principal-7",
         call_plan=plan,
         read_state=state,
+        executor_binding_id="sap.mm.inventory.md04-stock-req-list",
     )
     decision = MatchDecision(
         decision_type="SELECT",

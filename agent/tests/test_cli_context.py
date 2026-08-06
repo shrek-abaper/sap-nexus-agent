@@ -167,6 +167,7 @@ def test_cli_continue_read_binding_mismatch_has_no_gateway(capsys, monkeypatch):
         principal_id="local-user-0001",
         call_plan=plan,
         read_state=state,
+        executor_binding_id="sap.mm.inventory.md04-stock-req-list",
     ).to_dict()
     binding["turnId"] = "turn-tampered"
     monkeypatch.setattr(

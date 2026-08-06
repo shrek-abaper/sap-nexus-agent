@@ -58,14 +58,29 @@ export type ReadContextFrame = {
   capabilityVersion: string;
 };
 
-export type PendingInteraction = {
-  kind: "SLOT_CLARIFICATION" | "CAPABILITY_CHOICE" | "BATCH_CONFIRMATION" | "PLANNER_CONFIRMATION";
+type PendingBinding = {
   frameId: string;
-  expectedFields: string[];
   stateVersion: number;
   registrySnapshotId: string;
   expiresAt: string;
 };
+
+export type PendingPlannerGoal = {
+  capabilityId: string;
+  parameters: Record<string, string>;
+  missing: string[];
+};
+
+export type PendingInteraction = PendingBinding & (
+  | { kind: "SLOT_CLARIFICATION"; expectedFields: string[] }
+  | { kind: "CAPABILITY_CHOICE"; capabilityIds: string[] }
+  | { kind: "BATCH_CONFIRMATION"; batchRef: string }
+  | {
+      kind: "PLANNER_CONFIRMATION";
+      plannerRef: string;
+      plannerGoals: PendingPlannerGoal[];
+    }
+);
 
 export type ConversationReadState = {
   activeFrame: ReadContextFrame | null;
@@ -81,8 +96,30 @@ export type ReadExecutionBinding = {
   registrySnapshotId: string;
   principalId: string;
   capabilityVersion: string;
+  executorBindingId: string;
   callPlanHash: string;
   readState: ConversationReadState;
+};
+
+export type SelectionExecutionBinding = {
+  turnId: string;
+  stateVersion: number;
+  registrySnapshotId: string;
+  principalId: string;
+  capabilityId: string;
+  capabilityVersion: string;
+  executorBindingId: string;
+  callPlanHash: string;
+};
+
+export type BatchConversationBinding = {
+  conversationId: string;
+  turnId: string;
+  frameId: string;
+  stateVersion: number;
+  registrySnapshotId: string;
+  principalId: string;
+  batchRef: string;
 };
 
 export type SessionStateV2 = {
@@ -130,6 +167,8 @@ export type WorkbenchOutcome = {
   resolutionReport?: Record<string, unknown> | null;
   decision?: Record<string, unknown> | null;
   readExecutionBinding?: ReadExecutionBinding | null;
+  selectionExecutionBinding?: SelectionExecutionBinding | null;
+  batchConversationBinding?: BatchConversationBinding | null;
 };
 
 export type AgentRunRecord = {

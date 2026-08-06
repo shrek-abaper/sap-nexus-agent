@@ -728,18 +728,102 @@ function parseSlot(payload: unknown): SlotBinding {
 
 function parsePending(payload: unknown): PendingInteraction {
   const raw = requireRecord(payload, "PendingInteraction");
-  const expectedFields = parseStringArray(raw.expectedFields, "PendingInteraction.expectedFields");
-  if (new Set(expectedFields).size !== expectedFields.length) {
-    throw new Error("PendingInteraction.expectedFields must not contain duplicates");
-  }
-  return {
-    kind: requireEnum(raw.kind, ["SLOT_CLARIFICATION", "CAPABILITY_CHOICE", "BATCH_CONFIRMATION", "PLANNER_CONFIRMATION"] as const, "PendingInteraction.kind"),
+  const kind = requireEnum(raw.kind, ["SLOT_CLARIFICATION", "CAPABILITY_CHOICE", "BATCH_CONFIRMATION", "PLANNER_CONFIRMATION"] as const, "PendingInteraction.kind");
+  const common = {
     frameId: requireString(raw.frameId, "PendingInteraction.frameId"),
-    expectedFields,
     stateVersion: requireNonNegativeInteger(raw.stateVersion, "PendingInteraction.stateVersion"),
     registrySnapshotId: requireString(raw.registrySnapshotId, "PendingInteraction.registrySnapshotId"),
     expiresAt: requireString(raw.expiresAt, "PendingInteraction.expiresAt"),
   };
+  if (Number.isNaN(Date.parse(common.expiresAt))) {
+    throw new Error("PendingInteraction.expiresAt must be an ISO timestamp");
+  }
+  const commonFields = ["kind", "frameId", "stateVersion", "registrySnapshotId", "expiresAt"];
+  if (kind === "SLOT_CLARIFICATION") {
+    requireExactFields(raw, [...commonFields, "expectedFields"], "PendingInteraction");
+    const expectedFields = uniqueNonEmptyStrings(
+      raw.expectedFields,
+      "PendingInteraction.expectedFields",
+    );
+    return { kind, ...common, expectedFields };
+  }
+  if (kind === "CAPABILITY_CHOICE") {
+    requireExactFields(raw, [...commonFields, "capabilityIds"], "PendingInteraction");
+    const capabilityIds = uniqueNonEmptyStrings(
+      raw.capabilityIds,
+      "PendingInteraction.capabilityIds",
+    );
+    return { kind, ...common, capabilityIds };
+  }
+  if (kind === "BATCH_CONFIRMATION") {
+    requireExactFields(raw, [...commonFields, "batchRef"], "PendingInteraction");
+    return {
+      kind,
+      ...common,
+      batchRef: requireString(raw.batchRef, "PendingInteraction.batchRef"),
+    };
+  }
+
+  requireExactFields(
+    raw,
+    [...commonFields, "plannerRef", "plannerGoals"],
+    "PendingInteraction",
+  );
+  const plannerGoals = requireArray(
+    raw.plannerGoals,
+    "PendingInteraction.plannerGoals",
+  ).map((value) => {
+    const goal = requireRecord(value, "PendingPlannerGoal");
+    requireExactFields(
+      goal,
+      ["capabilityId", "parameters", "missing"],
+      "PendingPlannerGoal",
+    );
+    const parameters = requireRecord(goal.parameters, "PendingPlannerGoal.parameters");
+    return {
+      capabilityId: requireString(goal.capabilityId, "PendingPlannerGoal.capabilityId"),
+      parameters: Object.fromEntries(
+        Object.entries(parameters).map(([name, value]) => [
+          requireString(name, "PendingPlannerGoal parameter name"),
+          requireString(value, `PendingPlannerGoal.parameters.${name}`),
+        ]),
+      ),
+      missing: parseStringArray(goal.missing, "PendingPlannerGoal.missing"),
+    };
+  });
+  if (plannerGoals.length === 0) {
+    throw new Error("PendingInteraction.plannerGoals must not be empty");
+  }
+  if (new Set(plannerGoals.map((goal) => goal.capabilityId)).size !== plannerGoals.length) {
+    throw new Error("PendingInteraction.plannerGoals must not contain duplicate capabilities");
+  }
+  return {
+    kind,
+    ...common,
+    plannerRef: requireString(raw.plannerRef, "PendingInteraction.plannerRef"),
+    plannerGoals,
+  };
+}
+
+function requireExactFields(
+  raw: Record<string, unknown>,
+  fields: string[],
+  name: string,
+): void {
+  const allowed = new Set(fields);
+  const actual = Object.keys(raw);
+  if (actual.length !== allowed.size || actual.some((field) => !allowed.has(field))) {
+    throw new Error(`${name} contains unsupported or missing fields`);
+  }
+}
+
+function uniqueNonEmptyStrings(value: unknown, field: string): string[] {
+  const values = parseStringArray(value, field);
+  if (values.length === 0) throw new Error(`${field} must not be empty`);
+  if (new Set(values).size !== values.length) {
+    throw new Error(`${field} must not contain duplicates`);
+  }
+  return values;
 }
 
 function parseLastContext(payload: unknown): LastContext {

@@ -5,10 +5,12 @@ import type { AgentRunEvent, AgentRunState } from "./run-event-schema";
 import type {
   AgentRunRecord,
   ApprovalDecision,
+  ConversationReadState,
   ConversationContext,
   DurableConversationStore,
   DurableRunStore,
   ReadExecutionBinding,
+  SelectionExecutionBinding,
   SessionStateV2,
   WorkbenchOutcome
 } from "./durable/types";
@@ -72,7 +74,7 @@ type BatchContinuation = {
 };
 
 type AgentRunnerInput = {
-  mode: "query" | "resolve-read" | "continue-read";
+  mode: "query" | "resolve-read" | "continue-read" | "continue-selection";
   query: string;
   gatewayUrl: string;
   intentMode: string;
@@ -82,6 +84,8 @@ type AgentRunnerInput = {
   turnId?: string;
   callPlan?: Record<string, unknown>;
   readExecutionBinding?: ReadExecutionBinding;
+  selectionExecutionBinding?: SelectionExecutionBinding;
+  persistedReadState?: ConversationReadState;
 };
 
 type AgentRunner = (input: AgentRunnerInput) => Promise<WorkbenchOutcome>;
@@ -175,20 +179,7 @@ export async function createAgentRun(input: CreateAgentRunInput): Promise<Create
   const turnId = input.turnId ?? `turn-${crypto.randomUUID()}`;
   if (!turnId) throw new Error("turnId must be a non-empty string");
 
-  if (!input.conversationId) {
-    const runId = await startAgentRun(input.query, input.principal);
-    void executeRunnerInBackground(
-      runId,
-      input.query,
-      undefined,
-      new Date().toISOString(),
-      input.principal.principalId,
-      input.principal,
-    );
-    return { runId, turnId };
-  }
-
-  const conversationId = input.conversationId;
+  const conversationId = input.conversationId ?? `conversation-${crypto.randomUUID()}`;
   const conversationLeaseOwner = `${workerId}:conversation:${crypto.randomUUID()}`;
   const lease = await conversationStore.claim(
     conversationId,
@@ -276,15 +267,6 @@ export async function createAgentRun(input: CreateAgentRunInput): Promise<Create
       await conversationStore.release(conversationId, conversationLeaseOwner, lease.fenceToken);
     }
   }
-}
-
-async function startAgentRun(
-  query: string,
-  principal: TrustedPrincipal,
-): Promise<string> {
-  const runId = `run-${crypto.randomUUID()}`;
-  await persistStartedRun(runId, query, principal, new Date().toISOString());
-  return runId;
 }
 
 async function persistStartedRun(
@@ -403,6 +385,12 @@ async function executeRunnerInBackground(
             turnId,
             callPlan: resolution.callPlan,
             readExecutionBinding: resolution.readExecutionBinding,
+            persistedReadState: {
+              activeFrame: nextSession.activeFrame,
+              recentFrames: nextSession.recentFrames,
+              pendingInteraction: nextSession.pendingInteraction,
+              stateVersion: nextSession.stateVersion,
+            },
           });
           outcome = {
             ...continued,
@@ -419,6 +407,53 @@ async function executeRunnerInBackground(
         } else {
           outcome = resolution;
         }
+      } else if (
+        resolution.status === "resolved_selection"
+        && resolution.callPlan
+        && resolution.selectionExecutionBinding
+      ) {
+        const binding = resolution.selectionExecutionBinding;
+        if (
+          binding.turnId !== turnId
+          || binding.stateVersion !== expectedSessionVersion + 1
+          || binding.principalId !== principalId
+          || binding.registrySnapshotId !== resolution.registrySnapshotId
+          || binding.capabilityId !== resolution.callPlan.capabilityId
+          || resolution.callPlan.kind !== "Action"
+          || resolution.callPlan.requiresApproval !== true
+          || sha256Hex(canonicalJson(resolution.callPlan)) !== binding.callPlanHash
+        ) {
+          throw new ConversationProtocolError(
+            "CONTEXT_VERSION_CONFLICT",
+            "Resolved non-READ selection binding is incomplete or mismatched",
+          );
+        }
+        const nextSession: SessionStateV2 = {
+          ...current,
+          stateVersion: current.stateVersion + 1,
+          history: [...current.history, { role: "user", content: query }],
+          lastAppliedTurnId: turnId,
+          lastRunId: runId,
+        };
+        await saveConversationState(
+          conversationId,
+          current.stateVersion,
+          nextSession,
+          conversationLeaseOwner!,
+          conversationFenceToken!,
+        );
+        expectedSessionVersion = nextSession.stateVersion;
+        outcome = await readRunner({
+          mode: "continue-selection",
+          query,
+          gatewayUrl: gatewayUrl(),
+          intentMode: intentMode(),
+          principal,
+          turnId,
+          callPlan: resolution.callPlan,
+          selectionExecutionBinding: binding,
+        });
+        resultPersistenceRequired = true;
       } else {
         const nextSession: SessionStateV2 = {
           ...current,
@@ -435,21 +470,7 @@ async function executeRunnerInBackground(
           conversationFenceToken!,
         );
         expectedSessionVersion = nextSession.stateVersion;
-        if (resolution.status === "read_not_applicable") {
-          outcome = await runner({
-            mode: "query",
-            query,
-            gatewayUrl: gatewayUrl(),
-            intentMode: intentMode(),
-            context,
-            principal,
-            turnId,
-          });
-        } else {
-          // Test runners and older internal runners may already return the
-          // legacy final outcome from the resolve entry.
-          outcome = resolution;
-        }
+        outcome = resolution;
         resultPersistenceRequired = true;
       }
     } else {
@@ -550,6 +571,26 @@ async function executeRunnerInBackground(
     }
 
     if (!handoff) {
+      if (
+        outcome.status === "awaiting_batch_confirm"
+        && conversationId
+        && turnId
+        && outcome.conversationReadState?.pendingInteraction?.kind === "BATCH_CONFIRMATION"
+      ) {
+        const pending = outcome.conversationReadState.pendingInteraction;
+        outcome = {
+          ...outcome,
+          batchConversationBinding: {
+            conversationId,
+            turnId,
+            frameId: pending.frameId,
+            stateVersion: pending.stateVersion,
+            registrySnapshotId: pending.registrySnapshotId,
+            principalId,
+            batchRef: pending.batchRef,
+          },
+        };
+      }
       await emitEventsFromOutcome(runId, query, outcome, timestamp,
         (event) => runStore.appendEvent(runId, event), 2);
 
@@ -635,11 +676,14 @@ function validateReadResolution(
     || binding.registrySnapshotId !== frame.registrySnapshotId
     || binding.principalId !== principalId
     || binding.capabilityVersion !== frame.capabilityVersion
+    || !binding.executorBindingId
     || binding.readState.stateVersion !== state.stateVersion
     || binding.readState.activeFrame?.frameId !== frame.frameId
+    || canonicalJson(binding.readState) !== canonicalJson(state)
     || capabilityId !== frame.capabilityId
     || outcome.callPlan?.kind !== "Function"
     || outcome.callPlan?.requiresApproval !== false
+    || sha256Hex(canonicalJson(outcome.callPlan)) !== binding.callPlanHash
   ) {
     throw new ConversationProtocolError(
       "CONTEXT_VERSION_CONFLICT",
@@ -868,18 +912,101 @@ export async function confirmAgentRunBatch(
 
   const callPlan = objectOrNull(record.pendingOutcome.callPlan);
   const combinations = record.pendingOutcome.combinations ?? null;
-  if (!callPlan || !combinations) {
+  const binding = record.pendingOutcome.batchConversationBinding;
+  if (!callPlan || !combinations || !binding) {
     throw new Error("Agent run batch context is incomplete");
   }
 
-  const lease = await runStore.claim(runId, workerId, 60_000);
-  if (lease.status === "rejected") {
-    throw new Error(`Agent run is held by another worker (${lease.holder}); takeover rejected (fail-closed).`);
+  const conversationLeaseOwner = `${workerId}:batch:${crypto.randomUUID()}`;
+  const conversationLease = await conversationStore.claim(
+    binding.conversationId,
+    conversationLeaseOwner,
+    CONVERSATION_LEASE_TTL_MS,
+  );
+  if (conversationLease.status === "rejected") {
+    throw new ConversationProtocolError(
+      "CONVERSATION_BUSY",
+      `Conversation is held by another worker (${conversationLease.holder})`,
+    );
   }
-  // lease.status === "claimed" | "force-claimed" -> proceed (audited)
-  await runStore.appendDecision(runId, "approve");
-  // §1.3: fire-and-forget background execution; return immediately
-  void executeBatchInBackground(runId, record, callPlan, combinations, idemKey);
+
+  let backgroundOwnsConversationLease = false;
+  let runLeaseClaimed = false;
+  try {
+    const session = await conversationStore.load(
+      binding.conversationId,
+      principal.principalId,
+    );
+    const pending = session?.pendingInteraction;
+    const activeFrame = session?.activeFrame;
+    const expectedBatchRef = `sha256:${sha256Hex(canonicalJson({ callPlan, combinations }))}`;
+    if (
+      !session
+      || binding.principalId !== principal.principalId
+      || session.principalId !== principal.principalId
+      || session.stateVersion !== binding.stateVersion
+      || session.lastAppliedTurnId !== binding.turnId
+      || session.lastRunId !== runId
+      || pending?.kind !== "BATCH_CONFIRMATION"
+      || pending.frameId !== binding.frameId
+      || pending.stateVersion !== binding.stateVersion
+      || pending.registrySnapshotId !== binding.registrySnapshotId
+      || pending.batchRef !== binding.batchRef
+      || pending.batchRef !== expectedBatchRef
+      || Date.parse(pending.expiresAt) <= Date.now()
+      || activeFrame?.frameId !== binding.frameId
+      || activeFrame.status !== "READY"
+      || activeFrame.registrySnapshotId !== binding.registrySnapshotId
+      || activeFrame.capabilityId !== callPlan.capabilityId
+      || callPlan.kind !== "Function"
+      || callPlan.requiresApproval !== false
+    ) {
+      throw new ConversationProtocolError(
+        "CONTEXT_VERSION_CONFLICT",
+        "Batch confirmation binding is invalid, expired, or stale",
+      );
+    }
+
+    const lease = await runStore.claim(runId, workerId, 60_000);
+    if (lease.status === "rejected") {
+      throw new Error(`Agent run is held by another worker (${lease.holder}); takeover rejected (fail-closed).`);
+    }
+    runLeaseClaimed = true;
+    await saveConversationState(
+      binding.conversationId,
+      session.stateVersion,
+      {
+        ...session,
+        stateVersion: session.stateVersion + 1,
+        pendingInteraction: null,
+      },
+      conversationLeaseOwner,
+      conversationLease.fenceToken,
+    );
+    await runStore.appendDecision(runId, "approve");
+    backgroundOwnsConversationLease = true;
+    void executeBatchInBackground(
+      runId,
+      record,
+      callPlan,
+      combinations,
+      idemKey,
+      binding.conversationId,
+      conversationLeaseOwner,
+      conversationLease.fenceToken,
+    );
+  } catch (error) {
+    if (runLeaseClaimed) await runStore.release(runId, workerId);
+    throw error;
+  } finally {
+    if (!backgroundOwnsConversationLease) {
+      await conversationStore.release(
+        binding.conversationId,
+        conversationLeaseOwner,
+        conversationLease.fenceToken,
+      );
+    }
+  }
 }
 
 async function executeBatchInBackground(
@@ -887,9 +1014,18 @@ async function executeBatchInBackground(
   record: AgentRunRecord,
   callPlan: Record<string, unknown>,
   combinations: Record<string, string>[],
-  idemKey: string
+  idemKey: string,
+  conversationId: string,
+  conversationLeaseOwner: string,
+  conversationFenceToken: string,
 ): Promise<void> {
+  const heartbeat = startConversationLeaseHeartbeat(
+    conversationId,
+    conversationLeaseOwner,
+    conversationFenceToken,
+  );
   try {
+    await heartbeat.assertOwned();
     const runner = runnerForTests ?? runLocalPythonAgent;
     const outcome = await runner({
       mode: "query",
@@ -898,6 +1034,7 @@ async function executeBatchInBackground(
       intentMode: intentMode(),
       continuation: { type: "batch", callPlan, combinations }
     });
+    await heartbeat.assertOwned();
     await emitBatchEvents(record, outcome, new Date().toISOString(),
       (event) => runStore.appendEvent(runId, event));
     await runStore.markExecuted(idemKey, outcome);
@@ -912,6 +1049,13 @@ async function executeBatchInBackground(
       await runStore.appendEvent(runId, event);
     }
     await runStore.release(runId, workerId);
+  } finally {
+    heartbeat.stop();
+    await conversationStore.release(
+      conversationId,
+      conversationLeaseOwner,
+      conversationFenceToken,
+    );
   }
 }
 
@@ -1351,7 +1495,7 @@ async function runLocalPythonAgent(input: AgentRunnerInput): Promise<WorkbenchOu
     ];
     stdinPayload = JSON.stringify(input.context);
   } else if (input.mode === "continue-read") {
-    if (!input.callPlan || !input.readExecutionBinding) {
+    if (!input.callPlan || !input.readExecutionBinding || !input.persistedReadState) {
       throw new Error("Authoritative READ continuation requires a server-owned binding.");
     }
     args = [
@@ -1365,6 +1509,23 @@ async function runLocalPythonAgent(input: AgentRunnerInput): Promise<WorkbenchOu
     stdinPayload = JSON.stringify({
       callPlan: input.callPlan,
       binding: input.readExecutionBinding,
+      persistedReadState: input.persistedReadState,
+    });
+  } else if (input.mode === "continue-selection") {
+    if (!input.callPlan || !input.selectionExecutionBinding) {
+      throw new Error("Selection continuation requires a server-owned binding.");
+    }
+    args = [
+      "-m",
+      "sap_nexus_agent.cli",
+      "--continue-selection",
+      "--gateway-url",
+      input.gatewayUrl,
+      "--json",
+    ];
+    stdinPayload = JSON.stringify({
+      callPlan: input.callPlan,
+      binding: input.selectionExecutionBinding,
     });
   } else if (input.continuation) {
     const isBatch = input.continuation.type === "batch";

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import itertools
+import hashlib
+import json
 import os
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
@@ -19,7 +21,11 @@ from sap_nexus_agent.approval import (
 )
 from sap_nexus_agent.call_plan import CallPlan, create_call_plan
 from sap_nexus_agent.capability_selector import select_capability
-from sap_nexus_agent.conversation_context import ConversationContext, ReadExecutionBinding
+from sap_nexus_agent.conversation_context import (
+    ConversationContext,
+    ReadExecutionBinding,
+    SelectionExecutionBinding,
+)
 from sap_nexus_agent.execution_result import ExecutionResult
 from sap_nexus_agent.execution_result import ValidationResult
 from sap_nexus_agent.gateway_client import GatewayClientProtocol
@@ -109,6 +115,7 @@ class AgentOutcome:
     read_state: "ConversationReadState | None" = None
     resolution_report: Mapping[str, object] | None = None
     read_execution_binding: ReadExecutionBinding | None = None
+    selection_execution_binding: SelectionExecutionBinding | None = None
     turn_id: str | None = None
     frame_id: str | None = None
     state_version: int | None = None
@@ -176,12 +183,44 @@ def resolve_read_turn(
     )
     if outcome is not None:
         return outcome
+    if legacy_decision.decision_type == "SELECT" and legacy_decision.capability_id:
+        capability = _current_capability(sources, legacy_decision.capability_id)
+        if capability is not None:
+            governance = capability.get("governance")
+            if isinstance(governance, Mapping) and governance.get("sideEffect") != "none":
+                parameters = dict(legacy_decision.parameters or getattr(parsed, "parameters", {}))
+                call_plan = create_call_plan(
+                    legacy_decision.capability_id, parameters, kind="Action"
+                )
+                binding_id = _executor_binding_id(capability)
+                if binding_id:
+                    binding = SelectionExecutionBinding.create(
+                        turn_id=turn_id,
+                        state_version=(context.read_state.state_version if context.read_state else 0) + 1,
+                        registry_snapshot_id=lease.snapshot_id,
+                        principal_id=principal.principal_id,
+                        capability_version=str(capability.get("version", "1")),
+                        executor_binding_id=binding_id,
+                        call_plan=call_plan,
+                    )
+                    return AgentOutcome(
+                        status="resolved_selection",
+                        message=legacy_decision.rationale,
+                        call_plan=call_plan,
+                        match_decision=legacy_decision,
+                        selection_execution_binding=binding,
+                        turn_id=turn_id,
+                        state_version=binding.state_version,
+                        registry_snapshot_id=lease.snapshot_id,
+                    )
     return AgentOutcome(
-        status="read_not_applicable",
-        message="The turn is not an authoritative READ capability.",
-        error_type="READ_CONTEXT_NOT_APPLICABLE",
+        status="match_decision" if legacy_decision.decision_type in {"SHOW_OPTIONS", "ESCALATE_TO_PLANNER"} else "failure",
+        message=legacy_decision.rationale,
+        response_text=legacy_decision.rationale,
+        error_type=legacy_decision.error_type,
         match_decision=legacy_decision,
         turn_id=turn_id,
+        state_version=(context.read_state.state_version if context.read_state else 0) + 1,
         registry_snapshot_id=lease.snapshot_id,
     )
 
@@ -190,9 +229,21 @@ def continue_resolved_read(
     call_plan: CallPlan,
     binding: ReadExecutionBinding,
     gateway: GatewayClientProtocol,
+    *,
+    persisted_state: "ConversationReadState | None" = None,
+    principal: TrustedPrincipal | None = None,
+    snapshot: RegistrySnapshot | None = None,
+    sources: SemanticSourceDocuments | None = None,
 ) -> AgentOutcome:
     """Execute one immutable, server-owned, CAS-bound READY READ plan."""
-    if not isinstance(binding, ReadExecutionBinding) or not binding.validates(call_plan):
+    if not _valid_current_read_authority(
+        call_plan,
+        binding,
+        persisted_state=persisted_state,
+        principal=principal,
+        snapshot=snapshot,
+        sources=sources,
+    ):
         return AgentOutcome(
             status="failure",
             message="Resolved READ execution binding does not match persisted state.",
@@ -228,6 +279,185 @@ def continue_resolved_read(
     if call_plan.capability_id == INVENTORY_CAPABILITY_ID:
         return _finalize_inventory(call_plan, validation, execution)
     return _finalize_purchase_order(call_plan, validation, execution)
+
+
+def continue_resolved_selection(
+    call_plan: CallPlan,
+    binding: SelectionExecutionBinding,
+    gateway: GatewayClientProtocol,
+    *,
+    principal: TrustedPrincipal,
+    snapshot: RegistrySnapshot,
+    sources: SemanticSourceDocuments,
+) -> AgentOutcome:
+    """Validate one parsed WRITE selection without rerunning semantic parsing."""
+    capability = _current_capability(sources, call_plan.capability_id)
+    governance = capability.get("governance") if capability else None
+    executor_binding = capability.get("executorBinding") if capability else None
+    bound_executor = (
+        _current_executor_binding(sources, binding.executor_binding_id)
+        if isinstance(binding, SelectionExecutionBinding)
+        else None
+    )
+    if (
+        not isinstance(binding, SelectionExecutionBinding)
+        or not binding.validates(call_plan)
+        or binding.principal_id != principal.principal_id
+        or binding.registry_snapshot_id != snapshot.snapshot_id
+        or capability is None
+        or capability.get("status") != "active"
+        or str(capability.get("version", "1")) != binding.capability_version
+        or _executor_binding_id(capability) != binding.executor_binding_id
+        or not isinstance(executor_binding, Mapping)
+        or bound_executor is None
+        or bound_executor.get("type") != executor_binding.get("type")
+        or not isinstance(governance, Mapping)
+        or governance.get("sideEffect") == "none"
+        or governance.get("requiresApproval") is not True
+    ):
+        return AgentOutcome(
+            status="failure",
+            message="Resolved selection authority is invalid or stale.",
+            error_type="SELECTION_EXECUTION_BINDING_MISMATCH",
+        )
+    validation = gateway.validate(call_plan.capability_id, call_plan.parameters)
+    if not validation.success:
+        return AgentOutcome(
+            status="failure",
+            message="；".join(validation.messages),
+            response_text=narrate_failure(validation.error_type, validation.messages),
+            call_plan=call_plan,
+            validation_result=validation,
+            gateway_trace_id=validation.trace_id,
+            error_type=validation.error_type,
+        )
+    approval = create_approval_record(
+        capability_id=call_plan.capability_id,
+        parameters=call_plan.parameters,
+        approver="user",
+        registry_snapshot_id=snapshot.snapshot_id,
+    )
+    return AgentOutcome(
+        status="awaiting_approval",
+        message="采购申请参数已就绪，等待人工审批。",
+        response_text="请确认采购申请参数后批准或拒绝。",
+        call_plan=call_plan,
+        validation_result=validation,
+        gateway_trace_id=validation.trace_id,
+        approval_record=approval,
+    )
+
+
+def _valid_current_read_authority(
+    call_plan: CallPlan,
+    binding: ReadExecutionBinding,
+    *,
+    persisted_state: "ConversationReadState | None",
+    principal: TrustedPrincipal | None,
+    snapshot: RegistrySnapshot | None,
+    sources: SemanticSourceDocuments | None,
+) -> bool:
+    if (
+        not isinstance(binding, ReadExecutionBinding)
+        or persisted_state is None
+        or principal is None
+        or snapshot is None
+        or sources is None
+        or not binding.validates(call_plan, persisted_state)
+        or binding.principal_id != principal.principal_id
+        or binding.registry_snapshot_id != snapshot.snapshot_id
+    ):
+        return False
+    from sap_nexus_agent.semantic_planning.validation import build_semantic_contracts
+
+    try:
+        contracts = build_semantic_contracts(sources)
+    except Exception:
+        return False
+    if not contracts.report.valid or contracts.snapshot != snapshot:
+        return False
+    capability = _current_capability(sources, call_plan.capability_id)
+    governance = capability.get("governance") if capability else None
+    executor_binding = capability.get("executorBinding") if capability else None
+    if (
+        capability is None
+        or capability.get("status") != "active"
+        or capability.get("kind") != "Function"
+        or str(capability.get("version", "1")) != binding.capability_version
+        or not isinstance(governance, Mapping)
+        or governance.get("sideEffect") != "none"
+        or governance.get("requiresApproval") is not False
+        or not isinstance(executor_binding, Mapping)
+        or executor_binding.get("bindingId") != binding.executor_binding_id
+    ):
+        return False
+    from sap_nexus_agent.planner.capability_card import discover_cards
+    from sap_nexus_agent.visibility import filter_visible
+
+    execution_ids = {
+        card.capability_id
+        for card in filter_visible(discover_cards(snapshot, sources), for_execution=True)
+    }
+    if call_plan.capability_id not in execution_ids:
+        return False
+    raw_bindings = sources.executor_bindings.get("bindings", ())
+    matches = [
+        raw for raw in raw_bindings
+        if isinstance(raw, Mapping) and raw.get("bindingId") == binding.executor_binding_id
+    ] if isinstance(raw_bindings, (tuple, list)) else []
+    if len(matches) != 1 or matches[0].get("type") != executor_binding.get("type"):
+        return False
+    constraints = matches[0].get("constraints")
+    if not isinstance(constraints, Mapping) or constraints.get("sideEffect") != "none":
+        return False
+    frame = persisted_state.active_frame
+    if frame is None:
+        return False
+    inputs = capability.get("inputs", ())
+    if not isinstance(inputs, (tuple, list)):
+        return False
+    input_names = {
+        raw.get("name") for raw in inputs
+        if isinstance(raw, Mapping) and isinstance(raw.get("name"), str)
+    }
+    expected_parameters = {
+        name: slot.value
+        for name, slot in frame.slots.items()
+        if name in input_names and slot.state == "RESOLVED" and slot.value is not None
+    }
+    if call_plan.capability_id == INVENTORY_CAPABILITY_ID:
+        expected_parameters.setdefault("unit", "EA")
+    return call_plan.parameters == expected_parameters
+
+
+def _current_capability(
+    sources: SemanticSourceDocuments, capability_id: str
+) -> Mapping[str, object] | None:
+    values = sources.capabilities.get("capabilities", ())
+    matches = [
+        value for value in values
+        if isinstance(value, Mapping) and value.get("capabilityId") == capability_id
+    ] if isinstance(values, (tuple, list)) else []
+    return matches[0] if len(matches) == 1 else None
+
+
+def _executor_binding_id(capability: Mapping[str, object]) -> str | None:
+    executor_binding = capability.get("executorBinding")
+    if not isinstance(executor_binding, Mapping):
+        return None
+    binding_id = executor_binding.get("bindingId")
+    return binding_id if isinstance(binding_id, str) and binding_id else None
+
+
+def _current_executor_binding(
+    sources: SemanticSourceDocuments, binding_id: str
+) -> Mapping[str, object] | None:
+    values = sources.executor_bindings.get("bindings", ())
+    matches = [
+        value for value in values
+        if isinstance(value, Mapping) and value.get("bindingId") == binding_id
+    ] if isinstance(values, (tuple, list)) else []
+    return matches[0] if len(matches) == 1 else None
 
 
 def _governed_read_authority(
@@ -276,6 +506,20 @@ def _resolve_authoritative_read(
     from sap_nexus_agent.read_context import ConversationReadState
     from sap_nexus_agent.registry_loader import load_intent_catalog
 
+    prior_state = context.read_state or ConversationReadState(None, None, 0)
+    pending_resolution = _resolve_non_slot_pending(
+        text=text,
+        context=context,
+        prior_state=prior_state,
+        decision=legacy_decision,
+        lease=lease,
+        visible=visible,
+        turn_id=turn_id,
+    )
+    if isinstance(pending_resolution, AgentOutcome):
+        return pending_resolution
+    prior_state = pending_resolution
+
     capability_id = legacy_decision.capability_id
     if legacy_decision.decision_type in {"SHOW_OPTIONS", "ESCALATE_TO_PLANNER"}:
         if legacy_decision.decision_type == "SHOW_OPTIONS":
@@ -283,7 +527,6 @@ def _resolve_authoritative_read(
                 candidate.capability_id for candidate in legacy_decision.candidates or ()
             )
             pending_kind = "CAPABILITY_CHOICE"
-            expected_fields = ("capabilityId",)
         else:
             candidate_ids = tuple(
                 matched.capability_id
@@ -294,7 +537,6 @@ def _resolve_authoritative_read(
                 )
             )
             pending_kind = "PLANNER_CONFIRMATION"
-            expected_fields = ("confirmation",)
         catalog = load_intent_catalog()
         descriptors = tuple(catalog.find(candidate_id) for candidate_id in candidate_ids)
         if candidate_ids and all(
@@ -307,7 +549,7 @@ def _resolve_authoritative_read(
                 prior_state=prior_state,
                 decision=legacy_decision,
                 kind=pending_kind,
-                expected_fields=expected_fields,
+                capability_ids=candidate_ids,
                 snapshot_id=lease.snapshot_id,
                 turn_id=turn_id,
             )
@@ -329,7 +571,6 @@ def _resolve_authoritative_read(
             ),
         )
 
-    prior_state = context.read_state or ConversationReadState(None, None, 0)
     resolution = reduce_context(
         ContextReductionRequest(
             prior_state=prior_state,
@@ -374,10 +615,12 @@ def _resolve_authoritative_read(
             combinations = expand_combinations(parameters, multi_parameters)
             from sap_nexus_agent.read_context import PendingInteraction
 
-            pending = PendingInteraction(
-                kind="BATCH_CONFIRMATION",
+            pending = PendingInteraction.batch_confirmation(
                 frame_id=resolution.next_state.active_frame.frame_id,
-                expected_fields=tuple(multi_parameters),
+                batch_ref=_pending_payload_ref({
+                    "callPlan": call_plan.to_dict(),
+                    "combinations": combinations,
+                }),
                 state_version=resolution.next_state.state_version,
                 registry_snapshot_id=lease.snapshot_id,
                 expires_at=(datetime.now(UTC) + timedelta(minutes=15))
@@ -404,6 +647,9 @@ def _resolve_authoritative_read(
                 principal_id=principal.principal_id,
                 call_plan=call_plan,
                 read_state=next_state,
+                executor_binding_id=_executor_binding_id(
+                    _current_capability(lease.sources, capability_id) or {}
+                ) or "",
             )
 
     status = "awaiting_batch_confirm" if combinations is not None else {
@@ -451,7 +697,7 @@ def _bound_pending_outcome(
     prior_state: "ConversationReadState",
     decision: MatchDecision,
     kind: str,
-    expected_fields: tuple[str, ...],
+    capability_ids: tuple[str, ...],
     snapshot_id: str,
     turn_id: str,
 ) -> AgentOutcome:
@@ -461,18 +707,37 @@ def _bound_pending_outcome(
     frame_id = (
         prior_state.active_frame.frame_id
         if prior_state.active_frame is not None
-        else f"read-pending:{turn_id}"
+        else f"pending:{kind.lower()}:{_pending_payload_ref({'turnId': turn_id, 'snapshotId': snapshot_id, 'capabilityIds': capability_ids})[-24:]}"
     )
-    pending = PendingInteraction(
-        kind=kind,
-        frame_id=frame_id,
-        expected_fields=expected_fields,
-        state_version=state_version,
-        registry_snapshot_id=snapshot_id,
-        expires_at=(datetime.now(UTC) + timedelta(minutes=15))
-        .isoformat()
-        .replace("+00:00", "Z"),
+    expires_at = (datetime.now(UTC) + timedelta(minutes=15)).isoformat().replace(
+        "+00:00", "Z"
     )
+    if kind == "CAPABILITY_CHOICE":
+        pending = PendingInteraction.capability_choice(
+            frame_id=frame_id,
+            capability_ids=capability_ids,
+            state_version=state_version,
+            registry_snapshot_id=snapshot_id,
+            expires_at=expires_at,
+        )
+    else:
+        handoff = decision.handoff
+        goals = tuple(
+            {
+                "capabilityId": matched.capability_id,
+                "parameters": dict(matched.parameters),
+                "missing": list(matched.missing),
+            }
+            for matched in (handoff.matched_intents if handoff is not None else ())
+        )
+        pending = PendingInteraction.planner_confirmation(
+            frame_id=frame_id,
+            planner_ref=_pending_payload_ref({"goals": goals}),
+            goals=goals,
+            state_version=state_version,
+            registry_snapshot_id=snapshot_id,
+            expires_at=expires_at,
+        )
     next_state = ConversationReadState(
         active_frame=prior_state.active_frame,
         pending_interaction=pending,
@@ -507,6 +772,155 @@ def _bound_pending_outcome(
         state_version=state_version,
         registry_snapshot_id=snapshot_id,
     )
+
+
+def _pending_payload_ref(payload: object) -> str:
+    encoded = json.dumps(
+        payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")
+    return f"sha256:{hashlib.sha256(encoded).hexdigest()}"
+
+
+def _resolve_non_slot_pending(
+    *,
+    text: str,
+    context: ConversationContext,
+    prior_state: "ConversationReadState",
+    decision: MatchDecision,
+    lease: SnapshotLease,
+    visible: VisibleCapabilitySet,
+    turn_id: str,
+) -> "ConversationReadState | AgentOutcome":
+    from sap_nexus_agent.read_context import ConversationReadState
+
+    pending = prior_state.pending_interaction
+    if pending is None or pending.kind == "SLOT_CLARIFICATION":
+        return prior_state
+    if pending.kind == "BATCH_CONFIRMATION":
+        return _refresh_pending_outcome(
+            context, prior_state, pending, turn_id, "请先确认或取消待处理的批量查询。"
+        )
+
+    active_frame_id = prior_state.active_frame.frame_id if prior_state.active_frame else None
+    synthetic = pending.frame_id.startswith("pending:") and active_frame_id is None
+    binding_valid = (
+        pending.state_version == prior_state.state_version
+        and pending.registry_snapshot_id == lease.snapshot_id
+        and (pending.frame_id == active_frame_id or synthetic)
+        and _parse_expiry(pending.expires_at) > datetime.now(UTC)
+    )
+    visible_ids = frozenset(card.capability_id for card in visible.cards)
+    if pending.kind == "CAPABILITY_CHOICE":
+        binding_valid = binding_valid and bool(pending.capability_ids) and all(
+            capability_id in visible_ids for capability_id in pending.capability_ids
+        )
+        selected = decision.capability_id
+        if binding_valid and selected in pending.capability_ids:
+            return replace(prior_state, pending_interaction=None)
+        return _refresh_pending_outcome(
+            context,
+            prior_state,
+            pending,
+            turn_id,
+            "能力选择已失效或尚未明确，请重新选择。",
+        )
+
+    goals_payload = tuple(goal.to_dict() for goal in pending.planner_goals)
+    binding_valid = (
+        binding_valid
+        and pending.planner_ref == _pending_payload_ref({"goals": goals_payload})
+        and all(goal.capability_id in visible_ids for goal in pending.planner_goals)
+    )
+    confirmed = text.strip().lower() in {"继续", "continue", "ok", "好的", "确认", "confirm"}
+    if not binding_valid or not confirmed:
+        return _refresh_pending_outcome(
+            context,
+            prior_state,
+            pending,
+            turn_id,
+            "规划确认已失效或尚未确认，请重新确认。",
+        )
+
+    from sap_nexus_agent.match_decision import EscalationHandoff, MatchedIntent
+
+    handoff = EscalationHandoff(
+        reason="pending-confirmed",
+        matched_intents=[
+            MatchedIntent(
+                capability_id=goal.capability_id,
+                parameters=dict(goal.parameters),
+                missing=list(goal.missing),
+            )
+            for goal in pending.planner_goals
+        ],
+        utterance=text,
+        registry_snapshot_id=lease.snapshot_id,
+    )
+    confirmed_decision = MatchDecision(
+        decision_type="ESCALATE_TO_PLANNER",
+        handoff=handoff,
+        rationale="用户已确认进入规划。",
+    )
+    next_state = replace(
+        prior_state,
+        pending_interaction=None,
+        state_version=prior_state.state_version + 1,
+    )
+    next_context = replace(context, read_state=next_state, schema_version=2)
+    compiled = _compile_dry_run_safely(handoff, lease=lease)
+    return AgentOutcome(
+        status="match_decision",
+        message=confirmed_decision.rationale,
+        response_text=confirmed_decision.rationale,
+        match_decision=confirmed_decision,
+        dry_run=compiled if isinstance(compiled, PlanCompileResult) else None,
+        planner_failure=compiled if isinstance(compiled, PlannerFailure) else None,
+        updated_context=next_context,
+        read_state=next_state,
+        resolution_report={"pendingKind": "PLANNER_CONFIRMATION", "consumed": True},
+        turn_id=turn_id,
+        frame_id=pending.frame_id,
+        state_version=next_state.state_version,
+        registry_snapshot_id=lease.snapshot_id,
+    )
+
+
+def _refresh_pending_outcome(
+    context: ConversationContext,
+    prior_state: "ConversationReadState",
+    pending: "PendingInteraction",
+    turn_id: str,
+    response: str,
+) -> AgentOutcome:
+    from sap_nexus_agent.read_context import ConversationReadState
+
+    rebound = replace(pending, state_version=prior_state.state_version + 1)
+    next_state = ConversationReadState(
+        active_frame=prior_state.active_frame,
+        pending_interaction=rebound,
+        state_version=prior_state.state_version + 1,
+        recent_frames=prior_state.recent_frames,
+    )
+    return AgentOutcome(
+        status="match_decision",
+        message=response,
+        response_text=response,
+        updated_context=replace(context, read_state=next_state, schema_version=2),
+        read_state=next_state,
+        resolution_report={"pendingKind": pending.kind, "consumed": False},
+        turn_id=turn_id,
+        frame_id=pending.frame_id,
+        state_version=next_state.state_version,
+        registry_snapshot_id=pending.registry_snapshot_id,
+    )
+
+
+def _parse_expiry(value: str) -> datetime:
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=UTC)
+    except ValueError:
+        return datetime.min.replace(tzinfo=UTC)
 
 
 def run_query(
@@ -689,7 +1103,13 @@ def run_query(
             assert resolved.call_plan is not None
             assert resolved.read_execution_binding is not None
             executed = continue_resolved_read(
-                resolved.call_plan, resolved.read_execution_binding, gateway
+                resolved.call_plan,
+                resolved.read_execution_binding,
+                gateway,
+                persisted_state=resolved.read_state,
+                principal=effective_principal,
+                snapshot=snapshot,
+                sources=sources,
             )
             return replace(
                 executed,

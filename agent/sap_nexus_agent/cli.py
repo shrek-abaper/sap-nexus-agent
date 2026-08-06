@@ -6,7 +6,11 @@ import sys
 
 from sap_nexus_agent.approval import ApprovalRecord
 from sap_nexus_agent.call_plan import CallPlan
-from sap_nexus_agent.conversation_context import ConversationContext, ReadExecutionBinding
+from sap_nexus_agent.conversation_context import (
+    ConversationContext,
+    ReadExecutionBinding,
+    SelectionExecutionBinding,
+)
 from sap_nexus_agent.execution_result import ValidationResult
 from sap_nexus_agent.gateway_client import GatewayClient
 from sap_nexus_agent.llm_intent import build_intent_adapter
@@ -14,6 +18,7 @@ from sap_nexus_agent.orchestrator import (
     continue_action,
     continue_batch,
     continue_resolved_read,
+    continue_resolved_selection,
     resolve_read_turn,
     run_query,
 )
@@ -97,6 +102,11 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Continue one server-owned, persisted READ resolution",
     )
+    parser.add_argument(
+        "--continue-selection",
+        action="store_true",
+        help="Continue one server-owned non-READ selection without parsing again",
+    )
     parser.add_argument("--turn-id", help="Server-owned conversation turn identifier")
     args = parser.parse_args(argv)
 
@@ -137,7 +147,7 @@ def main(argv: list[str] | None = None) -> int:
         else:
             print(outcome.response_text or outcome.message or "未生成响应。")
         return 0 if outcome.status in {
-            "resolved_read", "clarification", "match_decision", "read_not_applicable"
+            "resolved_read", "resolved_selection", "clarification", "match_decision"
         } else 1
 
     if args.continue_read:
@@ -147,7 +157,12 @@ def main(argv: list[str] | None = None) -> int:
                 raise ValueError("continuation must be an object")
             call_plan = CallPlan.from_dict(dict(payload["callPlan"]))
             binding = ReadExecutionBinding.from_dict(dict(payload["binding"]))
-            if not binding.validates(call_plan):
+            from sap_nexus_agent.read_context import ConversationReadState
+
+            persisted_state = ConversationReadState.from_dict(
+                dict(payload["persistedReadState"])
+            )
+            if not binding.validates(call_plan, persisted_state):
                 raise ValueError("READ execution binding mismatch")
             principal = load_principal_from_env()
             repo_root = _resolve_repo_root()
@@ -167,12 +182,59 @@ def main(argv: list[str] | None = None) -> int:
                 }))
             return 2
         gateway = GatewayClient(args.gateway_url)
-        outcome = continue_resolved_read(call_plan, binding, gateway)
+        outcome = continue_resolved_read(
+            call_plan,
+            binding,
+            gateway,
+            persisted_state=persisted_state,
+            principal=principal,
+            snapshot=snapshot,
+            sources=sources,
+        )
         if args.json:
             print(json.dumps(outcome_to_workbench_dict(outcome), ensure_ascii=False))
         else:
             print(outcome.response_text or outcome.message or "未生成响应。")
         return 0 if outcome.status == "success" else 1
+
+    if args.continue_selection:
+        try:
+            payload = json.load(sys.stdin)
+            if not isinstance(payload, dict):
+                raise ValueError("continuation must be an object")
+            call_plan = CallPlan.from_dict(dict(payload["callPlan"]))
+            binding = SelectionExecutionBinding.from_dict(dict(payload["binding"]))
+            principal = load_principal_from_env()
+            repo_root = _resolve_repo_root()
+            sources = load_semantic_sources(repo_root)
+            snapshot = build_registry_snapshot(sources)
+            if (
+                binding.principal_id != principal.principal_id
+                or binding.registry_snapshot_id != snapshot.snapshot_id
+            ):
+                raise ValueError("selection authority drift")
+        except (json.JSONDecodeError, KeyError, TypeError, ValueError, AttributeError):
+            if args.json:
+                print(json.dumps({
+                    "status": "failure",
+                    "errorType": "SELECTION_EXECUTION_BINDING_MISMATCH",
+                    "message": "Invalid or stale selection binding.",
+                }))
+            return 2
+        gateway = GatewayClient(args.gateway_url)
+        outcome = continue_resolved_selection(
+            call_plan,
+            binding,
+            gateway,
+            principal=principal,
+            snapshot=snapshot,
+            sources=sources,
+        )
+        if args.json:
+            print(json.dumps(outcome_to_workbench_dict(outcome), ensure_ascii=False))
+        else:
+            print(outcome.response_text or outcome.message or "未生成响应。")
+        return 0 if outcome.status == "awaiting_approval" else 1
 
     if args.continue_action:
         gateway = GatewayClient(args.gateway_url)

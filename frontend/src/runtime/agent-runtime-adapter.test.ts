@@ -15,6 +15,7 @@ import {
 } from "./agent-runtime-adapter";
 import { JsonlConversationStore } from "./durable/jsonl-conversation-store";
 import { JsonlRunStore } from "./durable/jsonl-run-store";
+import { canonicalJson, sha256Hex } from "./durable/canonical-json";
 import type { WorkbenchOutcome } from "./durable/types";
 import { PLACEHOLDER_PRINCIPAL } from "./principal/types";
 import type { TrustedPrincipal } from "./principal/types";
@@ -84,7 +85,8 @@ function resolvedReadOutcome(turnId: string, stateVersion = 1): WorkbenchOutcome
       registrySnapshotId: "snapshot-read-1",
       principalId: PLACEHOLDER_PRINCIPAL.principalId,
       capabilityVersion: "1",
-      callPlanHash: "bound-hash",
+      executorBindingId: "sap.mm.inventory.md04-stock-req-list",
+      callPlanHash: sha256Hex(canonicalJson(callPlan)),
       readState,
     },
     responseText: "ready",
@@ -119,6 +121,69 @@ function clarifyReadOutcome(turnId: string, stateVersion = 1): WorkbenchOutcome 
     expiresAt: "2099-01-01T00:00:00Z",
   };
   return resolved;
+}
+
+function batchReadOutcome(turnId: string, stateVersion = 1): WorkbenchOutcome {
+  const resolved = resolvedReadOutcome(turnId, stateVersion);
+  const combinations = [
+    { material: "DEMOA2", plant: "1000", unit: "EA" },
+    { material: "DEMOA2", plant: "5100", unit: "EA" },
+  ];
+  const batchRef = `sha256:${sha256Hex(canonicalJson({
+    callPlan: resolved.callPlan,
+    combinations,
+  }))}`;
+  resolved.status = "awaiting_batch_confirm";
+  resolved.combinations = combinations;
+  resolved.matchDecision = {
+    decisionType: "CLARIFY",
+    capabilityId: "MM.Inventory.GetAvailability",
+  };
+  resolved.decision = resolved.matchDecision;
+  resolved.readExecutionBinding = null;
+  resolved.conversationReadState!.pendingInteraction = {
+    kind: "BATCH_CONFIRMATION",
+    frameId: "frame-read-1",
+    batchRef,
+    stateVersion,
+    registrySnapshotId: "snapshot-read-1",
+    expiresAt: "2099-01-01T00:00:00Z",
+  };
+  return resolved;
+}
+
+function resolvedSelectionOutcome(turnId: string, stateVersion = 1): WorkbenchOutcome {
+  const callPlan = {
+    agentTraceId: "agent-write-1",
+    capabilityId: "MM.PR.CreateDraft",
+    kind: "Action",
+    parameters: {
+      material: "DEMOA2", plant: "1000", quantity: "10", unit: "EA",
+      delivery_date: "2026-08-10", purchasing_group: "001",
+    },
+    validationPolicy: "validate_before_execute",
+    createdBy: "agent",
+    requiresApproval: true,
+  };
+  return {
+    status: "resolved_selection",
+    callPlan,
+    matchDecision: { decisionType: "SELECT", capabilityId: callPlan.capabilityId },
+    decision: { decisionType: "SELECT", capabilityId: callPlan.capabilityId },
+    turnId,
+    stateVersion,
+    registrySnapshotId: "snapshot-write-1",
+    selectionExecutionBinding: {
+      turnId,
+      stateVersion,
+      registrySnapshotId: "snapshot-write-1",
+      principalId: PLACEHOLDER_PRINCIPAL.principalId,
+      capabilityId: callPlan.capabilityId,
+      capabilityVersion: "1",
+      executorBindingId: "sap.mm.pr.create-draft",
+      callPlanHash: sha256Hex(canonicalJson(callPlan)),
+    },
+  };
 }
 
 async function waitForRunSettled(runId: string, timeoutMs = 5000, minEventCount = 0): Promise<AgentRunEvent[]> {
@@ -216,6 +281,35 @@ describe("agent-runtime-adapter durable integration", () => {
     expect(phases).toEqual(["resolve-read", "continue-read"]);
   });
 
+  it("generates an internal conversation id and still CASes before READ continuation", async () => {
+    const phases: string[] = [];
+    let oneShotQueries = 0;
+    const cas = vi.spyOn(convStore, "compareAndSwap");
+    setAgentRunnerForTests(async () => {
+      oneShotQueries++;
+      return { status: "success", responseText: "legacy" };
+    });
+    setReadAgentRunnerForTests(async (input) => {
+      phases.push(input.mode);
+      if (input.mode === "resolve-read") return resolvedReadOutcome(input.turnId!);
+      if (input.mode === "continue-read") {
+        expect(cas).toHaveBeenCalled();
+        return { status: "success", responseText: "库存 7 EA" };
+      }
+      throw new Error(`unexpected runner mode ${input.mode}`);
+    });
+
+    const { runId } = await createAgentRun({
+      query: "查库存",
+      turnId: "turn-generated-conversation",
+      principal: PLACEHOLDER_PRINCIPAL,
+    });
+    await waitForRunSettled(runId);
+
+    expect(phases).toEqual(["resolve-read", "continue-read"]);
+    expect(oneShotQueries).toBe(0);
+  });
+
   it("persists bound READ pending interaction across restart without continuation", async () => {
     let continuationCalls = 0;
     setReadAgentRunnerForTests(async (input) => {
@@ -270,6 +364,41 @@ describe("agent-runtime-adapter durable integration", () => {
     await waitForRunSettled(runId);
 
     expect(continuationCalls).toBe(0);
+  });
+
+  it("continues the first non-READ selection without rerunning query semantics", async () => {
+    const modes: string[] = [];
+    let oneShotQueries = 0;
+    setAgentRunnerForTests(async () => {
+      oneShotQueries++;
+      return { status: "success" };
+    });
+    setReadAgentRunnerForTests(async (input) => {
+      modes.push(input.mode);
+      if (input.mode === "resolve-read") {
+        return resolvedSelectionOutcome(input.turnId!);
+      }
+      if (input.mode === "continue-selection") {
+        const persisted = await convStore.load(
+          "c-write-selection",
+          PLACEHOLDER_PRINCIPAL.principalId,
+        );
+        expect(persisted?.lastAppliedTurnId).toBe("turn-write-selection");
+        return awaitingOutcome("run-write-selection");
+      }
+      throw new Error(`unexpected mode ${input.mode}`);
+    });
+
+    const { runId } = await createAgentRun({
+      query: "创建采购申请",
+      conversationId: "c-write-selection",
+      turnId: "turn-write-selection",
+      principal: PLACEHOLDER_PRINCIPAL,
+    });
+    await waitForRunSettled(runId);
+
+    expect(modes).toEqual(["resolve-read", "continue-selection"]);
+    expect(oneShotQueries).toBe(0);
   });
 
   it("getAgentRunEvents returns [] for unknown run", async () => {
@@ -362,19 +491,23 @@ describe("agent-runtime-adapter durable integration", () => {
 
   it("duplicate batch confirm continuation is idempotent (executes once)", async () => {
     let calls = 0;
-    const batchOutcome: WorkbenchOutcome = {
-      status: "awaiting_batch_confirm",
-      callPlan: { capabilityId: "cap-1", kind: "Function", agentTraceId: "t" },
-      combinations: [{ k: "v1" }, { k: "v2" }]
-    };
+    setReadAgentRunnerForTests(async (input) => {
+      if (input.mode === "resolve-read") return batchReadOutcome(input.turnId!);
+      throw new Error(`unexpected READ runner mode ${input.mode}`);
+    });
     setAgentRunnerForTests(async (input) => {
-      if (input.continuation) {
+      if (input.continuation?.type === "batch") {
         calls++;
         return { status: "success", responseText: "批处理完成" } as WorkbenchOutcome;
       }
-      return batchOutcome;
+      throw new Error("unexpected one-shot query");
     });
-    const { runId } = await createAgentRun({ query: "批量查询", conversationId: "c-batch-idem", principal: PLACEHOLDER_PRINCIPAL });
+    const { runId } = await createAgentRun({
+      query: "批量查询",
+      conversationId: "c-batch-idem",
+      turnId: "turn-batch-idem",
+      principal: PLACEHOLDER_PRINCIPAL,
+    });
     await waitForRunSettled(runId);
     const eventsBeforeConfirm = await getAgentRunEvents(runId, PLACEHOLDER_PRINCIPAL);
     await confirmAgentRunBatch(runId, PLACEHOLDER_PRINCIPAL);
@@ -382,6 +515,108 @@ describe("agent-runtime-adapter durable integration", () => {
     await confirmAgentRunBatch(runId, PLACEHOLDER_PRINCIPAL); // duplicate
     expect(calls).toBe(1);
   });
+
+  it("batch confirmation survives restart and CAS-consumes its bound pending before execution", async () => {
+    let batchCalls = 0;
+    setReadAgentRunnerForTests(async (input) => {
+      if (input.mode === "resolve-read") return batchReadOutcome(input.turnId!);
+      throw new Error(`unexpected READ runner mode ${input.mode}`);
+    });
+    setAgentRunnerForTests(async (input) => {
+      if (input.continuation?.type === "batch") {
+        batchCalls++;
+        const persisted = await convStore.load(
+          "c-batch-restart",
+          PLACEHOLDER_PRINCIPAL.principalId,
+        );
+        expect(persisted?.pendingInteraction).toBeNull();
+        expect(persisted?.stateVersion).toBe(2);
+        return { status: "success", responseText: "批处理完成" };
+      }
+      throw new Error("unexpected one-shot query");
+    });
+
+    const { runId } = await createAgentRun({
+      query: "批量查询",
+      conversationId: "c-batch-restart",
+      turnId: "turn-batch-restart",
+      principal: PLACEHOLDER_PRINCIPAL,
+    });
+    await waitForRunSettled(runId);
+    setDurableStoresForTests(new JsonlRunStore(dir), new JsonlConversationStore(dir));
+    const eventsBeforeConfirm = await getAgentRunEvents(runId, PLACEHOLDER_PRINCIPAL);
+
+    await confirmAgentRunBatch(runId, PLACEHOLDER_PRINCIPAL);
+    await waitForRunSettled(runId, 5000, eventsBeforeConfirm.length);
+
+    expect(batchCalls).toBe(1);
+  });
+
+  it.each(["expired", "intervening-turn", "lease", "cas", "store"] as const)(
+    "batch confirmation fails closed on %s with zero continuation",
+    async (failure) => {
+      let batchCalls = 0;
+      const conversationId = `c-batch-${failure}`;
+      setReadAgentRunnerForTests(async (input) => {
+        if (input.mode !== "resolve-read") throw new Error(`unexpected mode ${input.mode}`);
+        const outcome = batchReadOutcome(input.turnId!);
+        if (failure === "expired") {
+          const pending = outcome.conversationReadState!.pendingInteraction!;
+          if (pending.kind !== "BATCH_CONFIRMATION") throw new Error("wrong pending kind");
+          pending.expiresAt = "2000-01-01T00:00:00Z";
+        }
+        return outcome;
+      });
+      setAgentRunnerForTests(async (input) => {
+        if (input.continuation?.type === "batch") batchCalls++;
+        return { status: "success", responseText: "unexpected" };
+      });
+      const { runId } = await createAgentRun({
+        query: "批量查询",
+        conversationId,
+        turnId: `turn-batch-${failure}`,
+        principal: PLACEHOLDER_PRINCIPAL,
+      });
+      await waitForRunSettled(runId);
+
+      if (failure === "intervening-turn") {
+        const session = (await convStore.load(
+          conversationId,
+          PLACEHOLDER_PRINCIPAL.principalId,
+        ))!;
+        const pending = session.pendingInteraction!;
+        await convStore.compareAndSwap(conversationId, session.stateVersion, {
+          ...session,
+          stateVersion: session.stateVersion + 1,
+          pendingInteraction: { ...pending, stateVersion: session.stateVersion + 1 },
+          lastAppliedTurnId: "turn-intervening",
+          lastRunId: "run-intervening",
+        });
+      } else if (failure === "lease") {
+        await convStore.claim(conversationId, "other-worker", 60_000);
+      } else if (failure === "cas" || failure === "store") {
+        const failingStore = {
+          load: failure === "store"
+            ? vi.fn(async () => { throw new Error("injected store failure"); })
+            : convStore.load.bind(convStore),
+          claim: convStore.claim.bind(convStore),
+          compareAndSwap: failure === "cas"
+            ? vi.fn(async () => ({ status: "conflict" as const, actualVersion: 9 }))
+            : convStore.compareAndSwap.bind(convStore),
+          renew: convStore.renew.bind(convStore),
+          release: convStore.release.bind(convStore),
+          lookupTurn: convStore.lookupTurn.bind(convStore),
+          clear: convStore.clear.bind(convStore),
+          clearAll: convStore.clearAll.bind(convStore),
+        };
+        setDurableStoresForTests(runStore, failingStore);
+      }
+
+      await expect(confirmAgentRunBatch(runId, PLACEHOLDER_PRINCIPAL)).rejects.toThrow();
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      expect(batchCalls).toBe(0);
+    },
+  );
 
   it("createAgentRun binds principalId to the run record", async () => {
     const { runId } = await createAgentRun({ query: "查询库存", principal: PLACEHOLDER_PRINCIPAL });

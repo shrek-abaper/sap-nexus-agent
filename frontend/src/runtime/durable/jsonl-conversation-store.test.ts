@@ -51,6 +51,104 @@ describe("JsonlConversationStore", () => {
     expect(await reopened.load("c1", PRINCIPAL)).toEqual(makeSession());
   });
 
+  it.each([
+    ["slot clarification", {
+      kind: "SLOT_CLARIFICATION" as const,
+      frameId: "frame-1",
+      expectedFields: ["material"],
+      stateVersion: 1,
+      registrySnapshotId: "snapshot-1",
+      expiresAt: "2099-01-01T00:00:00Z",
+    }],
+    ["capability choice", {
+      kind: "CAPABILITY_CHOICE" as const,
+      frameId: "pending:choice:1",
+      capabilityIds: ["MM.PurchaseOrder.GetList"],
+      stateVersion: 1,
+      registrySnapshotId: "snapshot-1",
+      expiresAt: "2099-01-01T00:00:00Z",
+    }],
+    ["batch confirmation", {
+      kind: "BATCH_CONFIRMATION" as const,
+      frameId: "frame-1",
+      batchRef: "sha256:batch-1",
+      stateVersion: 1,
+      registrySnapshotId: "snapshot-1",
+      expiresAt: "2099-01-01T00:00:00Z",
+    }],
+    ["planner confirmation", {
+      kind: "PLANNER_CONFIRMATION" as const,
+      frameId: "pending:planner:1",
+      plannerRef: "sha256:planner-1",
+      plannerGoals: [{
+        capabilityId: "MM.PurchaseOrder.GetList",
+        parameters: { vendor: "1000" },
+        missing: [],
+      }],
+      stateVersion: 1,
+      registrySnapshotId: "snapshot-1",
+      expiresAt: "2099-01-01T00:00:00Z",
+    }],
+  ])("round-trips strict typed pending: %s", async (_label, pendingInteraction) => {
+    const store = new JsonlConversationStore(dir);
+    const session = makeSession({ pendingInteraction });
+
+    await expect(store.compareAndSwap("c1", 0, session)).resolves.toEqual({
+      status: "saved",
+      stateVersion: 1,
+    });
+    await expect(new JsonlConversationStore(dir).load("c1", PRINCIPAL))
+      .resolves.toEqual(session);
+  });
+
+  it.each([
+    ["cross-kind slot field", {
+      kind: "CAPABILITY_CHOICE",
+      frameId: "pending:choice:1",
+      expectedFields: ["capabilityId"],
+      stateVersion: 1,
+      registrySnapshotId: "snapshot-1",
+      expiresAt: "2099-01-01T00:00:00Z",
+    }],
+    ["approval authority", {
+      kind: "BATCH_CONFIRMATION",
+      frameId: "frame-1",
+      batchRef: "sha256:batch-1",
+      approvalId: "forged",
+      stateVersion: 1,
+      registrySnapshotId: "snapshot-1",
+      expiresAt: "2099-01-01T00:00:00Z",
+    }],
+    ["technical authority", {
+      kind: "PLANNER_CONFIRMATION",
+      frameId: "pending:planner:1",
+      plannerRef: "sha256:planner-1",
+      plannerGoals: [],
+      bindingId: "forged",
+      stateVersion: 1,
+      registrySnapshotId: "snapshot-1",
+      expiresAt: "2099-01-01T00:00:00Z",
+    }],
+    ["malformed planner goal", {
+      kind: "PLANNER_CONFIRMATION",
+      frameId: "pending:planner:1",
+      plannerRef: "sha256:planner-1",
+      plannerGoals: [{ capabilityId: "MM.PurchaseOrder.GetList", parameters: [], missing: [] }],
+      stateVersion: 1,
+      registrySnapshotId: "snapshot-1",
+      expiresAt: "2099-01-01T00:00:00Z",
+    }],
+  ])("rejects malformed pending %s without changing source bytes", async (_label, pending) => {
+    new JsonlConversationStore(dir);
+    const file = path.join(dir, "sessions", "invalid-pending.json");
+    const source = JSON.stringify({ ...makeSession(), pendingInteraction: pending });
+    writeFileSync(file, source, "utf8");
+
+    await expect(new JsonlConversationStore(dir).load("invalid-pending", PRINCIPAL))
+      .rejects.toMatchObject({ code: "CONTEXT_DESERIALIZATION_FAILED" });
+    expect(readFileSync(file, "utf8")).toBe(source);
+  });
+
   it("rejects a stale CAS without overwriting the winning state", async () => {
     const store = new JsonlConversationStore(dir);
     await store.compareAndSwap("c1", 0, makeSession());

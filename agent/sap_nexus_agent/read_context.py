@@ -190,13 +190,69 @@ class ReadContextFrame:
 
 
 @dataclass(frozen=True)
+class PendingPlannerGoal:
+    capability_id: str
+    parameters: tuple[tuple[str, str], ...]
+    missing: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        _non_empty_string(self.capability_id, "PendingPlannerGoal.capability_id")
+        if not isinstance(self.parameters, (tuple, list)):
+            raise ValueError("PendingPlannerGoal.parameters must be key/value pairs")
+        parameters = tuple(tuple(item) for item in self.parameters)
+        if any(
+            len(item) != 2
+            or not isinstance(item[0], str)
+            or not item[0]
+            or not isinstance(item[1], str)
+            for item in parameters
+        ):
+            raise ValueError("PendingPlannerGoal.parameters must contain string key/value pairs")
+        if len({name for name, _value in parameters}) != len(parameters):
+            raise ValueError("PendingPlannerGoal.parameters must not contain duplicate keys")
+        object.__setattr__(self, "parameters", parameters)
+        object.__setattr__(self, "missing", _string_tuple(self.missing, "PendingPlannerGoal.missing"))
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "capabilityId": self.capability_id,
+            "parameters": dict(self.parameters),
+            "missing": list(self.missing),
+        }
+
+    @classmethod
+    def from_dict(cls, payload: Mapping[str, object]) -> "PendingPlannerGoal":
+        raw = _payload_mapping(payload, "PendingPlannerGoal payload")
+        if set(raw) != {"capabilityId", "parameters", "missing"}:
+            raise ValueError("PendingPlannerGoal contains unsupported fields")
+        parameters = _payload_mapping(raw.get("parameters"), "PendingPlannerGoal.parameters")
+        return cls(
+            capability_id=_non_empty_string(
+                raw.get("capabilityId"), "PendingPlannerGoal.capabilityId"
+            ),
+            parameters=tuple(
+                (
+                    _non_empty_string(name, "PendingPlannerGoal parameter name"),
+                    _non_empty_string(value, "PendingPlannerGoal parameter value"),
+                )
+                for name, value in parameters.items()
+            ),
+            missing=_string_tuple(raw.get("missing"), "PendingPlannerGoal.missing"),
+        )
+
+
+@dataclass(frozen=True)
 class PendingInteraction:
     kind: PendingKind
     frame_id: str
-    expected_fields: tuple[str, ...]
     state_version: int
     registry_snapshot_id: str
     expires_at: str
+    expected_fields: tuple[str, ...] = ()
+    capability_ids: tuple[str, ...] = ()
+    batch_ref: str | None = None
+    planner_ref: str | None = None
+    planner_goals: tuple[PendingPlannerGoal, ...] = ()
 
     def __post_init__(self) -> None:
         if self.kind not in _PENDING_KINDS:
@@ -210,6 +266,31 @@ class PendingInteraction:
         if len(set(fields)) != len(fields):
             raise ValueError("PendingInteraction.expected_fields must not contain duplicates")
         object.__setattr__(self, "expected_fields", fields)
+        capability_ids = _string_tuple(
+            self.capability_ids, "PendingInteraction.capability_ids"
+        )
+        if len(set(capability_ids)) != len(capability_ids):
+            raise ValueError("PendingInteraction.capability_ids must not contain duplicates")
+        object.__setattr__(self, "capability_ids", capability_ids)
+        goals = tuple(self.planner_goals)
+        if not all(isinstance(goal, PendingPlannerGoal) for goal in goals):
+            raise ValueError("PendingInteraction.planner_goals must contain PendingPlannerGoal")
+        object.__setattr__(self, "planner_goals", goals)
+
+        if self.kind == "SLOT_CLARIFICATION":
+            if not fields or capability_ids or self.batch_ref or self.planner_ref or goals:
+                raise ValueError("PendingInteraction SLOT_CLARIFICATION payload is invalid")
+        elif self.kind == "CAPABILITY_CHOICE":
+            if fields or not capability_ids or self.batch_ref or self.planner_ref or goals:
+                raise ValueError("PendingInteraction CAPABILITY_CHOICE payload is invalid")
+        elif self.kind == "BATCH_CONFIRMATION":
+            if fields or capability_ids or not self.batch_ref or self.planner_ref or goals:
+                raise ValueError("PendingInteraction BATCH_CONFIRMATION payload is invalid")
+            _non_empty_string(self.batch_ref, "PendingInteraction.batch_ref")
+        elif self.kind == "PLANNER_CONFIRMATION":
+            if fields or capability_ids or self.batch_ref or not self.planner_ref or not goals:
+                raise ValueError("PendingInteraction PLANNER_CONFIRMATION payload is invalid")
+            _non_empty_string(self.planner_ref, "PendingInteraction.planner_ref")
 
     @property
     def binding_key(self) -> tuple[str, int, str]:
@@ -231,36 +312,132 @@ class PendingInteraction:
         return cls(
             kind="SLOT_CLARIFICATION",
             frame_id=frame_id,
-            expected_fields=fields,
             state_version=state_version,
             registry_snapshot_id=registry_snapshot_id,
             expires_at=expires_at,
+            expected_fields=fields,
+        )
+
+    @classmethod
+    def capability_choice(
+        cls,
+        *,
+        frame_id: str,
+        capability_ids: tuple[str, ...],
+        state_version: int,
+        registry_snapshot_id: str,
+        expires_at: str,
+    ) -> "PendingInteraction":
+        return cls(
+            kind="CAPABILITY_CHOICE",
+            frame_id=frame_id,
+            state_version=state_version,
+            registry_snapshot_id=registry_snapshot_id,
+            expires_at=expires_at,
+            capability_ids=capability_ids,
+        )
+
+    @classmethod
+    def batch_confirmation(
+        cls,
+        *,
+        frame_id: str,
+        batch_ref: str,
+        state_version: int,
+        registry_snapshot_id: str,
+        expires_at: str,
+    ) -> "PendingInteraction":
+        return cls(
+            kind="BATCH_CONFIRMATION",
+            frame_id=frame_id,
+            state_version=state_version,
+            registry_snapshot_id=registry_snapshot_id,
+            expires_at=expires_at,
+            batch_ref=batch_ref,
+        )
+
+    @classmethod
+    def planner_confirmation(
+        cls,
+        *,
+        frame_id: str,
+        planner_ref: str,
+        goals: tuple[PendingPlannerGoal | Mapping[str, object], ...],
+        state_version: int,
+        registry_snapshot_id: str,
+        expires_at: str,
+    ) -> "PendingInteraction":
+        parsed_goals = tuple(
+            goal if isinstance(goal, PendingPlannerGoal) else PendingPlannerGoal.from_dict(goal)
+            for goal in goals
+        )
+        return cls(
+            kind="PLANNER_CONFIRMATION",
+            frame_id=frame_id,
+            state_version=state_version,
+            registry_snapshot_id=registry_snapshot_id,
+            expires_at=expires_at,
+            planner_ref=planner_ref,
+            planner_goals=parsed_goals,
         )
 
     def to_dict(self) -> dict[str, object]:
-        return {
+        payload: dict[str, object] = {
             "kind": self.kind,
             "frameId": self.frame_id,
-            "expectedFields": list(self.expected_fields),
             "stateVersion": self.state_version,
             "registrySnapshotId": self.registry_snapshot_id,
             "expiresAt": self.expires_at,
         }
+        if self.kind == "SLOT_CLARIFICATION":
+            payload["expectedFields"] = list(self.expected_fields)
+        elif self.kind == "CAPABILITY_CHOICE":
+            payload["capabilityIds"] = list(self.capability_ids)
+        elif self.kind == "BATCH_CONFIRMATION":
+            payload["batchRef"] = self.batch_ref
+        else:
+            payload["plannerRef"] = self.planner_ref
+            payload["plannerGoals"] = [goal.to_dict() for goal in self.planner_goals]
+        return payload
 
     @classmethod
     def from_dict(cls, payload: Mapping[str, object]) -> "PendingInteraction":
         raw = _payload_mapping(payload, "PendingInteraction payload")
+        kind = raw.get("kind")
+        common = {"kind", "frameId", "stateVersion", "registrySnapshotId", "expiresAt"}
+        payload_fields = {
+            "SLOT_CLARIFICATION": {"expectedFields"},
+            "CAPABILITY_CHOICE": {"capabilityIds"},
+            "BATCH_CONFIRMATION": {"batchRef"},
+            "PLANNER_CONFIRMATION": {"plannerRef", "plannerGoals"},
+        }.get(kind)
+        if payload_fields is None or set(raw) != common | payload_fields:
+            raise ValueError("PendingInteraction contains unsupported or missing fields")
+        planner_goals = raw.get("plannerGoals", ())
+        if not isinstance(planner_goals, (tuple, list)):
+            raise ValueError("PendingInteraction.plannerGoals must be a list")
+        if not all(isinstance(goal, Mapping) for goal in planner_goals):
+            raise ValueError("PendingInteraction.plannerGoals must contain objects")
         return cls(
-            kind=raw.get("kind"),  # type: ignore[arg-type]
+            kind=kind,  # type: ignore[arg-type]
             frame_id=_non_empty_string(raw.get("frameId"), "PendingInteraction.frameId"),
-            expected_fields=_string_tuple(
-                raw.get("expectedFields", ()), "PendingInteraction.expectedFields"
-            ),
             state_version=raw.get("stateVersion"),  # type: ignore[arg-type]
             registry_snapshot_id=_non_empty_string(
                 raw.get("registrySnapshotId"), "PendingInteraction.registrySnapshotId"
             ),
             expires_at=_non_empty_string(raw.get("expiresAt"), "PendingInteraction.expiresAt"),
+            expected_fields=_string_tuple(
+                raw.get("expectedFields", ()), "PendingInteraction.expectedFields"
+            ),
+            capability_ids=_string_tuple(
+                raw.get("capabilityIds", ()), "PendingInteraction.capabilityIds"
+            ),
+            batch_ref=raw.get("batchRef"),  # type: ignore[arg-type]
+            planner_ref=raw.get("plannerRef"),  # type: ignore[arg-type]
+            planner_goals=tuple(
+                PendingPlannerGoal.from_dict(goal)
+                for goal in planner_goals
+            ),
         )
 
 

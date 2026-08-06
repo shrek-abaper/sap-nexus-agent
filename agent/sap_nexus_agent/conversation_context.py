@@ -187,8 +187,20 @@ class ReadExecutionBinding:
     registry_snapshot_id: str
     principal_id: str
     capability_version: str
+    executor_binding_id: str
     call_plan_hash: str
     read_state: "ConversationReadState"
+
+    def __post_init__(self) -> None:
+        for field in (
+            "turn_id", "frame_id", "registry_snapshot_id", "principal_id",
+            "capability_version", "executor_binding_id", "call_plan_hash",
+        ):
+            value = getattr(self, field)
+            if not isinstance(value, str) or not value:
+                raise ValueError(f"ReadExecutionBinding.{field} must be non-empty")
+        if not isinstance(self.state_version, int) or isinstance(self.state_version, bool) or self.state_version < 0:
+            raise ValueError("ReadExecutionBinding.state_version must be non-negative")
 
     @classmethod
     def create(
@@ -198,6 +210,7 @@ class ReadExecutionBinding:
         principal_id: str,
         call_plan: "CallPlan",
         read_state: "ConversationReadState",
+        executor_binding_id: str,
     ) -> "ReadExecutionBinding":
         frame = read_state.active_frame
         if frame is None:
@@ -209,6 +222,7 @@ class ReadExecutionBinding:
             registry_snapshot_id=frame.registry_snapshot_id,
             principal_id=principal_id,
             capability_version=frame.capability_version,
+            executor_binding_id=executor_binding_id,
             call_plan_hash=cls.hash_call_plan(call_plan),
             read_state=read_state,
         )
@@ -216,11 +230,15 @@ class ReadExecutionBinding:
     @staticmethod
     def hash_call_plan(call_plan: "CallPlan") -> str:
         encoded = json.dumps(
-            call_plan.to_dict(), ensure_ascii=True, sort_keys=True, separators=(",", ":")
+            call_plan.to_dict(), ensure_ascii=False, sort_keys=True, separators=(",", ":")
         ).encode("utf-8")
         return hashlib.sha256(encoded).hexdigest()
 
-    def validates(self, call_plan: "CallPlan") -> bool:
+    def validates(
+        self,
+        call_plan: "CallPlan",
+        persisted_state: "ConversationReadState | None" = None,
+    ) -> bool:
         frame = self.read_state.active_frame
         return bool(
             self.turn_id
@@ -231,8 +249,10 @@ class ReadExecutionBinding:
             and frame.frame_id == self.frame_id
             and frame.registry_snapshot_id == self.registry_snapshot_id
             and frame.capability_version == self.capability_version
+            and self.executor_binding_id
             and self.read_state.state_version == self.state_version
             and self.read_state.pending_interaction is None
+            and (persisted_state is None or persisted_state == self.read_state)
             and call_plan.kind == "Function"
             and not call_plan.requires_approval
             and call_plan.capability_id == frame.capability_id
@@ -247,6 +267,7 @@ class ReadExecutionBinding:
             "registrySnapshotId": self.registry_snapshot_id,
             "principalId": self.principal_id,
             "capabilityVersion": self.capability_version,
+            "executorBindingId": self.executor_binding_id,
             "callPlanHash": self.call_plan_hash,
             "readState": self.read_state.to_dict(),
         }
@@ -255,6 +276,12 @@ class ReadExecutionBinding:
     def from_dict(cls, payload: dict[str, object]) -> "ReadExecutionBinding":
         from sap_nexus_agent.read_context import ConversationReadState
 
+        expected = {
+            "turnId", "frameId", "stateVersion", "registrySnapshotId", "principalId",
+            "capabilityVersion", "executorBindingId", "callPlanHash", "readState",
+        }
+        if set(payload) != expected:
+            raise ValueError("ReadExecutionBinding contains unsupported fields")
         read_state = payload.get("readState")
         if not isinstance(read_state, dict):
             raise ValueError("ReadExecutionBinding.readState must be an object")
@@ -265,8 +292,99 @@ class ReadExecutionBinding:
             registry_snapshot_id=str(payload["registrySnapshotId"]),
             principal_id=str(payload["principalId"]),
             capability_version=str(payload["capabilityVersion"]),
+            executor_binding_id=str(payload["executorBindingId"]),
             call_plan_hash=str(payload["callPlanHash"]),
             read_state=ConversationReadState.from_dict(read_state),
+        )
+
+
+@dataclass(frozen=True)
+class SelectionExecutionBinding:
+    """Server-owned binding for a parsed non-READ selection continuation."""
+
+    turn_id: str
+    state_version: int
+    registry_snapshot_id: str
+    principal_id: str
+    capability_id: str
+    capability_version: str
+    executor_binding_id: str
+    call_plan_hash: str
+
+    def __post_init__(self) -> None:
+        for field in (
+            "turn_id", "registry_snapshot_id", "principal_id", "capability_id",
+            "capability_version", "executor_binding_id", "call_plan_hash",
+        ):
+            value = getattr(self, field)
+            if not isinstance(value, str) or not value:
+                raise ValueError(f"SelectionExecutionBinding.{field} must be non-empty")
+        if not isinstance(self.state_version, int) or isinstance(self.state_version, bool) or self.state_version < 0:
+            raise ValueError("SelectionExecutionBinding.state_version must be non-negative")
+
+    @classmethod
+    def create(
+        cls,
+        *,
+        turn_id: str,
+        state_version: int,
+        registry_snapshot_id: str,
+        principal_id: str,
+        capability_version: str,
+        executor_binding_id: str,
+        call_plan: "CallPlan",
+    ) -> "SelectionExecutionBinding":
+        return cls(
+            turn_id=turn_id,
+            state_version=state_version,
+            registry_snapshot_id=registry_snapshot_id,
+            principal_id=principal_id,
+            capability_id=call_plan.capability_id,
+            capability_version=capability_version,
+            executor_binding_id=executor_binding_id,
+            call_plan_hash=ReadExecutionBinding.hash_call_plan(call_plan),
+        )
+
+    def validates(self, call_plan: "CallPlan") -> bool:
+        return bool(
+            self.turn_id
+            and self.principal_id
+            and self.capability_id == call_plan.capability_id
+            and self.executor_binding_id
+            and call_plan.kind == "Action"
+            and call_plan.requires_approval
+            and ReadExecutionBinding.hash_call_plan(call_plan) == self.call_plan_hash
+        )
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "turnId": self.turn_id,
+            "stateVersion": self.state_version,
+            "registrySnapshotId": self.registry_snapshot_id,
+            "principalId": self.principal_id,
+            "capabilityId": self.capability_id,
+            "capabilityVersion": self.capability_version,
+            "executorBindingId": self.executor_binding_id,
+            "callPlanHash": self.call_plan_hash,
+        }
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, object]) -> "SelectionExecutionBinding":
+        expected = {
+            "turnId", "stateVersion", "registrySnapshotId", "principalId",
+            "capabilityId", "capabilityVersion", "executorBindingId", "callPlanHash",
+        }
+        if set(payload) != expected:
+            raise ValueError("SelectionExecutionBinding contains unsupported fields")
+        return cls(
+            turn_id=str(payload["turnId"]),
+            state_version=int(payload["stateVersion"]),
+            registry_snapshot_id=str(payload["registrySnapshotId"]),
+            principal_id=str(payload["principalId"]),
+            capability_id=str(payload["capabilityId"]),
+            capability_version=str(payload["capabilityVersion"]),
+            executor_binding_id=str(payload["executorBindingId"]),
+            call_plan_hash=str(payload["callPlanHash"]),
         )
 
 

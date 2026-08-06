@@ -89,6 +89,11 @@ def outcome_to_workbench_dict(outcome: AgentOutcome) -> dict[str, object]:
             if outcome.read_execution_binding is not None
             else None
         ),
+        "selectionExecutionBinding": (
+            outcome.selection_execution_binding.to_dict()
+            if outcome.selection_execution_binding is not None
+            else None
+        ),
         # Conversational context (Task 5): LastContext for the next turn,
         # derived from the outcome's match_decision. The backend records this
         # on the session so the next utterance can continue slot-fill (CLARIFY)
