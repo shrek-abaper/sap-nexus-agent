@@ -193,6 +193,48 @@ def test_parse_context_candidates_returns_empty_advisory_envelope_when_llm_is_un
     assert envelope.discard_reasons == ["llm_unavailable"]
 
 
+def test_parse_context_candidates_excludes_write_capability_from_prompt_and_goals():
+    catalog = load_intent_catalog()
+    client = FakeLlmClient(
+        {
+            "capabilityId": "MM.PR.CreateDraft",
+            "parameters": {"material": "M001", "plant": "1000"},
+        }
+    )
+
+    envelope = parse_context_candidates("创建采购申请", client=client, catalog=catalog)
+
+    prompt = client.calls[0]["messages"][0]["content"]
+    assert "MM.PR.CreateDraft" not in prompt
+    assert envelope.goals == ()
+    assert "unknown_capability:MM.PR.CreateDraft" in envelope.discard_reasons
+
+
+def test_parse_context_candidates_prompt_includes_read_language_hints():
+    client = FakeLlmClient({"capabilityId": "MM.Inventory.GetAvailability", "parameters": {}})
+
+    parse_context_candidates("查库存", client=client, catalog=load_intent_catalog())
+
+    prompt = client.calls[0]["messages"][0]["content"]
+    assert "库存查询" in prompt
+    assert "查物料 DEMOA2 在 1000 工厂的库存" in prompt
+
+
+def test_parse_context_candidates_audits_governance_fields_before_parameter_filtering():
+    client = FakeLlmClient(
+        {
+            "capabilityId": "MM.Inventory.GetAvailability",
+            "parameters": {"material": "M001", "principal": "admin", "approvalRecord": "approved"},
+        }
+    )
+
+    envelope = parse_context_candidates("查库存", client=client, catalog=load_intent_catalog())
+
+    assert envelope.goals[0].parameters == {"material": "M001"}
+    assert "governance_field:principal" in envelope.discard_reasons
+    assert "governance_field:approvalRecord" in envelope.discard_reasons
+
+
 def test_hybrid_returns_llm_result_directly_when_llm_outputs_rfc_name():
     """D2: rfcName LLM result returned directly (flag preserved), rule NOT invoked."""
     catalog = load_intent_catalog()

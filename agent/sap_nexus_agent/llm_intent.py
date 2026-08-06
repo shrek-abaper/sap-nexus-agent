@@ -51,10 +51,11 @@ def parse_context_candidates(
     """Return an advisory envelope without consulting or merging conversation context."""
     from sap_nexus_agent.intent_envelope import IntentEnvelope
 
+    read_catalog = _read_only_catalog(catalog)
     try:
         llm_client = client or OpenAiCompatibleLlmClient()
         payload = llm_client.chat_json(
-            _context_candidate_messages(text, catalog), temperature=0.0, max_tokens=400
+            _context_candidate_messages(text, read_catalog), temperature=0.0, max_tokens=400
         )
     except (LlmUnavailable, json.JSONDecodeError, ValueError, TypeError):
         return IntentEnvelope(
@@ -71,10 +72,18 @@ def parse_context_candidates(
         )
     return payload_to_envelope(
         payload,
-        catalog,
+        read_catalog,
         utterance=text,
         snapshot_id="",
-        visible_capability_ids=catalog.capability_ids,
+        visible_capability_ids=read_catalog.capability_ids,
+    )
+
+
+def _read_only_catalog(catalog: IntentCatalog) -> IntentCatalog:
+    capabilities = tuple(capability for capability in catalog.capabilities if capability.side_effect == "none")
+    return IntentCatalog(
+        capabilities=capabilities,
+        capability_ids=frozenset(capability.capability_id for capability in capabilities),
     )
 
 
@@ -229,6 +238,8 @@ def _messages(
 def _context_candidate_messages(text: str, catalog: IntentCatalog) -> list[dict[str, object]]:
     capabilities = "\n".join(
         f"- capabilityId: {capability.capability_id}\n"
+        f"  aliases: {', '.join(capability.aliases) or '(none)'}\n"
+        f"  examples: {', '.join(capability.examples) or '(none)'}\n"
         f"  inputs:\n{_format_context_inputs(capability.inputs)}"
         for capability in catalog.capabilities
     )

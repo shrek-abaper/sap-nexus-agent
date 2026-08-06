@@ -32,6 +32,7 @@ class CapabilityDescriptor:
     # so existing capabilities without these fields still load successfully.
     aliases: tuple[str, ...] = ()
     examples: tuple[str, ...] = ()
+    side_effect: str = ""
 
 
 @dataclass(frozen=True)
@@ -124,6 +125,8 @@ def load_intent_catalog(repo_root: str | None = None) -> IntentCatalog:
         aliases = tuple(str(a) for a in raw_aliases) if isinstance(raw_aliases, list) else ()
         raw_examples = cap.get("examples") or []
         examples = tuple(str(e) for e in raw_examples) if isinstance(raw_examples, list) else ()
+        raw_governance = cap.get("governance")
+        side_effect = raw_governance.get("sideEffect", "") if isinstance(raw_governance, dict) else ""
         descriptors.append(
             CapabilityDescriptor(
                 capability_id=cap["capabilityId"],
@@ -134,6 +137,7 @@ def load_intent_catalog(repo_root: str | None = None) -> IntentCatalog:
                 inputs=inputs,
                 aliases=aliases,
                 examples=examples,
+                side_effect=side_effect,
             )
         )
 

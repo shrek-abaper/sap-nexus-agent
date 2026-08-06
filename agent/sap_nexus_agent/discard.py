@@ -38,6 +38,21 @@ _TECHNICAL_FIELDS = frozenset({
     "sapclient",
 })
 
+_GOVERNANCE_FIELDS = frozenset({
+    "approval",
+    "approvalrecord",
+    "approvalstate",
+    "humanapproval",
+    "principal",
+    "visibility",
+    "visiblecapabilityids",
+    "writeauthority",
+    "requiresapproval",
+    "sideeffect",
+    "governance",
+    "capabilitykind",
+})
+
 # Invalid parameter names (prototype pollution + similar).
 _INVALID_PARAMS = frozenset({
     "__proto__",
@@ -122,9 +137,19 @@ def _check_params(params: dict[str, object]) -> list[str]:
     """Check parameter dict for technical fields and invalid params."""
     reasons: list[str] = []
     for key in params:
-        key_lower = key.lower()
-        if key_lower in _TECHNICAL_FIELDS:
-            reasons.append(f"technical_field:{key}")
-        elif key_lower in _INVALID_PARAMS:
+        reason = prohibited_field_reason(key)
+        if reason is not None:
+            reasons.append(reason)
+        elif key.lower() in _INVALID_PARAMS:
             reasons.append(f"invalid_param:{key}")
     return reasons
+
+
+def prohibited_field_reason(name: str) -> str | None:
+    """Return the structured reason for a field barred from model parameters."""
+    normalized = name.lower()
+    if normalized in _TECHNICAL_FIELDS:
+        return f"technical_field:{name}"
+    if normalized in _GOVERNANCE_FIELDS:
+        return f"governance_field:{name}"
+    return None

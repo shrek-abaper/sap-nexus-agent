@@ -7,36 +7,15 @@ from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Mapping
 
+from sap_nexus_agent.discard import prohibited_field_reason
 from sap_nexus_agent.intent_envelope import IntentEnvelope
 from sap_nexus_agent.registry_loader import CapabilityDescriptor, InputDescriptor
 
-
-_TECHNICAL_FIELDS = frozenset(
-    {
-        "baseurl",
-        "rfcname",
-        "credential",
-        "credentialref",
-        "credentials",
-        "serviceurl",
-        "servicepath",
-        "serviceref",
-        "endpoint",
-        "method",
-        "header",
-        "headers",
-        "csrf",
-        "token",
-        "authorization",
-        "destination",
-        "bindingid",
-        "entityset",
-        "executortype",
-        "sapclient",
-        "principal",
-        "approval",
-    }
-)
+_SEMANTIC_LABELS = {
+    "purchaseordernumber": ("采购订单", "po"),
+    "supplier": ("供应商",),
+    "unitofmeasure": ("单位",),
+}
 
 
 @dataclass(frozen=True)
@@ -108,8 +87,9 @@ def extract_context_candidates(
             if goal.capability_hint != descriptor.capability_id:
                 continue
             for name, value in goal.parameters.items():
-                if name.lower() in _TECHNICAL_FIELDS:
-                    _append_unique(discards, f"technical_field:{name}")
+                prohibited_reason = prohibited_field_reason(name)
+                if prohibited_reason is not None:
+                    _append_unique(discards, prohibited_reason)
                     continue
                 input_ = _find_input(descriptor.inputs, name)
                 if input_ is None:
@@ -148,13 +128,36 @@ def _deterministic_values(utterance: str, input_: InputDescriptor) -> tuple[tupl
             r"([A-Za-z0-9-]+)\s*(?:是|为)\s*(?:物料|material)",
         )
     else:
-        return ()
+        patterns = _generic_label_patterns(input_)
 
     values: list[tuple[str, tuple[int, int]]] = []
     for pattern in patterns:
         for match in re.finditer(pattern, utterance, flags=re.IGNORECASE):
             values.append((match.group(1), match.span(1)))
     return tuple(values)
+
+
+def _generic_label_patterns(input_: InputDescriptor) -> tuple[str, ...]:
+    labels = _input_labels(input_)
+    if not labels:
+        return ()
+    label_group = "|".join(re.escape(label) for label in labels)
+    return (
+        rf"(?:{label_group})\s*(?:改成|是指|为|是|:|：)?\s*([A-Za-z0-9_-]+)",
+        rf"([A-Za-z0-9_-]+)\s*(?:是|为)\s*(?:{label_group})",
+        rf"([A-Za-z0-9_-]+)\s*(?:{label_group})",
+    )
+
+
+def _input_labels(input_: InputDescriptor) -> tuple[str, ...]:
+    labels = [input_.name, _humanize_identifier(input_.semantic_name)]
+    semantic_type = input_.semantic_type.rsplit(":", maxsplit=1)[-1].lower()
+    labels.extend(_SEMANTIC_LABELS.get(semantic_type, ()))
+    return tuple(label for label in labels if label)
+
+
+def _humanize_identifier(value: str) -> str:
+    return re.sub(r"(?<!^)(?=[A-Z])", " ", value).replace("_", " ")
 
 
 def _clear_slots(utterance: str, inputs: tuple[InputDescriptor, ...]) -> tuple[str, ...]:

@@ -14,6 +14,12 @@ def inventory_descriptor():
     return descriptor
 
 
+def purchase_order_descriptor():
+    descriptor = load_intent_catalog(str(REPO_ROOT)).find("MM.PurchaseOrder.GetList")
+    assert descriptor is not None
+    return descriptor
+
+
 def model_envelope(parameters=None, *, discard_reasons=()):
     return IntentEnvelope(
         envelope_id="envelope-1",
@@ -100,3 +106,28 @@ def test_technical_model_field_is_discarded_without_creating_a_candidate():
     assert candidates.for_slot("material").model_values == ("M001",)
     assert "technical_field:rfcName" in candidates.discard_reasons
     assert candidates.for_slot("rfcName").values == ()
+
+
+def test_generic_semantic_label_extracts_purchase_order_vendor_deterministically():
+    candidates = extract_context_candidates("供应商 1000 的采购订单", purchase_order_descriptor(), None)
+
+    assert candidates.for_slot("vendor").deterministic_values == ("1000",)
+    assert candidates.for_slot("poNumber").values == ()
+
+
+def test_generic_semantic_adjacency_extracts_purchase_order_number_deterministically():
+    candidates = extract_context_candidates("4500000001 采购订单", purchase_order_descriptor(), None)
+
+    assert candidates.for_slot("poNumber").deterministic_values == ("4500000001",)
+
+
+def test_constructed_envelope_discards_governance_authority_fields():
+    candidates = extract_context_candidates(
+        "查库存",
+        inventory_descriptor(),
+        model_envelope({"material": "M001", "approvalRecord": "approved", "principal": "admin"}),
+    )
+
+    assert candidates.for_slot("material").model_values == ("M001",)
+    assert "governance_field:approvalRecord" in candidates.discard_reasons
+    assert "governance_field:principal" in candidates.discard_reasons

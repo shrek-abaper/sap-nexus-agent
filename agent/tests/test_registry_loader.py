@@ -37,6 +37,7 @@ def test_inventory_descriptor_inputs_parsed():
     assert inv is not None
     assert inv.domain == "MM"
     assert inv.business_object == "InventoryStock"
+    assert inv.side_effect == "none"
     input_names = {inp.name for inp in inv.inputs}
     assert input_names == {"material", "plant", "unit"}
     material = next(inp for inp in inv.inputs if inp.name == "material")
@@ -120,6 +121,7 @@ def test_registry_v2_metadata_does_not_change_runtime_descriptors():
         "inputs",
         "aliases",
         "examples",
+        "side_effect",
     )
     assert tuple(field.name for field in fields(InputDescriptor)) == (
         "name",

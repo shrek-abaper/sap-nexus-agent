@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from sap_nexus_agent.discard import detect_discard_reasons
+from sap_nexus_agent.discard import detect_discard_reasons, prohibited_field_reason
 
 
 def test_unknown_capability_discarded_with_reason():
@@ -163,3 +163,8 @@ def test_top_level_technical_field_discarded():
     visible_ids = frozenset(("MM.Inventory.GetAvailability",))
     reasons = detect_discard_reasons(payload, visible_ids)
     assert "technical_field:token" in reasons
+
+
+def test_governance_authority_field_has_a_structured_discard_reason():
+    assert prohibited_field_reason("approvalRecord") == "governance_field:approvalRecord"
+    assert prohibited_field_reason("principal") == "governance_field:principal"
