@@ -185,3 +185,53 @@ def test_cli_continue_read_binding_mismatch_has_no_gateway(capsys, monkeypatch):
     assert exit_code == 2
     output = json.loads(capsys.readouterr().out)
     assert output["errorType"] == "READ_EXECUTION_BINDING_MISMATCH"
+
+
+def test_cli_continue_read_semantic_preflight_finishes_before_gateway_construction(
+    capsys, monkeypatch
+):
+    from sap_nexus_agent.call_plan import create_call_plan
+    from sap_nexus_agent.conversation_context import ReadExecutionBinding
+    from sap_nexus_agent.orchestrator import _default_planner_sources
+    from sap_nexus_agent.read_context import ConversationReadState, ReadContextFrame, SlotBinding
+
+    snapshot, _sources = _default_planner_sources()
+    material = SlotBinding(
+        "material", "DEMOA2", ("DEMOA2",), "RESOLVED", "EXPLICIT",
+        "turn-cli-semantic", None, (),
+    )
+    frame = ReadContextFrame(
+        "frame-cli-semantic", "MM.Inventory.GetAvailability", {"material": material}, "READY",
+        "turn-cli-semantic", "turn-cli-semantic", snapshot.snapshot_id, "1",
+    )
+    state = ConversationReadState(frame, None, 1)
+    plan = create_call_plan(
+        "MM.Inventory.GetAvailability", {"material": "DEMOA2", "unit": "EA"}
+    )
+    binding = ReadExecutionBinding.create(
+        turn_id="turn-cli-semantic",
+        principal_id="local-user-0001",
+        call_plan=plan,
+        read_state=state,
+        executor_binding_id="sap.mm.inventory.md04-stock-req-list",
+    )
+    monkeypatch.setattr(
+        "sys.stdin",
+        io.StringIO(json.dumps({
+            "callPlan": plan.to_dict(),
+            "binding": binding.to_dict(),
+            "persistedReadState": state.to_dict(),
+        })),
+    )
+
+    def forbidden_gateway(_url):
+        raise AssertionError("semantic mismatch constructed GatewayClient")
+
+    monkeypatch.setattr("sap_nexus_agent.cli.GatewayClient", forbidden_gateway)
+
+    exit_code = main(["--continue-read", "--json"])
+
+    assert exit_code == 2
+    assert json.loads(capsys.readouterr().out)["errorType"] == (
+        "READ_EXECUTION_BINDING_MISMATCH"
+    )

@@ -149,6 +149,57 @@ describe("JsonlConversationStore", () => {
     expect(readFileSync(file, "utf8")).toBe(source);
   });
 
+  it.each([
+    "",
+    "tomorrow",
+    "2026-08-06T09:15:00",
+    "2026-02-30T09:15:00Z",
+  ])("rejects non-UTC or invalid ISO pending expiry %s", async (expiresAt) => {
+    new JsonlConversationStore(dir);
+    const file = path.join(dir, "sessions", "invalid-expiry.json");
+    const source = JSON.stringify({
+      ...makeSession(),
+      pendingInteraction: {
+        kind: "CAPABILITY_CHOICE",
+        frameId: "pending:choice:1",
+        capabilityIds: ["MM.PurchaseOrder.GetList"],
+        stateVersion: 1,
+        registrySnapshotId: "snapshot-1",
+        expiresAt,
+      },
+    });
+    writeFileSync(file, source, "utf8");
+
+    await expect(new JsonlConversationStore(dir).load("invalid-expiry", PRINCIPAL))
+      .rejects.toMatchObject({ code: "CONTEXT_DESERIALIZATION_FAILED" });
+    expect(readFileSync(file, "utf8")).toBe(source);
+  });
+
+  it("rejects duplicate planner capability ids", async () => {
+    new JsonlConversationStore(dir);
+    const file = path.join(dir, "sessions", "duplicate-planner.json");
+    const goal = {
+      capabilityId: "MM.Inventory.GetAvailability",
+      parameters: { material: "DEMOA2" },
+      missing: ["plant"],
+    };
+    writeFileSync(file, JSON.stringify({
+      ...makeSession(),
+      pendingInteraction: {
+        kind: "PLANNER_CONFIRMATION",
+        frameId: "pending:planner:1",
+        plannerRef: "sha256:planner-1",
+        plannerGoals: [goal, goal],
+        stateVersion: 1,
+        registrySnapshotId: "snapshot-1",
+        expiresAt: "2026-08-06T09:15:00Z",
+      },
+    }), "utf8");
+
+    await expect(new JsonlConversationStore(dir).load("duplicate-planner", PRINCIPAL))
+      .rejects.toMatchObject({ code: "CONTEXT_DESERIALIZATION_FAILED" });
+  });
+
   it("rejects a stale CAS without overwriting the winning state", async () => {
     const store = new JsonlConversationStore(dir);
     await store.compareAndSwap("c1", 0, makeSession());

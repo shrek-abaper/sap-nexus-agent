@@ -19,6 +19,8 @@ from sap_nexus_agent.orchestrator import (
     continue_batch,
     continue_resolved_read,
     continue_resolved_selection,
+    preflight_resolved_read,
+    preflight_resolved_batch,
     resolve_read_turn,
     run_query,
 )
@@ -171,6 +173,14 @@ def main(argv: list[str] | None = None) -> int:
             if (
                 binding.principal_id != principal.principal_id
                 or binding.registry_snapshot_id != snapshot.snapshot_id
+                or not preflight_resolved_read(
+                    call_plan,
+                    binding,
+                    persisted_state=persisted_state,
+                    principal=principal,
+                    snapshot=snapshot,
+                    sources=sources,
+                )
             ):
                 raise ValueError("READ execution authority drift")
         except (json.JSONDecodeError, KeyError, TypeError, ValueError, AttributeError):
@@ -262,22 +272,41 @@ def main(argv: list[str] | None = None) -> int:
         return 0 if outcome.status in {"success", "rejected"} else 1
 
     if args.continue_batch:
-        gateway = GatewayClient(args.gateway_url)
         try:
             payload = json.load(sys.stdin)
-            outcome = continue_batch(
-                CallPlan.from_dict(dict(payload["callPlan"])),
-                [dict(c) for c in payload["combinations"]],
-                gateway,
+            call_plan = CallPlan.from_dict(dict(payload["callPlan"]))
+            combinations = [dict(c) for c in payload["combinations"]]
+            binding = ReadExecutionBinding.from_dict(
+                dict(payload["readExecutionBinding"])
             )
-        except (json.JSONDecodeError, KeyError, TypeError, ValueError):
+            from sap_nexus_agent.read_context import ConversationReadState
+
+            persisted_state = ConversationReadState.from_dict(
+                dict(payload["persistedReadState"])
+            )
+            principal = load_principal_from_env()
+            sources = load_semantic_sources(_resolve_repo_root())
+            snapshot = build_registry_snapshot(sources)
+            if not preflight_resolved_batch(
+                call_plan,
+                combinations,
+                binding,
+                persisted_state=persisted_state,
+                principal=principal,
+                snapshot=snapshot,
+                sources=sources,
+            ):
+                raise ValueError("batch execution authority drift")
+        except (json.JSONDecodeError, KeyError, TypeError, ValueError, AttributeError):
             if args.json:
                 print(json.dumps({
                     "status": "failure",
-                    "errorType": "INVALID_BATCH_PAYLOAD",
-                    "message": "Invalid batch continuation payload.",
+                    "errorType": "BATCH_EXECUTION_BINDING_MISMATCH",
+                    "message": "Invalid or stale batch continuation payload.",
                 }))
             return 2
+        gateway = GatewayClient(args.gateway_url)
+        outcome = continue_batch(call_plan, combinations, gateway)
         if args.json:
             print(json.dumps(outcome_to_workbench_dict(outcome), ensure_ascii=False))
         else:

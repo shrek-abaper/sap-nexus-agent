@@ -59,26 +59,26 @@ export type ReadContextFrame = {
 };
 
 type PendingBinding = {
-  frameId: string;
-  stateVersion: number;
-  registrySnapshotId: string;
-  expiresAt: string;
+  readonly frameId: string;
+  readonly stateVersion: number;
+  readonly registrySnapshotId: string;
+  readonly expiresAt: string;
 };
 
 export type PendingPlannerGoal = {
-  capabilityId: string;
-  parameters: Record<string, string>;
-  missing: string[];
+  readonly capabilityId: string;
+  readonly parameters: Readonly<Record<string, string>>;
+  readonly missing: readonly string[];
 };
 
 export type PendingInteraction = PendingBinding & (
-  | { kind: "SLOT_CLARIFICATION"; expectedFields: string[] }
-  | { kind: "CAPABILITY_CHOICE"; capabilityIds: string[] }
-  | { kind: "BATCH_CONFIRMATION"; batchRef: string }
+  | { readonly kind: "SLOT_CLARIFICATION"; readonly expectedFields: readonly string[] }
+  | { readonly kind: "CAPABILITY_CHOICE"; readonly capabilityIds: readonly string[] }
+  | { readonly kind: "BATCH_CONFIRMATION"; readonly batchRef: string }
   | {
-      kind: "PLANNER_CONFIRMATION";
-      plannerRef: string;
-      plannerGoals: PendingPlannerGoal[];
+      readonly kind: "PLANNER_CONFIRMATION";
+      readonly plannerRef: string;
+      readonly plannerGoals: readonly PendingPlannerGoal[];
     }
 );
 
@@ -113,13 +113,16 @@ export type SelectionExecutionBinding = {
 };
 
 export type BatchConversationBinding = {
-  conversationId: string;
-  turnId: string;
-  frameId: string;
-  stateVersion: number;
-  registrySnapshotId: string;
-  principalId: string;
-  batchRef: string;
+  readonly conversationId: string;
+  readonly turnId: string;
+  readonly frameId: string;
+  readonly stateVersion: number;
+  readonly registrySnapshotId: string;
+  readonly principalId: string;
+  readonly capabilityVersion: string;
+  readonly executorBindingId: string;
+  readonly callPlanHash: string;
+  readonly batchRef: string;
 };
 
 export type SessionStateV2 = {

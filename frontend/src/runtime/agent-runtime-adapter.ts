@@ -71,10 +71,12 @@ type BatchContinuation = {
   type: "batch";
   callPlan: Record<string, unknown>;
   combinations: Record<string, string>[];
+  readExecutionBinding: ReadExecutionBinding;
+  persistedReadState: ConversationReadState;
 };
 
 type AgentRunnerInput = {
-  mode: "query" | "resolve-read" | "continue-read" | "continue-selection";
+  mode: "resolve-read" | "continue-read" | "continue-selection" | "continue-action" | "continue-batch";
   query: string;
   gatewayUrl: string;
   intentMode: string;
@@ -86,6 +88,7 @@ type AgentRunnerInput = {
   readExecutionBinding?: ReadExecutionBinding;
   selectionExecutionBinding?: SelectionExecutionBinding;
   persistedReadState?: ConversationReadState;
+  signal?: AbortSignal;
 };
 
 type AgentRunner = (input: AgentRunnerInput) => Promise<WorkbenchOutcome>;
@@ -100,7 +103,6 @@ const CONVERSATION_LEASE_HEARTBEAT_MS = 20_000;
 
 let runStore: DurableRunStore = new JsonlRunStore(durableDataDir, workerId);
 let conversationStore: DurableConversationStore = new JsonlConversationStore(durableDataDir);
-let durableStoresInjectedForTests = false;
 let runnerForTests: AgentRunner | null = null;
 let readRunnerForTests: AgentRunner | null = null;
 let compositionGatewayForTests: GatewayClient | null = null;
@@ -125,7 +127,6 @@ export function setPlanActionGatewayForTests(gateway: ActionGateway | null) {
 export function setDurableStoresForTests(run: DurableRunStore, conv: DurableConversationStore) {
   runStore = run;
   conversationStore = conv;
-  durableStoresInjectedForTests = true;
 }
 
 export function resetAgentRunsForTests() {
@@ -221,26 +222,8 @@ export async function createAgentRun(input: CreateAgentRunInput): Promise<Create
     }
 
     const runId = `run-${crypto.randomUUID()}`;
-    const authoritativeRead = readRunnerForTests !== null
-      || (runnerForTests === null && !durableStoresInjectedForTests);
+    const authoritativeRead = true;
     let expectedSessionVersion = session.stateVersion;
-    if (!authoritativeRead) {
-      const nextSession: SessionStateV2 = {
-        ...session,
-        stateVersion: session.stateVersion + 1,
-        history: [...session.history, { role: "user", content: input.query }],
-        lastAppliedTurnId: turnId,
-        lastRunId: runId,
-      };
-      await saveConversationState(
-        conversationId,
-        session.stateVersion,
-        nextSession,
-        conversationLeaseOwner,
-        lease.fenceToken,
-      );
-      expectedSessionVersion = nextSession.stateVersion;
-    }
 
     const timestamp = new Date().toISOString();
     await persistStartedRun(runId, input.query, input.principal, timestamp);
@@ -259,6 +242,7 @@ export async function createAgentRun(input: CreateAgentRunInput): Promise<Create
       lease.fenceToken,
       context,
       authoritativeRead,
+      input.conversationId === undefined,
     );
 
     return { runId, turnId };
@@ -298,6 +282,7 @@ async function executeRunnerInBackground(
   conversationFenceToken?: string,
   context?: ConversationContext,
   authoritativeRead = false,
+  allowGenericTestResolver = false,
 ): Promise<void> {
   let heartbeat: ReturnType<typeof startConversationLeaseHeartbeat> | null = null;
   try {
@@ -305,8 +290,8 @@ async function executeRunnerInBackground(
       ? startConversationLeaseHeartbeat(conversationId, conversationLeaseOwner, conversationFenceToken)
       : null;
     if (heartbeat) await heartbeat.assertOwned();
-    const runner = runnerForTests ?? runLocalPythonAgent;
-    const readRunner = readRunnerForTests ?? runLocalPythonAgent;
+    const genericTestResolver = allowGenericTestResolver ? runnerForTests : null;
+    const readRunner = readRunnerForTests ?? genericTestResolver ?? runLocalPythonAgent;
     let outcome: WorkbenchOutcome;
     let resultPersistenceRequired = Boolean(
       conversationId && turnId && expectedSessionVersion !== undefined && !authoritativeRead,
@@ -376,6 +361,14 @@ async function executeRunnerInBackground(
               "SELECT resolution is missing its immutable READ continuation binding",
             );
           }
+          await assertContinuationSession(
+            conversationId,
+            principalId,
+            turnId,
+            runId,
+            nextSession,
+            heartbeat!,
+          );
           const continued = await readRunner({
             mode: "continue-read",
             query,
@@ -443,6 +436,14 @@ async function executeRunnerInBackground(
           conversationFenceToken!,
         );
         expectedSessionVersion = nextSession.stateVersion;
+        await assertContinuationSession(
+          conversationId,
+          principalId,
+          turnId,
+          runId,
+          nextSession,
+          heartbeat!,
+        );
         outcome = await readRunner({
           mode: "continue-selection",
           query,
@@ -474,15 +475,10 @@ async function executeRunnerInBackground(
         resultPersistenceRequired = true;
       }
     } else {
-      outcome = await runner({
-        mode: "query",
-        query,
-        gatewayUrl: gatewayUrl(),
-        intentMode: intentMode(),
-        context,
-        principal,
-        turnId,
-      });
+      throw new ConversationProtocolError(
+        "CONTEXT_VERSION_CONFLICT",
+        "Conversation execution requires authoritative resolution",
+      );
     }
     if (heartbeat) await heartbeat.assertOwned();
     const handoff = parseCompositionHandoff(outcome);
@@ -578,6 +574,13 @@ async function executeRunnerInBackground(
         && outcome.conversationReadState?.pendingInteraction?.kind === "BATCH_CONFIRMATION"
       ) {
         const pending = outcome.conversationReadState.pendingInteraction;
+        const batchAuthority = outcome.readExecutionBinding;
+        if (!batchAuthority || !outcome.callPlan) {
+          throw new ConversationProtocolError(
+            "CONTEXT_VERSION_CONFLICT",
+            "Batch resolution is missing current execution authority",
+          );
+        }
         outcome = {
           ...outcome,
           batchConversationBinding: {
@@ -587,6 +590,9 @@ async function executeRunnerInBackground(
             stateVersion: pending.stateVersion,
             registrySnapshotId: pending.registrySnapshotId,
             principalId,
+            capabilityVersion: batchAuthority.capabilityVersion,
+            executorBindingId: batchAuthority.executorBindingId,
+            callPlanHash: batchAuthority.callPlanHash,
             batchRef: pending.batchRef,
           },
         };
@@ -723,10 +729,17 @@ function startConversationLeaseHeartbeat(
   conversationId: string,
   owner: string,
   fenceToken: string,
-): { assertOwned: () => Promise<void>; stop: () => void } {
+): { assertOwned: () => Promise<void>; signal: AbortSignal; stop: () => void } {
   let stopped = false;
   let lost: Error | null = null;
   let renewal: Promise<void> | null = null;
+  const abortController = new AbortController();
+
+  const markLost = (error: Error) => {
+    if (lost) return;
+    lost = error;
+    abortController.abort(error);
+  };
 
   const renew = async (): Promise<void> => {
     if (stopped || lost) return;
@@ -737,17 +750,17 @@ function startConversationLeaseHeartbeat(
       CONVERSATION_LEASE_TTL_MS,
     );
     if (outcome.status === "lost") {
-      lost = new ConversationProtocolError(
+      markLost(new ConversationProtocolError(
         "CONVERSATION_BUSY",
         `Conversation lease ownership was lost${outcome.holder ? ` to ${outcome.holder}` : ""}`,
-      );
+      ));
     }
   };
   const scheduleRenewal = () => {
     if (renewal || stopped || lost) return;
     renewal = renew()
       .catch((error: unknown) => {
-        lost = error instanceof Error ? error : new Error(String(error));
+        markLost(error instanceof Error ? error : new Error(String(error)));
       })
       .finally(() => { renewal = null; });
   };
@@ -761,11 +774,37 @@ function startConversationLeaseHeartbeat(
       await renew();
       if (lost) throw lost;
     },
+    signal: abortController.signal,
     stop: () => {
       stopped = true;
       clearInterval(timer);
     },
   };
+}
+
+async function assertContinuationSession(
+  conversationId: string,
+  principalId: string,
+  turnId: string,
+  runId: string,
+  expected: SessionStateV2,
+  heartbeat: { assertOwned: () => Promise<void> },
+): Promise<void> {
+  await heartbeat.assertOwned();
+  const current = await getSession(conversationId, principalId);
+  if (
+    current.principalId !== principalId
+    || current.stateVersion !== expected.stateVersion
+    || current.lastAppliedTurnId !== turnId
+    || current.lastRunId !== runId
+    || canonicalJson(current.activeFrame) !== canonicalJson(expected.activeFrame)
+    || canonicalJson(current.pendingInteraction) !== canonicalJson(expected.pendingInteraction)
+  ) {
+    throw new ConversationProtocolError(
+      "CONTEXT_VERSION_CONFLICT",
+      "Conversation binding changed immediately before continuation",
+    );
+  }
 }
 
 function isTerminalRun(record: AgentRunRecord): boolean {
@@ -861,7 +900,7 @@ async function executeApprovalInBackground(
   try {
     const runner = runnerForTests ?? runLocalPythonAgent;
     const outcome = await runner({
-      mode: "query",
+      mode: "continue-action",
       query: record.query,
       gatewayUrl: gatewayUrl(),
       intentMode: intentMode(),
@@ -951,16 +990,40 @@ export async function confirmAgentRunBatch(
       || pending.frameId !== binding.frameId
       || pending.stateVersion !== binding.stateVersion
       || pending.registrySnapshotId !== binding.registrySnapshotId
-      || pending.batchRef !== binding.batchRef
+      || activeFrame?.frameId !== binding.frameId
+    ) {
+      throw new ConversationProtocolError(
+        "CONTEXT_VERSION_CONFLICT",
+        "Batch confirmation binding is invalid, expired, or stale",
+      );
+    }
+    const executionAuthorityIsInvalid = (
+      pending.batchRef !== binding.batchRef
       || pending.batchRef !== expectedBatchRef
       || Date.parse(pending.expiresAt) <= Date.now()
-      || activeFrame?.frameId !== binding.frameId
       || activeFrame.status !== "READY"
       || activeFrame.registrySnapshotId !== binding.registrySnapshotId
+      || activeFrame.capabilityVersion !== binding.capabilityVersion
       || activeFrame.capabilityId !== callPlan.capabilityId
+      || !binding.executorBindingId
+      || sha256Hex(canonicalJson(callPlan)) !== binding.callPlanHash
       || callPlan.kind !== "Function"
       || callPlan.requiresApproval !== false
-    ) {
+    );
+    if (executionAuthorityIsInvalid) {
+      const invalidLease = await runStore.claim(runId, workerId, 60_000);
+      if (invalidLease.status === "rejected") {
+        throw new Error(`Agent run is held by another worker (${invalidLease.holder}); takeover rejected (fail-closed).`);
+      }
+      runLeaseClaimed = true;
+      await saveConversationState(
+        binding.conversationId,
+        session.stateVersion,
+        { ...session, stateVersion: session.stateVersion + 1, pendingInteraction: null },
+        conversationLeaseOwner,
+        conversationLease.fenceToken,
+      );
+      await runStore.appendDecision(runId, "reject");
       throw new ConversationProtocolError(
         "CONTEXT_VERSION_CONFLICT",
         "Batch confirmation binding is invalid, expired, or stale",
@@ -972,14 +1035,15 @@ export async function confirmAgentRunBatch(
       throw new Error(`Agent run is held by another worker (${lease.holder}); takeover rejected (fail-closed).`);
     }
     runLeaseClaimed = true;
+    const consumedSession: SessionStateV2 = {
+      ...session,
+      stateVersion: session.stateVersion + 1,
+      pendingInteraction: null,
+    };
     await saveConversationState(
       binding.conversationId,
       session.stateVersion,
-      {
-        ...session,
-        stateVersion: session.stateVersion + 1,
-        pendingInteraction: null,
-      },
+      consumedSession,
       conversationLeaseOwner,
       conversationLease.fenceToken,
     );
@@ -994,6 +1058,25 @@ export async function confirmAgentRunBatch(
       binding.conversationId,
       conversationLeaseOwner,
       conversationLease.fenceToken,
+      principal,
+      binding.turnId,
+      consumedSession,
+      {
+        turnId: binding.turnId,
+        frameId: binding.frameId,
+        stateVersion: consumedSession.stateVersion,
+        registrySnapshotId: binding.registrySnapshotId,
+        principalId: binding.principalId,
+        capabilityVersion: binding.capabilityVersion,
+        executorBindingId: binding.executorBindingId,
+        callPlanHash: binding.callPlanHash,
+        readState: {
+          activeFrame: consumedSession.activeFrame,
+          recentFrames: consumedSession.recentFrames,
+          pendingInteraction: consumedSession.pendingInteraction,
+          stateVersion: consumedSession.stateVersion,
+        },
+      },
     );
   } catch (error) {
     if (runLeaseClaimed) await runStore.release(runId, workerId);
@@ -1018,6 +1101,10 @@ async function executeBatchInBackground(
   conversationId: string,
   conversationLeaseOwner: string,
   conversationFenceToken: string,
+  principal: TrustedPrincipal,
+  turnId: string,
+  expectedSession: SessionStateV2,
+  readExecutionBinding: ReadExecutionBinding,
 ): Promise<void> {
   const heartbeat = startConversationLeaseHeartbeat(
     conversationId,
@@ -1025,14 +1112,29 @@ async function executeBatchInBackground(
     conversationFenceToken,
   );
   try {
-    await heartbeat.assertOwned();
+    await assertContinuationSession(
+      conversationId,
+      principal.principalId,
+      turnId,
+      runId,
+      expectedSession,
+      heartbeat,
+    );
     const runner = runnerForTests ?? runLocalPythonAgent;
     const outcome = await runner({
-      mode: "query",
+      mode: "continue-batch",
       query: record.query,
       gatewayUrl: gatewayUrl(),
       intentMode: intentMode(),
-      continuation: { type: "batch", callPlan, combinations }
+      principal,
+      continuation: {
+        type: "batch",
+        callPlan,
+        combinations,
+        readExecutionBinding,
+        persistedReadState: readExecutionBinding.readState,
+      },
+      signal: heartbeat.signal,
     });
     await heartbeat.assertOwned();
     await emitBatchEvents(record, outcome, new Date().toISOString(),
@@ -1527,8 +1629,14 @@ async function runLocalPythonAgent(input: AgentRunnerInput): Promise<WorkbenchOu
       callPlan: input.callPlan,
       binding: input.selectionExecutionBinding,
     });
-  } else if (input.continuation) {
-    const isBatch = input.continuation.type === "batch";
+  } else {
+    if (!input.continuation) {
+      throw new Error(`${input.mode} requires a server-owned continuation payload.`);
+    }
+    const isBatch = input.mode === "continue-batch";
+    if (isBatch !== (input.continuation.type === "batch")) {
+      throw new Error(`${input.mode} continuation payload type is invalid.`);
+    }
     args = [
       "-m",
       "sap_nexus_agent.cli",
@@ -1538,30 +1646,6 @@ async function runLocalPythonAgent(input: AgentRunnerInput): Promise<WorkbenchOu
       "--json"
     ];
     stdinPayload = JSON.stringify(input.continuation);
-  } else if (input.context) {
-    args = [
-      "-m",
-      "sap_nexus_agent.cli",
-      input.query,
-      "--context",
-      "--gateway-url",
-      input.gatewayUrl,
-      "--intent-mode",
-      input.intentMode,
-      "--json"
-    ];
-    stdinPayload = JSON.stringify(input.context);
-  } else {
-    args = [
-      "-m",
-      "sap_nexus_agent.cli",
-      input.query,
-      "--gateway-url",
-      input.gatewayUrl,
-      "--intent-mode",
-      input.intentMode,
-      "--json"
-    ];
   }
   const env = {
     ...process.env,
@@ -1569,7 +1653,14 @@ async function runLocalPythonAgent(input: AgentRunnerInput): Promise<WorkbenchOu
     ...(input.principal ? { SAP_NEXUS_PRINCIPAL: JSON.stringify(input.principal) } : {})
   };
 
-  const { stdout } = await spawnAndCapture(python, args, repoRoot, env, stdinPayload);
+  const { stdout } = await spawnAndCapture(
+    python,
+    args,
+    repoRoot,
+    env,
+    stdinPayload,
+    input.signal,
+  );
   try {
     return JSON.parse(stdout.trim()) as WorkbenchOutcome;
   } catch {
@@ -1582,11 +1673,24 @@ function spawnAndCapture(
   args: string[],
   cwd: string,
   env: NodeJS.ProcessEnv,
-  stdinPayload?: string
+  stdinPayload?: string,
+  signal?: AbortSignal,
 ): Promise<{ stdout: string }> {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, { cwd, env });
     let stdout = "";
+    let settled = false;
+    const cleanup = () => signal?.removeEventListener("abort", abort);
+    const fail = (error: Error) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      reject(error);
+    };
+    const abort = () => {
+      child.kill();
+      fail(signal?.reason instanceof Error ? signal.reason : new Error("Agent runner aborted."));
+    };
     child.stdout.on("data", (chunk: Buffer) => {
       stdout += chunk.toString("utf8");
     });
@@ -1596,8 +1700,15 @@ function spawnAndCapture(
     if (stdinPayload !== undefined) {
       child.stdin.end(stdinPayload);
     }
-    child.on("error", () => reject(new Error("Agent runner process could not be started.")));
-    child.on("close", () => resolve({ stdout }));
+    child.on("error", () => fail(new Error("Agent runner process could not be started.")));
+    child.on("close", () => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolve({ stdout });
+    });
+    if (signal?.aborted) abort();
+    else signal?.addEventListener("abort", abort, { once: true });
   });
 }
 

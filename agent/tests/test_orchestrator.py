@@ -640,6 +640,107 @@ def test_continue_resolved_read_rejects_every_authority_drift_before_gateway():
         assert gateway.execute_calls == []
 
 
+def test_continue_resolved_read_rejects_semantically_invalid_ready_frames_before_gateway():
+    import dataclasses
+
+    from sap_nexus_agent.conversation_context import ConversationContext, ReadExecutionBinding
+    from sap_nexus_agent.intent_envelope import IntentEnvelope, IntentGoal
+    from sap_nexus_agent.orchestrator import (
+        _default_planner_sources,
+        continue_resolved_read,
+        resolve_read_turn,
+    )
+
+    snapshot, sources = _default_planner_sources()
+    resolved = resolve_read_turn(
+        "物料 DEMOA2，工厂 1000",
+        context=ConversationContext(
+            None, None, read_state=ConversationReadState(None, None, 0), schema_version=2
+        ),
+        intent_adapter=lambda text, _context=None: IntentEnvelope(
+            envelope_id="env-semantic-preflight",
+            utterance=text,
+            goals=(IntentGoal(
+                "库存", "MM.Inventory.GetAvailability",
+                {"material": "DEMOA2", "plant": "1000"}, [],
+            ),),
+            user_constraints={}, ambiguities=[], reference_turn_id=None,
+            model_evidence={}, snapshot_id="advisory", discard_reasons=[], created_by="llm",
+        ),
+        principal=PLACEHOLDER_PRINCIPAL,
+        snapshot=snapshot,
+        sources=sources,
+        turn_id="turn-semantic-preflight",
+    )
+    frame = resolved.read_state.active_frame
+
+    missing_slots = dict(frame.slots)
+    missing_slots.pop("plant")
+    missing_state = dataclasses.replace(
+        resolved.read_state,
+        active_frame=dataclasses.replace(frame, slots=missing_slots),
+    )
+    missing_plan = dataclasses.replace(
+        resolved.call_plan,
+        parameters={"material": "DEMOA2", "unit": "EA"},
+    )
+
+    invalid_slots = dict(frame.slots)
+    invalid_slots["plant"] = dataclasses.replace(
+        invalid_slots["plant"], value="BAD!", candidates=("BAD!",)
+    )
+    invalid_state = dataclasses.replace(
+        resolved.read_state,
+        active_frame=dataclasses.replace(frame, slots=invalid_slots),
+    )
+    invalid_plan = dataclasses.replace(
+        resolved.call_plan,
+        parameters={"material": "DEMOA2", "plant": "BAD!", "unit": "EA"},
+    )
+
+    long_material = "M" * 41
+    long_slots = dict(frame.slots)
+    long_slots["material"] = dataclasses.replace(
+        long_slots["material"], value=long_material, candidates=(long_material,)
+    )
+    long_state = dataclasses.replace(
+        resolved.read_state,
+        active_frame=dataclasses.replace(frame, slots=long_slots),
+    )
+    long_plan = dataclasses.replace(
+        resolved.call_plan,
+        parameters={"material": long_material, "plant": "1000", "unit": "EA"},
+    )
+
+    for call_plan, state in (
+        (missing_plan, missing_state),
+        (invalid_plan, invalid_state),
+        (long_plan, long_state),
+    ):
+        binding = ReadExecutionBinding.create(
+            turn_id="turn-semantic-preflight",
+            principal_id=PLACEHOLDER_PRINCIPAL.principal_id,
+            call_plan=call_plan,
+            read_state=state,
+            executor_binding_id="sap.mm.inventory.md04-stock-req-list",
+        )
+        gateway = FakeGatewayClient()
+
+        outcome = continue_resolved_read(
+            call_plan,
+            binding,
+            gateway,
+            persisted_state=state,
+            principal=PLACEHOLDER_PRINCIPAL,
+            snapshot=snapshot,
+            sources=sources,
+        )
+
+        assert outcome.error_type == "READ_EXECUTION_BINDING_MISMATCH"
+        assert gateway.validate_calls == []
+        assert gateway.execute_calls == []
+
+
 def test_non_read_selection_is_parsed_once_and_preserves_write_approval():
     from sap_nexus_agent.conversation_context import ConversationContext
     from sap_nexus_agent.intent import IntentParseResult
@@ -724,6 +825,141 @@ def test_non_read_selection_is_parsed_once_and_preserves_write_approval():
     assert outcome.approval_record is not None
     assert len(gateway.validate_calls) == 1
     assert gateway.execute_calls == []
+
+
+def test_run_query_continues_authoritative_non_read_selection_without_read_binding():
+    from sap_nexus_agent.conversation_context import ConversationContext
+    from sap_nexus_agent.match_decision import MatchedIntent
+
+    calls = 0
+
+    def action_adapter(_text, _context=None):
+        nonlocal calls
+        calls += 1
+        parameters = {**_ACTION_BASE_PARAMS, "plant": "1000"}
+        return IntentParseResult(
+            intent=None,
+            parameters=parameters,
+            missing_parameters=[],
+            capability_id="MM.PR.CreateDraft",
+            matched_intents=[MatchedIntent("MM.PR.CreateDraft", parameters, [])],
+        )
+
+    gateway = FakeGatewayClient(
+        validation=ValidationResult(
+            trace_id="gw-write-run-query",
+            capability_id="MM.PR.CreateDraft",
+            success=True,
+            error_type="NONE",
+            messages=[],
+        )
+    )
+
+    outcome = run_query(
+        "创建采购申请",
+        gateway,
+        context=ConversationContext(
+            None,
+            None,
+            read_state=ConversationReadState(None, None, 0),
+            schema_version=2,
+        ),
+        intent_adapter=action_adapter,
+        principal=PLACEHOLDER_PRINCIPAL,
+    )
+
+    assert calls == 1
+    assert outcome.status == "awaiting_approval"
+    assert outcome.approval_record is not None
+    assert len(gateway.validate_calls) == 1
+    assert gateway.execute_calls == []
+
+
+def test_non_read_clarification_is_parsed_once_and_preserved_without_gateway():
+    from sap_nexus_agent.conversation_context import ConversationContext
+    from sap_nexus_agent.match_decision import MatchedIntent
+    from sap_nexus_agent.orchestrator import _default_planner_sources, resolve_read_turn
+
+    snapshot, sources = _default_planner_sources()
+    calls = 0
+
+    def adapter(_text, _context=None):
+        nonlocal calls
+        calls += 1
+        return IntentParseResult(
+            intent=None,
+            parameters={"material": "DEMOA2"},
+            missing_parameters=["plant", "quantity", "unit", "delivery_date", "purchasing_group"],
+            capability_id="MM.PR.CreateDraft",
+            matched_intents=[
+                MatchedIntent(
+                    "MM.PR.CreateDraft",
+                    {"material": "DEMOA2"},
+                    ["plant", "quantity", "unit", "delivery_date", "purchasing_group"],
+                )
+            ],
+        )
+
+    outcome = resolve_read_turn(
+        "创建采购申请，物料 DEMOA2",
+        context=ConversationContext(
+            None, None, read_state=ConversationReadState(None, None, 0), schema_version=2
+        ),
+        intent_adapter=adapter,
+        principal=PLACEHOLDER_PRINCIPAL,
+        snapshot=snapshot,
+        sources=sources,
+        turn_id="turn-write-clarify",
+    )
+
+    assert calls == 1
+    assert outcome.status == "clarification"
+    assert outcome.match_decision.decision_type == "CLARIFY"
+    assert outcome.call_plan is None
+    assert outcome.selection_execution_binding is None
+
+
+def test_mixed_planner_outcome_is_bound_without_rerunning_semantics():
+    from sap_nexus_agent.conversation_context import ConversationContext
+    from sap_nexus_agent.intent_envelope import IntentEnvelope, IntentGoal
+    from sap_nexus_agent.orchestrator import _default_planner_sources, resolve_read_turn
+
+    snapshot, sources = _default_planner_sources()
+    calls = 0
+
+    def adapter(text, _context=None):
+        nonlocal calls
+        calls += 1
+        return IntentEnvelope(
+            envelope_id="env-mixed-pending",
+            utterance=text,
+            goals=(
+                IntentGoal("库存", "MM.Inventory.GetAvailability", {}, ["material", "plant"]),
+                IntentGoal("创建采购申请", "MM.PR.CreateDraft", {}, ["material", "plant"]),
+            ),
+            user_constraints={}, ambiguities=[], reference_turn_id=None,
+            model_evidence={}, snapshot_id="advisory", discard_reasons=[], created_by="llm",
+        )
+
+    outcome = resolve_read_turn(
+        "查库存并创建采购申请",
+        context=ConversationContext(
+            None, None, read_state=ConversationReadState(None, None, 0), schema_version=2
+        ),
+        intent_adapter=adapter,
+        principal=PLACEHOLDER_PRINCIPAL,
+        snapshot=snapshot,
+        sources=sources,
+        turn_id="turn-mixed-planner",
+    )
+
+    assert calls == 1
+    assert outcome.status == "match_decision"
+    assert outcome.match_decision.decision_type == "ESCALATE_TO_PLANNER"
+    assert outcome.read_state.pending_interaction.kind == "PLANNER_CONFIRMATION"
+    assert tuple(
+        goal.capability_id for goal in outcome.read_state.pending_interaction.planner_goals
+    ) == ("MM.Inventory.GetAvailability", "MM.PR.CreateDraft")
 
 
 def test_python_hashes_match_typescript_canonical_json_for_unicode():
@@ -924,6 +1160,59 @@ def test_authoritative_multi_read_uses_planner_pending_interaction(monkeypatch):
     assert gateway.execute_calls == []
 
 
+def test_slot_clarification_survives_json_restart_and_is_consumed_once():
+    from sap_nexus_agent.conversation_context import ConversationContext
+    from sap_nexus_agent.match_decision import MatchedIntent
+    from sap_nexus_agent.orchestrator import _default_planner_sources, resolve_read_turn
+
+    snapshot, sources = _default_planner_sources()
+    initial = resolve_read_turn(
+        "查物料 DEMOA2 的库存",
+        context=ConversationContext(
+            None, None, read_state=ConversationReadState(None, None, 0), schema_version=2
+        ),
+        intent_adapter=lambda _text, _context=None: IntentParseResult(
+            intent="inventory_availability",
+            parameters={"material": "DEMOA2"},
+            missing_parameters=["plant"],
+            capability_id="MM.Inventory.GetAvailability",
+            matched_intents=[MatchedIntent(
+                "MM.Inventory.GetAvailability", {"material": "DEMOA2"}, ["plant"]
+            )],
+        ),
+        principal=PLACEHOLDER_PRINCIPAL,
+        snapshot=snapshot,
+        sources=sources,
+        turn_id="turn-slot-create",
+    )
+    restarted = ConversationContext.from_dict(initial.updated_context.to_dict())
+    response = resolve_read_turn(
+        "工厂 1000",
+        context=restarted,
+        intent_adapter=lambda _text, _context=None: IntentParseResult(
+            intent="inventory_availability",
+            parameters={"material": "DEMOA2", "plant": "1000"},
+            missing_parameters=[],
+            capability_id="MM.Inventory.GetAvailability",
+            matched_intents=[MatchedIntent(
+                "MM.Inventory.GetAvailability",
+                {"material": "DEMOA2", "plant": "1000"},
+                [],
+            )],
+        ),
+        principal=PLACEHOLDER_PRINCIPAL,
+        snapshot=snapshot,
+        sources=sources,
+        turn_id="turn-slot-response",
+    )
+
+    assert initial.status == "clarification"
+    assert initial.read_state.pending_interaction.kind == "SLOT_CLARIFICATION"
+    assert response.status == "resolved_read"
+    assert response.read_state.pending_interaction is None
+    assert response.state_version == initial.state_version + 1
+
+
 def test_capability_choice_survives_json_restart_and_is_consumed_once():
     from sap_nexus_agent.conversation_context import ConversationContext
     from sap_nexus_agent.match_decision import MatchedIntent
@@ -1011,6 +1300,171 @@ def test_planner_confirmation_survives_json_restart_and_is_consumed_once():
     assert response.match_decision.decision_type == "ESCALATE_TO_PLANNER"
     assert response.read_state.pending_interaction is None
     assert response.resolution_report["consumed"] is True
+
+
+def test_expired_capability_choice_is_discarded_before_normal_intent_resolution():
+    import dataclasses
+
+    from sap_nexus_agent.conversation_context import ConversationContext
+    from sap_nexus_agent.match_decision import MatchedIntent
+    from sap_nexus_agent.orchestrator import _default_planner_sources, resolve_read_turn
+
+    snapshot, sources = _default_planner_sources()
+    initial = resolve_read_turn(
+        "订单",
+        context=ConversationContext(
+            None, None, read_state=ConversationReadState(None, None, 0), schema_version=2
+        ),
+        intent_adapter=lambda _text, _context=None: IntentParseResult(
+            intent=None, parameters={}, missing_parameters=[],
+            matched_intents=[MatchedIntent("MM.PurchaseOrder.GetList", {}, [])],
+            is_ambiguous=True,
+        ),
+        principal=PLACEHOLDER_PRINCIPAL,
+        snapshot=snapshot,
+        sources=sources,
+        turn_id="turn-expired-choice-create",
+    )
+    expired = dataclasses.replace(
+        initial.read_state.pending_interaction,
+        expires_at="2000-01-01T00:00:00Z",
+    )
+    restarted = ConversationContext.from_dict(
+        dataclasses.replace(
+            initial.updated_context,
+            read_state=dataclasses.replace(initial.read_state, pending_interaction=expired),
+        ).to_dict()
+    )
+
+    response = resolve_read_turn(
+        "查采购订单 4500000001",
+        context=restarted,
+        intent_adapter=lambda _text, _context=None: IntentParseResult(
+            intent="purchase_order_list",
+            parameters={"poNumber": "4500000001"},
+            missing_parameters=[],
+            capability_id="MM.PurchaseOrder.GetList",
+            matched_intents=[
+                MatchedIntent("MM.PurchaseOrder.GetList", {"poNumber": "4500000001"}, [])
+            ],
+        ),
+        principal=PLACEHOLDER_PRINCIPAL,
+        snapshot=snapshot,
+        sources=sources,
+        turn_id="turn-expired-choice-response",
+    )
+
+    assert response.status == "resolved_read"
+    assert response.read_state.pending_interaction is None
+    assert response.registry_snapshot_id == snapshot.snapshot_id
+
+
+def test_invalid_planner_ref_is_discarded_without_rebinding_stale_pending():
+    import dataclasses
+
+    from sap_nexus_agent.conversation_context import ConversationContext
+    from sap_nexus_agent.intent_envelope import IntentEnvelope, IntentGoal
+    from sap_nexus_agent.orchestrator import _default_planner_sources, resolve_read_turn
+
+    snapshot, sources = _default_planner_sources()
+    initial = resolve_read_turn(
+        "查库存和采购订单",
+        context=ConversationContext(
+            None, None, read_state=ConversationReadState(None, None, 0), schema_version=2
+        ),
+        intent_adapter=lambda text, _context=None: IntentEnvelope(
+            envelope_id="env-invalid-planner-create",
+            utterance=text,
+            goals=(
+                IntentGoal("库存", "MM.Inventory.GetAvailability", {}, ["material", "plant"]),
+                IntentGoal("采购订单", "MM.PurchaseOrder.GetList", {}, []),
+            ),
+            user_constraints={}, ambiguities=[], reference_turn_id=None,
+            model_evidence={}, snapshot_id="advisory", discard_reasons=[], created_by="llm",
+        ),
+        principal=PLACEHOLDER_PRINCIPAL,
+        snapshot=snapshot,
+        sources=sources,
+        turn_id="turn-invalid-planner-create",
+    )
+    forged = dataclasses.replace(
+        initial.read_state.pending_interaction,
+        planner_ref="sha256:forged",
+    )
+    restarted = ConversationContext.from_dict(
+        dataclasses.replace(
+            initial.updated_context,
+            read_state=dataclasses.replace(initial.read_state, pending_interaction=forged),
+        ).to_dict()
+    )
+
+    response = resolve_read_turn(
+        "确认",
+        context=restarted,
+        intent_adapter=lambda _text, _context=None: IntentParseResult(
+            intent=None, parameters={}, missing_parameters=[], matched_intents=[]
+        ),
+        principal=PLACEHOLDER_PRINCIPAL,
+        snapshot=snapshot,
+        sources=sources,
+        turn_id="turn-invalid-planner-response",
+    )
+
+    assert response.read_state is None or response.read_state.pending_interaction is None
+    assert response.registry_snapshot_id == snapshot.snapshot_id
+
+
+def test_expired_batch_pending_is_discarded_for_a_fresh_normal_intent():
+    import dataclasses
+
+    from sap_nexus_agent.conversation_context import ConversationContext
+    from sap_nexus_agent.intent_envelope import IntentEnvelope, IntentGoal
+    from sap_nexus_agent.orchestrator import _default_planner_sources, resolve_read_turn
+
+    snapshot, sources = _default_planner_sources()
+    initial = resolve_read_turn(
+        "DEMOA2 在 5100、1000 的库存",
+        context=ConversationContext(
+            None, None, read_state=ConversationReadState(None, None, 0), schema_version=2
+        ),
+        intent_adapter=_multi_value_adapter({"plant": ["5100", "1000"]}),
+        principal=PLACEHOLDER_PRINCIPAL,
+        snapshot=snapshot,
+        sources=sources,
+        turn_id="turn-expired-batch-create",
+    )
+    expired = dataclasses.replace(
+        initial.read_state.pending_interaction,
+        expires_at="2000-01-01T00:00:00Z",
+    )
+    restarted = ConversationContext.from_dict(
+        dataclasses.replace(
+            initial.updated_context,
+            read_state=dataclasses.replace(initial.read_state, pending_interaction=expired),
+        ).to_dict()
+    )
+
+    response = resolve_read_turn(
+        "查物料 DEMOA2 在 1000 工厂的库存",
+        context=restarted,
+        intent_adapter=lambda text, _context=None: IntentEnvelope(
+            envelope_id="env-fresh-after-batch",
+            utterance=text,
+            goals=(IntentGoal(
+                "库存", "MM.Inventory.GetAvailability",
+                {"material": "DEMOA2", "plant": "1000"}, [],
+            ),),
+            user_constraints={}, ambiguities=[], reference_turn_id=None,
+            model_evidence={}, snapshot_id="advisory", discard_reasons=[], created_by="llm",
+        ),
+        principal=PLACEHOLDER_PRINCIPAL,
+        snapshot=snapshot,
+        sources=sources,
+        turn_id="turn-expired-batch-response",
+    )
+
+    assert response.status == "resolved_read"
+    assert response.read_state.pending_interaction is None
 
 
 def test_shadow_context_escalates_multiple_visible_read_goals_without_side_effects(monkeypatch):

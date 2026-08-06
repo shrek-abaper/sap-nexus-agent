@@ -164,6 +164,38 @@ def test_pending_interaction_uses_strict_typed_payloads_for_each_kind():
 
 
 @pytest.mark.parametrize(
+    "expires_at",
+    ["", "tomorrow", "2026-08-06T09:15:00", "2026-02-30T09:15:00Z"],
+)
+def test_pending_interaction_rejects_non_utc_or_invalid_iso_expiry(expires_at):
+    with pytest.raises(ValueError, match="expires"):
+        PendingInteraction.capability_choice(
+            frame_id="frame-1",
+            capability_ids=("MM.Inventory.GetAvailability",),
+            state_version=3,
+            registry_snapshot_id="snapshot-1",
+            expires_at=expires_at,
+        )
+
+
+def test_pending_planner_goals_reject_duplicate_capability_ids():
+    duplicate_goal = {
+        "capabilityId": "MM.Inventory.GetAvailability",
+        "parameters": {"material": "DEMOA2"},
+        "missing": ["plant"],
+    }
+    with pytest.raises(ValueError, match="duplicate capabilities"):
+        PendingInteraction.planner_confirmation(
+            frame_id="frame-1",
+            planner_ref="sha256:planner-1",
+            goals=(duplicate_goal, duplicate_goal),
+            state_version=3,
+            registry_snapshot_id="snapshot-1",
+            expires_at="2026-08-06T09:15:00Z",
+        )
+
+
+@pytest.mark.parametrize(
     "payload",
     [
         {

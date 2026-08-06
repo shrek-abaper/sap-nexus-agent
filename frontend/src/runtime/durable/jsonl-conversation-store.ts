@@ -735,9 +735,7 @@ function parsePending(payload: unknown): PendingInteraction {
     registrySnapshotId: requireString(raw.registrySnapshotId, "PendingInteraction.registrySnapshotId"),
     expiresAt: requireString(raw.expiresAt, "PendingInteraction.expiresAt"),
   };
-  if (Number.isNaN(Date.parse(common.expiresAt))) {
-    throw new Error("PendingInteraction.expiresAt must be an ISO timestamp");
-  }
+  requireUtcIsoTimestamp(common.expiresAt, "PendingInteraction.expiresAt");
   const commonFields = ["kind", "frameId", "stateVersion", "registrySnapshotId", "expiresAt"];
   if (kind === "SLOT_CLARIFICATION") {
     requireExactFields(raw, [...commonFields, "expectedFields"], "PendingInteraction");
@@ -824,6 +822,19 @@ function uniqueNonEmptyStrings(value: unknown, field: string): string[] {
     throw new Error(`${field} must not contain duplicates`);
   }
   return values;
+}
+
+function requireUtcIsoTimestamp(value: string, field: string): void {
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,6}))?Z$/.exec(value);
+  if (!match) throw new Error(`${field} must be a UTC ISO timestamp`);
+  const [, year, month, day, hour, minute, second] = match;
+  const parsed = new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}Z`);
+  if (Number.isNaN(parsed.getTime()) || parsed.getUTCFullYear() !== Number(year) ||
+      parsed.getUTCMonth() + 1 !== Number(month) || parsed.getUTCDate() !== Number(day) ||
+      parsed.getUTCHours() !== Number(hour) || parsed.getUTCMinutes() !== Number(minute) ||
+      parsed.getUTCSeconds() !== Number(second)) {
+    throw new Error(`${field} must be a UTC ISO timestamp`);
+  }
 }
 
 function parseLastContext(payload: unknown): LastContext {

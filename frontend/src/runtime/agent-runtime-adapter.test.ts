@@ -149,6 +149,17 @@ function batchReadOutcome(turnId: string, stateVersion = 1): WorkbenchOutcome {
     registrySnapshotId: "snapshot-read-1",
     expiresAt: "2099-01-01T00:00:00Z",
   };
+  resolved.readExecutionBinding = {
+    turnId,
+    frameId: "frame-read-1",
+    stateVersion,
+    registrySnapshotId: "snapshot-read-1",
+    principalId: PLACEHOLDER_PRINCIPAL.principalId,
+    capabilityVersion: "1",
+    executorBindingId: "sap.mm.inventory.md04-stock-req-list",
+    callPlanHash: sha256Hex(canonicalJson(resolved.callPlan)),
+    readState: resolved.conversationReadState!,
+  };
   return resolved;
 }
 
@@ -186,6 +197,26 @@ function resolvedSelectionOutcome(turnId: string, stateVersion = 1): WorkbenchOu
   };
 }
 
+function setInitialSelectionForTests(
+  continuation: (input: any) => Promise<WorkbenchOutcome> | WorkbenchOutcome,
+): void {
+  setReadAgentRunnerForTests(async (input) => {
+    if (input.mode === "resolve-read") return resolvedSelectionOutcome(input.turnId!);
+    if (input.mode === "continue-selection") return continuation(input);
+    throw new Error(`unexpected selection runner mode ${input.mode}`);
+  });
+}
+
+function setInitialReadForTests(
+  continuation: (input: any) => Promise<WorkbenchOutcome> | WorkbenchOutcome,
+): void {
+  setReadAgentRunnerForTests(async (input) => {
+    if (input.mode === "resolve-read") return resolvedReadOutcome(input.turnId!);
+    if (input.mode === "continue-read") return continuation(input);
+    throw new Error(`unexpected READ runner mode ${input.mode}`);
+  });
+}
+
 async function waitForRunSettled(runId: string, timeoutMs = 5000, minEventCount = 0): Promise<AgentRunEvent[]> {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
@@ -213,7 +244,7 @@ describe("agent-runtime-adapter durable integration", () => {
     runStore = new JsonlRunStore(dir);
     convStore = new JsonlConversationStore(dir);
     setDurableStoresForTests(runStore, convStore);
-    setAgentRunnerForTests(async () => awaitingOutcome("run-1"));
+    setInitialSelectionForTests(async () => awaitingOutcome("run-1"));
   });
   afterEach(() => {
     setAgentRunnerForTests(null);
@@ -233,7 +264,7 @@ describe("agent-runtime-adapter durable integration", () => {
   });
 
   it("preserves a supplied turnId and generates one only when absent", async () => {
-    setAgentRunnerForTests(async () => ({ status: "success", responseText: "ok" } as WorkbenchOutcome));
+    setInitialReadForTests(async () => ({ status: "success", responseText: "ok" } as WorkbenchOutcome));
     const supplied = await createAgentRun({
       query: "查询库存",
       conversationId: "c-turn-supplied",
@@ -366,6 +397,82 @@ describe("agent-runtime-adapter durable integration", () => {
     expect(continuationCalls).toBe(0);
   });
 
+  it("re-loads the current Session immediately before READ continuation", async () => {
+    let continuationCalls = 0;
+    let resolutionPersisted = false;
+    const load = vi.fn(async (conversationId: string, principalId: string) => {
+      const session = await convStore.load(conversationId, principalId);
+      if (!resolutionPersisted || !session) return session;
+      return { ...session, stateVersion: session.stateVersion + 1 };
+    });
+    const guardedStore = {
+      load,
+      claim: convStore.claim.bind(convStore),
+      compareAndSwap: vi.fn(async (...args: Parameters<typeof convStore.compareAndSwap>) => {
+        const result = await convStore.compareAndSwap(...args);
+        if (result.status === "saved") resolutionPersisted = true;
+        return result;
+      }),
+      renew: convStore.renew.bind(convStore),
+      release: convStore.release.bind(convStore),
+      lookupTurn: convStore.lookupTurn.bind(convStore),
+      clear: convStore.clear.bind(convStore),
+      clearAll: convStore.clearAll.bind(convStore),
+    };
+    setDurableStoresForTests(runStore, guardedStore);
+    setReadAgentRunnerForTests(async (input) => {
+      if (input.mode === "resolve-read") return resolvedReadOutcome(input.turnId!);
+      if (input.mode === "continue-read") continuationCalls++;
+      return { status: "success", responseText: "unexpected" };
+    });
+
+    const { runId } = await createAgentRun({
+      query: "查库存",
+      conversationId: "c-read-stale-session",
+      turnId: "turn-read-stale-session",
+      principal: PLACEHOLDER_PRINCIPAL,
+    });
+    await waitForRunSettled(runId);
+
+    expect(continuationCalls).toBe(0);
+  });
+
+  it("asserts the current fence immediately before READ continuation", async () => {
+    let continuationCalls = 0;
+    let renewCalls = 0;
+    const fencedStore = {
+      load: convStore.load.bind(convStore),
+      claim: convStore.claim.bind(convStore),
+      compareAndSwap: convStore.compareAndSwap.bind(convStore),
+      renew: vi.fn(async (...args: Parameters<typeof convStore.renew>) => {
+        renewCalls++;
+        if (renewCalls === 3) return { status: "lost" as const, holder: "takeover" };
+        return convStore.renew(...args);
+      }),
+      release: convStore.release.bind(convStore),
+      lookupTurn: convStore.lookupTurn.bind(convStore),
+      clear: convStore.clear.bind(convStore),
+      clearAll: convStore.clearAll.bind(convStore),
+    };
+    setDurableStoresForTests(runStore, fencedStore);
+    setReadAgentRunnerForTests(async (input) => {
+      if (input.mode === "resolve-read") return resolvedReadOutcome(input.turnId!);
+      if (input.mode === "continue-read") continuationCalls++;
+      return { status: "success", responseText: "unexpected" };
+    });
+
+    const { runId } = await createAgentRun({
+      query: "查库存",
+      conversationId: "c-read-stale-fence",
+      turnId: "turn-read-stale-fence",
+      principal: PLACEHOLDER_PRINCIPAL,
+    });
+    await waitForRunSettled(runId);
+
+    expect(renewCalls).toBeGreaterThanOrEqual(3);
+    expect(continuationCalls).toBe(0);
+  });
+
   it("continues the first non-READ selection without rerunning query semantics", async () => {
     const modes: string[] = [];
     let oneShotQueries = 0;
@@ -424,10 +531,7 @@ describe("agent-runtime-adapter durable integration", () => {
   });
 
   it("decideAgentRunApproval loads from store and appends decision events", async () => {
-    setAgentRunnerForTests(async () => ({ status: "success", responseText: "已执行" } as WorkbenchOutcome));
     const { runId } = await createAgentRun({ query: "查询库存", principal: PLACEHOLDER_PRINCIPAL });
-    // re-arm runner to awaiting for the initial run
-    setAgentRunnerForTests(async () => awaitingOutcome(runId));
     const { runId: awaitingRunId } = await createAgentRun({ query: "查询库存", conversationId: "c2", principal: PLACEHOLDER_PRINCIPAL });
     await waitForRunSettled(awaitingRunId);
     // pick the awaiting run created above
@@ -450,7 +554,7 @@ describe("agent-runtime-adapter durable integration", () => {
 
   it("treats a deliberately removed in-flight run as cancelled without orphan events", async () => {
     let finishRunner: (() => void) | undefined;
-    setAgentRunnerForTests(async () => {
+    setInitialReadForTests(async () => {
       await new Promise<void>((resolve) => { finishRunner = resolve; });
       return { status: "success", responseText: "late result" } as WorkbenchOutcome;
     });
@@ -467,7 +571,7 @@ describe("agent-runtime-adapter durable integration", () => {
     await waitForRunSettled(runId);
     resetAgentSessionsForTests();
     // after reset, Q2 gate no longer sees the prior pending run via session
-    setAgentRunnerForTests(async () => ({ status: "success", responseText: "ok" } as WorkbenchOutcome));
+    setInitialReadForTests(async () => ({ status: "success", responseText: "ok" } as WorkbenchOutcome));
     await expect(createAgentRun({ query: "新查询", conversationId: "c1", principal: PLACEHOLDER_PRINCIPAL })).resolves.toBeDefined();
   });
 
@@ -518,6 +622,7 @@ describe("agent-runtime-adapter durable integration", () => {
 
   it("batch confirmation survives restart and CAS-consumes its bound pending before execution", async () => {
     let batchCalls = 0;
+    let runnerPrincipal: TrustedPrincipal | undefined;
     setReadAgentRunnerForTests(async (input) => {
       if (input.mode === "resolve-read") return batchReadOutcome(input.turnId!);
       throw new Error(`unexpected READ runner mode ${input.mode}`);
@@ -525,6 +630,7 @@ describe("agent-runtime-adapter durable integration", () => {
     setAgentRunnerForTests(async (input) => {
       if (input.continuation?.type === "batch") {
         batchCalls++;
+        runnerPrincipal = input.principal;
         const persisted = await convStore.load(
           "c-batch-restart",
           PLACEHOLDER_PRINCIPAL.principalId,
@@ -550,6 +656,80 @@ describe("agent-runtime-adapter durable integration", () => {
     await waitForRunSettled(runId, 5000, eventsBeforeConfirm.length);
 
     expect(batchCalls).toBe(1);
+    expect(runnerPrincipal).toEqual(PLACEHOLDER_PRINCIPAL);
+  });
+
+  it("aborts an in-flight batch child when the conversation heartbeat loses its lease", async () => {
+    const conversationId = "c-batch-mid-flight-loss";
+    let gatewayCalls = 0;
+    let abortObserved = false;
+    let releaseBlockedRunner: (() => void) | undefined;
+    let markRunnerStarted: (() => void) | undefined;
+    const runnerStarted = new Promise<void>((resolve) => { markRunnerStarted = resolve; });
+
+    setReadAgentRunnerForTests(async (input) => {
+      if (input.mode === "resolve-read") return batchReadOutcome(input.turnId!);
+      throw new Error(`unexpected READ runner mode ${input.mode}`);
+    });
+    const { runId } = await createAgentRun({
+      query: "批量查询",
+      conversationId,
+      turnId: "turn-batch-mid-flight-loss",
+      principal: PLACEHOLDER_PRINCIPAL,
+    });
+    await waitForRunSettled(runId);
+
+    let renewCalls = 0;
+    const losingStore = {
+      load: convStore.load.bind(convStore),
+      claim: convStore.claim.bind(convStore),
+      compareAndSwap: convStore.compareAndSwap.bind(convStore),
+      renew: vi.fn(async (...args: Parameters<typeof convStore.renew>) => {
+        renewCalls++;
+        if (renewCalls === 2) return { status: "lost" as const, holder: "takeover" };
+        return convStore.renew(...args);
+      }),
+      release: convStore.release.bind(convStore),
+      lookupTurn: convStore.lookupTurn.bind(convStore),
+      clear: convStore.clear.bind(convStore),
+      clearAll: convStore.clearAll.bind(convStore),
+    };
+    setDurableStoresForTests(runStore, losingStore);
+    setAgentRunnerForTests(async (input) => {
+      if (input.continuation?.type !== "batch") throw new Error("unexpected continuation");
+      const signal = (input as typeof input & { signal?: AbortSignal }).signal;
+      gatewayCalls++;
+      markRunnerStarted?.();
+      await new Promise<void>((resolve, reject) => {
+        releaseBlockedRunner = resolve;
+        signal?.addEventListener("abort", () => {
+          abortObserved = true;
+          reject(signal.reason instanceof Error ? signal.reason : new Error("batch aborted"));
+        }, { once: true });
+      });
+      gatewayCalls++;
+      return { status: "success", responseText: "unexpected" };
+    });
+
+    vi.useFakeTimers();
+    try {
+      await confirmAgentRunBatch(runId, PLACEHOLDER_PRINCIPAL);
+      await vi.advanceTimersByTimeAsync(0);
+      await runnerStarted;
+      await vi.advanceTimersByTimeAsync(20_000);
+
+      expect(abortObserved).toBe(true);
+      expect(gatewayCalls).toBe(1);
+      await vi.advanceTimersByTimeAsync(0);
+      expect((await runStore.load(runId))?.events.at(-1)).toMatchObject({
+        type: "run_failed",
+        error: { errorType: "CONVERSATION_BUSY" },
+      });
+    } finally {
+      releaseBlockedRunner?.();
+      await vi.advanceTimersByTimeAsync(0);
+      vi.useRealTimers();
+    }
   });
 
   it.each(["expired", "intervening-turn", "lease", "cas", "store"] as const)(
@@ -563,7 +743,14 @@ describe("agent-runtime-adapter durable integration", () => {
         if (failure === "expired") {
           const pending = outcome.conversationReadState!.pendingInteraction!;
           if (pending.kind !== "BATCH_CONFIRMATION") throw new Error("wrong pending kind");
-          pending.expiresAt = "2000-01-01T00:00:00Z";
+          outcome.conversationReadState = {
+            ...outcome.conversationReadState!,
+            pendingInteraction: { ...pending, expiresAt: "2000-01-01T00:00:00Z" },
+          };
+          outcome.readExecutionBinding = {
+            ...outcome.readExecutionBinding!,
+            readState: outcome.conversationReadState,
+          };
         }
         return outcome;
       });
@@ -615,6 +802,13 @@ describe("agent-runtime-adapter durable integration", () => {
       await expect(confirmAgentRunBatch(runId, PLACEHOLDER_PRINCIPAL)).rejects.toThrow();
       await new Promise((resolve) => setTimeout(resolve, 20));
       expect(batchCalls).toBe(0);
+      if (failure === "expired") {
+        expect((await convStore.load(
+          conversationId,
+          PLACEHOLDER_PRINCIPAL.principalId,
+        ))?.pendingInteraction).toBeNull();
+        expect((await runStore.load(runId))?.decision).toBe("reject");
+      }
     },
   );
 
@@ -627,7 +821,7 @@ describe("agent-runtime-adapter durable integration", () => {
   });
 
   it("getSession writes principalId on first request and validates on subsequent", async () => {
-    setAgentRunnerForTests(async () => ({ status: "success", responseText: "ok" } as WorkbenchOutcome));
+    setInitialReadForTests(async () => ({ status: "success", responseText: "ok" } as WorkbenchOutcome));
     const { runId } = await createAgentRun({ query: "查询库存", conversationId: "c-own", principal: PLACEHOLDER_PRINCIPAL });
     expect(runId).toBeDefined();
     await waitForRunSettled(runId);
@@ -674,12 +868,10 @@ describe("agent-runtime-adapter durable integration", () => {
   });
 
   it("confirmAgentRunBatch throws not-found for cross-principal access", async () => {
-    setAgentRunnerForTests(async () => ({
-      status: "awaiting_batch_confirm",
-      callPlan: { capabilityId: "cap-1", kind: "Action" },
-      combinations: [{ plant: "P1" }],
-      responseText: "待确认"
-    } as WorkbenchOutcome));
+    setReadAgentRunnerForTests(async (input) => {
+      if (input.mode === "resolve-read") return batchReadOutcome(input.turnId!);
+      throw new Error(`unexpected batch runner mode ${input.mode}`);
+    });
     const { runId } = await createAgentRun({ query: "批量查询", principal: PLACEHOLDER_PRINCIPAL });
     const attacker: TrustedPrincipal = {
       principalId: "attacker-005",
@@ -723,7 +915,7 @@ describe("agent-runtime-adapter durable integration", () => {
 
   it("createAgentRun returns runId before runner produces non-started events", async () => {
     let runnerResolved = false;
-    setAgentRunnerForTests(async () => {
+    setInitialReadForTests(async () => {
       await new Promise((resolve) => setTimeout(resolve, 100));
       runnerResolved = true;
       return { status: "success", responseText: "完成", callPlan: { capabilityId: "cap-test", kind: "Function" } } as WorkbenchOutcome;

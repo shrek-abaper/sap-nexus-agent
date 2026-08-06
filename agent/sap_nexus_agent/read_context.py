@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
+from datetime import datetime
+import re
 from types import MappingProxyType
 from typing import Literal
 
@@ -24,6 +26,9 @@ _SLOT_PROVENANCES = frozenset(
 _PENDING_KINDS = frozenset(
     {"SLOT_CLARIFICATION", "CAPABILITY_CHOICE", "BATCH_CONFIRMATION", "PLANNER_CONFIRMATION"}
 )
+_UTC_ISO_TIMESTAMP = re.compile(
+    r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?Z$"
+)
 
 
 def _non_empty_string(value: object, field: str) -> str:
@@ -36,6 +41,17 @@ def _payload_mapping(payload: object, name: str) -> Mapping[str, object]:
     if not isinstance(payload, Mapping):
         raise ValueError(f"{name} must be a mapping")
     return payload
+
+
+def _utc_iso_timestamp(value: object, field: str) -> str:
+    text = _non_empty_string(value, field)
+    if not _UTC_ISO_TIMESTAMP.fullmatch(text):
+        raise ValueError(f"{field} must be a UTC ISO timestamp")
+    try:
+        datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ValueError(f"{field} must be a UTC ISO timestamp") from exc
+    return text
 
 
 @dataclass(frozen=True)
@@ -259,7 +275,7 @@ class PendingInteraction:
             raise ValueError(f"PendingInteraction.kind is invalid: {self.kind!r}")
         _non_empty_string(self.frame_id, "PendingInteraction.frame_id")
         _non_empty_string(self.registry_snapshot_id, "PendingInteraction.registry_snapshot_id")
-        _non_empty_string(self.expires_at, "PendingInteraction.expires_at")
+        _utc_iso_timestamp(self.expires_at, "PendingInteraction.expires_at")
         if not isinstance(self.state_version, int) or isinstance(self.state_version, bool) or self.state_version < 0:
             raise ValueError("PendingInteraction.state_version must be a non-negative integer")
         fields = _string_tuple(self.expected_fields, "PendingInteraction.expected_fields")
@@ -276,6 +292,10 @@ class PendingInteraction:
         if not all(isinstance(goal, PendingPlannerGoal) for goal in goals):
             raise ValueError("PendingInteraction.planner_goals must contain PendingPlannerGoal")
         object.__setattr__(self, "planner_goals", goals)
+        if len({goal.capability_id for goal in goals}) != len(goals):
+            raise ValueError(
+                "PendingInteraction.planner_goals must not contain duplicate capabilities"
+            )
 
         if self.kind == "SLOT_CLARIFICATION":
             if not fields or capability_ids or self.batch_ref or self.planner_ref or goals:
