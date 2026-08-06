@@ -23,16 +23,25 @@ class ReadCapabilityCandidates:
     capability_ids: tuple[str, ...]
     snapshot_id: str
     purpose: CandidatePurpose
+    goal_count: int | None = None
 
     def __post_init__(self) -> None:
         ids = tuple(self.capability_ids)
-        if not ids or not all(isinstance(capability_id, str) and capability_id for capability_id in ids):
-            raise ValueError("ReadCapabilityCandidates requires non-empty capability IDs")
+        if not all(isinstance(capability_id, str) and capability_id for capability_id in ids):
+            raise ValueError("ReadCapabilityCandidates capability IDs are invalid")
         if not isinstance(self.snapshot_id, str) or not self.snapshot_id:
             raise ValueError("ReadCapabilityCandidates requires a snapshot ID")
         if self.purpose not in {"AMBIGUITY", "MULTI_GOAL"}:
             raise ValueError("ReadCapabilityCandidates purpose is invalid")
+        goal_count = self.goal_count if self.goal_count is not None else len(ids)
+        if not isinstance(goal_count, int) or goal_count < 1:
+            raise ValueError("ReadCapabilityCandidates goal_count is invalid")
+        if self.purpose == "AMBIGUITY" and not ids:
+            raise ValueError("AMBIGUITY candidates require capability IDs")
+        if self.purpose == "MULTI_GOAL" and goal_count < 2:
+            raise ValueError("MULTI_GOAL candidates require multiple goals")
         object.__setattr__(self, "capability_ids", ids)
+        object.__setattr__(self, "goal_count", goal_count)
 
 
 @dataclass(frozen=True)
@@ -93,14 +102,24 @@ def decide_read_context(
     visible: VisibleCapabilitySet,
     current_snapshot_id: str,
     capability_candidates: ReadCapabilityCandidates | None = None,
+    execution_visible_capability_ids: frozenset[str] | None = None,
 ) -> ContextDecisionResult:
     """Map one reduced frame to a closed-set READ decision without side effects."""
     report = _resolution_report(resolution)
     if not current_snapshot_id or visible.snapshot_id != current_snapshot_id:
         return _reject(report, "CONTEXT_SNAPSHOT_DRIFT", "当前 Registry 快照不匹配。")
+    executable_ids = (
+        execution_visible_capability_ids
+        if execution_visible_capability_ids is not None
+        else frozenset(
+            card.capability_id
+            for card in visible.cards
+            if card.visibility == "VISIBLE_EXECUTION"
+        )
+    )
 
     candidate_decision = _candidate_decision(
-        capability_candidates, visible, current_snapshot_id, report
+        capability_candidates, visible, current_snapshot_id, report, executable_ids
     )
     if candidate_decision is not None:
         return candidate_decision
@@ -115,7 +134,7 @@ def decide_read_context(
     if len(cards) != 1:
         return _reject(report, "VISIBILITY_DENIED", "上下文能力不在当前可见闭集内。")
     card = cards[0]
-    if not _is_current_executable_read(card, current_snapshot_id):
+    if not _is_current_executable_read(card, current_snapshot_id, executable_ids):
         return _reject(
             report,
             "READ_CONTEXT_VISIBILITY_DENIED",
@@ -166,19 +185,23 @@ def _candidate_decision(
     visible: VisibleCapabilitySet,
     current_snapshot_id: str,
     report: Mapping[str, object],
+    executable_ids: frozenset[str],
 ) -> ContextDecisionResult | None:
     if candidates is None:
         return None
     if candidates.snapshot_id != current_snapshot_id:
         return _reject(report, "CONTEXT_SNAPSHOT_DRIFT", "候选能力不属于当前 Registry 快照。")
-    if len(set(candidates.capability_ids)) != len(candidates.capability_ids):
+    if (
+        candidates.purpose == "AMBIGUITY"
+        and len(set(candidates.capability_ids)) != len(candidates.capability_ids)
+    ):
         return _reject(report, "CONTEXT_CANDIDATE_DUPLICATE", "候选能力不能重复。")
 
     cards = []
-    for capability_id in candidates.capability_ids:
+    for capability_id in dict.fromkeys(candidates.capability_ids):
         matching = [card for card in visible.cards if card.capability_id == capability_id]
         if len(matching) != 1 or not _is_current_executable_read(
-            matching[0], current_snapshot_id
+            matching[0], current_snapshot_id, executable_ids
         ):
             return _reject(
                 report,
@@ -188,8 +211,6 @@ def _candidate_decision(
         cards.append(matching[0])
 
     if candidates.purpose == "MULTI_GOAL":
-        if len(cards) < 2:
-            return _reject(report, "CONTEXT_MULTI_GOAL_INVALID", "多目标至少需要两个 READ capability。")
         return _escalate(report)
     if len(cards) > 1:
         return ContextDecisionResult(
@@ -207,10 +228,12 @@ def _candidate_decision(
     return None
 
 
-def _is_current_executable_read(card, snapshot_id: str) -> bool:
+def _is_current_executable_read(
+    card, snapshot_id: str, executable_ids: frozenset[str]
+) -> bool:
     return (
         card.registry_snapshot_id == snapshot_id
-        and card.visibility == "VISIBLE_EXECUTION"
+        and card.capability_id in executable_ids
         and card.governance.side_effect == "none"
         and not card.governance.requires_approval
         and card.governance.data_classification == "internal"

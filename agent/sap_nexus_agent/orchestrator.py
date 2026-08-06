@@ -272,16 +272,10 @@ def run_query(
         snapshot_id=lease.snapshot_id,
         principal_id=effective_principal.principal_id,
     )
-    # Shadow uses the execution view only. The legacy selector keeps its
-    # existing dry-run visibility projection and remains authoritative.
-    shadow_visible_capability_set = VisibleCapabilitySet(
-        cards=tuple(
-            card
-            for card in filter_visible(all_cards, for_execution=True)
-            if card.visibility == "VISIBLE_EXECUTION"
-        ),
-        snapshot_id=lease.snapshot_id,
-        principal_id=effective_principal.principal_id,
+    # Bind shadow eligibility to this snapshot's Registry and binding catalog.
+    # Legacy dry-run card labels remain unchanged and authoritative for legacy.
+    shadow_execution_capability_ids = _execution_visible_capability_ids(
+        all_cards, sources
     )
 
     # Runbook 14 bridge: if the adapter returned an IntentEnvelope, dispatch
@@ -305,7 +299,8 @@ def run_query(
         decision=decision,
         envelope=envelope,
         context=context,
-        visible=shadow_visible_capability_set,
+        visible=visible_capability_set,
+        execution_visible_capability_ids=shadow_execution_capability_ids,
         snapshot_id=lease.snapshot_id,
         sources=sources,
     )
@@ -842,6 +837,7 @@ def _context_shadow(
     envelope: "IntentEnvelope | None",
     context: "ConversationContext | None",
     visible: VisibleCapabilitySet,
+    execution_visible_capability_ids: frozenset[str],
     snapshot_id: str,
     sources: SemanticSourceDocuments,
 ) -> "ContextShadow | None":
@@ -860,12 +856,15 @@ def _context_shadow(
     )
     if capability_candidates is None:
         return None
-    if len(capability_candidates.capability_ids) > 1:
+    if capability_candidates.purpose == "MULTI_GOAL" or len(
+        capability_candidates.capability_ids
+    ) > 1:
         frame_decision = decide_read_context(
             None,
             visible=visible,
             current_snapshot_id=snapshot_id,
             capability_candidates=capability_candidates,
+            execution_visible_capability_ids=execution_visible_capability_ids,
         )
         return ContextShadow(
             legacy_decision=decision.decision_type,
@@ -883,6 +882,7 @@ def _context_shadow(
     descriptor = _current_read_descriptor(
         capability_id=capability_id,
         visible=visible,
+        execution_visible_capability_ids=execution_visible_capability_ids,
         snapshot_id=snapshot_id,
         sources=sources,
     )
@@ -914,6 +914,7 @@ def _context_shadow(
         visible=visible,
         current_snapshot_id=snapshot_id,
         capability_candidates=capability_candidates,
+        execution_visible_capability_ids=execution_visible_capability_ids,
     )
     legacy_parameters = decision.parameters or {}
     frame_parameters = frame_decision.call_plan_parameters or {}
@@ -944,12 +945,11 @@ def _shadow_capability_candidates(
         capability_ids = tuple(
             goal.capability_hint for goal in envelope.goals if goal.capability_hint
         )
-        if not capability_ids:
-            return None
         return ReadCapabilityCandidates(
             capability_ids=capability_ids,
             snapshot_id=snapshot_id,
             purpose="MULTI_GOAL",
+            goal_count=len(envelope.goals),
         )
 
     if len(envelope.goals) != 1:
@@ -977,6 +977,7 @@ def _current_read_descriptor(
     *,
     capability_id: str,
     visible: VisibleCapabilitySet,
+    execution_visible_capability_ids: frozenset[str],
     snapshot_id: str,
     sources: SemanticSourceDocuments,
 ):
@@ -987,7 +988,7 @@ def _current_read_descriptor(
     card = cards[0]
     if (
         card.registry_snapshot_id != snapshot_id
-        or card.visibility != "VISIBLE_EXECUTION"
+        or card.capability_id not in execution_visible_capability_ids
         or card.governance.side_effect != "none"
         or card.governance.requires_approval
         or card.governance.data_classification != "internal"
@@ -1043,6 +1044,48 @@ def _current_read_descriptor(
         examples=(),
         side_effect=card.governance.side_effect,
     )
+
+
+def _execution_visible_capability_ids(
+    cards, sources: SemanticSourceDocuments
+) -> frozenset[str]:
+    """Project executable READ IDs from the current Registry and binding catalog."""
+    from sap_nexus_agent.visibility import filter_visible
+
+    raw_capabilities = {
+        capability.get("capabilityId"): capability
+        for capability in sources.capabilities.get("capabilities", ())
+        if isinstance(capability, Mapping)
+        and isinstance(capability.get("capabilityId"), str)
+    }
+    bindings = {
+        binding.get("bindingId"): binding
+        for binding in sources.executor_bindings.get("bindings", ())
+        if isinstance(binding, Mapping)
+        and isinstance(binding.get("bindingId"), str)
+    }
+    eligible_ids: set[str] = set()
+    for card in filter_visible(cards, for_execution=True):
+        if card.governance.requires_approval:
+            continue
+        capability = raw_capabilities.get(card.capability_id)
+        if not isinstance(capability, Mapping):
+            continue
+        executor_binding = capability.get("executorBinding")
+        if not isinstance(executor_binding, Mapping):
+            continue
+        binding_id = executor_binding.get("bindingId")
+        binding = bindings.get(binding_id)
+        if (
+            not isinstance(binding_id, str)
+            or not isinstance(binding, Mapping)
+            or executor_binding.get("type") != binding.get("type")
+        ):
+            continue
+        constraints = binding.get("constraints")
+        if isinstance(constraints, Mapping) and constraints.get("sideEffect") == "none":
+            eligible_ids.add(card.capability_id)
+    return frozenset(eligible_ids)
 
 
 def _capability_version(sources: SemanticSourceDocuments, capability_id: str) -> str:
