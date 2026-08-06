@@ -36,6 +36,7 @@ describe("durable conversation protocol", () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     setAgentRunnerForTests(null);
     setDurableStoresForTests(
       new JsonlRunStore(mkdtempSync(path.join(tmpdir(), "protocol-teardown-run-"))),
@@ -122,6 +123,125 @@ describe("durable conversation protocol", () => {
     expect(runner).not.toHaveBeenCalled();
   });
 
+  it("fails before runner eligibility when the fenced lease was taken over", async () => {
+    const now = Date.now();
+    const runner = vi.fn(async () => ({ status: "success" } as WorkbenchOutcome));
+    setAgentRunnerForTests(runner);
+    const compareAndSwap = conversationStore.compareAndSwap.bind(conversationStore);
+    let takeover: Awaited<ReturnType<JsonlConversationStore["claim"]>> | undefined;
+    vi.spyOn(conversationStore, "compareAndSwap").mockImplementation(async (...args) => {
+      const saved = await compareAndSwap(...args);
+      const clock = vi.spyOn(Date, "now").mockReturnValue(now + 60_001);
+      takeover = await new JsonlConversationStore(dir).claim("c-fenced-before-runner", "new-owner", 60_000);
+      clock.mockRestore();
+      return saved;
+    });
+
+    const { runId } = await createAgentRun({
+      query: "查询库存",
+      conversationId: "c-fenced-before-runner",
+      turnId: "turn-fenced-before-runner",
+      principal: PLACEHOLDER_PRINCIPAL,
+    });
+    await waitForTerminal(runId);
+
+    const events = await getAgentRunEvents(runId, PLACEHOLDER_PRINCIPAL);
+    expect(takeover).toMatchObject({ status: "force-claimed", previousHolder: expect.any(String) });
+    expect(events.at(-1)).toMatchObject({
+      type: "run_failed",
+      error: { errorType: "CONVERSATION_BUSY" },
+    });
+    expect(runner).not.toHaveBeenCalled();
+    expect(await new JsonlConversationStore(dir).claim(
+      "c-fenced-before-runner",
+      "third-owner",
+      60_000,
+    )).toMatchObject({ status: "rejected", holder: "new-owner" });
+  });
+
+  it("prevents a stale runner from persisting after lease takeover", async () => {
+    const now = Date.now();
+    let finish: (() => void) | undefined;
+    let started: (() => void) | undefined;
+    const runnerStarted = new Promise<void>((resolve) => { started = resolve; });
+    const runner = vi.fn(async () => {
+      started?.();
+      await new Promise<void>((resolve) => { finish = resolve; });
+      return { status: "success", responseText: "stale result" } as WorkbenchOutcome;
+    });
+    setAgentRunnerForTests(runner);
+    const { runId } = await createAgentRun({
+      query: "查询库存",
+      conversationId: "c-fenced-result",
+      turnId: "turn-fenced-result",
+      principal: PLACEHOLDER_PRINCIPAL,
+    });
+    await runnerStarted;
+    const clock = vi.spyOn(Date, "now").mockReturnValue(now + 120_001);
+    const takeover = await new JsonlConversationStore(dir).claim("c-fenced-result", "new-owner", 60_000);
+    clock.mockRestore();
+    finish?.();
+    await waitForTerminal(runId);
+
+    const session = await new JsonlConversationStore(dir).load(
+      "c-fenced-result",
+      PLACEHOLDER_PRINCIPAL.principalId,
+    );
+    const events = await getAgentRunEvents(runId, PLACEHOLDER_PRINCIPAL);
+    expect(takeover).toMatchObject({ status: "force-claimed" });
+    expect(session).toMatchObject({ stateVersion: 1, history: [{ role: "user", content: "查询库存" }] });
+    expect(events.at(-1)).toMatchObject({
+      type: "run_failed",
+      error: { errorType: "CONVERSATION_BUSY" },
+    });
+    expect(await new JsonlConversationStore(dir).claim("c-fenced-result", "third-owner", 60_000))
+      .toMatchObject({ status: "rejected", holder: "new-owner" });
+  });
+
+  it("renews the conversation lease while the runner is blocked and stops the heartbeat in finally", async () => {
+    vi.useFakeTimers();
+    let finish: (() => void) | undefined;
+    let renewCalls = 0;
+    const heartbeatStore = new Proxy(conversationStore, {
+      get(target, property) {
+        if (property === "renew") {
+          return async (...args: unknown[]) => {
+            renewCalls += 1;
+            const renew = Reflect.get(target, property) as ((...values: unknown[]) => unknown) | undefined;
+            return renew?.apply(target, args);
+          };
+        }
+        const value = Reflect.get(target, property);
+        return typeof value === "function" ? value.bind(target) : value;
+      },
+    });
+    setDurableStoresForTests(runStore, heartbeatStore);
+    setAgentRunnerForTests(async () => {
+      await new Promise<void>((resolve) => { finish = resolve; });
+      return { status: "clarification", responseText: "ok" } as WorkbenchOutcome;
+    });
+
+    const started = createAgentRun({
+      query: "查询库存",
+      conversationId: "c-heartbeat",
+      turnId: "turn-heartbeat",
+      principal: PLACEHOLDER_PRINCIPAL,
+    });
+    await vi.advanceTimersByTimeAsync(0);
+    const { runId } = await started;
+    await vi.advanceTimersByTimeAsync(20_000);
+    const callsWhileBlocked = renewCalls;
+
+    finish?.();
+    await vi.advanceTimersByTimeAsync(0);
+    const record = await runStore.load(runId);
+    expect(record?.events.at(-1)?.type).toBe("run_completed");
+    const callsAfterCompletion = renewCalls;
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(callsWhileBlocked).toBeGreaterThan(1);
+    expect(renewCalls).toBe(callsAfterCompletion);
+  });
+
   it("returns the prior run for a completed duplicate turn without re-execution", async () => {
     const runner = vi.fn(async () => ({ status: "success", responseText: "ok" } as WorkbenchOutcome));
     setAgentRunnerForTests(runner);
@@ -138,6 +258,41 @@ describe("durable conversation protocol", () => {
 
     expect(duplicate).toEqual({ runId: first.runId, turnId: "turn-stable" });
     expect(runner).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns an older completed turn after an intervening turn and restart without re-execution", async () => {
+    const runner = vi.fn(async ({ query }) => ({
+      status: "success",
+      responseText: `result:${query}`,
+    } as WorkbenchOutcome));
+    setAgentRunnerForTests(runner);
+    const first = await createAgentRun({
+      query: "first query",
+      conversationId: "c-historical-completed",
+      turnId: "turn-first",
+      principal: PLACEHOLDER_PRINCIPAL,
+    });
+    await waitForTerminal(first.runId);
+    const second = await createAgentRun({
+      query: "second query",
+      conversationId: "c-historical-completed",
+      turnId: "turn-second",
+      principal: PLACEHOLDER_PRINCIPAL,
+    });
+    await waitForTerminal(second.runId);
+
+    runStore = new JsonlRunStore(dir);
+    conversationStore = new JsonlConversationStore(dir);
+    setDurableStoresForTests(runStore, conversationStore);
+    const retried = await createAgentRun({
+      query: "first query",
+      conversationId: "c-historical-completed",
+      turnId: "turn-first",
+      principal: PLACEHOLDER_PRINCIPAL,
+    });
+
+    expect(retried).toEqual({ runId: first.runId, turnId: "turn-first" });
+    expect(runner).toHaveBeenCalledTimes(2);
   });
 
   it("fails closed for an in-flight duplicate without a second runner call", async () => {
@@ -197,6 +352,52 @@ describe("durable conversation protocol", () => {
       principal: PLACEHOLDER_PRINCIPAL,
     })).rejects.toMatchObject({ code: "CONVERSATION_TURN_IN_FLIGHT" });
     expect(runner).not.toHaveBeenCalled();
+  });
+
+  it("keeps an older crashed turn non-replayable after an intervening turn and restart", async () => {
+    await runStore.save("run-crashed-older", {
+      runId: "run-crashed-older",
+      query: "older query",
+      principalId: PLACEHOLDER_PRINCIPAL.principalId,
+      events: [{
+        runId: "run-crashed-older",
+        sequence: 1,
+        timestamp: new Date().toISOString(),
+        type: "run_started",
+        state: "running",
+      }],
+    });
+    await conversationStore.compareAndSwap("c-historical-crashed", 0, {
+      schemaVersion: 2,
+      stateVersion: 1,
+      principalId: PLACEHOLDER_PRINCIPAL.principalId,
+      activeFrame: null,
+      recentFrames: [],
+      pendingInteraction: null,
+      history: [{ role: "user", content: "older query" }],
+      lastAppliedTurnId: "turn-crashed-older",
+      lastRunId: "run-crashed-older",
+    });
+    const runner = vi.fn(async () => ({ status: "success", responseText: "new result" } as WorkbenchOutcome));
+    setAgentRunnerForTests(runner);
+    const intervening = await createAgentRun({
+      query: "intervening query",
+      conversationId: "c-historical-crashed",
+      turnId: "turn-intervening",
+      principal: PLACEHOLDER_PRINCIPAL,
+    });
+    await waitForTerminal(intervening.runId);
+
+    runStore = new JsonlRunStore(dir);
+    conversationStore = new JsonlConversationStore(dir);
+    setDurableStoresForTests(runStore, conversationStore);
+    await expect(createAgentRun({
+      query: "older query",
+      conversationId: "c-historical-crashed",
+      turnId: "turn-crashed-older",
+      principal: PLACEHOLDER_PRINCIPAL,
+    })).rejects.toMatchObject({ code: "CONVERSATION_TURN_IN_FLIGHT" });
+    expect(runner).toHaveBeenCalledTimes(1);
   });
 
   it("does not promote a persisted READ frame into WRITE approval authority", async () => {

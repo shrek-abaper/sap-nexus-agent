@@ -86,6 +86,8 @@ type AsyncPush = (event: Omit<AgentRunEvent, "runId" | "sequence" | "timestamp">
 const workbenchDataDir = process.env.WORKBENCH_DATA_DIR ?? path.join(process.cwd(), ".workbench-data");
 const durableDataDir = path.join(workbenchDataDir, "durable");
 const workerId = process.env.WORKER_ID ?? `worker-${process.pid}`;
+const CONVERSATION_LEASE_TTL_MS = 60_000;
+const CONVERSATION_LEASE_HEARTBEAT_MS = 20_000;
 
 let runStore: DurableRunStore = new JsonlRunStore(durableDataDir, workerId);
 let conversationStore: DurableConversationStore = new JsonlConversationStore(durableDataDir);
@@ -170,7 +172,11 @@ export async function createAgentRun(input: CreateAgentRunInput): Promise<Create
 
   const conversationId = input.conversationId;
   const conversationLeaseOwner = `${workerId}:conversation:${crypto.randomUUID()}`;
-  const lease = await conversationStore.claim(conversationId, conversationLeaseOwner, 60_000);
+  const lease = await conversationStore.claim(
+    conversationId,
+    conversationLeaseOwner,
+    CONVERSATION_LEASE_TTL_MS,
+  );
   if (lease.status === "rejected") {
     throw new ConversationProtocolError(
       "CONVERSATION_BUSY",
@@ -180,9 +186,13 @@ export async function createAgentRun(input: CreateAgentRunInput): Promise<Create
 
   let backgroundOwnsLease = false;
   try {
-    const session = await getSession(conversationId, input.principal.principalId);
-    if (session.lastAppliedTurnId === turnId && session.lastRunId) {
-      const prior = await runStore.load(session.lastRunId);
+    const priorTurn = await conversationStore.lookupTurn(
+      conversationId,
+      input.principal.principalId,
+      turnId,
+    );
+    if (priorTurn) {
+      const prior = await runStore.load(priorTurn.runId);
       if (prior && isTerminalRun(prior)) {
         return { runId: prior.runId, turnId };
       }
@@ -191,6 +201,7 @@ export async function createAgentRun(input: CreateAgentRunInput): Promise<Create
         "The turn was persisted but has no terminal result; automatic READ replay is disabled",
       );
     }
+    const session = await getSession(conversationId, input.principal.principalId);
 
     const lastRunId = session.lastRunId;
     if (lastRunId) {
@@ -212,7 +223,14 @@ export async function createAgentRun(input: CreateAgentRunInput): Promise<Create
       conversationId,
       session.stateVersion,
       nextSession,
+      { workerId: conversationLeaseOwner, fenceToken: lease.fenceToken },
     );
+    if (saved.status === "lease-lost") {
+      throw new ConversationProtocolError(
+        "CONVERSATION_BUSY",
+        `Conversation lease ownership was lost${saved.holder ? ` to ${saved.holder}` : ""}`,
+      );
+    }
     if (saved.status === "conflict") {
       throw new ConversationProtocolError(
         "CONTEXT_VERSION_CONFLICT",
@@ -234,13 +252,14 @@ export async function createAgentRun(input: CreateAgentRunInput): Promise<Create
       turnId,
       nextSession.stateVersion,
       conversationLeaseOwner,
+      lease.fenceToken,
       context,
     );
 
     return { runId, turnId };
   } finally {
     if (!backgroundOwnsLease) {
-      await conversationStore.release(conversationId, conversationLeaseOwner);
+      await conversationStore.release(conversationId, conversationLeaseOwner, lease.fenceToken);
     }
   }
 }
@@ -280,9 +299,15 @@ async function executeRunnerInBackground(
   turnId?: string,
   expectedSessionVersion?: number,
   conversationLeaseOwner?: string,
+  conversationFenceToken?: string,
   context?: ConversationContext,
 ): Promise<void> {
+  let heartbeat: ReturnType<typeof startConversationLeaseHeartbeat> | null = null;
   try {
+    heartbeat = conversationId && conversationLeaseOwner && conversationFenceToken
+      ? startConversationLeaseHeartbeat(conversationId, conversationLeaseOwner, conversationFenceToken)
+      : null;
+    if (heartbeat) await heartbeat.assertOwned();
     const runner = runnerForTests ?? runLocalPythonAgent;
     const outcome = await runner({ query, gatewayUrl: gatewayUrl(), intentMode: intentMode(), context, principal });
     const handoff = parseCompositionHandoff(outcome);
@@ -318,6 +343,13 @@ async function executeRunnerInBackground(
     }
 
     if (conversationId && turnId && expectedSessionVersion !== undefined) {
+      if (!heartbeat) {
+        throw new ConversationProtocolError(
+          "CONVERSATION_BUSY",
+          "Conversation lease binding is missing before result persistence",
+        );
+      }
+      await heartbeat.assertOwned();
       const session = await getSession(conversationId, principalId);
       if (session.stateVersion !== expectedSessionVersion ||
           session.lastAppliedTurnId !== turnId || session.lastRunId !== runId) {
@@ -339,7 +371,17 @@ async function executeRunnerInBackground(
         conversationId,
         session.stateVersion,
         nextSession,
+        {
+          workerId: conversationLeaseOwner!,
+          fenceToken: conversationFenceToken!,
+        },
       );
+      if (saved.status === "lease-lost") {
+        throw new ConversationProtocolError(
+          "CONVERSATION_BUSY",
+          `Conversation lease ownership was lost${saved.holder ? ` to ${saved.holder}` : ""}`,
+        );
+      }
       if (saved.status === "conflict") {
         throw new ConversationProtocolError(
           "CONTEXT_VERSION_CONFLICT",
@@ -365,11 +407,65 @@ async function executeRunnerInBackground(
       await runStore.appendEvent(runId, event);
     }
   } finally {
+    heartbeat?.stop();
     await runStore.release(runId, workerId);
-    if (conversationId && conversationLeaseOwner) {
-      await conversationStore.release(conversationId, conversationLeaseOwner);
+    if (conversationId && conversationLeaseOwner && conversationFenceToken) {
+      await conversationStore.release(
+        conversationId,
+        conversationLeaseOwner,
+        conversationFenceToken,
+      );
     }
   }
+}
+
+function startConversationLeaseHeartbeat(
+  conversationId: string,
+  owner: string,
+  fenceToken: string,
+): { assertOwned: () => Promise<void>; stop: () => void } {
+  let stopped = false;
+  let lost: Error | null = null;
+  let renewal: Promise<void> | null = null;
+
+  const renew = async (): Promise<void> => {
+    if (stopped || lost) return;
+    const outcome = await conversationStore.renew(
+      conversationId,
+      owner,
+      fenceToken,
+      CONVERSATION_LEASE_TTL_MS,
+    );
+    if (outcome.status === "lost") {
+      lost = new ConversationProtocolError(
+        "CONVERSATION_BUSY",
+        `Conversation lease ownership was lost${outcome.holder ? ` to ${outcome.holder}` : ""}`,
+      );
+    }
+  };
+  const scheduleRenewal = () => {
+    if (renewal || stopped || lost) return;
+    renewal = renew()
+      .catch((error: unknown) => {
+        lost = error instanceof Error ? error : new Error(String(error));
+      })
+      .finally(() => { renewal = null; });
+  };
+  const timer = setInterval(scheduleRenewal, CONVERSATION_LEASE_HEARTBEAT_MS);
+  timer.unref?.();
+
+  return {
+    assertOwned: async () => {
+      if (renewal) await renewal;
+      if (lost) throw lost;
+      await renew();
+      if (lost) throw lost;
+    },
+    stop: () => {
+      stopped = true;
+      clearInterval(timer);
+    },
+  };
 }
 
 function isTerminalRun(record: AgentRunRecord): boolean {
@@ -934,7 +1030,11 @@ async function emitBatchEvents(
 function buildRuntimeFailureEventsTail(runId: string, baseSequence: number, timestamp: string, error: unknown): AgentRunEvent[] {
   const safeMessage = error instanceof Error ? error.message : "Agent runtime failed";
   return [{ runId, sequence: baseSequence + 1, timestamp, type: "run_failed", state: "failed",
-    error: { errorType: "AGENT_RUNTIME_ERROR", message: safeMessage, stage: "running" } }];
+    error: {
+      errorType: error instanceof ConversationProtocolError ? error.code : "AGENT_RUNTIME_ERROR",
+      message: safeMessage,
+      stage: "running",
+    } }];
 }
 
 function planActionRuntime(): PlanActionContinuation {

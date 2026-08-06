@@ -120,9 +120,26 @@ export type LeaseOutcome =
   | { status: "rejected"; holder: string; expiresAt: string }
   | { status: "force-claimed"; previousHolder: string };
 
+export type ConversationLeaseOutcome =
+  | { status: "claimed"; fenceToken: string; expiresAt: string }
+  | { status: "rejected"; holder: string; expiresAt: string }
+  | {
+      status: "force-claimed";
+      previousHolder: string;
+      fenceToken: string;
+      expiresAt: string;
+    };
+
+export type ConversationLeaseRenewal =
+  | { status: "owned"; expiresAt: string }
+  | { status: "lost"; holder?: string; expiresAt?: string };
+
 export type ConversationCasOutcome =
   | { status: "saved"; stateVersion: number }
-  | { status: "conflict"; actualVersion: number };
+  | { status: "conflict"; actualVersion: number }
+  | { status: "lease-lost"; holder?: string; expiresAt?: string };
+
+export type ConversationLeaseFence = { workerId: string; fenceToken: string };
 
 export type ConversationTurnLookup = { runId: string };
 
@@ -173,13 +190,20 @@ export interface DurableRunStore {
 
 export interface DurableConversationStore {
   load(conversationId: string, principalId: string): Promise<SessionStateV2 | null>;
-  claim(conversationId: string, workerId: string, ttlMs: number): Promise<LeaseOutcome>;
+  claim(conversationId: string, workerId: string, ttlMs: number): Promise<ConversationLeaseOutcome>;
   compareAndSwap(
     conversationId: string,
     expectedVersion: number,
     next: SessionStateV2,
+    leaseFence?: ConversationLeaseFence,
   ): Promise<ConversationCasOutcome>;
-  release(conversationId: string, workerId: string): Promise<void>;
+  renew(
+    conversationId: string,
+    workerId: string,
+    fenceToken: string,
+    ttlMs: number,
+  ): Promise<ConversationLeaseRenewal>;
+  release(conversationId: string, workerId: string, fenceToken: string): Promise<void>;
   lookupTurn(
     conversationId: string,
     principalId: string,

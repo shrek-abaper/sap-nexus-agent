@@ -13,11 +13,13 @@ import {
 import path from "node:path";
 import type {
   ConversationCasOutcome,
+  ConversationLeaseOutcome,
+  ConversationLeaseFence,
+  ConversationLeaseRenewal,
   ConversationStoreErrorCode,
   ConversationTurnLookup,
   DurableConversationStore,
   LastContext,
-  LeaseOutcome,
   PendingInteraction,
   ReadContextFrame,
   SessionState,
@@ -27,8 +29,15 @@ import type {
 } from "./types";
 
 const LEGACY_PRINCIPAL = "local-user-0001";
+const TURN_LEDGER_RETENTION_LIMIT = 64;
 const conversationLocks = new Map<string, Promise<void>>();
 type LoadedSessionStateV2 = SessionStateV2 & { readonly lastContext?: LastContext | null };
+type ConversationTurnLedger = {
+  schemaVersion: 1;
+  principalId: string;
+  retentionLimit: number;
+  entries: Array<{ turnId: string; runId: string }>;
+};
 
 export class ConversationStoreError extends Error {
   constructor(
@@ -43,12 +52,15 @@ export class ConversationStoreError extends Error {
 export class JsonlConversationStore implements DurableConversationStore {
   private readonly sessionsDir: string;
   private readonly leasesDir: string;
+  private readonly turnLedgersDir: string;
 
   constructor(private readonly dataDir: string) {
     this.sessionsDir = path.join(dataDir, "sessions");
     this.leasesDir = path.join(dataDir, "conversation-leases");
+    this.turnLedgersDir = path.join(dataDir, "conversation-turn-ledgers");
     mkdirSync(this.sessionsDir, { recursive: true });
     mkdirSync(this.leasesDir, { recursive: true });
+    mkdirSync(this.turnLedgersDir, { recursive: true });
   }
 
   private file(conversationId: string): string {
@@ -57,6 +69,10 @@ export class JsonlConversationStore implements DurableConversationStore {
 
   private leaseFile(conversationId: string): string {
     return path.join(this.leasesDir, `${conversationId}.json`);
+  }
+
+  private turnLedgerFile(conversationId: string): string {
+    return path.join(this.turnLedgersDir, `${conversationId}.json`);
   }
 
   private lockKey(conversationId: string): string {
@@ -88,7 +104,11 @@ export class JsonlConversationStore implements DurableConversationStore {
       this.loadUnlocked(conversationId, principalId));
   }
 
-  async claim(conversationId: string, workerId: string, ttlMs: number): Promise<LeaseOutcome> {
+  async claim(
+    conversationId: string,
+    workerId: string,
+    ttlMs: number,
+  ): Promise<ConversationLeaseOutcome> {
     return withConversationLock(this.lockKey(conversationId), () => {
       if (!workerId || !Number.isFinite(ttlMs) || ttlMs <= 0) {
         throw new ConversationStoreError(
@@ -105,12 +125,31 @@ export class JsonlConversationStore implements DurableConversationStore {
           expiresAt: new Date(existing.expiresAt).toISOString(),
         };
       }
-      if (existing && existing.expiresAt <= now && existing.workerId !== workerId) {
-        this.writeLease(conversationId, workerId, ttlMs);
-        return { status: "force-claimed", previousHolder: existing.workerId };
+      const fenceToken = crypto.randomUUID();
+      const expiresAt = now + ttlMs;
+      if (existing && existing.expiresAt <= now) {
+        this.writeLease(conversationId, workerId, fenceToken, expiresAt);
+        return {
+          status: "force-claimed",
+          previousHolder: existing.workerId,
+          fenceToken,
+          expiresAt: new Date(expiresAt).toISOString(),
+        };
       }
-      this.writeLease(conversationId, workerId, ttlMs);
-      return { status: "claimed" };
+      if (existing) {
+        this.writeLease(conversationId, workerId, existing.fenceToken, expiresAt);
+        return {
+          status: "claimed",
+          fenceToken: existing.fenceToken,
+          expiresAt: new Date(expiresAt).toISOString(),
+        };
+      }
+      this.writeLease(conversationId, workerId, fenceToken, expiresAt);
+      return {
+        status: "claimed",
+        fenceToken,
+        expiresAt: new Date(expiresAt).toISOString(),
+      };
     });
   }
 
@@ -118,6 +157,7 @@ export class JsonlConversationStore implements DurableConversationStore {
     conversationId: string,
     expectedVersion: number,
     next: SessionStateV2,
+    leaseFence?: ConversationLeaseFence,
   ): Promise<ConversationCasOutcome> {
     return withConversationLock(this.lockKey(conversationId), () => {
       if (!Number.isSafeInteger(expectedVersion) || expectedVersion < 0) {
@@ -134,6 +174,20 @@ export class JsonlConversationStore implements DurableConversationStore {
         );
       }
 
+      if (leaseFence) {
+        const lease = this.readLease(conversationId);
+        if (!lease || lease.workerId !== leaseFence.workerId ||
+            lease.fenceToken !== leaseFence.fenceToken || lease.expiresAt <= Date.now()) {
+          return {
+            status: "lease-lost",
+            ...(lease ? {
+              holder: lease.workerId,
+              expiresAt: new Date(lease.expiresAt).toISOString(),
+            } : {}),
+          };
+        }
+      }
+
       const existing = this.loadUnlocked(conversationId, validatedNext.principalId);
       const actualVersion = existing?.stateVersion ?? 0;
       if (actualVersion !== expectedVersion) {
@@ -141,14 +195,46 @@ export class JsonlConversationStore implements DurableConversationStore {
       }
 
       this.writeAtomically(this.file(conversationId), validatedNext);
+      this.recordTurn(conversationId, validatedNext);
       return { status: "saved", stateVersion: validatedNext.stateVersion };
     });
   }
 
-  async release(conversationId: string, workerId: string): Promise<void> {
+  async renew(
+    conversationId: string,
+    workerId: string,
+    fenceToken: string,
+    ttlMs: number,
+  ): Promise<ConversationLeaseRenewal> {
+    return withConversationLock(this.lockKey(conversationId), () => {
+      if (!workerId || !fenceToken || !Number.isFinite(ttlMs) || ttlMs <= 0) {
+        throw new ConversationStoreError(
+          "CONVERSATION_LEASE_INVALID",
+          "Conversation lease renewal requires an owner, fence token, and positive TTL",
+        );
+      }
+      const existing = this.readLease(conversationId);
+      const now = Date.now();
+      if (!existing || existing.workerId !== workerId || existing.fenceToken !== fenceToken ||
+          existing.expiresAt <= now) {
+        return {
+          status: "lost",
+          ...(existing ? {
+            holder: existing.workerId,
+            expiresAt: new Date(existing.expiresAt).toISOString(),
+          } : {}),
+        };
+      }
+      const expiresAt = now + ttlMs;
+      this.writeLease(conversationId, workerId, fenceToken, expiresAt);
+      return { status: "owned", expiresAt: new Date(expiresAt).toISOString() };
+    });
+  }
+
+  async release(conversationId: string, workerId: string, fenceToken: string): Promise<void> {
     await withConversationLock(this.lockKey(conversationId), () => {
       const existing = this.readLease(conversationId);
-      if (existing?.workerId === workerId) {
+      if (existing?.workerId === workerId && existing.fenceToken === fenceToken) {
         unlinkSync(this.leaseFile(conversationId));
       }
     });
@@ -159,15 +245,22 @@ export class JsonlConversationStore implements DurableConversationStore {
     principalId: string,
     turnId: string,
   ): Promise<ConversationTurnLookup | null> {
-    const session = await this.load(conversationId, principalId);
-    if (session?.lastAppliedTurnId !== turnId || !session.lastRunId) return null;
-    return { runId: session.lastRunId };
+    return withConversationLock(this.lockKey(conversationId), () => {
+      const session = this.loadUnlocked(conversationId, principalId);
+      if (!session) return null;
+      const ledger = this.readTurnLedger(conversationId, principalId);
+      const entry = ledger?.entries.find((candidate) => candidate.turnId === turnId);
+      if (entry) return { runId: entry.runId };
+      if (session.lastAppliedTurnId !== turnId || !session.lastRunId) return null;
+      return { runId: session.lastRunId };
+    });
   }
 
   async clear(conversationId: string): Promise<void> {
     await withConversationLock(this.lockKey(conversationId), () => {
       unlinkIfPresent(this.file(conversationId));
       unlinkIfPresent(this.leaseFile(conversationId));
+      unlinkIfPresent(this.turnLedgerFile(conversationId));
     });
   }
 
@@ -178,6 +271,9 @@ export class JsonlConversationStore implements DurableConversationStore {
     for (const entry of readdirSync(this.leasesDir)) {
       if (entry.endsWith(".json")) unlinkSync(path.join(this.leasesDir, entry));
     }
+    for (const entry of readdirSync(this.turnLedgersDir)) {
+      if (entry.endsWith(".json")) unlinkSync(path.join(this.turnLedgersDir, entry));
+    }
   }
 
   private loadUnlocked(conversationId: string, principalId: string): SessionStateV2 | null {
@@ -185,9 +281,7 @@ export class JsonlConversationStore implements DurableConversationStore {
     if (!existsSync(file)) return null;
     try {
       const payload = JSON.parse(readFileSync(file, "utf8")) as unknown;
-      const session = isSessionStateV2(payload)
-        ? validateSessionV2(payload)
-        : migrateLegacySession(payload, principalId);
+      const session = decodeSession(payload, principalId);
       if (session.principalId !== principalId) {
         throw new ConversationStoreError(
           "CONTEXT_PRINCIPAL_MISMATCH",
@@ -204,7 +298,9 @@ export class JsonlConversationStore implements DurableConversationStore {
     }
   }
 
-  private readLease(conversationId: string): { workerId: string; expiresAt: number } | null {
+  private readLease(
+    conversationId: string,
+  ): { workerId: string; fenceToken: string; expiresAt: number } | null {
     const file = this.leaseFile(conversationId);
     if (!existsSync(file)) return null;
     try {
@@ -212,6 +308,7 @@ export class JsonlConversationStore implements DurableConversationStore {
       const record = requireRecord(value, "conversation lease");
       return {
         workerId: requireString(record.workerId, "conversation lease workerId"),
+        fenceToken: requireString(record.fenceToken, "conversation lease fenceToken"),
         expiresAt: requireNonNegativeInteger(record.expiresAt, "conversation lease expiresAt"),
       };
     } catch (error) {
@@ -222,11 +319,76 @@ export class JsonlConversationStore implements DurableConversationStore {
     }
   }
 
-  private writeLease(conversationId: string, workerId: string, ttlMs: number): void {
+  private writeLease(
+    conversationId: string,
+    workerId: string,
+    fenceToken: string,
+    expiresAt: number,
+  ): void {
     this.writeAtomically(this.leaseFile(conversationId), {
       workerId,
-      expiresAt: Date.now() + ttlMs,
+      fenceToken,
+      expiresAt,
     });
+  }
+
+  private recordTurn(conversationId: string, session: SessionStateV2): void {
+    if (!session.lastAppliedTurnId || !session.lastRunId) return;
+    const current = this.readTurnLedger(conversationId, session.principalId);
+    const entries = [
+      ...(current?.entries ?? []).filter((entry) => entry.turnId !== session.lastAppliedTurnId),
+      { turnId: session.lastAppliedTurnId, runId: session.lastRunId },
+    ].slice(-TURN_LEDGER_RETENTION_LIMIT);
+    this.writeAtomically(this.turnLedgerFile(conversationId), {
+      schemaVersion: 1,
+      principalId: session.principalId,
+      retentionLimit: TURN_LEDGER_RETENTION_LIMIT,
+      entries,
+    } satisfies ConversationTurnLedger);
+  }
+
+  private readTurnLedger(
+    conversationId: string,
+    principalId: string,
+  ): ConversationTurnLedger | null {
+    const file = this.turnLedgerFile(conversationId);
+    if (!existsSync(file)) return null;
+    try {
+      const raw = requireRecord(JSON.parse(readFileSync(file, "utf8")), "conversation turn ledger");
+      if (raw.schemaVersion !== 1 || raw.retentionLimit !== TURN_LEDGER_RETENTION_LIMIT) {
+        throw new Error("conversation turn ledger version or retention limit is invalid");
+      }
+      const storedPrincipal = requireString(raw.principalId, "conversation turn ledger principalId");
+      if (storedPrincipal !== principalId) {
+        throw new ConversationStoreError(
+          "CONTEXT_PRINCIPAL_MISMATCH",
+          "Conversation turn ledger does not belong to the current principal",
+        );
+      }
+      const entries = requireArray(raw.entries, "conversation turn ledger entries").map((value) => {
+        const entry = requireRecord(value, "conversation turn ledger entry");
+        return {
+          turnId: requireString(entry.turnId, "conversation turn ledger turnId"),
+          runId: requireString(entry.runId, "conversation turn ledger runId"),
+        };
+      });
+      if (entries.length > TURN_LEDGER_RETENTION_LIMIT ||
+          new Set(entries.map((entry) => entry.turnId)).size !== entries.length) {
+        throw new Error("conversation turn ledger entries are invalid");
+      }
+      return {
+        schemaVersion: 1,
+        principalId: storedPrincipal,
+        retentionLimit: TURN_LEDGER_RETENTION_LIMIT,
+        entries,
+      };
+    } catch (error) {
+      if (error instanceof ConversationStoreError) throw error;
+      throw new ConversationStoreError(
+        "CONTEXT_DESERIALIZATION_FAILED",
+        `Conversation turn ledger could not be deserialized: ${errorMessage(error)}`,
+      );
+    }
   }
 
   private writeAtomically(file: string, value: unknown): void {
@@ -259,6 +421,26 @@ async function withConversationLock<T>(key: string, operation: () => T | Promise
 
 function migrateLegacySession(payload: unknown, principalId: string): SessionStateV2 {
   const legacy = requireRecord(payload, "legacy SessionState");
+  const allowedFields = new Set([
+    "schemaVersion",
+    "lastContext",
+    "lastRunId",
+    "history",
+    "principalId",
+  ]);
+  if (legacy.schemaVersion !== undefined && legacy.schemaVersion !== 1) {
+    throw new Error("legacy SessionState.schemaVersion must be 1 when present");
+  }
+  for (const required of ["lastContext", "lastRunId", "history"]) {
+    if (!Object.hasOwn(legacy, required)) {
+      throw new Error(`legacy SessionState.${required} is required`);
+    }
+  }
+  for (const field of Object.keys(legacy)) {
+    if (!allowedFields.has(field)) {
+      throw new Error(`legacy SessionState contains unsupported field ${field}`);
+    }
+  }
   const storedPrincipal = legacy.principalId === undefined
     ? LEGACY_PRINCIPAL
     : requireString(legacy.principalId, "legacy principalId");
@@ -285,6 +467,15 @@ function migrateLegacySession(payload: unknown, principalId: string): SessionSta
   // Keep old concrete-store readers compiling without serializing or trusting LastContext in v2.
   Object.defineProperty(migrated, "lastContext", { value: lastContext, enumerable: false });
   return migrated;
+}
+
+function decodeSession(payload: unknown, principalId: string): SessionStateV2 {
+  const raw = requireRecord(payload, "conversation session");
+  if (raw.schemaVersion === 2) return validateSessionV2(raw);
+  if (raw.schemaVersion !== undefined && raw.schemaVersion !== 1) {
+    throw new Error(`Unsupported conversation session schemaVersion ${String(raw.schemaVersion)}`);
+  }
+  return migrateLegacySession(raw, principalId);
 }
 
 function migrateLegacyFrame(context: LastContext): ReadContextFrame {

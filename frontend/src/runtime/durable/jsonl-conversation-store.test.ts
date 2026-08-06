@@ -30,6 +30,7 @@ describe("JsonlConversationStore", () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.restoreAllMocks();
     rmSync(dir, { recursive: true, force: true });
   });
@@ -99,7 +100,11 @@ describe("JsonlConversationStore", () => {
     vi.spyOn(Date, "now").mockReturnValue(now);
     const store = new JsonlConversationStore(dir);
 
-    expect(await store.claim("c1", "worker-a", 60_000)).toEqual({ status: "claimed" });
+    expect(await store.claim("c1", "worker-a", 60_000)).toEqual({
+      status: "claimed",
+      fenceToken: expect.any(String),
+      expiresAt: new Date(now + 60_000).toISOString(),
+    });
     expect(await store.claim("c1", "worker-b", 60_000)).toEqual({
       status: "rejected",
       holder: "worker-a",
@@ -118,17 +123,74 @@ describe("JsonlConversationStore", () => {
     expect(await store.claim("c1", "worker-b", 60_000)).toEqual({
       status: "force-claimed",
       previousHolder: "worker-a",
+      fenceToken: expect.any(String),
+      expiresAt: new Date(now + 60_011).toISOString(),
     });
   });
 
   it("only lets the lease owner release the conversation", async () => {
     const store = new JsonlConversationStore(dir);
-    await store.claim("c1", "worker-a", 60_000);
-    await store.release("c1", "worker-b");
+    const claimed = await store.claim("c1", "worker-a", 60_000) as unknown as { fenceToken: string };
+    await store.release("c1", "worker-b", claimed.fenceToken);
     expect(await store.claim("c1", "worker-c", 60_000)).toMatchObject({ status: "rejected" });
 
-    await store.release("c1", "worker-a");
-    expect(await store.claim("c1", "worker-c", 60_000)).toEqual({ status: "claimed" });
+    await store.release("c1", "worker-a", claimed.fenceToken);
+    expect(await store.claim("c1", "worker-c", 60_000)).toMatchObject({
+      status: "claimed",
+      fenceToken: expect.any(String),
+    });
+  });
+
+  it("renews only the current unexpired fenced lease", async () => {
+    const now = 1_800_000_000_000;
+    vi.spyOn(Date, "now").mockReturnValue(now);
+    const store = new JsonlConversationStore(dir);
+    const first = await store.claim("c1", "worker-a", 100) as unknown as { fenceToken: string };
+    const renew = store as unknown as {
+      renew: (conversationId: string, workerId: string, fenceToken: string, ttlMs: number) =>
+        Promise<{ status: string; expiresAt?: string }>;
+    };
+
+    vi.mocked(Date.now).mockReturnValue(now + 50);
+    await expect(renew.renew("c1", "worker-a", first.fenceToken, 100)).resolves.toEqual({
+      status: "owned",
+      expiresAt: new Date(now + 150).toISOString(),
+    });
+    vi.mocked(Date.now).mockReturnValue(now + 151);
+    await expect(renew.renew("c1", "worker-a", first.fenceToken, 100)).resolves.toMatchObject({
+      status: "lost",
+    });
+  });
+
+  it("does not let a stale fence release a newer lease with the same owner id", async () => {
+    const now = 1_800_000_000_000;
+    vi.spyOn(Date, "now").mockReturnValue(now);
+    const store = new JsonlConversationStore(dir);
+    const first = await store.claim("c1", "worker-a", 10) as unknown as { fenceToken: string };
+    vi.mocked(Date.now).mockReturnValue(now + 11);
+    const second = await store.claim("c1", "worker-a", 60_000) as unknown as { fenceToken: string };
+
+    expect(second.fenceToken).not.toBe(first.fenceToken);
+    await store.release("c1", "worker-a", first.fenceToken);
+    expect(await store.claim("c1", "worker-b", 60_000)).toMatchObject({
+      status: "rejected",
+      holder: "worker-a",
+    });
+  });
+
+  it("rejects a stale fenced CAS atomically after lease takeover", async () => {
+    const now = 1_800_000_000_000;
+    vi.spyOn(Date, "now").mockReturnValue(now);
+    const store = new JsonlConversationStore(dir);
+    const first = await store.claim("c1", "worker-a", 10) as unknown as { fenceToken: string };
+    vi.mocked(Date.now).mockReturnValue(now + 11);
+    await store.claim("c1", "worker-b", 60_000);
+
+    await expect(store.compareAndSwap("c1", 0, makeSession(), {
+      workerId: "worker-a",
+      fenceToken: first.fenceToken,
+    })).resolves.toMatchObject({ status: "lease-lost", holder: "worker-b" });
+    expect(await store.load("c1", PRINCIPAL)).toBeNull();
   });
 
   it("looks up the persisted run for a duplicate turn id", async () => {
@@ -137,6 +199,36 @@ describe("JsonlConversationStore", () => {
 
     expect(await store.lookupTurn("c1", PRINCIPAL, "turn-1")).toEqual({ runId: "run-1" });
     expect(await store.lookupTurn("c1", PRINCIPAL, "turn-other")).toBeNull();
+  });
+
+  it("retains older turn mappings across later CAS updates and store restarts", async () => {
+    const store = new JsonlConversationStore(dir);
+    await store.compareAndSwap("c1", 0, makeSession());
+    await store.compareAndSwap("c1", 1, makeSession({
+      stateVersion: 2,
+      lastAppliedTurnId: "turn-2",
+      lastRunId: "run-2",
+    }));
+
+    const reopened = new JsonlConversationStore(dir);
+    expect(await reopened.lookupTurn("c1", PRINCIPAL, "turn-1")).toEqual({ runId: "run-1" });
+    expect(await reopened.lookupTurn("c1", PRINCIPAL, "turn-2")).toEqual({ runId: "run-2" });
+  });
+
+  it("bounds the durable turn ledger to the newest 64 turns", async () => {
+    const store = new JsonlConversationStore(dir);
+    for (let index = 1; index <= 65; index += 1) {
+      await store.compareAndSwap("c1", index - 1, makeSession({
+        stateVersion: index,
+        lastAppliedTurnId: `turn-${index}`,
+        lastRunId: `run-${index}`,
+      }));
+    }
+
+    const reopened = new JsonlConversationStore(dir);
+    expect(await reopened.lookupTurn("c1", PRINCIPAL, "turn-1")).toBeNull();
+    expect(await reopened.lookupTurn("c1", PRINCIPAL, "turn-2")).toEqual({ runId: "run-2" });
+    expect(await reopened.lookupTurn("c1", PRINCIPAL, "turn-65")).toEqual({ runId: "run-65" });
   });
 
   it("fails closed on principal mismatch without changing the source", async () => {
@@ -203,6 +295,59 @@ describe("JsonlConversationStore", () => {
       state: "RESOLVED",
       provenance: "INHERITED_LEGACY",
     });
+    expect(readFileSync(file, "utf8")).toBe(source);
+  });
+
+  it("accepts an explicitly versioned schema-v1 legacy session", async () => {
+    const store = new JsonlConversationStore(dir);
+    const file = path.join(dir, "sessions", "legacy-v1.json");
+    const source = JSON.stringify({
+      schemaVersion: 1,
+      lastContext: null,
+      lastRunId: "run-legacy-v1",
+      history: [{ role: "user", content: "legacy query" }],
+      principalId: PRINCIPAL,
+    });
+    writeFileSync(file, source, "utf8");
+
+    await expect(store.load("legacy-v1", PRINCIPAL)).resolves.toMatchObject({
+      schemaVersion: 2,
+      stateVersion: 0,
+      lastRunId: "run-legacy-v1",
+    });
+    expect(readFileSync(file, "utf8")).toBe(source);
+  });
+
+  it.each([
+    ["empty object", "{}"],
+    ["unsupported schema", JSON.stringify({ ...makeSession(), schemaVersion: 3 })],
+    ["malformed legacy field", JSON.stringify({
+      lastContext: null,
+      lastRunId: 42,
+      history: [],
+      principalId: PRINCIPAL,
+    })],
+    ["ambiguous legacy and v2 fields", JSON.stringify({
+      lastContext: null,
+      lastRunId: null,
+      history: [],
+      principalId: PRINCIPAL,
+      activeFrame: null,
+    })],
+  ])("rejects %s without changing exact source bytes", async (_label, source) => {
+    const store = new JsonlConversationStore(dir);
+    const file = path.join(dir, "sessions", "invalid-legacy.json");
+    writeFileSync(file, source, "utf8");
+
+    await expect(store.load("invalid-legacy", PRINCIPAL))
+      .rejects.toMatchObject({ code: "CONTEXT_DESERIALIZATION_FAILED" });
+    expect(readFileSync(file, "utf8")).toBe(source);
+    await expect(store.save("invalid-legacy", {
+      lastContext: null,
+      lastRunId: null,
+      history: [],
+      principalId: PRINCIPAL,
+    })).rejects.toMatchObject({ code: "CONTEXT_DESERIALIZATION_FAILED" });
     expect(readFileSync(file, "utf8")).toBe(source);
   });
 
