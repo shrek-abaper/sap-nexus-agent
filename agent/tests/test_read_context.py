@@ -154,3 +154,29 @@ def test_read_state_and_conversation_context_round_trip_without_legacy_json_chan
     assert "schemaVersion" not in ConversationContext(last_context=None, history=None).to_dict()
     with pytest.raises(dataclasses.FrozenInstanceError):
         state.state_version = 4
+
+
+def test_read_state_round_trips_immutable_recent_frames_and_defaults_legacy_payloads():
+    recent = ReadContextFrame(
+        frame_id="frame-recent",
+        capability_id="MM.Inventory.GetAvailability",
+        slots={"material": resolved_slot("material", "DEMOA2")},
+        status="READY",
+        created_turn_id="turn-1",
+        updated_turn_id="turn-1",
+        registry_snapshot_id="snapshot-1",
+        capability_version="2",
+    )
+    state = ConversationReadState(
+        active_frame=None,
+        pending_interaction=None,
+        state_version=3,
+        recent_frames=(recent,),
+    )
+
+    assert ConversationReadState.from_dict(state.to_dict()) == state
+    assert ConversationReadState.from_dict(
+        {"activeFrame": None, "pendingInteraction": None, "stateVersion": 3}
+    ).recent_frames == ()
+    with pytest.raises(dataclasses.FrozenInstanceError):
+        state.recent_frames = ()

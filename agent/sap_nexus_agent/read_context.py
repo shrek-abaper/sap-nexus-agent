@@ -269,6 +269,7 @@ class ConversationReadState:
     active_frame: ReadContextFrame | None
     pending_interaction: PendingInteraction | None
     state_version: int
+    recent_frames: tuple[ReadContextFrame, ...] = ()
 
     def __post_init__(self) -> None:
         if self.active_frame is not None and not isinstance(self.active_frame, ReadContextFrame):
@@ -281,12 +282,23 @@ class ConversationReadState:
             )
         if not isinstance(self.state_version, int) or isinstance(self.state_version, bool) or self.state_version < 0:
             raise ValueError("ConversationReadState.state_version must be a non-negative integer")
+        if isinstance(self.recent_frames, (str, bytes)) or not isinstance(
+            self.recent_frames, (tuple, list)
+        ):
+            raise ValueError("ConversationReadState.recent_frames must be a list or tuple")
+        recent_frames = tuple(self.recent_frames)
+        if len(recent_frames) > 2:
+            raise ValueError("ConversationReadState.recent_frames must contain at most two frames")
+        if not all(isinstance(frame, ReadContextFrame) for frame in recent_frames):
+            raise ValueError("ConversationReadState.recent_frames must contain ReadContextFrame values")
+        object.__setattr__(self, "recent_frames", recent_frames)
 
     def to_dict(self) -> dict[str, object]:
         return {
             "activeFrame": self.active_frame.to_dict() if self.active_frame else None,
             "pendingInteraction": self.pending_interaction.to_dict() if self.pending_interaction else None,
             "stateVersion": self.state_version,
+            "recentFrames": [frame.to_dict() for frame in self.recent_frames],
         }
 
     @classmethod
@@ -294,6 +306,9 @@ class ConversationReadState:
         raw = _payload_mapping(payload, "ConversationReadState payload")
         active_frame = raw.get("activeFrame")
         pending = raw.get("pendingInteraction")
+        recent_frames = raw.get("recentFrames", ())
+        if not isinstance(recent_frames, (list, tuple)):
+            raise ValueError("ConversationReadState.recentFrames must be a list")
         return cls(
             active_frame=ReadContextFrame.from_dict(active_frame)
             if isinstance(active_frame, Mapping)
@@ -302,6 +317,7 @@ class ConversationReadState:
             if isinstance(pending, Mapping)
             else None,
             state_version=raw.get("stateVersion", 0),  # type: ignore[arg-type]
+            recent_frames=tuple(ReadContextFrame.from_dict(frame) for frame in recent_frames),
         )
 
 
