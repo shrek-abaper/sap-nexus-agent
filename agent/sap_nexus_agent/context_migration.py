@@ -83,9 +83,32 @@ def _legacy_last_context(
         return None
     try:
         raw_last_context = legacy.get("lastContext")
-        return LastContext.from_dict(raw_last_context) if isinstance(raw_last_context, dict) else None
+        if not _is_strict_legacy_last_context(raw_last_context):
+            return None
+        return LastContext.from_dict(dict(raw_last_context))
     except (KeyError, TypeError, ValueError):
         return None
+
+
+def _is_strict_legacy_last_context(payload: object) -> bool:
+    if not isinstance(payload, Mapping):
+        return False
+    capability_id = payload.get("capabilityId")
+    parameters = payload.get("parameters")
+    missing_parameters = payload.get("missingParameters")
+    decision_type = payload.get("decisionType")
+    return (
+        isinstance(capability_id, str)
+        and bool(capability_id)
+        and isinstance(parameters, Mapping)
+        and all(
+            isinstance(name, str) and isinstance(value, str)
+            for name, value in parameters.items()
+        )
+        and isinstance(missing_parameters, list)
+        and all(isinstance(name, str) for name in missing_parameters)
+        and decision_type in {"SELECT", "CLARIFY"}
+    )
 
 
 def _require_non_empty(value: object, field: str) -> str:

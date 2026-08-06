@@ -1,3 +1,5 @@
+import pytest
+
 from sap_nexus_agent.context_migration import migrate_legacy_context
 from sap_nexus_agent.conversation_context import ConversationContext, LastContext
 
@@ -68,3 +70,40 @@ def test_migrate_malformed_payload_fails_closed_without_a_frame():
 
     assert state.active_frame is None
     assert state.pending_interaction is None
+
+
+@pytest.mark.parametrize(
+    "last_context",
+    [
+        {
+            "capabilityId": 3,
+            "parameters": {"material": "DEMOA2"},
+            "missingParameters": [],
+            "decisionType": "SELECT",
+        },
+        {
+            "capabilityId": "MM.Inventory.GetAvailability",
+            "parameters": {3: "DEMOA2"},
+            "missingParameters": [],
+            "decisionType": "SELECT",
+        },
+        {
+            "capabilityId": "MM.Inventory.GetAvailability",
+            "parameters": {"material": 3},
+            "missingParameters": [],
+            "decisionType": "SELECT",
+        },
+        {
+            "capabilityId": "MM.Inventory.GetAvailability",
+            "parameters": {"material": "DEMOA2"},
+            "missingParameters": [3],
+            "decisionType": "CLARIFY",
+        },
+    ],
+)
+def test_migrate_mapping_with_non_string_legacy_fields_fails_closed(last_context):
+    state = migrate_legacy_context(
+        {"lastContext": last_context}, snapshot_id="snapshot-2", turn_id="turn-9"
+    )
+
+    assert state.active_frame is None
