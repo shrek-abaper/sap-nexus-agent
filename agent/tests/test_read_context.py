@@ -6,6 +6,7 @@ from sap_nexus_agent.conversation_context import ConversationContext
 from sap_nexus_agent.read_context import (
     ConversationReadState,
     PendingInteraction,
+    PendingPlannerGoal,
     ReadContextFrame,
     SlotBinding,
 )
@@ -192,6 +193,54 @@ def test_pending_planner_goals_reject_duplicate_capability_ids():
             state_version=3,
             registry_snapshot_id="snapshot-1",
             expires_at="2026-08-06T09:15:00Z",
+        )
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {
+            "kind": "SLOT_CLARIFICATION",
+            "frameId": "frame-1",
+            "expectedFields": [""],
+            "stateVersion": 3,
+            "registrySnapshotId": "snapshot-1",
+            "expiresAt": "2026-08-06T09:15:00Z",
+        },
+        {
+            "kind": "CAPABILITY_CHOICE",
+            "frameId": "frame-1",
+            "capabilityIds": [""],
+            "stateVersion": 3,
+            "registrySnapshotId": "snapshot-1",
+            "expiresAt": "2026-08-06T09:15:00Z",
+        },
+        {
+            "kind": "PLANNER_CONFIRMATION",
+            "frameId": "frame-1",
+            "plannerRef": "sha256:planner-1",
+            "plannerGoals": [{
+                "capabilityId": "MM.PurchaseOrder.GetList",
+                "parameters": {"vendor": "1000"},
+                "missing": [""],
+            }],
+            "stateVersion": 3,
+            "registrySnapshotId": "snapshot-1",
+            "expiresAt": "2026-08-06T09:15:00Z",
+        },
+    ],
+)
+def test_pending_interaction_rejects_empty_array_strings_like_typescript(payload):
+    with pytest.raises(ValueError, match="must contain"):
+        PendingInteraction.from_dict(payload)
+
+
+def test_direct_pending_planner_goal_rejects_empty_parameter_values():
+    with pytest.raises(ValueError, match="key/value pairs"):
+        PendingPlannerGoal(
+            capability_id="MM.PurchaseOrder.GetList",
+            parameters=(("vendor", ""),),
+            missing=(),
         )
 
 

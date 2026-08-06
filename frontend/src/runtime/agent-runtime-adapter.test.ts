@@ -16,7 +16,7 @@ import {
 import { JsonlConversationStore } from "./durable/jsonl-conversation-store";
 import { JsonlRunStore } from "./durable/jsonl-run-store";
 import { canonicalJson, sha256Hex } from "./durable/canonical-json";
-import type { WorkbenchOutcome } from "./durable/types";
+import type { ConversationReadState, WorkbenchOutcome } from "./durable/types";
 import { PLACEHOLDER_PRINCIPAL } from "./principal/types";
 import type { TrustedPrincipal } from "./principal/types";
 import type { AgentRunEvent } from "./run-event-schema";
@@ -163,7 +163,11 @@ function batchReadOutcome(turnId: string, stateVersion = 1): WorkbenchOutcome {
   return resolved;
 }
 
-function resolvedSelectionOutcome(turnId: string, stateVersion = 1): WorkbenchOutcome {
+function resolvedSelectionOutcome(
+  turnId: string,
+  stateVersion = 1,
+  activeFrame: ConversationReadState["activeFrame"] = null,
+): WorkbenchOutcome {
   const callPlan = {
     agentTraceId: "agent-write-1",
     capabilityId: "MM.PR.CreateDraft",
@@ -181,7 +185,15 @@ function resolvedSelectionOutcome(turnId: string, stateVersion = 1): WorkbenchOu
     callPlan,
     matchDecision: { decisionType: "SELECT", capabilityId: callPlan.capabilityId },
     decision: { decisionType: "SELECT", capabilityId: callPlan.capabilityId },
+    conversationReadState: {
+      activeFrame,
+      recentFrames: [],
+      pendingInteraction: null,
+      stateVersion,
+    },
+    resolutionReport: { resolutionKind: "non_read" },
     turnId,
+    frameId: activeFrame?.frameId ?? null,
     stateVersion,
     registrySnapshotId: "snapshot-write-1",
     selectionExecutionBinding: {
@@ -473,6 +485,71 @@ describe("agent-runtime-adapter durable integration", () => {
     expect(continuationCalls).toBe(0);
   });
 
+  it("aborts an in-flight READ child when the conversation heartbeat loses its lease", async () => {
+    const conversationId = "c-read-mid-flight-loss";
+    let gatewayCalls = 0;
+    let abortObserved = false;
+    let releaseBlockedRunner: (() => void) | undefined;
+    let markRunnerStarted: (() => void) | undefined;
+    const runnerStarted = new Promise<void>((resolve) => { markRunnerStarted = resolve; });
+    let renewCalls = 0;
+    const losingStore = {
+      load: convStore.load.bind(convStore),
+      claim: convStore.claim.bind(convStore),
+      compareAndSwap: convStore.compareAndSwap.bind(convStore),
+      renew: vi.fn(async (...args: Parameters<typeof convStore.renew>) => {
+        renewCalls++;
+        if (renewCalls === 4) return { status: "lost" as const, holder: "takeover" };
+        return convStore.renew(...args);
+      }),
+      release: convStore.release.bind(convStore),
+      lookupTurn: convStore.lookupTurn.bind(convStore),
+      clear: convStore.clear.bind(convStore),
+      clearAll: convStore.clearAll.bind(convStore),
+    };
+    setDurableStoresForTests(runStore, losingStore);
+    setReadAgentRunnerForTests(async (input) => {
+      if (input.mode === "resolve-read") return resolvedReadOutcome(input.turnId!);
+      if (input.mode !== "continue-read") throw new Error(`unexpected mode ${input.mode}`);
+      gatewayCalls++;
+      markRunnerStarted?.();
+      await new Promise<void>((resolve, reject) => {
+        releaseBlockedRunner = resolve;
+        input.signal?.addEventListener("abort", () => {
+          abortObserved = true;
+          reject(input.signal?.reason instanceof Error ? input.signal.reason : new Error("READ aborted"));
+        }, { once: true });
+      });
+      gatewayCalls++;
+      return { status: "success", responseText: "unexpected" };
+    });
+
+    vi.useFakeTimers();
+    try {
+      const { runId } = await createAgentRun({
+        query: "查库存",
+        conversationId,
+        turnId: "turn-read-mid-flight-loss",
+        principal: PLACEHOLDER_PRINCIPAL,
+      });
+      await vi.advanceTimersByTimeAsync(0);
+      await runnerStarted;
+      await vi.advanceTimersByTimeAsync(20_000);
+
+      expect(abortObserved).toBe(true);
+      expect(gatewayCalls).toBe(1);
+      await vi.advanceTimersByTimeAsync(0);
+      expect((await runStore.load(runId))?.events.at(-1)).toMatchObject({
+        type: "run_failed",
+        error: { errorType: "CONVERSATION_BUSY" },
+      });
+    } finally {
+      releaseBlockedRunner?.();
+      await vi.advanceTimersByTimeAsync(0);
+      vi.useRealTimers();
+    }
+  });
+
   it("continues the first non-READ selection without rerunning query semantics", async () => {
     const modes: string[] = [];
     let oneShotQueries = 0;
@@ -507,6 +584,125 @@ describe("agent-runtime-adapter durable integration", () => {
     expect(modes).toEqual(["resolve-read", "continue-selection"]);
     expect(oneShotQueries).toBe(0);
   });
+
+  it("routes a real-shaped non-READ selection with an existing READ frame to Action approval", async () => {
+    const conversationId = "c-write-existing-read-frame";
+    const existingFrame = resolvedReadOutcome("turn-existing-read").conversationReadState!.activeFrame!;
+    await convStore.compareAndSwap(conversationId, 0, {
+      schemaVersion: 2,
+      principalId: PLACEHOLDER_PRINCIPAL.principalId,
+      stateVersion: 1,
+      activeFrame: existingFrame,
+      recentFrames: [],
+      pendingInteraction: null,
+      history: [],
+      lastAppliedTurnId: null,
+      lastRunId: null,
+    });
+    const modes: string[] = [];
+    setReadAgentRunnerForTests(async (input) => {
+      modes.push(input.mode);
+      if (input.mode === "resolve-read") {
+        return resolvedSelectionOutcome(input.turnId!, 2, existingFrame);
+      }
+      if (input.mode === "continue-selection") return awaitingOutcome("run-existing-frame");
+      throw new Error(`unexpected mode ${input.mode}`);
+    });
+
+    const { runId } = await createAgentRun({
+      query: "创建采购申请",
+      conversationId,
+      turnId: "turn-write-existing-read-frame",
+      principal: PLACEHOLDER_PRINCIPAL,
+    });
+    await waitForRunSettled(runId);
+
+    expect(modes).toEqual(["resolve-read", "continue-selection"]);
+    expect((await convStore.load(conversationId, PLACEHOLDER_PRINCIPAL.principalId))?.activeFrame)
+      .toEqual(existingFrame);
+    expect((await runStore.load(runId))?.pendingOutcome?.status).toBe("awaiting_approval");
+  });
+
+  it.each([
+    ["CLARIFY", null],
+    ["SHOW_OPTIONS", "CAPABILITY_CHOICE"],
+    ["ESCALATE_TO_PLANNER", "PLANNER_CONFIRMATION"],
+  ] as const)(
+    "persists real-shaped non-READ %s without treating an existing READ frame as current",
+    async (decisionType, pendingKind) => {
+      const conversationId = `c-non-read-${decisionType.toLowerCase()}`;
+      const turnId = `turn-non-read-${decisionType.toLowerCase()}`;
+      const existingFrame = resolvedReadOutcome("turn-existing-read").conversationReadState!.activeFrame!;
+      await convStore.compareAndSwap(conversationId, 0, {
+        schemaVersion: 2,
+        principalId: PLACEHOLDER_PRINCIPAL.principalId,
+        stateVersion: 1,
+        activeFrame: existingFrame,
+        recentFrames: [],
+        pendingInteraction: null,
+        history: [],
+        lastAppliedTurnId: null,
+        lastRunId: null,
+      });
+      const pendingInteraction = pendingKind === "CAPABILITY_CHOICE" ? {
+        kind: "CAPABILITY_CHOICE" as const,
+        frameId: existingFrame.frameId,
+        capabilityIds: ["MM.PR.CreateDraft"],
+        stateVersion: 2,
+        registrySnapshotId: "snapshot-write-1",
+        expiresAt: "2099-01-01T00:00:00Z",
+      } : pendingKind === "PLANNER_CONFIRMATION" ? {
+        kind: "PLANNER_CONFIRMATION" as const,
+        frameId: existingFrame.frameId,
+        plannerRef: "sha256:planner-write-1",
+        plannerGoals: [{
+          capabilityId: "MM.PR.CreateDraft",
+          parameters: { material: "DEMOA2" },
+          missing: ["plant"],
+        }],
+        stateVersion: 2,
+        registrySnapshotId: "snapshot-write-1",
+        expiresAt: "2099-01-01T00:00:00Z",
+      } : null;
+      const outcome: WorkbenchOutcome = {
+        status: decisionType === "CLARIFY" ? "clarification" : "match_decision",
+        responseText: "non-read response",
+        callPlan: null,
+        matchDecision: { decisionType, capabilityId: "MM.PR.CreateDraft" },
+        decision: { decisionType, capabilityId: "MM.PR.CreateDraft" },
+        conversationReadState: {
+          activeFrame: existingFrame,
+          recentFrames: [],
+          pendingInteraction,
+          stateVersion: 2,
+        },
+        resolutionReport: { resolutionKind: "non_read" },
+        turnId,
+        frameId: existingFrame.frameId,
+        stateVersion: 2,
+        registrySnapshotId: "snapshot-write-1",
+      };
+      const modes: string[] = [];
+      setReadAgentRunnerForTests(async (input) => {
+        modes.push(input.mode);
+        return outcome;
+      });
+
+      const { runId } = await createAgentRun({
+        query: "处理采购申请",
+        conversationId,
+        turnId,
+        principal: PLACEHOLDER_PRINCIPAL,
+      });
+      await waitForRunSettled(runId);
+
+      const persisted = await convStore.load(conversationId, PLACEHOLDER_PRINCIPAL.principalId);
+      expect(modes).toEqual(["resolve-read"]);
+      expect(persisted?.stateVersion).toBe(2);
+      expect(persisted?.activeFrame).toEqual(existingFrame);
+      expect(persisted?.pendingInteraction?.kind ?? null).toBe(pendingKind);
+    },
+  );
 
   it("getAgentRunEvents returns [] for unknown run", async () => {
     expect(await getAgentRunEvents("run-missing", PLACEHOLDER_PRINCIPAL)).toEqual([]);
@@ -811,6 +1007,100 @@ describe("agent-runtime-adapter durable integration", () => {
       }
     },
   );
+
+  it.each(["expired", "stale"] as const)(
+    "lets a fresh turn reach authoritative resolution for %s batch pending",
+    async (condition) => {
+      const conversationId = `c-batch-recovery-${condition}`;
+      let resolutionCalls = 0;
+      let recoveryVersion = 2;
+      setReadAgentRunnerForTests(async (input) => {
+        if (input.mode !== "resolve-read") throw new Error(`unexpected mode ${input.mode}`);
+        resolutionCalls++;
+        if (resolutionCalls === 1) {
+          const outcome = batchReadOutcome(input.turnId!);
+          if (condition === "expired") {
+            const pending = outcome.conversationReadState!.pendingInteraction!;
+            if (pending.kind !== "BATCH_CONFIRMATION") throw new Error("wrong pending kind");
+            outcome.conversationReadState = {
+              ...outcome.conversationReadState!,
+              pendingInteraction: { ...pending, expiresAt: "2000-01-01T00:00:00Z" },
+            };
+            outcome.readExecutionBinding = {
+              ...outcome.readExecutionBinding!,
+              readState: outcome.conversationReadState,
+            };
+          }
+          return outcome;
+        }
+        expect(input.context?.readState?.pendingInteraction?.kind).toBe("BATCH_CONFIRMATION");
+        return clarifyReadOutcome(input.turnId!, recoveryVersion);
+      });
+
+      const first = await createAgentRun({
+        query: "批量查询",
+        conversationId,
+        turnId: `turn-batch-recovery-${condition}-1`,
+        principal: PLACEHOLDER_PRINCIPAL,
+      });
+      await waitForRunSettled(first.runId);
+
+      if (condition === "stale") {
+        const session = (await convStore.load(
+          conversationId,
+          PLACEHOLDER_PRINCIPAL.principalId,
+        ))!;
+        const pending = session.pendingInteraction!;
+        await convStore.compareAndSwap(conversationId, session.stateVersion, {
+          ...session,
+          stateVersion: session.stateVersion + 1,
+          pendingInteraction: { ...pending, stateVersion: session.stateVersion },
+        });
+        recoveryVersion = session.stateVersion + 2;
+      }
+
+      const second = await createAgentRun({
+        query: "换成单个物料查询",
+        conversationId,
+        turnId: `turn-batch-recovery-${condition}-2`,
+        principal: PLACEHOLDER_PRINCIPAL,
+      });
+      await waitForRunSettled(second.runId);
+
+      const recovered = await convStore.load(
+        conversationId,
+        PLACEHOLDER_PRINCIPAL.principalId,
+      );
+      expect(resolutionCalls).toBe(2);
+      expect(recovered?.lastAppliedTurnId).toBe(`turn-batch-recovery-${condition}-2`);
+      expect(recovered?.pendingInteraction?.kind).toBe("SLOT_CLARIFICATION");
+    },
+  );
+
+  it("keeps a live undecided batch pending behind the Q2 gate", async () => {
+    let resolutionCalls = 0;
+    setReadAgentRunnerForTests(async (input) => {
+      if (input.mode !== "resolve-read") throw new Error(`unexpected mode ${input.mode}`);
+      resolutionCalls++;
+      return batchReadOutcome(input.turnId!);
+    });
+    const conversationId = "c-batch-live-q2";
+    const first = await createAgentRun({
+      query: "批量查询",
+      conversationId,
+      turnId: "turn-batch-live-q2-1",
+      principal: PLACEHOLDER_PRINCIPAL,
+    });
+    await waitForRunSettled(first.runId);
+
+    await expect(createAgentRun({
+      query: "发起新查询",
+      conversationId,
+      turnId: "turn-batch-live-q2-2",
+      principal: PLACEHOLDER_PRINCIPAL,
+    })).rejects.toThrow("当前对话有待审批的写操作");
+    expect(resolutionCalls).toBe(1);
+  });
 
   it("createAgentRun binds principalId to the run record", async () => {
     const { runId } = await createAgentRun({ query: "查询库存", principal: PLACEHOLDER_PRINCIPAL });

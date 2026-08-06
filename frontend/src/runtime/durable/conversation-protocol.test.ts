@@ -11,6 +11,7 @@ import {
 } from "../agent-runtime-adapter";
 import { JsonlConversationStore } from "./jsonl-conversation-store";
 import { JsonlRunStore } from "./jsonl-run-store";
+import { canonicalJson, sha256Hex } from "./canonical-json";
 import type { ConversationCasOutcome, SessionStateV2, WorkbenchOutcome } from "./types";
 import { FakeGateway } from "../plan-executor/fake-gateway";
 import { PLACEHOLDER_PRINCIPAL } from "../principal/types";
@@ -54,6 +55,56 @@ function compositionHandoff(): WorkbenchOutcome {
         projectionRef: [],
         ruleSetRefs: [],
       },
+    },
+  };
+}
+
+function resolvedReadOutcome(turnId: string): WorkbenchOutcome {
+  const callPlan = {
+    agentTraceId: "agent-protocol-read",
+    capabilityId: "MM.Inventory.GetAvailability",
+    kind: "Function",
+    parameters: { material: "DEMOA2", plant: "1000", unit: "EA" },
+    validationPolicy: "validate_before_execute",
+    createdBy: "agent",
+    requiresApproval: false,
+  };
+  const readState = {
+    activeFrame: {
+      frameId: "frame-protocol-read",
+      capabilityId: callPlan.capabilityId,
+      slots: {},
+      status: "READY" as const,
+      createdTurnId: turnId,
+      updatedTurnId: turnId,
+      registrySnapshotId: "snapshot-protocol-read",
+      capabilityVersion: "1",
+    },
+    recentFrames: [],
+    pendingInteraction: null,
+    stateVersion: 1,
+  };
+  return {
+    status: "resolved_read",
+    callPlan,
+    matchDecision: { decisionType: "SELECT", capabilityId: callPlan.capabilityId },
+    decision: { decisionType: "SELECT", capabilityId: callPlan.capabilityId },
+    conversationReadState: readState,
+    resolutionReport: { frameStatus: "READY" },
+    turnId,
+    frameId: readState.activeFrame.frameId,
+    stateVersion: 1,
+    registrySnapshotId: readState.activeFrame.registrySnapshotId,
+    readExecutionBinding: {
+      turnId,
+      frameId: readState.activeFrame.frameId,
+      stateVersion: 1,
+      registrySnapshotId: readState.activeFrame.registrySnapshotId,
+      principalId: PLACEHOLDER_PRINCIPAL.principalId,
+      capabilityVersion: "1",
+      executorBindingId: "sap.mm.inventory.md04-stock-req-list",
+      callPlanHash: sha256Hex(canonicalJson(callPlan)),
+      readState,
     },
   };
 }
@@ -105,8 +156,9 @@ describe("durable conversation protocol", () => {
       order.push("load");
       return load(...args);
     });
+    let casCount = 0;
     vi.spyOn(conversationStore, "compareAndSwap").mockImplementation(async (...args) => {
-      order.push("cas");
+      order.push(`cas-${++casCount}`);
       return compareAndSwap(...args);
     });
     vi.spyOn(conversationStore, "release").mockImplementation(async (...args) => {
@@ -118,9 +170,16 @@ describe("durable conversation protocol", () => {
       order.push("event");
       return appendEvent(...args);
     });
-    setReadAgentRunnerForTests(async () => {
-      order.push("runner");
-      return { status: "success", responseText: "ok" } as WorkbenchOutcome;
+    setReadAgentRunnerForTests(async (input) => {
+      if (input.mode === "resolve-read") {
+        order.push("resolve");
+        return resolvedReadOutcome(input.turnId!);
+      }
+      if (input.mode === "continue-read") {
+        order.push("continue");
+        return { status: "success", responseText: "ok" } as WorkbenchOutcome;
+      }
+      throw new Error(`unexpected mode ${input.mode}`);
     });
 
     const { runId } = await createAgentRun({
@@ -132,9 +191,12 @@ describe("durable conversation protocol", () => {
     await waitForTerminal(runId);
 
     expect(order.indexOf("claim")).toBeLessThan(order.indexOf("load"));
-    expect(order.indexOf("load")).toBeLessThan(order.indexOf("runner"));
-    expect(order.indexOf("runner")).toBeLessThan(order.indexOf("cas"));
-    expect(order.indexOf("cas")).toBeLessThan(order.indexOf("event"));
+    expect(order.indexOf("load")).toBeLessThan(order.indexOf("resolve"));
+    expect(order.indexOf("resolve")).toBeLessThan(order.indexOf("cas-1"));
+    expect(order.indexOf("cas-1")).toBeLessThan(order.indexOf("continue"));
+    expect(order.indexOf("continue")).toBeLessThan(order.indexOf("cas-2"));
+    expect(order.indexOf("cas-2")).toBeLessThan(order.indexOf("event"));
+    expect(casCount).toBe(2);
     expect(order.indexOf("event")).toBeLessThan(order.lastIndexOf("release"));
   });
 

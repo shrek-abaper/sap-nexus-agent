@@ -173,6 +173,51 @@ function buildContext(session: SessionStateV2): ConversationContext {
   };
 }
 
+function hasLiveUndecidedBatchPending(
+  outcome: WorkbenchOutcome,
+  session: SessionStateV2,
+  conversationId: string,
+  runId: string,
+  principalId: string,
+): boolean {
+  const binding = outcome.batchConversationBinding;
+  const pending = session.pendingInteraction;
+  const frame = session.activeFrame;
+  const callPlan = objectOrNull(outcome.callPlan);
+  const combinations = outcome.combinations;
+  if (
+    outcome.status !== "awaiting_batch_confirm"
+    || !binding
+    || pending?.kind !== "BATCH_CONFIRMATION"
+    || !frame
+    || !callPlan
+    || !combinations
+  ) {
+    return false;
+  }
+  const expectedBatchRef = `sha256:${sha256Hex(canonicalJson({ callPlan, combinations }))}`;
+  return session.principalId === principalId
+    && session.lastRunId === runId
+    && session.lastAppliedTurnId === binding.turnId
+    && session.stateVersion === binding.stateVersion
+    && binding.conversationId === conversationId
+    && binding.principalId === principalId
+    && pending.frameId === binding.frameId
+    && pending.stateVersion === binding.stateVersion
+    && pending.registrySnapshotId === binding.registrySnapshotId
+    && pending.batchRef === binding.batchRef
+    && pending.batchRef === expectedBatchRef
+    && Date.parse(pending.expiresAt) > Date.now()
+    && frame.frameId === binding.frameId
+    && frame.status === "READY"
+    && frame.registrySnapshotId === binding.registrySnapshotId
+    && frame.capabilityVersion === binding.capabilityVersion
+    && frame.capabilityId === callPlan.capabilityId
+    && callPlan.kind === "Function"
+    && callPlan.requiresApproval === false
+    && sha256Hex(canonicalJson(callPlan)) === binding.callPlanHash;
+}
+
 export async function createAgentRun(input: CreateAgentRunInput): Promise<CreateAgentRunResult> {
   if (input.rfcName) {
     throw new Error("Raw RFC execution is not allowed");
@@ -217,7 +262,17 @@ export async function createAgentRun(input: CreateAgentRunInput): Promise<Create
     if (lastRunId) {
       const lastRun = await runStore.load(lastRunId);
       if (lastRun?.pendingOutcome && !lastRun.decision) {
-        throw new Error("当前对话有待审批的写操作，请先处理审批后再发起新查询。");
+        const recoverableBatch = lastRun.pendingOutcome.status === "awaiting_batch_confirm"
+          && !hasLiveUndecidedBatchPending(
+            lastRun.pendingOutcome,
+            session,
+            conversationId,
+            lastRunId,
+            input.principal.principalId,
+          );
+        if (!recoverableBatch) {
+          throw new Error("当前对话有待审批的写操作，请先处理审批后再发起新查询。");
+        }
       }
     }
 
@@ -318,7 +373,15 @@ async function executeRunnerInBackground(
       const readState = resolution.conversationReadState;
       const decisionType = textValue(resolution.decision?.decisionType)
         ?? textValue(resolution.matchDecision?.decisionType);
-      const isReadResolution = readState !== null && readState !== undefined
+      const resolutionKind = textValue(resolution.resolutionReport?.resolutionKind);
+      const isNonReadResolution = resolutionKind === "non_read"
+        && readState !== null && readState !== undefined
+        && resolution.turnId === turnId
+        && resolution.stateVersion === readState.stateVersion
+        && typeof decisionType === "string";
+      const isReadResolution = !isNonReadResolution
+        && resolution.status !== "resolved_selection"
+        && readState !== null && readState !== undefined
         && resolution.turnId === turnId
         && resolution.stateVersion === readState.stateVersion
         && typeof decisionType === "string";
@@ -384,6 +447,7 @@ async function executeRunnerInBackground(
               pendingInteraction: nextSession.pendingInteraction,
               stateVersion: nextSession.stateVersion,
             },
+            signal: heartbeat!.signal,
           });
           outcome = {
             ...continued,
@@ -400,14 +464,25 @@ async function executeRunnerInBackground(
         } else {
           outcome = resolution;
         }
-      } else if (
-        resolution.status === "resolved_selection"
-        && resolution.callPlan
-        && resolution.selectionExecutionBinding
-      ) {
+      } else if (resolution.status === "resolved_selection") {
+        if (!resolution.callPlan || !resolution.selectionExecutionBinding) {
+          throw new ConversationProtocolError(
+            "CONTEXT_VERSION_CONFLICT",
+            "Resolved non-READ selection is missing its immutable continuation binding",
+          );
+        }
+        validateNonReadResolution(
+          resolution,
+          current,
+          turnId,
+          principalId,
+          expectedSessionVersion + 1,
+        );
+        const nextReadState = resolution.conversationReadState!;
         const binding = resolution.selectionExecutionBinding;
         if (
-          binding.turnId !== turnId
+          nextReadState.pendingInteraction !== null
+          || binding.turnId !== turnId
           || binding.stateVersion !== expectedSessionVersion + 1
           || binding.principalId !== principalId
           || binding.registrySnapshotId !== resolution.registrySnapshotId
@@ -423,7 +498,10 @@ async function executeRunnerInBackground(
         }
         const nextSession: SessionStateV2 = {
           ...current,
-          stateVersion: current.stateVersion + 1,
+          stateVersion: nextReadState.stateVersion,
+          activeFrame: nextReadState.activeFrame,
+          recentFrames: nextReadState.recentFrames,
+          pendingInteraction: nextReadState.pendingInteraction,
           history: [...current.history, { role: "user", content: query }],
           lastAppliedTurnId: turnId,
           lastRunId: runId,
@@ -455,6 +533,37 @@ async function executeRunnerInBackground(
           selectionExecutionBinding: binding,
         });
         resultPersistenceRequired = true;
+      } else if (isNonReadResolution) {
+        validateNonReadResolution(
+          resolution,
+          current,
+          turnId,
+          principalId,
+          expectedSessionVersion + 1,
+        );
+        const nextHistory = [...current.history, { role: "user" as const, content: query }];
+        if (resolution.responseText) {
+          nextHistory.push({ role: "assistant", content: resolution.responseText });
+        }
+        const nextSession: SessionStateV2 = {
+          ...current,
+          stateVersion: readState!.stateVersion,
+          activeFrame: readState!.activeFrame,
+          recentFrames: readState!.recentFrames,
+          pendingInteraction: readState!.pendingInteraction,
+          history: nextHistory,
+          lastAppliedTurnId: turnId,
+          lastRunId: runId,
+        };
+        await saveConversationState(
+          conversationId,
+          current.stateVersion,
+          nextSession,
+          conversationLeaseOwner!,
+          conversationFenceToken!,
+        );
+        expectedSessionVersion = nextSession.stateVersion;
+        outcome = resolution;
       } else {
         const nextSession: SessionStateV2 = {
           ...current,
@@ -622,6 +731,39 @@ async function executeRunnerInBackground(
         conversationFenceToken,
       );
     }
+  }
+}
+
+function validateNonReadResolution(
+  outcome: WorkbenchOutcome,
+  current: SessionStateV2,
+  turnId: string,
+  principalId: string,
+  expectedVersion: number,
+): void {
+  const state = outcome.conversationReadState;
+  const pending = state?.pendingInteraction;
+  const expectedFrameId = state?.activeFrame?.frameId ?? outcome.frameId;
+  if (
+    outcome.resolutionReport?.resolutionKind !== "non_read"
+    || !state
+    || state.stateVersion !== expectedVersion
+    || outcome.stateVersion !== expectedVersion
+    || outcome.turnId !== turnId
+    || current.principalId !== principalId
+    || canonicalJson(state.activeFrame) !== canonicalJson(current.activeFrame)
+    || canonicalJson(state.recentFrames) !== canonicalJson(current.recentFrames)
+    || (state.activeFrame?.frameId ?? pending?.frameId ?? null) !== (outcome.frameId ?? null)
+    || (pending != null && (
+      pending.frameId !== expectedFrameId
+      || pending.stateVersion !== expectedVersion
+      || pending.registrySnapshotId !== outcome.registrySnapshotId
+    ))
+  ) {
+    throw new ConversationProtocolError(
+      "CONTEXT_VERSION_CONFLICT",
+      "Resolved non-READ state does not match the claimed conversation turn",
+    );
   }
 }
 

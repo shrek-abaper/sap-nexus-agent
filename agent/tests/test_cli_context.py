@@ -172,7 +172,11 @@ def test_cli_continue_read_binding_mismatch_has_no_gateway(capsys, monkeypatch):
     binding["turnId"] = "turn-tampered"
     monkeypatch.setattr(
         "sys.stdin",
-        io.StringIO(json.dumps({"callPlan": plan.to_dict(), "binding": binding})),
+        io.StringIO(json.dumps({
+            "callPlan": plan.to_dict(),
+            "binding": binding,
+            "persistedReadState": state.to_dict(),
+        })),
     )
 
     def forbidden_gateway(_url):

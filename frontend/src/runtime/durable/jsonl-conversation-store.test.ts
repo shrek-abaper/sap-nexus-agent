@@ -138,6 +138,48 @@ describe("JsonlConversationStore", () => {
       registrySnapshotId: "snapshot-1",
       expiresAt: "2099-01-01T00:00:00Z",
     }],
+    ["empty slot field", {
+      kind: "SLOT_CLARIFICATION",
+      frameId: "frame-1",
+      expectedFields: [""],
+      stateVersion: 1,
+      registrySnapshotId: "snapshot-1",
+      expiresAt: "2099-01-01T00:00:00Z",
+    }],
+    ["empty capability id", {
+      kind: "CAPABILITY_CHOICE",
+      frameId: "pending:choice:1",
+      capabilityIds: [""],
+      stateVersion: 1,
+      registrySnapshotId: "snapshot-1",
+      expiresAt: "2099-01-01T00:00:00Z",
+    }],
+    ["empty planner missing field", {
+      kind: "PLANNER_CONFIRMATION",
+      frameId: "pending:planner:1",
+      plannerRef: "sha256:planner-1",
+      plannerGoals: [{
+        capabilityId: "MM.PurchaseOrder.GetList",
+        parameters: { vendor: "1000" },
+        missing: [""],
+      }],
+      stateVersion: 1,
+      registrySnapshotId: "snapshot-1",
+      expiresAt: "2099-01-01T00:00:00Z",
+    }],
+    ["empty planner parameter value", {
+      kind: "PLANNER_CONFIRMATION",
+      frameId: "pending:planner:1",
+      plannerRef: "sha256:planner-1",
+      plannerGoals: [{
+        capabilityId: "MM.PurchaseOrder.GetList",
+        parameters: { vendor: "" },
+        missing: [],
+      }],
+      stateVersion: 1,
+      registrySnapshotId: "snapshot-1",
+      expiresAt: "2099-01-01T00:00:00Z",
+    }],
   ])("rejects malformed pending %s without changing source bytes", async (_label, pending) => {
     new JsonlConversationStore(dir);
     const file = path.join(dir, "sessions", "invalid-pending.json");

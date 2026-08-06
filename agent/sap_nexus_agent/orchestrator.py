@@ -631,6 +631,14 @@ def _resolve_authoritative_read(
                 decision=legacy_decision,
                 kind=pending_kind,
                 capability_ids=candidate_ids,
+                resolution_kind=(
+                    "read"
+                    if all(
+                        _is_current_read_capability(lease.sources, candidate_id)
+                        for candidate_id in candidate_ids
+                    )
+                    else "non_read"
+                ),
                 snapshot_id=lease.snapshot_id,
                 turn_id=turn_id,
                 lease=lease,
@@ -799,6 +807,20 @@ def _read_capability_version(
     return "1"
 
 
+def _is_current_read_capability(
+    sources: SemanticSourceDocuments, capability_id: str
+) -> bool:
+    capability = _current_capability(sources, capability_id)
+    governance = capability.get("governance") if capability else None
+    return bool(
+        capability is not None
+        and capability.get("kind") == "Function"
+        and isinstance(governance, Mapping)
+        and governance.get("sideEffect") == "none"
+        and governance.get("requiresApproval") is False
+    )
+
+
 def _bound_pending_outcome(
     *,
     context: ConversationContext,
@@ -806,6 +828,7 @@ def _bound_pending_outcome(
     decision: MatchDecision,
     kind: str,
     capability_ids: tuple[str, ...],
+    resolution_kind: str,
     snapshot_id: str,
     turn_id: str,
     lease: SnapshotLease,
@@ -876,6 +899,7 @@ def _bound_pending_outcome(
         updated_context=next_context,
         read_state=next_state,
         resolution_report={
+            "resolutionKind": resolution_kind,
             "frameStatus": (
                 prior_state.active_frame.status
                 if prior_state.active_frame is not None
@@ -956,6 +980,7 @@ def _resolved_non_read_outcome(
         updated_context=next_context,
         read_state=next_state,
         selection_execution_binding=binding,
+        resolution_report={"resolutionKind": "non_read"},
         turn_id=turn_id,
         frame_id=(next_state.active_frame.frame_id if next_state.active_frame else None),
         state_version=next_state.state_version,

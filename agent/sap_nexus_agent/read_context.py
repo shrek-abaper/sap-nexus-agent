@@ -221,6 +221,7 @@ class PendingPlannerGoal:
             or not isinstance(item[0], str)
             or not item[0]
             or not isinstance(item[1], str)
+            or not item[1]
             for item in parameters
         ):
             raise ValueError("PendingPlannerGoal.parameters must contain string key/value pairs")
@@ -522,6 +523,6 @@ def _string_tuple(value: object, field: str) -> tuple[str, ...]:
     if isinstance(value, str) or not isinstance(value, (tuple, list)):
         raise ValueError(f"{field} must be a list or tuple of strings")
     values = tuple(value)
-    if not all(isinstance(item, str) for item in values):
-        raise ValueError(f"{field} must contain only strings")
+    if not all(isinstance(item, str) and item for item in values):
+        raise ValueError(f"{field} must contain only non-empty strings")
     return values

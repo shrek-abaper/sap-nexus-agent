@@ -750,9 +750,21 @@ def test_non_read_selection_is_parsed_once_and_preserves_write_approval():
         continue_resolved_selection,
         resolve_read_turn,
     )
+    from sap_nexus_agent.read_context import ReadContextFrame
+    from sap_nexus_agent.workbench_output import outcome_to_workbench_dict
 
     snapshot, sources = _default_planner_sources()
     calls = 0
+    existing_frame = ReadContextFrame(
+        frame_id="frame-existing-read",
+        capability_id="MM.Inventory.GetAvailability",
+        slots={},
+        status="COLLECTING",
+        created_turn_id="turn-existing-read",
+        updated_turn_id="turn-existing-read",
+        registry_snapshot_id=snapshot.snapshot_id,
+        capability_version="1",
+    )
 
     def nondeterministic_adapter(_text, _context=None):
         nonlocal calls
@@ -790,7 +802,7 @@ def test_non_read_selection_is_parsed_once_and_preserves_write_approval():
         context=ConversationContext(
             None,
             None,
-            read_state=ConversationReadState(None, None, 0),
+            read_state=ConversationReadState(existing_frame, None, 4),
             schema_version=2,
         ),
         intent_adapter=nondeterministic_adapter,
@@ -811,6 +823,11 @@ def test_non_read_selection_is_parsed_once_and_preserves_write_approval():
 
     assert resolved.status == "resolved_selection"
     assert resolved.selection_execution_binding is not None
+    serialized = outcome_to_workbench_dict(resolved)
+    assert serialized["resolutionReport"] == {"resolutionKind": "non_read"}
+    assert serialized["conversationReadState"]["activeFrame"]["updatedTurnId"] == (
+        "turn-existing-read"
+    )
     outcome = continue_resolved_selection(
         resolved.call_plan,
         resolved.selection_execution_binding,
@@ -879,6 +896,7 @@ def test_non_read_clarification_is_parsed_once_and_preserved_without_gateway():
     from sap_nexus_agent.conversation_context import ConversationContext
     from sap_nexus_agent.match_decision import MatchedIntent
     from sap_nexus_agent.orchestrator import _default_planner_sources, resolve_read_turn
+    from sap_nexus_agent.workbench_output import outcome_to_workbench_dict
 
     snapshot, sources = _default_planner_sources()
     calls = 0
@@ -917,6 +935,50 @@ def test_non_read_clarification_is_parsed_once_and_preserved_without_gateway():
     assert outcome.match_decision.decision_type == "CLARIFY"
     assert outcome.call_plan is None
     assert outcome.selection_execution_binding is None
+    assert outcome_to_workbench_dict(outcome)["resolutionReport"] == {
+        "resolutionKind": "non_read"
+    }
+
+
+def test_non_read_show_options_serialization_is_explicit():
+    from sap_nexus_agent.conversation_context import ConversationContext
+    from sap_nexus_agent.match_decision import MatchedIntent
+    from sap_nexus_agent.orchestrator import _default_planner_sources, resolve_read_turn
+    from sap_nexus_agent.workbench_output import outcome_to_workbench_dict
+
+    snapshot, sources = _default_planner_sources()
+    calls = 0
+
+    def adapter(_text, _context=None):
+        nonlocal calls
+        calls += 1
+        return IntentParseResult(
+            intent=None,
+            parameters={},
+            missing_parameters=[],
+            matched_intents=[MatchedIntent("MM.PR.CreateDraft", {}, [])],
+            is_ambiguous=True,
+        )
+
+    outcome = resolve_read_turn(
+        "我想处理采购申请",
+        context=ConversationContext(
+            None, None, read_state=ConversationReadState(None, None, 0), schema_version=2
+        ),
+        intent_adapter=adapter,
+        principal=PLACEHOLDER_PRINCIPAL,
+        snapshot=snapshot,
+        sources=sources,
+        turn_id="turn-write-options",
+    )
+
+    serialized = outcome_to_workbench_dict(outcome)
+    assert calls == 1
+    assert serialized["decision"]["decisionType"] == "SHOW_OPTIONS"
+    assert serialized["conversationReadState"]["pendingInteraction"]["kind"] == (
+        "CAPABILITY_CHOICE"
+    )
+    assert serialized["resolutionReport"]["resolutionKind"] == "non_read"
 
 
 def test_mixed_planner_outcome_is_bound_without_rerunning_semantics():
@@ -960,6 +1022,7 @@ def test_mixed_planner_outcome_is_bound_without_rerunning_semantics():
     assert tuple(
         goal.capability_id for goal in outcome.read_state.pending_interaction.planner_goals
     ) == ("MM.Inventory.GetAvailability", "MM.PR.CreateDraft")
+    assert outcome.resolution_report["resolutionKind"] == "non_read"
 
 
 def test_python_hashes_match_typescript_canonical_json_for_unicode():
