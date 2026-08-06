@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { JsonlConversationStore } from "./jsonl-conversation-store";
@@ -229,6 +229,88 @@ describe("JsonlConversationStore", () => {
     expect(await reopened.lookupTurn("c1", PRINCIPAL, "turn-1")).toBeNull();
     expect(await reopened.lookupTurn("c1", PRINCIPAL, "turn-2")).toEqual({ runId: "run-2" });
     expect(await reopened.lookupTurn("c1", PRINCIPAL, "turn-65")).toEqual({ runId: "run-65" });
+  });
+
+  it("reconciles a committed Session before a later CAS can overwrite its ledger fallback", async () => {
+    let failLedgerRename = true;
+    const store = new JsonlConversationStore(dir, (boundary) => {
+      if (failLedgerRename && boundary.artifact === "turn-ledger" && boundary.phase === "before-rename") {
+        failLedgerRename = false;
+        throw new Error("injected ledger rename failure");
+      }
+    });
+
+    await expect(store.compareAndSwap("c1", 0, makeSession()))
+      .rejects.toThrow("injected ledger rename failure");
+    expect(JSON.parse(readFileSync(path.join(dir, "sessions", "c1.json"), "utf8")))
+      .toMatchObject({ stateVersion: 1, lastAppliedTurnId: "turn-1", lastRunId: "run-1" });
+
+    const reopened = new JsonlConversationStore(dir);
+    await expect(reopened.compareAndSwap("c1", 1, makeSession({
+      stateVersion: 2,
+      lastAppliedTurnId: "turn-2",
+      lastRunId: "run-2",
+    }))).resolves.toEqual({ status: "saved", stateVersion: 2 });
+    expect(await reopened.lookupTurn("c1", PRINCIPAL, "turn-1")).toEqual({ runId: "run-1" });
+    expect(await reopened.lookupTurn("c1", PRINCIPAL, "turn-2")).toEqual({ runId: "run-2" });
+  });
+
+  it("does not precommit a prepared transaction when Session rename fails", async () => {
+    let failSessionRename = true;
+    const store = new JsonlConversationStore(dir, (boundary) => {
+      if (failSessionRename && boundary.artifact === "session" && boundary.phase === "before-rename") {
+        failSessionRename = false;
+        throw new Error("injected Session rename failure");
+      }
+    });
+
+    await expect(store.compareAndSwap("c1", 0, makeSession()))
+      .rejects.toThrow("injected Session rename failure");
+
+    const reopened = new JsonlConversationStore(dir);
+    expect(await reopened.load("c1", PRINCIPAL)).toBeNull();
+    expect(await reopened.lookupTurn("c1", PRINCIPAL, "turn-1")).toBeNull();
+  });
+
+  it("does not change Session bytes when prepared-journal write fails", async () => {
+    const original = makeSession();
+    const store = new JsonlConversationStore(dir);
+    await store.compareAndSwap("c1", 0, original);
+    const sessionFile = path.join(dir, "sessions", "c1.json");
+    const source = readFileSync(sessionFile, "utf8");
+    const failing = new JsonlConversationStore(dir, (boundary) => {
+      if (boundary.artifact === "transaction" && boundary.phase === "before-write") {
+        throw new Error("injected transaction write failure");
+      }
+    });
+
+    await expect(failing.compareAndSwap("c1", 1, makeSession({
+      stateVersion: 2,
+      lastAppliedTurnId: "turn-2",
+      lastRunId: "run-2",
+    }))).rejects.toThrow("injected transaction write failure");
+    expect(readFileSync(sessionFile, "utf8")).toBe(source);
+    expect(await new JsonlConversationStore(dir).lookupTurn("c1", PRINCIPAL, "turn-2")).toBeNull();
+  });
+
+  it("preserves malformed recovery journal and Session bytes while failing closed", async () => {
+    const store = new JsonlConversationStore(dir);
+    await store.compareAndSwap("c1", 0, makeSession());
+    const sessionFile = path.join(dir, "sessions", "c1.json");
+    const sessionSource = readFileSync(sessionFile, "utf8");
+    const transactionsDir = path.join(dir, "conversation-transactions");
+    mkdirSync(transactionsDir, { recursive: true });
+    const transactionFile = path.join(transactionsDir, "c1.json");
+    const transactionSource = "{malformed-journal";
+    writeFileSync(transactionFile, transactionSource, "utf8");
+
+    const reopened = new JsonlConversationStore(dir);
+    await expect(reopened.load("c1", PRINCIPAL))
+      .rejects.toMatchObject({ code: "CONTEXT_DESERIALIZATION_FAILED" });
+    await expect(reopened.compareAndSwap("c1", 1, makeSession({ stateVersion: 2 })))
+      .rejects.toMatchObject({ code: "CONTEXT_DESERIALIZATION_FAILED" });
+    expect(readFileSync(sessionFile, "utf8")).toBe(sessionSource);
+    expect(readFileSync(transactionFile, "utf8")).toBe(transactionSource);
   });
 
   it("fails closed on principal mismatch without changing the source", async () => {

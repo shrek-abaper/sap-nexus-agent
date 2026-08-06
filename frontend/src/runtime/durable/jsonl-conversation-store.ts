@@ -10,6 +10,7 @@ import {
   unlinkSync,
   writeFileSync,
 } from "node:fs";
+import { createHash } from "node:crypto";
 import path from "node:path";
 import type {
   ConversationCasOutcome,
@@ -38,6 +39,19 @@ type ConversationTurnLedger = {
   retentionLimit: number;
   entries: Array<{ turnId: string; runId: string }>;
 };
+type ConversationTransaction = {
+  schemaVersion: 1;
+  principalId: string;
+  expectedVersion: number;
+  committedVersion: number;
+  turnId: string;
+  runId: string;
+  sessionHash: string;
+};
+type ConversationStoreFaultBoundary = {
+  artifact: "session" | "lease" | "turn-ledger" | "transaction";
+  phase: "before-write" | "before-rename";
+};
 
 export class ConversationStoreError extends Error {
   constructor(
@@ -53,14 +67,20 @@ export class JsonlConversationStore implements DurableConversationStore {
   private readonly sessionsDir: string;
   private readonly leasesDir: string;
   private readonly turnLedgersDir: string;
+  private readonly transactionsDir: string;
 
-  constructor(private readonly dataDir: string) {
+  constructor(
+    private readonly dataDir: string,
+    private readonly faultInjector?: (boundary: ConversationStoreFaultBoundary) => void,
+  ) {
     this.sessionsDir = path.join(dataDir, "sessions");
     this.leasesDir = path.join(dataDir, "conversation-leases");
     this.turnLedgersDir = path.join(dataDir, "conversation-turn-ledgers");
+    this.transactionsDir = path.join(dataDir, "conversation-transactions");
     mkdirSync(this.sessionsDir, { recursive: true });
     mkdirSync(this.leasesDir, { recursive: true });
     mkdirSync(this.turnLedgersDir, { recursive: true });
+    mkdirSync(this.transactionsDir, { recursive: true });
   }
 
   private file(conversationId: string): string {
@@ -75,6 +95,10 @@ export class JsonlConversationStore implements DurableConversationStore {
     return path.join(this.turnLedgersDir, `${conversationId}.json`);
   }
 
+  private transactionFile(conversationId: string): string {
+    return path.join(this.transactionsDir, `${conversationId}.json`);
+  }
+
   private lockKey(conversationId: string): string {
     return path.resolve(this.file(conversationId));
   }
@@ -83,6 +107,7 @@ export class JsonlConversationStore implements DurableConversationStore {
   async save(conversationId: string, state: SessionState | SessionStateV2): Promise<void> {
     await withConversationLock(this.lockKey(conversationId), () => {
       const principalId = state.principalId ?? LEGACY_PRINCIPAL;
+      this.reconcileTransaction(conversationId, principalId);
       if (existsSync(this.file(conversationId))) {
         this.loadUnlocked(conversationId, principalId);
       }
@@ -92,7 +117,7 @@ export class JsonlConversationStore implements DurableConversationStore {
             ...migrateLegacySession(state, principalId),
             legacyLastContext: state.lastContext,
           };
-      this.writeAtomically(this.file(conversationId), next);
+      this.writeAtomically(this.file(conversationId), next, "session");
     });
   }
 
@@ -100,8 +125,10 @@ export class JsonlConversationStore implements DurableConversationStore {
     conversationId: string,
     principalId: string = LEGACY_PRINCIPAL,
   ): Promise<LoadedSessionStateV2 | null> {
-    return withConversationLock(this.lockKey(conversationId), () =>
-      this.loadUnlocked(conversationId, principalId));
+    return withConversationLock(this.lockKey(conversationId), () => {
+      this.reconcileTransaction(conversationId, principalId);
+      return this.loadUnlocked(conversationId, principalId);
+    });
   }
 
   async claim(
@@ -188,14 +215,20 @@ export class JsonlConversationStore implements DurableConversationStore {
         }
       }
 
+      this.reconcileTransaction(conversationId, validatedNext.principalId);
       const existing = this.loadUnlocked(conversationId, validatedNext.principalId);
       const actualVersion = existing?.stateVersion ?? 0;
       if (actualVersion !== expectedVersion) {
         return { status: "conflict", actualVersion };
       }
 
-      this.writeAtomically(this.file(conversationId), validatedNext);
+      const transaction = createTransaction(expectedVersion, validatedNext);
+      if (transaction) {
+        this.writeAtomically(this.transactionFile(conversationId), transaction, "transaction");
+      }
+      this.writeAtomically(this.file(conversationId), validatedNext, "session");
       this.recordTurn(conversationId, validatedNext);
+      if (transaction) unlinkIfPresent(this.transactionFile(conversationId));
       return { status: "saved", stateVersion: validatedNext.stateVersion };
     });
   }
@@ -246,6 +279,7 @@ export class JsonlConversationStore implements DurableConversationStore {
     turnId: string,
   ): Promise<ConversationTurnLookup | null> {
     return withConversationLock(this.lockKey(conversationId), () => {
+      this.reconcileTransaction(conversationId, principalId);
       const session = this.loadUnlocked(conversationId, principalId);
       if (!session) return null;
       const ledger = this.readTurnLedger(conversationId, principalId);
@@ -261,6 +295,7 @@ export class JsonlConversationStore implements DurableConversationStore {
       unlinkIfPresent(this.file(conversationId));
       unlinkIfPresent(this.leaseFile(conversationId));
       unlinkIfPresent(this.turnLedgerFile(conversationId));
+      unlinkIfPresent(this.transactionFile(conversationId));
     });
   }
 
@@ -273,6 +308,9 @@ export class JsonlConversationStore implements DurableConversationStore {
     }
     for (const entry of readdirSync(this.turnLedgersDir)) {
       if (entry.endsWith(".json")) unlinkSync(path.join(this.turnLedgersDir, entry));
+    }
+    for (const entry of readdirSync(this.transactionsDir)) {
+      if (entry.endsWith(".json")) unlinkSync(path.join(this.transactionsDir, entry));
     }
   }
 
@@ -329,7 +367,7 @@ export class JsonlConversationStore implements DurableConversationStore {
       workerId,
       fenceToken,
       expiresAt,
-    });
+    }, "lease");
   }
 
   private recordTurn(conversationId: string, session: SessionStateV2): void {
@@ -344,7 +382,80 @@ export class JsonlConversationStore implements DurableConversationStore {
       principalId: session.principalId,
       retentionLimit: TURN_LEDGER_RETENTION_LIMIT,
       entries,
-    } satisfies ConversationTurnLedger);
+    } satisfies ConversationTurnLedger, "turn-ledger");
+  }
+
+  private reconcileTransaction(conversationId: string, principalId: string): void {
+    const transaction = this.readTransaction(conversationId);
+    if (!transaction) return;
+    if (transaction.principalId !== principalId) {
+      throw new ConversationStoreError(
+        "CONTEXT_PRINCIPAL_MISMATCH",
+        "Conversation transaction does not belong to the current principal",
+      );
+    }
+    const session = this.loadUnlocked(conversationId, principalId);
+    const actualVersion = session?.stateVersion ?? 0;
+    if (actualVersion === transaction.expectedVersion) {
+      unlinkIfPresent(this.transactionFile(conversationId));
+      return;
+    }
+    if (!session || session.stateVersion !== transaction.committedVersion ||
+        session.lastAppliedTurnId !== transaction.turnId || session.lastRunId !== transaction.runId ||
+        sessionHash(session) !== transaction.sessionHash) {
+      throw new ConversationStoreError(
+        "CONTEXT_DESERIALIZATION_FAILED",
+        "Conversation transaction does not match the committed Session",
+      );
+    }
+    this.recordTurn(conversationId, session);
+    unlinkIfPresent(this.transactionFile(conversationId));
+  }
+
+  private readTransaction(conversationId: string): ConversationTransaction | null {
+    const file = this.transactionFile(conversationId);
+    if (!existsSync(file)) return null;
+    try {
+      const raw = requireRecord(JSON.parse(readFileSync(file, "utf8")), "conversation transaction");
+      const allowed = new Set([
+        "schemaVersion",
+        "principalId",
+        "expectedVersion",
+        "committedVersion",
+        "turnId",
+        "runId",
+        "sessionHash",
+      ]);
+      if (raw.schemaVersion !== 1 || Object.keys(raw).some((field) => !allowed.has(field))) {
+        throw new Error("conversation transaction schema is invalid");
+      }
+      const transaction: ConversationTransaction = {
+        schemaVersion: 1,
+        principalId: requireString(raw.principalId, "conversation transaction principalId"),
+        expectedVersion: requireNonNegativeInteger(
+          raw.expectedVersion,
+          "conversation transaction expectedVersion",
+        ),
+        committedVersion: requireNonNegativeInteger(
+          raw.committedVersion,
+          "conversation transaction committedVersion",
+        ),
+        turnId: requireString(raw.turnId, "conversation transaction turnId"),
+        runId: requireString(raw.runId, "conversation transaction runId"),
+        sessionHash: requireString(raw.sessionHash, "conversation transaction sessionHash"),
+      };
+      if (transaction.committedVersion !== transaction.expectedVersion + 1 ||
+          !/^[a-f0-9]{64}$/.test(transaction.sessionHash)) {
+        throw new Error("conversation transaction binding is invalid");
+      }
+      return transaction;
+    } catch (error) {
+      if (error instanceof ConversationStoreError) throw error;
+      throw new ConversationStoreError(
+        "CONTEXT_DESERIALIZATION_FAILED",
+        `Conversation transaction could not be deserialized: ${errorMessage(error)}`,
+      );
+    }
   }
 
   private readTurnLedger(
@@ -391,8 +502,13 @@ export class JsonlConversationStore implements DurableConversationStore {
     }
   }
 
-  private writeAtomically(file: string, value: unknown): void {
+  private writeAtomically(
+    file: string,
+    value: unknown,
+    artifact: ConversationStoreFaultBoundary["artifact"],
+  ): void {
     const tmp = `${file}.${process.pid}.${crypto.randomUUID()}.tmp`;
+    this.faultInjector?.({ artifact, phase: "before-write" });
     writeFileSync(tmp, JSON.stringify(value), "utf8");
     const fd = openSync(tmp, "r");
     try {
@@ -400,8 +516,29 @@ export class JsonlConversationStore implements DurableConversationStore {
     } finally {
       closeSync(fd);
     }
+    this.faultInjector?.({ artifact, phase: "before-rename" });
     renameSync(tmp, file);
   }
+}
+
+function createTransaction(
+  expectedVersion: number,
+  session: SessionStateV2,
+): ConversationTransaction | null {
+  if (!session.lastAppliedTurnId || !session.lastRunId) return null;
+  return {
+    schemaVersion: 1,
+    principalId: session.principalId,
+    expectedVersion,
+    committedVersion: session.stateVersion,
+    turnId: session.lastAppliedTurnId,
+    runId: session.lastRunId,
+    sessionHash: sessionHash(session),
+  };
+}
+
+function sessionHash(session: SessionStateV2): string {
+  return createHash("sha256").update(JSON.stringify(validateSessionV2(session))).digest("hex");
 }
 
 async function withConversationLock<T>(key: string, operation: () => T | Promise<T>): Promise<T> {

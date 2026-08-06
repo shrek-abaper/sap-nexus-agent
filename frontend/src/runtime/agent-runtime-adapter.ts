@@ -310,6 +310,7 @@ async function executeRunnerInBackground(
     if (heartbeat) await heartbeat.assertOwned();
     const runner = runnerForTests ?? runLocalPythonAgent;
     const outcome = await runner({ query, gatewayUrl: gatewayUrl(), intentMode: intentMode(), context, principal });
+    if (heartbeat) await heartbeat.assertOwned();
     const handoff = parseCompositionHandoff(outcome);
     let sessionOutcome = outcome;
     if (handoff) {
