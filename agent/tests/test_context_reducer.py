@@ -323,6 +323,61 @@ def test_explicit_correction_outranks_competing_deterministic_label(descriptors)
     assert any(evidence.source == "EXPLICIT_CORRECTION" for evidence in result.evidence)
 
 
+def test_standalone_confirmation_preserves_confirmation_evidence_and_provenance(descriptors):
+    inventory = descriptors["inventory"]
+    initial = reduce_context(
+        request(
+            ConversationReadState(None, None, 0),
+            inventory,
+            candidates(inventory, deterministic={"material": "DEMOA2", "plant": "5100"}),
+            "turn-1",
+        )
+    )
+
+    result = reduce_context(
+        request(
+            initial.next_state,
+            inventory,
+            candidates(inventory, confirmations={"plant": "1000"}),
+            "turn-2",
+        )
+    )
+
+    assert slot(result, "plant").value == "1000"
+    assert slot(result, "plant").provenance == "CONFIRMED"
+    assert any(evidence.source == "CONFIRMATION" for evidence in result.evidence)
+    assert not any(evidence.source == "EXPLICIT_CORRECTION" for evidence in result.evidence)
+
+
+def test_confirmation_outranks_competing_ordinary_deterministic_syntax(descriptors):
+    inventory = descriptors["inventory"]
+    initial = reduce_context(
+        request(
+            ConversationReadState(None, None, 0),
+            inventory,
+            candidates(inventory, deterministic={"material": "DEMOA2", "plant": "5100"}),
+            "turn-1",
+        )
+    )
+
+    result = reduce_context(
+        request(
+            initial.next_state,
+            inventory,
+            candidates(
+                inventory,
+                deterministic={"plant": "5100"},
+                confirmations={"plant": "1000"},
+            ),
+            "turn-2",
+        )
+    )
+
+    assert slot(result, "plant").value == "1000"
+    assert slot(result, "plant").provenance == "CONFIRMED"
+    assert any(evidence.source == "CONFIRMATION" for evidence in result.evidence)
+
+
 @pytest.mark.parametrize(
     "slot_name,value",
     (("plant", "工厂"), ("material", "x" * 41)),
