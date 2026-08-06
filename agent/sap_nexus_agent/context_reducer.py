@@ -166,6 +166,19 @@ def reduce_context(request: ContextReductionRequest) -> ContextResolution:
             else "DETERMINISTIC_LABEL"
         )
         if len(selected_values) > 1:
+            if explicit_values:
+                conflict_issue = "conflicting_explicit_values"
+                conflict_sources = tuple(
+                    source
+                    for source, values in (
+                        ("EXPLICIT_CORRECTION", corrections),
+                        ("CONFIRMATION", confirmations),
+                    )
+                    if values
+                )
+            else:
+                conflict_issue = "conflicting_deterministic_values"
+                conflict_sources = ("DETERMINISTIC_LABEL",)
             replacement = SlotBinding(
                 name=name,
                 value=None,
@@ -174,12 +187,15 @@ def reduce_context(request: ContextReductionRequest) -> ContextResolution:
                 provenance="EXPLICIT",
                 source_turn_id=request.turn_id,
                 source_span=None,
-                issues=("conflicting_deterministic_values",),
+                issues=(conflict_issue,),
             )
             slots[name] = replacement
             changed_slots.append(name)
-            _append_unique(issues, f"conflicting_deterministic_values:{name}")
-            evidence.append(ResolutionEvidence(name, None, "DETERMINISTIC_LABEL", "conflict"))
+            _append_unique(issues, f"{conflict_issue}:{name}")
+            evidence.extend(
+                ResolutionEvidence(name, None, source, "conflict")
+                for source in conflict_sources
+            )
             continue
 
         if selected_values:

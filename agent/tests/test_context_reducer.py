@@ -405,6 +405,16 @@ def test_mixed_correction_and_confirmation_conflict_in_the_same_top_tier(descrip
     assert result.next_state.active_frame.status == "CONFLICTED"
     assert slot(result, "plant").state == "CONFLICTED"
     assert slot(result, "plant").candidates == ("1000", "5100")
+    assert slot(result, "plant").issues == ("conflicting_explicit_values",)
+    assert "conflicting_explicit_values:plant" in result.issues
+    assert {
+        (evidence.source, evidence.reason)
+        for evidence in result.evidence
+        if evidence.slot == "plant"
+    } == {
+        ("EXPLICIT_CORRECTION", "conflict"),
+        ("CONFIRMATION", "conflict"),
+    }
 
 
 def test_same_value_correction_and_confirmation_are_deduped_with_auditable_evidence(descriptors):
@@ -680,6 +690,13 @@ def test_each_read_descriptor_has_fail_closed_slot_operations(
         request(ready, descriptor, ContextCandidateSet(conflict_slots, (), ()), "turn-4")
     )
     assert conflicted.next_state.active_frame.status == "CONFLICTED"
+    assert slot(conflicted, replace_slot).issues == ("conflicting_deterministic_values",)
+    assert f"conflicting_deterministic_values:{replace_slot}" in conflicted.issues
+    assert [
+        evidence.source
+        for evidence in conflicted.evidence
+        if evidence.slot == replace_slot and evidence.reason == "conflict"
+    ] == ["DETERMINISTIC_LABEL"]
 
     pending = PendingInteraction.slot_clarification(
         frame_id=ready.active_frame.frame_id,
