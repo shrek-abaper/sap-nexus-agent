@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Callable
 
+from sap_nexus_agent.context_decision_gate import ContextShadow
 from sap_nexus_agent.conversation_context import ConversationContext, LastContext
 from sap_nexus_agent.execution_result import ExecutionResult, ValidationResult
 from sap_nexus_agent.gateway_client import GatewayClientProtocol
@@ -65,7 +66,11 @@ def outcome_to_workbench_dict(outcome: AgentOutcome) -> dict[str, object]:
         "plannerFailure": _planner_failure_to_dict(outcome.planner_failure),
         # Shadow rollout evidence is intentionally limited to decisions and
         # slot names; raw history and model payloads never leave the server.
-        "contextShadow": dict(outcome.context_shadow) if outcome.context_shadow else None,
+        "contextShadow": (
+            outcome.context_shadow.to_dict()
+            if isinstance(outcome.context_shadow, ContextShadow)
+            else None
+        ),
         # Conversational context (Task 5): LastContext for the next turn,
         # derived from the outcome's match_decision. The backend records this
         # on the session so the next utterance can continue slot-fill (CLARIFY)

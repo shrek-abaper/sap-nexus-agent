@@ -3,7 +3,7 @@ from __future__ import annotations
 import itertools
 import os
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Callable
@@ -104,7 +104,7 @@ class AgentOutcome:
     updated_context: "ConversationContext | None" = None
     # Task 4 shadow rollout evidence. This is a redacted comparison only;
     # it never contains a shadow CallPlan, session state, or model payload.
-    context_shadow: dict[str, object] | None = None
+    context_shadow: "ContextShadow | None" = None
 
 
 IntentAdapter = Callable[[str, "ConversationContext | None"], IntentParseResult]
@@ -272,6 +272,16 @@ def run_query(
         snapshot_id=lease.snapshot_id,
         principal_id=effective_principal.principal_id,
     )
+    # Shadow uses the execution view only. The legacy selector keeps its
+    # existing dry-run visibility projection and remains authoritative.
+    shadow_visible_capability_set = VisibleCapabilitySet(
+        cards=tuple(
+            replace(card, visibility="VISIBLE_EXECUTION")
+            for card in filter_visible(all_cards, for_execution=True)
+        ),
+        snapshot_id=lease.snapshot_id,
+        principal_id=effective_principal.principal_id,
+    )
 
     # Runbook 14 bridge: if the adapter returned an IntentEnvelope, dispatch
     # through recall -> rerank -> select_capability_from_envelope. Otherwise
@@ -294,7 +304,7 @@ def run_query(
         decision=decision,
         envelope=envelope,
         context=context,
-        visible=visible_capability_set,
+        visible=shadow_visible_capability_set,
         snapshot_id=lease.snapshot_id,
         sources=sources,
     )
@@ -728,7 +738,7 @@ def _finalize_inventory(
     *,
     decision: MatchDecision | None = None,
     updated_context: "ConversationContext | None" = None,
-    context_shadow: dict[str, object] | None = None,
+    context_shadow: "ContextShadow | None" = None,
 ) -> AgentOutcome:
     fact = build_availability_fact(call_plan.agent_trace_id, execution, call_plan.parameters)
     if fact is None:
@@ -783,7 +793,7 @@ def _finalize_purchase_order(
     *,
     decision: MatchDecision | None = None,
     updated_context: "ConversationContext | None" = None,
-    context_shadow: dict[str, object] | None = None,
+    context_shadow: "ContextShadow | None" = None,
 ) -> AgentOutcome:
     facts = build_purchase_order_facts(call_plan.agent_trace_id, execution, call_plan.parameters)
     total_count = execution.data.get("totalCount")
@@ -833,13 +843,42 @@ def _context_shadow(
     visible: VisibleCapabilitySet,
     snapshot_id: str,
     sources: SemanticSourceDocuments,
-) -> dict[str, object] | None:
+) -> "ContextShadow | None":
     """Compare legacy selection with a local v2 reduction, without execution."""
-    if mode != "shadow" or envelope is None or decision.capability_id is None:
+    if mode != "shadow" or envelope is None:
         return None
 
+    from sap_nexus_agent.context_decision_gate import (
+        ContextShadow,
+        ReadCapabilityCandidates,
+        decide_read_context,
+    )
+
+    capability_candidates = _shadow_capability_candidates(envelope, snapshot_id)
+    if capability_candidates is None:
+        return None
+    if len(capability_candidates.capability_ids) > 1:
+        frame_decision = decide_read_context(
+            None,
+            visible=visible,
+            current_snapshot_id=snapshot_id,
+            capability_candidates=capability_candidates,
+        )
+        return ContextShadow(
+            legacy_decision=decision.decision_type,
+            frame_v2_decision=frame_decision.decision.decision_type,
+            slot_diff=(),
+            would_block_legacy_execution=(
+                decision.decision_type == "SELECT"
+                and frame_decision.decision.decision_type != "SELECT"
+            ),
+            would_clarify=frame_decision.decision.decision_type == "CLARIFY",
+        )
+
+    capability_id = capability_candidates.capability_ids[0]
+
     descriptor = _current_read_descriptor(
-        capability_id=decision.capability_id,
+        capability_id=capability_id,
         visible=visible,
         snapshot_id=snapshot_id,
         sources=sources,
@@ -848,7 +887,6 @@ def _context_shadow(
         return None
 
     from sap_nexus_agent.context_candidates import extract_context_candidates
-    from sap_nexus_agent.context_decision_gate import decide_read_context
     from sap_nexus_agent.context_reducer import ContextReductionRequest, reduce_context
     from sap_nexus_agent.read_context import ConversationReadState
 
@@ -869,27 +907,52 @@ def _context_shadow(
         )
     )
     frame_decision = decide_read_context(
-        resolution, visible=visible, current_snapshot_id=snapshot_id
+        resolution,
+        visible=visible,
+        current_snapshot_id=snapshot_id,
+        capability_candidates=capability_candidates,
     )
     legacy_parameters = decision.parameters or {}
     frame_parameters = frame_decision.call_plan_parameters or {}
     slot_order = [input_.name for input_ in descriptor.inputs]
-    all_slots = slot_order + sorted(
-        (set(legacy_parameters) | set(frame_parameters)) - set(slot_order)
-    )
+    all_slots = slot_order
     slot_diff = [
         name for name in all_slots if legacy_parameters.get(name) != frame_parameters.get(name)
     ]
-    return {
-        "legacyDecision": decision.decision_type,
-        "frameV2Decision": frame_decision.decision.decision_type,
-        "slotDiff": slot_diff,
-        "wouldBlockLegacyExecution": (
+    return ContextShadow(
+        legacy_decision=decision.decision_type,
+        frame_v2_decision=frame_decision.decision.decision_type,
+        slot_diff=tuple(slot_diff),
+        would_block_legacy_execution=(
             decision.decision_type == "SELECT"
             and frame_decision.decision.decision_type != "SELECT"
         ),
-        "wouldClarify": frame_decision.decision.decision_type == "CLARIFY",
-    }
+        would_clarify=frame_decision.decision.decision_type == "CLARIFY",
+    )
+
+
+def _shadow_capability_candidates(
+    envelope: "IntentEnvelope", snapshot_id: str
+) -> "ReadCapabilityCandidates | None":
+    """Preserve envelope goal count while binding IDs to the current snapshot later."""
+    from sap_nexus_agent.context_decision_gate import ReadCapabilityCandidates
+
+    capability_ids = tuple(
+        goal.capability_hint for goal in envelope.goals if goal.capability_hint
+    )
+    if not capability_ids:
+        return None
+    return ReadCapabilityCandidates(
+        capability_ids=capability_ids,
+        snapshot_id=snapshot_id,
+        purpose=(
+            "AMBIGUITY"
+            if len(capability_ids) > 1 and envelope.ambiguities
+            else "MULTI_GOAL"
+            if len(capability_ids) > 1
+            else "AMBIGUITY"
+        ),
+    )
 
 
 def _current_read_descriptor(
@@ -906,6 +969,7 @@ def _current_read_descriptor(
     card = cards[0]
     if (
         card.registry_snapshot_id != snapshot_id
+        or card.visibility != "VISIBLE_EXECUTION"
         or card.governance.side_effect != "none"
         or card.governance.requires_approval
         or card.governance.data_classification != "internal"

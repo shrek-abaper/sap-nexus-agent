@@ -236,21 +236,38 @@ def test_awaiting_batch_confirm_serializes_combinations():
 
 
 def test_workbench_output_serializes_only_redacted_context_shadow():
+    from sap_nexus_agent.context_decision_gate import ContextShadow
+
+    outcome = AgentOutcome(
+        status="success",
+        context_shadow=ContextShadow(
+            legacy_decision="SELECT",
+            frame_v2_decision="CLARIFY",
+            slot_diff=("material", "plant"),
+            would_block_legacy_execution=True,
+            would_clarify=True,
+        ),
+    )
+
+    payload = outcome_to_workbench_dict(outcome)
+
+    assert payload["contextShadow"] == outcome.context_shadow.to_dict()
+    assert "rawPayload" not in payload["contextShadow"]
+
+
+def test_workbench_rejects_hostile_untyped_context_shadow_payload():
     outcome = AgentOutcome(
         status="success",
         context_shadow={
             "legacyDecision": "SELECT",
-            "frameV2Decision": "CLARIFY",
-            "slotDiff": ["material", "plant"],
-            "wouldBlockLegacyExecution": True,
+            "rawPayload": {"history": ["secret"], "token": "secret"},
             "wouldClarify": True,
         },
     )
 
     payload = outcome_to_workbench_dict(outcome)
 
-    assert payload["contextShadow"] == outcome.context_shadow
-    assert "rawPayload" not in payload["contextShadow"]
+    assert payload["contextShadow"] is None
 
 
 def test_non_batch_outcome_combinations_is_none():

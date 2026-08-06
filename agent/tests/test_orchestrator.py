@@ -93,13 +93,113 @@ def test_shadow_context_keeps_legacy_authoritative_and_redacts_comparison(monkey
         ("MM.Inventory.GetAvailability", {"material": "1000", "plant": "工厂", "unit": "EA"})
     ]
     assert len(gateway.execute_calls) == 1
-    assert outcome.context_shadow == {
+    assert outcome.context_shadow.to_dict() == {
         "legacyDecision": "SELECT",
         "frameV2Decision": "CLARIFY",
         "slotDiff": ["material", "plant"],
         "wouldBlockLegacyExecution": True,
         "wouldClarify": True,
     }
+    assert context.read_state == ConversationReadState(None, None, 0)
+
+
+def test_shadow_context_escalates_multiple_visible_read_goals_without_side_effects(monkeypatch):
+    """Multiple envelope READ goals produce shadow escalation without a second call."""
+    from sap_nexus_agent.conversation_context import ConversationContext
+    from sap_nexus_agent.intent_envelope import IntentEnvelope, IntentGoal
+
+    calls = []
+
+    def adapter(text, _context=None):
+        calls.append(text)
+        return IntentEnvelope(
+            envelope_id="env-multi-read",
+            utterance=text,
+            goals=(
+                IntentGoal("库存", "MM.Inventory.GetAvailability", {}, ["material", "plant"]),
+                IntentGoal("采购订单", "MM.PurchaseOrder.GetList", {}, ["vendor"]),
+            ),
+            user_constraints={},
+            ambiguities=[],
+            reference_turn_id=None,
+            model_evidence={"rawPayload": {"history": "do-not-return"}},
+            snapshot_id="model-controlled",
+            discard_reasons=[],
+            created_by="llm",
+        )
+
+    monkeypatch.setenv("READ_CONTEXT_MODE", "shadow")
+    gateway = FakeGatewayClient()
+    context = ConversationContext(
+        last_context=None,
+        history=None,
+        read_state=ConversationReadState(None, None, 0),
+        schema_version=2,
+    )
+
+    outcome = run_query("查库存和采购订单", gateway, intent_adapter=adapter, context=context)
+
+    assert calls == ["查库存和采购订单"]
+    assert outcome.match_decision is not None
+    assert outcome.match_decision.decision_type == "ESCALATE_TO_PLANNER"
+    assert outcome.context_shadow.to_dict() == {
+        "legacyDecision": "ESCALATE_TO_PLANNER",
+        "frameV2Decision": "ESCALATE_TO_PLANNER",
+        "slotDiff": [],
+        "wouldBlockLegacyExecution": False,
+        "wouldClarify": False,
+    }
+    assert gateway.validate_calls == []
+    assert gateway.execute_calls == []
+    assert context.read_state == ConversationReadState(None, None, 0)
+
+
+def test_shadow_context_shows_options_for_bounded_ambiguous_read_goals(monkeypatch):
+    """Envelope ambiguity is advisory, while Registry visibility bounds options."""
+    from sap_nexus_agent.conversation_context import ConversationContext
+    from sap_nexus_agent.intent_envelope import IntentEnvelope, IntentGoal
+
+    calls = []
+
+    def adapter(text, _context=None):
+        calls.append(text)
+        return IntentEnvelope(
+            envelope_id="env-ambiguous-read",
+            utterance=text,
+            goals=(
+                IntentGoal("库存", "MM.Inventory.GetAvailability", {}, ["material", "plant"]),
+                IntentGoal("采购订单", "MM.PurchaseOrder.GetList", {}, ["vendor"]),
+            ),
+            user_constraints={},
+            ambiguities=["which-read-capability"],
+            reference_turn_id=None,
+            model_evidence={"rawPayload": {"history": "do-not-return"}},
+            snapshot_id="model-controlled",
+            discard_reasons=[],
+            created_by="llm",
+        )
+
+    monkeypatch.setenv("READ_CONTEXT_MODE", "shadow")
+    gateway = FakeGatewayClient()
+    context = ConversationContext(
+        last_context=None,
+        history=None,
+        read_state=ConversationReadState(None, None, 0),
+        schema_version=2,
+    )
+
+    outcome = run_query("查库存或采购订单", gateway, intent_adapter=adapter, context=context)
+
+    assert calls == ["查库存或采购订单"]
+    assert outcome.context_shadow.to_dict() == {
+        "legacyDecision": "ESCALATE_TO_PLANNER",
+        "frameV2Decision": "SHOW_OPTIONS",
+        "slotDiff": [],
+        "wouldBlockLegacyExecution": False,
+        "wouldClarify": False,
+    }
+    assert gateway.validate_calls == []
+    assert gateway.execute_calls == []
     assert context.read_state == ConversationReadState(None, None, 0)
 
 
