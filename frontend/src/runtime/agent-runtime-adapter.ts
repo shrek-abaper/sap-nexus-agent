@@ -8,9 +8,7 @@ import type {
   ConversationContext,
   DurableConversationStore,
   DurableRunStore,
-  LastContext,
-  SessionState,
-  Turn,
+  SessionStateV2,
   WorkbenchOutcome
 } from "./durable/types";
 import { JsonlConversationStore } from "./durable/jsonl-conversation-store";
@@ -38,12 +36,25 @@ export type { ApprovalDecision } from "./durable/types";
 import { redactArtifact } from "./redaction";
 import type { JsonValue } from "../shared/types/artifacts";
 
-type CreateAgentRunInput = {
+export type CreateAgentRunInput = {
   query: string;
   rfcName?: string;
   conversationId?: string;
+  turnId?: string;
   principal: TrustedPrincipal;
 };
+
+export type CreateAgentRunResult = { runId: string; turnId: string };
+
+export class ConversationProtocolError extends Error {
+  constructor(
+    readonly code: "CONVERSATION_BUSY" | "CONTEXT_VERSION_CONFLICT" | "CONVERSATION_TURN_IN_FLIGHT",
+    message: string,
+  ) {
+    super(message);
+    this.name = "ConversationProtocolError";
+  }
+}
 
 type ApprovalContinuation = {
   type?: "approval";
@@ -107,38 +118,80 @@ export function resetAgentSessionsForTests() {
   void conversationStore.clearAll();
 }
 
-async function getSession(conversationId: string, principalId: string): Promise<SessionState> {
-  const existing = await conversationStore.load(conversationId);
-  if (!existing) {
-    const session: SessionState = { lastContext: null, lastRunId: null, history: [], principalId };
-    await conversationStore.save(conversationId, session);
-    return session;
-  }
-  if (existing.principalId !== principalId) {
-    throw new Error("Conversation does not belong to the current principal");
-  }
-  return existing;
+async function getSession(conversationId: string, principalId: string): Promise<SessionStateV2> {
+  return await conversationStore.load(conversationId, principalId) ?? newSession(principalId);
 }
 
-function buildContext(session: SessionState): ConversationContext | undefined {
-  if (!session.lastContext) return undefined;
-  // Align with Python llm_intent.py `context.history[-6:]`: 近 3 轮 =
-  // user+assistant = 6 条 Turn (Concern 3).
-  const recent = session.history.slice(-6);
+function newSession(principalId: string): SessionStateV2 {
   return {
-    lastContext: session.lastContext,
-    history: recent.length > 0 ? recent : null
+    schemaVersion: 2,
+    stateVersion: 0,
+    principalId,
+    activeFrame: null,
+    recentFrames: [],
+    pendingInteraction: null,
+    history: [],
+    lastAppliedTurnId: null,
+    lastRunId: null,
   };
 }
 
-export async function createAgentRun(input: CreateAgentRunInput): Promise<{ runId: string }> {
+function buildContext(session: SessionStateV2): ConversationContext | undefined {
+  // Align with Python llm_intent.py `context.history[-6:]`: 近 3 轮 =
+  // user+assistant = 6 条 Turn (Concern 3).
+  const recent = session.history.slice(-6);
+  if (recent.length === 0) return undefined;
+  return {
+    // Persisted legacy context is never promoted back into execution authority.
+    lastContext: null,
+    history: recent,
+  };
+}
+
+export async function createAgentRun(input: CreateAgentRunInput): Promise<CreateAgentRunResult> {
   if (input.rfcName) {
     throw new Error("Raw RFC execution is not allowed");
   }
+  const turnId = input.turnId ?? `turn-${crypto.randomUUID()}`;
+  if (!turnId) throw new Error("turnId must be a non-empty string");
 
-  // Q2: reject new queries on a conversation that still has a pending write approval.
-  if (input.conversationId) {
-    const session = await getSession(input.conversationId, input.principal.principalId);
+  if (!input.conversationId) {
+    const runId = await startAgentRun(input.query, input.principal);
+    void executeRunnerInBackground(
+      runId,
+      input.query,
+      undefined,
+      new Date().toISOString(),
+      input.principal.principalId,
+      input.principal,
+    );
+    return { runId, turnId };
+  }
+
+  const conversationId = input.conversationId;
+  const conversationLeaseOwner = `${workerId}:conversation:${crypto.randomUUID()}`;
+  const lease = await conversationStore.claim(conversationId, conversationLeaseOwner, 60_000);
+  if (lease.status === "rejected") {
+    throw new ConversationProtocolError(
+      "CONVERSATION_BUSY",
+      `Conversation is held by another worker (${lease.holder})`,
+    );
+  }
+
+  let backgroundOwnsLease = false;
+  try {
+    const session = await getSession(conversationId, input.principal.principalId);
+    if (session.lastAppliedTurnId === turnId && session.lastRunId) {
+      const prior = await runStore.load(session.lastRunId);
+      if (prior && isTerminalRun(prior)) {
+        return { runId: prior.runId, turnId };
+      }
+      throw new ConversationProtocolError(
+        "CONVERSATION_TURN_IN_FLIGHT",
+        "The turn was persisted but has no terminal result; automatic READ replay is disabled",
+      );
+    }
+
     const lastRunId = session.lastRunId;
     if (lastRunId) {
       const lastRun = await runStore.load(lastRunId);
@@ -146,24 +199,75 @@ export async function createAgentRun(input: CreateAgentRunInput): Promise<{ runI
         throw new Error("当前对话有待审批的写操作，请先处理审批后再发起新查询。");
       }
     }
-  }
 
+    const runId = `run-${crypto.randomUUID()}`;
+    const nextSession: SessionStateV2 = {
+      ...session,
+      stateVersion: session.stateVersion + 1,
+      history: [...session.history, { role: "user", content: input.query }],
+      lastAppliedTurnId: turnId,
+      lastRunId: runId,
+    };
+    const saved = await conversationStore.compareAndSwap(
+      conversationId,
+      session.stateVersion,
+      nextSession,
+    );
+    if (saved.status === "conflict") {
+      throw new ConversationProtocolError(
+        "CONTEXT_VERSION_CONFLICT",
+        `Conversation state changed from version ${session.stateVersion} to ${saved.actualVersion}`,
+      );
+    }
+
+    const timestamp = new Date().toISOString();
+    await persistStartedRun(runId, input.query, input.principal, timestamp);
+    const context = buildContext(session);
+    backgroundOwnsLease = true;
+    void executeRunnerInBackground(
+      runId,
+      input.query,
+      conversationId,
+      timestamp,
+      input.principal.principalId,
+      input.principal,
+      turnId,
+      nextSession.stateVersion,
+      conversationLeaseOwner,
+      context,
+    );
+
+    return { runId, turnId };
+  } finally {
+    if (!backgroundOwnsLease) {
+      await conversationStore.release(conversationId, conversationLeaseOwner);
+    }
+  }
+}
+
+async function startAgentRun(
+  query: string,
+  principal: TrustedPrincipal,
+): Promise<string> {
   const runId = `run-${crypto.randomUUID()}`;
-  const timestamp = new Date().toISOString();
-  const query = input.query;
+  await persistStartedRun(runId, query, principal, new Date().toISOString());
+  return runId;
+}
+
+async function persistStartedRun(
+  runId: string,
+  query: string,
+  principal: TrustedPrincipal,
+  timestamp: string,
+): Promise<void> {
   const record: AgentRunRecord = {
     runId,
     query,
     events: [{ runId, sequence: 1, timestamp, type: "run_started", state: "running" }],
-    principalId: input.principal.principalId
+    principalId: principal.principalId,
   };
   await runStore.save(runId, record);
   await runStore.claim(runId, workerId, 60_000);
-
-  // §1.1: fire-and-forget background execution; return runId immediately
-  void executeRunnerInBackground(runId, query, input.conversationId, timestamp, input.principal.principalId, input.principal);
-
-  return { runId };
 }
 
 async function executeRunnerInBackground(
@@ -172,11 +276,14 @@ async function executeRunnerInBackground(
   conversationId: string | undefined,
   timestamp: string,
   principalId: string,
-  principal?: TrustedPrincipal
+  principal?: TrustedPrincipal,
+  turnId?: string,
+  expectedSessionVersion?: number,
+  conversationLeaseOwner?: string,
+  context?: ConversationContext,
 ): Promise<void> {
   try {
     const runner = runnerForTests ?? runLocalPythonAgent;
-    const context = conversationId ? buildContext(await getSession(conversationId, principalId)) : undefined;
     const outcome = await runner({ query, gatewayUrl: gatewayUrl(), intentMode: intentMode(), context, principal });
     const handoff = parseCompositionHandoff(outcome);
     let sessionOutcome = outcome;
@@ -208,7 +315,40 @@ async function executeRunnerInBackground(
           responseText: composition.narrative.summary,
         };
       }
-    } else {
+    }
+
+    if (conversationId && turnId && expectedSessionVersion !== undefined) {
+      const session = await getSession(conversationId, principalId);
+      if (session.stateVersion !== expectedSessionVersion ||
+          session.lastAppliedTurnId !== turnId || session.lastRunId !== runId) {
+        throw new ConversationProtocolError(
+          "CONTEXT_VERSION_CONFLICT",
+          "Conversation binding changed before the run result could be persisted",
+        );
+      }
+      const nextHistory = [...session.history];
+      if (sessionOutcome.responseText) {
+        nextHistory.push({ role: "assistant", content: sessionOutcome.responseText });
+      }
+      const nextSession: SessionStateV2 = {
+        ...session,
+        stateVersion: session.stateVersion + 1,
+        history: nextHistory,
+      };
+      const saved = await conversationStore.compareAndSwap(
+        conversationId,
+        session.stateVersion,
+        nextSession,
+      );
+      if (saved.status === "conflict") {
+        throw new ConversationProtocolError(
+          "CONTEXT_VERSION_CONFLICT",
+          `Conversation result lost CAS at version ${saved.actualVersion}`,
+        );
+      }
+    }
+
+    if (!handoff) {
       await emitEventsFromOutcome(runId, query, outcome, timestamp,
         (event) => runStore.appendEvent(runId, event), 2);
 
@@ -216,19 +356,6 @@ async function executeRunnerInBackground(
         await runStore.appendPendingOutcome(runId, outcome);
       }
     }
-
-    if (conversationId) {
-      const session = await getSession(conversationId, principalId);
-      session.lastRunId = runId;
-      session.history.push({ role: "user", content: query });
-      if (sessionOutcome.responseText) {
-        session.history.push({ role: "assistant", content: sessionOutcome.responseText });
-      }
-      session.lastContext = sessionOutcome.lastContext ?? null;
-      await conversationStore.save(conversationId, session);
-    }
-
-    await runStore.release(runId, workerId);
   } catch (error) {
     const currentRecord = await runStore.load(runId);
     if (!currentRecord) return;
@@ -237,8 +364,17 @@ async function executeRunnerInBackground(
     for (const event of failEvents) {
       await runStore.appendEvent(runId, event);
     }
+  } finally {
     await runStore.release(runId, workerId);
+    if (conversationId && conversationLeaseOwner) {
+      await conversationStore.release(conversationId, conversationLeaseOwner);
+    }
   }
+}
+
+function isTerminalRun(record: AgentRunRecord): boolean {
+  const last = record.events[record.events.length - 1];
+  return last?.type === "run_completed" || last?.type === "run_failed";
 }
 
 export async function getAgentRunEvents(

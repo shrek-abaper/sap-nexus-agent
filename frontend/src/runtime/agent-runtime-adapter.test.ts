@@ -74,6 +74,27 @@ describe("agent-runtime-adapter durable integration", () => {
     expect(events[0].type).toBe("run_started");
   });
 
+  it("preserves a supplied turnId and generates one only when absent", async () => {
+    setAgentRunnerForTests(async () => ({ status: "success", responseText: "ok" } as WorkbenchOutcome));
+    const supplied = await createAgentRun({
+      query: "查询库存",
+      conversationId: "c-turn-supplied",
+      turnId: "client-turn-1",
+      principal: PLACEHOLDER_PRINCIPAL,
+    });
+    const generated = await createAgentRun({
+      query: "查询库存",
+      conversationId: "c-turn-generated",
+      principal: PLACEHOLDER_PRINCIPAL,
+    });
+
+    await Promise.all([waitForRunSettled(supplied.runId), waitForRunSettled(generated.runId)]);
+
+    expect(supplied.turnId).toBe("client-turn-1");
+    expect(generated.turnId).toMatch(/^turn-/);
+    expect(generated.turnId).not.toBe(supplied.turnId);
+  });
+
   it("getAgentRunEvents returns [] for unknown run", async () => {
     expect(await getAgentRunEvents("run-missing", PLACEHOLDER_PRINCIPAL)).toEqual([]);
   });
@@ -197,13 +218,16 @@ describe("agent-runtime-adapter durable integration", () => {
     setAgentRunnerForTests(async () => ({ status: "success", responseText: "ok" } as WorkbenchOutcome));
     const { runId } = await createAgentRun({ query: "查询库存", conversationId: "c-own", principal: PLACEHOLDER_PRINCIPAL });
     expect(runId).toBeDefined();
+    await waitForRunSettled(runId);
     // second request with same principal should succeed (no throw)
     const { runId: runId2 } = await createAgentRun({ query: "再次查询", conversationId: "c-own", principal: PLACEHOLDER_PRINCIPAL });
     expect(runId2).toBeDefined();
+    await waitForRunSettled(runId2);
   });
 
   it("getSession rejects cross-principal access to existing conversation (fail-closed)", async () => {
-    await createAgentRun({ query: "查询库存", conversationId: "c-x", principal: PLACEHOLDER_PRINCIPAL });
+    const { runId } = await createAgentRun({ query: "查询库存", conversationId: "c-x", principal: PLACEHOLDER_PRINCIPAL });
+    await waitForRunSettled(runId);
     const attacker: TrustedPrincipal = {
       principalId: "attacker-002",
       role: "operator",
