@@ -76,7 +76,8 @@ public class CapabilityRegistryLoader {
                     asString(raw.get("type")),
                     asNullableInt(raw.get("minLength")),
                     asNullableInt(raw.get("maxLength")),
-                    asString(raw.get("sapParameter"))
+                    asString(raw.get("sapParameter")),
+                    asString(raw.get("pattern"))
             ));
         }
         return inputs;

@@ -3,6 +3,8 @@ package com.sapnexus.gateway.registry;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 public class CapabilityRegistryValidator {
     public void validate(CapabilityRegistry registry) {
@@ -56,6 +58,20 @@ public class CapabilityRegistryValidator {
         }
         if (capability.kind() == CapabilityKind.Action && !capability.governance().requiresApproval()) {
             throw new RegistryValidationException("Action capability must require human approval: " + capability.capabilityId());
+        }
+        for (CapabilityDefinition.InputField input : capability.inputs()) {
+            validatePattern(input);
+        }
+    }
+
+    private void validatePattern(CapabilityDefinition.InputField input) {
+        if (input.pattern() == null) {
+            return;
+        }
+        try {
+            Pattern.compile(input.pattern());
+        } catch (PatternSyntaxException e) {
+            throw new RegistryValidationException("Invalid input pattern: " + input.name());
         }
     }
 

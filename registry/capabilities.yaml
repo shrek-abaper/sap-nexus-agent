@@ -34,6 +34,7 @@ capabilities:
         type: string
         minLength: 1
         maxLength: 4
+        pattern: ^[A-Z0-9]{4}$
         sapParameter: PLANT
       - name: unit
         semanticName: unitOfMeasure
@@ -126,6 +127,7 @@ capabilities:
         type: string
         minLength: 1
         maxLength: 4
+        pattern: ^[A-Z0-9]{4}$
         sapParameter: Plant
       - name: material
         semanticName: materialNumber

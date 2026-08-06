@@ -8,6 +8,7 @@ import com.sapnexus.gateway.result.ErrorType;
 
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 public class CapabilityValidationService {
     private final CapabilityRegistry registry;
@@ -51,6 +52,9 @@ public class CapabilityValidationService {
         if (input.minLength() != null && text.length() < input.minLength()) {
             return false;
         }
-        return input.maxLength() == null || text.length() <= input.maxLength();
+        if (input.maxLength() != null && text.length() > input.maxLength()) {
+            return false;
+        }
+        return input.pattern() == null || Pattern.matches(input.pattern(), text);
     }
 }

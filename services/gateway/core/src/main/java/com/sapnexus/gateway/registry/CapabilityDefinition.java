@@ -60,8 +60,21 @@ public record CapabilityDefinition(
             String type,
             Integer minLength,
             Integer maxLength,
-            String sapParameter
+            String sapParameter,
+            String pattern
     ) {
+        public InputField(
+                String name,
+                String semanticName,
+                String semanticType,
+                boolean required,
+                String type,
+                Integer minLength,
+                Integer maxLength,
+                String sapParameter
+        ) {
+            this(name, semanticName, semanticType, required, type, minLength, maxLength, sapParameter, null);
+        }
     }
 
     public record OutputField(

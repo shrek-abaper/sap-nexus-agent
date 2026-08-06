@@ -206,10 +206,43 @@ class CapabilityRegistryLoaderTest {
                 .hasMessageContaining("executor.type");
     }
 
+    @Test
+    void rejectsInvalidInputPatternAtRegistryLoadTime() throws Exception {
+        Path registry = writeRegistry(Files.readString(projectRegistry())
+                .replace("        sapParameter: MATERIAL", "        pattern: \"[\"\n        sapParameter: MATERIAL"));
+
+        assertThatThrownBy(() -> new CapabilityRegistryLoader().load(registry))
+                .isInstanceOf(RegistryValidationException.class)
+                .hasMessageContaining("pattern");
+    }
+
+    @Test
+    void loadsPlantPatternFromTheProjectRegistry() {
+        CapabilityRegistry loaded = new CapabilityRegistryLoader().load(projectRegistry());
+
+        CapabilityDefinition inventory = loaded.findEnabled("MM.Inventory.GetAvailability").orElseThrow();
+        assertThat(inventory.inputs().stream()
+                .filter(input -> input.name().equals("plant"))
+                .findFirst().orElseThrow().pattern())
+                .isEqualTo("^[A-Z0-9]{4}$");
+    }
+
     private Path writeRegistry(String yaml) throws Exception {
         Path file = tempDir.resolve("capabilities.yaml");
         Files.writeString(file, yaml);
         return file;
+    }
+
+    private Path projectRegistry() {
+        Path dir = Path.of(System.getProperty("user.dir"));
+        while (dir != null && !Files.exists(dir.resolve("registry/capabilities.yaml"))) {
+            dir = dir.getParent();
+        }
+        if (dir == null) {
+            throw new IllegalStateException(
+                    "registry/capabilities.yaml not found from " + System.getProperty("user.dir"));
+        }
+        return dir.resolve("registry/capabilities.yaml");
     }
 
     private String validRegistry(String status, String sideEffect, boolean requiresApproval, String approvalPolicy) {
