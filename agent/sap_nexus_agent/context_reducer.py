@@ -116,6 +116,9 @@ def reduce_context(request: ContextReductionRequest) -> ContextResolution:
         valid_candidates = _validated_candidates(input_, slot_candidates.candidates, issues, evidence)
         corrections = _values_for_sources(valid_candidates, {"EXPLICIT_CORRECTION"})
         confirmations = _values_for_sources(valid_candidates, {"CONFIRMATION"})
+        explicit_values = corrections + tuple(
+            value for value in confirmations if value not in corrections
+        )
         pending_values = (
             _values_for_sources(valid_candidates, {"DETERMINISTIC_LABEL"})
             if pending is not None and name in pending.expected_fields
@@ -154,7 +157,7 @@ def reduce_context(request: ContextReductionRequest) -> ContextResolution:
             evidence.append(ResolutionEvidence(name, None, "EXPLICIT", "slot_cleared"))
             continue
 
-        selected_values = corrections or confirmations or pending_values or deterministic
+        selected_values = explicit_values or pending_values or deterministic
         selected_source = (
             "EXPLICIT_CORRECTION"
             if corrections
@@ -199,6 +202,10 @@ def reduce_context(request: ContextReductionRequest) -> ContextResolution:
                 changed_slots.append(name)
                 deterministic_changed = True
             evidence.append(ResolutionEvidence(name, value, selected_source, provenance.lower()))
+            if corrections and confirmations:
+                evidence.append(
+                    ResolutionEvidence(name, value, "CONFIRMATION", "coequal_explicit_evidence")
+                )
             if pending_answer:
                 confirmed_pending = True
             continue

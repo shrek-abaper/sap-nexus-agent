@@ -378,6 +378,67 @@ def test_confirmation_outranks_competing_ordinary_deterministic_syntax(descripto
     assert any(evidence.source == "CONFIRMATION" for evidence in result.evidence)
 
 
+def test_mixed_correction_and_confirmation_conflict_in_the_same_top_tier(descriptors):
+    inventory = descriptors["inventory"]
+    initial = reduce_context(
+        request(
+            ConversationReadState(None, None, 0),
+            inventory,
+            candidates(inventory, deterministic={"material": "DEMOA2", "plant": "5100"}),
+            "turn-1",
+        )
+    )
+
+    result = reduce_context(
+        request(
+            initial.next_state,
+            inventory,
+            candidates(
+                inventory,
+                explicit={"plant": "1000"},
+                confirmations={"plant": "5100"},
+            ),
+            "turn-2",
+        )
+    )
+
+    assert result.next_state.active_frame.status == "CONFLICTED"
+    assert slot(result, "plant").state == "CONFLICTED"
+    assert slot(result, "plant").candidates == ("1000", "5100")
+
+
+def test_same_value_correction_and_confirmation_are_deduped_with_auditable_evidence(descriptors):
+    inventory = descriptors["inventory"]
+    initial = reduce_context(
+        request(
+            ConversationReadState(None, None, 0),
+            inventory,
+            candidates(inventory, deterministic={"material": "DEMOA2", "plant": "5100"}),
+            "turn-1",
+        )
+    )
+
+    result = reduce_context(
+        request(
+            initial.next_state,
+            inventory,
+            candidates(
+                inventory,
+                explicit={"plant": "1000"},
+                confirmations={"plant": "1000"},
+            ),
+            "turn-2",
+        )
+    )
+
+    assert slot(result, "plant").value == "1000"
+    assert slot(result, "plant").state == "RESOLVED"
+    assert {evidence.source for evidence in result.evidence if evidence.slot == "plant"} >= {
+        "EXPLICIT_CORRECTION",
+        "CONFIRMATION",
+    }
+
+
 @pytest.mark.parametrize(
     "slot_name,value",
     (("plant", "工厂"), ("material", "x" * 41)),
