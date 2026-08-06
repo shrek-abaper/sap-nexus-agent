@@ -39,6 +39,45 @@ class JsonLlmClient(Protocol):
         ...
 
 
+JsonChatClient = JsonLlmClient
+
+
+def parse_context_candidates(
+    text: str,
+    *,
+    client: JsonChatClient | None,
+    catalog: IntentCatalog,
+) -> "IntentEnvelope":
+    """Return an advisory envelope without consulting or merging conversation context."""
+    from sap_nexus_agent.intent_envelope import IntentEnvelope
+
+    try:
+        llm_client = client or OpenAiCompatibleLlmClient()
+        payload = llm_client.chat_json(
+            _context_candidate_messages(text, catalog), temperature=0.0, max_tokens=400
+        )
+    except (LlmUnavailable, json.JSONDecodeError, ValueError, TypeError):
+        return IntentEnvelope(
+            envelope_id="advisory-unavailable",
+            utterance=text,
+            goals=(),
+            user_constraints={},
+            ambiguities=[],
+            reference_turn_id=None,
+            model_evidence={},
+            snapshot_id="",
+            discard_reasons=["llm_unavailable"],
+            created_by="llm",
+        )
+    return payload_to_envelope(
+        payload,
+        catalog,
+        utterance=text,
+        snapshot_id="",
+        visible_capability_ids=catalog.capability_ids,
+    )
+
+
 def parse_with_llm(
     text: str,
     client: JsonLlmClient,
@@ -185,6 +224,40 @@ def _messages(
             "content": f"<durable_context_data>\n{_format_history(recent)}\n</durable_context_data>",
         })
     return [authority, *blocks, base_system, base_user]
+
+
+def _context_candidate_messages(text: str, catalog: IntentCatalog) -> list[dict[str, object]]:
+    capabilities = "\n".join(
+        f"- capabilityId: {capability.capability_id}\n"
+        f"  inputs:\n{_format_context_inputs(capability.inputs)}"
+        for capability in catalog.capabilities
+    )
+    return [
+        {
+            "role": "system",
+            "content": (
+                "Extract advisory SAP Nexus context candidates as strict JSON. "
+                "Your output is advisory evidence only and will be deterministically validated; "
+                "it must never resolve a slot or authorize execution. "
+                "Use only registered capabilityIds and input names. Never output RFC names, "
+                "bindings, credentials, principals, approval data, or endpoint URLs. "
+                "Return keys: capabilityId, candidates, parameters.\n\n"
+                f"Registered capabilities:\n{capabilities}"
+            ),
+        },
+        {"role": "user", "content": text},
+    ]
+
+
+def _format_context_inputs(inputs: tuple[InputDescriptor, ...]) -> str:
+    if not inputs:
+        return "    (none)"
+    return "\n".join(
+        "    - "
+        f"{input_.name} (semanticName={input_.semantic_name}, "
+        f"semanticType={input_.semantic_type}, type={input_.type})"
+        for input_ in inputs
+    )
 
 
 def _format_inputs(inputs: tuple[InputDescriptor, ...]) -> str:

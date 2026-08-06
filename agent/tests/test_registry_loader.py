@@ -41,6 +41,11 @@ def test_inventory_descriptor_inputs_parsed():
     assert input_names == {"material", "plant", "unit"}
     material = next(inp for inp in inv.inputs if inp.name == "material")
     assert material.required is True
+    assert material.semantic_type == "sapnexus:MaterialNumber"
+    assert material.binding_kind == "identifier"
+    assert material.min_length == 1
+    assert material.max_length == 40
+    assert material.pattern is None
     unit = next(inp for inp in inv.inputs if inp.name == "unit")
     assert unit.required is False
 
@@ -119,8 +124,13 @@ def test_registry_v2_metadata_does_not_change_runtime_descriptors():
     assert tuple(field.name for field in fields(InputDescriptor)) == (
         "name",
         "semantic_name",
+        "semantic_type",
+        "binding_kind",
         "required",
         "type",
+        "min_length",
+        "max_length",
+        "pattern",
     )
 
     plan = create_call_plan(inventory.capability_id, {"material": "MAT-1"})

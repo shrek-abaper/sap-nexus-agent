@@ -11,6 +11,7 @@ from sap_nexus_agent.llm_intent import (
     _payload_to_parse_result,
     build_intent_adapter,
     parse_with_hybrid,
+    parse_context_candidates,
     parse_with_llm,
 )
 from sap_nexus_agent.registry_loader import load_intent_catalog
@@ -156,6 +157,40 @@ def test_hybrid_falls_back_to_rule_parser_when_llm_json_is_malformed():
 
     assert result.intent == "inventory_availability"
     assert result.parameters == {"material": "DEMOA1", "plant": "1000"}
+
+
+def test_parse_context_candidates_keeps_model_output_advisory():
+    catalog = load_intent_catalog()
+    client = FakeLlmClient(
+        {
+            "capabilityId": "MM.Inventory.GetAvailability",
+            "parameters": {"material": "1000", "plant": "工厂"},
+        }
+    )
+
+    envelope = parse_context_candidates("查库存", client=client, catalog=catalog)
+
+    assert envelope.created_by == "llm"
+    assert envelope.goals[0].parameters == {"material": "1000", "plant": "工厂"}
+    assert "advisory" in client.calls[0]["messages"][0]["content"].lower()
+
+
+def test_parse_context_candidates_returns_empty_advisory_envelope_for_malformed_json():
+    envelope = parse_context_candidates(
+        "查库存", client=FakeLlmClient("not-json"), catalog=load_intent_catalog()
+    )
+
+    assert envelope.goals == ()
+    assert envelope.discard_reasons == ["llm_unavailable"]
+
+
+def test_parse_context_candidates_returns_empty_advisory_envelope_when_llm_is_unavailable():
+    envelope = parse_context_candidates(
+        "查库存", client=FakeLlmClient(unavailable=True), catalog=load_intent_catalog()
+    )
+
+    assert envelope.goals == ()
+    assert envelope.discard_reasons == ["llm_unavailable"]
 
 
 def test_hybrid_returns_llm_result_directly_when_llm_outputs_rfc_name():

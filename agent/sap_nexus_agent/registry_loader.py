@@ -11,8 +11,13 @@ import yaml
 class InputDescriptor:
     name: str
     semantic_name: str
-    required: bool
-    type: str
+    semantic_type: str = ""
+    binding_kind: str | None = None
+    required: bool = False
+    type: str = "string"
+    min_length: int | None = None
+    max_length: int | None = None
+    pattern: str | None = None
 
 
 @dataclass(frozen=True)
@@ -102,8 +107,13 @@ def load_intent_catalog(repo_root: str | None = None) -> IntentCatalog:
             InputDescriptor(
                 name=inp["name"],
                 semantic_name=inp.get("semanticName", inp["name"]),
+                semantic_type=inp.get("semanticType", ""),
+                binding_kind=inp.get("bindingKind"),
                 required=bool(inp.get("required", False)),
                 type=inp.get("type", "string"),
+                min_length=inp.get("minLength"),
+                max_length=inp.get("maxLength"),
+                pattern=inp.get("pattern"),
             )
             for inp in (cap.get("inputs") or [])
             if isinstance(inp, dict) and "name" in inp
