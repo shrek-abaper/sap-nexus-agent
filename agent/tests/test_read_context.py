@@ -1,0 +1,156 @@
+import dataclasses
+
+import pytest
+
+from sap_nexus_agent.conversation_context import ConversationContext
+from sap_nexus_agent.read_context import (
+    ConversationReadState,
+    PendingInteraction,
+    ReadContextFrame,
+    SlotBinding,
+)
+
+
+def resolved_slot(name: str, value: str, turn_id: str = "turn-1") -> SlotBinding:
+    return SlotBinding(
+        name=name,
+        value=value,
+        candidates=(value,),
+        state="RESOLVED",
+        provenance="EXPLICIT",
+        source_turn_id=turn_id,
+        source_span=(0, len(value)),
+        issues=(),
+    )
+
+
+def cleared_slot(name: str, turn_id: str) -> SlotBinding:
+    return SlotBinding(
+        name=name,
+        value=None,
+        candidates=(),
+        state="CLEARED",
+        provenance="EXPLICIT",
+        source_turn_id=turn_id,
+        source_span=None,
+        issues=(),
+    )
+
+
+def test_slot_binding_round_trips_and_copies_input_collections():
+    candidates = ["DEMOA2"]
+    issues = ["observed"]
+    slot = SlotBinding(
+        name="material",
+        value="DEMOA2",
+        candidates=candidates,
+        state="RESOLVED",
+        provenance="CONFIRMED",
+        source_turn_id="turn-1",
+        source_span=(3, 13),
+        issues=issues,
+    )
+    candidates.append("1000")
+    issues.append("changed")
+
+    assert slot.candidates == ("DEMOA2",)
+    assert slot.issues == ("observed",)
+    assert SlotBinding.from_dict(slot.to_dict()) == slot
+
+
+def test_ready_frame_rejects_a_non_resolved_slot():
+    with pytest.raises(ValueError, match="READY frame"):
+        ReadContextFrame(
+            frame_id="frame-1",
+            capability_id="MM.Inventory.GetAvailability",
+            slots={"material": cleared_slot("material", "turn-2")},
+            status="READY",
+            created_turn_id="turn-1",
+            updated_turn_id="turn-2",
+            registry_snapshot_id="snapshot-1",
+            capability_version="2",
+        )
+
+
+def test_frame_round_trips_and_its_slots_cannot_be_mutated():
+    source_slots = {"material": resolved_slot("material", "DEMOA2")}
+    frame = ReadContextFrame(
+        frame_id="frame-1",
+        capability_id="MM.Inventory.GetAvailability",
+        slots=source_slots,
+        status="READY",
+        created_turn_id="turn-1",
+        updated_turn_id="turn-1",
+        registry_snapshot_id="snapshot-1",
+        capability_version="2",
+    )
+    source_slots["plant"] = resolved_slot("plant", "1000")
+
+    assert tuple(frame.slots) == ("material",)
+    with pytest.raises(TypeError):
+        frame.slots["plant"] = resolved_slot("plant", "1000")
+    assert ReadContextFrame.from_dict(frame.to_dict()) == frame
+
+
+def test_frame_rejects_invalid_enums_and_slot_name_mismatches():
+    with pytest.raises(ValueError, match="status"):
+        ReadContextFrame(
+            frame_id="frame-1",
+            capability_id="MM.Inventory.GetAvailability",
+            slots={},
+            status="UNKNOWN",
+            created_turn_id="turn-1",
+            updated_turn_id="turn-1",
+            registry_snapshot_id="snapshot-1",
+            capability_version="2",
+        )
+    with pytest.raises(ValueError, match="slot key"):
+        ReadContextFrame(
+            frame_id="frame-1",
+            capability_id="MM.Inventory.GetAvailability",
+            slots={"plant": resolved_slot("material", "DEMOA2")},
+            status="COLLECTING",
+            created_turn_id="turn-1",
+            updated_turn_id="turn-1",
+            registry_snapshot_id="snapshot-1",
+            capability_version="2",
+        )
+
+
+def test_pending_interaction_is_bound_to_frame_version_and_snapshot():
+    pending = PendingInteraction.slot_clarification(
+        frame_id="frame-1",
+        expected_fields=("material",),
+        state_version=3,
+        registry_snapshot_id="snapshot-1",
+        expires_at="2026-08-06T09:15:00Z",
+    )
+
+    assert pending.binding_key == ("frame-1", 3, "snapshot-1")
+    assert PendingInteraction.from_dict(pending.to_dict()) == pending
+
+
+def test_read_state_and_conversation_context_round_trip_without_legacy_json_changes():
+    frame = ReadContextFrame(
+        frame_id="frame-1",
+        capability_id="MM.Inventory.GetAvailability",
+        slots={"material": resolved_slot("material", "DEMOA2")},
+        status="READY",
+        created_turn_id="turn-1",
+        updated_turn_id="turn-1",
+        registry_snapshot_id="snapshot-1",
+        capability_version="2",
+    )
+    state = ConversationReadState(active_frame=frame, pending_interaction=None, state_version=3)
+    context = ConversationContext(
+        last_context=None,
+        history=None,
+        read_state=state,
+        schema_version=2,
+    )
+
+    assert ConversationContext.from_dict(context.to_dict()) == context
+    assert "readState" not in ConversationContext(last_context=None, history=None).to_dict()
+    assert "schemaVersion" not in ConversationContext(last_context=None, history=None).to_dict()
+    with pytest.raises(dataclasses.FrozenInstanceError):
+        state.state_version = 4

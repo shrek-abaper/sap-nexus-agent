@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     # Type-only import: avoids a circular import at runtime
     # (conversation_context -> match_decision -> capability_selector).
     from sap_nexus_agent.match_decision import EscalationHandoff, MatchedIntent
+    from sap_nexus_agent.read_context import ConversationReadState
 
 
 @dataclass(frozen=True)
@@ -95,9 +96,11 @@ class ConversationContext:
     history: tuple[Turn, ...] | None
     pending_show_options: "PendingShowOptions | None" = None
     pending_escalate: "PendingEscalate | None" = None
+    read_state: "ConversationReadState | None" = None
+    schema_version: int | None = None
 
     def to_dict(self) -> dict[str, object]:
-        return {
+        payload: dict[str, object] = {
             "lastContext": self.last_context.to_dict() if self.last_context else None,
             "history": [t.to_dict() for t in self.history] if self.history else None,
             "pendingShowOptions": (
@@ -107,6 +110,11 @@ class ConversationContext:
                 self.pending_escalate.to_dict() if self.pending_escalate else None
             ),
         }
+        if self.read_state is not None:
+            payload["readState"] = self.read_state.to_dict()
+        if self.schema_version is not None:
+            payload["schemaVersion"] = self.schema_version
+        return payload
 
     @classmethod
     def from_dict(cls, payload: dict[str, object]) -> "ConversationContext":
@@ -126,11 +134,21 @@ class ConversationContext:
         pending_escalate = (
             PendingEscalate.from_dict(pe_raw) if isinstance(pe_raw, dict) else None
         )
+        read_state_raw = payload.get("readState")
+        read_state = None
+        if isinstance(read_state_raw, dict):
+            from sap_nexus_agent.read_context import ConversationReadState
+
+            read_state = ConversationReadState.from_dict(read_state_raw)
+        schema_version_raw = payload.get("schemaVersion")
+        schema_version = schema_version_raw if isinstance(schema_version_raw, int) else None
         return cls(
             last_context=last_context,
             history=history,
             pending_show_options=pending_show_options,
             pending_escalate=pending_escalate,
+            read_state=read_state,
+            schema_version=schema_version,
         )
 
     def with_pending_show_options(
