@@ -1,0 +1,6 @@
+{
+  "schema": "comet.selection.v2",
+  "workflow": "native",
+  "change": "sap-nexus-governed-read-context",
+  "branch": null
+}

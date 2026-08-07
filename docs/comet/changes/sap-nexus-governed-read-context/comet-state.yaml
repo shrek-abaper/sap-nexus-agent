@@ -1,0 +1,23 @@
+schema: comet.native.v3
+minimum_runtime_version: 3
+revision: 3
+verification_protocol: legacy-v1
+name: sap-nexus-governed-read-context
+language: zh-CN
+phase: verify
+brief: brief.md
+approval: confirmed
+approved_contract_hash: 4b83254c3bc845f46e79dbd131863184aa04c726870419cfcc96948eb166db97
+spec_changes:
+  - capability: governed-read-context
+    operation: create
+    source: specs/governed-read-context/spec.md
+    base_hash: null
+verification_result: pending
+verification_report: null
+implementation_scope: runtime/evidence/scopes/49aaa0957faf20c38ce68965d30814caaa881bd03649d97d1845af006a48d3b2.json
+verification_evidence: null
+partial_allowance: runtime/evidence/allowances/211223d2b874acd0ad747a49a151089e3abeed697f7336528014d7fe762df4f6.json
+archived: false
+created_at: 2026-08-06
+run_id: ade1f358-832c-4395-82da-8b0812110eb0
