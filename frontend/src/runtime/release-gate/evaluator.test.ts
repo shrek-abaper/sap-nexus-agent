@@ -19,6 +19,20 @@ function passing(caseId: string, level: MaturityLevel): ReleaseCaseResult {
       unsupportedNarrativeClaims: 0,
       lineageRequired: 2,
       lineageLinked: 2,
+      contextConflictCases: 0,
+      falseSelects: 0,
+      nonReadyFrames: 0,
+      nonReadyGatewayCalls: 0,
+      callPlanSlotChecks: 0,
+      wrongCallPlanSlotRoles: 0,
+      duplicateTurnChecks: 0,
+      duplicateTurnGatewayCalls: 0,
+      casLeaseConflictChecks: 0,
+      stateOverwritesAfterConflict: 0,
+      staleFrameChecks: 0,
+      staleFrameExecutions: 0,
+      readWriteIsolationChecks: 0,
+      readContextWriteAuthorityCreations: 0,
     },
   };
 }
@@ -64,6 +78,26 @@ describe("evaluateRelease", () => {
 
     expect(report.decision).toBe("L1_ONLY");
     expect(report.levels.L2.hardGates.visibilityLeakageRate).toEqual({
+      actual: 0.5,
+      required: 0,
+      passed: false,
+    });
+  });
+
+  it("does not let a governed-context false SELECT be offset by passing cases", () => {
+    const falseSelect = passing("context-false-select", "L1");
+    falseSelect.metrics = {
+      ...falseSelect.metrics,
+      contextConflictCases: 1,
+      falseSelects: 1,
+    } as never;
+
+    const good = passing("l1-good", "L1");
+    good.metrics.contextConflictCases = 1;
+    const report = evaluateRelease([good, falseSelect], "L1");
+
+    expect(report.targetPassed).toBe(false);
+    expect(report.levels.L1.hardGates.falseSelectRate).toEqual({
       actual: 0.5,
       required: 0,
       passed: false,

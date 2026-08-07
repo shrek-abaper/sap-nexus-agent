@@ -129,7 +129,9 @@ def test_matcher_eval_file_covers_five_decision_classes():
         (REPO_ROOT / "evals" / "matcher_cases.yaml").read_text(encoding="utf-8")
     )
     decision_types = {
-        case["expected"]["decisionType"] for case in payload["cases"]
+        case["expected"]["decisionType"]
+        for case in payload["cases"]
+        if "expected" in case
     }
     assert decision_types >= {
         "SELECT",
@@ -222,6 +224,51 @@ def test_matcher_eval_routes_existing_files_through_legacy_path():
         summary = run_eval_file(REPO_ROOT / "evals" / filename)
         assert summary.failed == 0
         assert summary.passed == summary.total
+
+
+def test_governed_read_context_fixture_declares_complete_multi_turn_contract():
+    """Each ordered Frame-v2 turn states its authority and Gateway boundary."""
+    payload = json.loads(
+        (REPO_ROOT / "evals" / "matcher_cases.yaml").read_text(encoding="utf-8")
+    )
+    context_cases = [case for case in payload["cases"] if case.get("fixtureVersion")]
+
+    required = {
+        "direct-plant-switch",
+        "clear-then-ambiguous-reference",
+        "explicit-correction",
+        "llm-unavailable",
+        "malformed-json",
+        "technical-override-injection",
+        "capability-switch",
+        "recent-frame-explicit-restoration",
+        "registry-drift",
+        "principal-mismatch",
+        "concurrent-turns",
+        "duplicate-turn-id",
+        "read-write-authority-isolation",
+    }
+    assert {case["id"] for case in context_cases} >= required
+    for case in context_cases:
+        assert case["fixtureVersion"] == "governed-read-context-v1"
+        assert case["registrySnapshotId"]
+        assert "initialContext" in case
+        assert case["turns"]
+        for turn in case["turns"]:
+            assert turn["turnId"]
+            assert turn["expected"]["frameStatus"]
+            assert "slots" in turn["expected"]
+            assert turn["expected"]["decision"]
+            assert "validateDelta" in turn["expected"]
+            assert "executeDelta" in turn["expected"]
+
+
+def test_governed_read_context_eval_replays_reducer_and_enforces_turn_deltas():
+    """A recorded bad model payload remains CLARIFY with no CallPlan or Gateway IO."""
+    summary = run_eval_file(REPO_ROOT / "evals" / "matcher_cases.yaml")
+
+    assert summary.failed == 0
+    assert summary.passed == summary.total
 
 
 # --- S2-B dry-run Eval (Task 9) ---

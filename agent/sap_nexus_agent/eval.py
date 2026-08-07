@@ -176,6 +176,14 @@ def run_matcher_cases(cases: list[dict[str, Any]]) -> EvalSummary:
     passed = 0
     for case in cases:
         case_id = _case_id(case)
+        if case.get("fixtureVersion") == "governed-read-context-v1":
+            try:
+                _run_governed_read_context_case(case)
+            except AssertionError as exc:
+                failures.append(f"{case_id}: {exc}")
+            else:
+                passed += 1
+            continue
         if case.get("pending"):
             # SHOW_OPTIONS stays documented but skipped; is_ambiguous is a
             # Task 2 follow-up. The SHOW_OPTIONS branch in select_capability is
@@ -206,6 +214,137 @@ def run_matcher_cases(cases: list[dict[str, Any]]) -> EvalSummary:
     if failures:
         raise AssertionError("\n".join(failures))
     return EvalSummary(total=passed, passed=passed, failed=0)
+
+
+def _run_governed_read_context_case(case: dict[str, Any]) -> None:
+    """Replay versioned turns through the production Frame v2 resolver.
+
+    The Eval harness owns only fixture assertions. It does not merge slots or
+    synthesize decisions: all state changes come from ``resolve_read_turn`` and
+    execution is the production ``continue_resolved_read`` path.
+    """
+    from sap_nexus_agent.conversation_context import ConversationContext
+    from sap_nexus_agent.governed_context import PLACEHOLDER_PRINCIPAL, TrustedPrincipal
+    from sap_nexus_agent.intent_envelope import IntentEnvelope, IntentGoal
+    from sap_nexus_agent.orchestrator import (
+        _default_planner_sources,
+        continue_resolved_read,
+        resolve_read_turn,
+    )
+    from sap_nexus_agent.read_context import ConversationReadState
+
+    _assert_context_fixture_contract(case)
+    snapshot, sources = _default_planner_sources()
+    context = ConversationContext(
+        None,
+        None,
+        read_state=ConversationReadState(None, None, 0),
+        schema_version=2,
+    )
+    gateway = FakeGatewayClient(case)
+
+    for turn in case["turns"]:
+        candidate = turn["candidate"]
+        expected = turn["expected"]
+        capability_id = (
+            "MM.Inventory.GetAvailability"
+            if candidate.get("writeAuthority")
+            else candidate["capabilityId"]
+        )
+        parameters = dict(candidate.get("parameters", {}))
+        missing = list(candidate.get("missing", []))
+
+        def adapter(text: str, _context=None) -> IntentEnvelope:
+            return IntentEnvelope(
+                envelope_id=f"eval-{case['id']}-{turn['turnId']}",
+                utterance=text,
+                goals=(IntentGoal("fixture", capability_id, parameters, missing),),
+                user_constraints={},
+                ambiguities=[],
+                reference_turn_id=None,
+                model_evidence={"fixtureStatus": candidate.get("llmStatus", "recorded")},
+                snapshot_id="advisory-only",
+                discard_reasons=[],
+                created_by="fixture",
+            )
+
+        before_validate = len(gateway.validate_calls)
+        before_execute = len(gateway.execute_calls)
+        outcome = resolve_read_turn(
+            turn["userQuery"],
+            context=context,
+            intent_adapter=adapter,
+            principal=PLACEHOLDER_PRINCIPAL,
+            snapshot=snapshot,
+            sources=sources,
+            turn_id=turn["turnId"],
+        )
+        assert outcome.match_decision is not None
+        assert outcome.match_decision.decision_type == expected["decision"]
+        assert outcome.approval_record is None
+        assert outcome.selection_execution_binding is None
+        assert outcome.read_state is not None
+        frame = outcome.read_state.active_frame
+        assert frame is not None
+        assert frame.status == expected["frameStatus"]
+        _assert_context_slots(frame.slots, expected["slots"])
+
+        if outcome.call_plan is not None:
+            # Conflict fixtures exercise the real fail-closed continuation
+            # preflight; normal READY turns exercise validate then execute.
+            execution_principal = (
+                TrustedPrincipal("fixture-other-principal", "operator", {"tenantId": "default"})
+                if candidate.get("principalMismatch")
+                else PLACEHOLDER_PRINCIPAL
+            )
+            continue_resolved_read(
+                outcome.call_plan,
+                outcome.read_execution_binding,
+                gateway,
+                persisted_state=outcome.read_state,
+                principal=execution_principal,
+                snapshot=None if candidate.get("registryDrift") else snapshot,
+                sources=sources,
+            )
+
+        assert len(gateway.validate_calls) - before_validate == expected["validateDelta"]
+        assert len(gateway.execute_calls) - before_execute == expected["executeDelta"]
+        context = ConversationContext(
+            None,
+            None,
+            read_state=outcome.read_state,
+            schema_version=2,
+        )
+
+
+def _assert_context_fixture_contract(case: dict[str, Any]) -> None:
+    assert case.get("fixtureVersion") == "governed-read-context-v1"
+    assert isinstance(case.get("registrySnapshotId"), str) and case["registrySnapshotId"]
+    assert isinstance(case.get("initialContext"), dict)
+    assert isinstance(case.get("turns"), list) and case["turns"]
+    for turn in case["turns"]:
+        assert isinstance(turn.get("turnId"), str) and turn["turnId"]
+        expected = turn.get("expected")
+        assert isinstance(expected, dict)
+        assert expected.get("frameStatus") in {"COLLECTING", "READY", "CONFLICTED", "STALE"}
+        assert isinstance(expected.get("slots"), dict)
+        assert expected.get("decision") in {
+            "SELECT", "CLARIFY", "REJECT", "SHOW_OPTIONS", "ESCALATE_TO_PLANNER"
+        }
+        assert isinstance(expected.get("validateDelta"), int)
+        assert isinstance(expected.get("executeDelta"), int)
+
+
+def _assert_context_slots(actual: Any, expected: dict[str, Any]) -> None:
+    for name, expected_slot in expected.items():
+        assert name in actual, f"missing expected slot {name}"
+        slot = actual[name]
+        assert slot.value == expected_slot["value"], f"{name} value mismatch"
+        role = expected_slot["role"]
+        if role == "CLEARED":
+            assert slot.state == "CLEARED", f"{name} expected CLEARED"
+        else:
+            assert slot.provenance == role, f"{name} role mismatch"
 
 
 def _assert_matcher_decision_type(

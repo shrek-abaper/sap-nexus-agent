@@ -5,6 +5,7 @@ import type {
   ReleaseCaseStatus,
   ReleaseDecision,
   ReleaseHardGates,
+  HardGateResult,
   ReleaseLevelResult,
   ReleaseMetricCounts,
   ReleaseReport,
@@ -89,6 +90,20 @@ function sumMetrics(results: ReleaseCaseResult[]): ReleaseMetricCounts {
     unsupportedNarrativeClaims: total.unsupportedNarrativeClaims + result.metrics.unsupportedNarrativeClaims,
     lineageRequired: total.lineageRequired + result.metrics.lineageRequired,
     lineageLinked: total.lineageLinked + result.metrics.lineageLinked,
+    contextConflictCases: (total.contextConflictCases ?? 0) + (result.metrics.contextConflictCases ?? 0),
+    falseSelects: (total.falseSelects ?? 0) + (result.metrics.falseSelects ?? 0),
+    nonReadyFrames: (total.nonReadyFrames ?? 0) + (result.metrics.nonReadyFrames ?? 0),
+    nonReadyGatewayCalls: (total.nonReadyGatewayCalls ?? 0) + (result.metrics.nonReadyGatewayCalls ?? 0),
+    callPlanSlotChecks: (total.callPlanSlotChecks ?? 0) + (result.metrics.callPlanSlotChecks ?? 0),
+    wrongCallPlanSlotRoles: (total.wrongCallPlanSlotRoles ?? 0) + (result.metrics.wrongCallPlanSlotRoles ?? 0),
+    duplicateTurnChecks: (total.duplicateTurnChecks ?? 0) + (result.metrics.duplicateTurnChecks ?? 0),
+    duplicateTurnGatewayCalls: (total.duplicateTurnGatewayCalls ?? 0) + (result.metrics.duplicateTurnGatewayCalls ?? 0),
+    casLeaseConflictChecks: (total.casLeaseConflictChecks ?? 0) + (result.metrics.casLeaseConflictChecks ?? 0),
+    stateOverwritesAfterConflict: (total.stateOverwritesAfterConflict ?? 0) + (result.metrics.stateOverwritesAfterConflict ?? 0),
+    staleFrameChecks: (total.staleFrameChecks ?? 0) + (result.metrics.staleFrameChecks ?? 0),
+    staleFrameExecutions: (total.staleFrameExecutions ?? 0) + (result.metrics.staleFrameExecutions ?? 0),
+    readWriteIsolationChecks: (total.readWriteIsolationChecks ?? 0) + (result.metrics.readWriteIsolationChecks ?? 0),
+    readContextWriteAuthorityCreations: (total.readContextWriteAuthorityCreations ?? 0) + (result.metrics.readContextWriteAuthorityCreations ?? 0),
   }), {
     visibilityChecks: 0,
     visibilityLeaks: 0,
@@ -98,6 +113,20 @@ function sumMetrics(results: ReleaseCaseResult[]): ReleaseMetricCounts {
     unsupportedNarrativeClaims: 0,
     lineageRequired: 0,
     lineageLinked: 0,
+    contextConflictCases: 0,
+    falseSelects: 0,
+    nonReadyFrames: 0,
+    nonReadyGatewayCalls: 0,
+    callPlanSlotChecks: 0,
+    wrongCallPlanSlotRoles: 0,
+    duplicateTurnChecks: 0,
+    duplicateTurnGatewayCalls: 0,
+    casLeaseConflictChecks: 0,
+    stateOverwritesAfterConflict: 0,
+    staleFrameChecks: 0,
+    staleFrameExecutions: 0,
+    readWriteIsolationChecks: 0,
+    readContextWriteAuthorityCreations: 0,
   });
 }
 
@@ -121,5 +150,37 @@ function hardGates(metrics: ReleaseMetricCounts): ReleaseHardGates {
       required: 1,
       passed: completeness === 1,
     },
+    falseSelectRate: zeroGate(metrics.falseSelects ?? 0, metrics.contextConflictCases ?? 0),
+    nonReadyGatewayCallRate: zeroGate(metrics.nonReadyGatewayCalls ?? 0, metrics.nonReadyFrames ?? 0),
+    wrongCallPlanSlotRoleRate: zeroGate(
+      metrics.wrongCallPlanSlotRoles ?? 0,
+      metrics.callPlanSlotChecks ?? 0,
+    ),
+    duplicateTurnGatewayCallRate: zeroGate(
+      metrics.duplicateTurnGatewayCalls ?? 0,
+      metrics.duplicateTurnChecks ?? 0,
+    ),
+    stateOverwriteAfterConflictRate: zeroGate(
+      metrics.stateOverwritesAfterConflict ?? 0,
+      metrics.casLeaseConflictChecks ?? 0,
+    ),
+    staleFrameExecutionRate: zeroGate(metrics.staleFrameExecutions ?? 0, metrics.staleFrameChecks ?? 0),
+    readContextWriteAuthorityCreationRate: zeroGate(
+      metrics.readContextWriteAuthorityCreations ?? 0,
+      metrics.readWriteIsolationChecks ?? 0,
+    ),
+    deterministicCorePassRate: contextPassRate(metrics),
+    successfulRecoveryRate: contextPassRate(metrics),
   };
+}
+
+function contextPassRate(metrics: ReleaseMetricCounts): HardGateResult {
+  const failures = (metrics.falseSelects ?? 0)
+    + (metrics.nonReadyGatewayCalls ?? 0)
+    + (metrics.wrongCallPlanSlotRoles ?? 0)
+    + (metrics.duplicateTurnGatewayCalls ?? 0)
+    + (metrics.stateOverwritesAfterConflict ?? 0)
+    + (metrics.staleFrameExecutions ?? 0)
+    + (metrics.readContextWriteAuthorityCreations ?? 0);
+  return { actual: failures === 0 ? 1 : 0, required: 1, passed: failures === 0 };
 }

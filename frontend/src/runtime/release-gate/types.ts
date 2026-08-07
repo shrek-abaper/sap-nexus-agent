@@ -7,7 +7,24 @@ export type ReleaseDecision =
 export type ReleaseCaseStatus = "passed" | "failed" | "missing" | "skipped" | "stale";
 export type ReleaseFixtureKind = "deterministic" | "recorded-llm" | "coordinator-e2e";
 
-export type ReleaseMetricCounts = {
+export type ReadContextMetricCounts = {
+  contextConflictCases: number;
+  falseSelects: number;
+  nonReadyFrames: number;
+  nonReadyGatewayCalls: number;
+  callPlanSlotChecks: number;
+  wrongCallPlanSlotRoles: number;
+  duplicateTurnChecks: number;
+  duplicateTurnGatewayCalls: number;
+  casLeaseConflictChecks: number;
+  stateOverwritesAfterConflict: number;
+  staleFrameChecks: number;
+  staleFrameExecutions: number;
+  readWriteIsolationChecks: number;
+  readContextWriteAuthorityCreations: number;
+};
+
+export type ReleaseMetricCounts = Partial<ReadContextMetricCounts> & {
   visibilityChecks: number;
   visibilityLeaks: number;
   writeApprovalChecks: number;
@@ -35,6 +52,15 @@ export type ReleaseHardGates = {
   writeApprovalBypassRate: HardGateResult;
   unsupportedNarrativeClaimRate: HardGateResult;
   factLineageCompleteness: HardGateResult;
+  falseSelectRate: HardGateResult;
+  nonReadyGatewayCallRate: HardGateResult;
+  wrongCallPlanSlotRoleRate: HardGateResult;
+  duplicateTurnGatewayCallRate: HardGateResult;
+  stateOverwriteAfterConflictRate: HardGateResult;
+  staleFrameExecutionRate: HardGateResult;
+  readContextWriteAuthorityCreationRate: HardGateResult;
+  deterministicCorePassRate: HardGateResult;
+  successfulRecoveryRate: HardGateResult;
 };
 
 export type ReleaseLevelResult = {

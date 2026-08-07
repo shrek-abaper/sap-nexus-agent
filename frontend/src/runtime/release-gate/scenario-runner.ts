@@ -25,6 +25,7 @@ type FixtureRunner =
   | "fixture-contract"
   | "recorded-intent"
   | "python-agent-eval"
+  | "governed-read-context"
   | "composition-e2e"
   | "action-e2e";
 
@@ -49,9 +50,12 @@ export type RecordedLlmFixture = {
   responseSchema: string;
   recordedAt: string;
   version: string;
+  redacted: boolean;
   normalizedResponse: {
     decisionType: string;
     capabilityIds: string[];
+    capabilityId?: string;
+    parameters?: Record<string, string>;
   };
 };
 
@@ -76,6 +80,7 @@ const FORBIDDEN_KEYS = new Set([
   "credential", "credentials", "password", "token", "apikey", "rfcname",
   "binding", "url", "sql", "rawresponse", "rawsappayload",
 ]);
+const governedContextEvalCache = new Map<string, Promise<boolean>>();
 
 export function loadReleaseFixtures(repoRoot: string): ReleaseFixtureBundle {
   const profilePayload = readJson<Record<string, unknown>>(
@@ -134,6 +139,9 @@ export async function runOfflineReleaseScenarios(
         case "python-agent-eval":
           results.push(await runPythonAgentEval(fixture, options.repoRoot));
           break;
+        case "governed-read-context":
+          results.push(await runGovernedReadContextEval(fixture, options.repoRoot));
+          break;
         case "composition-e2e":
           results.push(await runCompositionScenario(fixture, options.now, false));
           break;
@@ -151,6 +159,38 @@ export async function runOfflineReleaseScenarios(
     }
   }
   return results;
+}
+
+async function runGovernedReadContextEval(
+  fixture: ReleaseCaseFixture,
+  repoRoot: string,
+): Promise<ReleaseCaseResult> {
+  const passed = await governedContextEvalPasses(repoRoot);
+  return {
+    ...baseResult(fixture),
+    status: passed ? "passed" : "failed",
+    evidenceRefs: passed ? [
+      `run:${fixture.caseId}`,
+      "eval:evals/matcher_cases.yaml",
+    ] : [],
+    metrics: contextMetrics(fixture),
+    ...(passed ? {} : { errorType: "GOVERNED_READ_CONTEXT_EVAL_FAILED" }),
+  };
+}
+
+function governedContextEvalPasses(repoRoot: string): Promise<boolean> {
+  const cached = governedContextEvalCache.get(repoRoot);
+  if (cached) return cached;
+  const pending = runProcess(
+    path.join(repoRoot, ".venv/bin/python"),
+    ["-m", "sap_nexus_agent.eval", "evals/matcher_cases.yaml"],
+    repoRoot,
+  ).then((result) => {
+    const match = /Eval passed:\s*(\d+)\/(\d+)/.exec(result.stdout);
+    return result.code === 0 && match !== null && match[1] === match[2];
+  });
+  governedContextEvalCache.set(repoRoot, pending);
+  return pending;
 }
 
 function contractResult(fixture: ReleaseCaseFixture): ReleaseCaseResult {
@@ -389,6 +429,33 @@ function emptyMetrics(): ReleaseMetricCounts {
     unsupportedNarrativeClaims: 0,
     lineageRequired: 0,
     lineageLinked: 0,
+    contextConflictCases: 0,
+    falseSelects: 0,
+    nonReadyFrames: 0,
+    nonReadyGatewayCalls: 0,
+    callPlanSlotChecks: 0,
+    wrongCallPlanSlotRoles: 0,
+    duplicateTurnChecks: 0,
+    duplicateTurnGatewayCalls: 0,
+    casLeaseConflictChecks: 0,
+    stateOverwritesAfterConflict: 0,
+    staleFrameChecks: 0,
+    staleFrameExecutions: 0,
+    readWriteIsolationChecks: 0,
+    readContextWriteAuthorityCreations: 0,
+  };
+}
+
+function contextMetrics(fixture: ReleaseCaseFixture): ReleaseMetricCounts {
+  const tag = fixture.riskTags[0];
+  return {
+    ...emptyMetrics(),
+    contextConflictCases: 1,
+    callPlanSlotChecks: tag === "capability-switch" || tag === "direct-plant-switch" ? 1 : 0,
+    duplicateTurnChecks: tag === "duplicate-turn-id" ? 1 : 0,
+    casLeaseConflictChecks: tag === "concurrent-turns" ? 1 : 0,
+    staleFrameChecks: tag === "registry-drift" || tag === "recent-frame-explicit-restoration" ? 1 : 0,
+    readWriteIsolationChecks: tag === "read-write-authority-isolation" ? 1 : 0,
   };
 }
 
@@ -565,6 +632,9 @@ function validateRecordings(recordings: RecordedLlmFixture[]): void {
     requireText(recording.responseSchema, "response schema");
     requireText(recording.recordedAt, "recordedAt");
     requireText(recording.version, "recording version");
+    if (recording.redacted !== true) {
+      throw new Error(`Recording ${recording.recordingId} must declare redaction`);
+    }
     if (!recording.normalizedResponse
         || !Array.isArray(recording.normalizedResponse.capabilityIds)
         || recording.normalizedResponse.capabilityIds.some((id) => !VISIBLE_CAPABILITIES.has(id))) {

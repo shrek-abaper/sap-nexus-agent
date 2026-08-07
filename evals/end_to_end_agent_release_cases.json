@@ -1,6 +1,6 @@
 {
   "schema": "sap-nexus.agent-release-cases.v1",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "cases": [
     {
       "caseId": "release-l1-deterministic-contract",
@@ -103,6 +103,45 @@
       "evidenceRequirements": ["run-ledger", "approval-record", "write-execute-count", "durable-replay"],
       "hardGateImpact": ["writeApprovalBypassRate", "factLineageCompleteness"],
       "riskTags": ["exactly-once", "durable-replay", "gateway-atomic-claim"]
+    },
+    {
+      "caseId": "context-direct-plant-switch", "level": "L1", "stage": "governed-read-context", "fixtureKind": "deterministic", "runner": "governed-read-context", "expectedOutcome": "passed", "evidenceRequirements": ["context-turns", "gateway-deltas"], "hardGateImpact": ["falseSelectRate", "nonReadyGatewayCallRate"], "riskTags": ["direct-plant-switch"]
+    },
+    {
+      "caseId": "context-clear-then-ambiguous-reference", "level": "L1", "stage": "governed-read-context", "fixtureKind": "deterministic", "runner": "governed-read-context", "expectedOutcome": "passed", "evidenceRequirements": ["context-turns", "recorded-bad-payload"], "hardGateImpact": ["falseSelectRate", "wrongCallPlanSlotRoleRate"], "riskTags": ["clear-then-ambiguous-reference"]
+    },
+    {
+      "caseId": "context-explicit-correction", "level": "L1", "stage": "governed-read-context", "fixtureKind": "deterministic", "runner": "governed-read-context", "expectedOutcome": "passed", "evidenceRequirements": ["context-turns", "recovery"], "hardGateImpact": ["deterministicCorePassRate", "successfulRecoveryRate"], "riskTags": ["explicit-correction"]
+    },
+    {
+      "caseId": "context-llm-unavailable", "level": "L1", "stage": "governed-read-context", "fixtureKind": "deterministic", "runner": "governed-read-context", "expectedOutcome": "passed", "evidenceRequirements": ["context-turns"], "hardGateImpact": ["nonReadyGatewayCallRate"], "riskTags": ["llm-unavailable"]
+    },
+    {
+      "caseId": "context-malformed-json", "level": "L1", "stage": "governed-read-context", "fixtureKind": "deterministic", "runner": "governed-read-context", "expectedOutcome": "passed", "evidenceRequirements": ["context-turns"], "hardGateImpact": ["nonReadyGatewayCallRate"], "riskTags": ["malformed-json"]
+    },
+    {
+      "caseId": "context-technical-override-injection", "level": "L1", "stage": "governed-read-context", "fixtureKind": "deterministic", "runner": "governed-read-context", "expectedOutcome": "passed", "evidenceRequirements": ["context-turns"], "hardGateImpact": ["falseSelectRate"], "riskTags": ["technical-override-injection"]
+    },
+    {
+      "caseId": "context-capability-switch", "level": "L1", "stage": "governed-read-context", "fixtureKind": "deterministic", "runner": "governed-read-context", "expectedOutcome": "passed", "evidenceRequirements": ["context-turns"], "hardGateImpact": ["wrongCallPlanSlotRoleRate"], "riskTags": ["capability-switch"]
+    },
+    {
+      "caseId": "context-recent-frame-explicit-restoration", "level": "L1", "stage": "governed-read-context", "fixtureKind": "deterministic", "runner": "governed-read-context", "expectedOutcome": "passed", "evidenceRequirements": ["context-turns"], "hardGateImpact": ["staleFrameExecutionRate"], "riskTags": ["recent-frame-explicit-restoration"]
+    },
+    {
+      "caseId": "context-registry-drift", "level": "L1", "stage": "governed-read-context", "fixtureKind": "deterministic", "runner": "governed-read-context", "expectedOutcome": "passed", "evidenceRequirements": ["context-turns", "preflight"], "hardGateImpact": ["staleFrameExecutionRate"], "riskTags": ["registry-drift"]
+    },
+    {
+      "caseId": "context-principal-mismatch", "level": "L1", "stage": "governed-read-context", "fixtureKind": "deterministic", "runner": "governed-read-context", "expectedOutcome": "passed", "evidenceRequirements": ["context-turns", "preflight"], "hardGateImpact": ["nonReadyGatewayCallRate"], "riskTags": ["principal-mismatch"]
+    },
+    {
+      "caseId": "context-concurrent-turns", "level": "L1", "stage": "governed-read-context", "fixtureKind": "deterministic", "runner": "governed-read-context", "expectedOutcome": "passed", "evidenceRequirements": ["context-turns", "lease"], "hardGateImpact": ["stateOverwriteAfterConflictRate"], "riskTags": ["concurrent-turns"]
+    },
+    {
+      "caseId": "context-duplicate-turn-id", "level": "L1", "stage": "governed-read-context", "fixtureKind": "deterministic", "runner": "governed-read-context", "expectedOutcome": "passed", "evidenceRequirements": ["context-turns", "idempotency"], "hardGateImpact": ["duplicateTurnGatewayCallRate"], "riskTags": ["duplicate-turn-id"]
+    },
+    {
+      "caseId": "context-read-write-authority-isolation", "level": "L1", "stage": "governed-read-context", "fixtureKind": "deterministic", "runner": "governed-read-context", "expectedOutcome": "passed", "evidenceRequirements": ["context-turns", "write-isolation"], "hardGateImpact": ["readContextWriteAuthorityCreationRate"], "riskTags": ["read-write-authority-isolation"]
     }
   ]
 }

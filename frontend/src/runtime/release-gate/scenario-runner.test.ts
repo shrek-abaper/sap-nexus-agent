@@ -27,7 +27,7 @@ describe("offline release scenarios", () => {
       expect(risks.has(risk)).toBe(true);
     }
     expect(fixtures.cases.every((entry) => entry.evidenceRequirements.length > 0)).toBe(true);
-    expect(fixtures.recordings).toHaveLength(3);
+    expect(fixtures.recordings).toHaveLength(4);
     expect(fixtures.recordings.every((recording) => (
       recording.provider.length > 0
       && recording.model.length > 0
@@ -36,6 +36,18 @@ describe("offline release scenarios", () => {
       && recording.recordedAt.length > 0
       && recording.version.length > 0
     ))).toBe(true);
+    const contextCases = fixtures.cases.filter((entry) => entry.stage === "governed-read-context");
+    expect(contextCases).toHaveLength(13);
+    expect(contextCases.every((entry) => entry.fixtureKind === "deterministic"
+      && entry.hardGateImpact.length > 0)).toBe(true);
+    const badRecording = fixtures.recordings.find((entry) => entry.recordingId === "recording-context-bad");
+    expect(badRecording).toMatchObject({
+      redacted: true,
+      normalizedResponse: {
+        capabilityId: "MM.Inventory.GetAvailability",
+        parameters: { material: "1000", plant: "工厂" },
+      },
+    });
     expect(JSON.stringify(fixtures)).not.toMatch(
       /"(?:credential|password|token|apiKey|rfcName|binding|url|sql|rawResponse|rawSapPayload)"\s*:/i,
     );
@@ -53,7 +65,7 @@ describe("offline release scenarios", () => {
       completedAt: "2026-08-05T01:01:00.000Z",
     });
 
-    expect(results).toHaveLength(9);
+    expect(results).toHaveLength(22);
     expect(results.filter((result) => result.status !== "passed")).toEqual([]);
     expect(results.filter((result) => result.fixtureKind === "coordinator-e2e")
       .every((result) => result.evidenceRefs.some((ref) => ref.startsWith("run:")))).toBe(true);

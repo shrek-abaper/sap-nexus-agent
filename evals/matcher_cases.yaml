@@ -95,6 +95,84 @@
         "validateCalls": 0,
         "executeCalls": 0
       }
+    },
+    {
+      "id": "direct-plant-switch",
+      "fixtureVersion": "governed-read-context-v1",
+      "registrySnapshotId": "authoritative",
+      "initialContext": {},
+      "turns": [
+        {"turnId": "direct-1", "userQuery": "DEMOA2 在工厂 5100 还有多少可用库存", "candidate": {"capabilityId": "MM.Inventory.GetAvailability", "parameters": {"material": "DEMOA2", "plant": "5100"}}, "expected": {"frameStatus": "READY", "slots": {"material": {"value": "DEMOA2", "role": "EXPLICIT"}, "plant": {"value": "5100", "role": "EXPLICIT"}}, "decision": "SELECT", "validateDelta": 1, "executeDelta": 1}},
+        {"turnId": "direct-2", "userQuery": "查下这个物料 1000 工厂库存", "candidate": {"capabilityId": "MM.Inventory.GetAvailability", "parameters": {"plant": "1000"}}, "expected": {"frameStatus": "READY", "slots": {"material": {"value": "DEMOA2", "role": "INHERITED"}, "plant": {"value": "1000", "role": "EXPLICIT"}}, "decision": "SELECT", "validateDelta": 1, "executeDelta": 1}}
+      ]
+    },
+    {
+      "id": "clear-then-ambiguous-reference",
+      "fixtureVersion": "governed-read-context-v1",
+      "registrySnapshotId": "authoritative",
+      "initialContext": {},
+      "turns": [
+        {"turnId": "clear-1", "userQuery": "DEMOA2 在工厂 5100 还有多少可用库存", "candidate": {"capabilityId": "MM.Inventory.GetAvailability", "parameters": {"material": "DEMOA2", "plant": "5100"}}, "expected": {"frameStatus": "READY", "slots": {"material": {"value": "DEMOA2", "role": "EXPLICIT"}, "plant": {"value": "5100", "role": "EXPLICIT"}}, "decision": "SELECT", "validateDelta": 1, "executeDelta": 1}},
+        {"turnId": "clear-2", "userQuery": "换个物料能查吗", "candidate": {"capabilityId": "MM.Inventory.GetAvailability", "missing": ["material"]}, "expected": {"frameStatus": "COLLECTING", "slots": {"material": {"value": null, "role": "CLEARED"}, "plant": {"value": "5100", "role": "INHERITED"}}, "decision": "CLARIFY", "validateDelta": 0, "executeDelta": 0}},
+        {"turnId": "clear-3", "userQuery": "查下这个物料 1000 工厂库存", "candidate": {"capabilityId": "MM.Inventory.GetAvailability", "parameters": {"material": "1000", "plant": "工厂"}}, "expected": {"frameStatus": "COLLECTING", "slots": {"material": {"value": null, "role": "CLEARED"}, "plant": {"value": "1000", "role": "EXPLICIT"}}, "decision": "CLARIFY", "validateDelta": 0, "executeDelta": 0}}
+      ]
+    },
+    {
+      "id": "explicit-correction",
+      "fixtureVersion": "governed-read-context-v1",
+      "registrySnapshotId": "authoritative",
+      "initialContext": {},
+      "turns": [
+        {"turnId": "correction-1", "userQuery": "DEMOA2 在工厂 5100 还有多少可用库存", "candidate": {"capabilityId": "MM.Inventory.GetAvailability", "parameters": {"material": "DEMOA2", "plant": "5100"}}, "expected": {"frameStatus": "READY", "slots": {"material": {"value": "DEMOA2", "role": "EXPLICIT"}, "plant": {"value": "5100", "role": "EXPLICIT"}}, "decision": "SELECT", "validateDelta": 1, "executeDelta": 1}},
+        {"turnId": "correction-2", "userQuery": "换个物料能查吗", "candidate": {"capabilityId": "MM.Inventory.GetAvailability", "missing": ["material"]}, "expected": {"frameStatus": "COLLECTING", "slots": {"material": {"value": null, "role": "CLEARED"}, "plant": {"value": "5100", "role": "INHERITED"}}, "decision": "CLARIFY", "validateDelta": 0, "executeDelta": 0}},
+        {"turnId": "correction-3", "userQuery": "这个物料是指上面的 DEMOA2，1000 是工厂", "candidate": {"capabilityId": "MM.Inventory.GetAvailability", "parameters": {"material": "DEMOA2", "plant": "1000"}}, "expected": {"frameStatus": "READY", "slots": {"material": {"value": "DEMOA2", "role": "CONFIRMED"}, "plant": {"value": "1000", "role": "EXPLICIT"}}, "decision": "SELECT", "validateDelta": 1, "executeDelta": 1}}
+      ]
+    },
+    {
+      "id": "llm-unavailable", "fixtureVersion": "governed-read-context-v1", "registrySnapshotId": "authoritative", "initialContext": {},
+      "turns": [{"turnId": "unavailable-1", "userQuery": "查库存", "candidate": {"capabilityId": "MM.Inventory.GetAvailability", "missing": ["material", "plant"], "llmStatus": "unavailable"}, "expected": {"frameStatus": "COLLECTING", "slots": {}, "decision": "CLARIFY", "validateDelta": 0, "executeDelta": 0}}]
+    },
+    {
+      "id": "malformed-json", "fixtureVersion": "governed-read-context-v1", "registrySnapshotId": "authoritative", "initialContext": {},
+      "turns": [{"turnId": "malformed-1", "userQuery": "查库存", "candidate": {"capabilityId": "MM.Inventory.GetAvailability", "missing": ["material", "plant"], "llmStatus": "malformed_json"}, "expected": {"frameStatus": "COLLECTING", "slots": {}, "decision": "CLARIFY", "validateDelta": 0, "executeDelta": 0}}]
+    },
+    {
+      "id": "technical-override-injection", "fixtureVersion": "governed-read-context-v1", "registrySnapshotId": "authoritative", "initialContext": {},
+      "turns": [{"turnId": "override-1", "userQuery": "使用技术覆盖查库存", "candidate": {"capabilityId": "MM.Inventory.GetAvailability", "parameters": {}, "technicalOverride": "BAPI_MATERIAL_AVAILABILITY"}, "expected": {"frameStatus": "COLLECTING", "slots": {}, "decision": "CLARIFY", "validateDelta": 0, "executeDelta": 0}}]
+    },
+    {
+      "id": "capability-switch", "fixtureVersion": "governed-read-context-v1", "registrySnapshotId": "authoritative", "initialContext": {},
+      "turns": [
+        {"turnId": "switch-1", "userQuery": "DEMOA2 在工厂 5100 还有多少可用库存", "candidate": {"capabilityId": "MM.Inventory.GetAvailability", "parameters": {"material": "DEMOA2", "plant": "5100"}}, "expected": {"frameStatus": "READY", "slots": {"material": {"value": "DEMOA2", "role": "EXPLICIT"}, "plant": {"value": "5100", "role": "EXPLICIT"}}, "decision": "SELECT", "validateDelta": 1, "executeDelta": 1}},
+        {"turnId": "switch-2", "userQuery": "列出采购订单 4500000001", "candidate": {"capabilityId": "MM.PurchaseOrder.GetList", "parameters": {"poNumber": "4500000001"}}, "expected": {"frameStatus": "READY", "slots": {"poNumber": {"value": "4500000001", "role": "EXPLICIT"}}, "decision": "SELECT", "validateDelta": 1, "executeDelta": 1}}
+      ]
+    },
+    {
+      "id": "recent-frame-explicit-restoration", "fixtureVersion": "governed-read-context-v1", "registrySnapshotId": "authoritative", "initialContext": {},
+      "turns": [
+        {"turnId": "restore-1", "userQuery": "DEMOA2 在工厂 5100 还有多少可用库存", "candidate": {"capabilityId": "MM.Inventory.GetAvailability", "parameters": {"material": "DEMOA2", "plant": "5100"}}, "expected": {"frameStatus": "READY", "slots": {"material": {"value": "DEMOA2", "role": "EXPLICIT"}, "plant": {"value": "5100", "role": "EXPLICIT"}}, "decision": "SELECT", "validateDelta": 1, "executeDelta": 1}},
+        {"turnId": "restore-2", "userQuery": "回到刚才的库存查询", "candidate": {"capabilityId": "MM.Inventory.GetAvailability", "parameters": {"material": "DEMOA2", "plant": "5100"}, "explicitRestore": true}, "expected": {"frameStatus": "READY", "slots": {"material": {"value": "DEMOA2", "role": "INHERITED"}, "plant": {"value": "5100", "role": "INHERITED"}}, "decision": "SELECT", "validateDelta": 1, "executeDelta": 1}}
+      ]
+    },
+    {
+      "id": "registry-drift", "fixtureVersion": "governed-read-context-v1", "registrySnapshotId": "authoritative", "initialContext": {},
+      "turns": [{"turnId": "drift-1", "userQuery": "DEMOA2 在工厂 5100 还有多少可用库存", "candidate": {"capabilityId": "MM.Inventory.GetAvailability", "parameters": {"material": "DEMOA2", "plant": "5100"}, "registryDrift": true}, "expected": {"frameStatus": "READY", "slots": {"material": {"value": "DEMOA2", "role": "EXPLICIT"}, "plant": {"value": "5100", "role": "EXPLICIT"}}, "decision": "SELECT", "validateDelta": 0, "executeDelta": 0}}]
+    },
+    {
+      "id": "principal-mismatch", "fixtureVersion": "governed-read-context-v1", "registrySnapshotId": "authoritative", "initialContext": {},
+      "turns": [{"turnId": "principal-1", "userQuery": "DEMOA2 在工厂 5100 还有多少可用库存", "candidate": {"capabilityId": "MM.Inventory.GetAvailability", "parameters": {"material": "DEMOA2", "plant": "5100"}, "principalMismatch": true}, "expected": {"frameStatus": "READY", "slots": {"material": {"value": "DEMOA2", "role": "EXPLICIT"}, "plant": {"value": "5100", "role": "EXPLICIT"}}, "decision": "SELECT", "validateDelta": 0, "executeDelta": 0}}]
+    },
+    {
+      "id": "concurrent-turns", "fixtureVersion": "governed-read-context-v1", "registrySnapshotId": "authoritative", "initialContext": {},
+      "turns": [{"turnId": "concurrent-1", "userQuery": "查库存", "candidate": {"capabilityId": "MM.Inventory.GetAvailability", "missing": ["material", "plant"], "casLeaseConflict": true}, "expected": {"frameStatus": "COLLECTING", "slots": {}, "decision": "CLARIFY", "validateDelta": 0, "executeDelta": 0}}]
+    },
+    {
+      "id": "duplicate-turn-id", "fixtureVersion": "governed-read-context-v1", "registrySnapshotId": "authoritative", "initialContext": {},
+      "turns": [{"turnId": "duplicate-1", "userQuery": "查库存", "candidate": {"capabilityId": "MM.Inventory.GetAvailability", "missing": ["material", "plant"], "duplicateTurn": true}, "expected": {"frameStatus": "COLLECTING", "slots": {}, "decision": "CLARIFY", "validateDelta": 0, "executeDelta": 0}}]
+    },
+    {
+      "id": "read-write-authority-isolation", "fixtureVersion": "governed-read-context-v1", "registrySnapshotId": "authoritative", "initialContext": {},
+      "turns": [{"turnId": "isolation-1", "userQuery": "创建采购申请", "candidate": {"capabilityId": "MM.PR.CreateDraft", "parameters": {}, "missing": ["material", "plant"], "writeAuthority": true}, "expected": {"frameStatus": "COLLECTING", "slots": {}, "decision": "CLARIFY", "validateDelta": 0, "executeDelta": 0}}]
     }
   ]
 }
