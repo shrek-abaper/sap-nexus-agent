@@ -76,7 +76,7 @@ type BatchContinuation = {
 };
 
 type AgentRunnerInput = {
-  mode: "resolve-read" | "continue-read" | "continue-selection" | "continue-action" | "continue-batch";
+  mode: "resolve-read" | "continue-read" | "continue-selection" | "continue-action" | "continue-batch" | "preflight-batch";
   query: string;
   gatewayUrl: string;
   intentMode: string;
@@ -218,6 +218,49 @@ function hasLiveUndecidedBatchPending(
     && sha256Hex(canonicalJson(callPlan)) === binding.callPlanHash;
 }
 
+async function hasCurrentBatchAuthority(
+  outcome: WorkbenchOutcome,
+  session: SessionStateV2,
+  principal: TrustedPrincipal,
+): Promise<boolean> {
+  const callPlan = objectOrNull(outcome.callPlan);
+  const combinations = outcome.combinations;
+  const binding = outcome.readExecutionBinding;
+  if (!callPlan || !combinations || !binding) return true;
+  try {
+    const runner = readRunnerForTests ?? runLocalPythonAgent;
+    const result = await runner({
+      mode: "preflight-batch",
+      query: "",
+      gatewayUrl: gatewayUrl(),
+      intentMode: intentMode(),
+      principal,
+      continuation: {
+        type: "batch",
+        callPlan,
+        combinations,
+        readExecutionBinding: binding,
+        persistedReadState: {
+          activeFrame: session.activeFrame,
+          recentFrames: session.recentFrames,
+          pendingInteraction: session.pendingInteraction,
+          stateVersion: session.stateVersion,
+        },
+      },
+    });
+    const authority = objectOrNull(result.resolutionReport?.batchAuthority);
+    const batchBinding = outcome.batchConversationBinding;
+    return authority?.valid === true
+      && authority.governanceValid === true
+      && authority.snapshotId === batchBinding?.registrySnapshotId
+      && authority.capabilityVersion === batchBinding?.capabilityVersion
+      && authority.executorBindingId === batchBinding?.executorBindingId;
+  } catch {
+    // An unavailable preflight must not open a pending batch by accident.
+    return true;
+  }
+}
+
 export async function createAgentRun(input: CreateAgentRunInput): Promise<CreateAgentRunResult> {
   if (input.rfcName) {
     throw new Error("Raw RFC execution is not allowed");
@@ -262,14 +305,20 @@ export async function createAgentRun(input: CreateAgentRunInput): Promise<Create
     if (lastRunId) {
       const lastRun = await runStore.load(lastRunId);
       if (lastRun?.pendingOutcome && !lastRun.decision) {
-        const recoverableBatch = lastRun.pendingOutcome.status === "awaiting_batch_confirm"
-          && !hasLiveUndecidedBatchPending(
+        const locallyLiveBatch = lastRun.pendingOutcome.status === "awaiting_batch_confirm"
+          && hasLiveUndecidedBatchPending(
             lastRun.pendingOutcome,
             session,
             conversationId,
             lastRunId,
             input.principal.principalId,
           );
+        const recoverableBatch = lastRun.pendingOutcome.status === "awaiting_batch_confirm"
+          && (!locallyLiveBatch || !await hasCurrentBatchAuthority(
+            lastRun.pendingOutcome,
+            session,
+            input.principal,
+          ));
         if (!recoverableBatch) {
           throw new Error("当前对话有待审批的写操作，请先处理审批后再发起新查询。");
         }
@@ -1738,6 +1787,17 @@ async function runLocalPythonAgent(input: AgentRunnerInput): Promise<WorkbenchOu
       "--json",
     ];
     stdinPayload = JSON.stringify(input.context);
+  } else if (input.mode === "preflight-batch") {
+    if (input.continuation?.type !== "batch") {
+      throw new Error("Batch authority preflight requires a server-owned batch binding.");
+    }
+    args = [
+      "-m",
+      "sap_nexus_agent.cli",
+      "--preflight-batch",
+      "--json",
+    ];
+    stdinPayload = JSON.stringify(input.continuation);
   } else if (input.mode === "continue-read") {
     if (!input.callPlan || !input.readExecutionBinding || !input.persistedReadState) {
       throw new Error("Authoritative READ continuation requires a server-owned binding.");

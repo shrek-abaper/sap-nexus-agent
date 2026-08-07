@@ -299,6 +299,47 @@ def preflight_resolved_batch(
     )
 
 
+def inspect_resolved_batch_authority(
+    call_plan: CallPlan,
+    combinations: list[dict[str, str]],
+    binding: ReadExecutionBinding,
+    *,
+    persisted_state: "ConversationReadState | None",
+    principal: TrustedPrincipal | None,
+    snapshot: RegistrySnapshot | None,
+    sources: SemanticSourceDocuments | None,
+) -> dict[str, object]:
+    """Return the current, read-only batch authority summary for Q2 recovery."""
+    capability = (
+        _current_capability(sources, call_plan.capability_id)
+        if sources is not None
+        else None
+    )
+    governance = capability.get("governance") if capability else None
+    return {
+        "valid": preflight_resolved_batch(
+            call_plan,
+            combinations,
+            binding,
+            persisted_state=persisted_state,
+            principal=principal,
+            snapshot=snapshot,
+            sources=sources,
+        ),
+        "snapshotId": snapshot.snapshot_id if snapshot is not None else None,
+        "capabilityVersion": str(capability.get("version", "1")) if capability else None,
+        "executorBindingId": _executor_binding_id(capability) if capability else None,
+        "governanceValid": bool(
+            capability is not None
+            and capability.get("status") == "active"
+            and capability.get("kind") == "Function"
+            and isinstance(governance, Mapping)
+            and governance.get("sideEffect") == "none"
+            and governance.get("requiresApproval") is False
+        ),
+    }
+
+
 def continue_resolved_selection(
     call_plan: CallPlan,
     binding: SelectionExecutionBinding,
@@ -1078,7 +1119,11 @@ def _resolve_non_slot_pending(
         planner_failure=compiled if isinstance(compiled, PlannerFailure) else None,
         updated_context=next_context,
         read_state=next_state,
-        resolution_report={"pendingKind": "PLANNER_CONFIRMATION", "consumed": True},
+        resolution_report={
+            "resolutionKind": "non_read",
+            "pendingKind": "PLANNER_CONFIRMATION",
+            "consumed": True,
+        },
         turn_id=turn_id,
         frame_id=pending.frame_id,
         state_version=next_state.state_version,

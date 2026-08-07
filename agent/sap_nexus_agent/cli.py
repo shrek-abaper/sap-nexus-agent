@@ -21,6 +21,7 @@ from sap_nexus_agent.orchestrator import (
     continue_resolved_selection,
     preflight_resolved_read,
     preflight_resolved_batch,
+    inspect_resolved_batch_authority,
     resolve_read_turn,
     run_query,
 )
@@ -88,6 +89,11 @@ def main(argv: list[str] | None = None) -> int:
         "--continue-batch",
         action="store_true",
         help="Read a batch continuation payload (callPlan + combinations) from stdin",
+    )
+    parser.add_argument(
+        "--preflight-batch",
+        action="store_true",
+        help="Inspect current batch authority without constructing a Gateway client",
     )
     parser.add_argument(
         "--context",
@@ -312,6 +318,50 @@ def main(argv: list[str] | None = None) -> int:
         else:
             print(outcome.response_text or outcome.message or "未生成响应。")
         return 0 if outcome.status == "success" else 1
+
+    if args.preflight_batch:
+        report = {
+            "valid": False,
+            "snapshotId": None,
+            "capabilityVersion": None,
+            "executorBindingId": None,
+            "governanceValid": False,
+        }
+        try:
+            payload = json.load(sys.stdin)
+            call_plan = CallPlan.from_dict(dict(payload["callPlan"]))
+            combinations = [dict(c) for c in payload["combinations"]]
+            binding = ReadExecutionBinding.from_dict(
+                dict(payload["readExecutionBinding"])
+            )
+            from sap_nexus_agent.read_context import ConversationReadState
+
+            persisted_state = ConversationReadState.from_dict(
+                dict(payload["persistedReadState"])
+            )
+            principal = load_principal_from_env()
+            sources = load_semantic_sources(_resolve_repo_root())
+            snapshot = build_registry_snapshot(sources)
+            report = inspect_resolved_batch_authority(
+                call_plan,
+                combinations,
+                binding,
+                persisted_state=persisted_state,
+                principal=principal,
+                snapshot=snapshot,
+                sources=sources,
+            )
+        except (json.JSONDecodeError, KeyError, TypeError, ValueError, AttributeError):
+            pass
+        output = {
+            "status": "batch_authority_preflight",
+            "resolutionReport": {"batchAuthority": report},
+        }
+        if args.json:
+            print(json.dumps(output, ensure_ascii=False))
+        else:
+            print("Batch authority is current." if report["valid"] else "Batch authority is stale.")
+        return 0
 
     if args.context:
         if not args.query:

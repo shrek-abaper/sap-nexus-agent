@@ -1362,6 +1362,7 @@ def test_planner_confirmation_survives_json_restart_and_is_consumed_once():
 
     assert response.match_decision.decision_type == "ESCALATE_TO_PLANNER"
     assert response.read_state.pending_interaction is None
+    assert response.resolution_report["resolutionKind"] == "non_read"
     assert response.resolution_report["consumed"] is True
 
 

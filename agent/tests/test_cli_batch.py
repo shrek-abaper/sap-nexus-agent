@@ -3,7 +3,9 @@ from __future__ import annotations
 import io
 import json
 import sys
+from collections.abc import Mapping
 from copy import deepcopy
+from dataclasses import replace
 
 import pytest
 
@@ -134,6 +136,54 @@ def test_cli_rejects_missing_batch_payload(monkeypatch):
     ])
 
     assert result != 0
+
+
+@pytest.mark.parametrize("case", ["local binding invalid", "current capability version drift"])
+def test_cli_batch_authority_preflight_reports_invalid_without_gateway(
+    case, monkeypatch, capsys
+):
+    payload = _batch_payload()
+    if case == "local binding invalid":
+        payload["readExecutionBinding"]["executorBindingId"] = "forged-binding"
+    else:
+        _snapshot, sources = _default_planner_sources()
+        def thaw(value):
+            if isinstance(value, Mapping):
+                return {key: thaw(item) for key, item in value.items()}
+            if isinstance(value, (tuple, list)):
+                return [thaw(item) for item in value]
+            return value
+
+        capabilities = thaw(sources.capabilities)
+        capabilities["capabilities"] = [
+            {
+                **dict(capability),
+                "version": "2",
+            }
+            if capability["capabilityId"] == "MM.Inventory.GetAvailability"
+            else dict(capability)
+            for capability in sources.capabilities["capabilities"]
+        ]
+        monkeypatch.setattr(
+            cli,
+            "load_semantic_sources",
+            lambda _root: replace(sources, capabilities=capabilities),
+        )
+    monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps(payload)))
+
+    def forbidden_gateway(_url):
+        raise AssertionError(f"{case} constructed GatewayClient")
+
+    monkeypatch.setattr(cli, "GatewayClient", forbidden_gateway)
+
+    result = cli.main(["--preflight-batch", "--json"])
+
+    authority = json.loads(capsys.readouterr().out)["resolutionReport"]["batchAuthority"]
+    assert result == 0
+    assert authority["valid"] is False
+    assert authority["snapshotId"]
+    assert authority["capabilityVersion"] == ("2" if case.endswith("drift") else "1")
+    assert authority["executorBindingId"] == "sap.mm.inventory.md04-stock-req-list"
 
 
 @pytest.mark.parametrize(

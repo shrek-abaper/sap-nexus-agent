@@ -10,6 +10,7 @@ import {
   resetAgentRunsForTests,
   resetAgentSessionsForTests,
   setAgentRunnerForTests,
+  setCompositionGatewayForTests,
   setReadAgentRunnerForTests,
   setDurableStoresForTests
 } from "./agent-runtime-adapter";
@@ -20,6 +21,7 @@ import type { ConversationReadState, WorkbenchOutcome } from "./durable/types";
 import { PLACEHOLDER_PRINCIPAL } from "./principal/types";
 import type { TrustedPrincipal } from "./principal/types";
 import type { AgentRunEvent } from "./run-event-schema";
+import { FakeGateway } from "./plan-executor/fake-gateway";
 
 function awaitingOutcome(runId: string): WorkbenchOutcome {
   return {
@@ -163,6 +165,118 @@ function batchReadOutcome(turnId: string, stateVersion = 1): WorkbenchOutcome {
   return resolved;
 }
 
+function confirmedMixedPlannerOutcome(
+  turnId: string,
+  stateVersion: number,
+  activeFrame: ConversationReadState["activeFrame"],
+): WorkbenchOutcome {
+  const bindings = [
+    { parameterName: "material", source: { kind: "literal", semanticType: "MaterialCode", value: "MAT-1" } },
+    { parameterName: "plant", source: { kind: "literal", semanticType: "PlantCode", value: "P1" } },
+  ];
+  return {
+    status: "match_decision",
+    responseText: "用户已确认进入规划。",
+    matchDecision: {
+      decisionType: "ESCALATE_TO_PLANNER",
+      handoff: { registrySnapshotId: "snapshot-read-1" },
+    },
+    decision: { decisionType: "ESCALATE_TO_PLANNER" },
+    dryRun: {
+      gaps: [],
+      governanceFlags: [],
+      planGraph: {
+        planGraphVersion: 2,
+        planId: "plan-mixed-confirmed",
+        goalId: "goal-mixed-confirmed",
+        executionMode: "READ_THEN_SINGLE_ACTION",
+        snapshotId: "snapshot-read-1",
+        nodes: [
+          {
+            nodeId: "node.inventory",
+            capabilityId: "MM.Inventory.GetAvailability",
+            parameterBindings: bindings,
+            producesFactTypes: ["InventoryAvailability"],
+            governance: { requiresApproval: false },
+          },
+          {
+            nodeId: "node.purchase-orders",
+            capabilityId: "MM.PurchaseOrder.GetList",
+            parameterBindings: bindings,
+            producesFactTypes: ["PurchaseOrder"],
+            governance: { requiresApproval: false },
+          },
+          {
+            nodeId: "node.action",
+            capabilityId: "MM.PR.CreateDraft",
+            parameterBindings: [
+              { parameterName: "quantity", source: { kind: "literal", semanticType: "Quantity", value: "10" } },
+              { parameterName: "delivery_date", source: { kind: "literal", semanticType: "Date", value: "2026-08-15" } },
+              { parameterName: "purchasing_group", source: { kind: "literal", semanticType: "PurchasingGroup", value: "601" } },
+            ],
+            producesFactTypes: [],
+            governance: { requiresApproval: true },
+          },
+        ],
+        edges: [],
+        topologicalOrder: ["node.inventory", "node.purchase-orders", "node.action"],
+        goalOutputs: [],
+        readPartition: ["node.inventory", "node.purchase-orders"],
+        actionPartition: ["node.action"],
+        projectionRef: [],
+        ruleSetRefs: [],
+      },
+    },
+    conversationReadState: {
+      activeFrame,
+      recentFrames: [],
+      pendingInteraction: null,
+      stateVersion,
+    },
+    resolutionReport: { resolutionKind: "non_read", pendingKind: "PLANNER_CONFIRMATION", consumed: true },
+    turnId,
+    frameId: activeFrame?.frameId ?? null,
+    stateVersion,
+    registrySnapshotId: "snapshot-read-1",
+  };
+}
+
+function mixedPlannerPendingOutcome(
+  turnId: string,
+  stateVersion: number,
+  activeFrame: ConversationReadState["activeFrame"],
+): WorkbenchOutcome {
+  if (!activeFrame) throw new Error("mixed planner pending requires the existing READ frame");
+  return {
+    status: "match_decision",
+    responseText: "请确认是否继续规划。",
+    matchDecision: { decisionType: "ESCALATE_TO_PLANNER" },
+    decision: { decisionType: "ESCALATE_TO_PLANNER" },
+    conversationReadState: {
+      activeFrame,
+      recentFrames: [],
+      pendingInteraction: {
+        kind: "PLANNER_CONFIRMATION",
+        frameId: activeFrame.frameId,
+        plannerRef: "sha256:mixed-planner-1",
+        plannerGoals: [
+          { capabilityId: "MM.Inventory.GetAvailability", parameters: {}, missing: ["material", "plant"] },
+          { capabilityId: "MM.PR.CreateDraft", parameters: {}, missing: ["material", "plant"] },
+        ],
+        stateVersion,
+        registrySnapshotId: "snapshot-read-1",
+        expiresAt: "2099-01-01T00:00:00Z",
+      },
+      stateVersion,
+    },
+    resolutionReport: { resolutionKind: "non_read", pendingKind: "PLANNER_CONFIRMATION" },
+    turnId,
+    frameId: activeFrame.frameId,
+    stateVersion,
+    registrySnapshotId: "snapshot-read-1",
+  };
+}
+
 function resolvedSelectionOutcome(
   turnId: string,
   stateVersion = 1,
@@ -261,6 +375,7 @@ describe("agent-runtime-adapter durable integration", () => {
   afterEach(() => {
     setAgentRunnerForTests(null);
     setReadAgentRunnerForTests(null);
+    setCompositionGatewayForTests(null);
     setDurableStoresForTests(
       new JsonlRunStore(mkdtempSync(path.join(tmpdir(), "teardown-"))),
       new JsonlConversationStore(mkdtempSync(path.join(tmpdir(), "teardown-")))
@@ -621,6 +736,84 @@ describe("agent-runtime-adapter durable integration", () => {
     expect((await convStore.load(conversationId, PLACEHOLDER_PRINCIPAL.principalId))?.activeFrame)
       .toEqual(existingFrame);
     expect((await runStore.load(runId))?.pendingOutcome?.status).toBe("awaiting_approval");
+  });
+
+  it("confirms a mixed planner with an existing READ frame into Human Approval", async () => {
+    const conversationId = "c-mixed-planner-existing-read";
+    const existingFrame = resolvedReadOutcome("turn-existing-read").conversationReadState!.activeFrame!;
+    await convStore.compareAndSwap(conversationId, 0, {
+      schemaVersion: 2,
+      principalId: PLACEHOLDER_PRINCIPAL.principalId,
+      stateVersion: 1,
+      activeFrame: existingFrame,
+      recentFrames: [],
+      pendingInteraction: null,
+      history: [],
+      lastAppliedTurnId: null,
+      lastRunId: null,
+    });
+    const gateway = new FakeGateway();
+    const dataAsOf = new Date().toISOString();
+    gateway.setExecuteResult("MM.Inventory.GetAvailability", {
+      success: true,
+      traceId: "gateway-inventory",
+      data: {
+        availableQuantity: 7,
+        unit: "EA",
+        material: "MAT-1",
+        plant: "P1",
+        dataAsOf,
+      },
+    });
+    gateway.setExecuteResult("MM.PurchaseOrder.GetList", {
+      success: true,
+      traceId: "gateway-po",
+      data: {
+        purchaseOrders: [{
+          purchaseOrder: "4500001",
+          purchaseOrderItem: "10",
+          orderQuantity: 5,
+          purchaseOrderUnit: "EA",
+          material: "MAT-1",
+          plant: "P1",
+        }],
+        dataAsOf,
+      },
+    });
+    setCompositionGatewayForTests(gateway);
+    const modes: string[] = [];
+    let resolutionCount = 0;
+    setReadAgentRunnerForTests(async (input) => {
+      modes.push(input.mode);
+      if (input.mode !== "resolve-read") throw new Error(`unexpected mode ${input.mode}`);
+      resolutionCount += 1;
+      return resolutionCount === 1
+        ? mixedPlannerPendingOutcome(input.turnId!, 2, existingFrame)
+        : confirmedMixedPlannerOutcome(input.turnId!, 3, existingFrame);
+    });
+
+    const first = await createAgentRun({
+      query: "查库存并创建采购申请",
+      conversationId,
+      turnId: "turn-mixed-planner-create",
+      principal: PLACEHOLDER_PRINCIPAL,
+    });
+    await waitForRunSettled(first.runId);
+    const second = await createAgentRun({
+      query: "确认",
+      conversationId,
+      turnId: "turn-mixed-planner-confirm",
+      principal: PLACEHOLDER_PRINCIPAL,
+    });
+    const events = await waitForRunSettled(second.runId);
+
+    expect(modes).toEqual(["resolve-read", "resolve-read"]);
+    expect(events.at(-1)?.state).toBe("awaiting_approval");
+    expect((await runStore.load(second.runId))?.pendingOutcome?.status).toBe("awaiting_approval");
+    expect(gateway.executeCalls.map((call) => call.capabilityId)).toEqual([
+      "MM.Inventory.GetAvailability",
+      "MM.PurchaseOrder.GetList",
+    ]);
   });
 
   it.each([
@@ -1074,6 +1267,60 @@ describe("agent-runtime-adapter durable integration", () => {
       expect(resolutionCalls).toBe(2);
       expect(recovered?.lastAppliedTurnId).toBe(`turn-batch-recovery-${condition}-2`);
       expect(recovered?.pendingInteraction?.kind).toBe("SLOT_CLARIFICATION");
+    },
+  );
+
+  it.each(["local binding invalid", "current Registry authority drift"] as const)(
+    "lets authoritative recovery resolve a batch when %s",
+    async (condition) => {
+      const conversationId = `c-batch-authority-${condition.replaceAll(" ", "-")}`;
+      const modes: string[] = [];
+      let resolutionCalls = 0;
+      setReadAgentRunnerForTests(async (input) => {
+        modes.push(input.mode);
+        if ((input as { mode: string }).mode === "preflight-batch") {
+          expect(input.continuation?.type).toBe("batch");
+          const persisted = await convStore.load(conversationId, PLACEHOLDER_PRINCIPAL.principalId);
+          expect(persisted?.pendingInteraction?.kind).toBe("BATCH_CONFIRMATION");
+          return {
+            status: "batch_authority_preflight",
+            resolutionReport: {
+              batchAuthority: {
+                valid: false,
+                snapshotId: condition === "current Registry authority drift" ? "snapshot-current" : "snapshot-read-1",
+                capabilityVersion: "1",
+                executorBindingId: "sap.mm.inventory.md04-stock-req-list",
+                governanceValid: condition !== "current Registry authority drift",
+              },
+            },
+          } as WorkbenchOutcome;
+        }
+        if (input.mode !== "resolve-read") throw new Error(`unexpected mode ${input.mode}`);
+        resolutionCalls += 1;
+        return resolutionCalls === 1
+          ? batchReadOutcome(input.turnId!)
+          : clarifyReadOutcome(input.turnId!, 2);
+      });
+
+      const first = await createAgentRun({
+        query: "批量查询",
+        conversationId,
+        turnId: `turn-batch-authority-${condition}-1`,
+        principal: PLACEHOLDER_PRINCIPAL,
+      });
+      await waitForRunSettled(first.runId);
+      const second = await createAgentRun({
+        query: "换成单个物料查询",
+        conversationId,
+        turnId: `turn-batch-authority-${condition}-2`,
+        principal: PLACEHOLDER_PRINCIPAL,
+      });
+      await waitForRunSettled(second.runId);
+
+      expect(modes).toEqual(["resolve-read", "preflight-batch", "resolve-read"]);
+      expect(resolutionCalls).toBe(2);
+      expect((await convStore.load(conversationId, PLACEHOLDER_PRINCIPAL.principalId))?.lastAppliedTurnId)
+        .toBe(`turn-batch-authority-${condition}-2`);
     },
   );
 
