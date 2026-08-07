@@ -82,3 +82,194 @@ Build config: isolation=branch, build_mode=subagent-driven-development, tdd_mode
 - Initial review: `0 Critical / 5 Important / 2 Minor`; report `.superpowers/sdd/final-review.md`.
 - Fix round 1: all seven findings addressed in `2ff280f`, including the carried Task 4 argument-limit Minor.
 - Fresh re-review: ready for Verify; `7/7` resolved, no unresolved or new findings; report `.superpowers/sdd/final-rereview-1.md`.
+
+---
+
+# SDD Progress Ledger - sap-nexus-governed-read-context
+
+Plan: docs/superpowers/plans/2026-08-06-governed-read-context.md
+Design: docs/superpowers/specs/2026-08-06-governed-read-context-design.md
+Native change: docs/comet/changes/sap-nexus-governed-read-context
+Branch: main
+BASE: 304d647
+Build config: isolation=current-branch-per-project-rule, build_mode=subagent-driven-development, tdd_mode=tdd, review_mode=standard
+
+## Pre-Flight Findings
+
+- Task-scoped local commits explicitly authorized on 2026-08-06; no push, amend, branch switch, or unrelated staging authorized.
+- Python baseline before Task 1: `959 passed, 1 skipped`.
+- No remaining plan conflicts after adding the two-phase `resolve_read_turn -> CAS -> continue_resolved_read` protocol and limiting Registry plant patterns to READ capabilities.
+- User ruling on 2026-08-07 (Task 9 Step 4 scope): Task 9's "remove the legacy
+  bridge" is narrowed to Option A only — restrict `READ_CONTEXT_MODE` to drop
+  the recognized `"legacy"` value and add the Step 2 contract test against the
+  governed `resolve_read_turn`/`continue_resolved_read` path (already
+  structurally clean of `last_context`). `agent/sap_nexus_agent/intent.py`'s
+  `resolve_with_context` auto-dispatch, the `--context` CLI sticky
+  CLARIFY->SELECT continuation feature (`cli.py`, documented in
+  `docs/runbooks/README.md` and
+  `docs/runbooks/12-conversational-context-and-multi-value-batch.md`), and
+  `agent/tests/test_conversation_context.py` are explicitly OUT of scope for
+  this change and MUST NOT be modified or deleted.
+
+## Tasks
+
+- [x] Task 1: Versioned Python READ context contracts and legacy migration
+- [x] Task 2: Deterministic candidate extraction and semantic validation
+- [x] Task 3: Pure ContextReducer and exact failure sequence
+- [x] Task 4: Fail-closed decision gate and shadow orchestration
+- [x] Task 5: Registry and Gateway semantic pattern validation
+- [x] Task 6: Durable Session v2, lease, CAS, and turn idempotency
+- [x] Task 7: Authoritative Frame v2 and unified pending interactions
+- [x] Task 8: Multi-turn Eval fixtures and release hard gates
+- [x] Task 9: Legacy bridge removal, full verification, and Native archive
+
+## Completed
+
+- Task 1: complete (commits `304d647..4dbefdb`, review clean after one fix round: Spec compliant + Quality Approved, 0 Critical/Important/Minor). Added immutable READ context contracts, optional ConversationContext v2 compatibility, and strict fail-closed legacy migration. RED collection failure; focused `19 passed`; full Agent `973 passed, 1 skipped`.
+- Task 2: complete (commits `4dbefdb..ae1f45d`, review clean after one fix round: Spec compliant + Quality Approved, 0 Critical/Important/Minor). Added READ-only advisory catalog, immutable candidate extraction, generic Registry-metadata labels, semantic exclusion, and centralized auditable governance discards. Focused `93 passed`; Agent `991 passed, 1 skipped`.
+- Task 3: complete (commits `ae1f45d..5fb4570`, review clean after four fix
+  rounds: Spec compliant + Quality Approved, 0 Critical/Important, 1 Minor
+  deferred). Added pure deterministic ContextReducer, immutable recent-frame
+  history, executable multi-turn fixtures, semantic trust-boundary validation,
+  explicit/pending/deterministic evidence arbitration, safe snapshot rebind, and
+  cross-descriptor invariants. Focused `21 passed`; Agent `1016 passed, 1 skipped`.
+- Task 4: complete (commits `5fb4570..c6e2467`, review clean after five fix
+  rounds: Spec compliant + Quality Approved, 0 Critical/Important). Added the
+  fail-closed Frame-to-decision gate, trusted combined authority service,
+  observational shadow mode, typed redacted evidence, semantic contract and
+  duplicate-ID validation, and distinct bounded-ambiguity/multi-goal routing.
+  Focused `150 passed`; Agent `1078 passed, 1 skipped`; Eval and OpenSpec clean.
+- Task 5: complete (commits `c6e2467..86e9833`, review clean: Spec compliant +
+  Quality Approved, 0 Critical/Important, 1 Minor deferred). Added optional
+  Registry input patterns, load-time regex validation, and full-string Gateway
+  validation for READ Plant values only. Gateway core/app and OpenSpec strict pass.
+- Task 6: complete (commits `86e9833..8b37579`, review clean after two fix
+  rounds: Spec compliant + Quality Approved, 0 Critical/Important, 1 Minor
+  deferred). Added Session v2 mirrors, strict legacy migration, fenced renewable
+  conversation leases, exact CAS, recoverable turn-ledger journal, and durable
+  duplicate-turn handling. Focused `64/64`; typecheck/build pass; one unrelated
+  full-verify failure was independently reproduced at the task base.
+- Task 7: complete (commits `8b37579..4c920f2`, review clean after four fix
+  rounds: Spec compliant + Quality Approved with Minor Findings, 0
+  Critical/Important, 2 Minors deferred). Made Frame v2 authoritative for READ,
+  enforced resolve/CAS/continue ordering, unified bound pending interactions,
+  added current-authority continuation and batch preflight, and preserved
+  non-READ/Human Approval routing. Agent `1130 passed, 1 skipped`; Eval and
+  OpenSpec clean; frontend serial verify had only the independently known
+  composition baseline failure.
+- Task 8: complete (commits `4c920f2..32f8b63`, review clean after four fix
+  rounds: Spec compliant + Quality Approved, 0 Critical/Important/Minor open).
+  Added 13 versioned governed-read multi-turn fixtures replayed through
+  production `resolve_read_turn`/`continue_resolved_read` and the real
+  hybrid-fallback/technical-override paths, exact slot-set assertions, and
+  non-compensable release-gate metrics/hard gates. Closed a self-referential
+  "applicable" no-op in three zero-rate gates and then an incomplete per-case
+  backstop, landing on an aggregate exact-total check (9/10/20 across all 13
+  context cases) that fails if any single case's evidence silently drops.
+  Python focused `24/24`; frontend release-gate suite `25/25`; typecheck/build
+  clean; `release-gate --profile all` `L3_ACTION_GOVERNED`, `22/22`,
+  `liveSmoke=not_run`.
+- Task 9: complete (commit `cf63a7e`, review clean after one fix round: Spec
+  compliant + Quality Approved, 0 Critical/Important/Minor open). Per the
+  user-confirmed Option A ruling, narrowed the legacy-bridge removal to
+  `_read_context_mode()` dropping the recognized `"legacy"` value only;
+  `intent.py`'s `resolve_with_context` auto-dispatch, the CLI `--context`
+  flag, and `test_conversation_context.py` are explicitly retained,
+  out-of-scope, non-governed legacy behavior (documented in design-doc §20 and
+  the verify report). Added a governed-path contract test with a reachability
+  sanity check plus a direct `last_context is None` invariant assertion across
+  a full 3-turn continuation. Agent `1137 passed, 1 skipped`; callplan
+  evidence, Gradle `:core:test :app:test`, and OpenSpec `20/20` all pass;
+  frontend typecheck clean (one pre-existing, independently-reproduced
+  `adapter-integration.test.ts` failure on unmodified `main`, unrelated to
+  this change); `release-gate --profile all` `L3_ACTION_GOVERNED`, `22/22`,
+  `liveSmoke=not_run`.
+
+## Minor Findings
+
+- Task 3 fix round 1: `agent/tests/test_context_reducer.py` uses a tautological
+  tuple-length assertion for the cross-descriptor pending invariant; defer to the
+  final whole-branch review after the load-bearing confirmation finding is fixed.
+- Task 4 final internal audit: whole-branch issuer/nested-DTO defensive tests may
+  be broadened, but final task review found no actual authority or output leak.
+- Task 5: report notes existing Gradle deprecation/JVM-sharing warnings without
+  preserving their exact text/source; defer evidence-hygiene triage to final review.
+- Task 6 initial review: protocol ordering test should assert both CAS operations
+  and `runner < result CAS < event`; defer this non-load-bearing test hardening to
+  final whole-branch review.
+- Task 7 final review: add a positive live-batch test where `preflight-batch`
+  succeeds and matching current authority, rather than exercising only the
+  fail-closed preflight-error branch.
+- Task 7 final review: add direct production child close-event coverage after a
+  conversation heartbeat abort; current tests prove signal propagation and the
+  production runner calls `child.kill()` but do not await a real child close.
+
+## Fix Rounds
+
+- Task 3: fix round 1/5 (4 addressed, 1 open - standalone `CONFIRMATION` is
+  emitted as `EXPLICIT_CORRECTION` / `EXPLICIT`; commit `7ec369d`).
+- Task 3: fix round 2/5 (1 addressed, 1 new open - mixed correction and
+  confirmation values in the same top evidence tier are not conflicted; commit
+  `d7430d7`).
+- Task 3: fix round 3/5 (1 addressed, 1 new open - explicit-tier conflict is
+  mislabeled as deterministic syntax in issues/evidence; commit `7b9f6ca`).
+- Task 3: fix round 4/5 (1 addressed, 0 open - explicit and deterministic
+  conflicts now retain truthful tier-specific issues/evidence; commit `5fb4570`).
+- Task 4: fix round 1/5 (2 addressed, 4 open - shadow orchestration upgrades
+  dry-run visibility and conflates bounded ambiguity with multi-goal routing;
+  commit `b83b68c`).
+- Task 4: fix round 2/5 (2 addressed, 2 open - positive shadow paths still
+  rely on test-only execution visibility, and multi-goal escalation still
+  requires two unique capability hints; commit `8fea3ae`).
+- Task 4: fix round 3/5 (3 addressed, 2 new open - execution visibility is
+  passed as an unbound raw ID set, and duplicate Registry/binding IDs are
+  resolved last-wins; commit `8a0986b`).
+- Task 4: fix round 4/5 (1 addressed, 2 open - projection proof can be bypassed
+  by `None`, and the cross-module issuer signs caller-supplied authority inputs;
+  commit `69cc4d5`).
+- Task 4: fix round 5/5 (4 addressed, 0 open - mandatory combined authority,
+  semantic-contract validation, and zero-side-effect shadow approved; commit
+  `c6e2467`).
+- Task 6: fix round 1/5 (1 addressed, 2 open - cross-file turn-ledger failure
+  can become replayable after an intervening turn, and known lease loss can
+  still reach composition Gateway; commit `c8e335a`).
+- Task 6: fix round 2/5 (2 addressed, 0 open - recoverable journal closes
+  Session/ledger crash windows and post-run fencing blocks composition/Gateway;
+  commit `8b37579`).
+- Task 7: fix round 1/5 (0 fully addressed, 5 original findings remain plus
+  in-scope continuation/pending regressions; commit `aac2950`). User ruling on
+  2026-08-07: cross-process Node lease/CAS atomicity remains outside the confirmed
+  local/single-worker JSON baseline; do not claim multi-worker safety.
+- Task 7: fix round 2/5 (one-shot and batch authority addressed; non-READ routing,
+  READ mid-flight fencing, pending decoder parity, and stale-batch recovery open;
+  commit `fe8cd14`).
+- Task 7: fix round 3/5 (normal READ abort, decoder parity, and initial non-READ
+  routing addressed; planner confirmation and current batch-authority recovery
+  open; commit `4938d8d`).
+- Task 7: fix round 4/5 (planner confirmation and read-only current Registry batch
+  preflight addressed; 0 Critical/Important open; commit `4c920f2`).
+- Task 8: fix round 1/4 (real production `resolve_read_turn`/`continue_resolved_read`
+  replay, exact slot-set assertions, and non-empty initial Frame fixture added;
+  0 Critical/Important open; commit `e8bd23f`).
+- Task 8: fix round 2/4 (durable CAS-loser/lease-busy evidence separated from
+  the CAS winner, per-case failure tracking, and production hybrid-fallback/
+  technical-override paths exercised; 1 new Important open - a self-referential
+  `applicable` argument made three zero-rate release gates a no-op; commit
+  `634d47c`).
+- Task 8: fix round 3/4 (added a 4-case per-case evidence backstop for the
+  three broken gates; re-review found it covered only 4 of 13 `context-*`
+  cases that populate the same aggregate metrics, leaving the remaining
+  evidence unprotected; commit `e0ecb30`).
+- Task 8: fix round 4/4 (replaced the per-case backstop with an aggregate
+  exact-total check across all 13 context cases - `contextConflictCases=9`,
+  `nonReadyFrames=10`, `callPlanSlotChecks=20`, independently verified against
+  three separate release-gate runs and the live fixture list; 0
+  Critical/Important open; commit `32f8b63`).
+- Task 9: fix round 1/1 (initial dispatch BLOCKED at Step 1 - the brief's
+  literal legacy-dispatch removal would break an active, unlisted caller
+  backing the shipped `--context` CLI feature; escalated to the user, who
+  ruled Option A - narrow the removal to `_read_context_mode()` only. Review
+  of the narrowed implementation found the new contract test's fixture
+  structurally could not reach the real `resolve_with_context` call path;
+  fixed with a reachability sanity check plus a direct `last_context`
+  invariant assertion, RED/GREEN verified; commit `cf63a7e`).
