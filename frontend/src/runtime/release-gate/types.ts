@@ -22,6 +22,10 @@ export type ReadContextMetricCounts = {
   staleFrameExecutions: number;
   readWriteIsolationChecks: number;
   readContextWriteAuthorityCreations: number;
+  deterministicCoreChecks: number;
+  deterministicCorePassed: number;
+  successfulRecoveryChecks: number;
+  successfulRecoveries: number;
 };
 
 export type ReleaseMetricCounts = Partial<ReadContextMetricCounts> & {

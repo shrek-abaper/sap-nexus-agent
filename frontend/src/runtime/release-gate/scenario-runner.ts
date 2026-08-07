@@ -9,7 +9,15 @@ import {
 } from "../action-governance/action-governance";
 import { CompositionCoordinator } from "../composition/coordinator";
 import { JsonlRunStore } from "../durable/jsonl-run-store";
+import { JsonlConversationStore } from "../durable/jsonl-conversation-store";
+import { canonicalJson, sha256Hex } from "../durable/canonical-json";
+import {
+  createAgentRun,
+  setDurableStoresForTests,
+  setReadAgentRunnerForTests,
+} from "../agent-runtime-adapter";
 import type { AgentRunRecord } from "../durable/types";
+import type { WorkbenchOutcome } from "../durable/types";
 import { FakeGateway } from "../plan-executor/fake-gateway";
 import type { PlanGraphV2 } from "../plan-executor/types";
 import { PLACEHOLDER_PRINCIPAL } from "../principal/types";
@@ -80,7 +88,33 @@ const FORBIDDEN_KEYS = new Set([
   "credential", "credentials", "password", "token", "apikey", "rfcname",
   "binding", "url", "sql", "rawresponse", "rawsappayload",
 ]);
-const governedContextEvalCache = new Map<string, Promise<boolean>>();
+type ContextTurnEvidence = {
+  turnId: string;
+  recordingId: string | null;
+  stateBefore: Record<string, unknown> | null;
+  stateAfter: Record<string, unknown>;
+  frame: { status: string };
+  slots: Record<string, { value: string | null; state: string; role: string }>;
+  decision: string;
+  callPlan: {
+    capabilityId: string;
+    parameters: Record<string, string>;
+    slotRoles: Record<string, string>;
+  } | null;
+  validateDelta: number;
+  executeDelta: number;
+  writeAuthority: { approvalRecord: boolean; selectionBinding: boolean };
+};
+
+type ContextCaseEvidence = {
+  caseId: string;
+  fixtureVersion: string;
+  registrySnapshotId: string;
+  turns: ContextTurnEvidence[];
+};
+
+const governedContextEvalCache = new Map<string, Promise<Map<string, ContextCaseEvidence>>>();
+const durableContextEvalCache = new Map<string, Promise<Map<string, Partial<ReleaseMetricCounts>>>>();
 
 export function loadReleaseFixtures(repoRoot: string): ReleaseFixtureBundle {
   const profilePayload = readJson<Record<string, unknown>>(
@@ -165,7 +199,19 @@ async function runGovernedReadContextEval(
   fixture: ReleaseCaseFixture,
   repoRoot: string,
 ): Promise<ReleaseCaseResult> {
-  const passed = await governedContextEvalPasses(repoRoot);
+  const fixtureId = fixture.caseId.replace(/^context-/, "");
+  const evidence = (await governedContextEvalEvidence(repoRoot)).get(fixtureId);
+  if (!evidence) {
+    return {
+      ...baseResult(fixture),
+      status: "missing",
+      evidenceRefs: [],
+      errorType: "CONTEXT_EVIDENCE_MISSING",
+    };
+  }
+  const metrics = contextMetrics(evidence);
+  Object.assign(metrics, await durableContextMetrics(repoRoot, fixtureId));
+  const passed = contextEvidencePasses(evidence, metrics);
   return {
     ...baseResult(fixture),
     status: passed ? "passed" : "failed",
@@ -173,21 +219,177 @@ async function runGovernedReadContextEval(
       `run:${fixture.caseId}`,
       "eval:evals/matcher_cases.yaml",
     ] : [],
-    metrics: contextMetrics(fixture),
-    ...(passed ? {} : { errorType: "GOVERNED_READ_CONTEXT_EVAL_FAILED" }),
+    metrics,
+    ...(passed ? {} : { errorType: "GOVERNED_READ_CONTEXT_EVIDENCE_FAILED" }),
   };
 }
 
-function governedContextEvalPasses(repoRoot: string): Promise<boolean> {
+function durableContextMetrics(
+  repoRoot: string,
+  fixtureId: string,
+): Promise<Partial<ReleaseMetricCounts>> {
+  let pending = durableContextEvalCache.get(repoRoot);
+  if (!pending) {
+    pending = runDurableContextProtocols();
+    durableContextEvalCache.set(repoRoot, pending);
+  }
+  return pending.then((results) => results.get(fixtureId) ?? {});
+}
+
+async function runDurableContextProtocols(): Promise<Map<string, Partial<ReleaseMetricCounts>>> {
+  const results = new Map<string, Partial<ReleaseMetricCounts>>();
+  results.set("duplicate-turn-id", await observeDuplicateTurn());
+  results.set("concurrent-turns", await observeLeaseConflict());
+  results.set("registry-drift", await observeRejectedContinuation("stale"));
+  results.set("read-write-authority-isolation", await observeRejectedContinuation("write"));
+  return results;
+}
+
+async function observeDuplicateTurn(): Promise<Partial<ReleaseMetricCounts>> {
+  return withRuntimeProtocol(async (store, runs) => {
+    let continuations = 0;
+    setReadAgentRunnerForTests(async (input) => {
+      if (input.mode === "resolve-read") return runtimeReadOutcome(input.turnId!);
+      if (input.mode === "continue-read") {
+        continuations += 1;
+        return { status: "success", responseText: "offline read" };
+      }
+      throw new Error(`unexpected runtime mode ${input.mode}`);
+    });
+    const first = await createAgentRun({
+      query: "查库存", conversationId: "context-duplicate", turnId: "duplicate-turn",
+      principal: PLACEHOLDER_PRINCIPAL,
+    });
+    await waitForRuntimeTerminal(runs, first.runId);
+    const retried = await createAgentRun({
+      query: "查库存", conversationId: "context-duplicate", turnId: "duplicate-turn",
+      principal: PLACEHOLDER_PRINCIPAL,
+    });
+    const session = await store.load("context-duplicate", PLACEHOLDER_PRINCIPAL.principalId);
+    return {
+      duplicateTurnChecks: 1,
+      duplicateTurnGatewayCalls: retried.runId === first.runId && continuations === 1 ? 0 : 1,
+      stateOverwritesAfterConflict: session?.lastAppliedTurnId === "duplicate-turn" ? 0 : 1,
+    };
+  });
+}
+
+async function observeLeaseConflict(): Promise<Partial<ReleaseMetricCounts>> {
+  return withRuntimeProtocol(async (store) => {
+    const held = await store.claim("context-concurrent", "other-worker", 60_000);
+    let busy = false;
+    try {
+      await createAgentRun({
+        query: "查库存", conversationId: "context-concurrent", turnId: "concurrent-turn",
+        principal: PLACEHOLDER_PRINCIPAL,
+      });
+    } catch (error) {
+      busy = error instanceof Error && "code" in error
+        && (error as { code?: string }).code === "CONVERSATION_BUSY";
+    }
+    const session = await store.load("context-concurrent", PLACEHOLDER_PRINCIPAL.principalId);
+    if (held.status === "claimed" || held.status === "force-claimed") {
+      await store.release("context-concurrent", "other-worker", held.fenceToken);
+    }
+    return {
+      casLeaseConflictChecks: 1,
+      stateOverwritesAfterConflict: busy && session === null ? 0 : 1,
+    };
+  });
+}
+
+async function observeRejectedContinuation(kind: "stale" | "write"): Promise<Partial<ReleaseMetricCounts>> {
+  return withRuntimeProtocol(async (_store, runs) => {
+    let continuations = 0;
+    setReadAgentRunnerForTests(async (input) => {
+      if (input.mode === "resolve-read") return runtimeReadOutcome(input.turnId!, kind);
+      if (input.mode === "continue-read" || input.mode === "continue-selection") continuations += 1;
+      throw new Error(`unexpected rejected continuation ${input.mode}`);
+    });
+    const started = await createAgentRun({
+      query: kind === "write" ? "创建采购申请" : "继续刚才库存", conversationId: `context-${kind}`,
+      turnId: `${kind}-turn`, principal: PLACEHOLDER_PRINCIPAL,
+    });
+    const events = await waitForRuntimeTerminal(runs, started.runId);
+    const rejected = events.at(-1)?.type === "run_failed" && continuations === 0;
+    return kind === "stale"
+      ? { staleFrameChecks: 1, staleFrameExecutions: rejected ? 0 : 1 }
+      : { readWriteIsolationChecks: 1, readContextWriteAuthorityCreations: rejected ? 0 : 1 };
+  });
+}
+
+async function withRuntimeProtocol<T>(
+  operation: (store: JsonlConversationStore, runs: JsonlRunStore) => Promise<T>,
+): Promise<T> {
+  const directory = mkdtempSync(path.join(tmpdir(), "sap-nexus-context-protocol-"));
+  const runs = new JsonlRunStore(directory, "release-gate-context");
+  const store = new JsonlConversationStore(directory);
+  setDurableStoresForTests(runs, store);
+  try {
+    return await operation(store, runs);
+  } finally {
+    setReadAgentRunnerForTests(null);
+    setDurableStoresForTests(
+      new JsonlRunStore(mkdtempSync(path.join(tmpdir(), "sap-nexus-context-teardown-"))),
+      new JsonlConversationStore(mkdtempSync(path.join(tmpdir(), "sap-nexus-context-teardown-"))),
+    );
+    rmSync(directory, { recursive: true, force: true });
+  }
+}
+
+async function waitForRuntimeTerminal(runs: JsonlRunStore, runId: string) {
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    const events = (await runs.load(runId))?.events ?? [];
+    if (events.at(-1)?.type === "run_completed" || events.at(-1)?.type === "run_failed") return events;
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  throw new Error(`runtime protocol run ${runId} did not settle`);
+}
+
+function runtimeReadOutcome(turnId: string, rejection?: "stale" | "write"): WorkbenchOutcome {
+  const frameStatus = rejection === "stale" ? "STALE" as const : "READY" as const;
+  const callPlan = {
+    agentTraceId: "release-context-read",
+    capabilityId: rejection === "write" ? "MM.PR.CreateDraft" : "MM.Inventory.GetAvailability",
+    kind: rejection === "write" ? "Action" : "Function",
+    parameters: { material: "DEMOA2", plant: "1000" },
+    validationPolicy: "validate_before_execute",
+    createdBy: "recorded-candidate",
+    requiresApproval: rejection === "write",
+  };
+  const readState = {
+    activeFrame: {
+      frameId: "release-context-frame", capabilityId: "MM.Inventory.GetAvailability",
+      slots: {}, status: frameStatus, createdTurnId: turnId, updatedTurnId: turnId,
+      registrySnapshotId: "snapshot-read-1", capabilityVersion: "1",
+    },
+    recentFrames: [], pendingInteraction: null, stateVersion: 1,
+  };
+  return {
+    status: "resolved_read", callPlan,
+    matchDecision: { decisionType: "SELECT", capabilityId: callPlan.capabilityId },
+    decision: { decisionType: "SELECT", capabilityId: callPlan.capabilityId },
+    conversationReadState: readState, resolutionReport: { frameStatus }, turnId,
+    frameId: "release-context-frame", stateVersion: 1, registrySnapshotId: "snapshot-read-1",
+    readExecutionBinding: {
+      turnId, frameId: "release-context-frame", stateVersion: 1, registrySnapshotId: "snapshot-read-1",
+      principalId: PLACEHOLDER_PRINCIPAL.principalId, capabilityVersion: "1",
+      executorBindingId: "offline-read", callPlanHash: sha256Hex(canonicalJson(callPlan)), readState,
+    },
+  };
+}
+
+function governedContextEvalEvidence(repoRoot: string): Promise<Map<string, ContextCaseEvidence>> {
   const cached = governedContextEvalCache.get(repoRoot);
   if (cached) return cached;
   const pending = runProcess(
     path.join(repoRoot, ".venv/bin/python"),
-    ["-m", "sap_nexus_agent.eval", "evals/matcher_cases.yaml"],
+    ["-m", "sap_nexus_agent.eval", "evals/matcher_cases.yaml", "--context-evidence"],
     repoRoot,
   ).then((result) => {
-    const match = /Eval passed:\s*(\d+)\/(\d+)/.exec(result.stdout);
-    return result.code === 0 && match !== null && match[1] === match[2];
+    if (result.code !== 0) return new Map();
+    const payload = JSON.parse(result.stdout) as { cases?: ContextCaseEvidence[] };
+    return new Map((payload.cases ?? []).map((entry) => [entry.caseId, entry]));
   });
   governedContextEvalCache.set(repoRoot, pending);
   return pending;
@@ -443,20 +645,74 @@ function emptyMetrics(): ReleaseMetricCounts {
     staleFrameExecutions: 0,
     readWriteIsolationChecks: 0,
     readContextWriteAuthorityCreations: 0,
+    deterministicCoreChecks: 0,
+    deterministicCorePassed: 0,
+    successfulRecoveryChecks: 0,
+    successfulRecoveries: 0,
   };
 }
 
-function contextMetrics(fixture: ReleaseCaseFixture): ReleaseMetricCounts {
-  const tag = fixture.riskTags[0];
+function contextMetrics(evidence: ContextCaseEvidence): ReleaseMetricCounts {
+  const turns = evidence.turns;
+  const selectable = turns.filter((turn) => turn.decision === "SELECT");
+  const nonReady = turns.filter((turn) => turn.frame.status !== "READY");
+  const callPlanChecks = selectable.flatMap((turn) => Object.entries(turn.callPlan?.slotRoles ?? {}));
+  const deterministicPasses = turns.filter((turn) => (
+    (turn.decision !== "SELECT" || (turn.frame.status === "READY" && turn.callPlan !== null))
+    && !(turn.frame.status !== "READY" && (turn.validateDelta > 0 || turn.executeDelta > 0))
+    && !turn.writeAuthority.approvalRecord
+    && !turn.writeAuthority.selectionBinding
+  ));
+  const recoveryTurns = turns.filter((turn) => {
+    const active = turn.stateBefore?.activeFrame;
+    return isRecord(active)
+      && (active.status === "COLLECTING" || active.status === "CONFLICTED")
+      && turn.frame.status === "READY";
+  });
+  const successfulRecoveries = recoveryTurns.filter((turn) => (
+    turn.decision === "SELECT" && turn.callPlan !== null && turn.executeDelta === 1
+  ));
   return {
     ...emptyMetrics(),
     contextConflictCases: 1,
-    callPlanSlotChecks: tag === "capability-switch" || tag === "direct-plant-switch" ? 1 : 0,
-    duplicateTurnChecks: tag === "duplicate-turn-id" ? 1 : 0,
-    casLeaseConflictChecks: tag === "concurrent-turns" ? 1 : 0,
-    staleFrameChecks: tag === "registry-drift" || tag === "recent-frame-explicit-restoration" ? 1 : 0,
-    readWriteIsolationChecks: tag === "read-write-authority-isolation" ? 1 : 0,
+    falseSelects: turns.filter((turn) => (
+      turn.decision === "SELECT" && (turn.frame.status !== "READY" || turn.callPlan === null)
+    )).length,
+    nonReadyFrames: nonReady.length,
+    nonReadyGatewayCalls: nonReady.reduce(
+      (total, turn) => total + turn.validateDelta + turn.executeDelta,
+      0,
+    ),
+    callPlanSlotChecks: callPlanChecks.length,
+    wrongCallPlanSlotRoles: callPlanChecks.filter(([, role]) => (
+      role === "MODEL_CANDIDATE" || role === "INHERITED_LEGACY"
+    )).length,
+    readWriteIsolationChecks: turns.length,
+    readContextWriteAuthorityCreations: turns.filter((turn) => (
+      turn.writeAuthority.approvalRecord || turn.writeAuthority.selectionBinding
+    )).length,
+    deterministicCoreChecks: turns.length,
+    deterministicCorePassed: deterministicPasses.length,
+    successfulRecoveryChecks: recoveryTurns.length,
+    successfulRecoveries: successfulRecoveries.length,
   };
+}
+
+function contextEvidencePasses(
+  evidence: ContextCaseEvidence,
+  metrics: ReleaseMetricCounts,
+): boolean {
+  return evidence.fixtureVersion === "governed-read-context-v1"
+    && evidence.registrySnapshotId.length > 0
+    && evidence.turns.length > 0
+    && metrics.falseSelects === 0
+    && metrics.nonReadyGatewayCalls === 0
+    && metrics.wrongCallPlanSlotRoles === 0
+    && metrics.readContextWriteAuthorityCreations === 0;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
 function dualReadGraph(): PlanGraphV2 {

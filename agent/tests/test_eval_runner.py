@@ -261,6 +261,7 @@ def test_governed_read_context_fixture_declares_complete_multi_turn_contract():
             assert turn["expected"]["decision"]
             assert "validateDelta" in turn["expected"]
             assert "executeDelta" in turn["expected"]
+            assert "callPlan" in turn["expected"]
 
 
 def test_governed_read_context_eval_replays_reducer_and_enforces_turn_deltas():
@@ -269,6 +270,44 @@ def test_governed_read_context_eval_replays_reducer_and_enforces_turn_deltas():
 
     assert summary.failed == 0
     assert summary.passed == summary.total
+
+
+def test_governed_context_evidence_uses_recorded_bad_payload_and_observes_each_turn():
+    """Release metrics must consume resolver observations, not fixture labels."""
+    from sap_nexus_agent.eval import run_governed_context_evidence
+
+    evidence = run_governed_context_evidence(REPO_ROOT / "evals" / "matcher_cases.yaml")
+    bad = next(case for case in evidence if case["caseId"] == "clear-then-ambiguous-reference")
+    turn = bad["turns"][-1]
+
+    assert turn["recordingId"] == "recording-context-bad"
+    assert turn["decision"] == "CLARIFY"
+    assert turn["callPlan"] is None
+    assert turn["validateDelta"] == 0
+    assert turn["executeDelta"] == 0
+    assert turn["slots"]["material"]["state"] != "RESOLVED"
+    assert turn["slots"]["plant"]["value"] == "1000"
+    assert turn["writeAuthority"] == {"approvalRecord": False, "selectionBinding": False}
+
+
+def test_recent_frame_restoration_requires_explicit_capability_round_trip():
+    """The fixture must prove a real switch before explicitly returning to inventory."""
+    from sap_nexus_agent.eval import run_governed_context_evidence
+
+    evidence = run_governed_context_evidence(REPO_ROOT / "evals" / "matcher_cases.yaml")
+    restored = next(case for case in evidence if case["caseId"] == "recent-frame-explicit-restoration")
+
+    assert [turn["decision"] for turn in restored["turns"]] == ["SELECT", "SELECT", "CLARIFY"]
+    switch = restored["turns"][1]
+    final = restored["turns"][2]
+    assert switch["stateAfter"]["activeFrame"]["capabilityId"] == "MM.PurchaseOrder.GetList"
+    assert switch["stateAfter"]["recentFrames"][0]["capabilityId"] == "MM.Inventory.GetAvailability"
+    assert final["stateAfter"]["activeFrame"]["capabilityId"] == "MM.Inventory.GetAvailability"
+    assert final["stateAfter"]["activeFrame"]["frameId"] == "MM.Inventory.GetAvailability:restore-3"
+    assert final["stateAfter"]["recentFrames"][0]["capabilityId"] == "MM.PurchaseOrder.GetList"
+    assert final["callPlan"] is None
+    assert final["validateDelta"] == 0
+    assert final["executeDelta"] == 0
 
 
 # --- S2-B dry-run Eval (Task 9) ---

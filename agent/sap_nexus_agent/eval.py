@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import json
+from dataclasses import replace
 from pathlib import Path
 import sys
 from typing import Any
@@ -124,7 +125,16 @@ def run_eval_file(path: Path) -> EvalSummary:
     # three-state). Routing is decided by the first case so the existing
     # inventory/PO/PR eval files keep using the legacy assertion path.
     if cases and "decisionType" in (cases[0].get("expected") or {}):
-        return run_matcher_cases(cases)
+        recordings_path = path.parent / "recorded_llm" / "end_to_end_agent_release.json"
+        recordings = (
+            {
+                str(recording["recordingId"]): recording
+                for recording in json.loads(recordings_path.read_text(encoding="utf-8"))["recordings"]
+            }
+            if any(case.get("fixtureVersion") == "governed-read-context-v1" for case in cases)
+            else None
+        )
+        return run_matcher_cases(cases, recordings)
 
     total = len(cases)
     failures: list[str] = []
@@ -149,7 +159,26 @@ def run_eval_file(path: Path) -> EvalSummary:
     return EvalSummary(total=total, passed=total, failed=0)
 
 
-def run_matcher_cases(cases: list[dict[str, Any]]) -> EvalSummary:
+def run_governed_context_evidence(path: Path) -> list[dict[str, Any]]:
+    """Return observed production-boundary evidence for versioned context fixtures."""
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    recordings_path = path.parent / "recorded_llm" / "end_to_end_agent_release.json"
+    recordings_payload = json.loads(recordings_path.read_text(encoding="utf-8"))
+    recordings = {
+        str(recording["recordingId"]): recording
+        for recording in recordings_payload["recordings"]
+    }
+    evidence: list[dict[str, Any]] = []
+    for case in payload["cases"]:
+        if case.get("fixtureVersion") == "governed-read-context-v1":
+            evidence.append(_run_governed_read_context_case(case, recordings))
+    return evidence
+
+
+def run_matcher_cases(
+    cases: list[dict[str, Any]],
+    recordings: dict[str, dict[str, Any]] | None = None,
+) -> EvalSummary:
     """S2-A matcher Eval (Design Doc §测试策略 -> S2-A matcher Eval).
 
     Routes each case through ``run_query`` (parse_intent + select_capability)
@@ -178,7 +207,7 @@ def run_matcher_cases(cases: list[dict[str, Any]]) -> EvalSummary:
         case_id = _case_id(case)
         if case.get("fixtureVersion") == "governed-read-context-v1":
             try:
-                _run_governed_read_context_case(case)
+                _run_governed_read_context_case(case, recordings)
             except AssertionError as exc:
                 failures.append(f"{case_id}: {exc}")
             else:
@@ -216,7 +245,10 @@ def run_matcher_cases(cases: list[dict[str, Any]]) -> EvalSummary:
     return EvalSummary(total=passed, passed=passed, failed=0)
 
 
-def _run_governed_read_context_case(case: dict[str, Any]) -> None:
+def _run_governed_read_context_case(
+    case: dict[str, Any],
+    recordings: dict[str, dict[str, Any]] | None = None,
+) -> dict[str, Any]:
     """Replay versioned turns through the production Frame v2 resolver.
 
     The Eval harness owns only fixture assertions. It does not merge slots or
@@ -235,24 +267,40 @@ def _run_governed_read_context_case(case: dict[str, Any]) -> None:
 
     _assert_context_fixture_contract(case)
     snapshot, sources = _default_planner_sources()
+    initial_state = ConversationReadState.from_dict(case["initialContext"])
     context = ConversationContext(
         None,
         None,
-        read_state=ConversationReadState(None, None, 0),
+        read_state=initial_state,
         schema_version=2,
     )
     gateway = FakeGatewayClient(case)
+    observed_turns: list[dict[str, Any]] = []
 
     for turn in case["turns"]:
         candidate = turn["candidate"]
         expected = turn["expected"]
-        capability_id = (
-            "MM.Inventory.GetAvailability"
-            if candidate.get("writeAuthority")
-            else candidate["capabilityId"]
-        )
-        parameters = dict(candidate.get("parameters", {}))
+        capability_id = candidate["capabilityId"]
+        recording_id = turn.get("recordingId")
+        recording = recordings.get(recording_id) if recording_id and recordings else None
+        if recording_id:
+            assert recording is not None, f"unknown recording {recording_id}"
+            assert recording.get("redacted") is True
+            normalized = recording.get("normalizedResponse")
+            assert isinstance(normalized, dict)
+            assert normalized.get("capabilityId") == capability_id
+            parameters = dict(normalized.get("parameters", {}))
+        else:
+            parameters = dict(candidate.get("parameters", {}))
         missing = list(candidate.get("missing", []))
+        state_before = context.read_state.to_dict() if context.read_state else None
+        if candidate.get("explicitRestore"):
+            assert "回到刚才" in turn["userQuery"], "restore must be explicitly referenced"
+            assert context.read_state is not None
+            assert any(
+                frame.capability_id == capability_id
+                for frame in context.read_state.recent_frames
+            ), "explicit restore target is not a recent Frame"
 
         def adapter(text: str, _context=None) -> IntentEnvelope:
             return IntentEnvelope(
@@ -262,7 +310,10 @@ def _run_governed_read_context_case(case: dict[str, Any]) -> None:
                 user_constraints={},
                 ambiguities=[],
                 reference_turn_id=None,
-                model_evidence={"fixtureStatus": candidate.get("llmStatus", "recorded")},
+                model_evidence={
+                    "fixtureStatus": candidate.get("llmStatus", "recorded"),
+                    **dict(candidate.get("modelEvidence", {})),
+                },
                 snapshot_id="advisory-only",
                 discard_reasons=[],
                 created_by="fixture",
@@ -280,6 +331,7 @@ def _run_governed_read_context_case(case: dict[str, Any]) -> None:
             turn_id=turn["turnId"],
         )
         assert outcome.match_decision is not None
+        assert snapshot.snapshot_id == case["registrySnapshotId"], "fixture snapshot mismatch"
         assert outcome.match_decision.decision_type == expected["decision"]
         assert outcome.approval_record is None
         assert outcome.selection_execution_binding is None
@@ -288,6 +340,8 @@ def _run_governed_read_context_case(case: dict[str, Any]) -> None:
         assert frame is not None
         assert frame.status == expected["frameStatus"]
         _assert_context_slots(frame.slots, expected["slots"])
+        _assert_context_call_plan(outcome.call_plan, frame.slots, expected["callPlan"])
+        _assert_context_frame_identity(outcome.read_state, expected)
 
         if outcome.call_plan is not None:
             # Conflict fixtures exercise the real fail-closed continuation
@@ -297,24 +351,72 @@ def _run_governed_read_context_case(case: dict[str, Any]) -> None:
                 if candidate.get("principalMismatch")
                 else PLACEHOLDER_PRINCIPAL
             )
+            current_snapshot = (
+                replace(snapshot, snapshot_id=f"{snapshot.snapshot_id}-drift")
+                if candidate.get("registryDrift")
+                else snapshot
+            )
             continue_resolved_read(
                 outcome.call_plan,
                 outcome.read_execution_binding,
                 gateway,
                 persisted_state=outcome.read_state,
                 principal=execution_principal,
-                snapshot=None if candidate.get("registryDrift") else snapshot,
+                snapshot=current_snapshot,
                 sources=sources,
             )
 
-        assert len(gateway.validate_calls) - before_validate == expected["validateDelta"]
-        assert len(gateway.execute_calls) - before_execute == expected["executeDelta"]
+        validate_delta = len(gateway.validate_calls) - before_validate
+        execute_delta = len(gateway.execute_calls) - before_execute
+        assert validate_delta == expected["validateDelta"]
+        assert execute_delta == expected["executeDelta"]
+        observed_turns.append({
+            "turnId": turn["turnId"],
+            "recordingId": recording_id,
+            "stateBefore": state_before,
+            "stateAfter": outcome.read_state.to_dict(),
+            "frame": frame.to_dict(),
+            "slots": {
+                name: {
+                    "value": slot.value,
+                    "state": slot.state,
+                    "role": slot.provenance,
+                }
+                for name, slot in frame.slots.items()
+            },
+            "decision": outcome.match_decision.decision_type,
+            "callPlan": (
+                {
+                    "capabilityId": outcome.call_plan.capability_id,
+                    "parameters": dict(outcome.call_plan.parameters),
+                    "slotRoles": {
+                        name: frame.slots[name].provenance
+                        for name in outcome.call_plan.parameters
+                        if name in frame.slots
+                    },
+                }
+                if outcome.call_plan is not None
+                else None
+            ),
+            "validateDelta": validate_delta,
+            "executeDelta": execute_delta,
+            "writeAuthority": {
+                "approvalRecord": outcome.approval_record is not None,
+                "selectionBinding": outcome.selection_execution_binding is not None,
+            },
+        })
         context = ConversationContext(
             None,
             None,
             read_state=outcome.read_state,
             schema_version=2,
         )
+    return {
+        "caseId": case["id"],
+        "fixtureVersion": case["fixtureVersion"],
+        "registrySnapshotId": snapshot.snapshot_id,
+        "turns": observed_turns,
+    }
 
 
 def _assert_context_fixture_contract(case: dict[str, Any]) -> None:
@@ -333,6 +435,40 @@ def _assert_context_fixture_contract(case: dict[str, Any]) -> None:
         }
         assert isinstance(expected.get("validateDelta"), int)
         assert isinstance(expected.get("executeDelta"), int)
+        assert "callPlan" in expected
+        if "activeFrame" in expected:
+            active = expected["activeFrame"]
+            assert isinstance(active, dict)
+            assert isinstance(active.get("capabilityId"), str) and active["capabilityId"]
+            assert isinstance(active.get("frameId"), str) and active["frameId"]
+            assert isinstance(expected.get("recentFrameCapabilityIds"), list)
+
+
+def _assert_context_call_plan(actual: Any, slots: Any, expected: Any) -> None:
+    if expected is None:
+        assert actual is None, "unexpected CallPlan"
+        return
+    assert actual is not None, "missing expected CallPlan"
+    assert actual.capability_id == expected["capabilityId"], "CallPlan capability mismatch"
+    assert dict(actual.parameters) == expected["parameters"], "CallPlan parameters mismatch"
+    assert {
+        name: slots[name].provenance
+        for name in actual.parameters
+        if name in slots
+    } == expected["slotRoles"], "CallPlan slot roles mismatch"
+
+
+def _assert_context_frame_identity(state: ConversationReadState, expected: dict[str, Any]) -> None:
+    identity = expected.get("activeFrame")
+    if identity is None:
+        return
+    frame = state.active_frame
+    assert frame is not None
+    assert frame.capability_id == identity["capabilityId"], "active Frame capability mismatch"
+    assert frame.frame_id == identity["frameId"], "active Frame identity mismatch"
+    assert [frame.capability_id for frame in state.recent_frames] == expected[
+        "recentFrameCapabilityIds"
+    ], "recent Frame history mismatch"
 
 
 def _assert_context_slots(actual: Any, expected: dict[str, Any]) -> None:
@@ -606,9 +742,15 @@ def _case_utterance(case: dict[str, Any]) -> str:
 
 def main(argv: list[str] | None = None) -> int:
     args = argv if argv is not None else sys.argv[1:]
-    if len(args) != 1:
-        print("Usage: python -m sap_nexus_agent.eval <json-formatted-cases-file>", file=sys.stderr)
+    if len(args) not in {1, 2} or (len(args) == 2 and args[1] != "--context-evidence"):
+        print(
+            "Usage: python -m sap_nexus_agent.eval <json-formatted-cases-file> [--context-evidence]",
+            file=sys.stderr,
+        )
         return 2
+    if len(args) == 2:
+        print(json.dumps({"cases": run_governed_context_evidence(Path(args[0]))}, ensure_ascii=False))
+        return 0
     summary = run_eval_file(Path(args[0]))
     print(f"Eval passed: {summary.passed}/{summary.total}")
     return 0

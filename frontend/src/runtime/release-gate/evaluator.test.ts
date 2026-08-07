@@ -104,6 +104,59 @@ describe("evaluateRelease", () => {
     });
   });
 
+  it.each([
+    ["non-ready Gateway", "nonReadyFrames", "nonReadyGatewayCalls"],
+    ["wrong CallPlan slot role", "callPlanSlotChecks", "wrongCallPlanSlotRoles"],
+    ["duplicate turn Gateway", "duplicateTurnChecks", "duplicateTurnGatewayCalls"],
+    ["CAS or lease overwrite", "casLeaseConflictChecks", "stateOverwritesAfterConflict"],
+    ["stale Frame execution", "staleFrameChecks", "staleFrameExecutions"],
+    ["READ-created WRITE authority", "readWriteIsolationChecks", "readContextWriteAuthorityCreations"],
+  ])("hard-fails one %s observation", (_label, denominator, violation) => {
+    const unsafe = passing("context-unsafe", "L1");
+    unsafe.metrics = {
+      ...unsafe.metrics,
+      [denominator]: 1,
+      [violation]: 1,
+    } as never;
+
+    expect(evaluateRelease([unsafe], "L1").targetPassed).toBe(false);
+  });
+
+  it("keeps successful recovery independent from deterministic-core safety", () => {
+    const incompleteRecovery = passing("context-recovery", "L1");
+    incompleteRecovery.metrics = {
+      ...incompleteRecovery.metrics,
+      contextConflictCases: 1,
+      deterministicCoreChecks: 2,
+      deterministicCorePassed: 2,
+      successfulRecoveryChecks: 2,
+      successfulRecoveries: 1,
+    } as never;
+
+    const report = evaluateRelease([incompleteRecovery], "L1");
+    expect(report.targetPassed).toBe(false);
+    expect(report.levels.L1.hardGates.deterministicCorePassRate).toMatchObject({ actual: 1, required: 1 });
+    expect(report.levels.L1.hardGates.successfulRecoveryRate).toMatchObject({ actual: 0.5, required: 1 });
+  });
+
+  it("fails required governed-context completeness gates with no observations", () => {
+    const unobserved = passing("context-unobserved", "L1");
+    unobserved.metrics.contextConflictCases = 1;
+    const report = evaluateRelease([unobserved], "L1");
+
+    expect(report.targetPassed).toBe(false);
+    expect(report.levels.L1.hardGates.deterministicCorePassRate).toEqual({
+      actual: 0,
+      required: 1,
+      passed: false,
+    });
+    expect(report.levels.L1.hardGates.successfulRecoveryRate).toEqual({
+      actual: 0,
+      required: 1,
+      passed: false,
+    });
+  });
+
   it("hard-fails incomplete lineage without rounding", () => {
     const incomplete = passing("l2-lineage", "L2");
     incomplete.metrics.lineageRequired = 3;

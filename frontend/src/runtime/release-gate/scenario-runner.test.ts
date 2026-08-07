@@ -67,6 +67,14 @@ describe("offline release scenarios", () => {
 
     expect(results).toHaveLength(22);
     expect(results.filter((result) => result.status !== "passed")).toEqual([]);
+    expect(results.find((result) => result.caseId === "context-duplicate-turn-id")?.metrics)
+      .toMatchObject({ duplicateTurnChecks: 1, duplicateTurnGatewayCalls: 0 });
+    expect(results.find((result) => result.caseId === "context-concurrent-turns")?.metrics)
+      .toMatchObject({ casLeaseConflictChecks: 1, stateOverwritesAfterConflict: 0 });
+    expect(results.find((result) => result.caseId === "context-registry-drift")?.metrics)
+      .toMatchObject({ staleFrameChecks: 1, staleFrameExecutions: 0 });
+    expect(results.find((result) => result.caseId === "context-read-write-authority-isolation")?.metrics)
+      .toMatchObject({ readWriteIsolationChecks: 1, readContextWriteAuthorityCreations: 0 });
     expect(results.filter((result) => result.fixtureKind === "coordinator-e2e")
       .every((result) => result.evidenceRefs.some((ref) => ref.startsWith("run:")))).toBe(true);
     expect(report.decision).toBe("L3_ACTION_GOVERNED");

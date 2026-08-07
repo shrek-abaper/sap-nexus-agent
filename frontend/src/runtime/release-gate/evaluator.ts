@@ -104,6 +104,10 @@ function sumMetrics(results: ReleaseCaseResult[]): ReleaseMetricCounts {
     staleFrameExecutions: (total.staleFrameExecutions ?? 0) + (result.metrics.staleFrameExecutions ?? 0),
     readWriteIsolationChecks: (total.readWriteIsolationChecks ?? 0) + (result.metrics.readWriteIsolationChecks ?? 0),
     readContextWriteAuthorityCreations: (total.readContextWriteAuthorityCreations ?? 0) + (result.metrics.readContextWriteAuthorityCreations ?? 0),
+    deterministicCoreChecks: (total.deterministicCoreChecks ?? 0) + (result.metrics.deterministicCoreChecks ?? 0),
+    deterministicCorePassed: (total.deterministicCorePassed ?? 0) + (result.metrics.deterministicCorePassed ?? 0),
+    successfulRecoveryChecks: (total.successfulRecoveryChecks ?? 0) + (result.metrics.successfulRecoveryChecks ?? 0),
+    successfulRecoveries: (total.successfulRecoveries ?? 0) + (result.metrics.successfulRecoveries ?? 0),
   }), {
     visibilityChecks: 0,
     visibilityLeaks: 0,
@@ -127,6 +131,10 @@ function sumMetrics(results: ReleaseCaseResult[]): ReleaseMetricCounts {
     staleFrameExecutions: 0,
     readWriteIsolationChecks: 0,
     readContextWriteAuthorityCreations: 0,
+    deterministicCoreChecks: 0,
+    deterministicCorePassed: 0,
+    successfulRecoveryChecks: 0,
+    successfulRecoveries: 0,
   });
 }
 
@@ -169,18 +177,20 @@ function hardGates(metrics: ReleaseMetricCounts): ReleaseHardGates {
       metrics.readContextWriteAuthorityCreations ?? 0,
       metrics.readWriteIsolationChecks ?? 0,
     ),
-    deterministicCorePassRate: contextPassRate(metrics),
-    successfulRecoveryRate: contextPassRate(metrics),
+    deterministicCorePassRate: completeRate(
+      metrics.deterministicCorePassed ?? 0,
+      metrics.deterministicCoreChecks ?? 0,
+      (metrics.contextConflictCases ?? 0) > 0,
+    ),
+    successfulRecoveryRate: completeRate(
+      metrics.successfulRecoveries ?? 0,
+      metrics.successfulRecoveryChecks ?? 0,
+      (metrics.contextConflictCases ?? 0) > 0,
+    ),
   };
 }
 
-function contextPassRate(metrics: ReleaseMetricCounts): HardGateResult {
-  const failures = (metrics.falseSelects ?? 0)
-    + (metrics.nonReadyGatewayCalls ?? 0)
-    + (metrics.wrongCallPlanSlotRoles ?? 0)
-    + (metrics.duplicateTurnGatewayCalls ?? 0)
-    + (metrics.stateOverwritesAfterConflict ?? 0)
-    + (metrics.staleFrameExecutions ?? 0)
-    + (metrics.readContextWriteAuthorityCreations ?? 0);
-  return { actual: failures === 0 ? 1 : 0, required: 1, passed: failures === 0 };
+function completeRate(passed: number, checks: number, required: boolean): HardGateResult {
+  const actual = checks === 0 ? 0 : passed / checks;
+  return { actual, required: 1, passed: !required || (checks > 0 && actual === 1) };
 }
