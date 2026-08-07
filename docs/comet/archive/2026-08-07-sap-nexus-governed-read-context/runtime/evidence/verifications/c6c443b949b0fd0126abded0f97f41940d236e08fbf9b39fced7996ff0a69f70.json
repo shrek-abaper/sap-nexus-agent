@@ -1,0 +1,438 @@
+{
+  "schema": "comet.native.verification-evidence.v2",
+  "change": "sap-nexus-governed-read-context",
+  "sourceRevision": 5,
+  "result": "fail",
+  "freshness": "partial",
+  "contractHash": "4b83254c3bc845f46e79dbd131863184aa04c726870419cfcc96948eb166db97",
+  "acceptanceCriteriaHash": "9611daeec5736af11a0c695b650980784cfa0027d51d555e775b5d43fcc42c93",
+  "implementationScopeRef": "runtime/evidence/scopes/b1b6b9fb5ecf7d7472af7527aad7b29df33367d9040e188f51e1f7e2f012b7a3.json",
+  "implementationScopeHash": "b1b6b9fb5ecf7d7472af7527aad7b29df33367d9040e188f51e1f7e2f012b7a3",
+  "reportRef": "verification.md",
+  "reportHash": "755a0bb7579a275b716073b64b679e16517be85170a5e90a3849ba2ce78abb80",
+  "acceptanceTrace": {
+    "schema": "comet.native.acceptance-trace.v2",
+    "nativeRootRef": "docs/comet",
+    "criteriaHash": "9611daeec5736af11a0c695b650980784cfa0027d51d555e775b5d43fcc42c93",
+    "total": 51,
+    "evidenced": 0,
+    "skipped": 51,
+    "entries": [
+      {
+        "acceptanceId": "acceptance-0872a842fc4998bbf24e338a0eade765f57e6a534d3aa91984c08f259a4099e5",
+        "status": "failed",
+        "kind": "spec-must",
+        "source": "specs/governed-read-context/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-0916d8633e59b9359490a89318e53613f5f80b58a25a386d3239a4a3da7efb0a",
+        "status": "failed",
+        "kind": "spec-scenario",
+        "source": "specs/governed-read-context/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-0a2f2d32d1cfed5adb6b02ee240dcba2c0d71626287d7433af2b3f861dcfef8d",
+        "status": "failed",
+        "kind": "brief-example",
+        "source": "brief.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-10829df51dce0e250f4d047a18eb04666fe3ec93393a77534a98a3d4cf2a9568",
+        "status": "failed",
+        "kind": "spec-must",
+        "source": "specs/governed-read-context/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-173e46fa6a3b810578ce0585c0fbcdd89d752a209832fb83aa2535d0d2a3b247",
+        "status": "failed",
+        "kind": "spec-scenario",
+        "source": "specs/governed-read-context/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-176745c49d87aaf7f7024975fac671d2c8da74dbe325a18898f9112c65211375",
+        "status": "failed",
+        "kind": "spec-scenario",
+        "source": "specs/governed-read-context/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-1999009fab693e004f7303983fbde92f55a2f3ca7f4ece1e0e2bb826d4716ded",
+        "status": "failed",
+        "kind": "spec-scenario",
+        "source": "specs/governed-read-context/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-1d9387cd55117b813fd0cd65f1d52f768a28ab044a0cac25efec322e2c508134",
+        "status": "failed",
+        "kind": "spec-scenario",
+        "source": "specs/governed-read-context/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-1e0bb632bcaf1f1c5bddb0820f393c965e85769d3aa023d6eb5888f87d707eb6",
+        "status": "failed",
+        "kind": "spec-must",
+        "source": "specs/governed-read-context/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-244843cf99a6bc7c27b85e41d05abfd43dd156568a8ea6c1cf7fc64a945868e3",
+        "status": "failed",
+        "kind": "spec-scenario",
+        "source": "specs/governed-read-context/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-24df840483e2e82475ff6b780472fc5ffa45820d65cb3e9b21f2136a1eeaae1c",
+        "status": "failed",
+        "kind": "brief-example",
+        "source": "brief.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-39875b74b8588cc34decf5e0c121ae1b6b3ffa5d8c97eedc67d45e4102d9a86a",
+        "status": "failed",
+        "kind": "spec-must",
+        "source": "specs/governed-read-context/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-3c347f9cb355c67e07552bb6129c586712236f7414d722f03ae7db1f84feb98d",
+        "status": "failed",
+        "kind": "spec-scenario",
+        "source": "specs/governed-read-context/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-412b479c836b1eb93b38c495b97c5799e316e24718dd725f039032b38227b39f",
+        "status": "failed",
+        "kind": "spec-scenario",
+        "source": "specs/governed-read-context/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-43eba157de0d3feedf286025a8e29268bac74254bc7ed3d092fad36f5c880019",
+        "status": "failed",
+        "kind": "brief-example",
+        "source": "brief.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-44fc1d4d500779845a61fe1030b415048dd1bfa35a583ba9fe4af750d6f0e2ef",
+        "status": "failed",
+        "kind": "spec-scenario",
+        "source": "specs/governed-read-context/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-484c9bf7005aea3acc49fc4e5e825fca7ca82132b296dfd055f20f90eb2edb84",
+        "status": "failed",
+        "kind": "spec-must",
+        "source": "specs/governed-read-context/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-4a998923760ad39543ce5558d023a37496da946b37ce9e51ff834988490f800b",
+        "status": "failed",
+        "kind": "spec-scenario",
+        "source": "specs/governed-read-context/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-59bb97884314deb474780947fba1a7e71070be65e6b4de260b0a26216d301d6e",
+        "status": "failed",
+        "kind": "spec-scenario",
+        "source": "specs/governed-read-context/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-607661da1f61085ec93751ca78a7e899420c084e3acef95df1e51a9078a02109",
+        "status": "failed",
+        "kind": "spec-must",
+        "source": "specs/governed-read-context/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-6da7a5e749e1f28152ce5ad070a7710e8d033c485966e6cabffc5ef038006676",
+        "status": "failed",
+        "kind": "spec-scenario",
+        "source": "specs/governed-read-context/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-6dc93df941a098d8a86dd39a7fb21dd62d95c626f6a93328e06b073f8cdb10eb",
+        "status": "failed",
+        "kind": "spec-must",
+        "source": "specs/governed-read-context/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-772934f93e16d332f8ba83c7fbaf814fcf472452c61a3ddc94aae3e91ddb66cc",
+        "status": "failed",
+        "kind": "spec-scenario",
+        "source": "specs/governed-read-context/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-7b7370f867a479bfe6b26e4df52cdcf2704c35f1fc7ddcd525448ede0683f4ed",
+        "status": "failed",
+        "kind": "spec-must",
+        "source": "specs/governed-read-context/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-80806cad2bfae70edc39cc4d5421234f37b47aa4b93193e7bb5f70137888f831",
+        "status": "failed",
+        "kind": "spec-scenario",
+        "source": "specs/governed-read-context/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-81781661e331100b520aa806de71f4c62dbde83dcfe9bd8bad047192fc3c66d9",
+        "status": "failed",
+        "kind": "brief-example",
+        "source": "brief.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-85ce51036d0e61e57e6ebf226afa429ac7f403f754cb4e431f95929800701f7e",
+        "status": "failed",
+        "kind": "spec-must",
+        "source": "specs/governed-read-context/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-8735247f15a7f6eb01db8e2e4a1d703564386f1ec11ca528216e466c0e087b35",
+        "status": "failed",
+        "kind": "spec-must",
+        "source": "specs/governed-read-context/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-959d46f9d7346640d5c12c76ea59775cb0e5803325987d4874438b870fca2bbc",
+        "status": "failed",
+        "kind": "spec-scenario",
+        "source": "specs/governed-read-context/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-9770c111a2556a1705175d83413075e7c81a5d89f46bc1c7148a74401f5a78a1",
+        "status": "failed",
+        "kind": "brief-example",
+        "source": "brief.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-9781a2ddcaaf956305ee0dcc7c91bbf93ca87ec9591aba04a38c679ff1615e2c",
+        "status": "failed",
+        "kind": "spec-scenario",
+        "source": "specs/governed-read-context/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-9c634e2b81fecfa7d5a05434cd886c8eadea0f0cfa5b355655fb2c5f2a6bad8f",
+        "status": "failed",
+        "kind": "spec-scenario",
+        "source": "specs/governed-read-context/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-9e8c4d04a27d4f09c5db22025308e38a3b220bfe8b9bf03f8cff662017dd321f",
+        "status": "failed",
+        "kind": "spec-scenario",
+        "source": "specs/governed-read-context/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-a411ea378888d90e4a0e392c63a5c1a183e6ca664c79c91b8885a796685cf343",
+        "status": "failed",
+        "kind": "spec-scenario",
+        "source": "specs/governed-read-context/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-b13e4af387c4234a0214c2c05959fc9cdfe438ca1bb1d9ac7d4ac740d1778be8",
+        "status": "failed",
+        "kind": "spec-scenario",
+        "source": "specs/governed-read-context/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-b7cd436e734bf501c58e263e2690f029627f3f8d7d6f3c7c28adbb8069f703da",
+        "status": "failed",
+        "kind": "brief-example",
+        "source": "brief.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-bba8a4057ae6b7e46956216953020ec8dd9aaabf4593b14f5a1234c6bb14290a",
+        "status": "failed",
+        "kind": "spec-scenario",
+        "source": "specs/governed-read-context/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-ca1d51ebf52e7a75a8380db16dd07ea024464d88c424e07146f252e502b69fb0",
+        "status": "failed",
+        "kind": "spec-must",
+        "source": "specs/governed-read-context/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-cb1238f758d476ada54eb9ce26aeb71f35322bbbbc756aaedbb57dd38930eedd",
+        "status": "failed",
+        "kind": "spec-scenario",
+        "source": "specs/governed-read-context/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-d8aea58e4cf236cac6f4eb076f022839dba227d65045bcdd09b81b8aa3795716",
+        "status": "failed",
+        "kind": "spec-scenario",
+        "source": "specs/governed-read-context/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-dac479e87675263fc9b22b3b742bbb287c4104f14020e03985fd14af9fd9feb7",
+        "status": "failed",
+        "kind": "spec-scenario",
+        "source": "specs/governed-read-context/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-dd85ae017b5be151922191569bd498910a222f8e290880c3493e166f5c388e07",
+        "status": "failed",
+        "kind": "spec-scenario",
+        "source": "specs/governed-read-context/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-de1b5857b36711b11a07e7da272c7031c3b920e6f45bf5968df9f47fb7c3b023",
+        "status": "failed",
+        "kind": "spec-scenario",
+        "source": "specs/governed-read-context/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-de691226f5737676f9fc404ea6e2dc8e00a18dfcaba3b19eb68bc096b406d56c",
+        "status": "failed",
+        "kind": "spec-must",
+        "source": "specs/governed-read-context/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-e5f22399b4b77c2617e96cb58c87e013b2e0d39964011dd5ce167f685e178653",
+        "status": "failed",
+        "kind": "spec-scenario",
+        "source": "specs/governed-read-context/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-e69bbb272a6c593210911a963253ead4b5e3c0ee10e37f1f852aaaf033135d92",
+        "status": "failed",
+        "kind": "brief-example",
+        "source": "brief.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-f4f6704ded73ee4268683f7b87a3fbbca9dd68f4105d0e139e77453a720deedd",
+        "status": "failed",
+        "kind": "spec-must",
+        "source": "specs/governed-read-context/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-f65c09401b016c58084278cda66d96d81e870158fdc0a9b3a801fcf93cdc8ab4",
+        "status": "failed",
+        "kind": "spec-scenario",
+        "source": "specs/governed-read-context/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-f9a56d65dd9fb6ec59a01f2dfbb4998cf35e1741ff840e50062c4d004a1242c9",
+        "status": "failed",
+        "kind": "spec-must",
+        "source": "specs/governed-read-context/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-fc88f3589e09f127d9de94f946e7059bccdc65e4feb7570ab83368247d8249ad",
+        "status": "failed",
+        "kind": "spec-scenario",
+        "source": "specs/governed-read-context/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      },
+      {
+        "acceptanceId": "acceptance-fe70d6afb2cc85fbfee6ef9965b37c64ff459c9e06423f3816341bbaba6f99ef",
+        "status": "failed",
+        "kind": "brief-example",
+        "source": "brief.md",
+        "evidenceRefs": [],
+        "skippedReason": "Returning to Build to remove unsafe symlinked tooling files before verification."
+      }
+    ],
+    "traceHash": "67eda7658e71286f2c78a044b64086aedb78b06c5c8937176566e2f4d177477e"
+  },
+  "partialAllowanceRef": "runtime/evidence/allowances/882a7b72817b72c01c72b15624e32674a355f470dec5d4b3504e17db08a20715.json",
+  "partialAllowanceHash": "882a7b72817b72c01c72b15624e32674a355f470dec5d4b3504e17db08a20715",
+  "requiredReceiptRefs": [],
+  "receiptRefs": [],
+  "createdAt": "2026-08-07T10:03:19.186Z",
+  "envelopeHash": "c6c443b949b0fd0126abded0f97f41940d236e08fbf9b39fced7996ff0a69f70"
+}

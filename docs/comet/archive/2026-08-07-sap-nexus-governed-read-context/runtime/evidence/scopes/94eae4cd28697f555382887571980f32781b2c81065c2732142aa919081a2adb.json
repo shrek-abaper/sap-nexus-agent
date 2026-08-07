@@ -1,0 +1,2127 @@
+{
+  "schema": "comet.native.implementation-scope.v2",
+  "contractHash": "4b83254c3bc845f46e79dbd131863184aa04c726870419cfcc96948eb166db97",
+  "baselineProjectionRef": "runtime/evidence/snapshots/350bf152b1c79abfd1f1f41b32b239950b961b92d6a34081f8357f05d8b45e4b.json",
+  "baselineProjectionHash": "350bf152b1c79abfd1f1f41b32b239950b961b92d6a34081f8357f05d8b45e4b",
+  "currentProjectionRef": "runtime/evidence/snapshots/ec113e2056fe84be4afdfbba8817150a84aab89806b1998c2c94f13f26539ba8.json",
+  "currentProjectionHash": "ec113e2056fe84be4afdfbba8817150a84aab89806b1998c2c94f13f26539ba8",
+  "complete": false,
+  "declaredArtifacts": [
+    {
+      "path": "agent/sap_nexus_agent/capability_selector.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/sap_nexus_agent/cli.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/sap_nexus_agent/context_candidates.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/sap_nexus_agent/context_decision_gate.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/sap_nexus_agent/context_migration.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/sap_nexus_agent/context_reducer.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/sap_nexus_agent/conversation_context.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/sap_nexus_agent/discard.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/sap_nexus_agent/eval.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/sap_nexus_agent/llm_intent.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/sap_nexus_agent/orchestrator.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/sap_nexus_agent/read_context.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/sap_nexus_agent/registry_loader.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/sap_nexus_agent/workbench_output.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/fixtures/governed_read_context_cases.json",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_cli_batch.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_cli_context.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_context_candidates.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_context_decision_gate.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_context_migration.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_context_reducer.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_contract_files.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_discard.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_eval_runner.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_llm_intent.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_orchestrator.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_read_context.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_registry_loader.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_workbench_output.py",
+      "kind": "file"
+    },
+    {
+      "path": "docs/superpowers/reports/2026-08-06-governed-read-context-verify.md",
+      "kind": "file"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-08-06-governed-read-context-design.md",
+      "kind": "file"
+    },
+    {
+      "path": "evals/end_to_end_agent_release_cases.json",
+      "kind": "file"
+    },
+    {
+      "path": "evals/matcher_cases.yaml",
+      "kind": "file"
+    },
+    {
+      "path": "evals/recorded_llm/end_to_end_agent_release.json",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/runtime/agent-runtime-adapter.test.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/runtime/agent-runtime-adapter.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/runtime/durable/conversation-protocol.test.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/runtime/durable/jsonl-conversation-store.test.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/runtime/durable/jsonl-conversation-store.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/runtime/durable/types.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/runtime/release-gate/evaluator.test.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/runtime/release-gate/evaluator.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/runtime/release-gate/scenario-runner.test.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/runtime/release-gate/scenario-runner.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/runtime/release-gate/types.ts",
+      "kind": "file"
+    },
+    {
+      "path": "registry/capabilities.yaml",
+      "kind": "file"
+    },
+    {
+      "path": "schemas/capability.schema.json",
+      "kind": "file"
+    },
+    {
+      "path": "services/gateway/core/src/main/java/com/sapnexus/gateway/registry/CapabilityDefinition.java",
+      "kind": "file"
+    },
+    {
+      "path": "services/gateway/core/src/main/java/com/sapnexus/gateway/registry/CapabilityRegistryLoader.java",
+      "kind": "file"
+    },
+    {
+      "path": "services/gateway/core/src/main/java/com/sapnexus/gateway/registry/CapabilityRegistryValidator.java",
+      "kind": "file"
+    },
+    {
+      "path": "services/gateway/core/src/main/java/com/sapnexus/gateway/validation/CapabilityValidationService.java",
+      "kind": "file"
+    },
+    {
+      "path": "services/gateway/core/src/test/java/com/sapnexus/gateway/registry/CapabilityRegistryLoaderTest.java",
+      "kind": "file"
+    },
+    {
+      "path": "services/gateway/core/src/test/java/com/sapnexus/gateway/validation/CapabilityValidationServiceTest.java",
+      "kind": "file"
+    }
+  ],
+  "changes": [
+    {
+      "path": ".claude/rules/comet-workflow-guard.md",
+      "kind": "modified",
+      "before": {
+        "hash": "dbd98cec32f3fae696dd90437c7c97126c77e9aa0b5d3f19beae4f7c85da77db",
+        "size": 2565
+      },
+      "after": {
+        "hash": "24af53427fb4cffea5395efe7d992e3ef322ce3618ea5982ab7c39420baf7c84",
+        "size": 2979
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/commands/comet-any.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "29ed526cada4bd574f700ca34e3ce7a854b8dbfd9537eb278548496da91b6aaf",
+        "size": 8211
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/commands/comet-archive.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "3952be298d89222d997b170acf6341fe3834259934a5cd8d2ba44a3ea502540a",
+        "size": 9793
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/commands/comet-build.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "d20e0b4a85ebc414c40b778ccb0ba43c34b442211e1191ffa0548b185633fc89",
+        "size": 24439
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/commands/comet-classic.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "ab45a869ed5650cc0081568e2db6ea23be9237191d00df655bdb8f6ba9688f08",
+        "size": 20330
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/commands/comet-design.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "057da8ffb834a2d6a829bbbaaa8519745d485c3348164888c5e8c5204801f42f",
+        "size": 13457
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/commands/comet-hotfix.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "a78f002e5f77fa3cb29c2163adf7ca620e3c8f00e00b0408a4339155e9818472",
+        "size": 14754
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/commands/comet-native.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "5de2350b4f4772d22b6444464f6f61df88da954165f544e3b0431fee4b73de9d",
+        "size": 9996
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/commands/comet-open.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "e85544a41e861ae8db760cfbe59a59fade0a6615d0774fcb75cfc7584d84da74",
+        "size": 20090
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/commands/comet-tweak.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "a3907211cf19de44d2856da74960759fe2ef8dfdea599b9718dd47ca64435129",
+        "size": 15579
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/commands/comet-verify.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "cba91ac73554dc2380cf0599766eacd545c52375e808d11ce596637c87ef5c58",
+        "size": 14754
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/commands/comet.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "8a2762e13b4c792f2f417fd5fda2849631375cfbcd8ffe3db0de9f94b3658984",
+        "size": 1893
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/commands/opsx-apply.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "67b0da48a07db31ef50e8be761d954a0a275075cbffd507c51662f4e11218af2",
+        "size": 7044
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/commands/opsx-archive.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "a7eff39bac6fb3994f96aad4267a187c446c41873f3f6cf03fb2aead2258a6fb",
+        "size": 10661
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/commands/opsx-bulk-archive.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "5cb14c40e5b774ba72594bcb60ccbfa73bf836148d1ff0d264ab13c6e197cab2",
+        "size": 15809
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/commands/opsx-continue.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "419d233e1e01bfed66c29919adaefbef115b40e0625ea81f60459acb76b68d31",
+        "size": 6192
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/commands/opsx-explore.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "4ad64338c480d289330e1bcfe13a58ac3f676b1b5ff6c6d644caf3990726a91a",
+        "size": 7868
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/commands/opsx-ff.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "c37bc6563c0ac475de0e9030920048528448aca47af5b6c3355996a31c781096",
+        "size": 7381
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/commands/opsx-new.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "98a71dd20c8572e3dd31e5fce7d6be6c137e1316225b7961914ce32a2a48ef7a",
+        "size": 3154
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/commands/opsx-onboard.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "38beb2ad16864a7a594d42c68a5422df6c8e0f8563c793a102be05326079874f",
+        "size": 15182
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/commands/opsx-propose.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "3f14b989b16dddce02f45ebabdcc34fd621593c6cd40bb80def78db5f30afdda",
+        "size": 7704
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/commands/opsx-sync.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "909029cc010e00e62148cb33c9af42e0d0950232cacbe634b4a836153c7d325b",
+        "size": 9375
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/commands/opsx-verify.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "a34e1e7cc79ff28905adbde21034b12abe9f411adbc6fa26a776abf89635f68f",
+        "size": 7223
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/rules/comet-workflow-guard.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "24af53427fb4cffea5395efe7d992e3ef322ce3618ea5982ab7c39420baf7c84",
+        "size": 2979
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/skills/openspec-apply-change/SKILL.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "72527851e33238ee7ac542f387edfe29e66bec940c2f94663953766bf0139754",
+        "size": 7333
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/skills/openspec-archive-change/SKILL.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "4c7b6459aea02ddef3f3a366291270962c77a37a6075e2365c6f4ccc3f93711c",
+        "size": 9959
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/skills/openspec-bulk-archive-change/SKILL.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "d0553307ad6e05ddca0990fdf2a085ed3c47eab7ac207e0507748f63a4f98e66",
+        "size": 16057
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/skills/openspec-continue-change/SKILL.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "239acfdeb6b178f1072bad98a30bb594991e6b88b917981115ec240abe2d7910",
+        "size": 6400
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/skills/openspec-explore/SKILL.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "a53eda380d3eaf55fbe7bee32fcfc441cf3a83e3b6d54772c6e578e69faca08f",
+        "size": 11969
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/skills/openspec-ff-change/SKILL.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "b175bced75780b375993933cbefbe6c16d630014e894258d8b5f0da8b86a7f4a",
+        "size": 7682
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/skills/openspec-new-change/SKILL.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "52db66fe4acd3823c4ec1943afcf503e9f24eff2dcff3bb189747c08281c31d4",
+        "size": 3479
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/skills/openspec-onboard/SKILL.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "895094a9b40c36dbd257f395ff8bc8d57e1ba101d82d1b40e0c65070c08694fd",
+        "size": 15383
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/skills/openspec-propose/SKILL.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "178afaf43436a4b9a639fa56f33d4dc809488e63da67f690cb78f58c6381755c",
+        "size": 8045
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/skills/openspec-sync-specs/SKILL.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "13be8daaacaee16017d374c91802f2661ac7109d30e25e186499087cb3e18220",
+        "size": 9610
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/skills/openspec-verify-change/SKILL.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "8ee85d7a34109a7cfcffd79530a88fb20b6d6e2a90a4fff38c759c30d19007bb",
+        "size": 7442
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".superpowers/sdd/progress.md",
+      "kind": "modified",
+      "before": {
+        "hash": "ca6804ac498601a592a589628811ed5855d8126df96f91da717f71258ee5f93e",
+        "size": 10167
+      },
+      "after": {
+        "hash": "9605fc8be64c9b7e6a82ef454226eab3426657a95f8fa3fb0ddfead7fc1ca0f3",
+        "size": 22979
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "agent/sap_nexus_agent/capability_selector.py",
+      "kind": "modified",
+      "before": {
+        "hash": "991f6c376d37c7d72d63709da06f66c11e2623ca76312617ed9cdf0dae97e918",
+        "size": 15786
+      },
+      "after": {
+        "hash": "0a383c01163005e8b75ec7cd86eb23cc8648535d531f1f7e54b1eb500660c353",
+        "size": 18506
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/capability_selector.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/sap_nexus_agent/cli.py",
+      "kind": "modified",
+      "before": {
+        "hash": "a473b673426865a694815518faf8252b9c4b9c95f45c60de850e59d41667f049",
+        "size": 7527
+      },
+      "after": {
+        "hash": "6cb549f472ef07db6bc40b5e36ec6c238d465fdb2e39535d42eb69a64b540b77",
+        "size": 17109
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/cli.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/sap_nexus_agent/context_candidates.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "d4bbfd104a8c60799a3d5d7bf7725629a5d8e49d6c33c5e371c093487cdd8489",
+        "size": 8280
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/context_candidates.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/sap_nexus_agent/context_decision_gate.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "7ee0bcba283250fd41bebbc5924ac40d2a9b1f92fdf2f85e71cb72ca25778415",
+        "size": 25038
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/context_decision_gate.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/sap_nexus_agent/context_migration.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "bef5b6aeef8aa7b00f0adf868fad325d15ccb75227c71d1aee0f83ff02232ed5",
+        "size": 4370
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/context_migration.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/sap_nexus_agent/context_reducer.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "bda355f5e83b0131a9654b55b285cfa5ad33591e95477c352bf554d784c96301",
+        "size": 16987
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/context_reducer.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/sap_nexus_agent/conversation_context.py",
+      "kind": "modified",
+      "before": {
+        "hash": "a4a7409ac8d3a4545fe07a34af25cc6b3f49c600949caa5d8b9ba2e2c5a87a35",
+        "size": 9596
+      },
+      "after": {
+        "hash": "5e82d1fa93fa81d8cd7ccf42f03de2f3f68433d22e8d10bbf97d48ed17faa58d",
+        "size": 18975
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/conversation_context.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/sap_nexus_agent/discard.py",
+      "kind": "modified",
+      "before": {
+        "hash": "cc2a32500a556029736475c863f8ddf90c54d957db036f5ba35cbb6807a091b2",
+        "size": 4373
+      },
+      "after": {
+        "hash": "fe6ec0b273ffea0f1ae8bc355b9c8475d4ef3595ffe44e4076c3413d4273838c",
+        "size": 4990
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/discard.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/sap_nexus_agent/eval.py",
+      "kind": "modified",
+      "before": {
+        "hash": "f4ac3f19b875e440a4563845afa8b1c244bc9775a0e847b21a0cbd5c8050d02d",
+        "size": 19397
+      },
+      "after": {
+        "hash": "8e41f4e06b3ae48974f4d67ead0d6251177d60fe87f81186367a086ad88d982c",
+        "size": 37928
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/eval.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/sap_nexus_agent/llm_intent.py",
+      "kind": "modified",
+      "before": {
+        "hash": "2289cd181eb06b2c8987edc696577dcbc161e2c028887505524f7b80072c4f41",
+        "size": 27401
+      },
+      "after": {
+        "hash": "bca4cd7f04a177cb80eec4a5c95350859c4799220e0c6c7158d01d5c82709d44",
+        "size": 30441
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/llm_intent.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/sap_nexus_agent/orchestrator.py",
+      "kind": "modified",
+      "before": {
+        "hash": "04f1595f396538c10ccbda7ecc0eb203b3167e2e51c617051c037dea487c95e2",
+        "size": 38936
+      },
+      "after": {
+        "hash": "461bb1e4df963b2e00df7ab7a8687383f344add3d59d50aa5060c4e7d9cfb393",
+        "size": 83783
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/orchestrator.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/sap_nexus_agent/read_context.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "ce84948ff56fee188f65cd3977ead012360be38ffadff4c5c133ddd72f09f052",
+        "size": 23063
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/read_context.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/sap_nexus_agent/registry_loader.py",
+      "kind": "modified",
+      "before": {
+        "hash": "19ee9bc8dd5635fc81bff3973a2acc378dfbed034a762a175932cf2409856be6",
+        "size": 4383
+      },
+      "after": {
+        "hash": "68c9bde43379148c1a9399af74e1cb22621943307c363fc659e2e5841b2ce820",
+        "size": 5036
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/registry_loader.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/sap_nexus_agent/workbench_output.py",
+      "kind": "modified",
+      "before": {
+        "hash": "efc143efc96b4bcc81a4b647b865a73ddb8c72543a89f528f472b7bc0c7f47f0",
+        "size": 8599
+      },
+      "after": {
+        "hash": "73dd47e44a34fcd04884322dcab1d2ef2e356dd3b34fe67d950509acf37014d7",
+        "size": 9896
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/workbench_output.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/fixtures/governed_read_context_cases.json",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "c2e0ed2f79f6b60a13f1a798a0d7a7b96ae0c35451339586bfe4ea0109ec93dd",
+        "size": 2589
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/fixtures/governed_read_context_cases.json",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_cli_batch.py",
+      "kind": "modified",
+      "before": {
+        "hash": "0ad4050707e256c041f498f7ed875b3f4229dd596be75615e7bde8e44fec16db",
+        "size": 2711
+      },
+      "after": {
+        "hash": "b80fa7c86b186419b4af1b0b71566414061cbec4a87f9911f2878c0ff044c8f6",
+        "size": 8225
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_cli_batch.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_cli_context.py",
+      "kind": "modified",
+      "before": {
+        "hash": "665d5f0fc05ba1b0b6504462456c63951295daf0c64676d067cc0d63a4425be4",
+        "size": 3980
+      },
+      "after": {
+        "hash": "eb634ee0d85fa1b4f6354708c823508c2bdd80ed63dac65426ce59e3de3a4bfb",
+        "size": 9165
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_cli_context.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_context_candidates.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "9219fe72e101fb77955ac54251fe81a1bfd59d7ae43968f92fd46f2b5dc7c935",
+        "size": 5471
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_context_candidates.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_context_decision_gate.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "85e1a7fdc2c8da884594754d7f284b4aa95814a6e0ce4ba688bd541db8b885ac",
+        "size": 21250
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_context_decision_gate.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_context_migration.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "8cd1a5747ffa10d15d9aa972f447987f063ceee4c03ae03b64f2fb2a9c6497dc",
+        "size": 3719
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_context_migration.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_context_reducer.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "aec2a0d080ce62c25d4561af468d5777da0f821c6ab338d6baee40130f6daaec",
+        "size": 25454
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_context_reducer.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_contract_files.py",
+      "kind": "modified",
+      "before": {
+        "hash": "28d1b0e3a5a4f2810ff30716edfc3cf190817337e43d7b8968af722d01720739",
+        "size": 20314
+      },
+      "after": {
+        "hash": "19219c590551affe34e614de597500b610a23b14f1395b422d2571fcf96b3e62",
+        "size": 21458
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_contract_files.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_discard.py",
+      "kind": "modified",
+      "before": {
+        "hash": "0cca9b3e007f0202be03482927975ab11b6d21e62b3d8db668f6f07a1119b3b3",
+        "size": 5552
+      },
+      "after": {
+        "hash": "3524fbf81629e5d1e0802f50056d4853afedd7614ccac0688871c3abe79b451a",
+        "size": 5820
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_discard.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_eval_runner.py",
+      "kind": "modified",
+      "before": {
+        "hash": "cab6b0bc52306269f4e7d31b29f0b6c492a1ccec102aab66cf32bd5ff5a603c1",
+        "size": 10953
+      },
+      "after": {
+        "hash": "560fd30420df47ea7d3c889dc7ec5bb21a1100fc4cb3a19804fb270edf7c6f95",
+        "size": 18946
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_eval_runner.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_llm_intent.py",
+      "kind": "modified",
+      "before": {
+        "hash": "820ce1d49c26015350cbb90e810308ecc7b6ef93ff04ca28797d7e3773ca6f75",
+        "size": 31727
+      },
+      "after": {
+        "hash": "2118a45115ecd5089edd7a5616fd347b8491a39be8c84c08c3051e9730b23874",
+        "size": 34593
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_llm_intent.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_orchestrator.py",
+      "kind": "modified",
+      "before": {
+        "hash": "51c438ff7954e88e07177f50e7c589864ed67d5987bbcb1729b00ebab3f1c136",
+        "size": 80230
+      },
+      "after": {
+        "hash": "5f75d13f26101e054f084e8f9b4f630375f83b480c12e94ac958c1e59b83a05b",
+        "size": 154026
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_orchestrator.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_read_context.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "0e1754a0e736f88934638ffcde6319c0e1fa7a9bb1c2ec6e445e99b819cd40dc",
+        "size": 11032
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_read_context.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_registry_loader.py",
+      "kind": "modified",
+      "before": {
+        "hash": "f949aefb19360e2f933afad51dd6ab7ad153ff86f7e985fcc2e3f9340b8e4c6a",
+        "size": 5779
+      },
+      "after": {
+        "hash": "5a019069d39c628fda63ab806d6125a22e76a9464729f3e5291ed9feb1e1e147",
+        "size": 6172
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_registry_loader.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_workbench_output.py",
+      "kind": "modified",
+      "before": {
+        "hash": "67751c200113c849210098cb953aeb55fe1859440e533ea85d6d6bb79f99b3f6",
+        "size": 8611
+      },
+      "after": {
+        "hash": "200d316f026c2672e03c75f322fba0685f2290a66962392c663271aa1f8bb43f",
+        "size": 11845
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_workbench_output.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "docs/superpowers/reports/2026-08-06-governed-read-context-verify.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "0799317fbc3fd04e022575b1a6732e9d2c860091c341b4a9a4e0a5370a6bc451",
+        "size": 13517
+      },
+      "attributedTo": [
+        {
+          "path": "docs/superpowers/reports/2026-08-06-governed-read-context-verify.md",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "docs/superpowers/specs/2026-08-06-governed-read-context-design.md",
+      "kind": "modified",
+      "before": {
+        "hash": "db1c0d0b9626d2940a0b1402661cfa8cb1fd10d25a4f00e87e20d06c086ae0e8",
+        "size": 25701
+      },
+      "after": {
+        "hash": "3c371998c27c3071836a6f1d3969e84b998ded766a24c0ffc482d15032233482",
+        "size": 28022
+      },
+      "attributedTo": [
+        {
+          "path": "docs/superpowers/specs/2026-08-06-governed-read-context-design.md",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "evals/end_to_end_agent_release_cases.json",
+      "kind": "modified",
+      "before": {
+        "hash": "01faf111dd44064214f43b4a511afb8a88c51e7ae2884f9b0b8d0e73d24edee9",
+        "size": 4303
+      },
+      "after": {
+        "hash": "0a94dac1a27be42b540c14e029b8457ae7fcf2b1c5b86d08830e33d489a52c3f",
+        "size": 8864
+      },
+      "attributedTo": [
+        {
+          "path": "evals/end_to_end_agent_release_cases.json",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "evals/matcher_cases.yaml",
+      "kind": "modified",
+      "before": {
+        "hash": "6a9e91cf32709c6e6ba32bfa391f419772444a751b5fdefd0b94d838bec6c664",
+        "size": 2631
+      },
+      "after": {
+        "hash": "bd672fe6c49a9c76bc035e1bd1a62569fcd9d51f8403e612b2e5f5f296a8090f",
+        "size": 27513
+      },
+      "attributedTo": [
+        {
+          "path": "evals/matcher_cases.yaml",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "evals/recorded_llm/end_to_end_agent_release.json",
+      "kind": "modified",
+      "before": {
+        "hash": "2465fc5e4176ea1c802685ffc1ecaa6f887fa26f7abc751c76926ea20d5a37a0",
+        "size": 1393
+      },
+      "after": {
+        "hash": "f2e352bb1bdf33775c1270c282880e4f23acc9c2e00150a80a925b0e5bf23b18",
+        "size": 2060
+      },
+      "attributedTo": [
+        {
+          "path": "evals/recorded_llm/end_to_end_agent_release.json",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/agent-runtime-adapter.test.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "c0eea50ebf4ce748af4b3c9ea474d056c46d200156fc4cd6f4491d75aa3557af",
+        "size": 16097
+      },
+      "after": {
+        "hash": "b0318d1b676f29be6847961ca720989a52ff9d8ef1ff727906f0ccc58471018e",
+        "size": 59908
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/agent-runtime-adapter.test.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/agent-runtime-adapter.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "768e5326c7cfa058f82fe7b24750c5e317ae5f6cc234f71fa26b84724e7dc964",
+        "size": 32726
+      },
+      "after": {
+        "hash": "119cad71f986019ba62669a1f195be47ca90d9435b49a02bd790ac4f078cf7a3",
+        "size": 66631
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/agent-runtime-adapter.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/durable/conversation-protocol.test.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "9b90e258967df03efac245645c88b45106cf197e4bbab67b70d60991dc6ed939",
+        "size": 27234
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/durable/conversation-protocol.test.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/durable/jsonl-conversation-store.test.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "6a2d4c6cba45e6e67c98240b9baceb8ff8439d681b14b847a0bb29d69ff53b37",
+        "size": 3738
+      },
+      "after": {
+        "hash": "1a40d8ef67b058bd7cac06d01da86ecd0221f8de9134e0c0a0978a4d7d953bdd",
+        "size": 24593
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/durable/jsonl-conversation-store.test.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/durable/jsonl-conversation-store.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "48ade401ed14820200b3db5cddc43d52ffbe6b073589a46b90b986bcd88dfc09",
+        "size": 1726
+      },
+      "after": {
+        "hash": "43c3fe233b405c46c30e664f6092e9c931494914046aaf0b101636bf63c33d78",
+        "size": 35341
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/durable/jsonl-conversation-store.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/durable/types.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "4e416505045dd82ec5c1d1dd840a08c35cfbf6da4e155be5bcf54984a06c87c4",
+        "size": 3915
+      },
+      "after": {
+        "hash": "02c1209fd0cd70883124eba67d5fee716958a6e37751a3ea7f8ca2e77d7496ac",
+        "size": 8893
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/durable/types.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/release-gate/evaluator.test.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "640d7baf6a76359afbf604daf60d93e20cb6e6dfa476d992ef34ee66cfe03c8f",
+        "size": 3638
+      },
+      "after": {
+        "hash": "581ff60a1c9b39ca001f5caddffd4290f302480114707956878125b6df1f5f5d",
+        "size": 12386
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/release-gate/evaluator.test.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/release-gate/evaluator.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "94074a5eb05384a2956192b06d1ec7b263b8313ed78a6b387cd1d8928d6b1593",
+        "size": 4781
+      },
+      "after": {
+        "hash": "aab06a1421e4cea8eb06b943ae2b3e00eecd12f02cfd21848ad88bb2f4a0bf56",
+        "size": 14292
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/release-gate/evaluator.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/release-gate/scenario-runner.test.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "9a449ad971e85ca38028d169aaa8f3a608adc3b7db64397c0674d7033ef07c0e",
+        "size": 2994
+      },
+      "after": {
+        "hash": "b8ef0f6996932928a9baf8a076a240c4b291d7b2f9ae6fde5087f8101c13b778",
+        "size": 4454
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/release-gate/scenario-runner.test.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/release-gate/scenario-runner.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "3bd20a09677a28478e032c7d7be5937b54b0b7c21bb6322259d135cb8e3d45a0",
+        "size": 21718
+      },
+      "after": {
+        "hash": "7f036298f843a98cb93e9c567e64b69d9c13f0b929d91c1262cc4abef7f583d0",
+        "size": 39291
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/release-gate/scenario-runner.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/release-gate/types.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "e942a9bc950af6bc05e522a47af57a94a7a63d1b19298f9078cafb140220f5a5",
+        "size": 2160
+      },
+      "after": {
+        "hash": "44343115dfc937a6cb30015d3f36cd0df4b0f69bb92130a454349ca145bb9ae6",
+        "size": 3248
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/release-gate/types.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "registry/capabilities.yaml",
+      "kind": "modified",
+      "before": {
+        "hash": "1d90508ca2e4033454df1ae08a4fe779779aaef27374922076eff2ba30355945",
+        "size": 8673
+      },
+      "after": {
+        "hash": "30efd87875fa5886d9be978059b9fb3d968f9b4ff68f79452c1b8123f5c1ca22",
+        "size": 8735
+      },
+      "attributedTo": [
+        {
+          "path": "registry/capabilities.yaml",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "schemas/capability.schema.json",
+      "kind": "modified",
+      "before": {
+        "hash": "9e9f98bca9c15266f3902f8ca64f6465d21c8ce1f462a49d5be7dbf3b4a9326b",
+        "size": 7621
+      },
+      "after": {
+        "hash": "938d836498472b40e41e5b56d9cc90473c0063b6d4dc318e96c7bd730ccaa1b7",
+        "size": 7678
+      },
+      "attributedTo": [
+        {
+          "path": "schemas/capability.schema.json",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "services/gateway/core/src/main/java/com/sapnexus/gateway/registry/CapabilityDefinition.java",
+      "kind": "modified",
+      "before": {
+        "hash": "149338a1b6e3488513bf86c011c1e44e2e9dd75342affe1f70b9cf42e99dc408",
+        "size": 2439
+      },
+      "after": {
+        "hash": "71942ed8c29704665eca0c231a09550b8294e301a233cef6dd34ac15964fefcd",
+        "size": 2898
+      },
+      "attributedTo": [
+        {
+          "path": "services/gateway/core/src/main/java/com/sapnexus/gateway/registry/CapabilityDefinition.java",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "services/gateway/core/src/main/java/com/sapnexus/gateway/registry/CapabilityRegistryLoader.java",
+      "kind": "modified",
+      "before": {
+        "hash": "61a143ff6bb002e2c0268ab281a4aa3d1f06cfba4069e8967d3e4b17c9e867f4",
+        "size": 6634
+      },
+      "after": {
+        "hash": "a2449c5731edc12081aaf12075e0326b80c1d32024ad6fa59fded94cc3f912b4",
+        "size": 6684
+      },
+      "attributedTo": [
+        {
+          "path": "services/gateway/core/src/main/java/com/sapnexus/gateway/registry/CapabilityRegistryLoader.java",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "services/gateway/core/src/main/java/com/sapnexus/gateway/registry/CapabilityRegistryValidator.java",
+      "kind": "modified",
+      "before": {
+        "hash": "cf7c79958e4cd4607e046caef963f6f2e72bd0971c9c1cd2f645d9e2b6f78fac",
+        "size": 3954
+      },
+      "after": {
+        "hash": "de1a329937248675509e6ee6f7f107157a22ae6032f8597b8dce9f2b2326f338",
+        "size": 4513
+      },
+      "attributedTo": [
+        {
+          "path": "services/gateway/core/src/main/java/com/sapnexus/gateway/registry/CapabilityRegistryValidator.java",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "services/gateway/core/src/main/java/com/sapnexus/gateway/validation/CapabilityValidationService.java",
+      "kind": "modified",
+      "before": {
+        "hash": "93b98afd8f69d5087471a77927bd37fdaced4869b0d8b864c35c42122eb384fe",
+        "size": 2588
+      },
+      "after": {
+        "hash": "9b7dafc67869db9d2d4903ef554b649818b18366427c623595db42ad50ac52bd",
+        "size": 2736
+      },
+      "attributedTo": [
+        {
+          "path": "services/gateway/core/src/main/java/com/sapnexus/gateway/validation/CapabilityValidationService.java",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "services/gateway/core/src/test/java/com/sapnexus/gateway/registry/CapabilityRegistryLoaderTest.java",
+      "kind": "modified",
+      "before": {
+        "hash": "6f7f97d9342bf1383faad25894caaf87d7e82047767197e6d7929ba8175becb4",
+        "size": 11851
+      },
+      "after": {
+        "hash": "8f05b2090643c3d6ae2e4dea51283e74dcb5a1ab4e815535e6502faf4f267568",
+        "size": 13290
+      },
+      "attributedTo": [
+        {
+          "path": "services/gateway/core/src/test/java/com/sapnexus/gateway/registry/CapabilityRegistryLoaderTest.java",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "services/gateway/core/src/test/java/com/sapnexus/gateway/validation/CapabilityValidationServiceTest.java",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "c9cf5c922a3e2e6b3b26bab75b908b637b7f6e3f58a3369d612008bbc84d3deb",
+        "size": 1572
+      },
+      "attributedTo": [
+        {
+          "path": "services/gateway/core/src/test/java/com/sapnexus/gateway/validation/CapabilityValidationServiceTest.java",
+          "kind": "file"
+        }
+      ]
+    }
+  ],
+  "unattributed": [
+    {
+      "path": ".claude/rules/comet-workflow-guard.md",
+      "kind": "modified",
+      "before": {
+        "hash": "dbd98cec32f3fae696dd90437c7c97126c77e9aa0b5d3f19beae4f7c85da77db",
+        "size": 2565
+      },
+      "after": {
+        "hash": "24af53427fb4cffea5395efe7d992e3ef322ce3618ea5982ab7c39420baf7c84",
+        "size": 2979
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/commands/comet-any.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "29ed526cada4bd574f700ca34e3ce7a854b8dbfd9537eb278548496da91b6aaf",
+        "size": 8211
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/commands/comet-archive.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "3952be298d89222d997b170acf6341fe3834259934a5cd8d2ba44a3ea502540a",
+        "size": 9793
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/commands/comet-build.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "d20e0b4a85ebc414c40b778ccb0ba43c34b442211e1191ffa0548b185633fc89",
+        "size": 24439
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/commands/comet-classic.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "ab45a869ed5650cc0081568e2db6ea23be9237191d00df655bdb8f6ba9688f08",
+        "size": 20330
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/commands/comet-design.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "057da8ffb834a2d6a829bbbaaa8519745d485c3348164888c5e8c5204801f42f",
+        "size": 13457
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/commands/comet-hotfix.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "a78f002e5f77fa3cb29c2163adf7ca620e3c8f00e00b0408a4339155e9818472",
+        "size": 14754
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/commands/comet-native.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "5de2350b4f4772d22b6444464f6f61df88da954165f544e3b0431fee4b73de9d",
+        "size": 9996
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/commands/comet-open.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "e85544a41e861ae8db760cfbe59a59fade0a6615d0774fcb75cfc7584d84da74",
+        "size": 20090
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/commands/comet-tweak.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "a3907211cf19de44d2856da74960759fe2ef8dfdea599b9718dd47ca64435129",
+        "size": 15579
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/commands/comet-verify.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "cba91ac73554dc2380cf0599766eacd545c52375e808d11ce596637c87ef5c58",
+        "size": 14754
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/commands/comet.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "8a2762e13b4c792f2f417fd5fda2849631375cfbcd8ffe3db0de9f94b3658984",
+        "size": 1893
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/commands/opsx-apply.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "67b0da48a07db31ef50e8be761d954a0a275075cbffd507c51662f4e11218af2",
+        "size": 7044
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/commands/opsx-archive.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "a7eff39bac6fb3994f96aad4267a187c446c41873f3f6cf03fb2aead2258a6fb",
+        "size": 10661
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/commands/opsx-bulk-archive.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "5cb14c40e5b774ba72594bcb60ccbfa73bf836148d1ff0d264ab13c6e197cab2",
+        "size": 15809
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/commands/opsx-continue.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "419d233e1e01bfed66c29919adaefbef115b40e0625ea81f60459acb76b68d31",
+        "size": 6192
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/commands/opsx-explore.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "4ad64338c480d289330e1bcfe13a58ac3f676b1b5ff6c6d644caf3990726a91a",
+        "size": 7868
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/commands/opsx-ff.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "c37bc6563c0ac475de0e9030920048528448aca47af5b6c3355996a31c781096",
+        "size": 7381
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/commands/opsx-new.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "98a71dd20c8572e3dd31e5fce7d6be6c137e1316225b7961914ce32a2a48ef7a",
+        "size": 3154
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/commands/opsx-onboard.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "38beb2ad16864a7a594d42c68a5422df6c8e0f8563c793a102be05326079874f",
+        "size": 15182
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/commands/opsx-propose.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "3f14b989b16dddce02f45ebabdcc34fd621593c6cd40bb80def78db5f30afdda",
+        "size": 7704
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/commands/opsx-sync.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "909029cc010e00e62148cb33c9af42e0d0950232cacbe634b4a836153c7d325b",
+        "size": 9375
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/commands/opsx-verify.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "a34e1e7cc79ff28905adbde21034b12abe9f411adbc6fa26a776abf89635f68f",
+        "size": 7223
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/rules/comet-workflow-guard.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "24af53427fb4cffea5395efe7d992e3ef322ce3618ea5982ab7c39420baf7c84",
+        "size": 2979
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/skills/openspec-apply-change/SKILL.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "72527851e33238ee7ac542f387edfe29e66bec940c2f94663953766bf0139754",
+        "size": 7333
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/skills/openspec-archive-change/SKILL.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "4c7b6459aea02ddef3f3a366291270962c77a37a6075e2365c6f4ccc3f93711c",
+        "size": 9959
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/skills/openspec-bulk-archive-change/SKILL.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "d0553307ad6e05ddca0990fdf2a085ed3c47eab7ac207e0507748f63a4f98e66",
+        "size": 16057
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/skills/openspec-continue-change/SKILL.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "239acfdeb6b178f1072bad98a30bb594991e6b88b917981115ec240abe2d7910",
+        "size": 6400
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/skills/openspec-explore/SKILL.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "a53eda380d3eaf55fbe7bee32fcfc441cf3a83e3b6d54772c6e578e69faca08f",
+        "size": 11969
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/skills/openspec-ff-change/SKILL.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "b175bced75780b375993933cbefbe6c16d630014e894258d8b5f0da8b86a7f4a",
+        "size": 7682
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/skills/openspec-new-change/SKILL.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "52db66fe4acd3823c4ec1943afcf503e9f24eff2dcff3bb189747c08281c31d4",
+        "size": 3479
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/skills/openspec-onboard/SKILL.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "895094a9b40c36dbd257f395ff8bc8d57e1ba101d82d1b40e0c65070c08694fd",
+        "size": 15383
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/skills/openspec-propose/SKILL.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "178afaf43436a4b9a639fa56f33d4dc809488e63da67f690cb78f58c6381755c",
+        "size": 8045
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/skills/openspec-sync-specs/SKILL.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "13be8daaacaee16017d374c91802f2661ac7109d30e25e186499087cb3e18220",
+        "size": 9610
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".opencode/skills/openspec-verify-change/SKILL.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "8ee85d7a34109a7cfcffd79530a88fb20b6d6e2a90a4fff38c759c30d19007bb",
+        "size": 7442
+      },
+      "attributedTo": []
+    },
+    {
+      "path": ".superpowers/sdd/progress.md",
+      "kind": "modified",
+      "before": {
+        "hash": "ca6804ac498601a592a589628811ed5855d8126df96f91da717f71258ee5f93e",
+        "size": 10167
+      },
+      "after": {
+        "hash": "9605fc8be64c9b7e6a82ef454226eab3426657a95f8fa3fb0ddfead7fc1ca0f3",
+        "size": 22979
+      },
+      "attributedTo": []
+    }
+  ],
+  "unresolvedScopes": [
+    {
+      "id": "scope:41ca1179c38fc2925f4330d3fb374847a5bad3ce83f14289e1311f806bb5b346",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": ".claude/rules/comet-workflow-guard.md",
+      "reason": "Changed path is not covered by a declared artifact: .claude/rules/comet-workflow-guard.md"
+    },
+    {
+      "id": "scope:abab47726900a999c83b51e6dae9e3d1d20af935e2cf608e6cb1d76797277440",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": ".opencode/commands/comet-any.md",
+      "reason": "Changed path is not covered by a declared artifact: .opencode/commands/comet-any.md"
+    },
+    {
+      "id": "scope:77d30e4178a75ead6718f749360a1765700691bc612868b38be685904a48567f",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": ".opencode/commands/comet-archive.md",
+      "reason": "Changed path is not covered by a declared artifact: .opencode/commands/comet-archive.md"
+    },
+    {
+      "id": "scope:98e9d4195128ed3b2e3f60be4090b98de0d3c7b345cf606f28499708caebbdba",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": ".opencode/commands/comet-build.md",
+      "reason": "Changed path is not covered by a declared artifact: .opencode/commands/comet-build.md"
+    },
+    {
+      "id": "scope:6cb2115776ab84d453c8c07d8a29f505a11fed1196afbad35c3b4623dcd2c49e",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": ".opencode/commands/comet-classic.md",
+      "reason": "Changed path is not covered by a declared artifact: .opencode/commands/comet-classic.md"
+    },
+    {
+      "id": "scope:acac1915ac1050aeb108545344653a362d7dba2f2fa84473dcb560587b524821",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": ".opencode/commands/comet-design.md",
+      "reason": "Changed path is not covered by a declared artifact: .opencode/commands/comet-design.md"
+    },
+    {
+      "id": "scope:57bc1d196108025c5a9b5036ef3632b2b7a52ffa64067146f48e25dca6dbe96c",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": ".opencode/commands/comet-hotfix.md",
+      "reason": "Changed path is not covered by a declared artifact: .opencode/commands/comet-hotfix.md"
+    },
+    {
+      "id": "scope:ebf7c82bcae41485b6e9261927a23e5a5f1aed8dfec85d273fd8e0077b578e4a",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": ".opencode/commands/comet-native.md",
+      "reason": "Changed path is not covered by a declared artifact: .opencode/commands/comet-native.md"
+    },
+    {
+      "id": "scope:643631dff2440a4715085a10b15c6ff70891294add0ed7b6653b553a9b21d4ac",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": ".opencode/commands/comet-open.md",
+      "reason": "Changed path is not covered by a declared artifact: .opencode/commands/comet-open.md"
+    },
+    {
+      "id": "scope:bcfac45eaf88a8ac5c173a65f9da3248b3adfc54eec431edd7ea06cb09b61544",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": ".opencode/commands/comet-tweak.md",
+      "reason": "Changed path is not covered by a declared artifact: .opencode/commands/comet-tweak.md"
+    },
+    {
+      "id": "scope:68354911d93955002960fa4d2b914b5fc0df1a7bd2066fe681f826d9b8b50a72",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": ".opencode/commands/comet-verify.md",
+      "reason": "Changed path is not covered by a declared artifact: .opencode/commands/comet-verify.md"
+    },
+    {
+      "id": "scope:faf3ac2cb0e93dfd655c6945ac22ffeec3304070e663f0e074988b4cd5ce4789",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": ".opencode/commands/comet.md",
+      "reason": "Changed path is not covered by a declared artifact: .opencode/commands/comet.md"
+    },
+    {
+      "id": "scope:84f9a37cff6d413805a56c740df6d45f1689a0bb7352603ae03036bac6abf057",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": ".opencode/commands/opsx-apply.md",
+      "reason": "Changed path is not covered by a declared artifact: .opencode/commands/opsx-apply.md"
+    },
+    {
+      "id": "scope:8fcd7a6a792b069e955e9e01e6d481bc451c84f2a41f873e6f9736bbde24cdaf",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": ".opencode/commands/opsx-archive.md",
+      "reason": "Changed path is not covered by a declared artifact: .opencode/commands/opsx-archive.md"
+    },
+    {
+      "id": "scope:1dc9f224ac0bf0cd6ac4003fe272d8df026040d74c5972cbc2f22bb28ae41d7c",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": ".opencode/commands/opsx-bulk-archive.md",
+      "reason": "Changed path is not covered by a declared artifact: .opencode/commands/opsx-bulk-archive.md"
+    },
+    {
+      "id": "scope:54fcd5be0417fd0d6081334d6757bf430f583574793861b5c550928319390fe1",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": ".opencode/commands/opsx-continue.md",
+      "reason": "Changed path is not covered by a declared artifact: .opencode/commands/opsx-continue.md"
+    },
+    {
+      "id": "scope:5c616eed9dd57e334c261328299534bb33f91805b16706c7b968a2e90e43f2ea",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": ".opencode/commands/opsx-explore.md",
+      "reason": "Changed path is not covered by a declared artifact: .opencode/commands/opsx-explore.md"
+    },
+    {
+      "id": "scope:e1ba4f24d1ab0cf835b121ccf77cf208483c18981bf64fcec9bca083a9567e7d",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": ".opencode/commands/opsx-ff.md",
+      "reason": "Changed path is not covered by a declared artifact: .opencode/commands/opsx-ff.md"
+    },
+    {
+      "id": "scope:233b7bc252b6c4ee22aa8011aa22f58192e93f32b05744967ff4ec9dbe684c9d",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": ".opencode/commands/opsx-new.md",
+      "reason": "Changed path is not covered by a declared artifact: .opencode/commands/opsx-new.md"
+    },
+    {
+      "id": "scope:caccc58e4de7358fed8467f25b9bda1e66a2ab70d09c196afcae3d532c5c6afc",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": ".opencode/commands/opsx-onboard.md",
+      "reason": "Changed path is not covered by a declared artifact: .opencode/commands/opsx-onboard.md"
+    },
+    {
+      "id": "scope:a024e853af5a1dc507731f9c9f8f73a5251360f5da84c796e996077c89073be8",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": ".opencode/commands/opsx-propose.md",
+      "reason": "Changed path is not covered by a declared artifact: .opencode/commands/opsx-propose.md"
+    },
+    {
+      "id": "scope:4b60767b37c35b5b2a98ba98b1b29280c0dec8e1fcc0326370c998aa05c12ca9",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": ".opencode/commands/opsx-sync.md",
+      "reason": "Changed path is not covered by a declared artifact: .opencode/commands/opsx-sync.md"
+    },
+    {
+      "id": "scope:e60854681bcab3d42e7e746433ed8f7df9882b97d4434706811ecfae66d62ca7",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": ".opencode/commands/opsx-verify.md",
+      "reason": "Changed path is not covered by a declared artifact: .opencode/commands/opsx-verify.md"
+    },
+    {
+      "id": "scope:1272f496b8b3b63613a36a8af3c70b2eb375638bb784c01dde44ea4c7b39a2d2",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": ".opencode/rules/comet-workflow-guard.md",
+      "reason": "Changed path is not covered by a declared artifact: .opencode/rules/comet-workflow-guard.md"
+    },
+    {
+      "id": "scope:817c8044f4add0040ab3d4890191a667c8783314e0194d5124b8a70190a2767d",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": ".opencode/skills/openspec-apply-change/SKILL.md",
+      "reason": "Changed path is not covered by a declared artifact: .opencode/skills/openspec-apply-change/SKILL.md"
+    },
+    {
+      "id": "scope:2423452f4b2fdf3465fd6c52c89c6a80a81ee1de9e6fc5cfb0c2dbf106095fbc",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": ".opencode/skills/openspec-archive-change/SKILL.md",
+      "reason": "Changed path is not covered by a declared artifact: .opencode/skills/openspec-archive-change/SKILL.md"
+    },
+    {
+      "id": "scope:f280be5d87e9d7ed0538dd1335af4ba931b50a1c5e8b7027a7e852eac46d8672",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": ".opencode/skills/openspec-bulk-archive-change/SKILL.md",
+      "reason": "Changed path is not covered by a declared artifact: .opencode/skills/openspec-bulk-archive-change/SKILL.md"
+    },
+    {
+      "id": "scope:fb979c3e659b9770213807d392d8faf465178a49a3e6bbc2520fa3d4dca0dbd6",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": ".opencode/skills/openspec-continue-change/SKILL.md",
+      "reason": "Changed path is not covered by a declared artifact: .opencode/skills/openspec-continue-change/SKILL.md"
+    },
+    {
+      "id": "scope:aaa7d7f20d49adcc63db9f91b931293f6ea214aaf817a40e2a11a97d7da3ec4b",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": ".opencode/skills/openspec-explore/SKILL.md",
+      "reason": "Changed path is not covered by a declared artifact: .opencode/skills/openspec-explore/SKILL.md"
+    },
+    {
+      "id": "scope:c436e2f46eefea478935c28127596b65c94b7a55edaf2c0ad63417068c741c54",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": ".opencode/skills/openspec-ff-change/SKILL.md",
+      "reason": "Changed path is not covered by a declared artifact: .opencode/skills/openspec-ff-change/SKILL.md"
+    },
+    {
+      "id": "scope:4881dc58cc707ec1b086def63f15c772d60a72a296998d91f1113c8b3c07dc95",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": ".opencode/skills/openspec-new-change/SKILL.md",
+      "reason": "Changed path is not covered by a declared artifact: .opencode/skills/openspec-new-change/SKILL.md"
+    },
+    {
+      "id": "scope:c705bb4f2e2b46bc15c56fa6d453bf4b88c13368ef3dbb9e2f88ea2fecd66095",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": ".opencode/skills/openspec-onboard/SKILL.md",
+      "reason": "Changed path is not covered by a declared artifact: .opencode/skills/openspec-onboard/SKILL.md"
+    },
+    {
+      "id": "scope:5a1e150091d26e472fc83c5fe05bc84f33d53bc5e32158bc9c682c5561c12593",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": ".opencode/skills/openspec-propose/SKILL.md",
+      "reason": "Changed path is not covered by a declared artifact: .opencode/skills/openspec-propose/SKILL.md"
+    },
+    {
+      "id": "scope:6a694ba1e8eebcd159a745fef0a0f75fffb9a9acc82307b7fefa929f9004d0ad",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": ".opencode/skills/openspec-sync-specs/SKILL.md",
+      "reason": "Changed path is not covered by a declared artifact: .opencode/skills/openspec-sync-specs/SKILL.md"
+    },
+    {
+      "id": "scope:cd75c60e0c73899993f2a196443e4a6acead5ec30843a392d3ebed690138be4a",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": ".opencode/skills/openspec-verify-change/SKILL.md",
+      "reason": "Changed path is not covered by a declared artifact: .opencode/skills/openspec-verify-change/SKILL.md"
+    },
+    {
+      "id": "scope:63d9875186e8ca59522492af82dd8621d7aec4ea0b4fc4c0517c2302cda68123",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": ".superpowers/sdd/progress.md",
+      "reason": "Changed path is not covered by a declared artifact: .superpowers/sdd/progress.md"
+    }
+  ],
+  "noCodeReason": null,
+  "scopeHash": "94eae4cd28697f555382887571980f32781b2c81065c2732142aa919081a2adb"
+}

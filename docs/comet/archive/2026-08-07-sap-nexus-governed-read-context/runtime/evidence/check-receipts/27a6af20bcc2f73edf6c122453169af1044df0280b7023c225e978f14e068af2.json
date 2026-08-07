@@ -1,0 +1,100 @@
+{
+  "schema": "comet.native.check-receipt.v1",
+  "change": "sap-nexus-governed-read-context",
+  "sourceRevision": 5,
+  "checker": {
+    "policy": "scoped-text-safety",
+    "version": 1,
+    "hash": "859ac9d93d19ac346e5e0c6dfca376112da6b0c9caeb9d7d7aa68393c73e0eaf",
+    "limits": {
+      "maxFiles": 256,
+      "maxFileBytes": 2097152,
+      "maxTotalBytes": 8388608,
+      "maxIssues": 128
+    }
+  },
+  "inputHash": "fef398259b925f5fd08dfae5127c01e237758231474b2c4cafb60f112192a13f",
+  "status": "failed",
+  "startedAt": "2026-08-07T10:02:06.554Z",
+  "endedAt": "2026-08-07T10:02:09.099Z",
+  "contract": {
+    "expectedHash": "4b83254c3bc845f46e79dbd131863184aa04c726870419cfcc96948eb166db97",
+    "beforeHash": "4b83254c3bc845f46e79dbd131863184aa04c726870419cfcc96948eb166db97",
+    "afterHash": "4b83254c3bc845f46e79dbd131863184aa04c726870419cfcc96948eb166db97"
+  },
+  "implementation": {
+    "scopeHash": "b1b6b9fb5ecf7d7472af7527aad7b29df33367d9040e188f51e1f7e2f012b7a3",
+    "expectedSnapshotHash": "8c8481aad3f8861b9628abafca38693d2892bba3b693b667fe6c95d32748e81a",
+    "beforeSnapshotHash": "8c8481aad3f8861b9628abafca38693d2892bba3b693b667fe6c95d32748e81a",
+    "afterSnapshotHash": "8c8481aad3f8861b9628abafca38693d2892bba3b693b667fe6c95d32748e81a"
+  },
+  "counts": {
+    "filesSelected": 100,
+    "filesScanned": 89,
+    "binaryFilesSkipped": 0,
+    "bytesScanned": 1451705,
+    "issueCount": 11,
+    "recordedIssueCount": 11
+  },
+  "issues": [
+    {
+      "path": ".opencode/skills/comet",
+      "line": 1,
+      "kind": "unsafe-file"
+    },
+    {
+      "path": ".opencode/skills/comet-any",
+      "line": 1,
+      "kind": "unsafe-file"
+    },
+    {
+      "path": ".opencode/skills/comet-archive",
+      "line": 1,
+      "kind": "unsafe-file"
+    },
+    {
+      "path": ".opencode/skills/comet-build",
+      "line": 1,
+      "kind": "unsafe-file"
+    },
+    {
+      "path": ".opencode/skills/comet-classic",
+      "line": 1,
+      "kind": "unsafe-file"
+    },
+    {
+      "path": ".opencode/skills/comet-design",
+      "line": 1,
+      "kind": "unsafe-file"
+    },
+    {
+      "path": ".opencode/skills/comet-hotfix",
+      "line": 1,
+      "kind": "unsafe-file"
+    },
+    {
+      "path": ".opencode/skills/comet-native",
+      "line": 1,
+      "kind": "unsafe-file"
+    },
+    {
+      "path": ".opencode/skills/comet-open",
+      "line": 1,
+      "kind": "unsafe-file"
+    },
+    {
+      "path": ".opencode/skills/comet-tweak",
+      "line": 1,
+      "kind": "unsafe-file"
+    },
+    {
+      "path": ".opencode/skills/comet-verify",
+      "line": 1,
+      "kind": "unsafe-file"
+    }
+  ],
+  "issuesTruncated": false,
+  "stale": false,
+  "staleReasons": [],
+  "receiptHash": "27a6af20bcc2f73edf6c122453169af1044df0280b7023c225e978f14e068af2"
+}

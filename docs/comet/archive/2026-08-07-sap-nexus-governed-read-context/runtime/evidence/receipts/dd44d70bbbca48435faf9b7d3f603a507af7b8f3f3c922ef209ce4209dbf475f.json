@@ -1,0 +1,51 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "sap-nexus-governed-read-context",
+    "sourceRevision": 7,
+    "contractHash": "4b83254c3bc845f46e79dbd131863184aa04c726870419cfcc96948eb166db97",
+    "scopeHash": "94eae4cd28697f555382887571980f32781b2c81065c2732142aa919081a2adb",
+    "snapshotHash": "ec113e2056fe84be4afdfbba8817150a84aab89806b1998c2c94f13f26539ba8",
+    "artifactHash": "42b3d98c0d6c30a9e74691aae54d682536d51aa280bb5eb22a32bb00922ade7c"
+  },
+  "acceptanceIds": [
+    "acceptance-81781661e331100b520aa806de71f4c62dbde83dcfe9bd8bad047192fc3c66d9",
+    "acceptance-dd85ae017b5be151922191569bd498910a222f8e290880c3493e166f5c388e07",
+    "acceptance-f65c09401b016c58084278cda66d96d81e870158fdc0a9b3a801fcf93cdc8ab4",
+    "acceptance-f9a56d65dd9fb6ec59a01f2dfbb4998cf35e1741ff840e50062c4d004a1242c9"
+  ],
+  "actor": "native-runtime:command:bash",
+  "issuedAt": "2026-08-07T10:04:54.194Z",
+  "evidence": {
+    "executable": "bash",
+    "args": [
+      "-c",
+      "cd services/gateway && ./gradlew :core:test :app:test"
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 600000,
+    "startedAt": "2026-08-07T10:04:49.269Z",
+    "endedAt": "2026-08-07T10:04:54.194Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "4c5afaa128e70a46926cd9f0364a9bf8bd638eb0",
+      "afterCommit": "4c5afaa128e70a46926cd9f0364a9bf8bd638eb0"
+    },
+    "afterFence": {
+      "snapshotHash": "ec113e2056fe84be4afdfbba8817150a84aab89806b1998c2c94f13f26539ba8",
+      "scopeHash": "94eae4cd28697f555382887571980f32781b2c81065c2732142aa919081a2adb",
+      "matched": true
+    },
+    "outputHash": "e1cd5c28184e9270b0835ad0dee072e511baaba5e1c8c93711d2de6a5f0356fe",
+    "outputSummary": "> Task :core:compileJava UP-TO-DATE\n> Task :core:processResources NO-SOURCE\n> Task :core:classes UP-TO-DATE\n> Task :core:jar UP-TO-DATE\n> Task :core:compileTestJava UP-TO-DATE\n> Task :core:processTestResources NO-SOURCE\n> Task :core:testClasses UP-TO-DATE\n> Task :core:test UP-TO-DATE\n> Task :jco:compileJava UP-TO-DATE\n> Task :jco:processResources NO-SOURCE\n> Task :jco:classes UP-TO-DATE\n> Task :jco:jar UP-TO-DATE\n> Task :odata:compileJava UP-TO-DATE\n> Task :odata:processResources NO-SOURCE\n> Task :odata:classes UP-TO-DATE\n> Task :odata:jar UP-TO-DATE\n> Task :app:compileJava UP-TO-DATE\n> Task :app:processResources UP-TO-DATE\n> Task :app:classes UP-TO-DATE\n> Task :app:compileTestJava UP-TO-DATE\n> Task :app:processTestResources NO-SOURCE\n> Task :app:testClasses UP-TO-DATE\n> Task :app:test UP-TO-DATE\n\nBUILD SUCCESSFUL in 4s\n12 actionable tasks: 12 up-to-date",
+    "outputTruncated": false
+  },
+  "receiptHash": "dd44d70bbbca48435faf9b7d3f603a507af7b8f3f3c922ef209ce4209dbf475f"
+}

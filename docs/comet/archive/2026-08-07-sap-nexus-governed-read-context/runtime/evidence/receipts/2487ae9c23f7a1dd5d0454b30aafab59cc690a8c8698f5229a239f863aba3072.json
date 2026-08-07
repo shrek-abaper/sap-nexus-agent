@@ -1,0 +1,57 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "sap-nexus-governed-read-context",
+    "sourceRevision": 7,
+    "contractHash": "4b83254c3bc845f46e79dbd131863184aa04c726870419cfcc96948eb166db97",
+    "scopeHash": "94eae4cd28697f555382887571980f32781b2c81065c2732142aa919081a2adb",
+    "snapshotHash": "ec113e2056fe84be4afdfbba8817150a84aab89806b1998c2c94f13f26539ba8",
+    "artifactHash": "42b3d98c0d6c30a9e74691aae54d682536d51aa280bb5eb22a32bb00922ade7c"
+  },
+  "acceptanceIds": [
+    "acceptance-412b479c836b1eb93b38c495b97c5799e316e24718dd725f039032b38227b39f",
+    "acceptance-85ce51036d0e61e57e6ebf226afa429ac7f403f754cb4e431f95929800701f7e",
+    "acceptance-b13e4af387c4234a0214c2c05959fc9cdfe438ca1bb1d9ac7d4ac740d1778be8",
+    "acceptance-ca1d51ebf52e7a75a8380db16dd07ea024464d88c424e07146f252e502b69fb0",
+    "acceptance-e69bbb272a6c593210911a963253ead4b5e3c0ee10e37f1f852aaaf033135d92"
+  ],
+  "actor": "native-runtime:command:npm",
+  "issuedAt": "2026-08-07T10:05:35.684Z",
+  "evidence": {
+    "executable": "npm",
+    "args": [
+      "--prefix",
+      "frontend",
+      "run",
+      "release-gate",
+      "--",
+      "--profile",
+      "all"
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 300000,
+    "startedAt": "2026-08-07T10:05:05.078Z",
+    "endedAt": "2026-08-07T10:05:35.684Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "4c5afaa128e70a46926cd9f0364a9bf8bd638eb0",
+      "afterCommit": "4c5afaa128e70a46926cd9f0364a9bf8bd638eb0"
+    },
+    "afterFence": {
+      "snapshotHash": "ec113e2056fe84be4afdfbba8817150a84aab89806b1998c2c94f13f26539ba8",
+      "scopeHash": "94eae4cd28697f555382887571980f32781b2c81065c2732142aa919081a2adb",
+      "matched": true
+    },
+    "outputHash": "a2e9b541f9e175fdeb9ebdeed12c2d7846b25f90b33ec81c47a2f1f6403fab84",
+    "outputSummary": "> sap-nexus-agent-workbench@0.1.0 release-gate\n> vite-node src/runtime/release-gate/cli.ts --profile all\n\nRelease decision: L3_ACTION_GOVERNED | target=L3 | passed=true | cases=22/22 | liveSmoke=not_run | report=runtime/evals/results/agent-release-l3-2026-08-07T10-05-05-768Z.json",
+    "outputTruncated": false
+  },
+  "receiptHash": "2487ae9c23f7a1dd5d0454b30aafab59cc690a8c8698f5229a239f863aba3072"
+}
