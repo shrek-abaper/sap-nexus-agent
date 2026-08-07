@@ -1921,9 +1921,15 @@ def _finalize_purchase_order(
 
 
 def _read_context_mode() -> str:
-    """Read the rollout mode from server process configuration only."""
+    """Read the rollout mode from server process configuration only.
+
+    "legacy" is not a recognized mode: the legacy merge bridge has been
+    retired from the governed rollout gate (Task 9). An unrecognized value
+    (including "legacy") falls through to the default "v2" behavior, same
+    as any other invalid input.
+    """
     mode = os.environ.get("READ_CONTEXT_MODE", "v2")
-    return mode if mode in {"legacy", "shadow", "v2"} else "v2"
+    return mode if mode in {"shadow", "v2"} else "v2"
 
 
 def _context_shadow(

@@ -331,6 +331,148 @@ def test_governed_read_context_authoritative_blocks_recorded_bad_model(monkeypat
     )
 
 
+def test_governed_read_context_never_calls_legacy_resolve_with_context(monkeypatch):
+    """The governed (Frame v2) READ path must never dispatch to the legacy
+    ``llm_intent.resolve_with_context`` merge, across a full multi-turn
+    continuation (CLARIFY -> CLARIFY -> SELECT).
+
+    The intent_adapter used below (a custom envelope-returning stub) never
+    calls ``parse_intent``, so on its own a monkeypatch of
+    ``resolve_with_context`` would be structurally unreachable: it would
+    pass even if the real safety invariant were deleted. Two things close
+    that gap:
+
+    1. A reachability sanity check (below) proves, using the *real*
+       production ``parse_intent`` (the function ``build_intent_adapter
+       ("rule", ...)`` returns directly, and that ``parse_with_hybrid``
+       falls back to on ``LlmUnavailable``), that ``resolve_with_context``
+       genuinely gets called whenever ``context.last_context`` is non-None
+       -- i.e. the monkeypatch below sits on a reachable path, not a dead
+       one.
+    2. The multi-turn loop seeds a *leaked* ``last_context`` (as would
+       happen if a caller round-tripped ``ConversationContext.from_dict``
+       on a payload carrying both ``lastContext`` and ``readState`` --
+       ``outcome_to_workbench_dict`` always emits ``lastContext`` from
+       ``match_decision`` regardless of read-context mode) and asserts
+       ``updated_context.last_context is None`` after every governed turn.
+       This directly exercises the invariant at
+       ``orchestrator.py:747``/``922`` (``_resolve_authoritative_read`` /
+       ``_bound_pending_outcome`` unconditionally null ``last_context``):
+       if that null-out were removed, the seeded leak would survive
+       unchanged and this assertion would fail on turn 1.
+    """
+    import pytest
+
+    from sap_nexus_agent import llm_intent
+    from sap_nexus_agent.conversation_context import ConversationContext, LastContext
+    from sap_nexus_agent.intent import parse_intent
+    from sap_nexus_agent.intent_envelope import IntentEnvelope, IntentGoal
+
+    leaked_last_context = LastContext(
+        capability_id="MM.Inventory.GetAvailability",
+        parameters={"material": "DEMOA2"},
+        missing_parameters=[],
+        decision_type="SELECT",
+    )
+
+    # --- Reachability sanity check ---------------------------------------
+    reach_calls = []
+    monkeypatch.setattr(
+        llm_intent,
+        "resolve_with_context",
+        lambda *args, **kwargs: reach_calls.append((args, kwargs)),
+    )
+    parse_intent(
+        "查库存",
+        context=ConversationContext(
+            last_context=leaked_last_context,
+            history=None,
+            read_state=ConversationReadState(None, None, 0),
+            schema_version=2,
+        ),
+    )
+    assert reach_calls, (
+        "the real parse_intent adapter must call resolve_with_context when "
+        "context.last_context is non-None, otherwise the monkeypatch below "
+        "would be unreachable"
+    )
+
+    # --- Main invariant: the governed READ path always clears last_context,
+    # so the reachable path above is never actually hit across governed
+    # turns, even when a leaked last_context is present on entry. ---------
+    def fail_if_called(*_args, **_kwargs):
+        pytest.fail("legacy resolve_with_context was called on the governed read path")
+
+    monkeypatch.setattr(llm_intent, "resolve_with_context", fail_if_called)
+
+    def adapter(text, _context=None):
+        parameters, missing = {
+            "DEMOA2 在工厂 5100 还有多少可用库存": (
+                {"material": "DEMOA2", "plant": "5100"},
+                [],
+            ),
+            "换个物料能查吗": ({}, ["material"]),
+            "这个物料是指上面的 DEMOA2，1000 是工厂": (
+                {"material": "DEMOA2", "plant": "1000"},
+                [],
+            ),
+        }[text]
+        return IntentEnvelope(
+            envelope_id=f"env-{len(text)}",
+            utterance=text,
+            goals=(
+                IntentGoal(
+                    goal_text="查库存",
+                    capability_hint="MM.Inventory.GetAvailability",
+                    parameters=parameters,
+                    missing=missing,
+                ),
+            ),
+            user_constraints={},
+            ambiguities=[],
+            reference_turn_id=None,
+            model_evidence={},
+            snapshot_id="model-advisory-only",
+            discard_reasons=[],
+            created_by="llm",
+        )
+
+    monkeypatch.delenv("READ_CONTEXT_MODE", raising=False)
+    gateway = FakeGatewayClient()
+    context = ConversationContext(
+        last_context=leaked_last_context,
+        history=None,
+        read_state=ConversationReadState(None, None, 0),
+        schema_version=2,
+    )
+    turns = (
+        "DEMOA2 在工厂 5100 还有多少可用库存",
+        "换个物料能查吗",
+        "这个物料是指上面的 DEMOA2，1000 是工厂",
+    )
+    expected_decisions = ("SELECT", "CLARIFY", "SELECT")
+
+    for index, (text, expected_decision) in enumerate(
+        zip(turns, expected_decisions, strict=True), start=1
+    ):
+        outcome = run_query(
+            text,
+            gateway,
+            intent_adapter=adapter,
+            context=context,
+            principal=PLACEHOLDER_PRINCIPAL,
+        )
+        assert outcome.match_decision is not None
+        assert outcome.match_decision.decision_type == expected_decision, f"turn {index}"
+        assert outcome.updated_context is not None
+        assert outcome.updated_context.last_context is None, (
+            f"turn {index}: governed read outcome must clear last_context, "
+            "else the next turn's real parse_intent adapter would route to "
+            "resolve_with_context"
+        )
+        context = outcome.updated_context
+
+
 def test_resolve_read_turn_returns_bound_plan_without_gateway_io():
     from sap_nexus_agent.conversation_context import ConversationContext
     from sap_nexus_agent.intent_envelope import IntentEnvelope, IntentGoal
