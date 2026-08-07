@@ -230,4 +230,72 @@ describe("evaluateRelease", () => {
       registrySnapshotId: "snapshot-1",
     });
   });
+
+  describe("aggregate governed-context evidence totals", () => {
+    // Real per-case contributions to contextConflictCases / nonReadyFrames /
+    // callPlanSlotChecks, verified against
+    // runtime/evals/results/agent-release-l3-2026-08-07T07-59-23-472Z.json
+    // (identical across the 2026-08-07T06-12-17-202Z and
+    // 2026-08-07T06-33-34-114Z runs too). Sums to the exact
+    // EXPECTED_CONTEXT_AGGREGATE_TOTALS constants in evaluator.ts (9, 10, 20).
+    const CONTEXT_CASE_METRICS: Record<string, {
+      contextConflictCases: number;
+      nonReadyFrames: number;
+      callPlanSlotChecks: number;
+    }> = {
+      "context-direct-plant-switch": { contextConflictCases: 0, nonReadyFrames: 0, callPlanSlotChecks: 4 },
+      "context-clear-then-ambiguous-reference": { contextConflictCases: 2, nonReadyFrames: 2, callPlanSlotChecks: 2 },
+      "context-explicit-correction": { contextConflictCases: 1, nonReadyFrames: 1, callPlanSlotChecks: 4 },
+      "context-llm-unavailable": { contextConflictCases: 1, nonReadyFrames: 1, callPlanSlotChecks: 0 },
+      "context-malformed-json": { contextConflictCases: 1, nonReadyFrames: 1, callPlanSlotChecks: 0 },
+      "context-technical-override-injection": { contextConflictCases: 0, nonReadyFrames: 1, callPlanSlotChecks: 0 },
+      "context-capability-switch": { contextConflictCases: 0, nonReadyFrames: 0, callPlanSlotChecks: 3 },
+      "context-recent-frame-explicit-restoration": { contextConflictCases: 1, nonReadyFrames: 1, callPlanSlotChecks: 3 },
+      "context-registry-drift": { contextConflictCases: 0, nonReadyFrames: 0, callPlanSlotChecks: 2 },
+      "context-principal-mismatch": { contextConflictCases: 0, nonReadyFrames: 0, callPlanSlotChecks: 2 },
+      "context-concurrent-turns": { contextConflictCases: 1, nonReadyFrames: 1, callPlanSlotChecks: 0 },
+      "context-duplicate-turn-id": { contextConflictCases: 1, nonReadyFrames: 1, callPlanSlotChecks: 0 },
+      "context-read-write-authority-isolation": { contextConflictCases: 1, nonReadyFrames: 1, callPlanSlotChecks: 0 },
+    };
+
+    function fullContextResults(
+      overrides: Record<string, Partial<typeof CONTEXT_CASE_METRICS[string]>> = {},
+    ): ReleaseCaseResult[] {
+      return Object.entries(CONTEXT_CASE_METRICS).map(([caseId, metrics]) => {
+        const result = passing(caseId, "L1");
+        result.metrics = {
+          ...result.metrics,
+          ...metrics,
+          ...(overrides[caseId] ?? {}),
+        } as never;
+        return result;
+      });
+    }
+
+    it("passes falseSelectRate/nonReadyGatewayCallRate/wrongCallPlanSlotRoleRate for the full, correct fixture set", () => {
+      const report = evaluateRelease(fullContextResults(), "L1");
+
+      expect(report.levels.L1.hardGates.falseSelectRate.passed).toBe(true);
+      expect(report.levels.L1.hardGates.nonReadyGatewayCallRate.passed).toBe(true);
+      expect(report.levels.L1.hardGates.wrongCallPlanSlotRoleRate.passed).toBe(true);
+    });
+
+    it.each([
+      ["falseSelectRate", "context-duplicate-turn-id", { contextConflictCases: 0 } as const],
+      ["nonReadyGatewayCallRate", "context-technical-override-injection", { nonReadyFrames: 0 } as const],
+      ["wrongCallPlanSlotRoleRate", "context-registry-drift", { callPlanSlotChecks: 0 } as const],
+    ])(
+      "fails %s when %s's evidence silently drops to 0 while every other context case still passes",
+      (gate, caseId, override) => {
+        // Simulates exactly the bug this fix closes: one case's evidence
+        // silently disappears (numerator AND denominator both drop by the
+        // same amount) while all 12 other context-* cases are untouched and
+        // still individually pass their own per-case checks.
+        const results = fullContextResults({ [caseId]: override });
+        const report = evaluateRelease(results, "L1");
+
+        expect(report.levels.L1.hardGates[gate as keyof typeof report.levels.L1.hardGates].passed).toBe(false);
+      },
+    );
+  });
 });

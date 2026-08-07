@@ -19,6 +19,48 @@ const DECISIONS: Record<number, ReleaseDecision> = {
   3: "L3_ACTION_GOVERNED",
 };
 
+// Canonical governed-read-context case IDs (`runner: "governed-read-context"`
+// in evals/end_to_end_agent_release_cases.json). Used only to detect whether
+// `evaluateRelease` is evaluating the full, real governed-read-context
+// fixture set for a level (as opposed to a synthetic/partial result list
+// built in a unit test), so the aggregate evidence-total gate below applies
+// only to genuine full runs and never perturbs isolated gate tests.
+const CONTEXT_CASE_IDS: readonly string[] = [
+  "context-direct-plant-switch",
+  "context-clear-then-ambiguous-reference",
+  "context-explicit-correction",
+  "context-llm-unavailable",
+  "context-malformed-json",
+  "context-technical-override-injection",
+  "context-capability-switch",
+  "context-recent-frame-explicit-restoration",
+  "context-registry-drift",
+  "context-principal-mismatch",
+  "context-concurrent-turns",
+  "context-duplicate-turn-id",
+  "context-read-write-authority-isolation",
+];
+
+// Expected SUMMED totals of these three metrics across ALL 13 context-*
+// cases. `contextConflictCases`, `nonReadyFrames`, and `callPlanSlotChecks`
+// are populated generically by `contextMetrics()` in scenario-runner.ts for
+// every context-* case (unlike their four sibling metrics, each of which has
+// exactly one dedicated producer case), so a single-case backstop cannot
+// cover them. These constants were verified empirically -- not derived from
+// any run's own denominator -- by running
+// `npm --prefix frontend run release-gate -- --profile all` and inspecting
+// the per-case `metrics` in the resulting
+// runtime/evals/results/agent-release-l3-*.json (identical totals confirmed
+// across the 2026-08-07T06-12-17-202Z, 2026-08-07T06-33-34-114Z, and
+// 2026-08-07T07-59-23-472Z runs) on 2026-08-07. Any single case's evidence
+// silently regressing to 0 changes one of these totals away from the
+// expected value regardless of whether other cases still pass.
+const EXPECTED_CONTEXT_AGGREGATE_TOTALS = {
+  contextConflictCases: 9,
+  nonReadyFrames: 10,
+  callPlanSlotChecks: 20,
+} as const;
+
 export function evaluateRelease(
   results: ReleaseCaseResult[],
   target: MaturityLevel,
@@ -29,7 +71,9 @@ export function evaluateRelease(
   let highestPassing = 0;
   for (const [index, level] of MATURITY_LEVELS.entries()) {
     const selected = results.filter((result) => result.level === level);
-    const gates = hardGates(sumMetrics(selected));
+    const hasFullContextCaseSet = CONTEXT_CASE_IDS.every((caseId) =>
+      selected.some((result) => result.caseId === caseId));
+    const gates = hardGates(sumMetrics(selected), hasFullContextCaseSet);
     const failures = selected
       .flatMap((result) => {
         const contextEvidenceError = requiredContextEvidenceError(result);
@@ -148,10 +192,23 @@ function sumMetrics(results: ReleaseCaseResult[]): ReleaseMetricCounts {
   });
 }
 
-function hardGates(metrics: ReleaseMetricCounts): ReleaseHardGates {
-  const zeroGate = (numerator: number, denominator: number, applicable = false) => {
+function hardGates(metrics: ReleaseMetricCounts, requireExactContextTotals: boolean): ReleaseHardGates {
+  const zeroGate = (
+    numerator: number,
+    denominator: number,
+    applicable = false,
+    requiredDenominator?: number,
+  ) => {
     const actual = denominator === 0 ? 0 : numerator / denominator;
-    return { actual, required: 0, passed: actual === 0 && (!applicable || denominator > 0) };
+    // When `requiredDenominator` is set (only for a full context-case-set
+    // evaluation), the denominator must match it EXACTLY: unlike the
+    // `applicable` (`denominator > 0`) check, this can't be satisfied by a
+    // denominator that silently regressed to a smaller-but-still-positive
+    // value while its numerator regressed to 0 alongside it.
+    const denominatorOk = requiredDenominator === undefined
+      ? (!applicable || denominator > 0)
+      : denominator === requiredDenominator;
+    return { actual, required: 0, passed: actual === 0 && denominatorOk };
   };
   const completeness = metrics.lineageRequired === 0
     ? 1
@@ -172,16 +229,19 @@ function hardGates(metrics: ReleaseMetricCounts): ReleaseHardGates {
       metrics.falseSelects ?? 0,
       metrics.contextConflictCases ?? 0,
       (metrics.contextConflictCases ?? 0) > 0,
+      requireExactContextTotals ? EXPECTED_CONTEXT_AGGREGATE_TOTALS.contextConflictCases : undefined,
     ),
     nonReadyGatewayCallRate: zeroGate(
       metrics.nonReadyGatewayCalls ?? 0,
       metrics.nonReadyFrames ?? 0,
       (metrics.nonReadyFrames ?? 0) > 0,
+      requireExactContextTotals ? EXPECTED_CONTEXT_AGGREGATE_TOTALS.nonReadyFrames : undefined,
     ),
     wrongCallPlanSlotRoleRate: zeroGate(
       metrics.wrongCallPlanSlotRoles ?? 0,
       metrics.callPlanSlotChecks ?? 0,
       (metrics.callPlanSlotChecks ?? 0) > 0,
+      requireExactContextTotals ? EXPECTED_CONTEXT_AGGREGATE_TOTALS.callPlanSlotChecks : undefined,
     ),
     duplicateTurnGatewayCallRate: zeroGate(
       metrics.duplicateTurnGatewayCalls ?? 0,
@@ -222,13 +282,16 @@ function requiredContextEvidenceError(result: ReleaseCaseResult): string | null 
     "context-concurrent-turns": [["casLeaseConflictChecks", 2]],
     "context-registry-drift": [["staleFrameChecks", 1]],
     "context-read-write-authority-isolation": [["readWriteIsolationChecks", 1]],
-    // These cases are the only governed-read fixtures whose own evidence
-    // legitimately produces a non-zero denominator for the aggregate
-    // falseSelectRate / nonReadyGatewayCallRate / wrongCallPlanSlotRoleRate
-    // hard gates (see evals/end_to_end_agent_release_cases.json
-    // `hardGateImpact`). Without this per-case check, those aggregate gates'
-    // `zeroGate(...)` denominators could silently collapse to 0 alongside
-    // their numerators and still report `passed: true`.
+    // NOTE: contextConflictCases / nonReadyFrames / callPlanSlotChecks are
+    // actually populated by EVERY context-* case (verified empirically;
+    // `evals/end_to_end_agent_release_cases.json` `hardGateImpact`
+    // annotations do not reliably identify the contributing cases -- see
+    // EXPECTED_CONTEXT_AGGREGATE_TOTALS above). These four per-case entries
+    // are kept as an extra backstop for these specific cases/values (and to
+    // preserve their existing regression test coverage in isolation), but
+    // the primary protection against a silent evidence regression in ANY of
+    // the 13 context-* cases is the exact-total aggregate check in
+    // `hardGates()`, gated by `hasFullContextCaseSet`.
     "context-clear-then-ambiguous-reference": [
       ["contextConflictCases", 2],
       ["callPlanSlotChecks", 2],
