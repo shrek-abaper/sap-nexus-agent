@@ -169,6 +169,31 @@ describe("evaluateRelease", () => {
     }]);
   });
 
+  it.each([
+    ["context-clear-then-ambiguous-reference", "contextConflictCases"],
+    ["context-llm-unavailable", "nonReadyFrames"],
+    ["context-malformed-json", "nonReadyFrames"],
+    ["context-capability-switch", "callPlanSlotChecks"],
+  ])(
+    "fails %s when its evidence denominator silently drops to 0 alongside a 0 numerator",
+    (caseId, metric) => {
+      // Regression test: falseSelectRate / nonReadyGatewayCallRate /
+      // wrongCallPlanSlotRoleRate must not report `passed: true` just
+      // because both the numerator and the denominator collapsed to 0 -
+      // that is indistinguishable from evidence being silently dropped.
+      const unobserved = passing(caseId, "L1");
+      // metrics default to all-zero via passing(); this asserts the case
+      // fails even though every zeroGate ratio is a vacuous 0/0.
+      const report = evaluateRelease([unobserved], "L1");
+
+      expect(report.targetPassed).toBe(false);
+      expect(report.levels.L1.failures).toEqual([{
+        caseId,
+        reason: `CONTEXT_EVIDENCE_MISSING:${metric}`,
+      }]);
+    },
+  );
+
   it("hard-fails incomplete lineage without rounding", () => {
     const incomplete = passing("l2-lineage", "L2");
     incomplete.metrics.lineageRequired = 3;

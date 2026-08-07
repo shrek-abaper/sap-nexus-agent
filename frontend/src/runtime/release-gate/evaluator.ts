@@ -217,16 +217,32 @@ function hardGates(metrics: ReleaseMetricCounts): ReleaseHardGates {
 }
 
 function requiredContextEvidenceError(result: ReleaseCaseResult): string | null {
-  const required = {
-    "context-duplicate-turn-id": ["duplicateTurnChecks", 1],
-    "context-concurrent-turns": ["casLeaseConflictChecks", 2],
-    "context-registry-drift": ["staleFrameChecks", 1],
-    "context-read-write-authority-isolation": ["readWriteIsolationChecks", 1],
-  } as const;
-  const requirement = required[result.caseId as keyof typeof required];
-  if (!requirement) return null;
-  const [metric, expected] = requirement;
-  return result.metrics[metric] === expected ? null : `CONTEXT_EVIDENCE_MISSING:${metric}`;
+  const required: Record<string, ReadonlyArray<readonly [keyof ReleaseMetricCounts, number]>> = {
+    "context-duplicate-turn-id": [["duplicateTurnChecks", 1]],
+    "context-concurrent-turns": [["casLeaseConflictChecks", 2]],
+    "context-registry-drift": [["staleFrameChecks", 1]],
+    "context-read-write-authority-isolation": [["readWriteIsolationChecks", 1]],
+    // These cases are the only governed-read fixtures whose own evidence
+    // legitimately produces a non-zero denominator for the aggregate
+    // falseSelectRate / nonReadyGatewayCallRate / wrongCallPlanSlotRoleRate
+    // hard gates (see evals/end_to_end_agent_release_cases.json
+    // `hardGateImpact`). Without this per-case check, those aggregate gates'
+    // `zeroGate(...)` denominators could silently collapse to 0 alongside
+    // their numerators and still report `passed: true`.
+    "context-clear-then-ambiguous-reference": [
+      ["contextConflictCases", 2],
+      ["callPlanSlotChecks", 2],
+    ],
+    "context-llm-unavailable": [["nonReadyFrames", 1]],
+    "context-malformed-json": [["nonReadyFrames", 1]],
+    "context-capability-switch": [["callPlanSlotChecks", 3]],
+  };
+  const requirements = required[result.caseId];
+  if (!requirements) return null;
+  for (const [metric, expected] of requirements) {
+    if (result.metrics[metric] !== expected) return `CONTEXT_EVIDENCE_MISSING:${metric}`;
+  }
+  return null;
 }
 
 function completeRate(passed: number, checks: number, required: boolean): HardGateResult {

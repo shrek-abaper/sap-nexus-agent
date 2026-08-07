@@ -775,15 +775,26 @@ function contextEvidencePasses(
   evidence: ContextCaseEvidence,
   metrics: ReleaseMetricCounts,
 ): boolean {
-  const durableRequired = evidence.caseId === "duplicate-turn-id"
-    ? metrics.duplicateTurnChecks === 1
-    : evidence.caseId === "concurrent-turns"
-      ? metrics.casLeaseConflictChecks === 2
-      : evidence.caseId === "registry-drift"
-        ? metrics.staleFrameChecks === 1
-        : evidence.caseId === "read-write-authority-isolation"
-          ? metrics.readWriteIsolationChecks === 1
-          : true;
+  // Kept in sync with evaluator.ts's `requiredContextEvidenceError`: each
+  // entry is a fixture whose own evidence is the (only) legitimate source of
+  // a non-zero denominator for the named aggregate metric. Checking the
+  // exact expected count here — not just that the numerator stayed 0 —
+  // catches a regression where the denominator itself silently drops to 0.
+  const requiredEvidence: Record<string, ReadonlyArray<readonly [keyof ReleaseMetricCounts, number]>> = {
+    "duplicate-turn-id": [["duplicateTurnChecks", 1]],
+    "concurrent-turns": [["casLeaseConflictChecks", 2]],
+    "registry-drift": [["staleFrameChecks", 1]],
+    "read-write-authority-isolation": [["readWriteIsolationChecks", 1]],
+    "clear-then-ambiguous-reference": [
+      ["contextConflictCases", 2],
+      ["callPlanSlotChecks", 2],
+    ],
+    "llm-unavailable": [["nonReadyFrames", 1]],
+    "malformed-json": [["nonReadyFrames", 1]],
+    "capability-switch": [["callPlanSlotChecks", 3]],
+  };
+  const durableRequired = (requiredEvidence[evidence.caseId] ?? [])
+    .every(([metric, expected]) => metrics[metric] === expected);
   return evidence.status === "passed"
     && evidence.failureRefs.length === 0
     && durableRequired
