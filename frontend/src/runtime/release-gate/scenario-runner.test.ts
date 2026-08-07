@@ -70,7 +70,9 @@ describe("offline release scenarios", () => {
     expect(results.find((result) => result.caseId === "context-duplicate-turn-id")?.metrics)
       .toMatchObject({ duplicateTurnChecks: 1, duplicateTurnGatewayCalls: 0 });
     expect(results.find((result) => result.caseId === "context-concurrent-turns")?.metrics)
-      .toMatchObject({ casLeaseConflictChecks: 1, stateOverwritesAfterConflict: 0 });
+      .toMatchObject({ casLeaseConflictChecks: 2, stateOverwritesAfterConflict: 0 });
+    expect(results.find((result) => result.caseId === "context-concurrent-turns")?.evidenceRefs)
+      .toContain("durable:cas-conflict");
     expect(results.find((result) => result.caseId === "context-registry-drift")?.metrics)
       .toMatchObject({ staleFrameChecks: 1, staleFrameExecutions: 0 });
     expect(results.find((result) => result.caseId === "context-read-write-authority-isolation")?.metrics)

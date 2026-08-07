@@ -256,7 +256,7 @@ def test_governed_read_context_fixture_declares_complete_multi_turn_contract():
         assert case["turns"]
         for turn in case["turns"]:
             assert turn["turnId"]
-            assert turn["expected"]["frameStatus"]
+            assert "frameStatus" in turn["expected"]
             assert "slots" in turn["expected"]
             assert turn["expected"]["decision"]
             assert "validateDelta" in turn["expected"]
@@ -308,6 +308,90 @@ def test_recent_frame_restoration_requires_explicit_capability_round_trip():
     assert final["callPlan"] is None
     assert final["validateDelta"] == 0
     assert final["executeDelta"] == 0
+
+
+def test_governed_context_evidence_preserves_case_results_and_production_outcomes():
+    """Release gates need every case result, including immutable resolver evidence."""
+    from sap_nexus_agent.eval import run_governed_context_evidence
+
+    evidence = run_governed_context_evidence(REPO_ROOT / "evals" / "matcher_cases.yaml")
+
+    assert len(evidence) == 13
+    assert all(case["status"] == "passed" for case in evidence)
+    seeded = next(case for case in evidence if case["caseId"] == "clear-then-ambiguous-reference")
+    assert seeded["turns"][0]["stateBefore"]["stateVersion"] == 4
+    assert set(seeded["turns"][0]["stateBefore"]["activeFrame"]["slots"]) == {"material", "plant"}
+    selected = next(case for case in evidence if case["caseId"] == "direct-plant-switch")
+    turn = selected["turns"][0]
+    assert turn["workbenchOutcome"]["callPlan"] == {
+        "agentTraceId": turn["workbenchOutcome"]["callPlan"]["agentTraceId"],
+        "capabilityId": "MM.Inventory.GetAvailability",
+        "kind": "Function",
+        "parameters": {"material": "DEMOA2", "plant": "5100", "unit": "EA"},
+        "validationPolicy": "validate_before_execute",
+        "createdBy": "agent",
+        "requiresApproval": False,
+    }
+    assert turn["workbenchOutcome"]["readExecutionBinding"]["readState"] == turn["stateAfter"]
+    assert turn["continuation"]["status"] == "success"
+    assert turn["continuation"]["errorType"] is None
+    assert turn["continuation"]["workbenchOutcome"]["status"] == "success"
+    assert selected["failureRefs"] == []
+
+    for case_id in ("llm-unavailable", "malformed-json"):
+        fallback = next(case for case in evidence if case["caseId"] == case_id)["turns"][0]
+        assert fallback["decision"] == "CLARIFY"
+        assert fallback["callPlan"] is None
+        assert fallback["validateDelta"] == 0
+        assert fallback["executeDelta"] == 0
+
+    override = next(case for case in evidence if case["caseId"] == "technical-override-injection")["turns"][0]
+    assert override["decision"] == "REJECT"
+    assert override["workbenchOutcome"]["errorType"] == "UNSUPPORTED_RFC_NAME"
+    assert override["callPlan"] is None
+    assert override["writeAuthority"] == {"approvalRecord": False, "selectionBinding": False}
+
+
+def test_governed_context_failure_ref_tracks_the_failing_turn_and_observations(tmp_path):
+    from sap_nexus_agent.eval import run_governed_context_evidence
+
+    fixtures = json.loads((REPO_ROOT / "evals" / "matcher_cases.yaml").read_text("utf-8"))
+    case = next(item for item in fixtures["cases"] if item["id"] == "clear-then-ambiguous-reference")
+    case["turns"][2]["expected"]["decision"] = "SELECT"
+    evals_dir = tmp_path / "evals"
+    recordings_dir = evals_dir / "recorded_llm"
+    recordings_dir.mkdir(parents=True)
+    fixture_path = evals_dir / "matcher_cases.yaml"
+    fixture_path.write_text(json.dumps(fixtures), encoding="utf-8")
+    (recordings_dir / "end_to_end_agent_release.json").write_text(
+        (REPO_ROOT / "evals" / "recorded_llm" / "end_to_end_agent_release.json").read_text("utf-8"),
+        encoding="utf-8",
+    )
+
+    evidence = run_governed_context_evidence(fixture_path)
+
+    assert len(evidence) == 13
+    assert next(case for case in evidence if case["caseId"] == "direct-plant-switch")["status"] == "passed"
+    failed = next(case for case in evidence if case["caseId"] == "clear-then-ambiguous-reference")
+    assert failed["status"] == "failed"
+    assert len(failed["failureRefs"]) == 1
+    ref = failed["failureRefs"][0]
+    assert {key: ref[key] for key in (
+        "caseId", "turnId", "stage", "decision", "validateDelta",
+        "executeDelta", "callPlan", "message",
+    )} == {
+        "caseId": "clear-then-ambiguous-reference",
+        "turnId": "clear-3",
+        "stage": "fixture_assertion",
+        "decision": "CLARIFY",
+        "validateDelta": 0,
+        "executeDelta": 0,
+        "callPlan": None,
+        "message": "decision mismatch: expected SELECT, got CLARIFY",
+    }
+    frame = ref["frame"]
+    assert frame["status"] == "COLLECTING"
+    assert set(frame["slots"]) == {"material", "plant"}
 
 
 # --- S2-B dry-run Eval (Task 9) ---

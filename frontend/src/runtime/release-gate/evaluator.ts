@@ -31,11 +31,17 @@ export function evaluateRelease(
     const selected = results.filter((result) => result.level === level);
     const gates = hardGates(sumMetrics(selected));
     const failures = selected
-      .filter((result) => result.status !== "passed" || result.evidenceRefs.length === 0)
-      .map((result) => ({
-        caseId: result.caseId,
-        reason: result.errorType ?? (result.evidenceRefs.length === 0 ? "EVIDENCE_MISSING" : result.status.toUpperCase()),
-      }));
+      .flatMap((result) => {
+        const contextEvidenceError = requiredContextEvidenceError(result);
+        if (result.status === "passed" && result.evidenceRefs.length > 0 && !contextEvidenceError) {
+          return [];
+        }
+        return [{
+          caseId: result.caseId,
+          reason: contextEvidenceError ?? result.errorType
+            ?? (result.evidenceRefs.length === 0 ? "EVIDENCE_MISSING" : result.status.toUpperCase()),
+        }];
+      });
     const ownPassed = selected.length > 0
       && failures.length === 0
       && Object.values(gates).every((gate) => gate.passed);
@@ -43,7 +49,11 @@ export function evaluateRelease(
     levels[level] = {
       profileVersion: RELEASE_PROFILE_VERSIONS[level],
       denominator: selected.length,
-      casePassed: selected.filter((result) => result.status === "passed" && result.evidenceRefs.length > 0).length,
+      casePassed: selected.filter((result) => (
+        result.status === "passed"
+        && result.evidenceRefs.length > 0
+        && !requiredContextEvidenceError(result)
+      )).length,
       passed: continuousPass,
       hardGates: gates,
       failures,
@@ -139,9 +149,9 @@ function sumMetrics(results: ReleaseCaseResult[]): ReleaseMetricCounts {
 }
 
 function hardGates(metrics: ReleaseMetricCounts): ReleaseHardGates {
-  const zeroGate = (numerator: number, denominator: number) => {
+  const zeroGate = (numerator: number, denominator: number, applicable = false) => {
     const actual = denominator === 0 ? 0 : numerator / denominator;
-    return { actual, required: 0, passed: actual === 0 };
+    return { actual, required: 0, passed: actual === 0 && (!applicable || denominator > 0) };
   };
   const completeness = metrics.lineageRequired === 0
     ? 1
@@ -158,24 +168,40 @@ function hardGates(metrics: ReleaseMetricCounts): ReleaseHardGates {
       required: 1,
       passed: completeness === 1,
     },
-    falseSelectRate: zeroGate(metrics.falseSelects ?? 0, metrics.contextConflictCases ?? 0),
-    nonReadyGatewayCallRate: zeroGate(metrics.nonReadyGatewayCalls ?? 0, metrics.nonReadyFrames ?? 0),
+    falseSelectRate: zeroGate(
+      metrics.falseSelects ?? 0,
+      metrics.contextConflictCases ?? 0,
+      (metrics.contextConflictCases ?? 0) > 0,
+    ),
+    nonReadyGatewayCallRate: zeroGate(
+      metrics.nonReadyGatewayCalls ?? 0,
+      metrics.nonReadyFrames ?? 0,
+      (metrics.nonReadyFrames ?? 0) > 0,
+    ),
     wrongCallPlanSlotRoleRate: zeroGate(
       metrics.wrongCallPlanSlotRoles ?? 0,
       metrics.callPlanSlotChecks ?? 0,
+      (metrics.callPlanSlotChecks ?? 0) > 0,
     ),
     duplicateTurnGatewayCallRate: zeroGate(
       metrics.duplicateTurnGatewayCalls ?? 0,
       metrics.duplicateTurnChecks ?? 0,
+      (metrics.duplicateTurnChecks ?? 0) > 0,
     ),
     stateOverwriteAfterConflictRate: zeroGate(
       metrics.stateOverwritesAfterConflict ?? 0,
       metrics.casLeaseConflictChecks ?? 0,
+      (metrics.casLeaseConflictChecks ?? 0) > 0,
     ),
-    staleFrameExecutionRate: zeroGate(metrics.staleFrameExecutions ?? 0, metrics.staleFrameChecks ?? 0),
+    staleFrameExecutionRate: zeroGate(
+      metrics.staleFrameExecutions ?? 0,
+      metrics.staleFrameChecks ?? 0,
+      (metrics.staleFrameChecks ?? 0) > 0,
+    ),
     readContextWriteAuthorityCreationRate: zeroGate(
       metrics.readContextWriteAuthorityCreations ?? 0,
       metrics.readWriteIsolationChecks ?? 0,
+      (metrics.readWriteIsolationChecks ?? 0) > 0,
     ),
     deterministicCorePassRate: completeRate(
       metrics.deterministicCorePassed ?? 0,
@@ -188,6 +214,19 @@ function hardGates(metrics: ReleaseMetricCounts): ReleaseHardGates {
       (metrics.contextConflictCases ?? 0) > 0,
     ),
   };
+}
+
+function requiredContextEvidenceError(result: ReleaseCaseResult): string | null {
+  const required = {
+    "context-duplicate-turn-id": ["duplicateTurnChecks", 1],
+    "context-concurrent-turns": ["casLeaseConflictChecks", 2],
+    "context-registry-drift": ["staleFrameChecks", 1],
+    "context-read-write-authority-isolation": ["readWriteIsolationChecks", 1],
+  } as const;
+  const requirement = required[result.caseId as keyof typeof required];
+  if (!requirement) return null;
+  const [metric, expected] = requirement;
+  return result.metrics[metric] === expected ? null : `CONTEXT_EVIDENCE_MISSING:${metric}`;
 }
 
 function completeRate(passed: number, checks: number, required: boolean): HardGateResult {

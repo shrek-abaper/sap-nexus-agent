@@ -171,7 +171,41 @@ def run_governed_context_evidence(path: Path) -> list[dict[str, Any]]:
     evidence: list[dict[str, Any]] = []
     for case in payload["cases"]:
         if case.get("fixtureVersion") == "governed-read-context-v1":
-            evidence.append(_run_governed_read_context_case(case, recordings))
+            failure_context: dict[str, Any] = {
+                "caseId": case.get("id", "unknown"),
+                "turnId": None,
+                "stage": "fixture_contract",
+                "decision": None,
+                "validateDelta": 0,
+                "executeDelta": 0,
+                "frame": None,
+                "callPlan": None,
+            }
+            try:
+                evidence.append(_run_governed_read_context_case(
+                    case, recordings, failure_context=failure_context
+                ))
+            except AssertionError as exc:
+                # Keep independent fixture evidence inspectable when one case
+                # fails; release gates must not turn every case into "missing".
+                evidence.append({
+                    "caseId": case.get("id", "unknown"),
+                    "fixtureVersion": case.get("fixtureVersion", "unknown"),
+                    "registrySnapshotId": case.get("registrySnapshotId", ""),
+                    "status": "failed",
+                    "turns": [],
+                    "failureRefs": [{
+                        "caseId": case.get("id", "unknown"),
+                        "turnId": failure_context["turnId"],
+                        "stage": failure_context["stage"],
+                        "decision": failure_context["decision"],
+                        "validateDelta": failure_context["validateDelta"],
+                        "executeDelta": failure_context["executeDelta"],
+                        "frame": failure_context["frame"],
+                        "callPlan": failure_context["callPlan"],
+                        "message": str(exc) or "fixture assertion failed",
+                    }],
+                })
     return evidence
 
 
@@ -248,6 +282,8 @@ def run_matcher_cases(
 def _run_governed_read_context_case(
     case: dict[str, Any],
     recordings: dict[str, dict[str, Any]] | None = None,
+    *,
+    failure_context: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Replay versioned turns through the production Frame v2 resolver.
 
@@ -258,6 +294,7 @@ def _run_governed_read_context_case(
     from sap_nexus_agent.conversation_context import ConversationContext
     from sap_nexus_agent.governed_context import PLACEHOLDER_PRINCIPAL, TrustedPrincipal
     from sap_nexus_agent.intent_envelope import IntentEnvelope, IntentGoal
+    from sap_nexus_agent.workbench_output import outcome_to_workbench_dict
     from sap_nexus_agent.orchestrator import (
         _default_planner_sources,
         continue_resolved_read,
@@ -278,6 +315,16 @@ def _run_governed_read_context_case(
     observed_turns: list[dict[str, Any]] = []
 
     for turn in case["turns"]:
+        if failure_context is not None:
+            failure_context.update({
+                "turnId": turn["turnId"],
+                "stage": "resolve_read_turn",
+                "decision": None,
+                "validateDelta": 0,
+                "executeDelta": 0,
+                "frame": None,
+                "callPlan": None,
+            })
         candidate = turn["candidate"]
         expected = turn["expected"]
         capability_id = candidate["capabilityId"]
@@ -303,6 +350,51 @@ def _run_governed_read_context_case(
             ), "explicit restore target is not a recent Frame"
 
         def adapter(text: str, _context=None) -> IntentEnvelope:
+            # Exercise the production advisory boundary for unavailable and
+            # malformed recordings instead of attaching a fixture status to a
+            # prebuilt successful envelope.
+            if candidate.get("llmStatus") in {"unavailable", "malformed_json"}:
+                from sap_nexus_agent.llm_client import LlmUnavailable
+                from sap_nexus_agent.llm_intent import parse_with_hybrid
+                from sap_nexus_agent.registry_loader import load_intent_catalog
+
+                class BrokenAdvisoryClient:
+                    def chat_json(self, *_args, **_kwargs):
+                        if candidate["llmStatus"] == "unavailable":
+                            raise LlmUnavailable("fixture unavailable")
+                        raise json.JSONDecodeError("fixture malformed", "{", 0)
+
+                return parse_with_hybrid(
+                    text,
+                    client=BrokenAdvisoryClient(),
+                    catalog=load_intent_catalog(),
+                )
+            if candidate.get("technicalOverride"):
+                from sap_nexus_agent.llm_intent import payload_to_envelope
+                from sap_nexus_agent.registry_loader import load_intent_catalog
+
+                catalog = load_intent_catalog()
+                envelope = payload_to_envelope(
+                    {
+                        "capabilityId": "MM.PR.CreateDraft",
+                        "parameters": {
+                            "material": "DEMOA2",
+                            "plant": "1000",
+                            "rfcName": candidate["technicalOverride"],
+                        },
+                    },
+                    catalog,
+                    utterance=text,
+                    snapshot_id="advisory-only",
+                    visible_capability_ids=frozenset(
+                        item.capability_id
+                        for item in catalog.capabilities
+                        if item.side_effect == "none"
+                    ),
+                )
+                assert "technical_field:rfcName" in envelope.discard_reasons
+                assert "unknown_capability:MM.PR.CreateDraft" in envelope.discard_reasons
+                return envelope
             return IntentEnvelope(
                 envelope_id=f"eval-{case['id']}-{turn['turnId']}",
                 utterance=text,
@@ -331,18 +423,41 @@ def _run_governed_read_context_case(
             turn_id=turn["turnId"],
         )
         assert outcome.match_decision is not None
-        assert snapshot.snapshot_id == case["registrySnapshotId"], "fixture snapshot mismatch"
-        assert outcome.match_decision.decision_type == expected["decision"]
-        assert outcome.approval_record is None
-        assert outcome.selection_execution_binding is None
         assert outcome.read_state is not None
         frame = outcome.read_state.active_frame
-        assert frame is not None
-        assert frame.status == expected["frameStatus"]
-        _assert_context_slots(frame.slots, expected["slots"])
-        _assert_context_call_plan(outcome.call_plan, frame.slots, expected["callPlan"])
-        _assert_context_frame_identity(outcome.read_state, expected)
+        if failure_context is not None:
+            failure_context.update({
+                "stage": "fixture_assertion",
+                "decision": outcome.match_decision.decision_type,
+                "validateDelta": len(gateway.validate_calls) - before_validate,
+                "executeDelta": len(gateway.execute_calls) - before_execute,
+                "frame": frame.to_dict() if frame is not None else {"status": "NONE"},
+                "callPlan": (
+                    {
+                        "capabilityId": outcome.call_plan.capability_id,
+                        "parameters": dict(outcome.call_plan.parameters),
+                    }
+                    if outcome.call_plan is not None else None
+                ),
+            })
+        assert snapshot.snapshot_id == case["registrySnapshotId"], "fixture snapshot mismatch"
+        assert outcome.match_decision.decision_type == expected["decision"], (
+            f"decision mismatch: expected {expected['decision']}, "
+            f"got {outcome.match_decision.decision_type}"
+        )
+        assert outcome.approval_record is None
+        assert outcome.selection_execution_binding is None
+        if expected["frameStatus"] is None:
+            assert frame is None
+            _assert_context_call_plan(outcome.call_plan, {}, expected["callPlan"])
+        else:
+            assert frame is not None
+            assert frame.status == expected["frameStatus"]
+            _assert_context_slots(frame.slots, expected["slots"])
+            _assert_context_call_plan(outcome.call_plan, frame.slots, expected["callPlan"])
+            _assert_context_frame_identity(outcome.read_state, expected)
 
+        continuation = None
         if outcome.call_plan is not None:
             # Conflict fixtures exercise the real fail-closed continuation
             # preflight; normal READY turns exercise validate then execute.
@@ -356,7 +471,7 @@ def _run_governed_read_context_case(
                 if candidate.get("registryDrift")
                 else snapshot
             )
-            continue_resolved_read(
+            continued = continue_resolved_read(
                 outcome.call_plan,
                 outcome.read_execution_binding,
                 gateway,
@@ -365,9 +480,20 @@ def _run_governed_read_context_case(
                 snapshot=current_snapshot,
                 sources=sources,
             )
+            continuation = {
+                "status": continued.status,
+                "errorType": continued.error_type,
+                "workbenchOutcome": outcome_to_workbench_dict(continued),
+            }
 
         validate_delta = len(gateway.validate_calls) - before_validate
         execute_delta = len(gateway.execute_calls) - before_execute
+        if failure_context is not None:
+            failure_context.update({
+                "stage": "gateway_delta_assertion",
+                "validateDelta": validate_delta,
+                "executeDelta": execute_delta,
+            })
         assert validate_delta == expected["validateDelta"]
         assert execute_delta == expected["executeDelta"]
         observed_turns.append({
@@ -375,14 +501,14 @@ def _run_governed_read_context_case(
             "recordingId": recording_id,
             "stateBefore": state_before,
             "stateAfter": outcome.read_state.to_dict(),
-            "frame": frame.to_dict(),
+            "frame": frame.to_dict() if frame is not None else {"status": "NONE"},
             "slots": {
                 name: {
                     "value": slot.value,
                     "state": slot.state,
                     "role": slot.provenance,
                 }
-                for name, slot in frame.slots.items()
+                for name, slot in (frame.slots.items() if frame is not None else ())
             },
             "decision": outcome.match_decision.decision_type,
             "callPlan": (
@@ -404,6 +530,8 @@ def _run_governed_read_context_case(
                 "approvalRecord": outcome.approval_record is not None,
                 "selectionBinding": outcome.selection_execution_binding is not None,
             },
+            "workbenchOutcome": outcome_to_workbench_dict(outcome),
+            "continuation": continuation,
         })
         context = ConversationContext(
             None,
@@ -415,7 +543,9 @@ def _run_governed_read_context_case(
         "caseId": case["id"],
         "fixtureVersion": case["fixtureVersion"],
         "registrySnapshotId": snapshot.snapshot_id,
+        "status": "passed",
         "turns": observed_turns,
+        "failureRefs": [],
     }
 
 
@@ -428,7 +558,7 @@ def _assert_context_fixture_contract(case: dict[str, Any]) -> None:
         assert isinstance(turn.get("turnId"), str) and turn["turnId"]
         expected = turn.get("expected")
         assert isinstance(expected, dict)
-        assert expected.get("frameStatus") in {"COLLECTING", "READY", "CONFLICTED", "STALE"}
+        assert expected.get("frameStatus") in {None, "COLLECTING", "READY", "CONFLICTED", "STALE"}
         assert isinstance(expected.get("slots"), dict)
         assert expected.get("decision") in {
             "SELECT", "CLARIFY", "REJECT", "SHOW_OPTIONS", "ESCALATE_TO_PLANNER"
@@ -472,6 +602,7 @@ def _assert_context_frame_identity(state: ConversationReadState, expected: dict[
 
 
 def _assert_context_slots(actual: Any, expected: dict[str, Any]) -> None:
+    assert set(actual) == set(expected), "unexpected Frame slots"
     for name, expected_slot in expected.items():
         assert name in actual, f"missing expected slot {name}"
         slot = actual[name]

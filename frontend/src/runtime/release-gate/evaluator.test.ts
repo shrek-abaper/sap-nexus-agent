@@ -157,6 +157,18 @@ describe("evaluateRelease", () => {
     });
   });
 
+  it("fails an applicable durable context case when its required denominator is absent", () => {
+    const missingCas = passing("context-concurrent-turns", "L1");
+    const report = evaluateRelease([missingCas], "L1");
+
+    expect(report.targetPassed).toBe(false);
+    expect(report.levels.L1.casePassed).toBe(0);
+    expect(report.levels.L1.failures).toEqual([{
+      caseId: "context-concurrent-turns",
+      reason: "CONTEXT_EVIDENCE_MISSING:casLeaseConflictChecks",
+    }]);
+  });
+
   it("hard-fails incomplete lineage without rounding", () => {
     const incomplete = passing("l2-lineage", "L2");
     incomplete.metrics.lineageRequired = 3;

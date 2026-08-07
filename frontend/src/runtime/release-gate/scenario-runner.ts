@@ -104,17 +104,22 @@ type ContextTurnEvidence = {
   validateDelta: number;
   executeDelta: number;
   writeAuthority: { approvalRecord: boolean; selectionBinding: boolean };
+  workbenchOutcome: WorkbenchOutcome;
+  continuation: { status: string; errorType: string | null; workbenchOutcome: WorkbenchOutcome } | null;
 };
 
 type ContextCaseEvidence = {
   caseId: string;
   fixtureVersion: string;
   registrySnapshotId: string;
+  status: "passed" | "failed";
   turns: ContextTurnEvidence[];
+  failureRefs: Array<Record<string, unknown>>;
 };
 
 const governedContextEvalCache = new Map<string, Promise<Map<string, ContextCaseEvidence>>>();
 const durableContextEvalCache = new Map<string, Promise<Map<string, Partial<ReleaseMetricCounts>>>>();
+let runtimeProtocolDirectory: string | null = null;
 
 export function loadReleaseFixtures(repoRoot: string): ReleaseFixtureBundle {
   const profilePayload = readJson<Record<string, unknown>>(
@@ -210,14 +215,20 @@ async function runGovernedReadContextEval(
     };
   }
   const metrics = contextMetrics(evidence);
-  Object.assign(metrics, await durableContextMetrics(repoRoot, fixtureId));
+  Object.assign(metrics, await durableContextMetrics(repoRoot, fixtureId, evidence));
   const passed = contextEvidencePasses(evidence, metrics);
+  const durableRef = fixtureId === "concurrent-turns" ? ["durable:lease-conflict", "durable:cas-conflict"]
+    : fixtureId === "duplicate-turn-id" ? ["durable:duplicate-turn"]
+    : fixtureId === "registry-drift" ? ["durable:stale-continuation"]
+    : fixtureId === "read-write-authority-isolation" ? ["durable:write-isolation"]
+    : [];
   return {
     ...baseResult(fixture),
     status: passed ? "passed" : "failed",
     evidenceRefs: passed ? [
       `run:${fixture.caseId}`,
       "eval:evals/matcher_cases.yaml",
+      ...durableRef,
     ] : [],
     metrics,
     ...(passed ? {} : { errorType: "GOVERNED_READ_CONTEXT_EVIDENCE_FAILED" }),
@@ -227,60 +238,60 @@ async function runGovernedReadContextEval(
 function durableContextMetrics(
   repoRoot: string,
   fixtureId: string,
+  evidence: ContextCaseEvidence,
 ): Promise<Partial<ReleaseMetricCounts>> {
   let pending = durableContextEvalCache.get(repoRoot);
   if (!pending) {
-    pending = runDurableContextProtocols();
+    pending = governedContextEvalEvidence(repoRoot).then(runDurableContextProtocols);
     durableContextEvalCache.set(repoRoot, pending);
   }
   return pending.then((results) => results.get(fixtureId) ?? {});
 }
 
-async function runDurableContextProtocols(): Promise<Map<string, Partial<ReleaseMetricCounts>>> {
+async function runDurableContextProtocols(
+  evidence: Map<string, ContextCaseEvidence>,
+): Promise<Map<string, Partial<ReleaseMetricCounts>>> {
   const results = new Map<string, Partial<ReleaseMetricCounts>>();
-  results.set("duplicate-turn-id", await observeDuplicateTurn());
-  results.set("concurrent-turns", await observeLeaseConflict());
-  results.set("registry-drift", await observeRejectedContinuation("stale"));
-  results.set("read-write-authority-isolation", await observeRejectedContinuation("write"));
+  results.set("duplicate-turn-id", await observeDuplicateTurn(requireProductionTurn(evidence, "direct-plant-switch")));
+  results.set("concurrent-turns", await observeConflicts(requireProductionTurn(evidence, "direct-plant-switch")));
+  results.set("registry-drift", await observeRejectedContinuation(requireProductionTurn(evidence, "registry-drift")));
+  results.set("read-write-authority-isolation", await observeRejectedContinuation(requireProductionTurn(evidence, "read-write-authority-isolation")));
   return results;
 }
 
-async function observeDuplicateTurn(): Promise<Partial<ReleaseMetricCounts>> {
+async function observeDuplicateTurn(turn: ContextTurnEvidence): Promise<Partial<ReleaseMetricCounts>> {
   return withRuntimeProtocol(async (store, runs) => {
     let continuations = 0;
     setReadAgentRunnerForTests(async (input) => {
-      if (input.mode === "resolve-read") return runtimeReadOutcome(input.turnId!);
-      if (input.mode === "continue-read") {
-        continuations += 1;
-        return { status: "success", responseText: "offline read" };
-      }
+      if (input.mode === "continue-read") continuations += 1;
+      if (input.mode === "resolve-read" || input.mode === "continue-read") return replayProductionTurn(turn, input);
       throw new Error(`unexpected runtime mode ${input.mode}`);
     });
     const first = await createAgentRun({
-      query: "查库存", conversationId: "context-duplicate", turnId: "duplicate-turn",
+      query: "查库存", conversationId: "context-duplicate", turnId: turn.turnId,
       principal: PLACEHOLDER_PRINCIPAL,
     });
     await waitForRuntimeTerminal(runs, first.runId);
     const retried = await createAgentRun({
-      query: "查库存", conversationId: "context-duplicate", turnId: "duplicate-turn",
+      query: "查库存", conversationId: "context-duplicate", turnId: turn.turnId,
       principal: PLACEHOLDER_PRINCIPAL,
     });
     const session = await store.load("context-duplicate", PLACEHOLDER_PRINCIPAL.principalId);
     return {
       duplicateTurnChecks: 1,
       duplicateTurnGatewayCalls: retried.runId === first.runId && continuations === 1 ? 0 : 1,
-      stateOverwritesAfterConflict: session?.lastAppliedTurnId === "duplicate-turn" ? 0 : 1,
+      stateOverwritesAfterConflict: session?.lastAppliedTurnId === turn.turnId ? 0 : 1,
     };
   });
 }
 
-async function observeLeaseConflict(): Promise<Partial<ReleaseMetricCounts>> {
+async function observeConflicts(turn: ContextTurnEvidence): Promise<Partial<ReleaseMetricCounts>> {
   return withRuntimeProtocol(async (store) => {
     const held = await store.claim("context-concurrent", "other-worker", 60_000);
     let busy = false;
     try {
       await createAgentRun({
-        query: "查库存", conversationId: "context-concurrent", turnId: "concurrent-turn",
+        query: "查库存", conversationId: "context-concurrent", turnId: turn.turnId,
         principal: PLACEHOLDER_PRINCIPAL,
       });
     } catch (error) {
@@ -295,46 +306,94 @@ async function observeLeaseConflict(): Promise<Partial<ReleaseMetricCounts>> {
       casLeaseConflictChecks: 1,
       stateOverwritesAfterConflict: busy && session === null ? 0 : 1,
     };
+  }).then(async (lease) => {
+    const cas = await withRuntimeProtocol(async (store, runs) => {
+      const realCas = store.compareAndSwap.bind(store);
+      let advanced = false;
+      store.compareAndSwap = async (...args) => {
+        if (!advanced) {
+          advanced = true;
+          const [conversationId, expectedVersion, next, fence] = args;
+          await realCas(conversationId, expectedVersion, {
+            ...next, lastAppliedTurnId: "cas-winner", lastRunId: "cas-winner",
+          }, fence);
+        }
+        return realCas(...args);
+      };
+      setReadAgentRunnerForTests(async (input) => replayProductionTurn(turn, input));
+      const started = await createAgentRun({
+        query: "查库存", conversationId: "context-cas", turnId: turn.turnId,
+        principal: PLACEHOLDER_PRINCIPAL,
+      });
+      const events = await waitForRuntimeTerminal(runs, started.runId);
+      const session = await store.load("context-cas", PLACEHOLDER_PRINCIPAL.principalId);
+      const lost = events.at(-1)?.type === "run_failed";
+      return {
+        casLeaseConflictChecks: 1,
+        stateOverwritesAfterConflict: lost && session?.lastAppliedTurnId === "cas-winner" ? 0 : 1,
+      };
+    });
+    return {
+      casLeaseConflictChecks: (lease.casLeaseConflictChecks ?? 0) + (cas.casLeaseConflictChecks ?? 0),
+      stateOverwritesAfterConflict: (lease.stateOverwritesAfterConflict ?? 0) + (cas.stateOverwritesAfterConflict ?? 0),
+    };
   });
 }
 
-async function observeRejectedContinuation(kind: "stale" | "write"): Promise<Partial<ReleaseMetricCounts>> {
+async function observeRejectedContinuation(turn: ContextTurnEvidence): Promise<Partial<ReleaseMetricCounts>> {
   return withRuntimeProtocol(async (_store, runs) => {
     let continuations = 0;
     setReadAgentRunnerForTests(async (input) => {
-      if (input.mode === "resolve-read") return runtimeReadOutcome(input.turnId!, kind);
-      if (input.mode === "continue-read" || input.mode === "continue-selection") continuations += 1;
-      throw new Error(`unexpected rejected continuation ${input.mode}`);
+      if (input.mode === "resolve-read" || input.mode === "continue-read") {
+        if (input.mode === "continue-read") continuations += 1;
+        return replayProductionTurn(turn, input);
+      }
+      throw new Error(`unexpected production replay ${input.mode}`);
     });
     const started = await createAgentRun({
-      query: kind === "write" ? "创建采购申请" : "继续刚才库存", conversationId: `context-${kind}`,
-      turnId: `${kind}-turn`, principal: PLACEHOLDER_PRINCIPAL,
+      query: "继续刚才查询", conversationId: `context-${turn.turnId}`,
+      turnId: turn.turnId, principal: PLACEHOLDER_PRINCIPAL,
     });
     const events = await waitForRuntimeTerminal(runs, started.runId);
     const rejected = events.at(-1)?.type === "run_failed" && continuations === 0;
-    return kind === "stale"
-      ? { staleFrameChecks: 1, staleFrameExecutions: rejected ? 0 : 1 }
-      : { readWriteIsolationChecks: 1, readContextWriteAuthorityCreations: rejected ? 0 : 1 };
+    return turn.callPlan
+      ? {
+          staleFrameChecks: 1,
+          staleFrameExecutions: turn.executeDelta === 0
+            && turn.continuation?.errorType !== null ? 0 : 1,
+        }
+      : {
+          readWriteIsolationChecks: 1,
+          readContextWriteAuthorityCreations: continuations === 0
+            && !turn.writeAuthority.approvalRecord
+            && !turn.writeAuthority.selectionBinding ? 0 : 1,
+        };
   });
 }
 
 async function withRuntimeProtocol<T>(
   operation: (store: JsonlConversationStore, runs: JsonlRunStore) => Promise<T>,
 ): Promise<T> {
-  const directory = mkdtempSync(path.join(tmpdir(), "sap-nexus-context-protocol-"));
+  const directory = runtimeProtocolDirectory ??= createRuntimeProtocolDirectory();
   const runs = new JsonlRunStore(directory, "release-gate-context");
   const store = new JsonlConversationStore(directory);
+  await runs.clearAll();
+  await store.clearAll();
   setDurableStoresForTests(runs, store);
   try {
     return await operation(store, runs);
   } finally {
     setReadAgentRunnerForTests(null);
-    setDurableStoresForTests(
-      new JsonlRunStore(mkdtempSync(path.join(tmpdir(), "sap-nexus-context-teardown-"))),
-      new JsonlConversationStore(mkdtempSync(path.join(tmpdir(), "sap-nexus-context-teardown-"))),
-    );
-    rmSync(directory, { recursive: true, force: true });
+    // Keep the injected global stores valid but empty for later test work.
+    await runs.clearAll();
+    await store.clearAll();
   }
+}
+
+function createRuntimeProtocolDirectory(): string {
+  const directory = mkdtempSync(path.join(tmpdir(), "sap-nexus-context-protocol-"));
+  process.once("exit", () => rmSync(directory, { recursive: true, force: true }));
+  return directory;
 }
 
 async function waitForRuntimeTerminal(runs: JsonlRunStore, runId: string) {
@@ -346,37 +405,26 @@ async function waitForRuntimeTerminal(runs: JsonlRunStore, runId: string) {
   throw new Error(`runtime protocol run ${runId} did not settle`);
 }
 
-function runtimeReadOutcome(turnId: string, rejection?: "stale" | "write"): WorkbenchOutcome {
-  const frameStatus = rejection === "stale" ? "STALE" as const : "READY" as const;
-  const callPlan = {
-    agentTraceId: "release-context-read",
-    capabilityId: rejection === "write" ? "MM.PR.CreateDraft" : "MM.Inventory.GetAvailability",
-    kind: rejection === "write" ? "Action" : "Function",
-    parameters: { material: "DEMOA2", plant: "1000" },
-    validationPolicy: "validate_before_execute",
-    createdBy: "recorded-candidate",
-    requiresApproval: rejection === "write",
-  };
-  const readState = {
-    activeFrame: {
-      frameId: "release-context-frame", capabilityId: "MM.Inventory.GetAvailability",
-      slots: {}, status: frameStatus, createdTurnId: turnId, updatedTurnId: turnId,
-      registrySnapshotId: "snapshot-read-1", capabilityVersion: "1",
-    },
-    recentFrames: [], pendingInteraction: null, stateVersion: 1,
-  };
-  return {
-    status: "resolved_read", callPlan,
-    matchDecision: { decisionType: "SELECT", capabilityId: callPlan.capabilityId },
-    decision: { decisionType: "SELECT", capabilityId: callPlan.capabilityId },
-    conversationReadState: readState, resolutionReport: { frameStatus }, turnId,
-    frameId: "release-context-frame", stateVersion: 1, registrySnapshotId: "snapshot-read-1",
-    readExecutionBinding: {
-      turnId, frameId: "release-context-frame", stateVersion: 1, registrySnapshotId: "snapshot-read-1",
-      principalId: PLACEHOLDER_PRINCIPAL.principalId, capabilityVersion: "1",
-      executorBindingId: "offline-read", callPlanHash: sha256Hex(canonicalJson(callPlan)), readState,
-    },
-  };
+function requireProductionTurn(
+  evidence: Map<string, ContextCaseEvidence>, caseId: string,
+): ContextTurnEvidence {
+  const caseEvidence = evidence.get(caseId);
+  const turn = caseEvidence?.turns.find((entry) => entry.workbenchOutcome !== null);
+  if (!caseEvidence || caseEvidence.status !== "passed" || !turn) {
+    throw new Error(`missing production context evidence for ${caseId}`);
+  }
+  return turn;
+}
+
+function replayProductionTurn(turn: ContextTurnEvidence, input: { mode: string; turnId?: string }): WorkbenchOutcome {
+  if (input.mode === "resolve-read") {
+    if (input.turnId !== turn.turnId) throw new Error("production turn binding mismatch");
+    return turn.workbenchOutcome;
+  }
+  if (input.mode === "continue-read" && turn.continuation) {
+    return turn.continuation.workbenchOutcome;
+  }
+  throw new Error(`missing immutable production replay for ${input.mode}`);
 }
 
 function governedContextEvalEvidence(repoRoot: string): Promise<Map<string, ContextCaseEvidence>> {
@@ -654,9 +702,9 @@ function emptyMetrics(): ReleaseMetricCounts {
 
 function contextMetrics(evidence: ContextCaseEvidence): ReleaseMetricCounts {
   const turns = evidence.turns;
-  const selectable = turns.filter((turn) => turn.decision === "SELECT");
+  const contextualConflicts = turns.filter(hasObservedContextConflict);
   const nonReady = turns.filter((turn) => turn.frame.status !== "READY");
-  const callPlanChecks = selectable.flatMap((turn) => Object.entries(turn.callPlan?.slotRoles ?? {}));
+  const callPlanChecks = turns.flatMap(observedCallPlanSlotChecks);
   const deterministicPasses = turns.filter((turn) => (
     (turn.decision !== "SELECT" || (turn.frame.status === "READY" && turn.callPlan !== null))
     && !(turn.frame.status !== "READY" && (turn.validateDelta > 0 || turn.executeDelta > 0))
@@ -674,7 +722,8 @@ function contextMetrics(evidence: ContextCaseEvidence): ReleaseMetricCounts {
   ));
   return {
     ...emptyMetrics(),
-    contextConflictCases: 1,
+    // Context-specific completeness only applies to observed resolver issues.
+    contextConflictCases: contextualConflicts.length,
     falseSelects: turns.filter((turn) => (
       turn.decision === "SELECT" && (turn.frame.status !== "READY" || turn.callPlan === null)
     )).length,
@@ -684,13 +733,10 @@ function contextMetrics(evidence: ContextCaseEvidence): ReleaseMetricCounts {
       0,
     ),
     callPlanSlotChecks: callPlanChecks.length,
-    wrongCallPlanSlotRoles: callPlanChecks.filter(([, role]) => (
-      role === "MODEL_CANDIDATE" || role === "INHERITED_LEGACY"
-    )).length,
-    readWriteIsolationChecks: turns.length,
-    readContextWriteAuthorityCreations: turns.filter((turn) => (
-      turn.writeAuthority.approvalRecord || turn.writeAuthority.selectionBinding
-    )).length,
+    wrongCallPlanSlotRoles: callPlanChecks.filter((check) => !check.valid).length,
+    // Only the dedicated durable probe proves the READ-to-WRITE boundary.
+    readWriteIsolationChecks: 0,
+    readContextWriteAuthorityCreations: 0,
     deterministicCoreChecks: turns.length,
     deterministicCorePassed: deterministicPasses.length,
     successfulRecoveryChecks: recoveryTurns.length,
@@ -698,11 +744,50 @@ function contextMetrics(evidence: ContextCaseEvidence): ReleaseMetricCounts {
   };
 }
 
+function hasObservedContextConflict(turn: ContextTurnEvidence): boolean {
+  const report = turn.workbenchOutcome.resolutionReport;
+  if (!isRecord(report) || !Array.isArray(report.issues)) return false;
+  return report.issues.some((issue) => typeof issue === "string" && (
+    issue.startsWith("missing_required:")
+    || issue.startsWith("invalid_semantic_value:")
+    || issue.startsWith("context_")
+  ));
+}
+
+function observedCallPlanSlotChecks(turn: ContextTurnEvidence): Array<{ valid: boolean }> {
+  if (!turn.callPlan) return [];
+  return Object.entries(turn.callPlan.parameters)
+    .filter(([parameter]) => parameter in turn.slots)
+    .map(([parameter, value]) => {
+      const slot = turn.slots[parameter];
+      const role = turn.callPlan?.slotRoles[parameter];
+      return {
+        valid: slot.value === value
+          && slot.state === "RESOLVED"
+          && role === slot.role
+          && role !== "MODEL_CANDIDATE"
+          && role !== "INHERITED_LEGACY",
+      };
+    });
+}
+
 function contextEvidencePasses(
   evidence: ContextCaseEvidence,
   metrics: ReleaseMetricCounts,
 ): boolean {
-  return evidence.fixtureVersion === "governed-read-context-v1"
+  const durableRequired = evidence.caseId === "duplicate-turn-id"
+    ? metrics.duplicateTurnChecks === 1
+    : evidence.caseId === "concurrent-turns"
+      ? metrics.casLeaseConflictChecks === 2
+      : evidence.caseId === "registry-drift"
+        ? metrics.staleFrameChecks === 1
+        : evidence.caseId === "read-write-authority-isolation"
+          ? metrics.readWriteIsolationChecks === 1
+          : true;
+  return evidence.status === "passed"
+    && evidence.failureRefs.length === 0
+    && durableRequired
+    && evidence.fixtureVersion === "governed-read-context-v1"
     && evidence.registrySnapshotId.length > 0
     && evidence.turns.length > 0
     && metrics.falseSelects === 0

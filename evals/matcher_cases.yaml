@@ -193,9 +193,39 @@
       "fixtureVersion": "governed-read-context-v1",
       "registrySnapshotId": "sha256:f8ed7ba1f27465e6fe54474a1258b926eea69885003c9eb46deea35f0d01e50b",
       "initialContext": {
-        "activeFrame": null,
+        "activeFrame": {
+          "frameId": "MM.Inventory.GetAvailability:seeded-context",
+          "capabilityId": "MM.Inventory.GetAvailability",
+          "slots": {
+            "material": {
+              "name": "material",
+              "value": "DEMOA2",
+              "candidates": ["DEMOA2"],
+              "state": "RESOLVED",
+              "provenance": "CONFIRMED",
+              "sourceTurnId": "seeded-context",
+              "sourceSpan": null,
+              "issues": []
+            },
+            "plant": {
+              "name": "plant",
+              "value": "5100",
+              "candidates": ["5100"],
+              "state": "RESOLVED",
+              "provenance": "CONFIRMED",
+              "sourceTurnId": "seeded-context",
+              "sourceSpan": null,
+              "issues": []
+            }
+          },
+          "status": "READY",
+          "createdTurnId": "seeded-context",
+          "updatedTurnId": "seeded-context",
+          "registrySnapshotId": "sha256:f8ed7ba1f27465e6fe54474a1258b926eea69885003c9eb46deea35f0d01e50b",
+          "capabilityVersion": "1"
+        },
         "pendingInteraction": null,
-        "stateVersion": 0,
+        "stateVersion": 4,
         "recentFrames": []
       },
       "turns": [
@@ -496,9 +526,9 @@
             "technicalOverride": "BAPI_MATERIAL_AVAILABILITY"
           },
           "expected": {
-            "frameStatus": "COLLECTING",
+            "frameStatus": null,
             "slots": {},
-            "decision": "CLARIFY",
+            "decision": "REJECT",
             "validateDelta": 0,
             "executeDelta": 0,
             "callPlan": null
