@@ -101,7 +101,7 @@
     {
       "id": "direct-plant-switch",
       "fixtureVersion": "governed-read-context-v1",
-      "registrySnapshotId": "sha256:f8ed7ba1f27465e6fe54474a1258b926eea69885003c9eb46deea35f0d01e50b",
+      "registrySnapshotId": "sha256:4f84a33d2c021284ca2b45ed105344cc7506118a3787e445cf4bed61d6c9082e",
       "initialContext": {
         "activeFrame": null,
         "pendingInteraction": null,
@@ -191,7 +191,7 @@
     {
       "id": "clear-then-ambiguous-reference",
       "fixtureVersion": "governed-read-context-v1",
-      "registrySnapshotId": "sha256:f8ed7ba1f27465e6fe54474a1258b926eea69885003c9eb46deea35f0d01e50b",
+      "registrySnapshotId": "sha256:4f84a33d2c021284ca2b45ed105344cc7506118a3787e445cf4bed61d6c9082e",
       "initialContext": {
         "activeFrame": {
           "frameId": "MM.Inventory.GetAvailability:seeded-context",
@@ -221,7 +221,7 @@
           "status": "READY",
           "createdTurnId": "seeded-context",
           "updatedTurnId": "seeded-context",
-          "registrySnapshotId": "sha256:f8ed7ba1f27465e6fe54474a1258b926eea69885003c9eb46deea35f0d01e50b",
+          "registrySnapshotId": "sha256:4f84a33d2c021284ca2b45ed105344cc7506118a3787e445cf4bed61d6c9082e",
           "capabilityVersion": "1"
         },
         "pendingInteraction": null,
@@ -325,7 +325,7 @@
     {
       "id": "explicit-correction",
       "fixtureVersion": "governed-read-context-v1",
-      "registrySnapshotId": "sha256:f8ed7ba1f27465e6fe54474a1258b926eea69885003c9eb46deea35f0d01e50b",
+      "registrySnapshotId": "sha256:4f84a33d2c021284ca2b45ed105344cc7506118a3787e445cf4bed61d6c9082e",
       "initialContext": {
         "activeFrame": null,
         "pendingInteraction": null,
@@ -443,7 +443,7 @@
     {
       "id": "llm-unavailable",
       "fixtureVersion": "governed-read-context-v1",
-      "registrySnapshotId": "sha256:f8ed7ba1f27465e6fe54474a1258b926eea69885003c9eb46deea35f0d01e50b",
+      "registrySnapshotId": "sha256:4f84a33d2c021284ca2b45ed105344cc7506118a3787e445cf4bed61d6c9082e",
       "initialContext": {
         "activeFrame": null,
         "pendingInteraction": null,
@@ -476,7 +476,7 @@
     {
       "id": "malformed-json",
       "fixtureVersion": "governed-read-context-v1",
-      "registrySnapshotId": "sha256:f8ed7ba1f27465e6fe54474a1258b926eea69885003c9eb46deea35f0d01e50b",
+      "registrySnapshotId": "sha256:4f84a33d2c021284ca2b45ed105344cc7506118a3787e445cf4bed61d6c9082e",
       "initialContext": {
         "activeFrame": null,
         "pendingInteraction": null,
@@ -509,7 +509,7 @@
     {
       "id": "technical-override-injection",
       "fixtureVersion": "governed-read-context-v1",
-      "registrySnapshotId": "sha256:f8ed7ba1f27465e6fe54474a1258b926eea69885003c9eb46deea35f0d01e50b",
+      "registrySnapshotId": "sha256:4f84a33d2c021284ca2b45ed105344cc7506118a3787e445cf4bed61d6c9082e",
       "initialContext": {
         "activeFrame": null,
         "pendingInteraction": null,
@@ -539,7 +539,7 @@
     {
       "id": "capability-switch",
       "fixtureVersion": "governed-read-context-v1",
-      "registrySnapshotId": "sha256:f8ed7ba1f27465e6fe54474a1258b926eea69885003c9eb46deea35f0d01e50b",
+      "registrySnapshotId": "sha256:4f84a33d2c021284ca2b45ed105344cc7506118a3787e445cf4bed61d6c9082e",
       "initialContext": {
         "activeFrame": null,
         "pendingInteraction": null,
@@ -622,7 +622,7 @@
     {
       "id": "recent-frame-explicit-restoration",
       "fixtureVersion": "governed-read-context-v1",
-      "registrySnapshotId": "sha256:f8ed7ba1f27465e6fe54474a1258b926eea69885003c9eb46deea35f0d01e50b",
+      "registrySnapshotId": "sha256:4f84a33d2c021284ca2b45ed105344cc7506118a3787e445cf4bed61d6c9082e",
       "initialContext": {
         "activeFrame": null,
         "pendingInteraction": null,
@@ -735,7 +735,7 @@
     {
       "id": "registry-drift",
       "fixtureVersion": "governed-read-context-v1",
-      "registrySnapshotId": "sha256:f8ed7ba1f27465e6fe54474a1258b926eea69885003c9eb46deea35f0d01e50b",
+      "registrySnapshotId": "sha256:4f84a33d2c021284ca2b45ed105344cc7506118a3787e445cf4bed61d6c9082e",
       "initialContext": {
         "activeFrame": null,
         "pendingInteraction": null,
@@ -788,7 +788,7 @@
     {
       "id": "principal-mismatch",
       "fixtureVersion": "governed-read-context-v1",
-      "registrySnapshotId": "sha256:f8ed7ba1f27465e6fe54474a1258b926eea69885003c9eb46deea35f0d01e50b",
+      "registrySnapshotId": "sha256:4f84a33d2c021284ca2b45ed105344cc7506118a3787e445cf4bed61d6c9082e",
       "initialContext": {
         "activeFrame": null,
         "pendingInteraction": null,
@@ -841,7 +841,7 @@
     {
       "id": "concurrent-turns",
       "fixtureVersion": "governed-read-context-v1",
-      "registrySnapshotId": "sha256:f8ed7ba1f27465e6fe54474a1258b926eea69885003c9eb46deea35f0d01e50b",
+      "registrySnapshotId": "sha256:4f84a33d2c021284ca2b45ed105344cc7506118a3787e445cf4bed61d6c9082e",
       "initialContext": {
         "activeFrame": null,
         "pendingInteraction": null,
@@ -874,7 +874,7 @@
     {
       "id": "duplicate-turn-id",
       "fixtureVersion": "governed-read-context-v1",
-      "registrySnapshotId": "sha256:f8ed7ba1f27465e6fe54474a1258b926eea69885003c9eb46deea35f0d01e50b",
+      "registrySnapshotId": "sha256:4f84a33d2c021284ca2b45ed105344cc7506118a3787e445cf4bed61d6c9082e",
       "initialContext": {
         "activeFrame": null,
         "pendingInteraction": null,
@@ -907,7 +907,7 @@
     {
       "id": "read-write-authority-isolation",
       "fixtureVersion": "governed-read-context-v1",
-      "registrySnapshotId": "sha256:f8ed7ba1f27465e6fe54474a1258b926eea69885003c9eb46deea35f0d01e50b",
+      "registrySnapshotId": "sha256:4f84a33d2c021284ca2b45ed105344cc7506118a3787e445cf4bed61d6c9082e",
       "initialContext": {
         "activeFrame": null,
         "pendingInteraction": null,

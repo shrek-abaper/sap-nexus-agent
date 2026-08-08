@@ -216,8 +216,8 @@ def test_parse_context_candidates_prompt_includes_read_language_hints():
     parse_context_candidates("查库存", client=client, catalog=load_intent_catalog())
 
     prompt = client.calls[0]["messages"][0]["content"]
-    assert "库存查询" in prompt
-    assert "查物料 DEMOA2 在 1000 工厂的库存" in prompt
+    assert "库存需求清单查询" in prompt or "MD04" in prompt
+    assert "查物料 DEMOA2 在 1000 工厂的库存/需求清单" in prompt
 
 
 def test_parse_context_candidates_audits_governance_fields_before_parameter_filtering():

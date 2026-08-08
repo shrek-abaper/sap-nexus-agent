@@ -33,14 +33,14 @@ export type SamplePrompt = {
 export const samplePrompts: SamplePrompt[] = [
   {
     kind: "read",
-    label: "READ · 库存",
+    label: "READ · 库存/需求",
     segments: [
       { text: SAMPLE_IDENTIFIERS.material, mono: true },
       { text: " 在工厂 " },
       { text: SAMPLE_IDENTIFIERS.plant, mono: true },
-      { text: " 还有多少可用库存" }
+      { text: " 的库存/需求清单" }
     ],
-    query: `${SAMPLE_IDENTIFIERS.material} 在工厂 ${SAMPLE_IDENTIFIERS.plant} 还有多少可用库存`
+    query: `${SAMPLE_IDENTIFIERS.material} 在工厂 ${SAMPLE_IDENTIFIERS.plant} 的库存/需求清单`
   },
   {
     kind: "read",
@@ -61,4 +61,4 @@ export const samplePrompts: SamplePrompt[] = [
 ];
 
 /** Hero 首屏输入框 placeholder。 */
-export const heroInputPlaceholder = `描述你的 SAP 问题，例如：${SAMPLE_IDENTIFIERS.material} 在工厂 ${SAMPLE_IDENTIFIERS.plant} 的可用库存`;
+export const heroInputPlaceholder = `描述你的 SAP 问题，例如：${SAMPLE_IDENTIFIERS.material} 在工厂 ${SAMPLE_IDENTIFIERS.plant} 的库存/需求清单`;

@@ -95,7 +95,7 @@ SAP Nexus Agent 是一个**基于能力本体建模的 SAP 治理型接入网关
 
 | 能力 ID | 名称 | 执行器 | SAP 端点 | 状态 |
 |---------|------|--------|----------|------|
-| `MM.Inventory.GetAvailability` | 库存可用量查询 | `JCO_RFC` | `BAPI_MATERIAL_STOCK_REQ_LIST` | ✅ active |
+| `MM.Inventory.GetAvailability` | 库存/需求清单查询（MD04） | `JCO_RFC` | `BAPI_MATERIAL_STOCK_REQ_LIST` | ✅ active |
 | `MM.PurchaseOrder.GetList` | 采购订单列表查询 | `ODATA` | `API_PURCHASEORDER_PROCESS_SRV` | ✅ active |
 | `MM.PR.CreateDraft` | 采购申请创建 | `JCO_RFC` | `BAPI_PR_CREATE` | ✅ active（需人工审批） |
 

@@ -80,10 +80,27 @@ class FakeGatewayClient:
                 "traceId": f"{case_id}-execute",
                 "capabilityId": "MM.Inventory.GetAvailability",
                 "success": True,
-                "executor": {"type": "JCO_RFC", "rfcName": "BAPI_MATERIAL_AVAILABILITY"},
+                "executor": {"type": "JCO_RFC", "rfcName": "BAPI_MATERIAL_STOCK_REQ_LIST"},
                 "returnMessages": [],
                 "data": {
                     "availableQuantity": 12,
+                    "unit": "EA",
+                    "mrpElementLines": [
+                        {
+                            "mrpElementInd": "BE",
+                            "mrpElement": "POitem",
+                            "elementQty": 264,
+                            "availQty1": 264,
+                            "date": "2026-06-21",
+                        },
+                        {
+                            "mrpElementInd": "WB",
+                            "mrpElement": "Stock",
+                            "elementQty": 12,
+                            "availQty1": 12,
+                            "date": "2026-06-21",
+                        },
+                    ],
                 },
                 "durationMs": 10,
                 "errorType": "NONE",

@@ -330,7 +330,7 @@ def test_capability_registry_v2_declares_fact_binding_contract():
         capability = by_id[capability_id]
         assert all(item["bindingKind"] == "identifier" for item in capability["inputs"])
         primary = [item for item in capability["outputs"] if item["evidenceRole"] == "primaryFact"]
-        assert [item["factTypeRef"] for item in primary] == [fact_type_id]
+        assert sorted({item["factTypeRef"] for item in primary}) == [fact_type_id]
 
 
 def test_capability_schema_accepts_current_registry_input_patterns():
@@ -445,11 +445,9 @@ def test_plan_graph_matches_published_registry_and_relation_catalog():
             assert source["kind"] == "goalConstraint"
             assert source["constraintName"] in constraints
             assert inputs[binding["parameterName"]]["bindingKind"] == "identifier"
-        assert node["producesFactTypes"] == [
-            output["factTypeRef"]
-            for output in capability["outputs"]
-            if output["evidenceRole"] == "primaryFact"
-        ]
+        assert node["producesFactTypes"] == sorted(
+            {output["factTypeRef"] for output in capability["outputs"] if output["evidenceRole"] == "primaryFact"}
+        )
 
 
 @pytest.mark.parametrize(

@@ -1,0 +1,40 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "static-inspection",
+  "role": "required-check",
+  "status": "passed",
+  "bindings": {
+    "change": "md04-stock-req-list-detail-narration",
+    "sourceRevision": 7,
+    "contractHash": "fcdcf549f70c6c371f6d5fea4cd126d3502504eb6cc6940a5e138f927bceee59",
+    "scopeHash": "4841face127e0609f56688584c38274f51c6817d397a9cb4401c3ed7d72fbd78",
+    "snapshotHash": "3fa46cc2cfa536d71ae66088a9f8a863c5244ae4167595d2dd9feed413706239",
+    "artifactHash": "b1002997a7bf686f220384e5aff0a3e14e81af8ccc5ad4cecc29b8d0430620f0"
+  },
+  "acceptanceIds": [],
+  "actor": "native-runtime:scoped-text-safety",
+  "issuedAt": "2026-08-08T23:22:32.489Z",
+  "evidence": {
+    "subjects": [
+      "README.en.md",
+      "README.md",
+      "agent/README.md",
+      "agent/sap_nexus_agent/narrator.py",
+      "agent/sap_nexus_agent/planner/capability_card.py",
+      "agent/sap_nexus_agent/reasoning_fact.py",
+      "agent/tests/test_contract_files.py",
+      "agent/tests/test_llm_intent.py",
+      "agent/tests/test_reasoning_narrator.py",
+      "evals/matcher_cases.yaml",
+      "frontend/src/runtime/projection/fact-builder.ts",
+      "registry/capabilities.yaml",
+      "services/gateway/jco/src/main/java/com/sapnexus/gateway/jco/InventoryAvailabilityExecutor.java",
+      "services/gateway/jco/src/test/java/com/sapnexus/gateway/jco/InventoryAvailabilityExecutorTest.java"
+    ],
+    "rule": "scoped-text-safety",
+    "resultSummary": "The built-in scoped inspection passed without skipped or blocking input.",
+    "checkReceiptRef": "runtime/evidence/check-receipts/50dc684eb24bc2bd28a412017e610dabafed0afa62882a061fcebac205b3a28a.json",
+    "checkReceiptHash": "50dc684eb24bc2bd28a412017e610dabafed0afa62882a061fcebac205b3a28a"
+  },
+  "receiptHash": "7fd30e217fc21353483617e734b893eca11ed9e95c0b9ed410583b74901395da"
+}

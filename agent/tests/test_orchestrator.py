@@ -2116,7 +2116,10 @@ def test_gateway_shaped_success_uses_call_plan_parameters_for_fact_context():
     assert outcome.fact.material == "DEMOA1"
     assert outcome.fact.plant == "1000"
     assert outcome.fact.unit == "EA"
-    assert outcome.response_text == "物料 DEMOA1 在工厂 1000 的可用库存为 12 EA。"
+    assert outcome.response_text == (
+        "物料 DEMOA1 在工厂 1000 的库存/需求清单（MD04）\n\n"
+        "当前可用量：12 EA"
+    )
 
 
 def test_success_without_available_quantity_returns_structured_failure():
@@ -2277,7 +2280,10 @@ def test_run_query_inventory_regression():
     assert outcome.call_plan.parameters == {"material": "DEMOA1", "plant": "1000", "unit": "EA"}
     assert outcome.fact is not None
     assert outcome.fact.predicate == "availableQuantity"
-    assert outcome.response_text == "物料 DEMOA1 在工厂 1000 的可用库存为 12 EA。"
+    assert outcome.response_text == (
+        "物料 DEMOA1 在工厂 1000 的库存/需求清单（MD04）\n\n"
+        "当前可用量：12 EA"
+    )
 
 
 def test_run_query_po_list_success():
@@ -2429,7 +2435,10 @@ def test_run_query_inventory_llm_unavailable_falls_back_to_template():
         outcome = run_inventory_query("DEMOA1 在 1000 还有多少可用库存？", gateway)
 
     assert outcome.status == "success"
-    assert outcome.response_text == "物料 DEMOA1 在工厂 1000 的可用库存为 12 EA。"
+    assert outcome.response_text == (
+        "物料 DEMOA1 在工厂 1000 的库存/需求清单（MD04）\n\n"
+        "当前可用量：12 EA"
+    )
 
 
 # ---------------------------------------------------------------------------

@@ -57,6 +57,7 @@ class InventoryAvailabilityExecutorTest {
         when(mrpLines.getString("MRP_ELEMENT_IND")).thenAnswer(invocation -> row.get() == 0 ? "BE" : "WB");
         when(mrpLines.getString("MRP_ELEMNT")).thenAnswer(invocation -> row.get() == 0 ? "POitem" : "Stock");
         when(mrpLines.getString("AVAIL_QTY1")).thenAnswer(invocation -> row.get() == 0 ? "264.000" : "12.000");
+        when(mrpLines.getString("ELEMENT_QTY")).thenAnswer(invocation -> row.get() == 0 ? "264.000" : "12.000");
         when(mrpLines.getString("AVAIL_DATE")).thenReturn("2026-06-21");
 
         InventoryAvailabilityExecutor executor = new InventoryAvailabilityExecutor(new FixedDestinationFactory(destination), new SapReturnNormalizer());
@@ -69,6 +70,17 @@ class InventoryAvailabilityExecutorTest {
         assertThat(result.data()).containsEntry("sourceTable", "MRP_IND_LINES");
         assertThat(result.data()).containsEntry("sourceField", "AVAIL_QTY1");
         assertThat(result.data()).containsEntry("mrpElementInd", "WB");
+        assertThat(result.data()).containsKey("mrpElementLines");
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> elementLines = (List<Map<String, Object>>) result.data().get("mrpElementLines");
+        assertThat(elementLines).hasSize(2);
+        assertThat(elementLines.get(0)).containsEntry("mrpElementInd", "BE");
+        assertThat(elementLines.get(0)).containsEntry("mrpElement", "POitem");
+        assertThat(elementLines.get(0)).containsEntry("availQty1", 264.0);
+        assertThat(elementLines.get(1)).containsEntry("mrpElementInd", "WB");
+        assertThat(elementLines.get(1)).containsEntry("mrpElement", "Stock");
+        assertThat(elementLines.get(1)).containsEntry("availQty1", 12.0);
+        assertThat(elementLines.get(1)).containsEntry("date", "2026-06-21");
     }
 
     @Test

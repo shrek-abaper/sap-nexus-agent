@@ -1,0 +1,48 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "md04-stock-req-list-detail-narration",
+    "sourceRevision": 7,
+    "contractHash": "fcdcf549f70c6c371f6d5fea4cd126d3502504eb6cc6940a5e138f927bceee59",
+    "scopeHash": "4841face127e0609f56688584c38274f51c6817d397a9cb4401c3ed7d72fbd78",
+    "snapshotHash": "3fa46cc2cfa536d71ae66088a9f8a863c5244ae4167595d2dd9feed413706239",
+    "artifactHash": "b1002997a7bf686f220384e5aff0a3e14e81af8ccc5ad4cecc29b8d0430620f0"
+  },
+  "acceptanceIds": [
+    "acceptance-9c59b5945e57a312804746a775fec9190d8fe1a92774cb924a48e7bf2fe458fc"
+  ],
+  "actor": "native-runtime:command:bash",
+  "issuedAt": "2026-08-08T23:20:53.142Z",
+  "evidence": {
+    "executable": "bash",
+    "args": [
+      "-c",
+      "PYTHONPATH=agent ./.venv/bin/python -m pytest agent/tests/test_reasoning_narrator.py agent/tests/test_contract_files.py agent/tests/test_planner_capability_card.py agent/tests/test_registry_contract.py agent/tests/test_llm_intent.py -q 2>&1 | tail -2 && openspec validate --all --strict 2>&1 | tail -1"
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 180000,
+    "startedAt": "2026-08-08T23:20:49.123Z",
+    "endedAt": "2026-08-08T23:20:53.142Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "b889af0a14eb142d3bd1dd8b4d500af213754605",
+      "afterCommit": "b889af0a14eb142d3bd1dd8b4d500af213754605"
+    },
+    "afterFence": {
+      "snapshotHash": "3fa46cc2cfa536d71ae66088a9f8a863c5244ae4167595d2dd9feed413706239",
+      "scopeHash": "4841face127e0609f56688584c38274f51c6817d397a9cb4401c3ed7d72fbd78",
+      "matched": true
+    },
+    "outputHash": "3c0e5d0e63b56a5642ca37b8ac2457d9a4b472d18d3a0d5566297ed3b248a29b",
+    "outputSummary": ".....................................................                    [100%]\n197 passed in 1.99s\nTotals: 20 passed, 0 failed (20 items)",
+    "outputTruncated": false
+  },
+  "receiptHash": "b9d977f719739c7a7c81ce1d67155318bd8c17ef6b630f4b01b0f3406ff530f7"
+}

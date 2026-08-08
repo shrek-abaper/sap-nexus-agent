@@ -98,6 +98,11 @@ const inventoryBuilder: FactBuilderDeclaration = {
       return [];
     }
     const unit = optionalText(record.executeData.unit) ?? optionalText(record.parameters.unit);
+    const evidence: Record<string, unknown> = { field: "availableQuantity", value: availableQuantity };
+    const mrpElementLines = record.executeData.mrpElementLines;
+    if (Array.isArray(mrpElementLines) && mrpElementLines.length > 0) {
+      evidence.mrpElementLines = mrpElementLines;
+    }
 
     return [{
       factId: `${record.nodeId}:availableQuantity:0`,
@@ -112,7 +117,7 @@ const inventoryBuilder: FactBuilderDeclaration = {
       deterministic: true,
       confidence: 1,
       source: source(record, "InventoryAvailability"),
-      evidence: [{ field: "availableQuantity", value: availableQuantity }],
+      evidence: [evidence],
       material: optionalText(record.parameters.material),
       plant: optionalText(record.parameters.plant),
       asOf: freshness(record, "dataAsOf"),

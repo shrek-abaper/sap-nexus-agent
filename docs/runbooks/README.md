@@ -1,21 +1,21 @@
 # SAP Nexus Agent Runbooks
 
-This directory stores session-start guides for continuing SAP Nexus Agent work across workstreams and sessions.
+This directory stores on-demand reference guides for SAP Nexus Agent work across workstreams and sessions.
 
-Use these runbooks before coding so each session starts from the same source of truth, current scope, verification targets, and safety constraints.
+These runbooks are **not** auto-loaded at session start. Consult a runbook only when a task touches the subsystem it covers, so that change starts from the same source of truth, current scope, verification targets, and safety constraints. For the on-demand loading policy, see `AGENTS.md` §1.
 
 ---
 
 ## How To Use This Directory
 
-At the start of each work session:
+All 22 workstream runbooks are now `Archived`, `Implemented`, or `Reserved` (see the index below). There is **no active workstream runbook** to continue. Each archived runbook still encodes its subsystem's scope, verification targets, safety boundaries, and design rationale, so it remains the fastest source of truth when changing that subsystem (e.g. runbook 05 for the Gateway execution path, runbook 11/21 for the SAP WRITE path, runbook 16 for the READ PlanExecutor).
 
-1. Read this file.
-2. Read the current workstream runbook from the index below.
-3. Check `git status --short`.
-4. Confirm whether there are active OpenSpec changes with `openspec list --json`.
-5. Continue from the next unchecked or unverified milestone in the runbook.
-6. At the end of the session, update the current runbook version or create the next numbered workstream runbook with:
+When a task does require a runbook:
+
+1. Find the matching workstream in the index below, cross-referenced by name, not by number.
+2. Read only that runbook.
+3. Check `git status --short` and `openspec list --json` for active changes before editing.
+4. When closing a session that opened or advanced a Comet change, update the corresponding runbook version (or create the next numbered workstream runbook) with:
    - what changed
    - what was verified
    - blockers
@@ -38,65 +38,29 @@ docs/wiki/archive/sap-nexus-agent-mm-mvp-notion.md
 docs/superpowers/specs/2026-08-03-sap-nexus-complete-agent-roadmap-design.md
 ```
 
-Key current scope (session-start details; structured maturity overview in the "Architecture Maturity & Current Status" table below):
+Key current scope (current-state snapshot; structured maturity overview in the "Architecture Maturity & Current Status" table below). Per-change archive paths, test counts and dates live in the Runbook Index and roadmap version table - not repeated here:
 
 ```text
-Live capability baseline = 2 READ Functions + 1 sandbox-governed Action
-Current inventory BAPI = BAPI_MATERIAL_STOCK_REQ_LIST (MD04 stock/requirements list)
+Live capability baseline = 2 READ Functions (MM.Inventory.GetAvailability via BAPI_MATERIAL_STOCK_REQ_LIST, MM.PurchaseOrder.GetList via ODATA) + 1 sandbox-governed Action (MM.PR.CreateDraft)
 Gateway = Java JCo Gateway included in first MVP
-Current completed change = sap-nexus-capability-registry-gateway archived
-Current completed change = sap-nexus-agent-callplan-evidence archived
-Current completed change = sap-nexus-agent-llm-intent-adapter archived
-Current completed change = sap-nexus-agent-workbench-console archived
-Current completed correction = sap-nexus-workbench-live-agent-runtime archived
-Current completed change = sap-nexus-inventory-md04-stock-req-list archived
-Current completed change = sap-nexus-registry-ontology-contract archived
-Current completed change = sap-nexus-gateway-execution-contract archived
-Current completed workstream = sap-nexus-eval-harness-seed implemented directly
-Current completed change = sap-nexus-odata-gateway-read-pilot implemented and PO OData activated
-Current completed change = po-odata-item-detail-filter archived at openspec/changes/archive/2026-07-09-po-odata-item-detail-filter/
-Current completed change = workbench-notion-chat-layout archived at openspec/changes/archive/2026-07-09-workbench-notion-chat-layout/ (Notion-style two-column chat layout, tweak workflow, verify passed)
-Current completed change = sap-nexus-sandbox-write-vertical-slice archived at openspec/changes/archive/2026-07-17-sap-nexus-sandbox-write-vertical-slice/; sandbox PR 10137471 committed; external approval, immutable snapshot, single execution, stateful JCo LUW and replay-complete trace verified
-OpenHarness comparison decision = use as design reference only; do not add runtime dependency or free SAP tool-calling
-DeerFlow adoption decision = use as design reference only; do not add deerflow-harness, DeerFlow Gateway/frontend, or a second Agent runtime
-Confirmed first composition scenario = MM.Inventory.GetAvailability + MM.PurchaseOrder.GetList -> MaterialSupplySnapshot
-Current semantic planning verification = docs/superpowers/reports/2026-07-19-sap-nexus-semantic-planning-foundation-verify.md
-P0A source-of-truth/repository hygiene = completed (2026-07-25): docs/status/paths synchronized, editable-install finder + .venv shebangs repointed from stale zl-projects to GitHub_Projects, runtime traces gitignored (runtime/* only .gitkeep tracked); no runtime behavior change
-Current completed change = sap-nexus-planner-dry-run (S2-A + S2-B implemented + verified + archived 2026-07-25 at openspec/changes/archive/2026-07-25-sap-nexus-planner-dry-run/): five-state MatchDecision, multi-intent/ambiguity/visibility, matcher Eval 6/6, progressive CapabilityCard + deterministic PlanCompiler dry-run (3/3 + 1 pending); no Gateway/SAP execution
-Current completed change = sap-nexus-agent-conversational-context (row 19A archived 2026-07-26 at openspec/changes/archive/2026-07-26-sap-nexus-agent-conversational-context/): instant multi-turn sticky-CLARIFY, ConversationContext signature, authority/untrusted-data history re-injection, frontend conversationId + CLI --context; process-local, pre-P0B, CLARIFY cross-turn only
-Current completed change = sap-nexus-multi-value-batch-query (row 19B archived 2026-07-27): multi_parameters split + expand_combinations + awaiting_batch_confirm (no execute) + continue_batch per-combo execution + narrate_inventory_facts aggregation; workbench/CLI/API/SSE end-to-end; READ-only v1 (Actions fall to awaiting_approval); includes llm-intent-enhancement + fix-batch-confirm-loop
-Current completed change = sap-nexus-durable-state-foundation (P0B 项1 archived 2026-08-02 at openspec/changes/archive/2026-08-02-sap-nexus-durable-state-foundation/): durable Run/Sessions JSONL store replacing process-local Maps, run ownership/lease fail-closed, structured checkpoint reference, idempotent continuation (3-segment key), three-layer state stratification (§4.2.1); single-worker durable, store-agnostic interface reserved for multi-worker; 57 tests pass. P0B row 22 split into 4 changes: 项2 trusted-principal-model 已归档（见下行）/ 项3 durable-approval-store / 项4 incremental-sse-reconnect 待续
-Current completed change = sap-nexus-trusted-principal-model (P0B 项2 archived 2026-08-02 at openspec/changes/archive/2026-08-02-sap-nexus-trusted-principal-model/): TrustedPrincipal/PrincipalRole/DataScope server-owned model, PrincipalInjector + LocalPlaceholderPrincipalInjector (injectPrincipal ignores request body, anti-prompt-injection), durable Run/Sessions bind principalId (required, backfill local-user-0001 for legacy), cross-principal fail-closed (read getAgentRunEvents returns [] / write decide+confirm throw not-found, ownership check before lease claim §4.1, getSession + conversationStore.load fail-closed), 4 route handlers server-owned injection (POST/approval/batch/stream); 76 tests pass; main spec merge trusted-principal-scope (ADDED 4) + durable-run-state (MODIFIED principalId binding + list/load filter). 项3 durable-approval-store 已归档（见下行）/ 项4 incremental-sse-reconnect 待续
-Current completed change = sap-nexus-durable-approval-store (P0B 项3 archived 2026-08-02 at openspec/changes/archive/2026-08-02-sap-nexus-durable-approval-store/): FileDurableApprovalStore replacing InMemoryApprovalStore (durable ApprovalRecord persistence + cross-restart recoverAll/reconcile + cross-worker claim/lease anti-replay + LeaseOutcome three-state Claimed/Rejected/ForceClaimed + striped ReentrantLock + FileChannel.lock + atomic tmp+rename + @Primary wiring + @PostConstruct startup recovery); 176 tests pass; main spec merge durable-approval-store (ADDED 4 requirements). 项4 incremental-sse-reconnect 已归档（见下行）
-Current completed change = sap-nexus-incremental-sse-reconnect (P0B 项4 archived 2026-08-02 at openspec/changes/archive/2026-08-02-sap-nexus-incremental-sse-reconnect/): incremental SSE + cursor reconnect (event builders -> async emitter emitEventsFromOutcome/emitApprovalEvents/emitBatchEvents + createAgentRun/decideAgentRunApproval/confirmAgentRunBatch fire-and-forget background executeRunnerInBackground/executeApprovalInBackground/executeBatchInBackground + stream route ReadableStream polling cursor/terminal/backpressure desiredSize + client AgentConsole lastSequence onerror ?cursor=N reconnect + §4.4 rejection run_failed terminal fix + principal auth preserved); 88 tests pass; main spec merge sse-cursor-reconnect (ADDED 4 requirements). P0B row 22 全部 4 项归档完成
-Current completed change = sap-nexus-governed-context-registry-snapshot (Runbook 13 archived 2026-08-03 at openspec/changes/archive/2026-08-03-sap-nexus-governed-context-registry-snapshot/): GovernedContext + SnapshotLease + VisibleCapabilitySet + PlannerFailure 数据结构；同一 run 的 intent/matcher/planner/approval 共享非空 snapshotId；principal 透传 + visibility pre-filter（进入 LLM prompt 前移除）+ CapabilityCard 安全投影；snapshot 漂移/source load 失败/visibility denial 结构化 fail-closed（5 种 error_type）；ApprovalRecord 携带 registry_snapshot_id。pytest 836 passed/1 skipped；main spec merge governed-context-registry-snapshot (ADDED 6) + planner-dry-run (MODIFIED 3) + pr-create-action (MODIFIED 1) + semantic-match-decision (ADDED 1 + MODIFIED 1) + trusted-principal-scope (ADDED 1)。
-Current completed change = sap-nexus-governed-intent-capability-recall (Runbook 14 archived 2026-08-03 at openspec/changes/archive/2026-08-03-sap-nexus-governed-intent-capability-recall/): LLM-first IntentEnvelope, closed-set recall, bounded rerank, discard detection and replayable five-state decision; 950 pytest / 10 eval / 17 openspec pass
-Current completed change = sap-nexus-semantic-plan-authoring-v2 (Runbook 15 archived 2026-08-04): deterministic PlanGraph v2 with parameter provenance and READ/WRITE partition; 330 focused pytest / 953+1 skipped full pytest / 18 openspec pass
-Current completed change = sap-nexus-read-plan-executor (Runbook 16 archived 2026-08-04 at openspec/changes/archive/2026-08-04-sap-nexus-read-plan-executor/): READ-only PlanExecutor consuming validated PlanGraph v2 readPartition; PlanGraphV2Parser + NodeStateMachine + DurableNodeLedger + DagScheduler + FakeGateway + SseEmitter + PlanExecutor with timeout/cancel/restart-recovery/idempotent-replay/dependency-blocking/lease-conflict-fail-closed; Action nodes BLOCKED_APPROVAL; 954 pytest / 174 frontend tests / 19 openspec pass
-Current completed change = sap-nexus-output-projection-registry (Runbook 17 archived 2026-08-05 at openspec/changes/archive/2026-08-05-sap-nexus-output-projection-registry/): versioned OutputProjectionRegistry, ProjectionInputAssembler, capability FactBuilder, MaterialSupplySnapshot, deterministic completeness/freshness/lineage/limitations/hash and executor projection payload recovery; 251 frontend tests / production build / 20 openspec pass; production orchestrator and projectionRef wiring remain deferred
-Current completed change = sap-nexus-recommendation-decision-plan (Runbook 18 Native archived 2026-08-05): snapshot-bound exact RuleSetRegistry, deterministic RecommendationDecisionEngine, input sufficiency/freshness/governance gates, replayable RecommendationPlan and at most one pending_approval ActionProposal; 316 frontend tests / production build / 954+1 skipped Agent tests / PR Eval 9/9 / call-plan Eval 7/7 / 20 openspec pass; component/Eval only, no orchestrator or SAP WRITE
-Current completed change = sap-nexus-grounded-narrative-orchestration (Runbook 19 Native archived 2026-08-05): deterministic NarrativeInputProjection, strict lossless LLM JSON rewrite validation, timeout/invalid fallback, traceable NarrativeEnvelope, zh/en status rendering and grounding Eval; 352 frontend tests / production build / 45 narrator tests / 954+1 skipped Agent gate / 20 openspec pass; component/Eval only, no orchestrator, Human Approval or SAP WRITE
-Current completed change = sap-nexus-workbench-plan-evidence-experience (Runbook 20 Native archived 2026-08-05): governed plan/evidence event projection, strict JSONL sequence, side-effect-free replay integrity and responsive eight-part Workbench view; 380 frontend tests / production build / desktop+mobile browser verification; component/UI integration only, no production orchestrator, Human Approval or SAP WRITE
-Current completed change = sap-nexus-read-to-write-action-governance (Runbook 21 Native archived 2026-08-05 at docs/comet/archive/2026-08-05-sap-nexus-read-to-write-action-governance/): plan-aware single-user HITL confirmation, complete subject revalidation, durable exactly-once continuation, Gateway plan guards/atomic claim and replayable approval/action evidence; 405 frontend tests / 959+1 skipped Agent tests / PR Eval 9/9 / Gateway BUILD SUCCESSFUL / 20 OpenSpec / Native acceptance 35/35; fake/sandbox boundary only, no live SAP WRITE
-Current completed change = sap-nexus-end-to-end-agent-eval-release-gate (Runbook 22 Native archived 2026-08-05 at docs/comet/archive/2026-08-05-sap-nexus-end-to-end-agent-eval-release-gate/): governed Python-to-TypeScript handoff, production composition coordinator, L1/L2/L3 profiles, four hard gates and offline CLI report; frontend 428/428 + build, Agent 959+1 skipped, OpenSpec 20/20, release gate 9/9 with `L3_ACTION_GOVERNED`, Native acceptance 42/42; live SAP READ/WRITE both `not_run`
+Current composition runtime = production TypeScript CompositionCoordinator wires validated PlanGraph v2 READ execution to deterministic OutputProjection, RecommendationDecision, grounded Narrative, durable event/replay, Workbench state and Runbook 21 plan-aware single Action HITL continuation; offline fake/sandbox L1/L2/L3 evidence passes, but live SAP composition and live WRITE remain `not_run`
+Live blocker = none for PO OData read; SAP SICF reactivated, PO live smoke passed
 Complete Agent sequence = runbooks 13-22 archived; there is no automatic next implementation entry
-S3 scheduling input = borrow ready-node/concurrency/timeout/cancel/ledger/trace mechanics only after PlanGraph validation; never infer execution from LLM Tool Calls
-S3 output foundation = deterministic OutputProjection with freshness, completeness, limitations and Fact lineage implemented at component/Eval scope; partial failure remains incomplete
-Completed platform gate = sap-nexus-trusted-durable-runtime-foundation; all four P0B changes archived 2026-08-02
-Triggered memory candidate = sap-nexus-governed-user-memory-pilot; user preferences only, never business facts, approval, policy, or execution authority
-Live blocker = none for PO OData read; SAP SICF was reactivated and PO live smoke passed
+Confirmed first composition scenario = MM.Inventory.GetAvailability + MM.PurchaseOrder.GetList -> MaterialSupplySnapshot
+OpenHarness comparison decision = design reference only; no runtime dependency or free SAP tool-calling
+DeerFlow adoption decision = design reference only; no deerflow-harness, DeerFlow Gateway/frontend, or second Agent runtime
+S3 scheduling constraint = borrow ready-node/concurrency/timeout/cancel/ledger/trace mechanics only after PlanGraph validation; never infer execution from LLM Tool Calls
 Deferred Phase 3+ workstream = sap-nexus-capability-matching-contract
 Reserved executor workstream = sap-nexus-sql-read-executor-contract
-Current composition runtime = production TypeScript CompositionCoordinator wires validated PlanGraph v2 READ execution to deterministic OutputProjection, RecommendationDecision, grounded Narrative, durable event/replay, Workbench state and Runbook 21 plan-aware single Action HITL continuation; offline fake/sandbox L1/L2/L3 evidence passes, but live SAP composition and live WRITE remain `not_run`
-Complete Agent target = runbooks 13-22: governed context -> LLM-first recall -> PlanGraph v2 -> READ executor -> projection -> recommendation -> grounded narrative -> Workbench -> single approved Action -> release gate
 MVP Knowledge/RAG = reserved interface only; no knowledge source, vector store, embedding retrieval or cross-session similar-question retrieval
 Reserved composition scope = general Dynamic Planner, multi-WRITE/Saga, automatic compensation and free LLM Tool Calling
+Triggered memory candidate = sap-nexus-governed-user-memory-pilot; user preferences only, never business facts, approval, policy, or execution authority
 No branch creation unless user explicitly asks
 ```
 
 ### Architecture Maturity & Current Status
 
-> Moved from `docs/wiki/sap-nexus-agent-technical-architecture.md` §1.1. Architecture retains only the maturity-level definitions and fail-closed boundaries; this table is the structured maturity overview and the single home for current maturity attribution and next-step status, so the baseline does not re-version on every progress change. The "Key current scope" notes below supplement it with archive paths, blockers, sequence and other session-start details not captured in the table.
+> Moved from `docs/wiki/sap-nexus-agent-technical-architecture.md` §1.1. Architecture retains only the maturity-level definitions and fail-closed boundaries; this table is the structured maturity overview and the single home for current maturity attribution and next-step status, so the baseline does not re-version on every progress change. The "Key current scope" notes above supplement it with current decisions, blockers, and scope boundaries not captured in the table.
 
 | 成熟度 | 内容 | 当前处理 |
 |---|---|---|

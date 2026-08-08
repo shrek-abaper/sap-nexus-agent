@@ -86,7 +86,7 @@ User Query (natural language)
 
 | Capability ID | Name | Executor | SAP Endpoint | Status |
 |---------------|------|----------|--------------|--------|
-| `MM.Inventory.GetAvailability` | Inventory Availability | `JCO_RFC` | `BAPI_MATERIAL_STOCK_REQ_LIST` | ✅ active |
+| `MM.Inventory.GetAvailability` | Stock/Requirements List (MD04) | `JCO_RFC` | `BAPI_MATERIAL_STOCK_REQ_LIST` | ✅ active |
 | `MM.PurchaseOrder.GetList` | Purchase Order List | `ODATA` | `API_PURCHASEORDER_PROCESS_SRV` | ✅ active |
 | `MM.PR.CreateDraft` | PR Create Draft | `JCO_RFC` | `BAPI_PR_CREATE` | ✅ active (requires approval) |
 

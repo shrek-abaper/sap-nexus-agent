@@ -1,0 +1,23 @@
+schema: comet.native.v3
+minimum_runtime_version: 3
+revision: 9
+verification_protocol: legacy-v1
+name: md04-stock-req-list-detail-narration
+language: en
+phase: archive
+brief: brief.md
+approval: confirmed
+approved_contract_hash: fcdcf549f70c6c371f6d5fea4cd126d3502504eb6cc6940a5e138f927bceee59
+spec_changes:
+  - capability: inventory-md04-detail-narration
+    operation: create
+    source: specs/inventory-md04-detail-narration/spec.md
+    base_hash: null
+verification_result: pass
+verification_report: verification.md
+implementation_scope: runtime/evidence/scopes/4841face127e0609f56688584c38274f51c6817d397a9cb4401c3ed7d72fbd78.json
+verification_evidence: runtime/evidence/verifications/31853ad00284d64b59e3810736bfa8f83c7b444b5eb5fa0354b9a1161f735f7a.json
+partial_allowance: null
+archived: true
+created_at: 2026-08-08
+run_id: 24c3a015-a97a-409e-9047-7f9e341c1fc1

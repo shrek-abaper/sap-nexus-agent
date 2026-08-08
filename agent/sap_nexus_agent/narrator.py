@@ -18,7 +18,10 @@ _SYSTEM_CONSTRAINT = (
 )
 
 _INVENTORY_GUIDANCE = (
-    "用给定物料的可用库存事实生成一句中文结论，说明物料在工厂的可用库存量与单位。"
+    "基于给定的 MRP 元素明细（库存/需求清单，MD04）生成层次化中文叙事：第一行标题说明物料与工厂；"
+    "第二段给出当前可用量与单位；第三段对供需关键元素做简要归纳（区分供应与需求）。"
+    "只能使用提供的事实字段，不得编造。若无明细，则只陈述可用量。"
+    "叙事末尾系统会追加原始 MRP 元素明细表格，你无需重复输出明细行。"
 )
 
 _PO_GUIDANCE = (
@@ -52,6 +55,83 @@ _PO_REQUIRED_EVIDENCE = (
 )
 
 
+def _format_mrp_element_lines(evidence: dict) -> str:
+    lines = evidence.get("mrpElementLines")
+    if not isinstance(lines, list) or not lines:
+        return ""
+    parts: list[str] = []
+    for item in lines:
+        if not isinstance(item, dict):
+            continue
+        parts.append(
+            f"元素[{item.get('mrpElementInd', '')}/{item.get('mrpElement', '')}] "
+            f"数量={item.get('elementQty', '')} 可用量={item.get('availQty1', '')} 日期={item.get('date', '')}"
+        )
+    return "\n".join(parts)
+
+
+def _mrp_detail_rows(evidence: dict) -> list[dict]:
+    lines = evidence.get("mrpElementLines")
+    if not isinstance(lines, list):
+        return []
+    return [item for item in lines if isinstance(item, dict)]
+
+
+def _qty_str(value: object) -> str:
+    """Render a quantity without a trailing .0 for integer-valued floats."""
+    if isinstance(value, float) and value.is_integer():
+        return str(int(value))
+    return str(value if value is not None else "")
+
+
+def _format_mrp_detail_table(evidence: dict) -> str:
+    """Deterministic, aligned tabular rendering of MRP element lines.
+
+    Renders the raw MRP_IND_LINES rows as a fixed-width table so the user sees
+    the original supply/demand elements alongside the narrative summary.
+    """
+    rows = _mrp_detail_rows(evidence)
+    if not rows:
+        return ""
+    header = ("元素指示符", "元素描述", "元素数量", "累加可用量", "日期")
+    str_rows = [
+        (
+            str(item.get("mrpElementInd", "") or ""),
+            str(item.get("mrpElement", "") or ""),
+            _qty_str(item.get("elementQty", "")),
+            _qty_str(item.get("availQty1", "")),
+            str(item.get("date", "") or ""),
+        )
+        for item in rows
+    ]
+    widths = [
+        max(len(header[i]), *(len(r[i]) for r in str_rows))
+        for i in range(len(header))
+    ]
+    def _fmt(cells: tuple[str, ...]) -> str:
+        return "  ".join(cells[i].ljust(widths[i]) for i in range(len(cells))).rstrip()
+
+    lines = [_fmt(header), _fmt(tuple("─" * widths[i] for i in range(len(header))))]
+    lines.extend(_fmt(r) for r in str_rows)
+    return "\n".join(lines)
+
+
+def _inventory_narrative_body(fact: ReasoningFact) -> str:
+    """Deterministic structured narrative body for a single inventory fact.
+
+    Layout: title line + blank + 可用量 line, with the raw MRP detail table
+    appended when the fact carries mrpElementLines evidence.
+    """
+    title = f"物料 {fact.material} 在工厂 {fact.plant} 的库存/需求清单（MD04）"
+    availability = f"当前可用量：{_qty_str(fact.value)} {fact.unit}"
+    evidence = fact.evidence[0] if fact.evidence else {}
+    table = _format_mrp_detail_table(evidence)
+    body = f"{title}\n\n{availability}"
+    if table:
+        body += f"\n\nMRP 元素明细：\n{table}"
+    return body
+
+
 def _build_messages(fact: ReasoningFact, capability_id: str) -> list[dict[str, str]]:
     guidance = narration_guidance(capability_id)
     user_content = (
@@ -60,6 +140,10 @@ def _build_messages(fact: ReasoningFact, capability_id: str) -> list[dict[str, s
         f"可用库存: {fact.value}\n"
         f"单位: {fact.unit}\n"
     )
+    evidence = fact.evidence[0] if fact.evidence else {}
+    detail = _format_mrp_element_lines(evidence)
+    if detail:
+        user_content += f"MRP 元素明细:\n{detail}\n"
     return [
         {"role": "system", "content": _SYSTEM_CONSTRAINT},
         {"role": "system", "content": guidance},
@@ -90,8 +174,12 @@ def _build_po_messages(facts: list[ReasoningFact], total_count: int | None) -> l
 
 
 def _template_inventory(fact: ReasoningFact) -> str:
-    """Deterministic template fallback for inventory narration."""
-    return f"物料 {fact.material} 在工厂 {fact.plant} 的可用库存为 {fact.value} {fact.unit}。"
+    """Deterministic template fallback for inventory narration.
+
+    Structured layout: title + available quantity + raw MRP detail table
+    (when evidence carries mrpElementLines).
+    """
+    return _inventory_narrative_body(fact)
 
 
 def _template_po(facts: list[ReasoningFact], total_count: int | None) -> str:
@@ -146,7 +234,14 @@ def narrate_fact(
         text = llm_client.chat_text(
             _build_messages(fact, capability_id), temperature=0.0, max_tokens=200
         )
-        return redact_sensitive(text.strip())
+        narrative = redact_sensitive(text.strip())
+        # Append the deterministic raw-detail table so the user always sees the
+        # original MRP element rows, regardless of LLM phrasing.
+        evidence = fact.evidence[0] if fact.evidence else {}
+        table = _format_mrp_detail_table(evidence)
+        if table:
+            narrative += f"\n\nMRP 元素明细：\n{table}"
+        return narrative
     except LlmUnavailable:
         return _template_inventory(fact)
 
@@ -258,6 +353,10 @@ def _build_inventory_batch_messages(
             f"物料: {fact.material}，工厂: {fact.plant}，"
             f"可用库存: {fact.value} {fact.unit}"
         )
+        evidence = fact.evidence[0] if fact.evidence else {}
+        detail = _format_mrp_element_lines(evidence)
+        if detail:
+            lines.append(f"MRP 元素明细:\n{detail}")
     if failures:
         for fail in failures:
             params = fail.get("parameters", {})
@@ -277,7 +376,13 @@ def _template_inventory_batch(
     facts: list[ReasoningFact],
     failures: list[dict] | None,
 ) -> str:
-    """Deterministic template fallback for batch inventory narration."""
+    """Deterministic template fallback for batch inventory narration.
+
+    Single fact (one material, one plant) uses the structured body with the
+    raw MRP detail table; multi-value aggregations keep the compact inline form.
+    """
+    if len(facts) == 1 and not failures:
+        return _inventory_narrative_body(facts[0])
     materials = {fact.material for fact in facts}
     lines: list[str] = []
     if len(materials) <= 1:

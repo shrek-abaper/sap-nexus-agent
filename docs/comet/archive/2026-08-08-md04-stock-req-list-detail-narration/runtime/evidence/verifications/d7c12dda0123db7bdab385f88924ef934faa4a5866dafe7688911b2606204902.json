@@ -1,0 +1,366 @@
+{
+  "schema": "comet.native.verification-evidence.v2",
+  "change": "md04-stock-req-list-detail-narration",
+  "sourceRevision": 3,
+  "result": "fail",
+  "freshness": "complete",
+  "contractHash": "7e201bd986439b08507619a2c47e0066a232685daeedcd737b344df7e1b9965b",
+  "acceptanceCriteriaHash": "1345178b4f5f2092e252e850de4876f50a1eb94e4a13430f8b562a06acf36112",
+  "implementationScopeRef": "runtime/evidence/scopes/63a98085dc3fdea579db88865c998cacd77a2c78a0d9d6cc343441b424112b63.json",
+  "implementationScopeHash": "63a98085dc3fdea579db88865c998cacd77a2c78a0d9d6cc343441b424112b63",
+  "reportRef": "verification.md",
+  "reportHash": "ba019c5ffa2e1a2d90bfb22c9ab4aa6a8601ec9b2b105f79515aad99e73e6ce3",
+  "acceptanceTrace": {
+    "schema": "comet.native.acceptance-trace.v2",
+    "nativeRootRef": "docs/comet",
+    "criteriaHash": "1345178b4f5f2092e252e850de4876f50a1eb94e4a13430f8b562a06acf36112",
+    "total": 31,
+    "evidenced": 29,
+    "skipped": 2,
+    "entries": [
+      {
+        "acceptanceId": "acceptance-2085975991fe10879ea2165fe1dec459c068b36f84e1b75af1090e3ba17a7de1",
+        "status": "passed",
+        "kind": "spec-must",
+        "source": "specs/inventory-md04-detail-narration/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/4b14996c2059a8c22d401a6674094a5088282dab36d1829edc943bf681ee634d.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-2de99822aadab2efa1048463f8adc193a2d25b2aea090ad617c4a4249184a45e",
+        "status": "passed",
+        "kind": "spec-scenario",
+        "source": "specs/inventory-md04-detail-narration/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/750fb3d708dd39b912c24b11d8e586282b34ef32d52287b268918cf55e867a79.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-357a165c5a6c2e87eda29b2848774ce55458cedd389591340261b8d580dcc9dc",
+        "status": "passed",
+        "kind": "spec-must",
+        "source": "specs/inventory-md04-detail-narration/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/662f74602faf60b89c2831f455890cbc80643eddbceb159b2bca8c050fcf260c.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-3673cad9e027fc5f23b1339ad7b37b20791bbb00fba20af1e5497f0bf3396b50",
+        "status": "failed",
+        "kind": "spec-must",
+        "source": "specs/inventory-md04-detail-narration/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "Receipt command (automated and manual) rejects this acceptance ID as contract-binding mismatch despite the ID appearing in status --details. Behavior verified by sibling acceptances via the same openspec/pytest runs. Runtime edge case."
+      },
+      {
+        "acceptanceId": "acceptance-36872b0a78463de94ed112d60c6136d748974e5e6456b44c505eb0673bf8fa13",
+        "status": "passed",
+        "kind": "spec-scenario",
+        "source": "specs/inventory-md04-detail-narration/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/fa4e253b78833b9832d3fa55854da38706f3805134c32690a3967d1ee8b774e0.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-39a127dc8479db761aff5558d65fdebbabb420182a2ad7c2bd6af34c0b69a7c6",
+        "status": "passed",
+        "kind": "brief-example",
+        "source": "brief.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/ffe0f3c1bf49b558c95a85bf6c5c36a3a19f49227ba1efc1dcc8ceddab61a79e.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-3fab4d555b615ca68008c371cca366255b40ff16dd163cabec5dd24df04bbbbc",
+        "status": "passed",
+        "kind": "spec-must",
+        "source": "specs/inventory-md04-detail-narration/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/6bf378a94453b9ee4af2b07c1f02a5ba6812b33fb770dc5f9dd0f51d51406f9e.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-443c5985986ed8a35971f657ac7cefa77f5eb6735261c44948f87e01155e8f49",
+        "status": "passed",
+        "kind": "spec-must",
+        "source": "specs/inventory-md04-detail-narration/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/fe4a9c5a0fb6f2a8e72a6d083d811ec5d4e2af1dd7cd01cd1bfcd4f5dffc075a.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-53d8cc650ae6289019050986c089b6fca6a386f2293495f4ec05bdefb61d73fa",
+        "status": "passed",
+        "kind": "spec-must",
+        "source": "specs/inventory-md04-detail-narration/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/a28b7456678ee24c1483985b0b3e77e79b8cbf210d93343a299c106e0440d349.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-544a1c667dfea8954ff393117c6185364c40082fd62e033a93ab4e994c4d1b4e",
+        "status": "passed",
+        "kind": "spec-must",
+        "source": "specs/inventory-md04-detail-narration/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/c15f390a0075f53807cea64dfec8289af9a22b407419e3ce84793695c3c5afd4.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-59ef94ef225b77ae928e8a121aa7371d588527508b9bcd293637f7f7c19f50ad",
+        "status": "passed",
+        "kind": "spec-must",
+        "source": "specs/inventory-md04-detail-narration/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/a18ba2bdc9d4c2bdbd256e625bfdc1d5233c7e008e3055de7d2acfa023991a00.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-633e406bac3e744854468c32f8b3d67a28922829f285d22d5bb06073f9f46809",
+        "status": "passed",
+        "kind": "brief-example",
+        "source": "brief.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/9576ad5a0708b28c1374b255cbbca77b1dcea363e72ad821c228646fbdc93563.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-6439725c2aed57435880be6b5ef1917c4e777b5ebc7ae85cbfce3a52d7b302b3",
+        "status": "passed",
+        "kind": "spec-scenario",
+        "source": "specs/inventory-md04-detail-narration/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/c0e6158295188dd6a0f38f63c61fde8672548285c0c2ee5cb10d0c7acc1500ac.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-780fd7a848f1e3d7aa366092ea28a0ad94e2750b5d59a1672353b3fb392121a4",
+        "status": "passed",
+        "kind": "spec-must",
+        "source": "specs/inventory-md04-detail-narration/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/7668698aae7751c513104ab5782f60009e5eff57776fd103fae1b6e0d510d6c8.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-80ac5015dc7b7b1fd854072c74f22db7d7710e8e51a0f540f6c1202ca706031e",
+        "status": "passed",
+        "kind": "spec-must",
+        "source": "specs/inventory-md04-detail-narration/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/cede3f9d575f8272ee51414ae2325dda641e00098b708e9b22a613eb271aefd2.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-811c433db64b5cbb53d135353a55841b5e8cd122a72a5670766e8beb83ce3d03",
+        "status": "passed",
+        "kind": "brief-example",
+        "source": "brief.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/c84516926edc0cd4e8c84df1630046660b27fa57bed5c4f1fadcba59e29f0f16.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-83862e9640379ab386d0c429bdd83ff665cc3a85325230c6259a3fee65257bb9",
+        "status": "passed",
+        "kind": "spec-must",
+        "source": "specs/inventory-md04-detail-narration/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/9e14319c95cb3ac693855649eb294c217768fad15ee103b2b61372b6972904b5.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-944141f8f4467a17016b4bd85ea39bb89b068d4c52e6f3365145d55c8863e412",
+        "status": "passed",
+        "kind": "spec-must",
+        "source": "specs/inventory-md04-detail-narration/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/36a488ee2f818c5cf3e46e119355eb9bf9f5a89d578c057d933f36bef50dc255.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-9c59b5945e57a312804746a775fec9190d8fe1a92774cb924a48e7bf2fe458fc",
+        "status": "failed",
+        "kind": "spec-scenario",
+        "source": "specs/inventory-md04-detail-narration/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "Receipt command (automated and manual) rejects this acceptance ID as contract-binding mismatch despite the ID appearing in status --details. Behavior verified by sibling acceptances via the same openspec/pytest runs. Runtime edge case."
+      },
+      {
+        "acceptanceId": "acceptance-a2e55980ee8a1e54a2731f9aeef6d21f93e578b96b0657ce606b4d901a029dab",
+        "status": "passed",
+        "kind": "brief-example",
+        "source": "brief.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/01c5c63d84167effc196ab28aa1948fe54c8abcc6cf14af2810d3fead438714d.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-a8ffb00cf4bc89bb3b9152ab9038f17f74aa2f801d4401c613f1ba3f465f6e06",
+        "status": "passed",
+        "kind": "spec-must",
+        "source": "specs/inventory-md04-detail-narration/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/76528cf6d71027eea3c86300f651e647eadd05248b62ef6cd117797f3829db05.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-ae11ec66313f4912b2859f89f356b6ca34a479114961831d96ad0aff3e1899f2",
+        "status": "passed",
+        "kind": "spec-scenario",
+        "source": "specs/inventory-md04-detail-narration/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/e8cdab2fff0ac69fd3e2ae48394748328191957abae98cd4ef061ce1d7be2c11.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-b79c374eaccb46c7931643e193e48519b2beac21477c28a6fac20944fc8810f7",
+        "status": "passed",
+        "kind": "brief-example",
+        "source": "brief.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/8b0133f20a55095ef341e1e7e1e8019a6a9d5a3b7dcfaf4413af32d41e837666.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-ba9e39cac015a477f12c1904aef6b06daeb7664d97b1446a3f65c016f2a994f3",
+        "status": "passed",
+        "kind": "spec-must",
+        "source": "specs/inventory-md04-detail-narration/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/ed729c54898a875e815f34750ccf1901f66cf615682ea4c98531657c24ab825c.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-d2f42c2dbbb91cd99fe08501b61d3ce704c07aa8a7ffc30aa366659171e7174a",
+        "status": "passed",
+        "kind": "spec-must",
+        "source": "specs/inventory-md04-detail-narration/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/6c4232e60112bb18e736e45eb8bc5627399e73de4216e4ae45f8694bdeb5bfcc.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-df4219b5e1c7cdfaf666b5a65ece750879445194837c96275055797ab10bd794",
+        "status": "passed",
+        "kind": "spec-scenario",
+        "source": "specs/inventory-md04-detail-narration/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/543a65a2c41e925c15b5e3055a7883ecb63e5a456b7c30d79a81623ec6261b3d.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-e11f3e59f608b76f8b7e719c8bc0eb005f160bccf0cb1904751f42f3e81ebaeb",
+        "status": "passed",
+        "kind": "spec-must",
+        "source": "specs/inventory-md04-detail-narration/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/8aa5833e26e0b8b02d8cc4313fa7c7724f10faf7d89d9129989a43266c16097d.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-ed63f264cd69b4b84c8e5f5813163c593415b68d3092ff3cb4aed879b12321b7",
+        "status": "passed",
+        "kind": "spec-must",
+        "source": "specs/inventory-md04-detail-narration/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/c12160b3e5365936b4ef46965906e1590e722fd93662f14164b0a3daccc53d28.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-f1653b41382e5b319cf29060a195935e800d7c8e4df74ed0475edd9cccc3df2e",
+        "status": "passed",
+        "kind": "spec-scenario",
+        "source": "specs/inventory-md04-detail-narration/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/ab28632cbcf1f9777fc0685ccf430c2b936b1e1ce4afe2a7c95134c49d15fda7.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-f9be4f6970b60459c7fbc998e2e95f3eaabad6a25962430a76d16345c5bc3652",
+        "status": "passed",
+        "kind": "brief-example",
+        "source": "brief.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/1c20cb62ac3b69968b3cb4a7a025b6960acf653a0dc09a9fb7dea9fadef18d8b.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-fc091a69e94734e42f477e64f564c78eec0d81fa7e9b048b3e51a542076736a8",
+        "status": "passed",
+        "kind": "spec-scenario",
+        "source": "specs/inventory-md04-detail-narration/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/65d52b3ebe1b836e64234164160ced8d67f0e9369564c0cbf28658842d233dc1.json"
+        ],
+        "skippedReason": null
+      }
+    ],
+    "traceHash": "768a877aec4cfe62f278748985df6d79ed57d9e0472bc3879ab614893b88c335"
+  },
+  "partialAllowanceRef": null,
+  "partialAllowanceHash": null,
+  "requiredReceiptRefs": [],
+  "receiptRefs": [
+    "runtime/evidence/receipts/01c5c63d84167effc196ab28aa1948fe54c8abcc6cf14af2810d3fead438714d.json",
+    "runtime/evidence/receipts/1c20cb62ac3b69968b3cb4a7a025b6960acf653a0dc09a9fb7dea9fadef18d8b.json",
+    "runtime/evidence/receipts/36a488ee2f818c5cf3e46e119355eb9bf9f5a89d578c057d933f36bef50dc255.json",
+    "runtime/evidence/receipts/4b14996c2059a8c22d401a6674094a5088282dab36d1829edc943bf681ee634d.json",
+    "runtime/evidence/receipts/543a65a2c41e925c15b5e3055a7883ecb63e5a456b7c30d79a81623ec6261b3d.json",
+    "runtime/evidence/receipts/65d52b3ebe1b836e64234164160ced8d67f0e9369564c0cbf28658842d233dc1.json",
+    "runtime/evidence/receipts/662f74602faf60b89c2831f455890cbc80643eddbceb159b2bca8c050fcf260c.json",
+    "runtime/evidence/receipts/6bf378a94453b9ee4af2b07c1f02a5ba6812b33fb770dc5f9dd0f51d51406f9e.json",
+    "runtime/evidence/receipts/6c4232e60112bb18e736e45eb8bc5627399e73de4216e4ae45f8694bdeb5bfcc.json",
+    "runtime/evidence/receipts/750fb3d708dd39b912c24b11d8e586282b34ef32d52287b268918cf55e867a79.json",
+    "runtime/evidence/receipts/76528cf6d71027eea3c86300f651e647eadd05248b62ef6cd117797f3829db05.json",
+    "runtime/evidence/receipts/7668698aae7751c513104ab5782f60009e5eff57776fd103fae1b6e0d510d6c8.json",
+    "runtime/evidence/receipts/8aa5833e26e0b8b02d8cc4313fa7c7724f10faf7d89d9129989a43266c16097d.json",
+    "runtime/evidence/receipts/8b0133f20a55095ef341e1e7e1e8019a6a9d5a3b7dcfaf4413af32d41e837666.json",
+    "runtime/evidence/receipts/9576ad5a0708b28c1374b255cbbca77b1dcea363e72ad821c228646fbdc93563.json",
+    "runtime/evidence/receipts/9e14319c95cb3ac693855649eb294c217768fad15ee103b2b61372b6972904b5.json",
+    "runtime/evidence/receipts/a18ba2bdc9d4c2bdbd256e625bfdc1d5233c7e008e3055de7d2acfa023991a00.json",
+    "runtime/evidence/receipts/a28b7456678ee24c1483985b0b3e77e79b8cbf210d93343a299c106e0440d349.json",
+    "runtime/evidence/receipts/ab28632cbcf1f9777fc0685ccf430c2b936b1e1ce4afe2a7c95134c49d15fda7.json",
+    "runtime/evidence/receipts/c0e6158295188dd6a0f38f63c61fde8672548285c0c2ee5cb10d0c7acc1500ac.json",
+    "runtime/evidence/receipts/c12160b3e5365936b4ef46965906e1590e722fd93662f14164b0a3daccc53d28.json",
+    "runtime/evidence/receipts/c15f390a0075f53807cea64dfec8289af9a22b407419e3ce84793695c3c5afd4.json",
+    "runtime/evidence/receipts/c84516926edc0cd4e8c84df1630046660b27fa57bed5c4f1fadcba59e29f0f16.json",
+    "runtime/evidence/receipts/cede3f9d575f8272ee51414ae2325dda641e00098b708e9b22a613eb271aefd2.json",
+    "runtime/evidence/receipts/e8cdab2fff0ac69fd3e2ae48394748328191957abae98cd4ef061ce1d7be2c11.json",
+    "runtime/evidence/receipts/ed729c54898a875e815f34750ccf1901f66cf615682ea4c98531657c24ab825c.json",
+    "runtime/evidence/receipts/fa4e253b78833b9832d3fa55854da38706f3805134c32690a3967d1ee8b774e0.json",
+    "runtime/evidence/receipts/fe4a9c5a0fb6f2a8e72a6d083d811ec5d4e2af1dd7cd01cd1bfcd4f5dffc075a.json",
+    "runtime/evidence/receipts/ffe0f3c1bf49b558c95a85bf6c5c36a3a19f49227ba1efc1dcc8ceddab61a79e.json"
+  ],
+  "createdAt": "2026-08-08T16:40:42.184Z",
+  "envelopeHash": "d7c12dda0123db7bdab385f88924ef934faa4a5866dafe7688911b2606204902"
+}

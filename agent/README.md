@@ -1,6 +1,6 @@
 # SAP Nexus Agent Python MVP
 
-Read-only Agent slice for Chinese inventory availability queries.
+Read-only Agent slice for Chinese MD04 stock/requirements list queries.
 
 ## Verification
 

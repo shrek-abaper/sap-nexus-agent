@@ -156,22 +156,33 @@ public class InventoryAvailabilityExecutor implements JcoCapabilityExecutor {
         }
         try {
             JCoTable lines = tables.getTable("MRP_IND_LINES");
+            List<Map<String, Object>> mrpElementLines = new ArrayList<>();
             for (int row = 0; row < lines.getNumRows(); row++) {
                 lines.setRow(row);
                 String elementInd = getString(lines, "MRP_ELEMENT_IND");
                 String element = getString(lines, "MRP_ELEMNT");
-                if ("WB".equals(elementInd) || "Stock".equalsIgnoreCase(element)) {
-                    Double quantity = parseQuantity(getString(lines, "AVAIL_QTY1"));
-                    if (quantity != null) {
-                        data.put("availableQuantity", quantity);
-                        data.put("sourceTable", "MRP_IND_LINES");
-                        data.put("sourceField", "AVAIL_QTY1");
-                        data.put("mrpElementInd", elementInd);
-                        data.put("mrpElement", element);
-                        data.put("availableDate", getString(lines, "AVAIL_DATE"));
-                    }
-                    return;
+                Double availQty1 = parseQuantity(getString(lines, "AVAIL_QTY1"));
+                Double elementQty = parseQuantity(getString(lines, "ELEMENT_QTY"));
+                String date = getString(lines, "AVAIL_DATE");
+                Map<String, Object> lineEntry = new LinkedHashMap<>();
+                lineEntry.put("mrpElementInd", elementInd);
+                lineEntry.put("mrpElement", element);
+                lineEntry.put("elementQty", elementQty);
+                lineEntry.put("availQty1", availQty1);
+                lineEntry.put("date", date);
+                mrpElementLines.add(lineEntry);
+                // Preserve the existing scalar availableQuantity: the running stock row (WB).
+                if (data.get("availableQuantity") == null && ("WB".equals(elementInd) || "Stock".equalsIgnoreCase(element)) && availQty1 != null) {
+                    data.put("availableQuantity", availQty1);
+                    data.put("sourceTable", "MRP_IND_LINES");
+                    data.put("sourceField", "AVAIL_QTY1");
+                    data.put("mrpElementInd", elementInd);
+                    data.put("mrpElement", element);
+                    data.put("availableDate", date);
                 }
+            }
+            if (!mrpElementLines.isEmpty()) {
+                data.put("mrpElementLines", mrpElementLines);
             }
         } catch (RuntimeException ignored) {
             // Some SAP releases or authorizations may omit the MD04 table; keep other normalized outputs.

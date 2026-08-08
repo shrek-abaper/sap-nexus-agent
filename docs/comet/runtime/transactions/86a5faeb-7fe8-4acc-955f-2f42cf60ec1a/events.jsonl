@@ -1,0 +1,8 @@
+{"sequence":1,"timestamp":"2026-08-08T23:23:15.026Z","type":"prepared"}
+{"sequence":2,"timestamp":"2026-08-08T23:23:16.373Z","type":"operation-started","operationId":"spec-1-inventory-md04-detail-narration"}
+{"sequence":3,"timestamp":"2026-08-08T23:23:16.496Z","type":"operation-completed","operationId":"spec-1-inventory-md04-detail-narration"}
+{"sequence":4,"timestamp":"2026-08-08T23:23:17.848Z","type":"operation-started","operationId":"archive-change"}
+{"sequence":5,"timestamp":"2026-08-08T23:23:18.653Z","type":"operation-completed","operationId":"archive-change"}
+{"sequence":6,"timestamp":"2026-08-08T23:23:19.056Z","type":"archive-finalization-started"}
+{"sequence":7,"timestamp":"2026-08-08T23:23:19.142Z","type":"archive-finalized"}
+{"sequence":8,"timestamp":"2026-08-08T23:23:19.186Z","type":"commit"}

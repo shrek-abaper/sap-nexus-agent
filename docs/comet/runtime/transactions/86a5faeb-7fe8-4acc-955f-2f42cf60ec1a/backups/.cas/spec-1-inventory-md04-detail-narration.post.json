@@ -1,0 +1,11 @@
+{
+  "schema": "comet.native.archive-cas.v1",
+  "operationId": "spec-1-inventory-md04-detail-narration",
+  "role": "post",
+  "hash": "7c47f4481c02301ea7073219feb46ea21a73e2afa466f5d1b82023f855306ab1",
+  "identity": {
+    "dev": 2096,
+    "ino": 305952,
+    "birthtimeMs": 1786231396411.6328
+  }
+}

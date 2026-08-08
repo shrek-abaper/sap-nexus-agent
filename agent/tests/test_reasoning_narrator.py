@@ -69,6 +69,95 @@ def test_md04_source_field_is_preserved_in_availability_fact_evidence():
     assert fact.evidence[0]["mrpElementInd"] == "WB"
 
 
+def test_mrp_element_lines_are_preserved_in_availability_fact_evidence():
+    result = ExecutionResult(
+        trace_id="gw-md04-detail",
+        capability_id="MM.Inventory.GetAvailability",
+        success=True,
+        executor={"type": "JCO_RFC", "rfcName": "BAPI_MATERIAL_STOCK_REQ_LIST"},
+        return_messages=[],
+        data={
+            "material": "DEMOA1",
+            "plant": "1000",
+            "availableQuantity": 12.0,
+            "unit": "EA",
+            "sourceTable": "MRP_IND_LINES",
+            "sourceField": "AVAIL_QTY1",
+            "mrpElementInd": "WB",
+            "mrpElementLines": [
+                {
+                    "mrpElementInd": "BE",
+                    "mrpElement": "POitem",
+                    "elementQty": 264.0,
+                    "availQty1": 264.0,
+                    "date": "2026-06-21",
+                },
+                {
+                    "mrpElementInd": "WB",
+                    "mrpElement": "Stock",
+                    "elementQty": 12.0,
+                    "availQty1": 12.0,
+                    "date": "2026-06-21",
+                },
+            ],
+        },
+        duration_ms=10,
+        error_type="NONE",
+    )
+
+    fact = build_availability_fact("agent-1", result)
+
+    assert fact is not None
+    detail = fact.evidence[0]["mrpElementLines"]
+    assert isinstance(detail, list)
+    assert len(detail) == 2
+    assert detail[0]["mrpElementInd"] == "BE"
+    assert detail[1]["mrpElementInd"] == "WB"
+
+
+def test_narrate_fact_llm_path_includes_mrp_element_detail():
+    result = ExecutionResult(
+        trace_id="gw-md04-detail",
+        capability_id="MM.Inventory.GetAvailability",
+        success=True,
+        executor={"type": "JCO_RFC", "rfcName": "BAPI_MATERIAL_STOCK_REQ_LIST"},
+        return_messages=[],
+        data={
+            "material": "DEMOA1",
+            "plant": "1000",
+            "availableQuantity": 12.0,
+            "unit": "EA",
+            "mrpElementLines": [
+                {
+                    "mrpElementInd": "BE",
+                    "mrpElement": "POitem",
+                    "elementQty": 264.0,
+                    "availQty1": 264.0,
+                    "date": "2026-06-21",
+                },
+                {
+                    "mrpElementInd": "WB",
+                    "mrpElement": "Stock",
+                    "elementQty": 12.0,
+                    "availQty1": 12.0,
+                    "date": "2026-06-21",
+                },
+            ],
+        },
+        duration_ms=10,
+        error_type="NONE",
+    )
+    fact = build_availability_fact("agent-1", result)
+    fake = FakeNarratorLlmClient(text="物料 DEMOA1 在 1000 可用 12 EA，含 2 个 MRP 元素行。")
+
+    narrate_fact(fact, client=fake)
+
+    user_content = fake.calls[0]["messages"][2]["content"]
+    assert "MRP 元素明细" in user_content
+    assert "BE/POitem" in user_content
+    assert "WB/Stock" in user_content
+
+
 def test_failed_execution_creates_no_success_fact():
     result = ExecutionResult(
         trace_id="gw-fail",
@@ -87,7 +176,10 @@ def test_failed_execution_creates_no_success_fact():
 def test_narrate_fact_uses_only_fact_fields():
     fact = build_availability_fact("agent-1", successful_execution())
 
-    assert narrate_fact(fact) == "物料 DEMOA1 在工厂 1000 的可用库存为 12 EA。"
+    assert narrate_fact(fact) == (
+        "物料 DEMOA1 在工厂 1000 的库存/需求清单（MD04）\n\n"
+        "当前可用量：12 EA"
+    )
 
 
 def test_narrator_rejects_missing_quantity():
@@ -390,7 +482,7 @@ from sap_nexus_agent.narrator import narration_guidance
 def test_narration_guidance_inventory():
     guidance = narration_guidance("MM.Inventory.GetAvailability")
     assert "库存" in guidance
-    assert "可用库存" in guidance
+    assert "MRP" in guidance or "需求" in guidance
 
 
 def test_narration_guidance_purchase_order():
@@ -489,7 +581,10 @@ def test_narrate_fact_llm_unavailable_falls_back_to_template():
 
     result = narrate_fact(fact, client=fake)
 
-    assert result == "物料 DEMOA1 在工厂 1000 的可用库存为 12 EA。"
+    assert result == (
+        "物料 DEMOA1 在工厂 1000 的库存/需求清单（MD04）\n\n"
+        "当前可用量：12 EA"
+    )
 
 
 def test_narrate_fact_no_client_falls_back_to_template():
@@ -498,12 +593,60 @@ def test_narrate_fact_no_client_falls_back_to_template():
 
     result = narrate_fact(fact)
 
-    assert result == "物料 DEMOA1 在工厂 1000 的可用库存为 12 EA。"
+    assert result == (
+        "物料 DEMOA1 在工厂 1000 的库存/需求清单（MD04）\n\n"
+        "当前可用量：12 EA"
+    )
 
 
-# ---------------------------------------------------------------------------
-# narrate_purchase_order_facts LLM path + fallback (Task 5)
-# ---------------------------------------------------------------------------
+def test_narrate_fact_template_includes_mrp_detail_table():
+    """Template fallback renders the raw MRP element rows as an aligned table."""
+    result = ExecutionResult(
+        trace_id="gw-md04-detail",
+        capability_id="MM.Inventory.GetAvailability",
+        success=True,
+        executor={"type": "JCO_RFC", "rfcName": "BAPI_MATERIAL_STOCK_REQ_LIST"},
+        return_messages=[],
+        data={
+            "material": "DEMOA1",
+            "plant": "1000",
+            "availableQuantity": 12.0,
+            "unit": "EA",
+            "mrpElementLines": [
+                {
+                    "mrpElementInd": "BE",
+                    "mrpElement": "POitem",
+                    "elementQty": 264.0,
+                    "availQty1": 264.0,
+                    "date": "2026-06-21",
+                },
+                {
+                    "mrpElementInd": "WB",
+                    "mrpElement": "Stock",
+                    "elementQty": 12.0,
+                    "availQty1": 12.0,
+                    "date": "2026-06-21",
+                },
+            ],
+        },
+        duration_ms=10,
+        error_type="NONE",
+    )
+    fact = build_availability_fact("agent-1", result)
+    fake = FakeNarratorLlmClient(unavailable=True)
+
+    narrative = narrate_fact(fact, client=fake)
+
+    assert "库存/需求清单（MD04）" in narrative
+    assert "当前可用量：12" in narrative
+    assert "EA" in narrative
+    assert "MRP 元素明细：" in narrative
+    assert "元素指示符" in narrative
+    assert "WB" in narrative
+    assert "BE" in narrative
+    assert "Stock" in narrative
+    assert "POitem" in narrative
+    assert "2026-06-21" in narrative
 
 
 def test_narrate_po_facts_llm_path_returns_generated_text():

@@ -2,7 +2,7 @@ version: 2
 capabilities:
   - capabilityId: MM.Inventory.GetAvailability
     name: Inventory Availability
-    description: Read material availability for a plant through SAP MD04 stock/requirements list.
+    description: Read the SAP MD04 stock/requirements list for a material and plant, returning MRP element lines and the running available quantity.
     status: active
     kind: Function
     domain: MM
@@ -10,12 +10,13 @@ capabilities:
     ontologyIri: sapnexus:MM_Inventory_GetAvailability
     semanticType: sapnexus:InventoryAvailabilityReadFunction
     aliases:
-      - 库存查询
+      - 库存需求清单查询
       - 物料可用量
+      - MD04查询
       - 库存
     examples:
-      - 查物料 DEMOA2 在 1000 工厂的库存
-      - 1000 工厂 DEMOA2 还有多少
+      - 查物料 DEMOA2 在 1000 工厂的库存/需求清单（可用量）
+      - 1000 工厂 DEMOA2 的 MD04 可用量
     inputs:
       - name: material
         semanticName: materialNumber
@@ -51,6 +52,11 @@ capabilities:
         type: number
         evidenceRole: primaryFact
         factTypeRef: sapnexus:InventoryAvailabilityFact
+      - name: mrpElementLines
+        semanticType: sapnexus:MrpElementLine
+        type: array
+        evidenceRole: primaryFact
+        factTypeRef: sapnexus:InventoryAvailabilityFact
       - name: returnMessages
         semanticType: sapnexus:SapReturnMessage
         type: array
@@ -64,6 +70,7 @@ capabilities:
         unit: UNIT
       outputMapping:
         availableQuantity: MRP_IND_LINES.WB.AVAIL_QTY1
+        mrpElementLines: MRP_IND_LINES
         returnMessages: RETURN
     executorBinding:
       type: JCO_RFC

@@ -66,6 +66,9 @@ def build_availability_fact(
     for key in ("sourceTable", "mrpElementInd", "mrpElement", "availableDate"):
         if key in result.data:
             evidence[key] = result.data[key]
+    mrp_element_lines = result.data.get("mrpElementLines")
+    if mrp_element_lines:
+        evidence["mrpElementLines"] = mrp_element_lines
     return ReasoningFact(
         fact_id=f"fact-{uuid.uuid4()}",
         agent_trace_id=agent_trace_id,

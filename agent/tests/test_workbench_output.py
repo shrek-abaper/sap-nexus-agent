@@ -59,7 +59,10 @@ def test_workbench_output_serializes_live_agent_result_without_fake_quantity_or_
     assert payload["executionResult"]["data"]["availableQuantity"] == 7
     assert payload["gatewayTraceId"] == "gw-execute-live"
     assert payload["fact"]["value"] == 7
-    assert payload["responseText"] == "物料 MAT-LIVE 在工厂 1000 的可用库存为 7 EA。"
+    assert payload["responseText"] == (
+        "物料 MAT-LIVE 在工厂 1000 的库存/需求清单（MD04）\n\n"
+        "当前可用量：7 EA"
+    )
     assert "SAP_PASSWORD" not in str(payload)
     assert "LLM_API_KEY" not in str(payload)
 

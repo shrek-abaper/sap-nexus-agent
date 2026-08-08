@@ -1,0 +1,27 @@
+{
+  "schema": "comet.native.transaction.v2",
+  "id": "86a5faeb-7fe8-4acc-955f-2f42cf60ec1a",
+  "kind": "archive",
+  "status": "committed",
+  "change": "md04-stock-req-list-detail-narration",
+  "createdAt": "2026-08-08T23:23:13.253Z",
+  "preflightHash": "a2823c4e78ed5423991578ecfdd5d113f40b5cfb453e56ac01a0ef725708ce3e",
+  "operations": [
+    {
+      "id": "spec-1-inventory-md04-detail-narration",
+      "type": "write",
+      "target": "specs/inventory-md04-detail-narration/spec.md",
+      "staged": "runtime/transactions/86a5faeb-7fe8-4acc-955f-2f42cf60ec1a/staged/specs/inventory-md04-detail-narration/spec.md",
+      "expectedTargetHash": null,
+      "stagedHash": "7c47f4481c02301ea7073219feb46ea21a73e2afa466f5d1b82023f855306ab1"
+    },
+    {
+      "id": "archive-change",
+      "type": "move",
+      "source": "changes/md04-stock-req-list-detail-narration",
+      "target": "archive/2026-08-08-md04-stock-req-list-detail-narration",
+      "expectedSourceHash": "7f505abd32573290fd567bdd2f7347d050940ccfad0992e5e9a25952b11ce7b9",
+      "expectedTargetHash": null
+    }
+  ]
+}

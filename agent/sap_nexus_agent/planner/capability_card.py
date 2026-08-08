@@ -130,7 +130,7 @@ def _project_produces_fact_types(raw_outputs: Any) -> tuple[str, ...]:
         if not isinstance(output, Mapping):
             continue
         ref = output.get("factTypeRef")
-        if isinstance(ref, str) and ref:
+        if isinstance(ref, str) and ref and ref not in fact_types:
             fact_types.append(ref)
     return tuple(fact_types)
 
