@@ -4,7 +4,7 @@ import re
 
 from sap_nexus_agent.llm_client import LlmUnavailable, OpenAiCompatibleLlmClient
 from sap_nexus_agent.reasoning_fact import ReasoningFact
-from sap_nexus_agent.registry_loader import load_intent_catalog
+from sap_nexus_agent.registry_loader import NarrativeConfig, load_intent_catalog
 
 
 class NarrativeGuardError(ValueError):
@@ -17,31 +17,38 @@ _SYSTEM_CONSTRAINT = (
     "不得输出 SAP 表名、BAPI/RFC 名或凭据。"
 )
 
-_INVENTORY_GUIDANCE = (
-    "基于给定的 MRP 元素明细（库存/需求清单，MD04）生成层次化中文叙事：第一行标题说明物料与工厂；"
-    "第二段给出当前可用量与单位；第三段对供需关键元素做简要归纳（区分供应与需求）。"
-    "只能使用提供的事实字段，不得编造。若无明细，则只陈述可用量。"
-    "叙事末尾系统会追加原始 MRP 元素明细表格，你无需重复输出明细行。"
-)
+# ---------------------------------------------------------------------------
+# Centralized prompt/fallback template registry (D5: templates are IDs, not
+# inline yaml strings). Each prompt template is a guidance string paired with a
+# user-content builder; each fallback template is a deterministic renderer.
+# Adding a capability's narration only declares the template id in yaml + adds
+# the template here (no new narration pipeline).
+# ---------------------------------------------------------------------------
 
-_PO_GUIDANCE = (
-    "用给定的采购订单条目事实生成中文归纳，列出关键订单（采购订单号、供应商、物料、工厂、数量、单位），"
-    "多条时归纳总结。"
-)
+_PROMPT_GUIDANCE: dict[str, str] = {
+    "inventory-md04": (
+        "基于给定的 MRP 元素明细（库存/需求清单，MD04）生成层次化中文叙事：第一行标题说明物料与工厂；"
+        "第二段给出当前可用量与单位；第三段对供需关键元素做简要归纳（区分供应与需求）。"
+        "只能使用提供的事实字段，不得编造。若无明细，则只陈述可用量。"
+        "叙事末尾系统会追加原始 MRP 元素明细表格，你无需重复输出明细行。"
+    ),
+    "purchase-order-list": (
+        "用给定的采购订单条目事实生成中文归纳，列出关键订单（采购订单号、供应商、物料、工厂、数量、单位），"
+        "多条时归纳总结。"
+    ),
+    "pr-create-receipt": (
+        "用给定的采购申请创建结果事实生成中文回执，说明 PR 号。"
+        "只能使用提供的事实字段，不得编造。"
+    ),
+}
 
 _GENERIC_GUIDANCE = "用给定事实字段的值生成自然语言中文陈述，只陈述字段中存在的数据。"
 
 
-def narration_guidance(capability_id: str) -> str:
-    """按 businessObject 派生叙事指引；未知能力用通用 fact-based 指引。"""
-    catalog = load_intent_catalog()
-    descriptor = catalog.find(capability_id)
-    business_object = descriptor.business_object if descriptor else ""
-    if business_object == "InventoryStock":
-        return _INVENTORY_GUIDANCE
-    if business_object == "PurchaseOrder":
-        return _PO_GUIDANCE
-    return _GENERIC_GUIDANCE
+def _guidance_for(config: NarrativeConfig | None) -> str:
+    if config is None:
+        return _GENERIC_GUIDANCE
+    return _PROMPT_GUIDANCE.get(config.prompt_template, _GENERIC_GUIDANCE)
 
 
 _PO_LIMIT = 50
@@ -55,42 +62,28 @@ _PO_REQUIRED_EVIDENCE = (
 )
 
 
-def _format_mrp_element_lines(evidence: dict) -> str:
-    lines = evidence.get("mrpElementLines")
-    if not isinstance(lines, list) or not lines:
-        return ""
-    parts: list[str] = []
-    for item in lines:
-        if not isinstance(item, dict):
-            continue
-        parts.append(
-            f"元素[{item.get('mrpElementInd', '')}/{item.get('mrpElement', '')}] "
-            f"数量={item.get('elementQty', '')} 可用量={item.get('availQty1', '')} 日期={item.get('date', '')}"
-        )
-    return "\n".join(parts)
-
-
-def _mrp_detail_rows(evidence: dict) -> list[dict]:
-    lines = evidence.get("mrpElementLines")
-    if not isinstance(lines, list):
-        return []
-    return [item for item in lines if isinstance(item, dict)]
+# ---------------------------------------------------------------------------
+# Quantity formatting helper (integer-valued floats render without .0)
+# ---------------------------------------------------------------------------
 
 
 def _qty_str(value: object) -> str:
-    """Render a quantity without a trailing .0 for integer-valued floats."""
     if isinstance(value, float) and value.is_integer():
         return str(int(value))
     return str(value if value is not None else "")
 
 
-def _format_mrp_detail_table(evidence: dict) -> str:
-    """Deterministic, aligned tabular rendering of MRP element lines.
+# ---------------------------------------------------------------------------
+# Detail formatter registry (D3: pluggable, keyed by id; unknown -> none)
+# ---------------------------------------------------------------------------
 
-    Renders the raw MRP_IND_LINES rows as a fixed-width table so the user sees
-    the original supply/demand elements alongside the narrative summary.
-    """
-    rows = _mrp_detail_rows(evidence)
+
+def _format_mrp_detail_table(evidence: dict) -> str:
+    """Aligned tabular rendering of MRP element lines (mrp-table formatter)."""
+    rows = evidence.get("mrpElementLines")
+    if not isinstance(rows, list):
+        return ""
+    rows = [item for item in rows if isinstance(item, dict)]
     if not rows:
         return ""
     header = ("元素指示符", "元素描述", "元素数量", "累加可用量", "日期")
@@ -108,6 +101,7 @@ def _format_mrp_detail_table(evidence: dict) -> str:
         max(len(header[i]), *(len(r[i]) for r in str_rows))
         for i in range(len(header))
     ]
+
     def _fmt(cells: tuple[str, ...]) -> str:
         return "  ".join(cells[i].ljust(widths[i]) for i in range(len(cells))).rstrip()
 
@@ -116,24 +110,95 @@ def _format_mrp_detail_table(evidence: dict) -> str:
     return "\n".join(lines)
 
 
-def _inventory_narrative_body(fact: ReasoningFact) -> str:
-    """Deterministic structured narrative body for a single inventory fact.
+def _format_po_list_detail(facts: list[ReasoningFact]) -> str:
+    """Inline list rendering of PO item facts (po-list formatter)."""
+    lines: list[str] = []
+    for fact in facts[:_PO_LIMIT]:
+        ev = fact.evidence[0] if fact.evidence else {}
+        lines.append(
+            f"采购订单 {ev.get('purchaseOrder', '')}："
+            f"供应商 {ev.get('supplier', '')}，"
+            f"物料 {ev.get('material', '')}，"
+            f"工厂 {ev.get('plant', '')}，"
+            f"数量 {ev.get('orderQuantity', '')} {ev.get('purchaseOrderUnit', '')}。"
+        )
+    return "\n".join(lines)
 
-    Layout: title line + blank + 可用量 line, with the raw MRP detail table
-    appended when the fact carries mrpElementLines evidence.
+
+def _format_no_detail(_evidence: dict) -> str:
+    return ""
+
+
+# detailFormatter id -> function(evidence_or_facts) -> str
+_DETAIL_FORMATTERS: dict[str, object] = {
+    "mrp-table": _format_mrp_detail_table,
+    "po-list": _format_po_list_detail,
+    "none": _format_no_detail,
+}
+
+
+def _resolve_detail_formatter(config: NarrativeConfig | None):
+    formatter_id = config.detail_formatter if config else "none"
+    return _DETAIL_FORMATTERS.get(formatter_id, _format_no_detail)
+
+
+# ---------------------------------------------------------------------------
+# fieldMapping resolution: map fact fixed fields + evidence dynamic fields to
+# template variables (D6).
+# ---------------------------------------------------------------------------
+
+
+def _resolve_template_vars(fact: ReasoningFact, config: NarrativeConfig | None) -> dict[str, str]:
+    """Resolve fieldMapping to concrete values from a single fact."""
+    if config is None:
+        return {}
+    evidence = fact.evidence[0] if fact.evidence else {}
+    vars_: dict[str, str] = {}
+    for var_name, source_expr in config.field_mapping:
+        vars_[var_name] = _resolve_one_var(source_expr, fact, evidence)
+    return vars_
+
+
+def _resolve_one_var(source_expr: str, fact: ReasoningFact, evidence: dict) -> str:
+    """Resolve one fieldMapping source expression to a string value.
+
+    Supports:
+      - {material}/{plant}/{value}/{unit} placeholders filled from fact fixed fields
+      - a bare evidence field name (e.g. mrpElementLines) -> rendered detail (handled by formatter)
+      - comma-separated evidence field names (po itemFields) -> kept as-is for list builders
     """
-    title = f"物料 {fact.material} 在工厂 {fact.plant} 的库存/需求清单（MD04）"
+    if "{" in source_expr and "}" in source_expr:
+        return source_expr.format(
+            material=fact.material or "",
+            plant=fact.plant or "",
+            value=_qty_str(fact.value),
+            unit=fact.unit or "",
+        )
+    return source_expr
+
+
+# ---------------------------------------------------------------------------
+# Single-value narration (factShape: single-value) - inventory
+# ---------------------------------------------------------------------------
+
+
+def _inventory_narrative_body(fact: ReasoningFact, config: NarrativeConfig | None) -> str:
+    """Deterministic structured body: title + 可用量 + detail table (via formatter)."""
+    vars_ = _resolve_template_vars(fact, config)
+    title_text = vars_.get("title", f"{fact.material} 在工厂 {fact.plant}")
+    title = f"物料 {title_text} 的库存/需求清单（MD04）"
     availability = f"当前可用量：{_qty_str(fact.value)} {fact.unit}"
     evidence = fact.evidence[0] if fact.evidence else {}
-    table = _format_mrp_detail_table(evidence)
+    formatter = _resolve_detail_formatter(config)
+    detail = formatter(evidence) if config and config.detail_formatter != "none" else ""
     body = f"{title}\n\n{availability}"
-    if table:
-        body += f"\n\nMRP 元素明细：\n{table}"
+    if detail:
+        body += f"\n\nMRP 元素明细：\n{detail}"
     return body
 
 
-def _build_messages(fact: ReasoningFact, capability_id: str) -> list[dict[str, str]]:
-    guidance = narration_guidance(capability_id)
+def _build_single_value_messages(fact: ReasoningFact, config: NarrativeConfig | None) -> list[dict[str, str]]:
+    guidance = _guidance_for(config)
     user_content = (
         f"物料: {fact.material}\n"
         f"工厂: {fact.plant}\n"
@@ -141,9 +206,18 @@ def _build_messages(fact: ReasoningFact, capability_id: str) -> list[dict[str, s
         f"单位: {fact.unit}\n"
     )
     evidence = fact.evidence[0] if fact.evidence else {}
-    detail = _format_mrp_element_lines(evidence)
-    if detail:
-        user_content += f"MRP 元素明细:\n{detail}\n"
+    # Feed detail rows to the LLM in compact form for grounding.
+    lines = evidence.get("mrpElementLines")
+    if isinstance(lines, list) and lines:
+        parts = []
+        for item in lines:
+            if not isinstance(item, dict):
+                continue
+            parts.append(
+                f"元素[{item.get('mrpElementInd', '')}/{item.get('mrpElement', '')}] "
+                f"数量={item.get('elementQty', '')} 可用量={item.get('availQty1', '')} 日期={item.get('date', '')}"
+            )
+        user_content += "MRP 元素明细:\n" + "\n".join(parts) + "\n"
     return [
         {"role": "system", "content": _SYSTEM_CONSTRAINT},
         {"role": "system", "content": guidance},
@@ -151,8 +225,48 @@ def _build_messages(fact: ReasoningFact, capability_id: str) -> list[dict[str, s
     ]
 
 
-def _build_po_messages(facts: list[ReasoningFact], total_count: int | None) -> list[dict[str, str]]:
-    guidance = narration_guidance("MM.PurchaseOrder.GetList")
+def narrate_single_value(
+    fact: ReasoningFact,
+    config: NarrativeConfig | None = None,
+    *,
+    client=None,
+) -> str:
+    """Generic single-value narration (factShape: single-value)."""
+    missing = [
+        name
+        for name, value in {
+            "material": fact.material,
+            "plant": fact.plant,
+            "value": fact.value,
+            "unit": fact.unit,
+        }.items()
+        if value is None or value == ""
+    ]
+    if missing:
+        raise NarrativeGuardError(f"ReasoningFact missing fields for narration: {', '.join(missing)}")
+    try:
+        llm_client = client or OpenAiCompatibleLlmClient()
+        text = llm_client.chat_text(
+            _build_single_value_messages(fact, config), temperature=0.0, max_tokens=200
+        )
+        narrative = redact_sensitive(text.strip())
+        evidence = fact.evidence[0] if fact.evidence else {}
+        formatter = _resolve_detail_formatter(config)
+        detail = formatter(evidence) if config and config.detail_formatter != "none" else ""
+        if detail:
+            narrative += f"\n\nMRP 元素明细：\n{detail}"
+        return narrative
+    except LlmUnavailable:
+        return _inventory_narrative_body(fact, config)
+
+
+# ---------------------------------------------------------------------------
+# List narration (factShape: list) - purchase order
+# ---------------------------------------------------------------------------
+
+
+def _build_list_messages(facts: list[ReasoningFact], total_count: int | None, config: NarrativeConfig | None) -> list[dict[str, str]]:
+    guidance = _guidance_for(config)
     lines: list[str] = []
     for fact in facts[:_PO_LIMIT]:
         ev = fact.evidence[0] if fact.evidence else {}
@@ -173,17 +287,21 @@ def _build_po_messages(facts: list[ReasoningFact], total_count: int | None) -> l
     ]
 
 
-def _template_inventory(fact: ReasoningFact) -> str:
-    """Deterministic template fallback for inventory narration.
+def _assert_po_evidence_complete(facts: list[ReasoningFact]) -> None:
+    for fact in facts[:_PO_LIMIT]:
+        evidence = fact.evidence[0] if fact.evidence else {}
+        missing = [
+            field
+            for field in _PO_REQUIRED_EVIDENCE
+            if field not in evidence or evidence[field] is None
+        ]
+        if missing:
+            raise NarrativeGuardError(
+                f"ReasoningFact missing evidence fields for PO narration: {', '.join(missing)}"
+            )
 
-    Structured layout: title + available quantity + raw MRP detail table
-    (when evidence carries mrpElementLines).
-    """
-    return _inventory_narrative_body(fact)
 
-
-def _template_po(facts: list[ReasoningFact], total_count: int | None) -> str:
-    """Deterministic template fallback for PO narration; raises guard on missing evidence."""
+def _list_fallback(facts: list[ReasoningFact], total_count: int | None) -> str:
     lines: list[str] = []
     for fact in facts[:_PO_LIMIT]:
         evidence = fact.evidence[0] if fact.evidence else {}
@@ -211,39 +329,57 @@ def _template_po(facts: list[ReasoningFact], total_count: int | None) -> str:
     return "\n".join(lines)
 
 
-def narrate_fact(
-    fact: ReasoningFact,
+def narrate_list(
+    facts: list[ReasoningFact],
+    config: NarrativeConfig | None = None,
     *,
-    capability_id: str = "MM.Inventory.GetAvailability",
+    total_count: int | None = None,
     client=None,
 ) -> str:
-    missing = [
-        name
-        for name, value in {
-            "material": fact.material,
-            "plant": fact.plant,
-            "value": fact.value,
-            "unit": fact.unit,
-        }.items()
-        if value is None or value == ""
-    ]
-    if missing:
-        raise NarrativeGuardError(f"ReasoningFact missing fields for narration: {', '.join(missing)}")
+    """Generic list narration (factShape: list)."""
+    if not facts:
+        return "无匹配记录。"
+    _assert_po_evidence_complete(facts)
     try:
         llm_client = client or OpenAiCompatibleLlmClient()
         text = llm_client.chat_text(
-            _build_messages(fact, capability_id), temperature=0.0, max_tokens=200
+            _build_list_messages(facts, total_count, config), temperature=0.0, max_tokens=400
         )
-        narrative = redact_sensitive(text.strip())
-        # Append the deterministic raw-detail table so the user always sees the
-        # original MRP element rows, regardless of LLM phrasing.
-        evidence = fact.evidence[0] if fact.evidence else {}
-        table = _format_mrp_detail_table(evidence)
-        if table:
-            narrative += f"\n\nMRP 元素明细：\n{table}"
-        return narrative
+        return redact_sensitive(text.strip())
     except LlmUnavailable:
-        return _template_inventory(fact)
+        return _list_fallback(facts, total_count)
+
+
+# ---------------------------------------------------------------------------
+# Action-receipt narration (factShape: action-receipt) - PR create
+# ---------------------------------------------------------------------------
+
+
+def _action_receipt_body(fact: ReasoningFact, config: NarrativeConfig | None) -> str:
+    evidence = fact.evidence[0] if fact.evidence else {}
+    pr_number = str(evidence.get("value", "") or "")
+    if pr_number:
+        return f"采购申请创建成功，PR 号：{pr_number}"
+    return "采购请求创建成功但未返回 PR 号。"
+
+
+def narrate_action_receipt(
+    fact: ReasoningFact,
+    config: NarrativeConfig | None = None,
+    *,
+    client=None,
+) -> str:
+    """Generic action-receipt narration (factShape: action-receipt).
+
+    Deterministic: PR create receipt does not call the LLM (it is a structured
+    confirmation, not an inductive summary).
+    """
+    return _action_receipt_body(fact, config)
+
+
+# ---------------------------------------------------------------------------
+# Failure narration (unchanged)
+# ---------------------------------------------------------------------------
 
 
 def narrate_failure(error_type: str, messages: list[str]) -> str:
@@ -267,8 +403,63 @@ def redact_sensitive(text: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Purchase Order list narrative
+# Backward-compatible dispatch: resolve NarrativeConfig by capability_id and
+# route to the factShape entry point. Old per-capability entry points below are
+# thin shims so existing callers/tests keep working during the migration.
 # ---------------------------------------------------------------------------
+
+
+def _config_for(capability_id: str) -> NarrativeConfig | None:
+    catalog = load_intent_catalog()
+    descriptor = catalog.find(capability_id)
+    return descriptor.narrative if descriptor else None
+
+
+def narrate_by_capability(
+    fact: ReasoningFact,
+    capability_id: str,
+    *,
+    client=None,
+) -> str:
+    """Unified single-fact dispatch by capability's narrative.factShape."""
+    config = _config_for(capability_id)
+    shape = config.fact_shape if config else "single-value"
+    if shape == "action-receipt":
+        return narrate_action_receipt(fact, config, client=client)
+    return narrate_single_value(fact, config, client=client)
+
+
+def narrate_list_by_capability(
+    facts: list[ReasoningFact],
+    capability_id: str,
+    *,
+    total_count: int | None = None,
+    client=None,
+) -> str:
+    """Unified list-fact dispatch by capability's narrative.factShape."""
+    config = _config_for(capability_id)
+    return narrate_list(facts, config, total_count=total_count, client=client)
+
+
+# ---------------------------------------------------------------------------
+# Backward-compatible shims (preserve existing call sites during migration)
+# ---------------------------------------------------------------------------
+
+
+# Kept for callers that still import narration_guidance / narrate_fact etc.
+def narration_guidance(capability_id: str) -> str:
+    """Legacy guidance lookup by capability_id; delegates to the template registry."""
+    return _guidance_for(_config_for(capability_id))
+
+
+def narrate_fact(
+    fact: ReasoningFact,
+    *,
+    capability_id: str = "MM.Inventory.GetAvailability",
+    client=None,
+) -> str:
+    """Legacy single-fact entry; delegates to narrate_single_value."""
+    return narrate_single_value(fact, _config_for(capability_id), client=client)
 
 
 def narrate_purchase_order_facts(
@@ -277,54 +468,11 @@ def narrate_purchase_order_facts(
     total_count: int | None = None,
     client=None,
 ) -> str:
-    """Grounded narrative for a list of purchase-order-item facts.
-
-    - Empty list -> "无匹配记录。" (not an error, no LLM call).
-    - Non-empty: LLM main path (chat_text + redact_sensitive).
-    - LlmUnavailable -> template concatenation (guard raises on missing evidence).
-    - More than 50 items (or totalCount > 50) -> truncation notice (template path).
-    """
-    if not facts:
-        return "无匹配记录。"
-
-    _assert_po_evidence_complete(facts)
-
-    try:
-        llm_client = client or OpenAiCompatibleLlmClient()
-        text = llm_client.chat_text(
-            _build_po_messages(facts, total_count), temperature=0.0, max_tokens=400
-        )
-        return redact_sensitive(text.strip())
-    except LlmUnavailable:
-        return _template_po(facts, total_count)
-
-
-def _assert_po_evidence_complete(facts: list[ReasoningFact]) -> None:
-    """Reject incomplete evidence before narration, regardless of LLM availability.
-
-    Mirrors inventory's guard-before-LLM discipline so behavior is deterministic:
-    incomplete evidence raises NarrativeGuardError whether the LLM is up or down.
-    """
-    for fact in facts[:_PO_LIMIT]:
-        evidence = fact.evidence[0] if fact.evidence else {}
-        missing = [
-            field
-            for field in _PO_REQUIRED_EVIDENCE
-            if field not in evidence or evidence[field] is None
-        ]
-        if missing:
-            raise NarrativeGuardError(
-                f"ReasoningFact missing evidence fields for PO narration: {', '.join(missing)}"
-            )
-
-
-# ---------------------------------------------------------------------------
-# Inventory batch narrative (multi-value aggregation, Design Doc §4.5)
-# ---------------------------------------------------------------------------
+    """Legacy PO list entry; delegates to narrate_list."""
+    return narrate_list(facts, _config_for("MM.PurchaseOrder.GetList"), total_count=total_count, client=client)
 
 
 def _assert_inventory_fields(facts: list[ReasoningFact]) -> None:
-    """Reject incomplete facts before narration, regardless of LLM availability."""
     for fact in facts:
         missing = [
             name
@@ -346,7 +494,8 @@ def _build_inventory_batch_messages(
     facts: list[ReasoningFact],
     failures: list[dict] | None,
 ) -> list[dict[str, str]]:
-    guidance = narration_guidance("MM.Inventory.GetAvailability")
+    config = _config_for("MM.Inventory.GetAvailability")
+    guidance = _guidance_for(config)
     lines: list[str] = []
     for fact in facts:
         lines.append(
@@ -354,9 +503,17 @@ def _build_inventory_batch_messages(
             f"可用库存: {fact.value} {fact.unit}"
         )
         evidence = fact.evidence[0] if fact.evidence else {}
-        detail = _format_mrp_element_lines(evidence)
-        if detail:
-            lines.append(f"MRP 元素明细:\n{detail}")
+        rows = evidence.get("mrpElementLines")
+        if isinstance(rows, list) and rows:
+            parts = []
+            for item in rows:
+                if not isinstance(item, dict):
+                    continue
+                parts.append(
+                    f"元素[{item.get('mrpElementInd', '')}/{item.get('mrpElement', '')}] "
+                    f"数量={item.get('elementQty', '')} 可用量={item.get('availQty1', '')} 日期={item.get('date', '')}"
+                )
+            lines.append(f"MRP 元素明细:\n" + "\n".join(parts))
     if failures:
         for fail in failures:
             params = fail.get("parameters", {})
@@ -376,17 +533,12 @@ def _template_inventory_batch(
     facts: list[ReasoningFact],
     failures: list[dict] | None,
 ) -> str:
-    """Deterministic template fallback for batch inventory narration.
-
-    Single fact (one material, one plant) uses the structured body with the
-    raw MRP detail table; multi-value aggregations keep the compact inline form.
-    """
+    config = _config_for("MM.Inventory.GetAvailability")
     if len(facts) == 1 and not failures:
-        return _inventory_narrative_body(facts[0])
+        return _inventory_narrative_body(facts[0], config)
     materials = {fact.material for fact in facts}
     lines: list[str] = []
     if len(materials) <= 1:
-        # 单物料：对齐 spec "5200: 176 EA; 1000: 0 EA"
         material = next(iter(materials), None)
         if material:
             lines.append(f"物料 {material}：")
@@ -395,7 +547,6 @@ def _template_inventory_batch(
         ]
         lines.append("；".join(plant_lines) + "。")
     else:
-        # 多物料：每条含 material
         for fact in facts:
             lines.append(
                 f"物料 {fact.material} 在工厂 {fact.plant} 为 {fact.value} {fact.unit}；"
@@ -414,18 +565,10 @@ def narrate_inventory_facts(
     failures: list[dict] | None = None,
     client=None,
 ) -> str:
-    """Grounded narrative for a list of inventory facts (multi-value aggregation).
-
-    - Empty facts + no failures -> "无匹配记录。" (no LLM call).
-    - Non-empty: LLM main path (chat_text + redact_sensitive).
-    - LlmUnavailable -> template fallback (guard raises on missing fields).
-    - Partial failures appended as annotations.
-    """
+    """Legacy batch inventory entry; delegates to the generic batch path."""
     if not facts and not failures:
         return "无匹配记录。"
-
     _assert_inventory_fields(facts)
-
     try:
         llm_client = client or OpenAiCompatibleLlmClient()
         text = llm_client.chat_text(

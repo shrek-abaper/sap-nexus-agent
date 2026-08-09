@@ -122,7 +122,11 @@ def test_registry_v2_metadata_does_not_change_runtime_descriptors():
         "aliases",
         "examples",
         "side_effect",
+        "narrative",
     )
+    assert inventory.narrative is not None
+    assert inventory.narrative.fact_shape == "single-value"
+    assert inventory.narrative.detail_formatter == "mrp-table"
     assert tuple(field.name for field in fields(InputDescriptor)) == (
         "name",
         "semantic_name",

@@ -1,0 +1,11 @@
+{
+  "schema": "comet.native.archive-cas.v1",
+  "operationId": "spec-1-narrative-generalization",
+  "role": "post",
+  "hash": "5ea2d39bacebf8fa511737a86e189e254c406f79342720bd1293c2a7d331c3eb",
+  "identity": {
+    "dev": 2096,
+    "ino": 446885,
+    "birthtimeMs": 1786240366475.016
+  }
+}

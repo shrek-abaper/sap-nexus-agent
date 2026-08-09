@@ -1,0 +1,35 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "static-inspection",
+  "role": "required-check",
+  "status": "passed",
+  "bindings": {
+    "change": "narrative-generalization",
+    "sourceRevision": 3,
+    "contractHash": "e91844d84f5f2142ba6b63abd2db1abf1dc2a20d462bfa42d17689e6200f1f2e",
+    "scopeHash": "a45eed7dab74db579fa30f68f221a632ddef144ae8b918495196e3daf43b5c24",
+    "snapshotHash": "8842950a7ef034a5376300578857021cf750a8d71a01f01da9ae508376111410",
+    "artifactHash": "7e06440a600cbe221428e75aa63d3e4d07828e5378c28800afed81e42765204e"
+  },
+  "acceptanceIds": [],
+  "actor": "native-runtime:scoped-text-safety",
+  "issuedAt": "2026-08-09T01:52:26.955Z",
+  "evidence": {
+    "subjects": [
+      "agent/sap_nexus_agent/narrator.py",
+      "agent/sap_nexus_agent/orchestrator.py",
+      "agent/sap_nexus_agent/reasoning_fact.py",
+      "agent/sap_nexus_agent/registry_loader.py",
+      "agent/tests/test_reasoning_narrator.py",
+      "agent/tests/test_registry_loader.py",
+      "evals/matcher_cases.yaml",
+      "registry/capabilities.yaml",
+      "schemas/capability.schema.json"
+    ],
+    "rule": "scoped-text-safety",
+    "resultSummary": "The built-in scoped inspection passed without skipped or blocking input.",
+    "checkReceiptRef": "runtime/evidence/check-receipts/4502fedb434be45427aaac31c424e449a004a304fb182fed27e095309c4f1880.json",
+    "checkReceiptHash": "4502fedb434be45427aaac31c424e449a004a304fb182fed27e095309c4f1880"
+  },
+  "receiptHash": "e216082b1bb55d86fdf4bc165f16dbbaf1549bcda64bf6acb5fda6ba4364cfa4"
+}

@@ -91,6 +91,15 @@ capabilities:
       approvalPolicy: not_required
       dataClassification: internal
       auditRequired: true
+    narrative:
+      factShape: single-value
+      promptTemplate: inventory-md04
+      fallbackTemplate: inventory-md04
+      fieldMapping:
+        title: "{material} 在工厂 {plant}"
+        primary: "{value} {unit}"
+        detailRows: mrpElementLines
+      detailFormatter: mrp-table
   - capabilityId: MM.PurchaseOrder.GetList
     name: Purchase Order List
     description: Read purchase order list through SAP OData service.
@@ -168,6 +177,13 @@ capabilities:
       approvalPolicy: not_required
       dataClassification: internal
       auditRequired: true
+    narrative:
+      factShape: list
+      promptTemplate: purchase-order-list
+      fallbackTemplate: purchase-order-list
+      fieldMapping:
+        itemFields: purchaseOrder,supplier,material,plant,orderQuantity,purchaseOrderUnit
+      detailFormatter: po-list
   - capabilityId: MM.PR.CreateDraft
     name: Purchase Requisition Create Draft
     description: 创建采购申请 (PR) 草稿, 支持实物直采与间采 (成本中心)
@@ -297,3 +313,10 @@ capabilities:
       approvalPolicy: human_required
       dataClassification: internal
       auditRequired: true
+    narrative:
+      factShape: action-receipt
+      promptTemplate: pr-create-receipt
+      fallbackTemplate: pr-create-receipt
+      fieldMapping:
+        receiptId: prNumber
+      detailFormatter: none

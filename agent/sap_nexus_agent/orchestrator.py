@@ -34,16 +34,18 @@ from sap_nexus_agent.intent import IntentParseResult, parse_intent, parse_invent
 from sap_nexus_agent.match_decision import MatchDecision
 from sap_nexus_agent.narrator import (
     NarrativeGuardError,
-    narrate_fact,
+    narrate_action_receipt,
+    narrate_by_capability,
     narrate_failure,
     narrate_inventory_facts,
-    narrate_purchase_order_facts,
+    narrate_list_by_capability,
 )
 from sap_nexus_agent.planner.handoff import compile_plan_v2_from_handoff
 from sap_nexus_agent.planner.plan_compiler_v2 import PlanCompileResult
 from sap_nexus_agent.reasoning_fact import (
     ReasoningFact,
     build_availability_fact,
+    build_pr_create_fact,
     build_purchase_order_facts,
 )
 from sap_nexus_agent.semantic_planning import (
@@ -238,9 +240,7 @@ def continue_resolved_read(
             gateway_trace_id=execution.trace_id,
             error_type=execution.error_type,
         )
-    if call_plan.capability_id == INVENTORY_CAPABILITY_ID:
-        return _finalize_inventory(call_plan, validation, execution)
-    return _finalize_purchase_order(call_plan, validation, execution)
+    return _finalize_narrative(call_plan, validation, execution)
 
 
 def preflight_resolved_read(
@@ -1585,13 +1585,7 @@ def run_query(
             context_shadow=context_shadow,
         )
 
-    if capability_id == INVENTORY_CAPABILITY_ID:
-        return _finalize_inventory(
-            call_plan, validation, execution, decision=decision,
-            updated_context=_clear_pending_if_present(context),
-            context_shadow=context_shadow,
-        )
-    return _finalize_purchase_order(
+    return _finalize_narrative(
         call_plan, validation, execution, decision=decision,
         updated_context=_clear_pending_if_present(context),
         context_shadow=context_shadow,
@@ -1772,7 +1766,7 @@ def continue_action(
         )
 
     executed = mark_executed(approved)
-    return _finalize_pr_create(
+    return _finalize_narrative(
         call_plan,
         validation,
         execution,
@@ -1799,31 +1793,7 @@ def _approval_failure(
     )
 
 
-def _finalize_pr_create(
-    call_plan: CallPlan,
-    validation: ValidationResult,
-    execution: ExecutionResult,
-    *,
-    approval_record: ApprovalRecord | None = None,
-) -> AgentOutcome:
-    pr_number = execution.data.get("prNumber", "")
-    response_text = (
-        f"采购申请创建成功，PR 号：{pr_number}"
-        if pr_number
-        else "采购请求创建成功但未返回 PR 号。"
-    )
-    return AgentOutcome(
-        status="success",
-        response_text=response_text,
-        call_plan=call_plan,
-        validation_result=validation,
-        execution_result=execution,
-        gateway_trace_id=execution.trace_id,
-        approval_record=approval_record,
-    )
-
-
-def _finalize_inventory(
+def _finalize_narrative(
     call_plan: CallPlan,
     validation: ValidationResult,
     execution: ExecutionResult,
@@ -1831,38 +1801,72 @@ def _finalize_inventory(
     decision: MatchDecision | None = None,
     updated_context: "ConversationContext | None" = None,
     context_shadow: "ContextShadow | None" = None,
+    approval_record: ApprovalRecord | None = None,
 ) -> AgentOutcome:
-    fact = build_availability_fact(call_plan.agent_trace_id, execution, call_plan.parameters)
-    if fact is None:
-        return AgentOutcome(
-            status="failure",
-            message="缺少可叙事的库存事实。",
-            response_text="缺少可叙事的库存事实，无法生成库存结论。",
-            call_plan=call_plan,
-            validation_result=validation,
-            execution_result=execution,
-            gateway_trace_id=execution.trace_id,
-            error_type="NARRATIVE_GUARD_ERROR",
-            match_decision=decision,
-            updated_context=updated_context,
-            context_shadow=context_shadow,
-        )
+    """Unified narrative finalize: dispatch by capability's narrative.factShape.
+
+    Replaces the per-capability _finalize_inventory/_finalize_purchase_order/
+    _finalize_pr_create branches. Fact construction and narration are driven by
+    the capability's narrative declaration (factShape), not by capability_id
+    branching.
+    """
+    capability_id = call_plan.capability_id
+    from sap_nexus_agent.registry_loader import load_intent_catalog
+    catalog = load_intent_catalog()
+    descriptor = catalog.find(capability_id)
+    fact_shape = descriptor.narrative.fact_shape if descriptor and descriptor.narrative else "single-value"
+    config = descriptor.narrative if descriptor else None
+
+    # Build fact(s) by factShape.
+    fact: ReasoningFact | None = None
+    facts: list[ReasoningFact] = []
+    if fact_shape == "list":
+        facts = build_purchase_order_facts(call_plan.agent_trace_id, execution, call_plan.parameters)
+    elif fact_shape == "action-receipt":
+        fact = build_pr_create_fact(call_plan.agent_trace_id, execution, call_plan.parameters)
+    else:
+        fact = build_availability_fact(call_plan.agent_trace_id, execution, call_plan.parameters)
+        if fact is None:
+            return AgentOutcome(
+                status="failure",
+                message="缺少可叙事的库存事实。",
+                response_text="缺少可叙事的库存事实，无法生成库存结论。",
+                call_plan=call_plan,
+                validation_result=validation,
+                execution_result=execution,
+                gateway_trace_id=execution.trace_id,
+                error_type="NARRATIVE_GUARD_ERROR",
+                match_decision=decision,
+                updated_context=updated_context,
+                context_shadow=context_shadow,
+                approval_record=approval_record,
+            )
+
+    # Narrate by factShape.
     try:
-        response_text = narrate_fact(fact, capability_id="MM.Inventory.GetAvailability")
+        if fact_shape == "list":
+            total_count = execution.data.get("totalCount")
+            response_text = narrate_list_by_capability(facts, capability_id, total_count=total_count)
+        elif fact_shape == "action-receipt":
+            response_text = narrate_action_receipt(fact, config)
+        else:
+            response_text = narrate_by_capability(fact, capability_id)
     except NarrativeGuardError as exc:
         return AgentOutcome(
             status="failure",
             message=str(exc),
-            response_text="缺少可叙事的库存事实，无法生成库存结论。",
+            response_text="缺少可叙事的事实，无法生成结论。" if fact_shape != "list" else "事实缺少必要字段，无法生成结论。",
             call_plan=call_plan,
             validation_result=validation,
             execution_result=execution,
             fact=fact,
+            facts=facts if fact_shape == "list" else None,
             gateway_trace_id=execution.trace_id,
             error_type="NARRATIVE_GUARD_ERROR",
             match_decision=decision,
             updated_context=updated_context,
             context_shadow=context_shadow,
+            approval_record=approval_record,
         )
     return AgentOutcome(
         status="success",
@@ -1871,52 +1875,12 @@ def _finalize_inventory(
         validation_result=validation,
         execution_result=execution,
         fact=fact,
+        facts=facts if fact_shape == "list" else None,
         gateway_trace_id=execution.trace_id,
         match_decision=decision,
         updated_context=updated_context,
         context_shadow=context_shadow,
-    )
-
-
-def _finalize_purchase_order(
-    call_plan: CallPlan,
-    validation: ValidationResult,
-    execution: ExecutionResult,
-    *,
-    decision: MatchDecision | None = None,
-    updated_context: "ConversationContext | None" = None,
-    context_shadow: "ContextShadow | None" = None,
-) -> AgentOutcome:
-    facts = build_purchase_order_facts(call_plan.agent_trace_id, execution, call_plan.parameters)
-    total_count = execution.data.get("totalCount")
-    try:
-        response_text = narrate_purchase_order_facts(facts, total_count=total_count)
-    except NarrativeGuardError as exc:
-        return AgentOutcome(
-            status="failure",
-            message=str(exc),
-            response_text="采购订单事实缺少必要字段，无法生成结论。",
-            call_plan=call_plan,
-            validation_result=validation,
-            execution_result=execution,
-            facts=facts,
-            gateway_trace_id=execution.trace_id,
-            error_type="NARRATIVE_GUARD_ERROR",
-            match_decision=decision,
-            updated_context=updated_context,
-            context_shadow=context_shadow,
-        )
-    return AgentOutcome(
-        status="success",
-        response_text=response_text,
-        call_plan=call_plan,
-        validation_result=validation,
-        execution_result=execution,
-        facts=facts,
-        gateway_trace_id=execution.trace_id,
-        match_decision=decision,
-        updated_context=updated_context,
-        context_shadow=context_shadow,
+        approval_record=approval_record,
     )
 
 

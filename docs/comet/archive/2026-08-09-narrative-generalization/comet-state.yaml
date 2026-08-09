@@ -1,0 +1,23 @@
+schema: comet.native.v3
+minimum_runtime_version: 3
+revision: 5
+verification_protocol: legacy-v1
+name: narrative-generalization
+language: en
+phase: archive
+brief: brief.md
+approval: confirmed
+approved_contract_hash: e91844d84f5f2142ba6b63abd2db1abf1dc2a20d462bfa42d17689e6200f1f2e
+spec_changes:
+  - capability: narrative-generalization
+    operation: create
+    source: specs/narrative-generalization/spec.md
+    base_hash: null
+verification_result: pass
+verification_report: verification.md
+implementation_scope: runtime/evidence/scopes/a45eed7dab74db579fa30f68f221a632ddef144ae8b918495196e3daf43b5c24.json
+verification_evidence: runtime/evidence/verifications/0d68726f05c1ba92918955028ea5d3c1b695cf4614b3bf26f6a6fae656e90b12.json
+partial_allowance: null
+archived: true
+created_at: 2026-08-08
+run_id: d2d683dc-f949-44c9-8004-ffc925eb6e64

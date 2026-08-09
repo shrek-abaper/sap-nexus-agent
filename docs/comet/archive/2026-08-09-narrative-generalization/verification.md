@@ -1,0 +1,330 @@
+# Acceptance evidence
+
+<!-- comet-native:acceptance-evidence:start -->
+[
+  {
+    "acceptance_id": "acceptance-045e7b007735b8c7137c4102e51f43e23d0a58f3f89627376754114ab9d11cbd",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/9e1624689e4de2fa8c8e0a8207aef19cdb6e74a5936cb10051ad06a62cae49b6.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-0b6078d12e17a58d9dfa7453f2d082e8aa7a5dd691ed22cc347386ecd3943f5a",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/bbaf17fedc4e804b562eb7267f4d3a81873401fd59b07bacf10936fed494b6a8.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-1142b6852287dc1c522fb9f0b756f598c0b13426669815a62a9293cf76d88441",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/bd0d15dbd8c16b4eed60f820f630f44742b6d7b2610b188dd7e2e1f550aaf263.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-125aeccb6926c6a78b7360bb2fa921e23f1cb66c906b650e0ff7afad27ca2c5c",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/64b1eeee975c6a2b1b7938285868cd65d414ebc4ec4744b91d12a00a86919dd1.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-144e920df5da49c0469b6bd294048938bc5ad0e3a806ccde3a52c5dfcae7b549",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/7a1c240c217de7f0dbaa1faa63617700c62ef794a7897479922f6aa5977c5507.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-17e7ed4588f3d99d4abc392e1a7754bbce3068cee961ad2d4f3d403924a7195a",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/c6f2c72fff71695ca7bb13f788a38ed951adb2b47bc8a6858dc68442f3f43ba6.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-1a4830f72f90265ae454d3139b8933b4746e862043e474a0c19756c593371e43",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/9fcb7c01f6dde5693184a954c4a5796c1cc1ac8725747b75dcd8ca05c6bb779d.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-1c0a636bf08f6f4a397db4cdfaf7fb491643a47b1bfa9a256a870a3d09f3374b",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/61208f6bd010f595e0e71b06d588e686b2003e53a3e78e6fb9fa549b36938ed8.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-337f0f7bf529b7eac3bad12b9c0dde00105f121c733d6fac46de62cdd030b06b",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/28f997e2d527a0e6ba3754968b523f6da971cf64be90caa5895f30cac5d647fc.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-3a074cec188a7693a87ecad9d760f45185d367c37b080700cb78ea74beefc6cf",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/a85de5eea5c5fc40dd655d969c52049c61efbd0dd8ccdc5e0ec629100fef5f5e.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-3bb33f143d4e18cebd847232f911a896acaddde17ed678554fbf78a070339790",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/9c83bf83b32fdc445055399349252576028546c7e2ec5c45fec946a4fa66aeff.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-42e99bc873c1c7429e84c218d8523016ac54980d1be43964d366019b8d2985d8",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/f24a32665206ffa65fd9c78d906fe919a899898bc173868e2ad9839b448b4607.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-4629d19e2a3d93268b852c3e0f896fb821de3c7889fa308b78f47f56019b4b8f",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/00c52a90bf3340ef430950ad080e52e6fba76a23452f001deca977e33c289a44.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-486c9c472419880f8072a681b6cb636570ad36c19298f5058a23258225f45f38",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/360d44b0291dabffaf69f838d99920e062062c86a7e2d708ca7c5c39c9ccce15.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-4ca56888e2164ea7613b0100d7cc522317d85d3df9dad164877f6b74dd3ec8c7",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/020262ce310b0923cc92f029919ba9b3cab81fd3c9218a3682a2cb1079e2c9c7.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-4db405c54e66d28c22a123713a190936fbd9a5301ad47640a85eb43316e6adc3",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/434e8cc54564196b836ba6b1bdc47f0b791eb82d30439f8d764df97b47387c25.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-4ec7858d651356839378dabda5296e998488cf98652f86f8d623f0ed89257b50",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/4f3264bd6139ea7797f41b615337b5fb64bce74120a8f750c16c6cae8ae0f3b3.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-523f29192d0fb8aee463075cfa361e3ca83431eafa53982318bcbcbea6e78724",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/2b52a69d863d4aeacd9fc341ab3d8899a8c489fa8cab5cab72b5561c07d2ef70.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-543c2c6d9c1826ed798e814c170514be17ba699c541394baf14419c9ef72110b",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/af8eeb5b0a12c74a6a2cc85474aadcc9e44efc11e0e0e2802edf7650b3cfd06b.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-6350f04a8d179f5c7a92a9e26ab35f8a429771a16e4156ada4920c592319c611",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/5963b6aa25157acc2c27bf21ea740b79b792745ffb3ea5077578a113777c4044.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-6981a19db3399a391f981e39a6684f5bff2301cb6195a8c4b2e7cbb4a1819561",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/15fcbd991fc1b770c56e7e457bdea5255acba3618bbf4a9d7f3ccd4a2a86bb13.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-6ad9ef545b62f077aaa75f89afc6dca8f5f36b039b80fd4c4d8d821564fdf5ae",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/f0f48f31b80fac9a91c93fbc1144c8f4684999ff3854d843504b478be2a43668.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-7802a2a6194d7cc759f6c0bd304c27f0c4ab5fdc8e3a51ba74db56f96734a09c",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/ebc4ad451fb208b8b78ea899d2848a0de52d2024b54f7b3730648c8db9dac904.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-7e1c8bc1b4673dce1ea66c65f53944a71a02265ff2e03e12b1509fa6b0d03777",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/07cac7ceea9a59e125856543470b8521e73b5401e5f472d8884ded6fe57058b2.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-7f7fc80edf4ff16160f03b3b3c0b0ee510634e12e6fdeadf6fa0815848acd5eb",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/462c0a26f7cb2516d06094a134a990e614da463be5a7dd173baeadd6eff87aaf.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-85da4e44c3fedc5e9ee7cdb3374e684c53bbdd3a98f73031bc6fc65b6383def8",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/4051fd088529310c1966689a1150d57495de4f9cb549a014a0e0df3ac1204567.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-890a90ee2983becce5aefec44da619a93e656f84a2a309ac54cffa4182fc6b24",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/99456191554d68c6471612adc21280bee9daa3923484808c9cfa6c800bc30cc5.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-8f73137809634a51cd07807132d0a42fff3767638961985770d9cc80a8989415",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/d5634cd4d551e134aba8a906bd91590c70343e88c1ff340dea7458c5696e39c2.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-92ae36c22a833edca3a3caed19ae7449284e53aef92c63914a907138ad177b34",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/08440bdb4b92ddd0b364b78598b11d8b698b66c1e33855e1bba4f1c6b5ff7cda.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-9f32778f352e8d0dd274686f6b33d1cd8c6f914f93c05264758186eb3b6b1743",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/205801b58199d504762674fbb43c438318e3584da154378685a63275ae8892b0.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-a19a2072ee427b7326ed087ee1bf48c26867583f2e0d33439fa14c11ffca09ca",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/1dafb35ad12bd757c9e4e4992f6141dd8fb474ff06efd50ef498d7c0e280c73e.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-b3751a25a744e7e1b3a29b2be436afdb2241f67fadd17b8392224a46f9dd75b4",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/f5036ec86927584d0897cb42016a5312af4ef448bb0e6bcc7bef7ef02439f27e.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-b480ba8d6577c4d9e0f9d861a7d0cf89b25b6984e2300fd9d0cad6fafc01ff70",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/8fbff70eb38a731f5eb8aaba87440323702d281a65e2dc26173c116ee7037bda.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-b4eb716134f7afd8c19359ccd2474b7ec6a74a691b1c16c457ef14ea0bfe47cb",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/4f2c79b463b9e9e7e78b562ea07176f588f16e32621b6be0f2c96f9ba2838525.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-b6d43e33338590f3318f90fc6036b92774860ea21926ca022a80a46873f86270",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/a427df066239a8c4f35c89c9eedd413659ca41439224ec3733ba2ae688b7e7f5.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-c6608c7e737f7bcdea0ae322b371ef7d8ec4457aeb9281c35603aacb4ca1cbe2",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/61337c8eb655d35f381cf90463b08374e7975000a23809952b24426e5a3160fb.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-c8369bca899daf2f871aa5f6256543ee4116d81403126a4904dc1e18223e393e",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/0b4a51599369771602359816a858e674779f97c732ca603a9cd28a5d2dbcd10b.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-e0af0abd793681ae98b1f9a5bb1a228853b7bcfb39608bc408abe94b37888464",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/4325847a4ef767f4801e1df4d670db9d36fff54d69bb11aee6b0e981c9f659a3.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-ebc80fd4bfc5d831be57611cced7e38e1a1729fd423b2601231e6fb6106eaf86",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/e61f6d1f4343fc7821e267e70c9dcd2768306d357acbcbad9416809d90cb131f.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-f2c35cc60ab6569e6ce89d3286bf6a9c76d8b54950090eac0dda57ae8c2e9cd8",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/9c77ce48b455dae9ba93fa7260d4b3a3ebb31d5319eb098e0aced243d6802aee.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-fa896a5b397b2d5f9ebabea082fe40f11e548a994937b35ae9d67dbf998bea49",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/02bf53b350aa3bb2a16519c8af3d451ce05fcddc32faee1692cb4e95e817dc89.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-fd23b06f97fde645e8c242a5d4f6a1b51fcc3875b85048ca56173b550338cb17",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/c41d2f8b47b746713400f664052fbc3c2a6d0bbe3058a944edf77e9635bcb04e.json"
+    ]
+  }
+]
+<!-- comet-native:acceptance-evidence:end -->
+
+# Commands and results
+
+## Schema / registry
+- `openspec validate --all --strict` - 20 passed, 0 failed - PASS.
+- `PYTHONPATH=agent .venv/bin/python scripts/validate-semantic-planning-contract.py` - snapshotId=sha256:2bcba24e... - PASS.
+
+## Agent test suite
+- `PYTHONPATH=agent .venv/bin/python -m pytest agent/tests/ -q` - 1145 passed, 1 skipped - PASS.
+- New: A6 synthetic capability zero-code narration, A8 unknown formatter fallback, PR action-receipt (3 tests), build_pr_create_fact determinism.
+- Updated: narrator _build_messages -> _build_single_value_messages/_build_list_messages, registry_loader descriptor field tuple + narrative assertions.
+
+## Inventory eval
+- `PYTHONPATH=agent .venv/bin/python -m sap_nexus_agent.eval evals/inventory_availability_cases.yaml` - 7/7 - PASS.
+
+## Frontend verify
+- `npm --prefix frontend run verify` - 523 passed (1 pre-existing adapter-integration failure, unrelated).
+
+# Skipped checks
+- Full release gate: workstream-level, not required for single-framework change (CLAUDE.md §4).
+
+# Spec consistency
+- Complete target spec at specs/narrative-generalization/spec.md. All requirements map to implemented code. factShape clustering (single-value/list/action-receipt), narrative declaration inline in capabilities.yaml, template registry + detail formatter registry in narrator.py, unified _finalize_narrative dispatch, PR create via framework, synthetic capability zero-code. Identifier stability, READ/WRITE boundary, fact-chain determinism upheld.
+
+# Known limitations and risks
+- Backward-compat shims (narrate_fact/narrate_purchase_order_facts/narrate_inventory_facts) preserved for the batch multi-value path and existing callers; full removal deferred. The unified dispatch (_finalize_narrative) covers all 3 capabilities.
+- Pre-existing frontend adapter-integration.test.ts failure unrelated.
+
+# Conclusion
+Implementation complete. 42/42 acceptance receipts valid. All change-scoped verification passes: openspec 20/0, agent 1145 passed/1 skipped, eval 7/7, frontend 523 passed (1 pre-existing).

@@ -21,6 +21,17 @@ class InputDescriptor:
 
 
 @dataclass(frozen=True)
+class NarrativeConfig:
+    """Narrative declaration for a capability (metadata-driven narration)."""
+
+    fact_shape: str
+    prompt_template: str
+    fallback_template: str
+    field_mapping: tuple[tuple[str, str], ...]
+    detail_formatter: str
+
+
+@dataclass(frozen=True)
 class CapabilityDescriptor:
     capability_id: str
     name: str
@@ -33,6 +44,7 @@ class CapabilityDescriptor:
     aliases: tuple[str, ...] = ()
     examples: tuple[str, ...] = ()
     side_effect: str = ""
+    narrative: NarrativeConfig | None = None
 
 
 @dataclass(frozen=True)
@@ -44,6 +56,26 @@ class IntentCatalog:
         for cap in self.capabilities:
             if cap.capability_id == capability_id:
                 return cap
+        return None
+
+
+def _parse_narrative(raw: object) -> NarrativeConfig | None:
+    """Parse an optional narrative declaration; None when absent or malformed."""
+    if not isinstance(raw, dict):
+        return None
+    try:
+        field_mapping_raw = raw.get("fieldMapping") or {}
+        field_mapping = tuple(
+            (str(k), str(v)) for k, v in field_mapping_raw.items()
+        ) if isinstance(field_mapping_raw, dict) else ()
+        return NarrativeConfig(
+            fact_shape=str(raw["factShape"]),
+            prompt_template=str(raw["promptTemplate"]),
+            fallback_template=str(raw["fallbackTemplate"]),
+            field_mapping=field_mapping,
+            detail_formatter=str(raw.get("detailFormatter", "none")),
+        )
+    except (KeyError, TypeError):
         return None
 
 
@@ -127,6 +159,7 @@ def load_intent_catalog(repo_root: str | None = None) -> IntentCatalog:
         examples = tuple(str(e) for e in raw_examples) if isinstance(raw_examples, list) else ()
         raw_governance = cap.get("governance")
         side_effect = raw_governance.get("sideEffect", "") if isinstance(raw_governance, dict) else ""
+        narrative = _parse_narrative(cap.get("narrative"))
         descriptors.append(
             CapabilityDescriptor(
                 capability_id=cap["capabilityId"],
@@ -138,6 +171,7 @@ def load_intent_catalog(repo_root: str | None = None) -> IntentCatalog:
                 aliases=aliases,
                 examples=examples,
                 side_effect=side_effect,
+                narrative=narrative,
             )
         )
 

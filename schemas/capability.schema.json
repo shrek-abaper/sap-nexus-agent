@@ -71,7 +71,8 @@
         "executor": { "$ref": "#/$defs/executor" },
         "executorBinding": { "$ref": "#/$defs/executorBinding" },
         "evalLinkage": { "$ref": "#/$defs/evalLinkage" },
-        "governance": { "$ref": "#/$defs/governance" }
+        "governance": { "$ref": "#/$defs/governance" },
+        "narrative": { "$ref": "#/$defs/narrative" }
       },
       "allOf": [
         {
@@ -231,6 +232,22 @@
         "approvalPolicy": { "type": "string", "enum": ["not_required", "human_required"] },
         "dataClassification": { "type": "string", "minLength": 1 },
         "auditRequired": { "type": "boolean" }
+      }
+    },
+    "narrative": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["factShape", "promptTemplate", "fallbackTemplate", "fieldMapping", "detailFormatter"],
+      "properties": {
+        "factShape": { "type": "string", "enum": ["single-value", "list", "action-receipt"] },
+        "promptTemplate": { "type": "string", "minLength": 1 },
+        "fallbackTemplate": { "type": "string", "minLength": 1 },
+        "fieldMapping": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": { "type": "string", "minLength": 1 }
+        },
+        "detailFormatter": { "type": "string", "enum": ["mrp-table", "po-list", "none"] }
       }
     }
   }

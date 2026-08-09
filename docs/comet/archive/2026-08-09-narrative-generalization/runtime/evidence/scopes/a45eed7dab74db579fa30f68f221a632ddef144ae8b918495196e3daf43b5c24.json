@@ -1,0 +1,215 @@
+{
+  "schema": "comet.native.implementation-scope.v2",
+  "contractHash": "e91844d84f5f2142ba6b63abd2db1abf1dc2a20d462bfa42d17689e6200f1f2e",
+  "baselineProjectionRef": "runtime/evidence/snapshots/07c86d8a2f8371eade4b40328dd50b60d23c7d9a59e93638c3ec8d1fc551c6cb.json",
+  "baselineProjectionHash": "07c86d8a2f8371eade4b40328dd50b60d23c7d9a59e93638c3ec8d1fc551c6cb",
+  "currentProjectionRef": "runtime/evidence/snapshots/8842950a7ef034a5376300578857021cf750a8d71a01f01da9ae508376111410.json",
+  "currentProjectionHash": "8842950a7ef034a5376300578857021cf750a8d71a01f01da9ae508376111410",
+  "complete": true,
+  "declaredArtifacts": [
+    {
+      "path": "agent/sap_nexus_agent/narrator.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/sap_nexus_agent/orchestrator.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/sap_nexus_agent/reasoning_fact.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/sap_nexus_agent/registry_loader.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_reasoning_narrator.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_registry_loader.py",
+      "kind": "file"
+    },
+    {
+      "path": "evals/matcher_cases.yaml",
+      "kind": "file"
+    },
+    {
+      "path": "registry/capabilities.yaml",
+      "kind": "file"
+    },
+    {
+      "path": "schemas/capability.schema.json",
+      "kind": "file"
+    }
+  ],
+  "changes": [
+    {
+      "path": "agent/sap_nexus_agent/narrator.py",
+      "kind": "modified",
+      "before": {
+        "hash": "b0e55f505a72ec05f9ca95c60a523db76cfca579c034332a9410f801f8b97e3e",
+        "size": 16222
+      },
+      "after": {
+        "hash": "6bb2a8a2dd6c6db8cde784ff4ca298b76fbedd959debe88d90624b3c00258aa9",
+        "size": 22020
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/narrator.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/sap_nexus_agent/orchestrator.py",
+      "kind": "modified",
+      "before": {
+        "hash": "461bb1e4df963b2e00df7ab7a8687383f344add3d59d50aa5060c4e7d9cfb393",
+        "size": 83783
+      },
+      "after": {
+        "hash": "0bb97848a0526704d26b68b970131f39a07200a625a7885e42fa5e5b89278cdf",
+        "size": 83072
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/orchestrator.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/sap_nexus_agent/reasoning_fact.py",
+      "kind": "modified",
+      "before": {
+        "hash": "bfc359f90c1bdd44d7ba97de18863c5ef6d029c10f93264617b40cf8b6a3bef3",
+        "size": 6481
+      },
+      "after": {
+        "hash": "0922721d427e8ec00bf70602204d13476751b366ab05758a7e7d7aed6a905dfc",
+        "size": 7893
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/reasoning_fact.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/sap_nexus_agent/registry_loader.py",
+      "kind": "modified",
+      "before": {
+        "hash": "68c9bde43379148c1a9399af74e1cb22621943307c363fc659e2e5841b2ce820",
+        "size": 5036
+      },
+      "after": {
+        "hash": "1b635d100a6cd22082414d57748aa5ce4bb707d1654c8c991f26d4c0dbd0b8ec",
+        "size": 6240
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/registry_loader.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_reasoning_narrator.py",
+      "kind": "modified",
+      "before": {
+        "hash": "8646ba312ccd8a20f8b67b882d4351a35836f7854fe20558fb624b8dc1a7395e",
+        "size": 31071
+      },
+      "after": {
+        "hash": "0e55237d25f7238fc8a678d0f34383a3ce79544b2aa408ffe08368925a20a32e",
+        "size": 36410
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_reasoning_narrator.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_registry_loader.py",
+      "kind": "modified",
+      "before": {
+        "hash": "5a019069d39c628fda63ab806d6125a22e76a9464729f3e5291ed9feb1e1e147",
+        "size": 6172
+      },
+      "after": {
+        "hash": "f925dc743cde4918b335b7e9b913857a521884154190a17e481b8424e4d0cf91",
+        "size": 6359
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_registry_loader.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "evals/matcher_cases.yaml",
+      "kind": "modified",
+      "before": {
+        "hash": "a43fdf2448bf3b8387d6b2e89e594a4dc6778cbe17f6d0e9a01252398b54ada2",
+        "size": 27513
+      },
+      "after": {
+        "hash": "3003fff6a63df645dff3d307ab51864723f4b8f43d8f9694007ff5ec078e1da8",
+        "size": 27513
+      },
+      "attributedTo": [
+        {
+          "path": "evals/matcher_cases.yaml",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "registry/capabilities.yaml",
+      "kind": "modified",
+      "before": {
+        "hash": "17363b900cf0d699065c21595a1d23229fe43eb4c763f4d8b496bc35acfd5a16",
+        "size": 9076
+      },
+      "after": {
+        "hash": "e83fd095a8d62be60cfd86543dc0d84c9ea1df4217d14a0e4861c504ea66f9ab",
+        "size": 9835
+      },
+      "attributedTo": [
+        {
+          "path": "registry/capabilities.yaml",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "schemas/capability.schema.json",
+      "kind": "modified",
+      "before": {
+        "hash": "938d836498472b40e41e5b56d9cc90473c0063b6d4dc318e96c7bd730ccaa1b7",
+        "size": 7678
+      },
+      "after": {
+        "hash": "007748530d79cd49ae0d86f4fdb6e8e72e2e7e30c4a5d77a9c43ee15faa49e34",
+        "size": 8436
+      },
+      "attributedTo": [
+        {
+          "path": "schemas/capability.schema.json",
+          "kind": "file"
+        }
+      ]
+    }
+  ],
+  "unattributed": [],
+  "unresolvedScopes": [],
+  "noCodeReason": null,
+  "scopeHash": "a45eed7dab74db579fa30f68f221a632ddef144ae8b918495196e3daf43b5c24"
+}

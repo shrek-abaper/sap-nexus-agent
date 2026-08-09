@@ -499,12 +499,14 @@ def test_narration_guidance_unknown_capability_returns_generic():
 # Prompt message construction
 # ---------------------------------------------------------------------------
 
-from sap_nexus_agent.narrator import _build_messages, _build_po_messages
+from sap_nexus_agent.narrator import _build_single_value_messages, _build_list_messages
+from sap_nexus_agent.registry_loader import load_intent_catalog
 
 
 def test_build_messages_inventory_contains_system_constraint_and_fact_fields():
     fact = build_availability_fact("agent-1", successful_execution())
-    messages = _build_messages(fact, "MM.Inventory.GetAvailability")
+    config = load_intent_catalog().find("MM.Inventory.GetAvailability").narrative
+    messages = _build_single_value_messages(fact, config)
 
     assert messages[0]["role"] == "system"
     assert "不得编造" in messages[0]["content"]
@@ -520,7 +522,8 @@ def test_build_messages_inventory_contains_system_constraint_and_fact_fields():
 def test_build_po_messages_contains_constraint_and_evidence():
     items = [_po_item(po="4500000001", supplier="DEMOV1")]
     facts = build_purchase_order_facts("agent-po-1", _po_execution_result(items))
-    messages = _build_po_messages(facts, total_count=1)
+    config = load_intent_catalog().find("MM.PurchaseOrder.GetList").narrative
+    messages = _build_list_messages(facts, total_count=1, config=config)
 
     assert messages[0]["role"] == "system"
     assert "不得编造" in messages[0]["content"]
@@ -890,3 +893,143 @@ def test_narrate_inventory_facts_guard_on_missing_fields():
         assert False, "expected NarrativeGuardError"
     except NarrativeGuardError:
         pass
+
+
+# ---------------------------------------------------------------------------
+# Generalized framework: synthetic capability narrates via declaration only (A6)
+# ---------------------------------------------------------------------------
+
+
+def test_synthetic_capability_narrates_via_declaration_only():
+    """A6: a capability with only a narrative declaration (no new narrator code)
+    narrates through the generic factShape framework."""
+    from sap_nexus_agent.narrator import narrate_single_value
+    from sap_nexus_agent.registry_loader import NarrativeConfig
+
+    config = NarrativeConfig(
+        fact_shape="single-value",
+        prompt_template="inventory-md04",
+        fallback_template="inventory-md04",
+        field_mapping=(("title", "{material} 在工厂 {plant}"), ("primary", "{value} {unit}")),
+        detail_formatter="none",
+    )
+    fact = build_availability_fact("agent-1", successful_execution())
+    fake = FakeNarratorLlmClient(unavailable=True)
+
+    result = narrate_single_value(fact, config, client=fake)
+
+    assert "DEMOA1" in result
+    assert "1000" in result
+    assert "12" in result
+    assert "EA" in result
+
+
+def test_unknown_detail_formatter_falls_back_to_none():
+    """A8: unknown detailFormatter id falls back to none (no detail, no error)."""
+    from sap_nexus_agent.narrator import narrate_single_value
+    from sap_nexus_agent.registry_loader import NarrativeConfig
+
+    config = NarrativeConfig(
+        fact_shape="single-value",
+        prompt_template="inventory-md04",
+        fallback_template="inventory-md04",
+        field_mapping=(("title", "{material} 在工厂 {plant}"),),
+        detail_formatter="unknown-xyz",
+    )
+    fact = build_availability_fact("agent-1", successful_execution())
+    fake = FakeNarratorLlmClient(unavailable=True)
+
+    result = narrate_single_value(fact, config, client=fake)
+
+    assert "MRP 元素明细" not in result
+    assert "当前可用量" in result
+
+
+# ---------------------------------------------------------------------------
+# Action-receipt narration (PR create) via the framework
+# ---------------------------------------------------------------------------
+
+
+def test_action_receipt_narration_with_pr_number():
+    """A5: PR create narration flows through narrate_action_receipt."""
+    from sap_nexus_agent.narrator import narrate_action_receipt
+    from sap_nexus_agent.registry_loader import NarrativeConfig
+    from sap_nexus_agent.reasoning_fact import build_pr_create_fact
+
+    result = ExecutionResult(
+        trace_id="gw-pr",
+        capability_id="MM.PR.CreateDraft",
+        success=True,
+        executor={"type": "JCO_RFC", "rfcName": "BAPI_PR_CREATE"},
+        return_messages=[],
+        data={"prNumber": "0010001234"},
+        duration_ms=10,
+        error_type="NONE",
+    )
+    fact = build_pr_create_fact("agent-1", result)
+    config = NarrativeConfig(
+        fact_shape="action-receipt",
+        prompt_template="pr-create-receipt",
+        fallback_template="pr-create-receipt",
+        field_mapping=(("receiptId", "prNumber"),),
+        detail_formatter="none",
+    )
+
+    text = narrate_action_receipt(fact, config)
+
+    assert "0010001234" in text
+    assert "采购申请创建成功" in text
+
+
+def test_action_receipt_narration_without_pr_number():
+    """A5: PR create without a PR number yields the missing-number message."""
+    from sap_nexus_agent.narrator import narrate_action_receipt
+    from sap_nexus_agent.registry_loader import NarrativeConfig
+    from sap_nexus_agent.reasoning_fact import build_pr_create_fact
+
+    result = ExecutionResult(
+        trace_id="gw-pr-empty",
+        capability_id="MM.PR.CreateDraft",
+        success=True,
+        executor={"type": "JCO_RFC", "rfcName": "BAPI_PR_CREATE"},
+        return_messages=[],
+        data={"prNumber": ""},
+        duration_ms=10,
+        error_type="NONE",
+    )
+    fact = build_pr_create_fact("agent-1", result)
+    config = NarrativeConfig(
+        fact_shape="action-receipt",
+        prompt_template="pr-create-receipt",
+        fallback_template="pr-create-receipt",
+        field_mapping=(("receiptId", "prNumber"),),
+        detail_formatter="none",
+    )
+
+    text = narrate_action_receipt(fact, config)
+
+    assert "未返回 PR 号" in text
+
+
+def test_build_pr_create_fact_is_deterministic():
+    """PR create fact stays deterministic; no LLM text in evidence."""
+    from sap_nexus_agent.reasoning_fact import build_pr_create_fact
+
+    result = ExecutionResult(
+        trace_id="gw-pr",
+        capability_id="MM.PR.CreateDraft",
+        success=True,
+        executor={"type": "JCO_RFC", "rfcName": "BAPI_PR_CREATE"},
+        return_messages=[],
+        data={"prNumber": "0010001234"},
+        duration_ms=10,
+        error_type="NONE",
+    )
+    fact = build_pr_create_fact("agent-1", result)
+
+    assert fact is not None
+    assert fact.deterministic is True
+    assert fact.confidence == 1.0
+    assert fact.predicate == "purchaseRequisitionCreated"
+    assert fact.business_object == "PurchaseRequisition"
+    assert fact.evidence[0]["value"] == "0010001234"

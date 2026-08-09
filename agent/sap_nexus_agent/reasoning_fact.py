@@ -182,3 +182,45 @@ def _build_po_fact(
         material=_optional_text(material),
         plant=_optional_text(plant),
     )
+
+
+def build_pr_create_fact(
+    agent_trace_id: str,
+    result: ExecutionResult,
+    parameters: dict[str, str] | None = None,
+) -> ReasoningFact | None:
+    """Build a fact for a successful PR create (action-receipt).
+
+    Carries the created PR number in evidence. Returns None for a failed
+    execution. The fact stays deterministic (deterministic=True, confidence=1.0);
+    no LLM text is placed in evidence.
+    """
+    if not result.success:
+        return None
+    pr_number = result.data.get("prNumber") or ""
+    context = parameters or {}
+    evidence = {
+        "field": "prNumber",
+        "value": pr_number,
+    }
+    return ReasoningFact(
+        fact_id=f"fact-{uuid.uuid4()}",
+        agent_trace_id=agent_trace_id,
+        trace_id=agent_trace_id,
+        gateway_trace_id=result.trace_id,
+        domain="MM",
+        business_object="PurchaseRequisition",
+        predicate="purchaseRequisitionCreated",
+        value=None,
+        unit=None,
+        deterministic=True,
+        confidence=1.0,
+        source={
+            "capabilityId": result.capability_id,
+            "executorType": result.executor.get("type"),
+            "rfcName": result.executor.get("rfcName"),
+        },
+        evidence=[evidence],
+        material=_optional_text(result.data.get("material") or context.get("material")),
+        plant=_optional_text(result.data.get("plant") or context.get("plant")),
+    )

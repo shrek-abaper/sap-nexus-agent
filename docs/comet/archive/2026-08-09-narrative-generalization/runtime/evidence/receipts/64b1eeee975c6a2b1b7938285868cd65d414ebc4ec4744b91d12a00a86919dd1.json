@@ -1,0 +1,48 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "narrative-generalization",
+    "sourceRevision": 3,
+    "contractHash": "e91844d84f5f2142ba6b63abd2db1abf1dc2a20d462bfa42d17689e6200f1f2e",
+    "scopeHash": "a45eed7dab74db579fa30f68f221a632ddef144ae8b918495196e3daf43b5c24",
+    "snapshotHash": "8842950a7ef034a5376300578857021cf750a8d71a01f01da9ae508376111410",
+    "artifactHash": "7e06440a600cbe221428e75aa63d3e4d07828e5378c28800afed81e42765204e"
+  },
+  "acceptanceIds": [
+    "acceptance-125aeccb6926c6a78b7360bb2fa921e23f1cb66c906b650e0ff7afad27ca2c5c"
+  ],
+  "actor": "native-runtime:command:bash",
+  "issuedAt": "2026-08-09T01:46:22.117Z",
+  "evidence": {
+    "executable": "bash",
+    "args": [
+      "-c",
+      "PYTHONPATH=agent ./.venv/bin/python -m pytest agent/tests/test_reasoning_narrator.py agent/tests/test_orchestrator.py agent/tests/test_registry_loader.py agent/tests/test_contract_files.py -q 2>&1 | tail -2 && openspec validate --all --strict 2>&1 | tail -1"
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 180000,
+    "startedAt": "2026-08-09T01:46:14.357Z",
+    "endedAt": "2026-08-09T01:46:22.117Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "bb4073243e9e338cb76d7ead41ed565c63ed3da8",
+      "afterCommit": "bb4073243e9e338cb76d7ead41ed565c63ed3da8"
+    },
+    "afterFence": {
+      "snapshotHash": "8842950a7ef034a5376300578857021cf750a8d71a01f01da9ae508376111410",
+      "scopeHash": "a45eed7dab74db579fa30f68f221a632ddef144ae8b918495196e3daf43b5c24",
+      "matched": true
+    },
+    "outputHash": "7c8fe25196145ce754c1b09d2163d0b8fe7d5b67f7473dd17faab113c2e95c45",
+    "outputSummary": "......                                                                   [100%]\n222 passed in 5.38s\nTotals: 20 passed, 0 failed (20 items)",
+    "outputTruncated": false
+  },
+  "receiptHash": "64b1eeee975c6a2b1b7938285868cd65d414ebc4ec4744b91d12a00a86919dd1"
+}
