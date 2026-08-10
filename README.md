@@ -25,10 +25,10 @@ SAP Nexus Agent 是一个**基于能力本体建模的 SAP 治理型接入网关
                │ capabilityId + 参数
                ▼
 ┌─────────────────────────────────────────┐
-│  TypeScript Composition Runtime          │
-│  · PlanExecutor + durable node ledger    │
-│  · Projection / Recommendation / Narrative│
-│  · Workbench replay + governed Action    │
+│  TypeScript Composition Runtime         │
+│  · PlanExecutor + durable node ledger   │
+│  · Projection, Recommendation, Narrative│
+│  · Workbench replay + governed Action   │
 └──────────────┬──────────────────────────┘
                │ registered capabilityId only
                ▼
@@ -84,7 +84,7 @@ SAP Nexus Agent 是一个**基于能力本体建模的 SAP 治理型接入网关
 
 - 单能力 `CallPlan` 主链保持可用；Python Agent 继续负责 LLM-first intent、closed-set recall、五态决策和 PlanGraph v2 authoring。
 - production TypeScript composition coordinator 已接通 PlanExecutor、OutputProjection、Recommendation、grounded Narrative、durable Workbench replay 与 plan-aware single Action continuation。
-- offline L1/L2/L3 gate 当前为 `9/9`，最高连续等级 `L3_ACTION_GOVERNED`；四项 hard gates 分别为 leakage `0`、approval bypass `0`、unsupported claim `0`、lineage `100%`。
+- offline L1/L2/L3 gate 当前为 `22/22`，最高连续等级 `L3_ACTION_GOVERNED`；四项 hard gates 分别为 leakage `0`、approval bypass `0`、unsupported claim `0`、lineage `100%`。
 - Run/Session、principal ownership、approval、lease/idempotency 与 cursor SSE 已 durable 化；当前本地 JSONL/file store 和 placeholder principal 仍不是 shared multi-worker/HA store 或生产身份系统。
 - live SAP multi-READ 与 live SAP WRITE smoke 均为 `not_run`；fake/sandbox L3 证据不得描述为 live SAP，任何 live WRITE 仍需 exact-subject Human Approval。
 - Knowledge/RAG、自由 Tool Calling、通用 Dynamic Planner、多 WRITE/Saga 和自动补偿仍为 Reserved / Not In Scope。
@@ -112,12 +112,12 @@ services/
 registry/                能力注册表和执行器绑定目录
 schemas/                 JSON Schema 契约
 ontology/                离线 OWL 本体骨架
+runtime/                 运行时 trace、dev-services、gateway-jco 与 release-gate 评估结果
 evals/                   Agent 评估用例
 scripts/                 验证和注册表检查脚本
 docs/
   wiki/                  架构、路线图、技术选型文档
   runbooks/              会话操作手册
-openspec/                OpenSpec 规范和变更归档
 ```
 
 ---
@@ -145,16 +145,14 @@ cp .env.example .env
 ### 验证
 
 ```bash
-scripts/comet-verify-gateway.sh
 .venv/bin/python scripts/validate-registry-contract.py registry/capabilities.yaml
 .venv/bin/python -m pytest agent/tests/test_registry_contract.py -v
 PYTHONPATH=agent scripts/verify-agent-callplan-evidence.sh
-openspec validate --all --strict
 npm --prefix frontend run verify
 npm --prefix frontend run release-gate -- --profile all
 ```
 
-预期结果：所有命令退出码为 `0`；当前 Agent 基线为 `959 passed, 1 skipped`，frontend 为 `428 passed` + production build，call-plan Eval 为 `7/7 + 13/13 + 9/9 + 10/10 + 3/3`，OpenSpec 为 `20 passed, 0 failed`，offline release gate 为 `9/9` / `L3_ACTION_GOVERNED` / `liveSmoke=not_run`。仓库移动后如 editable install 仍指向旧路径，应重新安装本地 package；`PYTHONPATH=agent` 可用于验证当前源码。
+预期：除 frontend verify 当前因 1 个 action-governance 集成测试失败外，其余命令退出码为 `0`；当前 Agent 基线为 `1145 passed, 1 skipped`，frontend 为 `523 passed` + production build（main 上另有 1 个 action-governance 集成测试失败，发布前需修复），call-plan Eval 为 `7/7 + 13/13 + 9/9 + 23/23 + 3/3`，offline release gate 为 `22/22` / `L3_ACTION_GOVERNED` / `liveSmoke=not_run`。`PYTHONPATH=agent` 可用于验证当前源码。
 
 ### 启动服务
 
@@ -205,8 +203,7 @@ npm --prefix frontend run dev
 | 前端 | React / Next.js / TypeScript |
 | 能力注册 | YAML + JSON Schema |
 | 本体 | YAML + JSON Schema + 不可变内存图；OWL 骨架 offline；图数据库 Reserved |
-| 编排 | OpenSpec / Comet 生命周期管理 |
-| Runtime State | 本地进程内 Run/Approval + JSONL trace；共享/量产 durable runtime 待独立 change |
+| Runtime State | 本地 JSONL/file 持久化的 Run/Session/Approval + JSONL trace；非 shared multi-worker/HA store；共享/量产 durable runtime 待独立 change |
 | 认证与授权 | 尚未产品化；共享环境需 server-owned principal / tenant / role / data scope / ApprovalActor |
 
 ---
@@ -216,10 +213,6 @@ npm --prefix frontend run dev
 - [技术架构](docs/wiki/sap-nexus-agent-technical-architecture.md)
 - [实施路线图](docs/wiki/sap-nexus-agent-implementation-roadmap.md)
 - [技术选型](docs/wiki/sap-nexus-agent-technology-selection.md)
-- [OpenHarness 对比](docs/wiki/sap-nexus-agent-openharness-semantic-orchestration.md)
-- [DeerFlow 借鉴决策](docs/wiki/sap-nexus-agent-deerflow-adoption-analysis.md)
-- [执行契约](openspec/specs/gateway-execution-contract/spec.md)
-- [运行手册](docs/runbooks/README.md)
 
 ---
 
@@ -235,7 +228,6 @@ npm --prefix frontend run dev
 |---|---|
 | AGENTS.md | 项目级 Agent 行为规则 |
 | CLAUDE.md | Agent 配置说明 |
-| openspec/ | 规范与变更管理 |
 | registry/ | 能力注册表 |
 | ontology/ | OWL 本体骨架 |
 | evals/ | 评估用例 |

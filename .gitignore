@@ -50,20 +50,12 @@ out/
 .gradle/
 gradle-app.setting
 
-# Native SAP JCo libraries and archives
+# Native SAP JCo libraries and archives (proprietary, must not be redistributed)
 sapjco3.jar
 libsapjco3.*
 *.so
 *.dll
 *.dylib
-!gateway-jco/lib/
-!gateway-jco/lib/sapjco3.jar
-!gateway-jco/lib/linux/
-!gateway-jco/lib/linux/libsapjco3.so
-!gateway-jco/lib/windows/
-!gateway-jco/lib/windows/sapjco3.dll
-!gateway-jco/lib/macos/
-!gateway-jco/lib/macos/.gitkeep
 
 # Test and evaluation artifacts
 /coverage/

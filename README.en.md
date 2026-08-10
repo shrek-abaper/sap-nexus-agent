@@ -18,11 +18,19 @@ User Query (natural language)
 │  Python Agent Layer                      │
 │  · Semantic intent parsing (LLM + Rule)  │
 │  · Registered capability selection        │
-│  · CallPlan generation                    │
+│  · CallPlan / PlanGraph v2 authoring      │
 │  · ReasoningFact construction             │
 │  · Chinese / English narrative            │
 └──────────────┬──────────────────────────┘
                │ capabilityId + parameters
+               ▼
+┌─────────────────────────────────────────┐
+│  TypeScript Composition Runtime         │
+│  · PlanExecutor + durable node ledger   │
+│  · Projection, Recommendation, Narrative│
+│  · Workbench replay + governed Action   │
+└──────────────┬──────────────────────────┘
+               │ registered capabilityId only
                ▼
 ┌─────────────────────────────────────────┐
 │  Java Gateway Execution Layer             │
@@ -64,31 +72,32 @@ User Query (natural language)
 
 ### Executor Families
 
-| Type | Status | Description |
-|------|--------|-------------|
-| `JCO_RFC` | ✅ Live | Direct RFC/BAPI execution via SAP JCo |
-| `ODATA` | ✅ Live | Thin reverse proxy → Python OData microservice → SAP OData |
-| `CDS_ADT` | 🔒 Fail-closed | Architecture reserve |
-| `REST_JSON` | 🔒 Fail-closed | Architecture reserve |
-| `SQL_READ` | 🔒 Fail-closed | Architecture reserve |
+| Type        | Status        | Description                                                |
+| ----------- | ------------- | ---------------------------------------------------------- |
+| `JCO_RFC`   | ✅ Live        | Direct RFC/BAPI execution via SAP JCo                      |
+| `ODATA`     | ✅ Live        | Thin reverse proxy → Python OData microservice → SAP OData |
+| `CDS_ADT`   | 🔒 Fail-closed | Architecture reserve                                       |
+| `REST_JSON` | 🔒 Fail-closed | Architecture reserve                                       |
+| `SQL_READ`  | 🔒 Fail-closed | Architecture reserve                                       |
 
 ### Current Runtime Maturity
 
-- `FactType`, `CapabilityRelation`, `GoalSpec`, `PlanGraph`, and `RegistrySnapshot` contracts are implemented, verified, and archived; the product runtime still executes single-capability `CallPlan`s only.
-- Workbench Runs and Gateway Approvals currently use process-local stores; restart recovery, long approvals, and multi-instance ownership are not production-ready.
-- The current `/stream` route returns buffered SSE-formatted events after completion; it is not incremental or resumable streaming.
-- Trusted principal, tenant, role, data scope, and ApprovalActor propagation are not integrated; WRITE remains sandbox/dev only.
-- Shared S3, long approvals, multi-worker/HA, or non-sandbox WRITE require a separate trusted/durable runtime change first.
+- The single-capability `CallPlan` main chain remains available; the Python Agent continues to own LLM-first intent, closed-set recall, five-state decisioning, and PlanGraph v2 authoring.
+- The production TypeScript composition coordinator wires up PlanExecutor, OutputProjection, Recommendation, grounded Narrative, durable Workbench replay, and plan-aware single-Action continuation.
+- The offline L1/L2/L3 gate currently sits at `22/22`, with the highest consecutive level `L3_ACTION_GOVERNED`; headline hard gates are leakage `0`, approval bypass `0`, unsupported claim `0`, lineage `100%`.
+- Run/Session, principal ownership, approval, lease/idempotency, and cursor SSE are durable; the current local JSONL/file store and placeholder principal are still not a shared multi-worker/HA store or a production identity system.
+- Live SAP multi-READ and live SAP WRITE smoke tests are both `not_run`; fake/sandbox L3 evidence must not be described as live SAP, and any live WRITE still requires exact-subject Human Approval.
+- Knowledge/RAG, free-form Tool Calling, a general Dynamic Planner, multi-WRITE/Saga, and automatic compensation remain Reserved / Not In Scope.
 
 ---
 
 ## Registered Capabilities
 
-| Capability ID | Name | Executor | SAP Endpoint | Status |
-|---------------|------|----------|--------------|--------|
-| `MM.Inventory.GetAvailability` | Stock/Requirements List (MD04) | `JCO_RFC` | `BAPI_MATERIAL_STOCK_REQ_LIST` | ✅ active |
-| `MM.PurchaseOrder.GetList` | Purchase Order List | `ODATA` | `API_PURCHASEORDER_PROCESS_SRV` | ✅ active |
-| `MM.PR.CreateDraft` | PR Create Draft | `JCO_RFC` | `BAPI_PR_CREATE` | ✅ active (requires approval) |
+| Capability ID                  | Name                           | Executor  | SAP Endpoint                    | Status                       |
+| ------------------------------ | ------------------------------ | --------- | ------------------------------- | ---------------------------- |
+| `MM.Inventory.GetAvailability` | Stock/Requirements List (MD04) | `JCO_RFC` | `BAPI_MATERIAL_STOCK_REQ_LIST`  | ✅ active                     |
+| `MM.PurchaseOrder.GetList`     | Purchase Order List            | `ODATA`   | `API_PURCHASEORDER_PROCESS_SRV` | ✅ active                     |
+| `MM.PR.CreateDraft`            | PR Create Draft                | `JCO_RFC` | `BAPI_PR_CREATE`                | ✅ active (requires approval) |
 
 ---
 
@@ -96,19 +105,19 @@ User Query (natural language)
 
 ```text
 agent/                   Python Agent package, tests, and evals
-frontend/                Next.js Agent Workbench
+frontend/                Next.js Agent Workbench + TypeScript Composition Runtime (src/runtime)
 services/
   gateway/               Java Spring Boot SAP Gateway (multi-module)
   odata-service/         Python OData read-only microservice
 registry/                Capability registry and executor binding catalog
 schemas/                 JSON Schema contracts
 ontology/                Offline OWL identity skeleton
+runtime/                 Runtime traces, dev-services, gateway-jco, and release-gate eval results
 evals/                   Agent eval cases
 scripts/                 Verification and registry validation helpers
 docs/
   wiki/                  Architecture, roadmap, technology selection
   runbooks/              Session runbooks
-openspec/                OpenSpec specs and archived changes
 ```
 
 ---
@@ -136,14 +145,14 @@ cp .env.example .env
 ### Verification
 
 ```bash
-scripts/comet-verify-gateway.sh
 .venv/bin/python scripts/validate-registry-contract.py registry/capabilities.yaml
 .venv/bin/python -m pytest agent/tests/test_registry_contract.py -v
 PYTHONPATH=agent scripts/verify-agent-callplan-evidence.sh
-openspec validate --all --strict
+npm --prefix frontend run verify
+npm --prefix frontend run release-gate -- --profile all
 ```
 
-Expected: every command exits `0`. The current Agent baseline is `550 passed, 1 skipped`; evals are `7/7 + 13/13 + 9/9`; OpenSpec is `8 passed, 0 failed`. After moving the repository, reinstall the editable local package if it still points to the old checkout; `PYTHONPATH=agent` verifies the current source tree directly.
+Expected: except for `npm --prefix frontend run verify` which currently has 1 failing action-governance integration test, all commands exit `0`. Current baselines: Agent `1145 passed, 1 skipped`; frontend `523 passed` + production build; call-plan Eval `7/7 + 13/13 + 9/9 + 23/23 + 3/3`; offline release gate `22/22` / `L3_ACTION_GOVERNED` / `liveSmoke=not_run`. `PYTHONPATH=agent` verifies the current source tree directly.
 
 ### Launch Services
 
@@ -186,17 +195,16 @@ Open `http://127.0.0.1:3000/workbench`.
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Agent | Python package + OpenAI-compatible LLM + Rule hybrid |
-| Gateway | Java 17 / Spring Boot / Gradle multi-module |
-| SAP Connectivity | SAP JCo 3 (RFC) + SAP OData (HTTP) |
-| Frontend | React / Next.js / TypeScript |
-| Capability Registry | YAML + JSON Schema |
-| Ontology | YAML + JSON Schema + immutable in-memory graph; offline OWL skeleton; graph database Reserved |
-| Orchestration | OpenSpec / Comet lifecycle management |
-| Runtime State | Local process Run/Approval state + JSONL traces; shared/production durable runtime requires a separate change |
-| Authentication & Authorization | Not productized; shared environments require server-owned principal / tenant / role / data scope / ApprovalActor |
+| Layer                          | Technology                                                                                                                                                    |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Agent                          | Python package + OpenAI-compatible LLM + Rule hybrid                                                                                                          |
+| Gateway                        | Java 17 / Spring Boot / Gradle multi-module                                                                                                                   |
+| SAP Connectivity               | SAP JCo 3 (RFC) + SAP OData (HTTP)                                                                                                                            |
+| Frontend                       | React / Next.js / TypeScript                                                                                                                                  |
+| Capability Registry            | YAML + JSON Schema                                                                                                                                            |
+| Ontology                       | YAML + JSON Schema + immutable in-memory graph; offline OWL skeleton; graph database Reserved                                                                 |
+| Runtime State                  | Local JSONL/file-backed Run/Session/Approval + JSONL traces; not a shared multi-worker/HA store; shared/production durable runtime requires a separate change |
+| Authentication & Authorization | Not productized; shared environments require server-owned principal / tenant / role / data scope / ApprovalActor                                              |
 
 ---
 
@@ -205,10 +213,6 @@ Open `http://127.0.0.1:3000/workbench`.
 - [Technical Architecture](docs/wiki/sap-nexus-agent-technical-architecture.md)
 - [Implementation Roadmap](docs/wiki/sap-nexus-agent-implementation-roadmap.md)
 - [Technology Selection](docs/wiki/sap-nexus-agent-technology-selection.md)
-- [OpenHarness Comparison](docs/wiki/sap-nexus-agent-openharness-semantic-orchestration.md)
-- [DeerFlow Adoption Decision](docs/wiki/sap-nexus-agent-deerflow-adoption-analysis.md)
-- [Execution Contract](openspec/specs/gateway-execution-contract/spec.md)
-- [Runbooks](docs/runbooks/README.md)
 
 ---
 
@@ -220,11 +224,10 @@ No open-source license file is currently included. Add an explicit `LICENSE` bef
 
 ## Quick Links
 
-| | |
-|---|---|
+|           |                                      |
+| --------- | ------------------------------------ |
 | AGENTS.md | Project-level agent behavioral rules |
-| CLAUDE.md | Agent configuration |
-| openspec/ | Specifications and change management |
-| registry/ | Capability registry |
-| ontology/ | OWL ontology skeleton |
-| evals/ | Evaluation test cases |
+| CLAUDE.md | Agent configuration                  |
+| registry/ | Capability registry                  |
+| ontology/ | OWL ontology skeleton                |
+| evals/    | Evaluation test cases                |
