@@ -76,4 +76,11 @@ Thumbs.db
 .claude/skills/
 .codex/hooks.json
 .codex/skills/
+.opencode/skills/
 .comet/skills/
+
+# SDD (subagent-driven-development) local runtime artifacts
+# Keep sdd/progress.md (tracked, state-recovery ledger); ignore rebuildable task/review pieces.
+.superpowers/sdd/task-*
+.superpowers/sdd/review-*
+.superpowers/sdd/final-review-fix-report.md

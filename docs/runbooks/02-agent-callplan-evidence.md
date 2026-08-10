@@ -230,7 +230,7 @@ If a live Gateway smoke is needed, start `gateway-jco` with local `.env` and SAP
 Copy and paste this prompt into a new session to continue work:
 
 ```text
-继续 . 项目工作。
+继续本项目工作。
 
 请先读取并遵守：
 1. AGENTS.md

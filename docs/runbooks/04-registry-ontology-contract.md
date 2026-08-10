@@ -339,7 +339,7 @@ OpenSpec PostHog telemetry may still print network flush errors in restricted-ne
 ## 9. Prompt To Start The Next Session
 
 ```text
-继续 . 项目工作。
+继续本项目工作。
 
 请先读取并遵守：
 1. AGENTS.md

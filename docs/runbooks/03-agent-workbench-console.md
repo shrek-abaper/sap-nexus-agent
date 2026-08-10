@@ -288,7 +288,7 @@ Do not reopen this workstream unless a concrete defect is found in the Workbench
 Use `docs/runbooks/04-registry-ontology-contract.md` for the next session. The old Workbench startup prompt is superseded because `sap-nexus-agent-workbench-console` is completed, verified, merged to `main`, and archived.
 
 ```text
-继续 . 项目工作。
+继续本项目工作。
 
 请先读取并遵守：
 1. AGENTS.md
