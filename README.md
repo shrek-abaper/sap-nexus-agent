@@ -176,7 +176,7 @@ PYTHONPATH=. python -m odata_service.server
 
 ```bash
 PYTHONPATH=agent .venv/bin/python -m sap_nexus_agent.cli \
-  "DEMOA1 在 1000 还有多少可用库存？" \
+  "A100 在 1000 还有多少可用库存？" \
   --gateway-url http://127.0.0.1:8080 --intent-mode rule
 ```
 

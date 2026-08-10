@@ -176,7 +176,7 @@ Terminal 3 — Agent CLI:
 
 ```bash
 PYTHONPATH=agent .venv/bin/python -m sap_nexus_agent.cli \
-  "How much available stock does DEMOA1 have at 1000?" \
+  "How much available stock does A100 have at 1000?" \
   --gateway-url http://127.0.0.1:8080 --intent-mode rule
 ```
 
