@@ -84,3 +84,6 @@ Thumbs.db
 .superpowers/sdd/task-*
 .superpowers/sdd/review-*
 .superpowers/sdd/final-review-fix-report.md
+
+# Tangential wiki archive (not core project docs)
+docs/wiki/archive/
