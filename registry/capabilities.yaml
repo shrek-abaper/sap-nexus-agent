@@ -17,6 +17,37 @@ capabilities:
     examples:
       - 查物料 DEMOA2 在 1000 工厂的库存/需求清单（可用量）
       - 1000 工厂 DEMOA2 的 MD04 可用量
+    intent:
+      intentName: inventory_availability
+      primaryKeywords:
+        - '库存'
+        - '可用量'
+        - '可用库存'
+        - '还有多少'
+      weakKeywords:
+        - '有没有'
+      triggerKeywords:
+        - '库存'
+        - '可用量'
+        - '可用库存'
+        - '还有多少'
+        - '有没有'
+      fieldNames:
+        zh-CN:
+          material: 物料编号
+          plant: 工厂
+          unit: 单位
+      clarifyPrompt:
+        zh-CN:
+          cases:
+            - missing:
+                - material
+              text: '请提供要查询的物料编号。'
+            - missing:
+                - plant
+              text: '请提供要查询的工厂。'
+          fallback:
+            template: '请提供要查询的物料编号和工厂。'
     inputs:
       - name: material
         semanticName: materialNumber
@@ -27,6 +58,16 @@ capabilities:
         minLength: 1
         maxLength: 40
         sapParameter: MATERIAL
+        extraction:
+          matchers:
+            - kind: semanticType
+              ref: MaterialNumber
+          priority: 10
+          excludes:
+            - plant
+            - unit
+          resolver: text
+          reaskSuspect: true
       - name: plant
         semanticName: plant
         semanticType: sapnexus:Plant
@@ -37,6 +78,12 @@ capabilities:
         maxLength: 4
         pattern: ^[A-Z0-9]{4}$
         sapParameter: PLANT
+        extraction:
+          matchers:
+            - kind: semanticType
+              ref: Plant
+          priority: 20
+          resolver: text
       - name: unit
         semanticName: unitOfMeasure
         semanticType: sapnexus:UnitOfMeasure
@@ -46,6 +93,28 @@ capabilities:
         minLength: 1
         maxLength: 3
         sapParameter: UNIT
+        extraction:
+          matchers:
+            - kind: keyword
+              pattern: '\bEA\b'
+              value: EA
+            - kind: keyword
+              pattern: '\bPC\b'
+              value: PC
+            - kind: keyword
+              pattern: '\bKG\b'
+              value: KG
+            - kind: keyword
+              pattern: '\bG\b'
+              value: G
+            - kind: keyword
+              pattern: '\bL\b'
+              value: L
+            - kind: keyword
+              pattern: '\bM\b'
+              value: M
+          priority: 15
+          resolver: text
     outputs:
       - name: availableQuantity
         semanticType: sapnexus:AvailableQuantity
@@ -116,6 +185,37 @@ capabilities:
     examples:
       - 查采购订单 4500000001
       - 供应商 1000 的采购订单
+    intent:
+      intentName: purchase_order_list
+      primaryKeywords:
+        - '采购订单'
+      weakKeywords:
+        - '订单'
+        - '(?<![A-Za-z])PO(?![A-Za-z])'
+        - '采购'
+      triggerKeywords:
+        - '采购订单'
+        - '订单'
+        - '(?<![A-Za-z])PO(?![A-Za-z])'
+      fieldNames:
+        zh-CN:
+          poNumber: 采购订单号
+          vendor: 供应商
+          plant: 工厂
+          material: 物料
+      requireAny:
+        inputs:
+          - poNumber
+          - vendor
+          - plant
+          - material
+        missingName: filter
+      clarifyPrompt:
+        zh-CN:
+          cases:
+            - missing:
+                - filter
+              text: '请至少提供一个过滤条件（采购订单号、供应商、工厂或物料）。'
     inputs:
       - name: poNumber
         semanticName: purchaseOrderNumber
@@ -126,6 +226,16 @@ capabilities:
         minLength: 1
         maxLength: 40
         sapParameter: PurchaseOrder
+        extraction:
+          matchers:
+            - kind: regex
+              pattern: '(?<!\d)(\d{10})(?!\d)'
+              scan: all
+          priority: 10
+          excludes:
+            - vendor
+            - plant
+          resolver: text
       - name: vendor
         semanticName: supplier
         semanticType: sapnexus:Supplier
@@ -135,6 +245,12 @@ capabilities:
         minLength: 1
         maxLength: 10
         sapParameter: Supplier
+        extraction:
+          matchers:
+            - kind: regex
+              pattern: '供应商\s*(\d+)'
+          priority: 40
+          resolver: text
       - name: plant
         semanticName: plant
         semanticType: sapnexus:Plant
@@ -145,6 +261,12 @@ capabilities:
         maxLength: 4
         pattern: ^[A-Z0-9]{4}$
         sapParameter: Plant
+        extraction:
+          matchers:
+            - kind: regex
+              pattern: '(?:工厂\s*(\d{4}|[A-Z]\d{3}))|(?:(\d{4}|[A-Z]\d{3})\s*工厂)'
+          priority: 30
+          resolver: text
       - name: material
         semanticName: materialNumber
         semanticType: sapnexus:MaterialNumber
@@ -154,6 +276,12 @@ capabilities:
         minLength: 1
         maxLength: 40
         sapParameter: Material
+        extraction:
+          matchers:
+            - kind: regex
+              pattern: '物料\s*([A-Za-z0-9][A-Za-z0-9\-/]+)'
+          priority: 20
+          resolver: text
     outputs:
       - name: purchaseOrders
         semanticType: sapnexus:PurchaseOrderItem
@@ -200,6 +328,40 @@ capabilities:
     examples:
       - 帮我建一个采购申请 DEMOA2 1000 100 EA
       - 创建 PR 草稿 物料 DEMOA2 工厂 1000 数量 100
+    intent:
+      intentName: pr_create
+      primaryKeywords:
+        - '采购申请'
+        - '创建采购'
+        - '建PR'
+        - '建 PR'
+        - '创建PR'
+        - '创建 PR'
+        - 'PR草稿'
+        - 'PR 草稿'
+      weakKeywords:
+        - '采购'
+      triggerKeywords:
+        - '采购申请'
+        - '建PR'
+        - '建 PR'
+        - '创建PR'
+        - '创建 PR'
+        - 'PR草稿'
+        - 'PR 草稿'
+      fieldNames:
+        zh-CN:
+          material: 物料编号
+          plant: 工厂
+          quantity: 数量
+          unit: 单位
+          delivery_date: 交货日期
+          purchasing_group: 采购组
+          cost_center: 成本中心(间采 PR 需提供)
+      clarifyPrompt:
+        zh-CN:
+          fallback:
+            template: '请提供: {fields}'
     inputs:
       - name: material
         semanticName: materialNumber
@@ -210,6 +372,12 @@ capabilities:
         minLength: 1
         maxLength: 40
         sapParameter: PRITEM.MATERIAL
+        extraction:
+          matchers:
+            - kind: regex
+              pattern: '物料\s*([A-Za-z0-9][A-Za-z0-9\-/]+)'
+          priority: 50
+          resolver: text
       - name: plant
         semanticName: plant
         semanticType: sapnexus:Plant
@@ -219,6 +387,12 @@ capabilities:
         minLength: 1
         maxLength: 4
         sapParameter: PRITEM.PLANT
+        extraction:
+          matchers:
+            - kind: regex
+              pattern: '工厂\s*(\d{4}|[A-Z]\d{3})'
+          priority: 40
+          resolver: text
       - name: quantity
         semanticName: quantity
         semanticType: sapnexus:Quantity
@@ -226,6 +400,12 @@ capabilities:
         required: true
         type: number
         sapParameter: PRITEM.QUANTITY
+        extraction:
+          matchers:
+            - kind: semanticType
+              ref: Quantity
+          priority: 30
+          resolver: quantity
       - name: unit
         semanticName: unitOfMeasure
         semanticType: sapnexus:UnitOfMeasure
@@ -235,6 +415,12 @@ capabilities:
         minLength: 1
         maxLength: 3
         sapParameter: PRITEM.UNIT
+        extraction:
+          matchers:
+            - kind: semanticType
+              ref: Unit
+          priority: 25
+          resolver: text
       - name: delivery_date
         semanticName: deliveryDate
         semanticType: sapnexus:DeliveryDate
@@ -242,6 +428,11 @@ capabilities:
         required: true
         type: string
         sapParameter: PRITEM.DELIV_DATE
+        extraction:
+          matchers:
+            - kind: semanticType
+              ref: Date
+          resolver: date
       - name: purchasing_group
         semanticName: purchasingGroup
         semanticType: sapnexus:PurchasingGroup
@@ -251,6 +442,12 @@ capabilities:
         minLength: 1
         maxLength: 3
         sapParameter: PRITEM.PUR_GROUP
+        extraction:
+          matchers:
+            - kind: semanticType
+              ref: PurchasingGroup
+          priority: 15
+          resolver: text
       - name: acct_assgn_cat
         semanticName: accountAssignmentCategory
         semanticType: sapnexus:AcctAssignmentCat
@@ -259,6 +456,13 @@ capabilities:
         type: string
         maxLength: 1
         sapParameter: PRITEM.ACCTASSCAT
+        extraction:
+          matchers:
+            - kind: keyword
+              pattern: '(?:间采|账号分配)\s*[Kk]'
+              value: K
+          priority: 10
+          resolver: text
       - name: cost_center
         semanticName: costCenter
         semanticType: sapnexus:CostCenter
@@ -267,6 +471,18 @@ capabilities:
         type: string
         maxLength: 10
         sapParameter: PRITEM.COSTCENTER
+        extraction:
+          matchers:
+            - kind: regex
+              pattern: '成本中心\s*(\d+)'
+          priority: 5
+          resolver: text
+          when:
+            field: acct_assgn_cat
+            equals: K
+          requiredWhen:
+            field: acct_assgn_cat
+            equals: K
     outputs:
       - name: prNumber
         semanticType: sapnexus:PrNumber

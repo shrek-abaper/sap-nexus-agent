@@ -397,3 +397,98 @@ def test_off_thread_backtracking_guard_is_bounded():
     assert not thread.is_alive(), "off-thread guard ran unbounded"
     assert _time.perf_counter() - started < 5
     assert result.get("error") is not None
+
+
+# --- Registry declaration parity (Task 5) ---
+
+
+def _registry_intent_blocks() -> dict:
+    doc = yaml.safe_load((REPO_ROOT / "registry" / "capabilities.yaml").read_text(encoding="utf-8"))
+    return {c["capabilityId"]: c for c in doc["capabilities"]}
+
+
+def test_inventory_declaration_parity_constants():
+    cap = _registry_intent_blocks()["MM.Inventory.GetAvailability"]
+    intent = cap["intent"]
+    assert intent["intentName"] == "inventory_availability"
+    assert intent["primaryKeywords"] == ["库存", "可用量", "可用库存", "还有多少"]
+    assert intent["weakKeywords"] == ["有没有"]
+    assert intent["triggerKeywords"] == ["库存", "可用量", "可用库存", "还有多少", "有没有"]
+    inputs = {i["name"]: i for i in cap["inputs"]}
+    assert inputs["material"]["extraction"]["excludes"] == ["plant", "unit"]
+    assert inputs["material"]["extraction"]["reaskSuspect"] is True
+    assert inputs["material"]["extraction"]["matchers"] == [{"kind": "semanticType", "ref": "MaterialNumber"}]
+    assert inputs["plant"]["extraction"]["matchers"] == [{"kind": "semanticType", "ref": "Plant"}]
+    unit_patterns = [(m.get("value"), m["pattern"]) for m in inputs["unit"]["extraction"]["matchers"]]
+    assert unit_patterns == [
+        ("EA", r"\bEA\b"), ("PC", r"\bPC\b"), ("KG", r"\bKG\b"),
+        ("G", r"\bG\b"), ("L", r"\bL\b"), ("M", r"\bM\b"),
+    ]
+    zh = intent["clarifyPrompt"]["zh-CN"]
+    assert zh["cases"] == [
+        {"missing": ["material"], "text": "请提供要查询的物料编号。"},
+        {"missing": ["plant"], "text": "请提供要查询的工厂。"},
+    ]
+    assert zh["fallback"] == {"template": "请提供要查询的物料编号和工厂。"}
+
+
+def test_po_declaration_parity_constants():
+    cap = _registry_intent_blocks()["MM.PurchaseOrder.GetList"]
+    intent = cap["intent"]
+    assert intent["intentName"] == "purchase_order_list"
+    assert intent["primaryKeywords"] == ["采购订单"]
+    assert intent["weakKeywords"] == ["订单", r"(?<![A-Za-z])PO(?![A-Za-z])", "采购"]
+    assert intent["triggerKeywords"] == ["采购订单", "订单", r"(?<![A-Za-z])PO(?![A-Za-z])"]
+    assert intent["requireAny"] == {
+        "inputs": ["poNumber", "vendor", "plant", "material"], "missingName": "filter",
+    }
+    inputs = {i["name"]: i for i in cap["inputs"]}
+    assert inputs["vendor"]["extraction"]["matchers"] == [
+        {"kind": "regex", "pattern": r"供应商\s*(\d+)"}]
+    assert inputs["plant"]["extraction"]["matchers"] == [
+        {"kind": "regex",
+         "pattern": r"(?:工厂\s*(\d{4}|[A-Z]\d{3}))|(?:(\d{4}|[A-Z]\d{3})\s*工厂)"}]
+    assert inputs["material"]["extraction"]["matchers"] == [
+        {"kind": "regex", "pattern": r"物料\s*([A-Za-z0-9][A-Za-z0-9\-/]+)"}]
+    assert inputs["poNumber"]["extraction"]["matchers"] == [
+        {"kind": "regex", "pattern": r"(?<!\d)(\d{10})(?!\d)", "scan": "all"}]
+    assert inputs["poNumber"]["extraction"]["excludes"] == ["vendor", "plant"]
+    zh = intent["clarifyPrompt"]["zh-CN"]
+    assert zh["cases"] == [
+        {"missing": ["filter"], "text": "请至少提供一个过滤条件（采购订单号、供应商、工厂或物料）。"}]
+
+
+def test_pr_declaration_parity_constants():
+    cap = _registry_intent_blocks()["MM.PR.CreateDraft"]
+    intent = cap["intent"]
+    assert intent["intentName"] == "pr_create"
+    assert intent["primaryKeywords"] == [
+        "采购申请", "创建采购", "建PR", "建 PR", "创建PR", "创建 PR", "PR草稿", "PR 草稿",
+    ]
+    assert intent["weakKeywords"] == ["采购"]
+    assert intent["triggerKeywords"] == [
+        "采购申请", "建PR", "建 PR", "创建PR", "创建 PR", "PR草稿", "PR 草稿",
+    ]
+    assert intent["clarifyPrompt"]["zh-CN"]["fallback"] == {"template": "请提供: {fields}"}
+    assert intent["fieldNames"]["zh-CN"] == {
+        "material": "物料编号", "plant": "工厂", "quantity": "数量", "unit": "单位",
+        "delivery_date": "交货日期", "purchasing_group": "采购组",
+        "cost_center": "成本中心(间采 PR 需提供)",
+    }
+    inputs = {i["name"]: i for i in cap["inputs"]}
+    assert inputs["material"]["extraction"]["matchers"] == [
+        {"kind": "regex", "pattern": r"物料\s*([A-Za-z0-9][A-Za-z0-9\-/]+)"}]
+    assert inputs["plant"]["extraction"]["matchers"] == [
+        {"kind": "regex", "pattern": r"工厂\s*(\d{4}|[A-Z]\d{3})"}]
+    assert inputs["quantity"]["extraction"]["matchers"] == [
+        {"kind": "semanticType", "ref": "Quantity"}]
+    assert inputs["unit"]["extraction"]["matchers"] == [
+        {"kind": "semanticType", "ref": "Unit"}]
+    assert inputs["delivery_date"]["extraction"] == {
+        "matchers": [{"kind": "semanticType", "ref": "Date"}], "resolver": "date"}
+    assert inputs["purchasing_group"]["extraction"]["matchers"] == [
+        {"kind": "semanticType", "ref": "PurchasingGroup"}]
+    assert inputs["acct_assgn_cat"]["extraction"]["matchers"] == [
+        {"kind": "keyword", "pattern": r"(?:间采|账号分配)\s*[Kk]", "value": "K"}]
+    assert inputs["cost_center"]["extraction"]["when"] == {"field": "acct_assgn_cat", "equals": "K"}
+    assert inputs["cost_center"]["extraction"]["requiredWhen"] == {"field": "acct_assgn_cat", "equals": "K"}
