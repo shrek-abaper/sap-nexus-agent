@@ -86,7 +86,7 @@ SAP Nexus Agent 是一个**基于能力本体建模的 SAP 治理型接入网关
 - production TypeScript composition coordinator 已接通 PlanExecutor、OutputProjection、Recommendation、grounded Narrative、durable Workbench replay 与 plan-aware single Action continuation。
 - offline L1/L2/L3 gate 当前为 `22/22`，最高连续等级 `L3_ACTION_GOVERNED`；四项 hard gates 分别为 leakage `0`、approval bypass `0`、unsupported claim `0`、lineage `100%`。
 - Run/Session、principal ownership、approval、lease/idempotency 与 cursor SSE 已 durable 化；当前本地 JSONL/file store 和 placeholder principal 仍不是 shared multi-worker/HA store 或生产身份系统。
-- live SAP multi-READ 与 live SAP WRITE smoke 均为 `not_run`；fake/sandbox L3 证据不得描述为 live SAP，任何 live WRITE 仍需 exact-subject Human Approval。
+- 三个已注册能力（两个 READ + 一个 WRITE）均已与真实 SAP 打通并通过 live 冒烟验证（执行记录见 `runtime/gateway-jco/traces.jsonl`）；offline release gate 报告中的 `liveSmoke` 字段保持 `not_run`（离线门禁不执行真实 SAP 调用，live 验证独立进行）；fake/sandbox L3 证据不得描述为 live SAP，任何 live WRITE 仍需 exact-subject Human Approval。
 - Knowledge/RAG、自由 Tool Calling、通用 Dynamic Planner、多 WRITE/Saga 和自动补偿仍为 Reserved / Not In Scope。
 
 ---
@@ -152,7 +152,7 @@ npm --prefix frontend run verify
 npm --prefix frontend run release-gate -- --profile all
 ```
 
-预期：除 frontend verify 当前因 1 个 action-governance 集成测试失败外，其余命令退出码为 `0`；当前 Agent 基线为 `1145 passed, 1 skipped`，frontend 为 `523 passed` + production build（main 上另有 1 个 action-governance 集成测试失败，发布前需修复），call-plan Eval 为 `7/7 + 13/13 + 9/9 + 23/23 + 3/3`，offline release gate 为 `22/22` / `L3_ACTION_GOVERNED` / `liveSmoke=not_run`。`PYTHONPATH=agent` 可用于验证当前源码。
+预期：除 frontend verify 当前因 1 个 action-governance 集成测试失败外，其余命令退出码为 `0`；当前 Agent 基线为 `1145 passed, 1 skipped`，frontend 为 `523 passed` + production build（main 上另有 1 个 action-governance 集成测试失败，发布前需修复），call-plan Eval 为 `7/7 + 13/13 + 9/9 + 23/23 + 3/3`，offline release gate 为 `22/22` / `L3_ACTION_GOVERNED`（离线门禁不含 live SAP 冒烟，报告内 `liveSmoke` 恒为 `not_run`）。`PYTHONPATH=agent` 可用于验证当前源码。
 
 ### 启动服务
 
@@ -218,7 +218,7 @@ npm --prefix frontend run dev
 
 ## 许可
 
-本项目当前未包含开源许可证文件。公开发布前需添加明确的 `LICENSE`。
+本项目采用 [Apache-2.0](LICENSE) 许可证。
 
 ---
 

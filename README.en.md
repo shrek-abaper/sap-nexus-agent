@@ -86,7 +86,7 @@ User Query (natural language)
 - The production TypeScript composition coordinator wires up PlanExecutor, OutputProjection, Recommendation, grounded Narrative, durable Workbench replay, and plan-aware single-Action continuation.
 - The offline L1/L2/L3 gate currently sits at `22/22`, with the highest consecutive level `L3_ACTION_GOVERNED`; headline hard gates are leakage `0`, approval bypass `0`, unsupported claim `0`, lineage `100%`.
 - Run/Session, principal ownership, approval, lease/idempotency, and cursor SSE are durable; the current local JSONL/file store and placeholder principal are still not a shared multi-worker/HA store or a production identity system.
-- Live SAP multi-READ and live SAP WRITE smoke tests are both `not_run`; fake/sandbox L3 evidence must not be described as live SAP, and any live WRITE still requires exact-subject Human Approval.
+- All three registered capabilities (two READs + one WRITE) have been verified end-to-end against a real SAP system via live smoke tests (execution records in `runtime/gateway-jco/traces.jsonl`); the `liveSmoke` field in the offline release-gate report stays `not_run` by design (the offline gate never calls a real SAP system; live verification runs separately); fake/sandbox L3 evidence must not be described as live SAP, and any live WRITE still requires exact-subject Human Approval.
 - Knowledge/RAG, free-form Tool Calling, a general Dynamic Planner, multi-WRITE/Saga, and automatic compensation remain Reserved / Not In Scope.
 
 ---
@@ -152,7 +152,7 @@ npm --prefix frontend run verify
 npm --prefix frontend run release-gate -- --profile all
 ```
 
-Expected: except for `npm --prefix frontend run verify` which currently has 1 failing action-governance integration test, all commands exit `0`. Current baselines: Agent `1145 passed, 1 skipped`; frontend `523 passed` + production build; call-plan Eval `7/7 + 13/13 + 9/9 + 23/23 + 3/3`; offline release gate `22/22` / `L3_ACTION_GOVERNED` / `liveSmoke=not_run`. `PYTHONPATH=agent` verifies the current source tree directly.
+Expected: except for `npm --prefix frontend run verify` which currently has 1 failing action-governance integration test, all commands exit `0`. Current baselines: Agent `1145 passed, 1 skipped`; frontend `523 passed` + production build; call-plan Eval `7/7 + 13/13 + 9/9 + 23/23 + 3/3`; offline release gate `22/22` / `L3_ACTION_GOVERNED` (the offline gate includes no live SAP smoke, so its `liveSmoke` field always reads `not_run`). `PYTHONPATH=agent` verifies the current source tree directly.
 
 ### Launch Services
 
@@ -218,7 +218,7 @@ Open `http://127.0.0.1:3000/workbench`.
 
 ## License
 
-No open-source license file is currently included. Add an explicit `LICENSE` before publishing publicly.
+This project is licensed under [Apache-2.0](LICENSE).
 
 ---
 
