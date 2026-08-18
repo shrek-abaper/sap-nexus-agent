@@ -204,3 +204,156 @@ def test_material_filters_reproduce_legacy_guards():
         "toUpperCaseCompare": True, # legacy: token.upper() in excluded
         "toUpperCaseOutput": False, # legacy returns the original token
     }
+
+
+# --- Registry contract validator rules (Task 4) ---
+
+from scripts.validate_registry_contract import (
+    load_registry_contract,
+    load_semantic_type_catalog,
+    regex_backtracking_guard,
+    validate_registry_contract,
+)
+
+
+class _IndentedDumper(yaml.SafeDumper):
+    """Block sequences indented under their key.
+
+    The registry contract validator parses capabilities.yaml with its own
+    indentation-based parser: list items must sit deeper than their parent key.
+    PyYAML's default dump style emits them at the parent indent, which that
+    parser rejects, so tests serialize with this dumper instead.
+    """
+
+    def increase_indent(self, flow=False, indentless=False):
+        return super().increase_indent(flow, False)
+
+
+def _capability_yaml(intent_block=None, extraction=None, inputs=None):
+    """Minimal valid capability with optional extraction metadata."""
+    base_inputs = inputs or [
+        {"name": "material", "semanticType": "sapnexus:MaterialNumber",
+         "required": True, "type": "string"},
+    ]
+    if extraction is not None:
+        base_inputs[0]["extraction"] = extraction
+    cap = {
+        "capabilityId": "T.Capability.One", "name": "T", "description": "d",
+        "status": "active", "kind": "Function", "domain": "T", "businessObject": "T",
+        "ontologyIri": "sapnexus:T_Capability_One", "semanticType": "sapnexus:T_Fn",
+        "executor": {"type": "JCO_RFC"},
+        "executorBinding": {"type": "JCO_RFC", "bindingId": "test.read.binding"},
+        "governance": {"sideEffect": "none", "requiresApproval": False,
+                       "approvalPolicy": "not_required"},
+        "inputs": base_inputs,
+        "outputs": [{"name": "out", "semanticType": "sapnexus:Out", "type": "string"}],
+    }
+    if intent_block is not None:
+        cap["intent"] = intent_block
+    return {"version": 2, "capabilities": [cap]}
+
+
+def _write_registry(tmp_path, doc):
+    path = tmp_path / "capabilities.yaml"
+    path.write_text(
+        yaml.dump(doc, Dumper=_IndentedDumper, allow_unicode=True,
+                  default_flow_style=False, sort_keys=False),
+        encoding="utf-8",
+    )
+    return path
+
+
+VALID_EXTRACTION = {
+    "matchers": [{"kind": "semanticType", "ref": "Date"}],
+    "resolver": "date",
+}
+
+
+def _valid_intent(**overrides):
+    block = {
+        "intentName": "t_one",
+        "primaryKeywords": ["库存"],
+        "clarifyPrompt": {
+            "zh-CN": {
+                "cases": [{"missing": ["material"], "text": "请提供物料。"}],
+                "fallback": {"template": "请提供: {fields}"},
+            }
+        },
+    }
+    block.update(overrides)
+    return block
+
+
+def test_real_registry_validates_with_catalog():
+    contract = load_registry_contract(REPO_ROOT / "registry" / "capabilities.yaml")
+    errors = validate_registry_contract(contract, repo_root=REPO_ROOT)
+    assert errors == []
+
+
+def test_real_catalog_loads_without_errors():
+    entries, errors = load_semantic_type_catalog(REPO_ROOT)
+    assert errors == []
+    assert set(entries) >= {"Plant", "MaterialNumber", "Quantity", "Unit",
+                            "Date", "PurchasingGroup", "Vendor", "PONumber"}
+
+
+def test_dangling_semantic_type_reference_rejected(tmp_path):
+    doc = _capability_yaml(_valid_intent(), {"matchers": [{"kind": "semanticType", "ref": "Missing"}]})
+    contract = load_registry_contract(_write_registry(tmp_path, doc))
+    errors = validate_registry_contract(contract, repo_root=REPO_ROOT)
+    assert any("semanticType" in e and "Missing" in e for e in errors)
+
+
+def test_non_compiling_regex_rejected(tmp_path):
+    doc = _capability_yaml(_valid_intent(), {"matchers": [{"kind": "regex", "pattern": "([unclosed"}]})
+    contract = load_registry_contract(_write_registry(tmp_path, doc))
+    errors = validate_registry_contract(contract, repo_root=REPO_ROOT)
+    assert any("compile" in e for e in errors)
+
+
+def test_catastrophic_backtracking_regex_rejected():
+    assert regex_backtracking_guard("(a+)+$") is not None
+    assert regex_backtracking_guard("a".ljust(300, "a")) is not None  # length guard
+    assert regex_backtracking_guard(r"物料\s*([A-Za-z0-9\-/]+)") is None
+
+
+def test_evasive_backtracking_regex_rejected():
+    # Alternation-based blowup evades the nested-quantifier heuristic; the
+    # bounded sample timeout must abort it instead of hanging the validator.
+    assert regex_backtracking_guard(r"(a|a)+$") is not None
+
+
+def test_missing_clarify_locale_rejected(tmp_path):
+    intent = _valid_intent(clarifyPrompt={"en-US": {"fallback": {"template": "provide {fields}"}}})
+    doc = _capability_yaml(intent, VALID_EXTRACTION)
+    contract = load_registry_contract(_write_registry(tmp_path, doc))
+    errors = validate_registry_contract(contract, repo_root=REPO_ROOT)
+    assert any("clarifyPrompt" in e and "zh-CN" in e for e in errors)
+
+
+def test_weak_primary_keyword_overlap_rejected(tmp_path):
+    intent = _valid_intent(weakKeywords=["库存"])
+    doc = _capability_yaml(intent, VALID_EXTRACTION)
+    contract = load_registry_contract(_write_registry(tmp_path, doc))
+    errors = validate_registry_contract(contract, repo_root=REPO_ROOT)
+    assert any("weakKeywords" in e for e in errors)
+
+
+def test_when_references_undeclared_input_rejected(tmp_path):
+    intent = _valid_intent()
+    extraction = {"matchers": [{"kind": "regex", "pattern": "(\\d+)"}],
+                  "when": {"field": "nonexistent", "equals": "K"}}
+    doc = _capability_yaml(intent, extraction)
+    contract = load_registry_contract(_write_registry(tmp_path, doc))
+    errors = validate_registry_contract(contract, repo_root=REPO_ROOT)
+    assert any("when" in e and "nonexistent" in e for e in errors)
+
+
+def test_excludes_reference_undeclared_input_rejected(tmp_path):
+    intent = _valid_intent()
+    extraction = {"matchers": [{"kind": "semanticType", "ref": "Date"}],
+                  "excludes": ["ghost"]}
+    doc = _capability_yaml(intent, extraction)
+    contract = load_registry_contract(_write_registry(tmp_path, doc))
+    errors = validate_registry_contract(contract, repo_root=REPO_ROOT)
+    assert any("excludes" in e and "ghost" in e for e in errors)

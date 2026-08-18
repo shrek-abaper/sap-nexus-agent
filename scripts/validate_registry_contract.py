@@ -3,7 +3,226 @@ from __future__ import annotations
 from dataclasses import dataclass
 import json
 from pathlib import Path
+import re
+import signal
+import time
 from typing import Any
+
+import jsonschema
+
+SUPPORTED_LOCALES = ("zh-CN",)
+MAX_REGEX_LENGTH = 200
+_NESTED_QUANTIFIER = re.compile(r"\((?:[^()]*[*+])[^()]*\)[*+{]")
+_BACKTRACKING_SAMPLES = ("a" * 64, "a" * 64 + "!", "a" * 32 + "b", "0" * 64)
+_SAMPLE_TIME_BUDGET_SECONDS = 0.05
+
+
+class _RegexSearchTimeout(Exception):
+    """Raised by the SIGALRM handler when a sample search blows the time budget."""
+
+
+def _abort_search(signum: int, frame: Any) -> None:
+    raise _RegexSearchTimeout()
+
+
+def _search_exceeds_budget(compiled: re.Pattern, sample: str) -> bool:
+    """Run compiled.search(sample) under a hard time bound.
+
+    A wall-clock check after the fact can never fire on a catastrophic pattern
+    (the search simply never returns), so prefer SIGALRM to abort it. The plain
+    timed fallback only covers platforms/threads without SIGALRM.
+    """
+    try:
+        signal.signal(signal.SIGALRM, _abort_search)
+        signal.setitimer(signal.ITIMER_REAL, _SAMPLE_TIME_BUDGET_SECONDS)
+    except (AttributeError, ValueError, OSError):
+        started = time.perf_counter()
+        compiled.search(sample)
+        return time.perf_counter() - started > _SAMPLE_TIME_BUDGET_SECONDS
+    try:
+        compiled.search(sample)
+        return False
+    except _RegexSearchTimeout:
+        return True
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+
+
+def regex_backtracking_guard(pattern: str) -> str | None:
+    """Compile + backtracking-safety guard (length, nested quantifiers, bounded sample timeout)."""
+    if len(pattern) > MAX_REGEX_LENGTH:
+        return f"regex exceeds length limit {MAX_REGEX_LENGTH}: {pattern[:60]!r}..."
+    try:
+        compiled = re.compile(pattern)
+    except re.error as exc:
+        return f"regex does not compile: {exc}"
+    if _NESTED_QUANTIFIER.search(pattern):
+        return f"regex contains nested quantifiers (backtracking risk): {pattern[:60]!r}"
+    for sample in _BACKTRACKING_SAMPLES:
+        if _search_exceeds_budget(compiled, sample):
+            return f"regex exceeds sample timeout on input of length {len(sample)}: {pattern[:60]!r}"
+    return None
+
+
+def load_semantic_type_catalog(repo_root: Path) -> tuple[dict[str, dict], list[str]]:
+    """Load registry/semantic-types.yaml -> (entries by id, errors)."""
+    path = repo_root / "registry" / "semantic-types.yaml"
+    if not path.exists():
+        return {}, ["semantic-type catalog missing: registry/semantic-types.yaml"]
+    import yaml
+    try:
+        doc = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except (OSError, yaml.YAMLError) as exc:
+        return {}, [f"semantic-type catalog unreadable: {exc}"]
+    entries: dict[str, dict] = {}
+    errors: list[str] = []
+    for raw in (doc or {}).get("semanticTypes", []) or []:
+        if not isinstance(raw, dict):
+            errors.append("semantic-type catalog entry must be a mapping")
+            continue
+        entry_id = str(raw.get("id") or "")
+        if not entry_id:
+            errors.append("semantic-type catalog entry requires id")
+        elif entry_id in entries:
+            errors.append(f"duplicate semantic-type id: {entry_id}")
+        else:
+            entries[entry_id] = raw
+    return entries, errors
+
+
+def validate_extraction_declarations(
+    contract: RegistryContract,
+    catalog_entries: dict[str, dict],
+    repo_root: Path,
+) -> list[str]:
+    """Cross-field semantics for intent/extraction declarations.
+
+    Opt-in per capability: rules fire only when a capability carries an
+    `intent` block or an input `extraction` declaration. The semantic-type
+    catalog itself is validated on every invocation.
+    """
+    errors: list[str] = []
+    for entry_id, entry in catalog_entries.items():
+        for matcher in (entry.get("matchers") or []) if isinstance(entry, dict) else []:
+            errors.extend(
+                _validate_matcher(matcher, catalog_entries, f"semantic-type catalog entry {entry_id}")
+            )
+
+    schema_path = repo_root / "schemas" / "extraction-declaration.schema.json"
+    try:
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+        intent_validator = jsonschema.Draft202012Validator(schema)
+        extraction_validator = jsonschema.Draft202012Validator(schema["definitions"]["inputExtraction"])
+    except (OSError, ValueError, KeyError) as exc:
+        return [f"extraction-declaration schema unreadable: {exc}"]
+
+    for capability in contract.capabilities:
+        cap_id = capability.capability_id or "<unknown>"
+        raw = capability.raw if isinstance(capability.raw, dict) else {}
+        intent = raw.get("intent")
+        inputs = raw.get("inputs") if isinstance(raw.get("inputs"), list) else []
+        extractions: list[tuple[str, dict]] = []
+        for input_field in inputs:
+            if isinstance(input_field, dict) and isinstance(input_field.get("extraction"), dict):
+                extractions.append((str(input_field.get("name") or "<unknown>"), input_field["extraction"]))
+        if not isinstance(intent, dict) and not extractions:
+            continue
+        input_names = {
+            str(field.get("name"))
+            for field in inputs
+            if isinstance(field, dict) and field.get("name")
+        }
+        if isinstance(intent, dict):
+            for schema_error in intent_validator.iter_errors(intent):
+                errors.append(f"{cap_id}: intent: {schema_error.message}")
+            primary = {str(k) for k in (intent.get("primaryKeywords") or [])}
+            weak = {str(k) for k in (intent.get("weakKeywords") or [])}
+            overlap = sorted(primary & weak)
+            if overlap:
+                errors.append(
+                    f"{cap_id}: weakKeywords must be disjoint from primaryKeywords: {', '.join(overlap)}"
+                )
+        required_fields = {
+            str(field.get("name"))
+            for field in inputs
+            if isinstance(field, dict) and field.get("name") and field.get("required")
+        }
+        required_fields.update(
+            name for name, extraction in extractions if extraction.get("requiredWhen")
+        )
+        if isinstance(intent, dict) and isinstance(intent.get("requireAny"), dict):
+            missing_name = intent["requireAny"].get("missingName")
+            if missing_name:
+                required_fields.add(str(missing_name))
+        if isinstance(intent, dict):
+            errors.extend(_clarify_locale_errors(cap_id, intent, required_fields))
+        for input_name, extraction in extractions:
+            for schema_error in extraction_validator.iter_errors(extraction):
+                errors.append(f"{cap_id}: inputs[{input_name}].extraction: {schema_error.message}")
+            for matcher in extraction.get("matchers") or []:
+                errors.extend(
+                    _validate_matcher(matcher, catalog_entries, f"{cap_id}: inputs[{input_name}].extraction")
+                )
+            for condition_key in ("when", "requiredWhen"):
+                condition = extraction.get(condition_key)
+                if isinstance(condition, dict) and condition.get("field") not in input_names:
+                    errors.append(
+                        f"{cap_id}: inputs[{input_name}].extraction.{condition_key} "
+                        f"references undeclared input: {condition.get('field')}"
+                    )
+            for excluded in extraction.get("excludes") or []:
+                if excluded not in input_names:
+                    errors.append(
+                        f"{cap_id}: inputs[{input_name}].extraction.excludes "
+                        f"references undeclared input: {excluded}"
+                    )
+    return errors
+
+
+def _validate_matcher(matcher: Any, catalog_entries: dict[str, dict], context: str) -> list[str]:
+    """Resolve semanticType refs and guard every inline regex/keyword pattern."""
+    if not isinstance(matcher, dict):
+        return [f"{context}: matcher must be a mapping"]
+    if matcher.get("kind") == "semanticType":
+        ref = matcher.get("ref")
+        if ref not in catalog_entries:
+            return [f"{context}: semanticType ref not found in catalog: {ref}"]
+        return []
+    pattern = matcher.get("pattern")
+    if isinstance(pattern, str):
+        guard_error = regex_backtracking_guard(pattern)
+        if guard_error:
+            return [f"{context}: {guard_error}"]
+    return []
+
+
+def _clarify_locale_errors(cap_id: str, intent: dict[str, Any], required_fields: set[str]) -> list[str]:
+    """Every supported locale must cover each required input (case.missing or fallback)."""
+    errors: list[str] = []
+    clarify = intent.get("clarifyPrompt")
+    clarify = clarify if isinstance(clarify, dict) else {}
+    for locale in SUPPORTED_LOCALES:
+        prompt = clarify.get(locale)
+        if not isinstance(prompt, dict):
+            errors.append(
+                f"{cap_id}: clarifyPrompt missing locale {locale} "
+                f"for required inputs: {', '.join(sorted(required_fields))}"
+            )
+            continue
+        fallback = prompt.get("fallback")
+        has_fallback = isinstance(fallback, dict) and bool(fallback.get("template"))
+        covered: set[str] = set()
+        for case in prompt.get("cases") or []:
+            if isinstance(case, dict):
+                covered.update(str(name) for name in case.get("missing") or [])
+        missing = sorted(
+            name for name in required_fields if name not in covered and not has_fallback
+        )
+        if missing:
+            errors.append(
+                f"{cap_id}: clarifyPrompt[{locale}] missing coverage for required inputs: {', '.join(missing)}"
+            )
+    return errors
 
 
 @dataclass(frozen=True)
@@ -83,6 +302,9 @@ def validate_registry_contract(contract: RegistryContract, repo_root: Path) -> l
             errors.append(f"{capability.capability_id}: ontologyIri not found in ontology skeleton")
         errors.extend(_validate_eval_linkage(capability, repo_root))
         errors.extend(_validate_rest_json_binding(capability, binding))
+    catalog_entries, catalog_errors = load_semantic_type_catalog(repo_root)
+    errors.extend(catalog_errors)
+    errors.extend(validate_extraction_declarations(contract, catalog_entries, repo_root))
     return errors
 
 
@@ -299,8 +521,20 @@ def _parse_simple_yaml(path: Path) -> dict[str, Any]:
             parent.append(item)
             if item_text:
                 key, value = _split_key_value(item_text)
-                item[key] = _parse_scalar(value)
-            stack.append((indent, item))
+                if value == "":
+                    # Trailing "key:" on a list-item line: the container that
+                    # follows belongs to the item. Push it at a virtual indent so
+                    # both the container's children and the item's sibling keys
+                    # land on the right parent.
+                    next_container = _next_container(lines, raw_line)
+                    item[key] = next_container
+                    stack.append((indent, item))
+                    stack.append((indent + 2, next_container))
+                else:
+                    item[key] = _parse_scalar(value)
+                    stack.append((indent, item))
+            else:
+                stack.append((indent, item))
             continue
         key, value = _split_key_value(text)
         if value == "":
