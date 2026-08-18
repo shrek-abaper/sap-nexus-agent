@@ -208,6 +208,11 @@ def test_material_filters_reproduce_legacy_guards():
 
 # --- Registry contract validator rules (Task 4) ---
 
+from copy import deepcopy
+
+from sap_nexus_agent.semantic_planning.loader import load_semantic_sources
+from sap_nexus_agent.semantic_planning.validation import build_semantic_contracts
+
 from scripts.validate_registry_contract import (
     load_registry_contract,
     load_semantic_type_catalog,
@@ -492,3 +497,128 @@ def test_pr_declaration_parity_constants():
         {"kind": "keyword", "pattern": r"(?:间采|账号分配)\s*[Kk]", "value": "K"}]
     assert inputs["cost_center"]["extraction"]["when"] == {"field": "acct_assgn_cat", "equals": "K"}
     assert inputs["cost_center"]["extraction"]["requiredWhen"] == {"field": "acct_assgn_cat", "equals": "K"}
+
+
+# --- Task 5b: capability.schema.json embedding + drift guard against
+# extraction-declaration.schema.json (the shape authority) ---
+
+
+def test_real_registry_sources_build_valid_semantic_contract():
+    # Regression: capability.schema.json ($defs.capability uses
+    # additionalProperties: false) must allowlist the capability-level
+    # `intent` block and per-input `extraction` blocks, otherwise
+    # build_semantic_contracts fails on the real registry with
+    # SCHEMA_INVALID "unexpected property: intent".
+    result = build_semantic_contracts(load_semantic_sources(REPO_ROOT))
+    assert result.report.valid, [
+        (issue.path, issue.code, issue.message) for issue in result.report.issues
+    ]
+    assert result.graph is not None and result.snapshot is not None
+
+
+def _capability_block_schema(block_name: str) -> dict:
+    """Wrap a $defs block of capability.schema.json as a standalone schema."""
+    capability_schema = _load("capability.schema.json")
+    return {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$defs": capability_schema["$defs"],
+        "$ref": f"#/$defs/{block_name}",
+    }
+
+
+def _assert_block_parity(instance: dict, authority_schema: dict, block_name: str) -> None:
+    embedded = _capability_block_schema(block_name)
+    authority_valid = jsonschema.Draft202012Validator(authority_schema).is_valid(instance)
+    embedded_valid = jsonschema.Draft202012Validator(embedded).is_valid(instance)
+    assert embedded_valid == authority_valid
+
+
+def _mutated(base: dict, mutation: dict) -> dict:
+    payload = deepcopy(base)
+    for key, value in mutation.items():
+        if value is _MISSING:
+            payload.pop(key, None)
+        else:
+            payload[key] = value
+    return payload
+
+
+INTENT_PARITY_MUTATIONS = [
+    {},                                                     # canonical: both accept
+    {"intentName": 123},
+    {"intentName": ""},
+    {"primaryKeywords": []},
+    {"primaryKeywords": "库存"},
+    {"weakKeywords": ["采购", 5]},
+    {"triggerKeywords": []},
+    {"fieldNames": {}},
+    {"fieldNames": {"zh-CN": {}}},
+    {"requireAny": {"inputs": [], "missingName": "x"}},
+    {"requireAny": {"inputs": ["a"]}},                     # missingName required
+    {"requireAny": {"inputs": ["a"], "missingName": "x", "extra": 1}},
+    {"clarifyPrompt": {}},
+    {"clarifyPrompt": {"zh-CN": {"cases": "nope"}}},
+    {"clarifyPrompt": {"zh-CN": {"fallback": {"template": ""}}}},
+    {"clarifyPrompt": {"zh-CN": {"cases": [], "fallback": {"template": "t"}}}},
+    {"unknownProperty": True},
+]
+
+
+@pytest.mark.parametrize("mutation", INTENT_PARITY_MUTATIONS)
+def test_intent_block_parity_with_extraction_declaration(mutation):
+    # Drift guard: the embedded $defs.intentBlock in capability.schema.json
+    # must accept/reject exactly what extraction-declaration.schema.json
+    # (root) accepts/rejects for the intent block.
+    schema = _load("extraction-declaration.schema.json")
+    _assert_block_parity(
+        _mutated(VALID_INTENT, mutation), schema, "intentBlock"
+    )
+
+
+def test_canonical_intent_block_accepted_by_both_schemas():
+    schema = _load("extraction-declaration.schema.json")
+    assert jsonschema.Draft202012Validator(schema).is_valid(VALID_INTENT)
+    assert jsonschema.Draft202012Validator(
+        _capability_block_schema("intentBlock")
+    ).is_valid(VALID_INTENT)
+
+
+EXTRACTION_PARITY_MUTATIONS = [
+    {},                                                     # canonical: both accept
+    {"matchers": []},
+    {"matchers": "all"},
+    {"matchers": [{"kind": "embedding", "pattern": "x"}]},
+    {"matchers": [{"kind": "regex"}]},
+    {"matchers": [{"kind": "keyword", "pattern": "x"}]},
+    {"matchers": [{"kind": "semanticType", "pattern": "x"}]},
+    {"matchers": [{"kind": "keyword", "pattern": "x", "value": "K", "scan": "every"}]},
+    {"priority": "high"},
+    {"resolver": "decimal"},
+    {"when": {"field": "x"}},
+    {"when": {"field": "x", "equals": "K", "extra": 0}},
+    {"reaskSuspect": "yes"},
+    {"unknownProperty": True},
+]
+
+
+@pytest.mark.parametrize("mutation", EXTRACTION_PARITY_MUTATIONS)
+def test_extraction_block_parity_with_extraction_declaration(mutation):
+    # Drift guard: the embedded $defs.extractionBlock in capability.schema.json
+    # must accept/reject exactly what extraction-declaration.schema.json
+    # (definitions.inputExtraction) accepts/rejects for input extractions.
+    schema = _load("extraction-declaration.schema.json")
+    _assert_block_parity(
+        _mutated(VALID_INPUT_EXTRACTION, mutation),
+        schema["definitions"]["inputExtraction"],
+        "extractionBlock",
+    )
+
+
+def test_canonical_extraction_block_accepted_by_both_schemas():
+    schema = _load("extraction-declaration.schema.json")
+    assert jsonschema.Draft202012Validator(
+        schema["definitions"]["inputExtraction"]
+    ).is_valid(VALID_INPUT_EXTRACTION)
+    assert jsonschema.Draft202012Validator(
+        _capability_block_schema("extractionBlock")
+    ).is_valid(VALID_INPUT_EXTRACTION)
