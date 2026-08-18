@@ -3,7 +3,7 @@
 ## 1. Declaration Schema and Validation (zero behavior change)
 
 - [x] 1.1 Define JSON Schema for capability extraction declarations (`primaryKeywords`, per-input `extraction` matchers with `keyword`/`regex`/`semanticType` kinds, `excludes`, `priority`, `resolver`, `clarifyPrompt` locale map) in `schemas/`
-- [ ] 1.2 Define JSON Schema for the semantic-type extraction catalog `registry/semantic-types.yaml` (versioned root, semantic type id, matcher list, priority)
+- [x] Define JSON Schema for the semantic-type extraction catalog `registry/semantic-types.yaml` (versioned root, semantic type id, matcher list, priority)
 - [ ] 1.3 Create `registry/semantic-types.yaml` with entries lifted verbatim from current extractors (Plant, MaterialNumber, Quantity+unit, Date, vendor/purchasing-group as applicable)
 - [ ] 1.4 Add extraction declaration + catalog validation to `scripts/validate-registry-contract.py`: regex compile check, backtracking-safety guard (length + nested-quantifier heuristic with bounded sample timeout), semanticType reference resolution, clarifyPrompt locale completeness for required inputs, duplicate catalog id rejection
 - [ ] 1.5 Add extraction declarations to the three existing capabilities in `registry/capabilities.yaml` with strict-parity values (keywords, patterns, priorities, exclusions, clarifyPrompt text copied verbatim from current code strings)
