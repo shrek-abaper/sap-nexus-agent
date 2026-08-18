@@ -1,0 +1,15 @@
+{
+  "change": "declarative-intent-extraction",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "d2310029b57deb3ec78ddaa19c8713f0a1473ef41d89241ce169544377a6270c",
+  "files": [
+    { "path": "openspec/changes/declarative-intent-extraction/proposal.md", "sha256": "b4b3b1eb6607931f6a8a65bc143b274a9c468859cbb53160fbc2260efc716fe2" },
+    { "path": "openspec/changes/declarative-intent-extraction/design.md", "sha256": "08a49fd7211cbae5ce10a29491715f59348f6ba8e017f2b0124e66ea8cf936b3" },
+    { "path": "openspec/changes/declarative-intent-extraction/tasks.md", "sha256": "4128f7c7fc2d21e63d5354039685e73f39b6c019e1b5e24f9700ebc12af24afb" },
+    { "path": "openspec/changes/declarative-intent-extraction/specs/declarative-intent-extraction/spec.md", "sha256": "5d362258b9ccb3afc70eda64531a51999566a018f504ff6eb44e855aedac772f" },
+    { "path": "openspec/changes/declarative-intent-extraction/specs/registry-ontology-contract/spec.md", "sha256": "ee2ad5c0a8510684ac08eaccdb020b3c3e9a68b6ee1d9e89df1ac2d452737155" }
+  ]
+}
