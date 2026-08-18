@@ -15,6 +15,7 @@ MAX_REGEX_LENGTH = 200
 _NESTED_QUANTIFIER = re.compile(r"\((?:[^()]*[*+])[^()]*\)[*+{]")
 _BACKTRACKING_SAMPLES = ("a" * 64, "a" * 64 + "!", "a" * 32 + "b", "0" * 64)
 _SAMPLE_TIME_BUDGET_SECONDS = 0.05
+_FALLBACK_PROBE_SEGMENT = 12
 
 
 class _RegexSearchTimeout(Exception):
@@ -25,20 +26,38 @@ def _abort_search(signum: int, frame: Any) -> None:
     raise _RegexSearchTimeout()
 
 
+def _fallback_probe_exceeds_budget(compiled: re.Pattern, sample: str) -> bool:
+    """Bounded probe for contexts without SIGALRM (off main thread, non-POSIX).
+
+    sre holds the GIL for the entire search, so neither a worker thread nor an
+    after-the-fact clock check can bound a full-length run off the main thread.
+    Instead run only a head+tail truncated probe: catastrophic backtracking
+    cost grows geometrically with input length, so the probe exposes the
+    evasive patterns the static heuristic misses without ever running a
+    full-length search.
+    """
+    if len(sample) > 2 * _FALLBACK_PROBE_SEGMENT:
+        probe = sample[:_FALLBACK_PROBE_SEGMENT] + sample[-_FALLBACK_PROBE_SEGMENT:]
+    else:
+        probe = sample
+    started = time.perf_counter()
+    compiled.search(probe)
+    return time.perf_counter() - started > _SAMPLE_TIME_BUDGET_SECONDS
+
+
 def _search_exceeds_budget(compiled: re.Pattern, sample: str) -> bool:
     """Run compiled.search(sample) under a hard time bound.
 
     A wall-clock check after the fact can never fire on a catastrophic pattern
-    (the search simply never returns), so prefer SIGALRM to abort it. The plain
-    timed fallback only covers platforms/threads without SIGALRM.
+    (the search simply never returns), so prefer SIGALRM to abort it. When
+    signals are unavailable, fall back to a truncated probe instead of a full
+    search (see _fallback_probe_exceeds_budget).
     """
     try:
         signal.signal(signal.SIGALRM, _abort_search)
         signal.setitimer(signal.ITIMER_REAL, _SAMPLE_TIME_BUDGET_SECONDS)
     except (AttributeError, ValueError, OSError):
-        started = time.perf_counter()
-        compiled.search(sample)
-        return time.perf_counter() - started > _SAMPLE_TIME_BUDGET_SECONDS
+        return _fallback_probe_exceeds_budget(compiled, sample)
     try:
         compiled.search(sample)
         return False
@@ -120,12 +139,25 @@ def validate_extraction_declarations(
         cap_id = capability.capability_id or "<unknown>"
         raw = capability.raw if isinstance(capability.raw, dict) else {}
         intent = raw.get("intent")
+        if "intent" in raw and not isinstance(intent, dict):
+            errors.append(f"{cap_id}: intent must be a mapping")
+            intent = None
         inputs = raw.get("inputs") if isinstance(raw.get("inputs"), list) else []
         extractions: list[tuple[str, dict]] = []
         for input_field in inputs:
-            if isinstance(input_field, dict) and isinstance(input_field.get("extraction"), dict):
-                extractions.append((str(input_field.get("name") or "<unknown>"), input_field["extraction"]))
-        if not isinstance(intent, dict) and not extractions:
+            if not isinstance(input_field, dict):
+                continue
+            extraction = input_field.get("extraction")
+            if extraction is None:
+                continue
+            input_name = str(input_field.get("name") or "<unknown>")
+            if not isinstance(extraction, dict):
+                errors.append(
+                    f"{cap_id}: inputs[{input_name}].extraction must be a mapping"
+                )
+                continue
+            extractions.append((input_name, extraction))
+        if intent is None and not extractions:
             continue
         input_names = {
             str(field.get("name"))

@@ -357,3 +357,43 @@ def test_excludes_reference_undeclared_input_rejected(tmp_path):
     contract = load_registry_contract(_write_registry(tmp_path, doc))
     errors = validate_registry_contract(contract, repo_root=REPO_ROOT)
     assert any("excludes" in e and "ghost" in e for e in errors)
+
+
+# --- Fix round 1: malformed declarations and off-thread guard bounding ---
+
+def test_malformed_intent_block_rejected(tmp_path):
+    # Present-but-not-a-mapping intent must be a validation error, not a silent skip.
+    doc = _capability_yaml(intent_block=[])
+    contract = load_registry_contract(_write_registry(tmp_path, doc))
+    errors = validate_registry_contract(contract, repo_root=REPO_ROOT)
+    assert any("intent must be a mapping" in e for e in errors)
+
+
+def test_malformed_input_extraction_rejected(tmp_path):
+    # Present-but-not-a-mapping extraction must be a validation error naming the input.
+    doc = _capability_yaml(_valid_intent(), extraction=[])
+    contract = load_registry_contract(_write_registry(tmp_path, doc))
+    errors = validate_registry_contract(contract, repo_root=REPO_ROOT)
+    assert any(
+        "extraction must be a mapping" in e and "material" in e for e in errors
+    )
+
+
+def test_off_thread_backtracking_guard_is_bounded():
+    # SIGALRM is unavailable off the main thread; the fallback path must still
+    # terminate (worker thread + join timeout) instead of hanging.
+    import threading
+    import time as _time
+
+    result: dict = {}
+
+    def run():
+        result["error"] = regex_backtracking_guard(r"(a|a)+$")
+
+    thread = threading.Thread(target=run, daemon=True)
+    started = _time.perf_counter()
+    thread.start()
+    thread.join(timeout=5)
+    assert not thread.is_alive(), "off-thread guard ran unbounded"
+    assert _time.perf_counter() - started < 5
+    assert result.get("error") is not None
