@@ -5,7 +5,7 @@
 - [x] 1.1 Define JSON Schema for capability extraction declarations (`primaryKeywords`, per-input `extraction` matchers with `keyword`/`regex`/`semanticType` kinds, `excludes`, `priority`, `resolver`, `clarifyPrompt` locale map) in `schemas/`
 - [x] Define JSON Schema for the semantic-type extraction catalog `registry/semantic-types.yaml` (versioned root, semantic type id, matcher list, priority)
 - [x] Create `registry/semantic-types.yaml` with entries lifted verbatim from current extractors (Plant, MaterialNumber, Quantity+unit, Date, vendor/purchasing-group as applicable)
-- [ ] 1.4 Add extraction declaration + catalog validation to `scripts/validate-registry-contract.py`: regex compile check, backtracking-safety guard (length + nested-quantifier heuristic with bounded sample timeout), semanticType reference resolution, clarifyPrompt locale completeness for required inputs, duplicate catalog id rejection
+- [x] Add extraction declaration + catalog validation to `scripts/validate-registry-contract.py`: regex compile check, backtracking-safety guard (length + nested-quantifier heuristic with bounded sample timeout), semanticType reference resolution, clarifyPrompt locale completeness for required inputs, duplicate catalog id rejection
 - [ ] 1.5 Add extraction declarations to the three existing capabilities in `registry/capabilities.yaml` with strict-parity values (keywords, patterns, priorities, exclusions, clarifyPrompt text copied verbatim from current code strings)
 - [ ] 1.6 Add a gateway test proving registry loading with extraction metadata leaves gateway behavior unchanged
 - [ ] 1.7 Verify: `openspec list --json && openspec validate --all --strict`, registry contract validation, agent test baseline all green
