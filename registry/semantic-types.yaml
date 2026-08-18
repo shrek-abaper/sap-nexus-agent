@@ -1,0 +1,66 @@
+version: 1
+semanticTypes:
+  - id: Plant
+    description: SAP plant code - 工厂-prefixed form first, bare 4-char code fallback with lookaround guards
+    priority: 20
+    matchers:
+      - kind: regex
+        pattern: '(?:在\s*([A-Z]\d{3}|\d{4}))|(?:([A-Z]\d{3}|\d{4})\s*工厂)'
+      - kind: regex
+        pattern: '(?<!\d)([A-Z]\d{3}|\d{4})(?!\d)'
+  - id: MaterialNumber
+    description: Bare uppercase token scan with material guards
+    priority: 10
+    matchers:
+      - kind: regex
+        pattern: '(?<![A-Za-z0-9-])[A-Z0-9][A-Z0-9-]{1,39}(?![A-Za-z0-9-])'
+        scan: all
+    filters:
+      minLength: 5
+      notIn: ['RFCNAME']
+      prefixBlacklist: ['BAPI_']
+      toUpperCaseCompare: true
+      toUpperCaseOutput: false
+  - id: Quantity
+    description: Numeric capture optionally followed by a unit token
+    priority: 30
+    matchers:
+      - kind: regex
+        pattern: '(\d+(?:\.\d+)?)\s*(?:EA|PC|KG|G|L|M)'
+        ignoreCase: true
+  - id: Unit
+    description: Unit-of-measure token, uppercased on output
+    priority: 25
+    matchers:
+      - kind: regex
+        pattern: '\b(EA|PC|KG|G|L|M)\b'
+        ignoreCase: true
+    filters:
+      toUpperCaseOutput: true
+  - id: Date
+    description: ISO date capture
+    priority: 20
+    matchers:
+      - kind: regex
+        pattern: '(\d{4}-\d{2}-\d{2})'
+  - id: PurchasingGroup
+    description: 采购组-prefixed code, uppercased on output
+    priority: 15
+    matchers:
+      - kind: regex
+        pattern: '采购组\s*([A-Za-z0-9]{1,3})'
+    filters:
+      toUpperCaseOutput: true
+  - id: Vendor
+    description: PO vendor number, 供应商-prefixed
+    priority: 40
+    matchers:
+      - kind: regex
+        pattern: '供应商\s*(\d+)'
+  - id: PONumber
+    description: 10-digit PO number, iterated so value exclusions can skip matches
+    priority: 10
+    matchers:
+      - kind: regex
+        pattern: '(?<!\d)(\d{10})(?!\d)'
+        scan: all

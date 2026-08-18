@@ -153,3 +153,54 @@ def test_duplicate_catalog_id_allowed_by_schema():
         ],
     }
     jsonschema.validate(payload, _load("semantic-type-catalog.schema.json"))
+
+
+# --- Semantic-type catalog parity (Task 3) ---
+
+import yaml
+
+from sap_nexus_agent import intent as legacy_intent
+from sap_nexus_agent import pr_intent as legacy_pr
+
+CATALOG_PATH = REPO_ROOT / "registry" / "semantic-types.yaml"
+
+EXPECTED_PATTERN_PARITY = {
+    "Plant": [
+        legacy_intent.PLANT_PATTERN.pattern,
+        r"(?<!\d)([A-Z]\d{3}|\d{4})(?!\d)",
+    ],
+    "MaterialNumber": [legacy_intent.TOKEN_PATTERN.pattern],
+    "Quantity": [legacy_pr.QUANTITY_PATTERN.pattern],
+    "Unit": [legacy_pr.UNIT_PATTERN.pattern],
+    "Date": [legacy_pr.DATE_PATTERN.pattern],
+    "PurchasingGroup": [legacy_pr.PURCHASING_GROUP_PATTERN.pattern],
+    "Vendor": [legacy_intent.PO_VENDOR_PATTERN.pattern],
+    "PONumber": [legacy_intent.PO_NUMBER_PATTERN.pattern],
+}
+
+
+def _load_catalog() -> dict:
+    return yaml.safe_load(CATALOG_PATH.read_text(encoding="utf-8"))
+
+
+def test_catalog_matches_json_schema():
+    jsonschema.validate(_load_catalog(), _load("semantic-type-catalog.schema.json"))
+
+
+def test_catalog_patterns_are_lifted_verbatim_from_legacy_extractors():
+    catalog = {e["id"]: e for e in _load_catalog()["semanticTypes"]}
+    assert set(catalog) == set(EXPECTED_PATTERN_PARITY)
+    for entry_id, patterns in EXPECTED_PATTERN_PARITY.items():
+        assert [m["pattern"] for m in catalog[entry_id]["matchers"]] == patterns, entry_id
+
+
+def test_material_filters_reproduce_legacy_guards():
+    catalog = {e["id"]: e for e in _load_catalog()["semanticTypes"]}
+    filters = catalog["MaterialNumber"]["filters"]
+    assert filters == {
+        "minLength": 5,             # legacy: len(token) > 4
+        "notIn": ["RFCNAME"],       # legacy: excluded.update({"RFCNAME"})
+        "prefixBlacklist": ["BAPI_"],
+        "toUpperCaseCompare": True, # legacy: token.upper() in excluded
+        "toUpperCaseOutput": False, # legacy returns the original token
+    }
