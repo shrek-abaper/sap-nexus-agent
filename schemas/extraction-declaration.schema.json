@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:sap-nexus:extraction-declaration:v1",
+  "title": "Capability intent extraction declaration",
+  "description": "Declarative intent-extraction block attached to a capability. The root schema validates the `intent` object itself; input-extraction declarations are validated standalone via `definitions.inputExtraction`. The capabilities.yaml embedding is checked by the registry validator.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["intentName", "primaryKeywords"],
+  "properties": {
+    "intentName": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Stable identifier of the intent this capability realizes."
+    },
+    "primaryKeywords": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string", "minLength": 1},
+      "description": "Strong trigger keywords; at least one is required. Must stay disjoint from weakKeywords (enforced by the validator, not expressible in plain JSON Schema)."
+    },
+    "weakKeywords": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "description": "Weak confirmation keywords that only reinforce a primary hit."
+    },
+    "triggerKeywords": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string", "minLength": 1},
+      "description": "Override for the trigger keyword set; defaults to primaryKeywords when absent."
+    },
+    "fieldNames": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "minProperties": 1,
+        "additionalProperties": {"type": "string", "minLength": 1}
+      },
+      "description": "Per-locale display names for input fields, keyed by locale then field name."
+    },
+    "requireAny": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["inputs", "missingName"],
+      "properties": {
+        "inputs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "missingName": {"type": "string", "minLength": 1}
+      },
+      "description": "If none of these input fields could be extracted, ask for missingName."
+    },
+    "clarifyPrompt": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {"$ref": "#/$defs/localePrompt"},
+      "description": "Per-locale clarification prompt cases and fallback template."
+    }
+  },
+  "$defs": {
+    "localePrompt": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "cases": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["missing", "text"],
+            "properties": {
+              "missing": {
+                "type": "array",
+                "minItems": 1,
+                "items": {"type": "string", "minLength": 1}
+              },
+              "text": {"type": "string", "minLength": 1}
+            }
+          }
+        },
+        "fallback": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["template"],
+          "properties": {"template": {"type": "string", "minLength": 1}}
+        }
+      }
+    }
+  },
+  "definitions": {
+    "inputExtraction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["matchers"],
+      "properties": {
+        "matchers": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/matcher"}
+        },
+        "priority": {"type": "integer"},
+        "excludes": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        },
+        "resolver": {"enum": ["date", "quantity", "text"]},
+        "when": {"$ref": "#/$defs/condition"},
+        "requiredWhen": {"$ref": "#/$defs/condition"},
+        "reaskSuspect": {"type": "boolean"}
+      },
+      "$defs": {
+        "matcher": {
+          "type": "object",
+          "required": ["kind"],
+          "properties": {
+            "kind": {"enum": ["keyword", "regex", "semanticType"]},
+            "pattern": {"type": "string", "minLength": 1},
+            "value": {"type": "string", "minLength": 1},
+            "ref": {"type": "string", "minLength": 1},
+            "ignoreCase": {"type": "boolean"},
+            "scan": {"enum": ["first", "all"]}
+          },
+          "allOf": [
+            {"if": {"properties": {"kind": {"const": "keyword"}}},
+             "then": {"required": ["pattern", "value"]}},
+            {"if": {"properties": {"kind": {"const": "regex"}}},
+             "then": {"required": ["pattern"]}},
+            {"if": {"properties": {"kind": {"const": "semanticType"}}},
+             "then": {"required": ["ref"]}}
+          ]
+        },
+        "condition": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["field", "equals"],
+          "properties": {
+            "field": {"type": "string", "minLength": 1},
+            "equals": {"type": "string"}
+          }
+        }
+      }
+    }
+  }
+}
