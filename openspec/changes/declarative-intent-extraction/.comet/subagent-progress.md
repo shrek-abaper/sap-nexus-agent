@@ -1,28 +1,32 @@
 # Comet coordinator checkpoint - declarative-intent-extraction
 
-- Current plan task: Task 12 (docs/superpowers/plans/2026-08-18-declarative-intent-extraction.md,
-  "### Task 12: Migration seam in `parse_intent` and sticky continuation  (tasks.md 2.5)")
-- Mapped OpenSpec task: tasks.md line 19
+- Current plan tasks: Tasks 13-15 (docs/superpowers/plans/2026-08-18-declarative-intent-extraction.md,
+  batched dispatch per SDD ledger preflight ruling #9)
+- Mapped OpenSpec tasks: tasks.md lines 23-25 (3.1, 3.2, 3.3)
 - Stage: done
-- Model used: github-copilot/gpt-5.5 (category: ultrabrain) - implementer and reviewer
-- BASE commit: c21d680
-- Implementation commit: dde9baa (checkoff: b282b7c)
-- RED/GREEN evidence: no new tests (this task is a documented no-op); full suite 15
-  failed/1335 passed/1 skipped exact match to pre-task baseline (verified independently by
-  coordinator before AND by implementer after); parity harness 108/108 unchanged.
+- Model used: github-copilot/gpt-5.5 (category: ultrabrain) - implementer (with one resumed
+  continuation to correct an over-conservative BLOCKED call) and batch reviewer
+- BASE commit: b282b7c
+- Implementation commits: bf2b201 (PR + ordering fix), 25da9e5 (Inventory + capability_id
+  nulling fix), d8f29d7 (PO, clean flip). Checkoff: 19a52c8.
+- RED/GREEN evidence: parity 108/108 after each capability; full suite 15 failed/1335
+  passed/1 skipped exact match to baseline after each capability; 5 call-plan eval files
+  individually verified (3 fully green, 2 retain pre-existing baseline failures independently
+  reproduced by coordinator with the seam toggled off).
 - review_mode: standard
-- Review stages passed: mandatory per-task reviewer (ledger pre-flight plan) - Approved, 0
-  findings (confirmed vestigial sketch line correctly omitted, restrict_to default-None
-  equivalence, migrated set stays empty).
+- Review stages passed: batch reviewer dispatched (coordinator judgment - not on the
+  mandatory list, but two real production fixes + a hardcoded capability-id check warranted
+  it) - Approved, 0 Critical/Important. 1 minor deferred to final review (inline comment).
 - Unresolved reviewer feedback: none
-- Current fix round: 0/1 (not needed)
-- Risk-task review already triggered this task: yes (mandatory per ledger)
+- Current fix round: 0/1 (not needed for the review; one BLOCKED->resume cycle occurred at
+  the implementer stage, not the review stage, and was resolved via task_id continuation,
+  not a formal fix-loop round)
+- Risk-task review already triggered this task: yes (coordinator-initiated, not ledger-mandatory)
 
-GROUP 2 (Tasks 8-12) COMPLETE. Next: GROUP 3 - Tasks 13-15 (tasks.md 3.1-3.3, per-capability
-migration: PR -> Inventory -> PO in that order per Global Constraints). Ledger preflight
-ruling #9 (binding): batch 13-15 into ONE dispatch, sequential per-capability with a parity
-gate between each, THREE separate standalone commits (one per capability, per Global
-Constraints "Each migration step is a standalone commit"). No briefs exist yet for 13-15 -
-must extract via task-brief script. review_mode=standard and these are not on the mandatory
-per-task reviewer list (only 4,5,10,11,12,17,18 are) - risk-signal self-report governs
-whether each gets a reviewer.
+GROUP 3 (Tasks 13-15) COMPLETE. `_ENGINE_MIGRATED_CAPABILITIES` = all 3 capabilities.
+
+Next: GROUP 4 - Tasks 16-19 (tasks.md 4.1-4.4: CLARIFY template rendering, optional LLM
+rephrase, legacy deletion, declaration-only fixture capability proof). No briefs exist yet -
+must extract via task-brief script. Ledger's review-dispatch plan requires MANDATORY
+per-task reviewers for Tasks 17 and 18 (18 is the legacy-deletion task - highest blast
+radius in the whole plan, deletes pr_intent.py and the per-capability seam).
