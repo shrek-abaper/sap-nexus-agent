@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 
 from validate_registry_contract import (
+    collect_deprecation_warnings,
     count_regex_matchers,
     load_registry_contract,
     load_semantic_type_catalog,
@@ -30,6 +31,8 @@ def main(argv: list[str] | None = None) -> int:
         f"regex matchers in use: {catalog_count + capability_count} "
         f"(semantic-type catalog {catalog_count} + capability-level {capability_count})"
     )
+    for warning in collect_deprecation_warnings(contract):
+        print(f"warning: {warning}")
     print(f"Registry contract valid: {args[0]}")
     return 0
 

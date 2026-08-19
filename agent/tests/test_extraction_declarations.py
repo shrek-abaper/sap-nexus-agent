@@ -737,3 +737,116 @@ def test_loader_parses_strategy_and_max_rounds():
 
     assert _parse_clarify_prompt({"cases": [{"missing": ["a"], "text": "t"}]}).strategy is None
     assert _parse_clarify_prompt({"fallback": {"template": "t"}}).max_rounds is None
+
+
+# --- Task 3.1 (B3 series): binding.sources[] schema + deprecated extraction alias ---
+
+VALID_BINDING = {
+    "sources": [
+        {"kind": "userUtterance", "matchers": [{"kind": "semanticType", "ref": "MaterialNumber"}]},
+        {"kind": "capabilityOutput", "factType": "vendor", "field": "vendor"},
+        {"kind": "default", "value": "K"},
+    ],
+    "elicitIfMissing": True,
+    "priority": 10,
+    "excludes": ["plant"],
+    "resolver": "text",
+    "when": {"field": "acct_assgn_cat", "equals": "K"},
+    "requiredWhen": {"field": "acct_assgn_cat", "equals": "K"},
+    "reaskSuspect": True,
+}
+
+BINDING_PARITY_MUTATIONS = [
+    {},
+    {"sources": []},                                                          # at least one source
+    {"sources": [{"kind": "embedding"}]},                                     # unknown kind
+    {"sources": [{"kind": "userUtterance"}]},                                 # needs matchers
+    {"sources": [{"kind": "capabilityOutput", "field": "x"}]},                # needs factType
+    {"sources": [{"kind": "default"}]},                                       # needs value
+    {"sources": [{"kind": "default", "value": "1", "matchers": [{"kind": "regex", "pattern": "x"}]}]},  # source extra property
+    {"elicitIfMissing": "nope"},
+    {"priority": "high"},
+    {"resolver": "decimal"},
+    {"when": {"field": "x"}},
+    {"unknownProperty": True},
+]
+
+
+def test_valid_input_binding_passes():
+    schema = _load("extraction-declaration.schema.json")
+    jsonschema.validate(VALID_BINDING, schema["definitions"]["inputBinding"])
+
+
+@pytest.mark.parametrize("mutation", BINDING_PARITY_MUTATIONS)
+def test_input_binding_block_parity_with_extraction_declaration(mutation):
+    # Drift guard: the embedded $defs.inputBindingBlock in capability.schema.json
+    # must accept/reject exactly what extraction-declaration.schema.json's
+    # definitions.inputBinding accepts/rejects.
+    schema = _load("extraction-declaration.schema.json")
+    _assert_block_parity(
+        _mutated(VALID_BINDING, mutation), schema["definitions"]["inputBinding"], "inputBindingBlock"
+    )
+
+
+def test_capability_schema_io_field_accepts_binding():
+    capability_schema = _load("capability.schema.json")
+    io_field = {
+        "name": "vendor",
+        "semanticType": "sapnexus:Supplier",
+        "bindingKind": "identifier",
+        "required": True,
+        "type": "string",
+        "sapParameter": "VENDOR",
+        "binding": {"sources": [{"kind": "userUtterance", "matchers": [{"kind": "regex", "pattern": "x"}]}]},
+    }
+    jsonschema.validate(io_field, _capability_block_schema("ioField"))
+
+
+def test_extraction_alias_emits_deprecation_warning_with_migration_text():
+    from scripts.validate_registry_contract import collect_deprecation_warnings
+
+    contract = load_registry_contract(REPO_ROOT / "registry" / "capabilities.yaml")
+    warnings = collect_deprecation_warnings(contract)
+    assert len(warnings) >= 1
+    assert all("extraction" in w and "binding.sources" in w for w in warnings)
+    assert any("MM.PR.CreateDraft" in w for w in warnings)
+    assert any("extraction.matchers" in w and "kind: userUtterance" in w for w in warnings)
+
+
+def test_binding_shape_validates_without_warnings(tmp_path):
+    from scripts.validate_registry_contract import collect_deprecation_warnings
+
+    doc = _capability_yaml(
+        _valid_intent(),
+        inputs=[{
+            "name": "vendor",
+            "semanticType": "sapnexus:Supplier",
+            "required": True,
+            "type": "string",
+            "binding": {"sources": [{"kind": "default", "value": "V1"}]},
+        }],
+    )
+    contract = load_registry_contract(_write_registry(tmp_path, doc))
+    errors = validate_registry_contract(contract, repo_root=REPO_ROOT)
+    # The synthetic fixture intentionally omits unrelated registry rules
+    # (bindingKind, evidenceRole, evalLinkage, real bindingId/ontologyIri), so
+    # only assert that the binding shape adds no validation errors.
+    assert not any(".binding:" in e or "binding source" in e or "declares both" in e for e in errors)
+    assert collect_deprecation_warnings(contract) == []
+
+
+def test_binding_and_extraction_together_rejected(tmp_path):
+    doc = _capability_yaml(
+        _valid_intent(),
+        inputs=[{
+            "name": "vendor",
+            "semanticType": "sapnexus:Supplier",
+            "required": True,
+            "type": "string",
+            "extraction": {"matchers": [{"kind": "regex", "pattern": "x"}]},
+            "binding": {"sources": [{"kind": "default", "value": "V1"}]},
+        }],
+    )
+    contract = load_registry_contract(_write_registry(tmp_path, doc))
+    errors = validate_registry_contract(contract, repo_root=REPO_ROOT)
+    assert any("both binding and deprecated extraction" in e for e in errors)

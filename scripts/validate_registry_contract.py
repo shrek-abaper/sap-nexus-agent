@@ -137,6 +137,7 @@ def validate_extraction_declarations(
         schema = json.loads(schema_path.read_text(encoding="utf-8"))
         intent_validator = jsonschema.Draft202012Validator(schema)
         extraction_validator = jsonschema.Draft202012Validator(schema["definitions"]["inputExtraction"])
+        binding_validator = jsonschema.Draft202012Validator(schema["definitions"]["inputBinding"])
     except (OSError, ValueError, KeyError) as exc:
         return [f"extraction-declaration schema unreadable: {exc}"]
 
@@ -148,21 +149,28 @@ def validate_extraction_declarations(
             errors.append(f"{cap_id}: intent must be a mapping")
             intent = None
         inputs = raw.get("inputs") if isinstance(raw.get("inputs"), list) else []
-        extractions: list[tuple[str, dict]] = []
+        declared: list[tuple[str, dict]] = []
         for input_field in inputs:
             if not isinstance(input_field, dict):
                 continue
-            extraction = input_field.get("extraction")
-            if extraction is None:
-                continue
             input_name = str(input_field.get("name") or "<unknown>")
-            if not isinstance(extraction, dict):
+            extraction = input_field.get("extraction")
+            binding = input_field.get("binding")
+            if "extraction" in input_field and not isinstance(extraction, dict):
                 errors.append(
                     f"{cap_id}: inputs[{input_name}].extraction must be a mapping"
                 )
-                continue
-            extractions.append((input_name, extraction))
-        if intent is None and not extractions:
+            has_extraction = isinstance(extraction, dict)
+            has_binding = isinstance(binding, dict)
+            if has_extraction and has_binding:
+                errors.append(
+                    f"{cap_id}: inputs[{input_name}] declares both binding and deprecated extraction; use binding only"
+                )
+            if has_binding:
+                declared.append((input_name, binding))
+            elif has_extraction:
+                declared.append((input_name, extraction))
+        if intent is None and not declared:
             continue
         input_names = {
             str(field.get("name"))
@@ -185,7 +193,7 @@ def validate_extraction_declarations(
             if isinstance(field, dict) and field.get("name") and field.get("required")
         }
         required_fields.update(
-            name for name, extraction in extractions if extraction.get("requiredWhen")
+            name for name, declaration in declared if declaration.get("requiredWhen")
         )
         if isinstance(intent, dict) and isinstance(intent.get("requireAny"), dict):
             missing_name = intent["requireAny"].get("missingName")
@@ -193,24 +201,39 @@ def validate_extraction_declarations(
                 required_fields.add(str(missing_name))
         if isinstance(intent, dict):
             errors.extend(_clarify_locale_errors(cap_id, intent, required_fields))
-        for input_name, extraction in extractions:
-            for schema_error in extraction_validator.iter_errors(extraction):
-                errors.append(f"{cap_id}: inputs[{input_name}].extraction: {schema_error.message}")
-            for matcher in extraction.get("matchers") or []:
-                errors.extend(
-                    _validate_matcher(matcher, catalog_entries, f"{cap_id}: inputs[{input_name}].extraction")
-                )
+        for input_name, declaration in declared:
+            if "sources" in declaration:
+                for schema_error in binding_validator.iter_errors(declaration):
+                    errors.append(f"{cap_id}: inputs[{input_name}].binding: {schema_error.message}")
+                for source in declaration.get("sources") or []:
+                    if not isinstance(source, dict):
+                        continue
+                    for matcher in source.get("matchers") or []:
+                        errors.extend(
+                            _validate_matcher(
+                                matcher,
+                                catalog_entries,
+                                f"{cap_id}: inputs[{input_name}].binding source",
+                            )
+                        )
+            else:
+                for schema_error in extraction_validator.iter_errors(declaration):
+                    errors.append(f"{cap_id}: inputs[{input_name}].extraction: {schema_error.message}")
+                for matcher in declaration.get("matchers") or []:
+                    errors.extend(
+                        _validate_matcher(matcher, catalog_entries, f"{cap_id}: inputs[{input_name}].extraction")
+                    )
             for condition_key in ("when", "requiredWhen"):
-                condition = extraction.get(condition_key)
+                condition = declaration.get(condition_key)
                 if isinstance(condition, dict) and condition.get("field") not in input_names:
                     errors.append(
-                        f"{cap_id}: inputs[{input_name}].extraction.{condition_key} "
+                        f"{cap_id}: inputs[{input_name}].{condition_key} "
                         f"references undeclared input: {condition.get('field')}"
                     )
-            for excluded in extraction.get("excludes") or []:
+            for excluded in declaration.get("excludes") or []:
                 if excluded not in input_names:
                     errors.append(
-                        f"{cap_id}: inputs[{input_name}].extraction.excludes "
+                        f"{cap_id}: inputs[{input_name}].excludes "
                         f"references undeclared input: {excluded}"
                     )
     return errors
@@ -245,6 +268,25 @@ def count_regex_matchers(contract: RegistryContract, catalog_entries: dict[str, 
                 if isinstance(matcher, dict) and matcher.get("kind") == "regex"
             )
     return catalog_count, capability_count
+
+
+def collect_deprecation_warnings(contract: RegistryContract) -> list[str]:
+    """Warn per legacy extraction: usage with binding.sources[] migration text."""
+    warnings: list[str] = []
+    for capability in contract.capabilities:
+        cap_id = capability.capability_id or "<unknown>"
+        raw = capability.raw if isinstance(capability.raw, dict) else {}
+        inputs = raw.get("inputs") if isinstance(raw.get("inputs"), list) else []
+        for input_field in inputs:
+            if not isinstance(input_field, dict) or not isinstance(input_field.get("extraction"), dict):
+                continue
+            input_name = str(input_field.get("name") or "<unknown>")
+            warnings.append(
+                f"{cap_id}: inputs[{input_name}].extraction is deprecated; "
+                "replace extraction.matchers with "
+                "binding.sources[{kind: userUtterance, matchers: [...]}]"
+            )
+    return warnings
 
 
 def _validate_matcher(matcher: Any, catalog_entries: dict[str, dict], context: str, require_justification: bool = False) -> list[str]:
