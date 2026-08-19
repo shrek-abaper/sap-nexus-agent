@@ -835,7 +835,7 @@ git commit -m "feat(declarative-intent): B1.4 validator rejects un-justified cat
 - Consumes: tasks 1.1–1.4.
 - Produces: the PR plant input contract `^[A-Z0-9]{4}$` aligned with `plantCode`; B2/B3 build on this registry.
 
-- [ ] **Step 1: Pre-change grep gate** (Design §3.4)
+- [x] **Step 1: Pre-change grep gate** (Design §3.4)
 
 Run:
 ```bash
@@ -844,7 +844,7 @@ grep -rnE "[a-z][0-9A-Za-z]{3}|[0-9A-Za-z]{5,}" evals/*.json evals/*.yaml | grep
 ```
 Expected: no hit pairs a PR plant value violating `^[A-Z0-9]{4}$` (lowercase or length != 4) with 工厂/在 context. All PR eval plant values are `1000`/`5100` (verified against `evals/pr_create_cases.json` and `evals/matcher_cases.yaml`). If a violating case is found, it may be updated ONLY with an explicit semantic justification, and that update must be noted in the commit message.
 
-- [ ] **Step 2: Add the pattern** to the PR.CreateDraft plant input (`registry/capabilities.yaml`, plant input at line ~383, after `maxLength: 4`):
+- [x] **Step 2: Add the pattern** to the PR.CreateDraft plant input (`registry/capabilities.yaml`, plant input at line ~383, after `maxLength: 4`):
 
 ```yaml
         maxLength: 4
@@ -857,7 +857,7 @@ Also update `test_pr_declaration_parity_constants` (line 477) so the parity cons
     assert inputs["plant"]["pattern"] == "^[A-Z0-9]{4}$"
 ```
 
-- [ ] **Step 3: Verify the equivalence gates**
+- [x] **Step 3: Verify the equivalence gates**
 
 Run:
 ```bash
@@ -866,7 +866,7 @@ cd agent && python3 -m pytest tests/ -q
 ```
 Expected: PASS — matcher_cases 23/23; full agent suite green (any pre-existing failures recorded in the closeout task 4.1 baseline, not introduced here).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add registry/capabilities.yaml agent/tests/test_extraction_declarations.py
