@@ -609,8 +609,8 @@ def resolve_with_context(
         reask_fields = [
             inp.name
             for inp in descriptor.inputs
-            if inp.extraction is not None
-            and inp.extraction.reask_suspect
+            if inp.binding is not None
+            and inp.binding.reask_suspect
             and inp.name in context.last_context.parameters
             and inp.name not in extracted
         ]

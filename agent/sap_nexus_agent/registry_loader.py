@@ -20,6 +20,7 @@ class InputDescriptor:
     max_length: int | None = None
     pattern: str | None = None
     extraction: ExtractionConfig | None = None
+    binding: BindingConfig | None = None
 
 
 @dataclass(frozen=True)
@@ -58,6 +59,35 @@ class ExtractionConfig:
     """Per-input extraction declaration (declarative intent extraction)."""
 
     matchers: tuple[MatcherConfig, ...]
+    priority: int = 0
+    excludes: tuple[str, ...] = ()
+    resolver: str = "text"
+    when: ConditionConfig | None = None
+    required_when: ConditionConfig | None = None
+    reask_suspect: bool = False
+
+
+@dataclass(frozen=True)
+class BindingSource:
+    """One source of an input's value: userUtterance | capabilityOutput | default."""
+
+    kind: str
+    matchers: tuple[MatcherConfig, ...] = ()
+    fact_type: str | None = None
+    field: str | None = None
+    value: str | None = None
+
+
+@dataclass(frozen=True)
+class BindingConfig:
+    """Input-level binding declaration (normalized from `extraction` when absent).
+
+    priority/excludes/resolver/when/requiredWhen/reaskSuspect stay input-level
+    concerns (Design §3.6), not per-source.
+    """
+
+    sources: tuple[BindingSource, ...]
+    elicit_if_missing: bool = True
     priority: int = 0
     excludes: tuple[str, ...] = ()
     resolver: str = "text"
@@ -219,6 +249,50 @@ def _parse_extraction(raw: object) -> ExtractionConfig | None:
         when=_parse_condition(raw.get("when")),
         required_when=_parse_condition(raw.get("requiredWhen")),
         reask_suspect=bool(raw.get("reaskSuspect", False)),
+    )
+
+
+def _parse_binding_source(raw: object) -> BindingSource | None:
+    if not isinstance(raw, dict) or "kind" not in raw:
+        return None
+    return BindingSource(
+        kind=str(raw["kind"]),
+        matchers=tuple(
+            m for m in (_parse_matcher(x) for x in raw.get("matchers") or []) if m
+        ),
+        fact_type=str(raw["factType"]) if raw.get("factType") is not None else None,
+        field=str(raw["field"]) if raw.get("field") is not None else None,
+        value=str(raw["value"]) if raw.get("value") is not None else None,
+    )
+
+
+def _parse_input_binding(raw: object) -> BindingConfig | None:
+    """Parse an input's `binding` block, or normalize the deprecated
+    `extraction` alias into a single userUtterance source (Design §3.6)."""
+    if not isinstance(raw, dict):
+        return None
+    binding_raw = raw.get("binding")
+    if isinstance(binding_raw, dict):
+        sources = tuple(
+            s for s in (_parse_binding_source(x) for x in binding_raw.get("sources") or []) if s
+        )
+        if not sources:
+            return None
+        return BindingConfig(
+            sources=sources,
+            elicit_if_missing=bool(binding_raw.get("elicitIfMissing", True)),
+        )
+    extraction = _parse_extraction(raw.get("extraction"))
+    if extraction is None:
+        return None
+    return BindingConfig(
+        sources=(BindingSource(kind="userUtterance", matchers=extraction.matchers),),
+        priority=extraction.priority,
+        excludes=extraction.excludes,
+        resolver=extraction.resolver,
+        when=extraction.when,
+        required_when=extraction.required_when,
+        reask_suspect=extraction.reask_suspect,
     )
 
 
@@ -437,6 +511,7 @@ def load_intent_catalog(repo_root: str | None = None) -> IntentCatalog:
                 max_length=inp.get("maxLength"),
                 pattern=inp.get("pattern"),
                 extraction=_parse_extraction(inp.get("extraction")),
+                binding=_parse_input_binding(inp),
             )
             for inp in (cap.get("inputs") or [])
             if isinstance(inp, dict) and "name" in inp

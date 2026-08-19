@@ -9,7 +9,9 @@ from sap_nexus_agent.extraction._matching import input_filters, keyword_matches,
 from sap_nexus_agent.extraction.clarify import render_clarify, render_clarify_round
 from sap_nexus_agent.extraction.resolvers import resolve
 from sap_nexus_agent.registry_loader import (
+    BindingSource,
     CapabilityDescriptor,
+    InputDescriptor,
     IntentCatalog,
 )
 
@@ -19,6 +21,8 @@ if TYPE_CHECKING:
     from sap_nexus_agent.match_decision import MatchedIntent
 
 _SUSPECT_TOKEN: Final = re.compile(r"[A-Za-z0-9][A-Za-z0-9-]{4,}")
+_SOURCE_PRIORITY: Final = ("capabilityOutput", "userUtterance", "default")
+_WIRED_SOURCE_KINDS: frozenset[str] = frozenset({"userUtterance", "default"})
 
 
 def keyword_hits(text: str, cap: CapabilityDescriptor) -> tuple[bool, bool]:
@@ -66,34 +70,92 @@ def extract_parameters(
     base: Mapping[str, str] | None = None,
 ) -> dict[str, str]:
     parameters = dict(base or {})
-    ordered = [(idx, inp) for idx, inp in enumerate(cap.inputs) if inp.extraction is not None]
-    ordered.sort(key=lambda pair: (-pair[1].extraction.priority, pair[0]))
+    ordered = [(idx, inp) for idx, inp in enumerate(cap.inputs) if inp.binding is not None]
+    ordered.sort(key=lambda pair: (-pair[1].binding.priority, pair[0]))
 
     for _idx, inp in ordered:
-        ext = inp.extraction
-        if ext is None or (ext.when is not None and parameters.get(ext.when.field) != ext.when.equals):
+        binding = inp.binding
+        if binding is None or (binding.when is not None and parameters.get(binding.when.field) != binding.when.equals):
             continue
         excluded_values = {
             parameters[other_name]
-            for other_name in ext.excludes
+            for other_name in binding.excludes
             if other_name in parameters
         }
-        for matcher in ext.matchers:
+        value = resolve_input_binding(text, inp, catalog, excluded_values)
+        if value is not None:
+            parameters[inp.name] = value
+    return parameters
+
+
+def resolve_input_binding(
+    text: str,
+    inp: InputDescriptor,
+    catalog: IntentCatalog,
+    excluded_values: set[str],
+) -> str | None:
+    """Resolve the input's value from its binding sources in priority order.
+
+    Priority: capabilityOutput > userUtterance > default (Design §3.6); the
+    first produced value wins. capabilityOutput is NOT wired this batch
+    (_WIRED_SOURCE_KINDS): its sources are skipped so no production path can
+    reach the NotImplemented branch; the xfail placeholder test pins the
+    future landing point.
+    """
+    binding = inp.binding
+    if binding is None:
+        return None
+    for kind in _SOURCE_PRIORITY:
+        if kind not in _WIRED_SOURCE_KINDS:
+            continue
+        for source in binding.sources:
+            if source.kind != kind:
+                continue
+            value = _resolve_source(kind, source, text, catalog, excluded_values, binding.resolver)
+            if value is not None:
+                return value
+    return None
+
+
+def _resolve_source(
+    kind: str,
+    source: BindingSource,
+    text: str,
+    catalog: IntentCatalog,
+    excluded_values: set[str],
+    resolver: str,
+) -> str | None:
+    if kind == "capabilityOutput":
+        # NotImplemented on purpose: dependency-edge binding (D2) is the
+        # landing point for capabilityOutput sources. The branch is unwired
+        # from resolve_input_binding this batch, so production never reaches
+        # this raise; the xfail placeholder test pins this contract.
+        raise NotImplementedError(
+            "capabilityOutput binding source is not implemented; "
+            "landing point: dependency-edge binding"
+        )
+    if kind == "userUtterance":
+        for matcher in source.matchers:
             filters = input_filters(matcher, catalog)
             value = match_value(matcher, text, catalog, filters, excluded_values)
             if value is not None:
-                parameters[inp.name] = resolve(value, ext.resolver, filters)
-                break
-    return parameters
+                return resolve(value, resolver, filters)
+        return None
+    if kind == "default":
+        return source.value
+    return None
 
 
 def missing_parameters(cap: CapabilityDescriptor, parameters: Mapping[str, str]) -> list[str]:
     missing = []
     for inp in cap.inputs:
+        binding = inp.binding
+        if binding is not None and not binding.elicit_if_missing:
+            continue
         required_when = (
-            inp.extraction is not None
-            and inp.extraction.required_when is not None
-            and parameters.get(inp.extraction.required_when.field) == inp.extraction.required_when.equals
+            binding is not None
+            and binding.required_when is not None
+            and parameters.get(binding.required_when.field) == binding.required_when.equals
         )
         if (inp.required or required_when) and inp.name not in parameters:
             missing.append(inp.name)
@@ -276,8 +338,8 @@ def _drop_reask_suspects(
     reask_fields = [
         inp.name
         for inp in cap.inputs
-        if inp.extraction is not None
-        and inp.extraction.reask_suspect
+        if inp.binding is not None
+        and inp.binding.reask_suspect
         and inp.name in previous
         and inp.name not in extracted
     ]

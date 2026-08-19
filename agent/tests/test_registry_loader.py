@@ -140,6 +140,7 @@ def test_registry_v2_metadata_does_not_change_runtime_descriptors():
         "max_length",
         "pattern",
         "extraction",
+        "binding",
     )
 
     plan = create_call_plan(inventory.capability_id, {"material": "MAT-1"})
