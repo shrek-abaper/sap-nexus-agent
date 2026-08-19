@@ -27,7 +27,7 @@
 ## 4. Legacy Removal and CLARIFY Rendering
 
 - [x] 4.1 Render CLARIFY text from `clarifyPrompt` templates deterministically in rule mode (template rendering live for all migrated capabilities; parity includes clarification text)
-- [ ] 4.2 Add optional LLM rephrase step for llm/hybrid modes: grounded to declared missing inputs, closed-set output check, template fallback on timeout/malformed/unavailable
+- [x] 4.2 Add optional LLM rephrase step for llm/hybrid modes: grounded to declared missing inputs, closed-set output check, template fallback on timeout/malformed/unavailable
 - [ ] 4.3 Delete legacy branches in `intent.py`, remove `pr_intent.py`, remove the per-capability seam; engine is the only extraction path
 - [ ] 4.4 Add a test-only fixture capability registered with declarations only (no code) proving rule-mode recognition, slot filling, and CLARIFY end to end
 
