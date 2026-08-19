@@ -1110,7 +1110,7 @@ git commit -m "feat(declarative-intent): B2.2 PR.CreateDraft clarifyPrompt -> st
   - `render_clarify_round(cap, missing, clarify_rounds, locale=ACTIVE_LOCALE) -> tuple[str | None, Mapping[str, int] | None]` — returns the incremented round counter when a strategy prompt was rendered, else `None`.
   - `_missing_by_group(cap, missing) -> dict[str, list[str]]` — group key is the input's first binding source kind; default `"userUtterance"` when the input has no binding.
 
-- [ ] **Step 1: Write the failing tests** (append to `agent/tests/test_clarify_rendering.py`)
+- [x] **Step 1: Write the failing tests** (append to `agent/tests/test_clarify_rendering.py`)
 
 ```python
 def test_pr_strategy_renders_one_prompt_per_group():
@@ -1221,12 +1221,12 @@ def test_strategy_groups_by_binding_source_kind(tmp_path):
     assert (text, kind) == ("请提供供应商。", "cases")
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd agent && python3 -m pytest tests/test_clarify_rendering.py -q`
 Expected: FAIL — no `strategy` handling in `render_clarify`: PR (strategy + fallback, no cases) falls through to the fallback template in round 1, so `render_clarify_round`/`render_clarify_with_kind` don't exist (ImportError) and the group test's `Test.Groups` renders fallback, not grouped prompts.
 
-- [ ] **Step 3: Implement the rendering** in `agent/sap_nexus_agent/extraction/clarify.py`
+- [x] **Step 3: Implement the rendering** in `agent/sap_nexus_agent/extraction/clarify.py`
 
 Add the constants and imports at the top (extend the existing `from typing import Final, Protocol` import with `Mapping`):
 
@@ -1331,6 +1331,12 @@ def render_clarify_round(
     if kind != "strategy":
         return text, None
     rounds = dict(clarify_rounds or {})
+    if cap.capability_id not in rounds:
+        # Coordinator ruling (2026-08-20): reset the budget when the turn's
+        # capability is not yet tracked (pins test_strategy_rounds_reset_on_capability_switch).
+        # The sticky callers (2.4) reset before calling; this internal reset
+        # is redundant-but-harmless there and makes the function total.
+        rounds = {}
     rounds[cap.capability_id] = rounds.get(cap.capability_id, 0) + 1
     return text, rounds
 
@@ -1341,18 +1347,24 @@ def _missing_by_group(cap: CapabilityDescriptor, missing: list[str]) -> dict[str
     for name in missing:
         group = "userUtterance"
         inp = next((i for i in cap.inputs if i.name == name), None)
-        if inp is not None and inp.binding is not None and inp.binding.sources:
-            group = inp.binding.sources[0].kind
+        # Coordinator ruling (2026-08-20): InputDescriptor.binding lands in task 3.2;
+        # until then every input falls into the default userUtterance group
+        # (plan Interfaces: "until then the loader normalizes extraction →
+        # userUtterance group"). getattr keeps 2.3 tests green pre-3.2.
+        binding = getattr(inp, "binding", None)
+        if binding is not None and binding.sources:
+            group = binding.sources[0].kind
         groups.setdefault(group, []).append(name)
     return groups
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `cd agent && python3 -m pytest tests/test_clarify_rendering.py -q`
 Expected: PASS — all new tests plus the pre-existing ones (`test_pr_fallback_join_template`, `test_sticky_clarify_rendered_from_declaration`, `test_inventory_cases_exact_missing_sets`, `test_po_filter_case`, `test_missing_locale_falls_back_to_names`, rephrase tests).
+Coordinator ruling (2026-08-20): `test_strategy_groups_by_binding_source_kind`'s grouping assertion is transiently red until task 3.2 lands `InputDescriptor.binding` (the test's synthetic registry declares `binding.sources`, which the loader cannot parse before 3.2; the cases-override assertion within the same test passes at 2.3). This is an extension of the documented transient-red window; task 3.2's regression gate turns it green. Do not weaken the test.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add agent/sap_nexus_agent/extraction/clarify.py agent/tests/test_clarify_rendering.py
