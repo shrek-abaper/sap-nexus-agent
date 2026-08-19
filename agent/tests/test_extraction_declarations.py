@@ -171,8 +171,16 @@ EXPECTED_PATTERN_PARITY = {
     "Unit": [r"\b(EA|PC|KG|G|L|M)\b"],
     "Date": [r"(\d{4}-\d{2}-\d{2})"],
     "PurchasingGroup": [r"采购组\s*([A-Za-z0-9]{1,3})"],
-    "Vendor": [r"供应商\s*(\d+)"],
-    "PONumber": [r"(?<!\d)(\d{10})(?!\d)"],
+    # Deliberate departure from the verbatim legacy lift: the legacy digit-only
+    # pattern never matched sanitized (DEMOV1) or real (V72719) vendor codes.
+    "Vendor": [r"供应商\s*([A-Z0-9]{1,10})"],
+    # Deliberate departure from the verbatim legacy lift: the legacy bare
+    # 10-digit pattern never matched sanitized PO codes (DEMOPO1); the
+    # 采购订单-anchored alphanumeric matcher is added as a second form.
+    "PONumber": [
+        r"(?<!\d)(\d{10})(?!\d)",
+        r"采购订单\s*([A-Z0-9]{4,10})",
+    ],
 }
 
 
@@ -445,15 +453,21 @@ def test_po_declaration_parity_constants():
         "inputs": ["poNumber", "vendor", "plant", "material"], "missingName": "filter",
     }
     inputs = {i["name"]: i for i in cap["inputs"]}
+    # Deliberate departure from the verbatim legacy lift: digit-only vendor
+    # extraction never matched sanitized (DEMOV1) or real (V72719) codes.
     assert inputs["vendor"]["extraction"]["matchers"] == [
-        {"kind": "regex", "pattern": r"供应商\s*(\d+)"}]
+        {"kind": "regex", "pattern": r"供应商\s*([A-Z0-9]{1,10})"}]
     assert inputs["plant"]["extraction"]["matchers"] == [
         {"kind": "regex",
          "pattern": r"(?:工厂\s*(\d{4}|[A-Z]\d{3}))|(?:(\d{4}|[A-Z]\d{3})\s*工厂)"}]
     assert inputs["material"]["extraction"]["matchers"] == [
         {"kind": "regex", "pattern": r"物料\s*([A-Za-z0-9][A-Za-z0-9\-/]+)"}]
+    # Deliberate departure from the verbatim legacy lift: bare 10-digit poNumber
+    # extraction never matched sanitized PO codes (DEMOPO1); the anchored
+    # alphanumeric matcher is the second form.
     assert inputs["poNumber"]["extraction"]["matchers"] == [
-        {"kind": "regex", "pattern": r"(?<!\d)(\d{10})(?!\d)", "scan": "all"}]
+        {"kind": "regex", "pattern": r"(?<!\d)(\d{10})(?!\d)", "scan": "all"},
+        {"kind": "regex", "pattern": r"采购订单\s*([A-Z0-9]{4,10})"}]
     assert inputs["poNumber"]["extraction"]["excludes"] == ["vendor", "plant"]
     zh = intent["clarifyPrompt"]["zh-CN"]
     assert zh["cases"] == [

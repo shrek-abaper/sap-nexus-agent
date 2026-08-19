@@ -345,7 +345,9 @@ def test_capability_schema_accepts_current_registry_input_patterns():
         for input_ in capability["inputs"]
         if "pattern" in input_
     ]
-    assert patterns == ["^[A-Z0-9]{4}$", "^[A-Z0-9]{4}$"]
+    # Input patterns in registry order: GetAvailability.plant, GetList.vendor
+    # (added with the sanitized/real vendor-code shape fix), GetList.plant.
+    assert patterns == ["^[A-Z0-9]{4}$", "^[A-Z0-9]{1,10}$", "^[A-Z0-9]{4}$"]
 
 
 @pytest.mark.parametrize(
