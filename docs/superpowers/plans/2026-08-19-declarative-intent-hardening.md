@@ -488,12 +488,12 @@ git commit -m "feat(declarative-intent): B1.2 named-kind compilation prefixed/su
 - Consumes: task 1.1 schema (regex justification now required), task 1.2 compilation.
 - Produces: the real catalog data driving tasks 1.4/1.5 and the whole B2/B3 batch.
 
-- [ ] **Step 1: Run the pre-change gate**
+- [x] **Step 1: Run the pre-change gate**
 
 Run: `cd agent && python3 -m pytest tests/test_extraction_declarations.py::test_catalog_matches_json_schema -q`
 Expected: FAIL — the real catalog now violates the task 1.1 schema (regex matchers lack `justification`). This is the red this task resolves.
 
-- [ ] **Step 2: Rewrite `registry/semantic-types.yaml`**
+- [x] **Step 2: Rewrite `registry/semantic-types.yaml`**
 
 - Bump `version: 1` → `version: 2` (schema: "bumped on every structural change").
 - Add the catalog-level `valueShapes` section after `semanticTypes:` block (top level, sibling of `semanticTypes`):
@@ -565,7 +565,7 @@ valueShapes:
           express the 4-10 character width constraint on the captured value.
 ```
 
-- [ ] **Step 3: Update the parity pins** in `agent/tests/test_extraction_declarations.py`
+- [x] **Step 3: Update the parity pins** in `agent/tests/test_extraction_declarations.py`
 
 Remove `"Plant"` from `EXPECTED_PATTERN_PARITY` and add the named-kind pin below it:
 
@@ -621,7 +621,7 @@ def test_catalog_value_shapes_plant_code():
     assert _load_catalog()["valueShapes"] == {"plantCode": "^[A-Z0-9]{4}$"}
 ```
 
-- [ ] **Step 4: Run the registry and test gates**
+- [x] **Step 4: Run the registry and test gates**
 
 Run:
 ```bash
@@ -630,7 +630,7 @@ cd agent && python3 -m pytest tests/test_eval_runner.py -q
 ```
 Expected: PASS — schema/parity/loader/matching tests green, `test_catalog_matches_json_schema` green again, matcher_cases 23/23 (`test_matcher_eval_file_passes`).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add registry/semantic-types.yaml agent/tests/test_extraction_declarations.py
