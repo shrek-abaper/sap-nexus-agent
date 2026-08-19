@@ -60,6 +60,10 @@ _INVENTORY_CAPABILITY_ID = "MM.Inventory.GetAvailability"
 _PURCHASE_ORDER_CAPABILITY_ID = "MM.PurchaseOrder.GetList"
 _PR_CREATE_CAPABILITY_ID = "MM.PR.CreateDraft"
 
+# Migration seam (tasks.md 2.5, removed by 4.3): declared+migrated capabilities
+# run on the extraction engine; everything else keeps this module's legacy path.
+_ENGINE_MIGRATED_CAPABILITIES: set[str] = set()
+
 # OData / technical-override detection. Forms a double-layer defense with the
 # Java-side CapabilityRequest guard (Task 6): Agent rejects first, Java rejects
 # again. Covers raw OData URLs, OData query options, and technical safety fields
@@ -156,23 +160,85 @@ def parse_intent(
 
         return resolve_with_context(text, context, load_intent_catalog())
 
-    # Keyword ambiguity detection (Design Doc § 多意图检测 Q2). Computed before
-    # the existing keyword scan so it is available on every return path below.
-    is_ambiguous = _detect_keyword_ambiguity(normalized)
+    return _parse_single_turn(normalized, contains_rfc_name, contains_odata_override)
 
+
+def _legacy_keyword_hits(normalized: str) -> list[tuple[str, bool, bool]]:
+    hits: list[tuple[str, bool, bool]] = []
+    if _INVENTORY_CAPABILITY_ID not in _ENGINE_MIGRATED_CAPABILITIES:
+        hits.append((
+            _INVENTORY_CAPABILITY_ID,
+            any(k in normalized for k in INVENTORY_PRIMARY_KEYWORDS),
+            any(k in normalized for k in INVENTORY_WEAK_KEYWORDS),
+        ))
+    if _PURCHASE_ORDER_CAPABILITY_ID not in _ENGINE_MIGRATED_CAPABILITIES:
+        hits.append((
+            _PURCHASE_ORDER_CAPABILITY_ID,
+            any(k in normalized for k in PURCHASE_ORDER_PRIMARY_KEYWORDS),
+            any(k in normalized for k in PURCHASE_ORDER_WEAK_KEYWORDS),
+        ))
+    if _PR_CREATE_CAPABILITY_ID not in _ENGINE_MIGRATED_CAPABILITIES:
+        hits.append((
+            _PR_CREATE_CAPABILITY_ID,
+            any(k in normalized for k in PR_CREATE_PRIMARY_KEYWORDS),
+            any(k in normalized for k in PR_CREATE_WEAK_KEYWORDS),
+        ))
+    return hits
+
+
+def _parse_single_turn(
+    normalized: str,
+    contains_rfc_name: bool,
+    contains_odata_override: bool,
+) -> IntentParseResult:
     # Lazy import: pr_intent imports IntentParseResult from this module, so a
     # top-level import would create a circular dependency. MatchedIntent is
     # co-located with the selector layer (match_decision -> capability_selector
     # -> intent), so it is also lazy to break the same cycle.
+    from sap_nexus_agent.extraction import engine
     from sap_nexus_agent.match_decision import MatchedIntent
     from sap_nexus_agent.pr_intent import PR_CREATE_KEYWORDS, parse_pr_create_intent
 
-    # Detect each capability's keyword set independently (D-1 fix).
-    matches_inventory = any(keyword in normalized for keyword in INVENTORY_KEYWORDS)
-    matches_po = _PURCHASE_ORDER_KEYWORD_PATTERN.search(normalized) is not None
-    matches_pr = any(keyword in normalized for keyword in PR_CREATE_KEYWORDS)
-
+    hits = _legacy_keyword_hits(normalized)
     per_capability: list[tuple[str, IntentParseResult]] = []
+
+    if _ENGINE_MIGRATED_CAPABILITIES:
+        from sap_nexus_agent.registry_loader import load_intent_catalog
+
+        catalog = load_intent_catalog()
+        for cap in catalog.capabilities:
+            if cap.intent_config is None or cap.capability_id not in _ENGINE_MIGRATED_CAPABILITIES:
+                continue
+            primary, weak = engine.keyword_hits(normalized, cap)
+            hits.append((cap.capability_id, primary, weak))
+            if engine.triggered(normalized, cap):
+                per_capability.append((
+                    cap.capability_id,
+                    engine.build_capability_result(
+                        normalized,
+                        cap,
+                        catalog,
+                        contains_rfc_name=contains_rfc_name,
+                        contains_odata_override=contains_odata_override,
+                    ),
+                ))
+
+    is_ambiguous = engine.is_ambiguous((primary, weak) for _cap_id, primary, weak in hits)
+
+    # Detect each capability's keyword set independently (D-1 fix).
+    matches_inventory = (
+        _INVENTORY_CAPABILITY_ID not in _ENGINE_MIGRATED_CAPABILITIES
+        and any(keyword in normalized for keyword in INVENTORY_KEYWORDS)
+    )
+    matches_po = (
+        _PURCHASE_ORDER_CAPABILITY_ID not in _ENGINE_MIGRATED_CAPABILITIES
+        and _PURCHASE_ORDER_KEYWORD_PATTERN.search(normalized) is not None
+    )
+    matches_pr = (
+        _PR_CREATE_CAPABILITY_ID not in _ENGINE_MIGRATED_CAPABILITIES
+        and any(keyword in normalized for keyword in PR_CREATE_KEYWORDS)
+    )
+
     if matches_inventory:
         per_capability.append((
             _INVENTORY_CAPABILITY_ID,

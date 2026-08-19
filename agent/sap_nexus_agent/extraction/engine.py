@@ -45,11 +45,16 @@ def is_ambiguous(hits: Iterable[tuple[bool, bool]]) -> bool:
     return matched >= 2 and primary == 0
 
 
-def any_primary_keyword(text: str, catalog: IntentCatalog) -> bool:
+def any_primary_keyword(
+    text: str,
+    catalog: IntentCatalog,
+    restrict_to: set[str] | None = None,
+) -> bool:
     return any(
         keyword_matches(keyword, text)
         for cap in catalog.capabilities
         if cap.intent_config is not None
+        and (restrict_to is None or cap.capability_id in restrict_to)
         for keyword in cap.intent_config.primary_keywords
     )
 

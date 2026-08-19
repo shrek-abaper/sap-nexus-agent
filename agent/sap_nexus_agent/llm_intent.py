@@ -9,6 +9,7 @@ from sap_nexus_agent.intent import (
     IntentParseResult,
     PR_CREATE_PRIMARY_KEYWORDS,
     PURCHASE_ORDER_PRIMARY_KEYWORDS,
+    _ENGINE_MIGRATED_CAPABILITIES,
     _INVENTORY_CAPABILITY_ID,
     _PURCHASE_ORDER_CAPABILITY_ID,
     _build_inventory_result,
@@ -491,6 +492,12 @@ _PRIMARY_KEYWORD_SETS = (
     PR_CREATE_PRIMARY_KEYWORDS,
 )
 
+_LEGACY_PRIMARY_KEYWORD_SETS = (
+    (_INVENTORY_CAPABILITY_ID, INVENTORY_PRIMARY_KEYWORDS),
+    (_PURCHASE_ORDER_CAPABILITY_ID, PURCHASE_ORDER_PRIMARY_KEYWORDS),
+    (_PR_CREATE_CAPABILITY_ID, PR_CREATE_PRIMARY_KEYWORDS),
+)
+
 
 def _contains_any_primary_keyword(text: str) -> bool:
     """Return True if text contains any registered capability's primary keyword.
@@ -500,7 +507,23 @@ def _contains_any_primary_keyword(text: str) -> bool:
     count as a new-turn trigger, so a follow-up that merely adds a weak keyword
     still inherits the prior capability via sticky continuation.
     """
-    return any(any(kw in text for kw in keyword_set) for keyword_set in _PRIMARY_KEYWORD_SETS)
+    legacy_hit = any(
+        cap_id not in _ENGINE_MIGRATED_CAPABILITIES
+        and any(kw in text for kw in keyword_set)
+        for cap_id, keyword_set in _LEGACY_PRIMARY_KEYWORD_SETS
+    )
+    if legacy_hit:
+        return True
+    if not _ENGINE_MIGRATED_CAPABILITIES:
+        return False
+
+    from sap_nexus_agent.extraction import engine
+
+    return engine.any_primary_keyword(
+        text,
+        load_intent_catalog(),
+        restrict_to=_ENGINE_MIGRATED_CAPABILITIES,
+    )
 
 
 def _extract_params_for(capability_id: str, text: str) -> dict[str, str]:
@@ -512,6 +535,14 @@ def _extract_params_for(capability_id: str, text: str) -> dict[str, str]:
     caller against the catalog descriptor (the merged result may satisfy inputs
     the extractor alone would have flagged missing).
     """
+    if capability_id in _ENGINE_MIGRATED_CAPABILITIES:
+        from sap_nexus_agent.extraction import engine
+
+        catalog = load_intent_catalog()
+        cap = catalog.find(capability_id)
+        if cap is not None and cap.intent_config is not None:
+            return engine.extract_parameters(text, cap, catalog)
+
     if capability_id == _INVENTORY_CAPABILITY_ID:
         return _build_inventory_result(text, False, False).parameters
     if capability_id == _PURCHASE_ORDER_CAPABILITY_ID:
