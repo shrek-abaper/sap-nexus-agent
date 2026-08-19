@@ -3,7 +3,7 @@
 ## 1. B1 — Matcher kind whitelist
 
 - [x] 1.1 Extend `schemas/semantic-type-catalog.schema.json`: matcher kind enum gains `prefixed`, `suffixed`, `valueShape`; catalog-level `valueShapes` section; `regex` kind requires non-empty `justification`. Extend the loader model (`registry_loader.py`) to parse the new kinds and valueShapes.
-- [ ] 1.2 Implement named-kind compilation in `agent/sap_nexus_agent/extraction/_matching.py`: `prefixed` (value after prefix token), `suffixed` (value before suffix token), `valueShape` (reference to `valueShapes` entry), keeping capture-group semantics identical to the regex path.
+- [x] 1.2 Implement named-kind compilation in `agent/sap_nexus_agent/extraction/_matching.py`: `prefixed` (value after prefix token), `suffixed` (value before suffix token), `valueShape` (reference to `valueShapes` entry), keeping capture-group semantics identical to the regex path.
 - [ ] 1.3 Add `valueShapes.plantCode: '^[A-Z0-9]{4}$'` to `registry/semantic-types.yaml`; rewrite the Plant prefixed/suffixed matcher with `prefixed: [在]` + `suffixed: [工厂]` + `valueShape: plantCode`; keep the bare-code fallback as a regex matcher with a `justification` (guarded bare scan cannot be expressed by named kinds).
 - [ ] 1.4 `scripts/validate-registry-contract.py`: reject regex matchers without justification; print the total regex-matcher count across the semantic-type catalog and capability-level matchers as an observable metric.
 - [ ] 1.5 Add `pattern: '^[A-Z0-9]{4}$'` to `MM.PR.CreateDraft.plant` after grepping all eval cases to confirm none depends on the previously loose validation. Verify equivalence: matcher_cases 23/23 and full agent pytest stay green.

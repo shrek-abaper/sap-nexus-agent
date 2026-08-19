@@ -297,7 +297,7 @@ git commit -m "feat(declarative-intent): B1.1 catalog schema named kinds + value
   - `match_value` now dispatches named kinds to `_compile_named_kind`; everything else (capture extraction, filters, exclusions, scan) is unchanged.
   - `_merge_matcher` propagates the new fields.
 
-- [ ] **Step 1: Write the failing tests** — create `agent/tests/test_named_kind_matching.py`
+- [x] **Step 1: Write the failing tests** — create `agent/tests/test_named_kind_matching.py`
 
 ```python
 """Compiled-regex behavior of the named matcher kinds (Design §3.1, §3.2)."""
@@ -390,12 +390,12 @@ def test_semantic_type_wrapper_merges_named_kind_fields():
     assert match_value(wrapper, "在 1000", CATALOG, EMPTY_FILTERS, set()) == "1000"
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd agent && python3 -m pytest tests/test_named_kind_matching.py -q`
 Expected: FAIL — `AttributeError: 'MatcherConfig' object has no attribute 'prefix'` (task 1.1's fields exist, but `match_value` has no named-kind dispatch yet: prefixed/suffixed kinds fall through to `_compile_matcher` which compiles `pattern or ""` → empty pattern, so nothing matches).
 
-- [ ] **Step 3: Implement the compilation** in `agent/sap_nexus_agent/extraction/_matching.py`
+- [x] **Step 3: Implement the compilation** in `agent/sap_nexus_agent/extraction/_matching.py`
 
 Update `match_value` (line 19) — insert the named-kind dispatch between the `semanticType` branch and `_compile_matcher`:
 
@@ -459,17 +459,17 @@ def _merge_matcher(entry_matcher: MatcherConfig, wrapper: MatcherConfig) -> Matc
     )
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `cd agent && python3 -m pytest tests/test_named_kind_matching.py -q`
-Expected: PASS (all 8 tests).
+Expected: PASS (all 7 tests; the file has 7 test functions — the original "8" was a miscount). Note: green only after task 1.3 lands the registry data.
 
-- [ ] **Step 5: Verify the B1 equivalence gate is untouched**
+- [x] **Step 5: Verify the B1 equivalence gate is untouched**
 
 Run: `cd agent && python3 -m pytest tests/test_eval_runner.py -q`
 Expected: PASS — `test_matcher_eval_file_passes` (matcher_cases 23 active cases, total >= 5). The file itself is unchanged.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add agent/sap_nexus_agent/extraction/_matching.py agent/tests/test_named_kind_matching.py
