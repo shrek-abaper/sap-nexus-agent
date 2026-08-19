@@ -653,7 +653,7 @@ git commit -m "feat(declarative-intent): B1.3 registry Plant rewrite to named ki
   - `count_regex_matchers(contract: RegistryContract, catalog_entries: dict[str, dict]) -> tuple[int, int]` → `(catalog_count, capability_count)`.
   - CLI prints `regex matchers in use: N (semantic-type catalog M + capability-level K)` after "valid" — a count, never a gate.
 
-- [ ] **Step 1: Write the failing tests** (append to `agent/tests/test_extraction_declarations.py`; extend the import from `scripts.validate_registry_contract` with `count_regex_matchers`, `validate_extraction_declarations`)
+- [x] **Step 1: Write the failing tests** (append to `agent/tests/test_extraction_declarations.py`; extend the import from `scripts.validate_registry_contract` with `count_regex_matchers`, `validate_extraction_declarations`)
 
 ```python
 def test_unjustified_catalog_regex_rejected(tmp_path):
@@ -685,12 +685,12 @@ def test_regex_matcher_count_is_observable_metric():
     assert capability_count >= 1
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd agent && python3 -m pytest tests/test_extraction_declarations.py -q -k "justification or regex_matcher_count"`
 Expected: FAIL — `TypeError: _validate_matcher() got an unexpected keyword argument 'require_justification'` / `ImportError: cannot import name 'count_regex_matchers'`.
 
-- [ ] **Step 3: Implement the validator changes** in `scripts/validate_registry_contract.py`
+- [x] **Step 3: Implement the validator changes** in `scripts/validate_registry_contract.py`
 
 Update `_validate_matcher` (line 214):
 
@@ -765,7 +765,7 @@ def count_regex_matchers(contract: RegistryContract, catalog_entries: dict[str, 
     return catalog_count, capability_count
 ```
 
-- [ ] **Step 4: Update the CLI** in `scripts/validate-registry-contract.py`
+- [x] **Step 4: Update the CLI** in `scripts/validate-registry-contract.py`
 
 ```python
 #!/usr/bin/env python3
@@ -808,7 +808,7 @@ if __name__ == "__main__":
     raise SystemExit(main())
 ```
 
-- [ ] **Step 5: Run tests and the CLI to verify**
+- [x] **Step 5: Run tests and the CLI to verify**
 
 Run:
 ```bash
@@ -817,7 +817,7 @@ python3 scripts/validate-registry-contract.py registry/capabilities.yaml
 ```
 Expected: tests PASS; CLI prints `regex matchers in use: 17 (semantic-type catalog 9 + capability-level 8)` followed by `Registry contract valid: registry/capabilities.yaml`, exit 0. (Counts verified against the post-1.3 registry: catalog = Plant 1 + MaterialNumber/Quantity/Unit/Date/PurchasingGroup/Vendor 1 each + PONumber 2 = 9; capability-level = 8 inline extraction regexes, unchanged by this batch.)
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add scripts/validate_registry_contract.py scripts/validate-registry-contract.py agent/tests/test_extraction_declarations.py
