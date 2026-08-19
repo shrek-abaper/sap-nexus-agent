@@ -62,7 +62,7 @@ _PR_CREATE_CAPABILITY_ID = "MM.PR.CreateDraft"
 
 # Migration seam (tasks.md 2.5, removed by 4.3): declared+migrated capabilities
 # run on the extraction engine; everything else keeps this module's legacy path.
-_ENGINE_MIGRATED_CAPABILITIES: set[str] = {"MM.PR.CreateDraft"}
+_ENGINE_MIGRATED_CAPABILITIES: set[str] = {"MM.PR.CreateDraft", "MM.Inventory.GetAvailability"}
 
 # OData / technical-override detection. Forms a double-layer defense with the
 # Java-side CapabilityRequest guard (Task 6): Agent rejects first, Java rejects
@@ -214,12 +214,12 @@ def _parse_single_turn(
             hits.append((cap.capability_id, primary, weak))
             if engine.triggered(normalized, cap):
                 migrated_results[cap.capability_id] = engine.build_capability_result(
-                        normalized,
-                        cap,
-                        catalog,
-                        contains_rfc_name=contains_rfc_name,
-                        contains_odata_override=contains_odata_override,
-                    )
+                    normalized,
+                    cap,
+                    catalog,
+                    contains_rfc_name=contains_rfc_name,
+                    contains_odata_override=contains_odata_override,
+                )
 
     is_ambiguous = engine.is_ambiguous((primary, weak) for _cap_id, primary, weak in hits)
 
@@ -290,7 +290,7 @@ def _parse_single_turn(
             clarification=single.clarification,
             contains_rfc_name=contains_rfc_name,
             contains_odata_override=contains_odata_override,
-            capability_id=single.capability_id,
+            capability_id=single.capability_id if _cap_id == _PR_CREATE_CAPABILITY_ID else None,
             matched_intents=matched_intents,
             is_ambiguous=is_ambiguous,
         )
