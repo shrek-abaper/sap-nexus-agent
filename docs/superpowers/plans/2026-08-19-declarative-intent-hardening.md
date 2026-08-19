@@ -1057,7 +1057,7 @@ git commit -m "feat(declarative-intent): B2.1 clarifyPrompt strategy groupByBind
 - Consumes: task 2.1 schema/loader.
 - Produces: PR declares `strategy: groupByBindingKind` + `maxRounds: 2`; Inventory keeps its two cases entries as the override mechanism (untouched).
 
-- [ ] **Step 1: Restructure the PR declaration**
+- [x] **Step 1: Restructure the PR declaration**
 
 Replace the PR.CreateDraft clarifyPrompt block (currently fallback-only):
 
@@ -1072,7 +1072,7 @@ Replace the PR.CreateDraft clarifyPrompt block (currently fallback-only):
 
 (`MM.Inventory.GetAvailability` and `MM.PurchaseOrder.GetList` clarifyPrompt blocks stay unchanged.)
 
-- [ ] **Step 2: Update the parity constants** in `agent/tests/test_extraction_declarations.py`
+- [x] **Step 2: Update the parity constants** in `agent/tests/test_extraction_declarations.py`
 
 Replace line 488:
 
@@ -1082,12 +1082,12 @@ Replace line 488:
     assert intent["clarifyPrompt"]["zh-CN"]["fallback"] == {"template": "请提供: {fields}"}
 ```
 
-- [ ] **Step 3: Run the tests to verify**
+- [x] **Step 3: Run the tests to verify**
 
 Run: `cd agent && python3 -m pytest tests/test_extraction_declarations.py tests/test_clarify_rendering.py -q`
 Expected: PASS — parity constants updated; rendering behavior is unchanged in round 1 because the strategy template equals the fallback template ("请提供: {fields}"), so `test_pr_fallback_join_template` and `test_sticky_clarify_rendered_from_declaration` stay green.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add registry/capabilities.yaml agent/tests/test_extraction_declarations.py
