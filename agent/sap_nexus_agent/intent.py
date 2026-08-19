@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field, replace
 import re
 import uuid
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Mapping
 
 from sap_nexus_agent.intent_envelope import IntentEnvelope, IntentGoal
 
@@ -62,6 +62,11 @@ class IntentParseResult:
     # values. Orthogonal to ``parameters`` (single-valued). Default empty for
     # backward compatibility.
     multi_parameters: dict[str, list[str]] = field(default_factory=dict)
+    # Task 2.4: durable clarify round-budget tracking (B2 series). Populated
+    # ONLY on sticky CLARIFY turns where a strategy prompt was rendered:
+    # capabilityId -> rounds consumed. None (default) on all other paths, so
+    # existing constructions are unchanged.
+    clarify_rounds: Mapping[str, int] | None = None
 
 
 def parse_intent(

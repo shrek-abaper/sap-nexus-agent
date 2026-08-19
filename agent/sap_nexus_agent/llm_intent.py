@@ -4,7 +4,12 @@ from dataclasses import replace
 import json
 from typing import TYPE_CHECKING, Protocol
 
-from sap_nexus_agent.extraction.clarify import ACTIVE_LOCALE, render_clarify, rephrase_clarify
+from sap_nexus_agent.extraction.clarify import (
+    ACTIVE_LOCALE,
+    render_clarify,
+    render_clarify_round,
+    rephrase_clarify,
+)
 from sap_nexus_agent.extraction.engine import _SUSPECT_TOKEN
 from sap_nexus_agent.intent import (
     IntentParseResult,
@@ -576,8 +581,6 @@ def resolve_with_context(
             and parsed.matched_intents[0].capability_id
             == context.last_context.capability_id
         ):
-            from dataclasses import replace
-
             new_params = dict(parsed.parameters)
             new_params["material"] = context.last_context.parameters["material"]
             new_missing = [m for m in parsed.missing_parameters if m != "material"]
@@ -615,8 +618,14 @@ def resolve_with_context(
             merged = {name: value for name, value in merged.items() if name not in reask_fields}
             missing = [*reask_fields, *(name for name in missing if name not in reask_fields)]
 
-    clarification = render_clarify(descriptor, missing)
-    return IntentParseResult(
+    prev_rounds: dict[str, int] = {}
+    if context.read_state is not None:
+        prev_rounds = dict(context.read_state.clarify_rounds)
+    if prev_rounds and cap_id not in prev_rounds:
+        prev_rounds = {}  # the turn selected a different capability: reset the budget
+
+    clarification, next_rounds = render_clarify_round(descriptor, missing, prev_rounds)
+    result = IntentParseResult(
         intent=None,
         capability_id=cap_id,
         parameters=merged,
@@ -628,6 +637,9 @@ def resolve_with_context(
             MatchedIntent(capability_id=cap_id, parameters=merged, missing=list(missing))
         ],
     )
+    if next_rounds is not None:
+        result = replace(result, clarify_rounds=next_rounds)
+    return result
 
 
 def payload_to_envelope(

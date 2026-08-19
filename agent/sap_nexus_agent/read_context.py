@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 import re
 from types import MappingProxyType
@@ -468,6 +468,7 @@ class ConversationReadState:
     pending_interaction: PendingInteraction | None
     state_version: int
     recent_frames: tuple[ReadContextFrame, ...] = ()
+    clarify_rounds: Mapping[str, int] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if self.active_frame is not None and not isinstance(self.active_frame, ReadContextFrame):
@@ -490,14 +491,30 @@ class ConversationReadState:
         if not all(isinstance(frame, ReadContextFrame) for frame in recent_frames):
             raise ValueError("ConversationReadState.recent_frames must contain ReadContextFrame values")
         object.__setattr__(self, "recent_frames", recent_frames)
+        if not isinstance(self.clarify_rounds, Mapping):
+            raise ValueError("ConversationReadState.clarify_rounds must be a mapping")
+        if not all(
+            isinstance(cap_id, str)
+            and isinstance(rounds, int)
+            and not isinstance(rounds, bool)
+            and rounds >= 0
+            for cap_id, rounds in self.clarify_rounds.items()
+        ):
+            raise ValueError(
+                "ConversationReadState.clarify_rounds must map capabilityId to non-negative integers"
+            )
+        object.__setattr__(self, "clarify_rounds", dict(self.clarify_rounds))
 
     def to_dict(self) -> dict[str, object]:
-        return {
+        payload: dict[str, object] = {
             "activeFrame": self.active_frame.to_dict() if self.active_frame else None,
             "pendingInteraction": self.pending_interaction.to_dict() if self.pending_interaction else None,
             "stateVersion": self.state_version,
             "recentFrames": [frame.to_dict() for frame in self.recent_frames],
         }
+        if self.clarify_rounds:
+            payload["clarifyRounds"] = dict(sorted(self.clarify_rounds.items()))
+        return payload
 
     @classmethod
     def from_dict(cls, payload: Mapping[str, object]) -> "ConversationReadState":
@@ -507,6 +524,10 @@ class ConversationReadState:
         recent_frames = raw.get("recentFrames", ())
         if not isinstance(recent_frames, (list, tuple)):
             raise ValueError("ConversationReadState.recentFrames must be a list")
+        clarify_rounds = raw.get("clarifyRounds")
+        rounds: dict[str, int] = {}
+        if isinstance(clarify_rounds, Mapping):
+            rounds = {str(cap_id): int(count) for cap_id, count in clarify_rounds.items()}
         return cls(
             active_frame=ReadContextFrame.from_dict(active_frame)
             if isinstance(active_frame, Mapping)
@@ -516,6 +537,7 @@ class ConversationReadState:
             else None,
             state_version=raw.get("stateVersion", 0),  # type: ignore[arg-type]
             recent_frames=tuple(ReadContextFrame.from_dict(frame) for frame in recent_frames),
+            clarify_rounds=rounds,
         )
 
 

@@ -6,7 +6,7 @@ import re
 from typing import TYPE_CHECKING, Final
 
 from sap_nexus_agent.extraction._matching import input_filters, keyword_matches, match_value
-from sap_nexus_agent.extraction.clarify import render_clarify
+from sap_nexus_agent.extraction.clarify import render_clarify, render_clarify_round
 from sap_nexus_agent.extraction.resolvers import resolve
 from sap_nexus_agent.registry_loader import (
     CapabilityDescriptor,
@@ -177,7 +177,17 @@ def sticky_parse(text: str, context: "ConversationContext", catalog: IntentCatal
     merged = extract_parameters(text, descriptor, catalog, base=context.last_context.parameters)
     missing = missing_parameters(descriptor, merged)
     merged, missing = _drop_reask_suspects(text, descriptor, context.last_context.parameters, extracted, merged, missing)
-    return _sticky_result(cap_id, merged, missing, render_clarify(descriptor, missing))
+
+    prev_rounds: dict[str, int] = {}
+    if context.read_state is not None:
+        prev_rounds = dict(context.read_state.clarify_rounds)
+    if prev_rounds and cap_id not in prev_rounds:
+        prev_rounds = {}
+    clarification, next_rounds = render_clarify_round(descriptor, missing, prev_rounds)
+    result = _sticky_result(cap_id, merged, missing, clarification)
+    if next_rounds is not None:
+        result = replace(result, clarify_rounds=next_rounds)
+    return result
 
 
 def _matched_intents(

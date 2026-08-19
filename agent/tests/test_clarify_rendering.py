@@ -302,3 +302,39 @@ def test_hybrid_clarify_falls_back_to_template_on_model_failure():
 
     assert result.clarification == "请提供要查询的物料编号。"
     assert len(model.calls) == 2
+
+
+def test_sticky_clarify_rounds_capped_via_read_state():
+    from sap_nexus_agent.conversation_context import ConversationContext, LastContext
+    from sap_nexus_agent.llm_intent import resolve_with_context
+    from sap_nexus_agent.read_context import ConversationReadState
+
+    def _sticky(rounds):
+        context = ConversationContext(
+            history=(),
+            last_context=LastContext(
+                capability_id="MM.PR.CreateDraft",
+                decision_type="CLARIFY",
+                parameters={"material": "DEMOA2", "quantity": "50"},
+                missing_parameters=["plant", "unit", "delivery_date", "purchasing_group"],
+            ),
+            read_state=ConversationReadState(
+                active_frame=None,
+                pending_interaction=None,
+                state_version=1,
+                clarify_rounds=rounds or {},
+            ),
+        )
+        return resolve_with_context("工厂 1000", context, load_intent_catalog())
+
+    first = _sticky({})
+    assert first.clarification == "请提供: 单位, 交货日期, 采购组"
+    assert first.clarify_rounds == {"MM.PR.CreateDraft": 1}
+
+    second = _sticky(first.clarify_rounds)
+    assert second.clarify_rounds == {"MM.PR.CreateDraft": 2}
+
+    third = _sticky(second.clarify_rounds)
+    # Budget exhausted: fallback template, rounds not incremented.
+    assert third.clarification == "请提供: 单位, 交货日期, 采购组"
+    assert third.clarify_rounds is None

@@ -967,11 +967,13 @@ def _resolved_non_read_outcome(
 ) -> AgentOutcome:
     from sap_nexus_agent.read_context import ConversationReadState
 
+    parsed_rounds = getattr(parsed, "clarify_rounds", None)
     next_state = ConversationReadState(
         active_frame=prior_state.active_frame,
         pending_interaction=None,
         state_version=prior_state.state_version + 1,
         recent_frames=prior_state.recent_frames,
+        clarify_rounds=dict(parsed_rounds) if parsed_rounds else dict(prior_state.clarify_rounds),
     )
     next_context = replace(context, read_state=next_state, schema_version=2)
     status = {

@@ -331,3 +331,24 @@ def test_read_state_round_trips_immutable_recent_frames_and_defaults_legacy_payl
     ).recent_frames == ()
     with pytest.raises(dataclasses.FrozenInstanceError):
         state.recent_frames = ()
+
+
+def test_read_state_clarify_rounds_round_trip_and_omitted_when_empty():
+    from sap_nexus_agent.read_context import ConversationReadState
+
+    state = ConversationReadState(active_frame=None, pending_interaction=None, state_version=0)
+    assert "clarifyRounds" not in state.to_dict()  # legacy payloads round-trip unchanged
+
+    state = ConversationReadState(
+        active_frame=None,
+        pending_interaction=None,
+        state_version=0,
+        clarify_rounds={"MM.PR.CreateDraft": 2},
+    )
+    assert state.to_dict()["clarifyRounds"] == {"MM.PR.CreateDraft": 2}
+    assert ConversationReadState.from_dict(state.to_dict()).clarify_rounds == {
+        "MM.PR.CreateDraft": 2
+    }
+
+    legacy = {"activeFrame": None, "pendingInteraction": None, "stateVersion": 0, "recentFrames": []}
+    assert ConversationReadState.from_dict(legacy).clarify_rounds == {}
