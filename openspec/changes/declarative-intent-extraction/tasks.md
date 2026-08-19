@@ -15,7 +15,7 @@
 - [x] Load extraction declarations and the semantic-type catalog atomically in the agent registry loader; snapshot id covers both artifacts
 - [x] 2.2 Implement generic value resolvers (`date`, `quantity`, `text`) lifted verbatim from current extractor logic
 - [x] 2.3 Implement the generic extraction engine: primary-keyword trigger scan, ordered matcher evaluation, token claiming with `excludes` and `priority`, MatchedIntent production - zero capability branches
-- [ ] 2.4 Build the differential parity harness: committed utterance fixtures (single-intent, multi-intent, ambiguous, partial params, technical override, sticky follow-ups) asserting identical decisions/parameters/clarification text between legacy path and engine
+- [x] 2.4 Build the differential parity harness: committed utterance fixtures (single-intent, multi-intent, ambiguous, partial params, technical override, sticky follow-ups) asserting identical decisions/parameters/clarification text between legacy path and engine
 - [ ] 2.5 Wire the per-capability seam in `parse_intent` and sticky continuation: declared capabilities dispatch to the engine, undeclared fall back to legacy (migration-only)
 
 ## 3. Per-Capability Migration (strict parity, single-turn + sticky together)
