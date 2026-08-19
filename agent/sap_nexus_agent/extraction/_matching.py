@@ -97,7 +97,7 @@ def _compile_named_kind(matcher: MatcherConfig, catalog: IntentCatalog) -> re.Pa
             return None
         return re.compile(rf"({inner})\s*(?:{tokens})", flags)
     if matcher.kind == "valueShape":
-        return re.compile(rf"(?<![A-Z0-9])({inner})(?![A-Z0-9])", flags)
+        return re.compile(rf"(?<![A-Za-z0-9])({inner})(?![A-Za-z0-9])", flags)
     return None
 
 

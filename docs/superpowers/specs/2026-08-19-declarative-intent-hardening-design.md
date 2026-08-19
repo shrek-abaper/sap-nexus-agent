@@ -50,7 +50,7 @@ Matcher kinds compile to bounded regexes at load time:
 - `suffixed: {suffix: ['工厂']}` → `(<shape>)\s*(?:工厂)` — value captured
   before the suffix token(s).
 - `valueShape: {shape: plantCode}` — standalone bare scan:
-  `(?<![A-Z0-9])(<shape compiled>)(?![A-Z0-9])`; as a component of
+  `(?<![A-Za-z0-9])(<shape compiled>)(?![A-Za-z0-9])`; as a component of
   prefixed/suffixed it supplies the capture shape without boundary guards
   (guards come from the prefix/suffix anchors).
 
