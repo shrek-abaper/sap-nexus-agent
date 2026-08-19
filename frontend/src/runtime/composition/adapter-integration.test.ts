@@ -112,7 +112,11 @@ describe("agent runtime composition integration", () => {
     setDurableStoresForTests(new JsonlRunStore(dir), new JsonlConversationStore(dir));
     setAgentRunnerForTests(async () => escalation());
     gateway = new FakeGateway();
-    const dataAsOf = "2026-08-05T01:00:00.000Z";
+    // Fresh projection timestamp: the recommendation rule rejects projections
+    // older than 24h (PROJECTION_STALE). A hardcoded date made this test a
+    // time bomb that started failing on 2026-08-06 once the fixture age
+    // exceeded one day.
+    const dataAsOf = new Date(Date.now() - 60_000).toISOString();
     gateway.setExecuteResult("MM.Inventory.GetAvailability", {
       success: true,
       traceId: "gateway-inventory",
