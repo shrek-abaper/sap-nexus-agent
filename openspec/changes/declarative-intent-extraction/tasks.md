@@ -34,4 +34,4 @@
 ## 5. Closeout Verification
 
 - [x] 5.1 Full verification sweep: `git status --short`, agent test suite, call-plan eval (`PYTHONPATH=agent scripts/verify-agent-callplan-evidence.sh`), registry contract validation, frontend untouched check
-- [ ] 5.2 Update README/docs references to the rule path architecture (declarative extraction, catalog location) and record parity baseline in the change's verification notes
+- [x] 5.2 Update README/docs references to the rule path architecture (declarative extraction, catalog location) and record parity baseline in the change's verification notes
