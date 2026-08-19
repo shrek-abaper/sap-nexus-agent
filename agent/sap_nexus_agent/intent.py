@@ -62,7 +62,11 @@ _PR_CREATE_CAPABILITY_ID = "MM.PR.CreateDraft"
 
 # Migration seam (tasks.md 2.5, removed by 4.3): declared+migrated capabilities
 # run on the extraction engine; everything else keeps this module's legacy path.
-_ENGINE_MIGRATED_CAPABILITIES: set[str] = {"MM.PR.CreateDraft", "MM.Inventory.GetAvailability"}
+_ENGINE_MIGRATED_CAPABILITIES: set[str] = {
+    "MM.PR.CreateDraft",
+    "MM.Inventory.GetAvailability",
+    "MM.PurchaseOrder.GetList",
+}
 
 # OData / technical-override detection. Forms a double-layer defense with the
 # Java-side CapabilityRequest guard (Task 6): Agent rejects first, Java rejects
