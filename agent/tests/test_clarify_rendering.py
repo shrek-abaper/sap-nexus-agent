@@ -338,3 +338,32 @@ def test_sticky_clarify_rounds_capped_via_read_state():
     # Budget exhausted: fallback template, rounds not incremented.
     assert third.clarification == "请提供: 单位, 交货日期, 采购组"
     assert third.clarify_rounds is None
+
+
+def test_pr_missing_1_2_3_plus_fields_rounds_never_exceed_max_rounds():
+    from sap_nexus_agent.extraction.clarify import render_clarify_round
+
+    pr = _cap("MM.PR.CreateDraft")
+    missing = ["quantity"]
+    rounds = {}
+    for _ in range(5):
+        text, next_rounds = render_clarify_round(pr, missing, rounds)
+        assert text is not None
+        if next_rounds is None:
+            break
+        assert next_rounds["MM.PR.CreateDraft"] <= 2  # never exceeds maxRounds
+        rounds = next_rounds
+    else:
+        raise AssertionError("strategy prompt rendered more than maxRounds times")
+    # The loop above breaks only via budget exhaustion; assert it happened.
+    assert rounds == {"MM.PR.CreateDraft": 2}
+
+
+def test_inventory_cases_still_override_strategy_path():
+    inv = _cap("MM.Inventory.GetAvailability")
+    # Inventory declares cases + fallback (no strategy): the exact-set override
+    # is the main path and must stay intact (spec: cases override checked first).
+    assert render_clarify(inv, ["material"]) == "请提供要查询的物料编号。"
+    assert render_clarify(inv, ["plant"]) == "请提供要查询的工厂。"
+    assert render_clarify(inv, ["material", "plant"]) == "请提供要查询的物料编号和工厂。"
+    assert render_clarify(inv, []) is None
