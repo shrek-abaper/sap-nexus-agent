@@ -165,10 +165,6 @@ import yaml
 CATALOG_PATH = REPO_ROOT / "registry" / "semantic-types.yaml"
 
 EXPECTED_PATTERN_PARITY = {
-    "Plant": [
-        r"(?:在\s*([A-Z]\d{3}|\d{4}))|(?:([A-Z]\d{3}|\d{4})\s*工厂)",
-        r"(?<!\d)([A-Z]\d{3}|\d{4})(?!\d)",
-    ],
     "MaterialNumber": [r"(?<![A-Za-z0-9-])[A-Z0-9][A-Z0-9-]{1,39}(?![A-Za-z0-9-])"],
     "Quantity": [r"(\d+(?:\.\d+)?)\s*(?:EA|PC|KG|G|L|M)"],
     "Unit": [r"\b(EA|PC|KG|G|L|M)\b"],
@@ -186,6 +182,20 @@ EXPECTED_PATTERN_PARITY = {
     ],
 }
 
+EXPECTED_PLANT_MATCHERS = [
+    {"kind": "prefixed", "prefix": ["在"], "valueShape": "plantCode"},
+    {"kind": "suffixed", "suffix": ["工厂"], "valueShape": "plantCode"},
+    {
+        "kind": "regex",
+        "pattern": r"(?<!\d)([A-Z]\d{3}|\d{4})(?!\d)",
+        "justification": (
+            "Bare 4-char code scan with digit-only lookaround guards; the "
+            "named-kind bare scan uses alnum guards and would change behavior "
+            "for digit-adjacent tokens."
+        ),
+    },
+]
+
 
 def _load_catalog() -> dict:
     return yaml.safe_load(CATALOG_PATH.read_text(encoding="utf-8"))
@@ -197,9 +207,14 @@ def test_catalog_matches_json_schema():
 
 def test_catalog_patterns_are_lifted_verbatim_from_legacy_extractors():
     catalog = {e["id"]: e for e in _load_catalog()["semanticTypes"]}
-    assert set(catalog) == set(EXPECTED_PATTERN_PARITY)
+    assert set(catalog) == set(EXPECTED_PATTERN_PARITY) | {"Plant"}
     for entry_id, patterns in EXPECTED_PATTERN_PARITY.items():
         assert [m["pattern"] for m in catalog[entry_id]["matchers"]] == patterns, entry_id
+    assert catalog["Plant"]["matchers"] == EXPECTED_PLANT_MATCHERS
+
+
+def test_catalog_value_shapes_plant_code():
+    assert _load_catalog()["valueShapes"] == {"plantCode": "^[A-Z0-9]{4}$"}
 
 
 def test_material_filters_reproduce_legacy_guards():
