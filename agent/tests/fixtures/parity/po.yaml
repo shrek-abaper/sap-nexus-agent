@@ -1,0 +1,137 @@
+capability: MM.PurchaseOrder.GetList
+rows:
+  - name: po-by-number
+    mode: single
+    utterance: 查询采购订单 4500000001 的明细
+    expect:
+      decision_type: SELECT
+      capability_id: MM.PurchaseOrder.GetList
+      parameters:
+        poNumber: '4500000001'
+      missing: []
+      clarification: null
+      is_ambiguous: false
+      clarification_strict: true
+  - name: po-by-vendor
+    mode: single
+    utterance: 查供应商 1000 的采购订单
+    expect:
+      decision_type: SELECT
+      capability_id: MM.PurchaseOrder.GetList
+      parameters:
+        vendor: '1000'
+      missing: []
+      clarification: null
+      is_ambiguous: false
+      clarification_strict: true
+  - name: po-by-material-and-plant
+    mode: single
+    utterance: 查工厂 5300 物料 DEMOA4B 的采购订单
+    expect:
+      decision_type: SELECT
+      capability_id: MM.PurchaseOrder.GetList
+      parameters:
+        plant: '5300'
+        material: DEMOA4B
+      missing: []
+      clarification: null
+      is_ambiguous: false
+      clarification_strict: true
+  - name: po-no-filter
+    mode: single
+    utterance: 帮我查一下采购订单
+    expect:
+      decision_type: CLARIFY
+      capability_id: MM.PurchaseOrder.GetList
+      parameters: {}
+      missing:
+        - filter
+      clarification: 请至少提供一个过滤条件（采购订单号、供应商、工厂或物料）。
+      is_ambiguous: false
+      clarification_strict: true
+  - name: po-number-value-excluded
+    mode: single
+    utterance: 采购订单 4500000001 供应商 4500000001
+    expect:
+      decision_type: SELECT
+      capability_id: MM.PurchaseOrder.GetList
+      parameters:
+        vendor: '4500000001'
+      missing: []
+      clarification: null
+      is_ambiguous: false
+      clarification_strict: true
+  - name: po-bare-po-trigger
+    mode: single
+    utterance: PO 4500000001
+    expect:
+      decision_type: SELECT
+      capability_id: MM.PurchaseOrder.GetList
+      parameters:
+        poNumber: '4500000001'
+      missing: []
+      clarification: null
+      is_ambiguous: false
+      clarification_strict: true
+  - name: po-import-no-false-positive
+    mode: single
+    utterance: IMPORT 4500000001
+    expect:
+      decision_type: REJECT
+      capability_id: null
+      parameters: {}
+      missing: []
+      clarification: null
+      is_ambiguous: false
+      clarification_strict: true
+  - name: po-weak-ambiguous-escalate
+    mode: single
+    utterance: 有没有订单
+    expect:
+      decision_type: ESCALATE_TO_PLANNER
+      capability_id: null
+      parameters: {}
+      missing: []
+      clarification: null
+      is_ambiguous: true
+      clarification_strict: true
+  - name: po-technical-override
+    mode: single
+    utterance: 采购订单 $select=PurchaseOrder
+    expect:
+      decision_type: REJECT
+      capability_id: null
+      parameters: {}
+      missing: []
+      clarification: null
+      is_ambiguous: false
+      clarification_strict: true
+  - name: po-sticky-merge
+    mode: sticky
+    utterance: 工厂 5300
+    last_context:
+      capability_id: MM.PurchaseOrder.GetList
+      decision_type: SELECT
+      parameters:
+        vendor: '1000'
+    expect:
+      decision_type: SELECT
+      capability_id: MM.PurchaseOrder.GetList
+      parameters:
+        vendor: '1000'
+        plant: '5300'
+      missing: []
+      clarification: null
+      is_ambiguous: false
+      clarification_strict: true
+  - name: weak-only-no-trigger-ambiguous
+    mode: single
+    utterance: 采购
+    expect:
+      decision_type: REJECT
+      capability_id: null
+      parameters: {}
+      missing: []
+      clarification: null
+      is_ambiguous: true
+      clarification_strict: true

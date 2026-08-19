@@ -1,0 +1,200 @@
+capability: MM.PR.CreateDraft
+rows:
+  - name: pr-full-direct
+    mode: single
+    utterance: 创建PR 物料 DEMOA2 工厂 1000 数量 100 EA 交货日期 2026-09-01 采购组 001
+    expect:
+      decision_type: SELECT
+      capability_id: MM.PR.CreateDraft
+      parameters:
+        material: DEMOA2
+        plant: '1000'
+        quantity: '100'
+        unit: EA
+        delivery_date: '2026-09-01'
+        purchasing_group: '001'
+      missing: []
+      clarification: null
+      is_ambiguous: false
+      clarification_strict: true
+  - name: pr-missing-most
+    mode: single
+    utterance: 建PR 物料 DEMOA2 工厂 1000
+    expect:
+      decision_type: CLARIFY
+      capability_id: MM.PR.CreateDraft
+      parameters:
+        material: DEMOA2
+        plant: '1000'
+      missing:
+        - quantity
+        - unit
+        - delivery_date
+        - purchasing_group
+      clarification: '请提供: 数量, 单位, 交货日期, 采购组'
+      is_ambiguous: false
+      clarification_strict: true
+  - name: pr-indirect-full
+    mode: single
+    utterance: 帮我建一个采购申请 间采 物料 DEMOA2 工厂 1000 数量 10 PC 成本中心 4700 交货日期 2026-10-01 采购组 002
+    expect:
+      decision_type: SELECT
+      capability_id: MM.PR.CreateDraft
+      parameters:
+        material: DEMOA2
+        plant: '1000'
+        quantity: '10'
+        unit: PC
+        delivery_date: '2026-10-01'
+        purchasing_group: '002'
+      missing: []
+      clarification: null
+      is_ambiguous: false
+      clarification_strict: true
+  - name: pr-indirect-missing-cost-center
+    mode: single
+    utterance: 帮我建一个采购申请 间采 物料 DEMOA2 工厂 1000 数量 10 PC 交货日期 2026-10-01 采购组 002
+    expect:
+      decision_type: SELECT
+      capability_id: MM.PR.CreateDraft
+      parameters:
+        material: DEMOA2
+        plant: '1000'
+        quantity: '10'
+        unit: PC
+        delivery_date: '2026-10-01'
+        purchasing_group: '002'
+      missing: []
+      clarification: null
+      is_ambiguous: false
+      clarification_strict: true
+  - name: pr-lowercase-unit
+    mode: single
+    utterance: 创建PR 物料 DEMOA2 工厂 1000 数量 5 ea 交货日期 2026-01-01 采购组 001
+    expect:
+      decision_type: SELECT
+      capability_id: MM.PR.CreateDraft
+      parameters:
+        material: DEMOA2
+        plant: '1000'
+        quantity: '5'
+        unit: EA
+        delivery_date: '2026-01-01'
+        purchasing_group: '001'
+      missing: []
+      clarification: null
+      is_ambiguous: false
+      clarification_strict: true
+  - name: pr-no-trigger
+    mode: single
+    utterance: 今天天气怎么样
+    expect:
+      decision_type: REJECT
+      capability_id: null
+      parameters: {}
+      missing: []
+      clarification: null
+      is_ambiguous: false
+      clarification_strict: true
+  - name: pr-technical-override
+    mode: single
+    utterance: 创建PR rfcName=BAPI_PR_CREATE 物料 DEMOA2
+    expect:
+      decision_type: REJECT
+      capability_id: null
+      parameters: {}
+      missing: []
+      clarification: null
+      is_ambiguous: false
+      clarification_strict: true
+  - name: pr-multi-with-inventory
+    mode: single
+    utterance: 创建PR 物料 DEMOA2 工厂 1000，顺便查一下库存 DEMOA1 在 5100
+    expect:
+      decision_type: ESCALATE_TO_PLANNER
+      capability_id: null
+      parameters: {}
+      missing: []
+      clarification: null
+      is_ambiguous: false
+      clarification_strict: true
+  - name: pr-ambiguous-show-options
+    mode: single
+    utterance: 有没有采购
+    expect:
+      decision_type: SHOW_OPTIONS
+      capability_id: null
+      parameters: {}
+      missing:
+        - material
+        - plant
+      clarification: 请提供要查询的物料编号和工厂。
+      is_ambiguous: true
+      clarification_strict: true
+  - name: pr-sticky-merge
+    mode: sticky
+    utterance: 工厂 1000 数量 50
+    last_context:
+      capability_id: MM.PR.CreateDraft
+      decision_type: CLARIFY
+      parameters:
+        material: DEMOA2
+    expect:
+      decision_type: CLARIFY
+      capability_id: MM.PR.CreateDraft
+      parameters:
+        material: DEMOA2
+        plant: '1000'
+      missing:
+        - quantity
+        - unit
+        - delivery_date
+        - purchasing_group
+      clarification: 请提供以下参数：quantity, unit, delivery_date, purchasing_group。
+      is_ambiguous: false
+      clarification_strict: false
+  - name: pr-sticky-new-turn
+    mode: sticky
+    utterance: 查一下库存 DEMOA1 在 5100
+    last_context:
+      capability_id: MM.PR.CreateDraft
+      decision_type: CLARIFY
+      parameters:
+        material: DEMOA2
+    expect:
+      decision_type: SELECT
+      capability_id: MM.Inventory.GetAvailability
+      parameters:
+        material: DEMOA1
+        plant: '5100'
+      missing: []
+      clarification: null
+      is_ambiguous: false
+      clarification_strict: true
+  - name: pr-sticky-new-turn-inherit
+    mode: sticky
+    utterance: 数量 20
+    last_context:
+      capability_id: MM.PR.CreateDraft
+      decision_type: SELECT
+      parameters:
+        material: DEMOA2
+        plant: '1000'
+        quantity: '100'
+        unit: EA
+        delivery_date: '2026-09-01'
+        purchasing_group: '001'
+    expect:
+      decision_type: SELECT
+      capability_id: MM.PR.CreateDraft
+      parameters:
+        material: DEMOA2
+        plant: '1000'
+        quantity: '100'
+        unit: EA
+        delivery_date: '2026-09-01'
+        purchasing_group: '001'
+      missing: []
+      clarification: null
+      is_ambiguous: false
+      clarification_strict: false
