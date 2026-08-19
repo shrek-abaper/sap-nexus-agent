@@ -52,15 +52,17 @@ semanticTypes:
     filters:
       toUpperCaseOutput: true
   - id: Vendor
-    description: PO vendor number, 供应商-prefixed
+    description: PO vendor number, 供应商-prefixed alphanumeric code (e.g. V72719; digit-only also accepted)
     priority: 40
     matchers:
       - kind: regex
-        pattern: '供应商\s*(\d+)'
+        pattern: '供应商\s*([A-Z0-9]{1,10})'
   - id: PONumber
-    description: 10-digit PO number, iterated so value exclusions can skip matches
+    description: PO number - bare 10-digit form, or 采购订单-prefixed alphanumeric code for sanitized values (e.g. DEMOPO1)
     priority: 10
     matchers:
       - kind: regex
         pattern: '(?<!\d)(\d{10})(?!\d)'
         scan: all
+      - kind: regex
+        pattern: '采购订单\s*([A-Z0-9]{4,10})'

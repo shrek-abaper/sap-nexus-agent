@@ -231,6 +231,8 @@ capabilities:
             - kind: regex
               pattern: '(?<!\d)(\d{10})(?!\d)'
               scan: all
+            - kind: regex
+              pattern: '采购订单\s*([A-Z0-9]{4,10})'
           priority: 10
           excludes:
             - vendor
@@ -244,11 +246,12 @@ capabilities:
         type: string
         minLength: 1
         maxLength: 10
+        pattern: '^[A-Z0-9]{1,10}$'
         sapParameter: Supplier
         extraction:
           matchers:
             - kind: regex
-              pattern: '供应商\s*(\d+)'
+              pattern: '供应商\s*([A-Z0-9]{1,10})'
           priority: 40
           resolver: text
       - name: plant
