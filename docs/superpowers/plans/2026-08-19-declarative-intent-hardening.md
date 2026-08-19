@@ -84,7 +84,7 @@ Note on transient red between 1.1 and 1.3: task 1.1 makes the catalog schema req
   - `_parse_matcher(raw)` parses `prefix`/`suffix` (list of strings), `valueShape` (string), `justification` (string).
   - Catalog schema accepts matcher kinds `prefixed`/`suffixed`/`valueShape` and requires `justification` on `regex`.
 
-- [ ] **Step 1: Write the failing schema tests** (append to `agent/tests/test_extraction_declarations.py`; `_load` and `pytest`/`jsonschema` are already imported there)
+- [x] **Step 1: Write the failing schema tests** (append to `agent/tests/test_extraction_declarations.py`; `_load` and `pytest`/`jsonschema` are already imported there)
 
 ```python
 def test_catalog_schema_accepts_named_kinds_and_value_shapes():
@@ -114,12 +114,12 @@ Also update the two existing fixtures that now violate the justification rule (t
 - `VALID_CATALOG` line 97: `{"kind": "regex", "pattern": "[A-Z0-9]+", "scan": "all"}` → add `"justification": "synthetic fixture"`.
 - `test_duplicate_catalog_id_allowed_by_schema` lines 150 and 152: add `"justification": "synthetic fixture"` to both regex matchers.
 
-- [ ] **Step 2: Run the schema tests to verify they fail**
+- [x] **Step 2: Run the schema tests to verify they fail**
 
 Run: `cd agent && python3 -m pytest tests/test_extraction_declarations.py -q`
 Expected: FAIL — `ValidationError` raised for the accepted payload, or the regex-without-justification payload unexpectedly passes; the two fixture tests FAIL because `justification` is now required.
 
-- [ ] **Step 3: Write the failing loader tests** (append to `agent/tests/test_registry_loader.py`; check the file's existing import style and mirror it — it already imports `load_intent_catalog`)
+- [x] **Step 3: Write the failing loader tests** (append to `agent/tests/test_registry_loader.py`; check the file's existing import style and mirror it — it already imports `load_intent_catalog`)
 
 ```python
 def test_parse_matcher_accepts_named_kind_fields():
@@ -151,12 +151,12 @@ def test_catalog_value_shapes_parsed_from_document():
     assert catalog.find("X").matchers[0].value_shape == "plantCode"
 ```
 
-- [ ] **Step 4: Run the loader tests to verify they fail**
+- [x] **Step 4: Run the loader tests to verify they fail**
 
 Run: `cd agent && python3 -m pytest tests/test_registry_loader.py -q`
 Expected: FAIL — `TypeError: __init__() got an unexpected keyword argument 'prefix'` / `MatcherConfig` has no field `prefix` / `SemanticTypeCatalog` has no attribute `value_shapes`.
 
-- [ ] **Step 5: Implement the schema change** in `schemas/semantic-type-catalog.schema.json`
+- [x] **Step 5: Implement the schema change** in `schemas/semantic-type-catalog.schema.json`
 
 Add `valueShapes` to top-level `properties` (after `semanticTypes`, before the closing brace of `properties`):
 
@@ -217,7 +217,7 @@ Replace the matcher `properties` block (currently lines 39–46) and its `allOf`
               ]
 ```
 
-- [ ] **Step 6: Implement the loader change** in `agent/sap_nexus_agent/registry_loader.py`
+- [x] **Step 6: Implement the loader change** in `agent/sap_nexus_agent/registry_loader.py`
 
 Append the four fields to `MatcherConfig` (after `scan`):
 
@@ -270,12 +270,12 @@ Update `_parse_semantic_type_catalog` (line 309) — replace the final `return S
     return SemanticTypeCatalog(entries=tuple(entries), value_shapes=value_shapes)
 ```
 
-- [ ] **Step 7: Run all tests to verify they pass**
+- [x] **Step 7: Run all tests to verify they pass**
 
 Run: `cd agent && python3 -m pytest tests/test_extraction_declarations.py tests/test_registry_loader.py -q`
 Expected: PASS (all new tests; the two updated fixtures; note `test_catalog_matches_json_schema` may be red here — it validates the real catalog which lacks justifications until task 1.3; that is expected and resolved in 1.3).
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add schemas/semantic-type-catalog.schema.json agent/sap_nexus_agent/registry_loader.py agent/tests/test_extraction_declarations.py agent/tests/test_registry_loader.py
