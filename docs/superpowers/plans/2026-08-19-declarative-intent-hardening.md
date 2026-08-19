@@ -1392,7 +1392,7 @@ git commit -m "feat(declarative-intent): B2.3 strategy rendering groupByBindingK
   - `resolve_with_context` and `engine.sticky_parse` set `clarify_rounds` on the result when a strategy prompt was rendered; reset the counter when the turn's capability differs from the accumulated one.
   - `orchestrator._resolved_non_read_outcome` persists the parsed rounds into `next_state` for CLARIFY decisions.
 
-- [ ] **Step 1: Write the failing tests** (append to `agent/tests/test_read_context.py`)
+- [x] **Step 1: Write the failing tests** (append to `agent/tests/test_read_context.py`)
 
 ```python
 def test_read_state_clarify_rounds_round_trip_and_omitted_when_empty():
@@ -1455,12 +1455,12 @@ def test_sticky_clarify_rounds_capped_via_read_state():
     assert third.clarify_rounds is None
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd agent && python3 -m pytest tests/test_read_context.py tests/test_clarify_rendering.py -q`
 Expected: FAIL — `TypeError: __init__() got an unexpected keyword argument 'clarify_rounds'` and `AttributeError: 'IntentParseResult' object has no attribute 'clarify_rounds'`.
 
-- [ ] **Step 3: Implement `ConversationReadState.clarify_rounds`** in `agent/sap_nexus_agent/read_context.py`
+- [x] **Step 3: Implement `ConversationReadState.clarify_rounds`** in `agent/sap_nexus_agent/read_context.py`
 
 Add the field (ensure `field` is in the module's `from dataclasses import ...`):
 
@@ -1527,7 +1527,7 @@ In `from_dict` (line 502), add the parsing before the `return cls(...)`:
         )
 ```
 
-- [ ] **Step 4: Implement `IntentParseResult.clarify_rounds`** in `agent/sap_nexus_agent/intent.py`
+- [x] **Step 4: Implement `IntentParseResult.clarify_rounds`** in `agent/sap_nexus_agent/intent.py`
 
 Append the field (last, defaulted) to the frozen dataclass; add `Mapping` to the module's typing imports if not present:
 
@@ -1536,7 +1536,7 @@ Append the field (last, defaulted) to the frozen dataclass; add `Mapping` to the
     clarify_rounds: Mapping[str, int] | None = None
 ```
 
-- [ ] **Step 5: Wire the budget into `resolve_with_context`** in `agent/sap_nexus_agent/llm_intent.py`
+- [x] **Step 5: Wire the budget into `resolve_with_context`** in `agent/sap_nexus_agent/llm_intent.py`
 
 Replace the final block of `resolve_with_context` (currently `clarification = render_clarify(descriptor, missing)` at line 618 through the `return IntentParseResult(...)`):
 
@@ -1567,7 +1567,7 @@ Replace the final block of `resolve_with_context` (currently `clarification = re
 
 Update the `render_clarify` import at the top of `llm_intent.py` to include `render_clarify_round` (import both; `render_clarify` remains used by other callers in the module, if any — keep it imported).
 
-- [ ] **Step 6: Wire the budget into `engine.sticky_parse`** in `agent/sap_nexus_agent/extraction/engine.py`
+- [x] **Step 6: Wire the budget into `engine.sticky_parse`** in `agent/sap_nexus_agent/extraction/engine.py`
 
 Replace the final return (line 181, `return _sticky_result(cap_id, merged, missing, render_clarify(descriptor, missing))`):
 
@@ -1586,7 +1586,7 @@ Replace the final return (line 181, `return _sticky_result(cap_id, merged, missi
 
 Ensure `from dataclasses import replace` and `render_clarify_round` are imported in `engine.py` (add `replace` to the dataclasses import; change the clarify import to include `render_clarify_round`).
 
-- [ ] **Step 7: Persist rounds in the orchestrator** — in `agent/sap_nexus_agent/orchestrator.py`, modify `_resolved_non_read_outcome` (line 970):
+- [x] **Step 7: Persist rounds in the orchestrator** — in `agent/sap_nexus_agent/orchestrator.py`, modify `_resolved_non_read_outcome` (line 970):
 
 ```python
     parsed_rounds = getattr(parsed, "clarify_rounds", None)
@@ -1601,13 +1601,13 @@ Ensure `from dataclasses import replace` and `render_clarify_round` are imported
 
 `_bound_pending_outcome` (line 914) stays untouched — CLARIFY decisions never route through it.
 
-- [ ] **Step 8: Run the tests to verify**
+- [x] **Step 8: Run the tests to verify**
 
 Run: `cd agent && python3 -m pytest tests/test_read_context.py tests/test_clarify_rendering.py tests/test_llm_intent.py tests/test_orchestrator.py -q`
 Expected: PASS — new round-trip and sticky-budget tests; the legacy round-trip test (`test_read_state_and_conversation_context_round_trip_without_legacy_json_changes`) stays green because `clarifyRounds` is omitted when empty; orchestrator CLARIFY tests stay green.
 Note: if any `test_llm_intent.py`/`test_orchestrator.py` test asserts full `IntentParseResult` equality on a sticky result, add `clarify_rounds=None` to the expected literal — the budget only populates the field on sticky CLARIFY turns.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add agent/sap_nexus_agent/read_context.py agent/sap_nexus_agent/intent.py agent/sap_nexus_agent/llm_intent.py agent/sap_nexus_agent/extraction/engine.py agent/sap_nexus_agent/orchestrator.py agent/tests/test_read_context.py agent/tests/test_clarify_rendering.py
