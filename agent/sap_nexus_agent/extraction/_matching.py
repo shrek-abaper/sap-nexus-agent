@@ -36,7 +36,10 @@ def match_value(
                 return value
         return None
 
-    compiled = _compile_matcher(matcher)
+    if matcher.kind in ("prefixed", "suffixed", "valueShape"):
+        compiled = _compile_named_kind(matcher, catalog)
+    else:
+        compiled = _compile_matcher(matcher)
     if compiled is None:
         return _constant_keyword_fallback(matcher, text)
     if matcher.scan == "all":
@@ -65,6 +68,37 @@ def _compile_matcher(matcher: MatcherConfig) -> re.Pattern[str] | None:
         return re.compile(matcher.pattern or "", flags)
     except re.error:
         return None
+
+
+def _compile_named_kind(matcher: MatcherConfig, catalog: IntentCatalog) -> re.Pattern[str] | None:
+    """Compile a named-kind matcher against a catalog-level value shape.
+
+    The shape's ^/$ anchors are stripped: in a prefixed/suffixed composition
+    the prefix/suffix tokens provide the left/right anchor; in the bare
+    valueShape scan alphanumeric lookaround guards provide both.
+    """
+    shape = (catalog.semantic_types.value_shapes or {}).get(matcher.value_shape or "")
+    if not shape:
+        return None
+    inner = shape
+    if inner.startswith("^"):
+        inner = inner[1:]
+    if inner.endswith("$"):
+        inner = inner[:-1]
+    flags = re.IGNORECASE if matcher.ignore_case else 0
+    if matcher.kind == "prefixed":
+        tokens = "|".join(re.escape(token) for token in matcher.prefix)
+        if not tokens:
+            return None
+        return re.compile(rf"(?:{tokens})\s*({inner})", flags)
+    if matcher.kind == "suffixed":
+        tokens = "|".join(re.escape(token) for token in matcher.suffix)
+        if not tokens:
+            return None
+        return re.compile(rf"({inner})\s*(?:{tokens})", flags)
+    if matcher.kind == "valueShape":
+        return re.compile(rf"(?<![A-Z0-9])({inner})(?![A-Z0-9])", flags)
+    return None
 
 
 def _captured_value(regex_match: re.Match[str], matcher: MatcherConfig) -> str:
@@ -107,4 +141,8 @@ def _merge_matcher(entry_matcher: MatcherConfig, wrapper: MatcherConfig) -> Matc
         ref=entry_matcher.ref,
         ignore_case=entry_matcher.ignore_case or wrapper.ignore_case,
         scan=scan,
+        prefix=wrapper.prefix or entry_matcher.prefix,
+        suffix=wrapper.suffix or entry_matcher.suffix,
+        value_shape=wrapper.value_shape or entry_matcher.value_shape,
+        justification=wrapper.justification or entry_matcher.justification,
     )
