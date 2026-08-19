@@ -516,6 +516,7 @@ def test_pr_declaration_parity_constants():
         {"kind": "regex", "pattern": r"物料\s*([A-Za-z0-9][A-Za-z0-9\-/]+)"}]
     assert inputs["plant"]["extraction"]["matchers"] == [
         {"kind": "regex", "pattern": r"工厂\s*(\d{4}|[A-Z]\d{3})"}]
+    assert inputs["plant"]["pattern"] == "^[A-Z0-9]{4}$"
     assert inputs["quantity"]["extraction"]["matchers"] == [
         {"kind": "semanticType", "ref": "Quantity"}]
     assert inputs["unit"]["extraction"]["matchers"] == [

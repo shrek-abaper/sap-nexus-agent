@@ -389,6 +389,7 @@ capabilities:
         type: string
         minLength: 1
         maxLength: 4
+        pattern: '^[A-Z0-9]{4}$'
         sapParameter: PRITEM.PLANT
         extraction:
           matchers:
