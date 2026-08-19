@@ -92,6 +92,10 @@ def rephrase_clarify(
     if elapsed_ms > timeout_ms:
         return None
 
+    # payload must be a JSON object (dict). If the model returned a non-dict
+    # (list, None, string, int, etc.) treat it as malformed and fail closed.
+    if not isinstance(payload, dict):
+        return None
     question = payload.get("question")
     if not isinstance(question, str):
         return None

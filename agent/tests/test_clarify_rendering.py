@@ -138,6 +138,36 @@ def test_rephrase_rejects_malformed_json():
     assert result is None
 
 
+def test_rephrase_rejects_nondict_payload_none():
+    # adversarial: model returns None (non-object JSON)
+    model = _FakeModel(None)
+
+    result = clarify.rephrase_clarify(
+        "请提供要查询的物料编号。",
+        ["material"],
+        {"material": "物料编号"},
+        {"material"},
+        model,
+    )
+
+    assert result is None
+
+
+def test_rephrase_rejects_nondict_payload_list():
+    # adversarial: model returns a non-dict JSON payload (a list)
+    model = _FakeModel([[]])
+
+    result = clarify.rephrase_clarify(
+        "请提供要查询的物料编号。",
+        ["material"],
+        {"material": "物料编号"},
+        {"material"},
+        model,
+    )
+
+    assert result is None
+
+
 def test_rephrase_rejects_timeout():
     model = _FakeModel({"question": "想查哪个物料编号？"}, delay=0.02)
 
