@@ -283,10 +283,16 @@ def _clarify_locale_errors(cap_id: str, intent: dict[str, Any], required_fields:
             continue
         fallback = prompt.get("fallback")
         has_fallback = isinstance(fallback, dict) and bool(fallback.get("template"))
+        strategy = prompt.get("strategy")
         covered: set[str] = set()
         for case in prompt.get("cases") or []:
             if isinstance(case, dict):
                 covered.update(str(name) for name in case.get("missing") or [])
+        if strategy is not None:
+            # groupByBindingKind renders every required input of a group; with
+            # a single userUtterance group (all current declarations) that is
+            # every required input of the capability.
+            covered.update(required_fields)
         missing = sorted(
             name for name in required_fields if name not in covered and not has_fallback
         )

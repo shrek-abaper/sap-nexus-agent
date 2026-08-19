@@ -65,6 +65,16 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "strategy": {
+          "enum": ["groupByBindingKind"],
+          "description": "Rendering strategy: missing fields are grouped by binding source kind; at most one prompt per group per round, rendered from fieldNames display names."
+        },
+        "maxRounds": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 2,
+          "description": "Clarify round budget per capability; exhaustion degrades to the fallback template."
+        },
         "cases": {
           "type": "array",
           "items": {
@@ -79,13 +89,15 @@
               },
               "text": {"type": "string", "minLength": 1}
             }
-          }
+          },
+          "description": "Optional exact missing-set override, checked before strategy rendering."
         },
         "fallback": {
           "type": "object",
           "additionalProperties": false,
           "required": ["template"],
-          "properties": {"template": {"type": "string", "minLength": 1}}
+          "properties": {"template": {"type": "string", "minLength": 1}},
+          "description": "Template rendered when the strategy budget is exhausted (or when no strategy is declared and no case matches)."
         }
       }
     }

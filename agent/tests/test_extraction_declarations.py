@@ -595,6 +595,11 @@ INTENT_PARITY_MUTATIONS = [
     {"unknownProperty": True},
 ]
 
+INTENT_PARITY_MUTATIONS += [
+    {"clarifyPrompt": {"zh-CN": {"strategy": "freeText"}}},                     # unknown strategy
+    {"clarifyPrompt": {"zh-CN": {"strategy": "groupByBindingKind", "maxRounds": 0}}},  # maxRounds >= 1
+]
+
 
 @pytest.mark.parametrize("mutation", INTENT_PARITY_MUTATIONS)
 def test_intent_block_parity_with_extraction_declaration(mutation):
@@ -709,3 +714,24 @@ def test_regex_matcher_count_is_observable_metric():
     # declarations still use extraction with inline regexes (e.g. PR material).
     assert catalog_count == 9
     assert capability_count >= 1
+
+
+def test_strategy_only_clarify_prompt_accepted():
+    schema = _load("extraction-declaration.schema.json")
+    jsonschema.validate(
+        {**VALID_INTENT, "clarifyPrompt": {"zh-CN": {"strategy": "groupByBindingKind", "maxRounds": 2}}},
+        schema,
+    )
+
+
+def test_loader_parses_strategy_and_max_rounds():
+    from sap_nexus_agent.registry_loader import _parse_clarify_prompt
+
+    prompt = _parse_clarify_prompt({"strategy": "groupByBindingKind", "maxRounds": 3})
+    assert prompt is not None
+    assert prompt.strategy == "groupByBindingKind"
+    assert prompt.max_rounds == 3
+    assert prompt.cases == () and prompt.fallback_template is None
+
+    assert _parse_clarify_prompt({"cases": [{"missing": ["a"], "text": "t"}]}).strategy is None
+    assert _parse_clarify_prompt({"fallback": {"template": "t"}}).max_rounds is None

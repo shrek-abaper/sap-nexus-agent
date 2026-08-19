@@ -76,6 +76,8 @@ class ClarifyCase:
 class ClarifyPromptConfig:
     cases: tuple[ClarifyCase, ...] = ()
     fallback_template: str | None = None
+    strategy: str | None = None
+    max_rounds: int | None = None
 
 
 @dataclass(frozen=True)
@@ -241,9 +243,16 @@ def _parse_clarify_prompt(raw: object) -> ClarifyPromptConfig | None:
         if isinstance(fallback, dict) and fallback.get("template") is not None
         else None
     )
-    if not cases and fallback_template is None:
+    strategy = raw.get("strategy")
+    if not cases and fallback_template is None and strategy is None:
         return None
-    return ClarifyPromptConfig(cases=cases, fallback_template=fallback_template)
+    max_rounds = raw.get("maxRounds")
+    return ClarifyPromptConfig(
+        cases=cases,
+        fallback_template=fallback_template,
+        strategy=str(strategy) if strategy is not None else None,
+        max_rounds=int(max_rounds) if isinstance(max_rounds, int) else None,
+    )
 
 
 def _parse_require_any(raw: object) -> RequireAnyConfig | None:
