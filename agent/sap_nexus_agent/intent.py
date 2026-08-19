@@ -62,7 +62,7 @@ _PR_CREATE_CAPABILITY_ID = "MM.PR.CreateDraft"
 
 # Migration seam (tasks.md 2.5, removed by 4.3): declared+migrated capabilities
 # run on the extraction engine; everything else keeps this module's legacy path.
-_ENGINE_MIGRATED_CAPABILITIES: set[str] = set()
+_ENGINE_MIGRATED_CAPABILITIES: set[str] = {"MM.PR.CreateDraft"}
 
 # OData / technical-override detection. Forms a double-layer defense with the
 # Java-side CapabilityRequest guard (Task 6): Agent rejects first, Java rejects
@@ -201,6 +201,7 @@ def _parse_single_turn(
 
     hits = _legacy_keyword_hits(normalized)
     per_capability: list[tuple[str, IntentParseResult]] = []
+    migrated_results: dict[str, IntentParseResult] = {}
 
     if _ENGINE_MIGRATED_CAPABILITIES:
         from sap_nexus_agent.registry_loader import load_intent_catalog
@@ -212,16 +213,13 @@ def _parse_single_turn(
             primary, weak = engine.keyword_hits(normalized, cap)
             hits.append((cap.capability_id, primary, weak))
             if engine.triggered(normalized, cap):
-                per_capability.append((
-                    cap.capability_id,
-                    engine.build_capability_result(
+                migrated_results[cap.capability_id] = engine.build_capability_result(
                         normalized,
                         cap,
                         catalog,
                         contains_rfc_name=contains_rfc_name,
                         contains_odata_override=contains_odata_override,
-                    ),
-                ))
+                    )
 
     is_ambiguous = engine.is_ambiguous((primary, weak) for _cap_id, primary, weak in hits)
 
@@ -239,17 +237,23 @@ def _parse_single_turn(
         and any(keyword in normalized for keyword in PR_CREATE_KEYWORDS)
     )
 
-    if matches_inventory:
+    if _INVENTORY_CAPABILITY_ID in migrated_results:
+        per_capability.append((_INVENTORY_CAPABILITY_ID, migrated_results[_INVENTORY_CAPABILITY_ID]))
+    elif matches_inventory:
         per_capability.append((
             _INVENTORY_CAPABILITY_ID,
             _build_inventory_result(normalized, contains_rfc_name, contains_odata_override),
         ))
-    if matches_po:
+    if _PURCHASE_ORDER_CAPABILITY_ID in migrated_results:
+        per_capability.append((_PURCHASE_ORDER_CAPABILITY_ID, migrated_results[_PURCHASE_ORDER_CAPABILITY_ID]))
+    elif matches_po:
         per_capability.append((
             _PURCHASE_ORDER_CAPABILITY_ID,
             _build_purchase_order_result(normalized, contains_rfc_name, contains_odata_override),
         ))
-    if matches_pr:
+    if _PR_CREATE_CAPABILITY_ID in migrated_results:
+        per_capability.append((_PR_CREATE_CAPABILITY_ID, migrated_results[_PR_CREATE_CAPABILITY_ID]))
+    elif matches_pr:
         per_capability.append((
             _PR_CREATE_CAPABILITY_ID,
             parse_pr_create_intent(normalized),
