@@ -20,9 +20,9 @@
 
 ## 3. Per-Capability Migration (strict parity, single-turn + sticky together)
 
-- [ ] 3.1 Migrate `MM.PR.CreateDraft` to the engine; parity harness + full agent suite green
-- [ ] 3.2 Migrate `MM.Inventory.GetAvailability` to the engine (including sticky material-CLARIFY quirk preserved via declaration-scoped guard); parity harness + full agent suite green
-- [ ] 3.3 Migrate `MM.PurchaseOrder.GetList` to the engine (exclusion-heavy PO number logic); parity harness + full agent suite green
+- [x] 3.1 Migrate `MM.PR.CreateDraft` to the engine; parity harness + full agent suite green
+- [x] 3.2 Migrate `MM.Inventory.GetAvailability` to the engine (including sticky material-CLARIFY quirk preserved via declaration-scoped guard); parity harness + full agent suite green
+- [x] 3.3 Migrate `MM.PurchaseOrder.GetList` to the engine (exclusion-heavy PO number logic); parity harness + full agent suite green
 
 ## 4. Legacy Removal and CLARIFY Rendering
 
