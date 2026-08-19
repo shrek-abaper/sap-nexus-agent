@@ -2,9 +2,9 @@
 
 # SAP Nexus Agent
 
-SAP Nexus Agent 是一个**基于能力本体建模的 SAP 治理型接入网关**。当前以 YAML Registry、JSON Schema、Fact Type / Capability Relation catalog 和不可变进程内语义图建模 SAP 业务能力及参数约束；LLM Agent 仅在已注册能力边界内提出意图或计划候选，所有数据访问必须经过 Capability Registry、确定性校验和白名单执行器绑定，不支持裸 RFC/OData/SQL 调用。
+SAP Nexus Agent 的长期目标是建立面向 SAP On-Prem 的能力智能枢纽，而不是单点库存查询机器人。这是一个基于 Harness Engineering 架构的治理型接入网关，Agent 从不直接接触裸 RFC/OData/SQL，只能通过已注册能力的 `capabilityId` 提出意图或计划候选。所有数据访问必须经过 Capability Registry、确定性校验和白名单执行器绑定。
 
-**核心原则：能力即边界 —— 不是通用 SAP 代理，而是受控能力网关。**
+**核心原则：事实先于叙事；能力即边界 —— 这不是通用 SAP 代理，而是受控能力网关。**
 
 ---
 
@@ -55,21 +55,21 @@ SAP Nexus Agent 是一个**基于能力本体建模的 SAP 治理型接入网关
 
 ## 核心特性
 
-### 能力本体建模（Core Differentiator）
+### 能力本体建模（核心差异点）
 
-- **Capability Ontology** ─ 每个 SAP 操作（查询/写入）被建模为形式化能力，包含 `ontologyIri`、`semanticType`、输入/输出语义类型、事实类型引用
-- **语义参数映射** ─ 能力输入参数通过 `semanticName`/`semanticType` 关联到本体概念（如 `MaterialNumber`、`Plant`），与 SAP 技术参数（`MATERIAL`、`PLANT`）分离
-- **执行器绑定** ─ 能力绑定到特定执行器（`JCO_RFC` / `ODATA`），通过白名单 `bindingId` 控制，运行时不允许替换
-- **OWL 预留** ─ `ontologyIri` 和 `semanticType` 为未来 OWL 本体推理预留迁移路径，当前一致性门禁由 JSON Schema + Registry Validator 承担
-- **声明式意图解析** ─ Rule 模式意图解析完全声明驱动（`registry/capabilities.yaml` 的 `intent` 块 + `registry/semantic-types.yaml` 语义类型目录），添加新能力无需修改 Agent 代码，Task 19 的纯声明能力证明已验证扩展契约
+- **Capability Ontology** — 每个 SAP 操作（查询/写入）被建模为形式化能力，包含 `ontologyIri`、`semanticType`、输入/输出语义类型、事实类型引用
+- **语义参数映射** — 能力输入参数通过 `semanticName`/`semanticType` 关联到本体概念（如 `MaterialNumber`、`Plant`），与 SAP 技术参数（`MATERIAL`、`PLANT`）解耦
+- **执行器绑定** — 能力绑定到特定执行器（`JCO_RFC` / `ODATA`），通过白名单 `bindingId` 控制，运行时拒绝替换
+- **OWL 预留** — `ontologyIri` 和 `semanticType` 为未来 OWL 本体推理预留迁移路径，当前一致性门禁由 JSON Schema + Registry Validator 承担
+- **声明式意图解析** — Rule 模式意图解析完全声明驱动（`registry/capabilities.yaml` 的 `intent` 块 + `registry/semantic-types.yaml` 语义类型目录），添加新能力无需修改 Agent 代码，Task 19 的纯声明能力证明已验证扩展契约
 
 ### 治理与安全
 
-- **fail-closed** ─ 不支持的执行器类型（`CDS_ADT` / `REST_JSON` / `SQL_READ`）默认拒绝执行
-- **参数注入防护** ─ 调用者不得提供或覆盖 `rfcName`、`bindingId`、服务 URL、HTTP 方法、凭证引用、原生 SQL、CDS 对象等
-- **READ 安全边界** ─ READ 能力不得调用 `BAPI_TRANSACTION_COMMIT` 或 `BAPI_TRANSACTION_ROLLBACK`
-- **WRITE 人工审批** ─ WRITE 能力（如采购申请创建）需人工审批确认后才执行
-- **全链路审计** ─ 每次执行生成 TraceSpan，记录意图→CallPlan→验证→执行→证据→叙述的完整链路
+- **fail-closed** — 不支持的执行器类型（`CDS_ADT` / `REST_JSON` / `SQL_READ`）默认拒绝执行
+- **参数注入防护** — 调用者不得提供或覆盖 `rfcName`、`bindingId`、服务 URL、HTTP 方法、凭证引用、原生 SQL、CDS 对象等
+- **READ 安全边界** — READ 能力不得调用 `BAPI_TRANSACTION_COMMIT` 或 `BAPI_TRANSACTION_ROLLBACK`
+- **WRITE 人工审批** — WRITE 能力（如采购申请创建）需人工审批确认后才执行
+- **全链路审计** — 每次执行生成 TraceSpan，记录意图→CallPlan→验证→执行→证据→叙述的完整链路
 
 ### 执行器家族
 
@@ -83,12 +83,15 @@ SAP Nexus Agent 是一个**基于能力本体建模的 SAP 治理型接入网关
 
 ### 当前运行成熟度
 
-- 单能力 `CallPlan` 主链保持可用；Python Agent 继续负责 LLM-first intent、closed-set recall、五态决策和 PlanGraph v2 authoring。
-- production TypeScript composition coordinator 已接通 PlanExecutor、OutputProjection、Recommendation、grounded Narrative、durable Workbench replay 与 plan-aware single Action continuation。
-- offline L1/L2/L3 gate 当前为 `22/22`，最高连续等级 `L3_ACTION_GOVERNED`；四项 hard gates 分别为 leakage `0`、approval bypass `0`、unsupported claim `0`、lineage `100%`。
-- Run/Session、principal ownership、approval、lease/idempotency 与 cursor SSE 已 durable 化；当前本地 JSONL/file store 和 placeholder principal 仍不是 shared multi-worker/HA store 或生产身份系统。
-- 三个已注册能力（两个 READ + 一个 WRITE）均已与真实 SAP 打通并通过 live 冒烟验证（执行记录见 `runtime/gateway-jco/traces.jsonl`）；offline release gate 报告中的 `liveSmoke` 字段保持 `not_run`（离线门禁不执行真实 SAP 调用，live 验证独立进行）；fake/sandbox L3 证据不得描述为 live SAP，任何 live WRITE 仍需 exact-subject Human Approval。
-- Knowledge/RAG、自由 Tool Calling、通用 Dynamic Planner、多 WRITE/Saga 和自动补偿仍为 Reserved / Not In Scope。
+- **离线端到端治理编排已可用**：意图 → CallPlan → 校验/执行 → ExecutionResult → ReasoningFact → 叙述 → 持久化 Workbench 回放 → plan-aware single Action continuation，单能力 `CallPlan` 主链保持可用。
+- **Python Agent 职责**：LLM-first intent、closed-set recall、五态决策和 PlanGraph v2 authoring。
+- **TypeScript composition coordinator**：已接通 PlanExecutor、OutputProjection、Recommendation、grounded Narrative、durable Workbench replay 与 plan-aware single Action continuation。
+- **Release gate 里程碑**：offline L1/L2/L3 gate 曾于 2026-08-10 达成 `22/22`，最高连续等级 `L3_ACTION_GOVERNED`；四项 hard gates 分别为 leakage `0`、approval bypass `0`、unsupported claim `0`、lineage `100%`。
+- **当前架构限制（设计选择，非缺陷）**：
+  - Run/Session、principal ownership、approval、lease/idempotency 与 cursor SSE 已 durable 化；但当前本地 JSONL/file store 和 placeholder principal 仍不是 shared multi-worker/HA store 或生产身份系统
+  - Knowledge/RAG、自由 Tool Calling、通用 Dynamic Planner、多 WRITE/Saga 和自动补偿仍为 Reserved / Not In Scope
+  - 图数据库和 OWL 推理运行时为预留方向，当前 JSON Schema + Registry Validator 承担一致性职责
+- **SAP 连通性**：三个已注册能力（两个 READ + 一个 WRITE）均已与真实 SAP 打通并通过 live 冒烟验证（执行记录见 `runtime/gateway-jco/traces.jsonl`）；offline release gate 报告中的 `liveSmoke` 字段保持 `not_run`（离线门禁不执行真实 SAP 调用，live 验证独立进行）；任何 live WRITE 仍需 exact-subject Human Approval。
 
 ---
 
@@ -128,7 +131,7 @@ docs/
 ### 前置依赖
 
 - Java 17
-- Gradle 8.8 +（或使用 `services/gateway/gradlew`）
+- Gradle 8.8+（或使用 `services/gateway/gradlew`）
 - Python 3.12+
 - Node.js 20+
 - SAP JCo 3 库（用于 SAP 实时执行）
@@ -143,7 +146,7 @@ cp .env.example .env
 # 填入 SAP 连接参数、LLM API Key 等
 ```
 
-### 验证
+### 验证（截至 2026-08-19）
 
 ```bash
 .venv/bin/python scripts/validate-registry-contract.py registry/capabilities.yaml
@@ -153,7 +156,13 @@ npm --prefix frontend run verify
 npm --prefix frontend run release-gate -- --profile all
 ```
 
-预期：除 frontend verify 当前因 1 个 action-governance 集成测试失败外，其余命令退出码为 `0`；当前 Agent 基线为 `1145 passed, 1 skipped`，frontend 为 `523 passed` + production build（main 上另有 1 个 action-governance 集成测试失败，发布前需修复），call-plan Eval 为 `7/7 + 13/13 + 9/9 + 23/23 + 3/3`，offline release gate 为 `22/22` / `L3_ACTION_GOVERNED`（离线门禁不含 live SAP 冒烟，报告内 `liveSmoke` 恒为 `not_run`）。`PYTHONPATH=agent` 可用于验证当前源码。
+当前基线：
+- Agent 测试套件：`1273 passed, 15 failed, 1 skipped`（15 个已知失败为与核心功能无关的既有问题）
+- Frontend 测试套件：`522 passed, 2 failed`（2 个已知失败：action-governance 集成测试 1 个、release-gate offline-scenario 测试 1 个）
+- Call-plan Eval：`inventory 7/7` ✅、`eval_harness_seed_cases.json 11/13`（2 个 PO-vendor-matching 既有失败）、`PR 9/9` ✅、`matcher_cases.yaml 21/23`（2 个 fixture-snapshot-mismatch 既有失败）、`dry-run 3/3` ✅
+- Offline release gate：于 2026-08-10 达成 `22/22` / `L3_ACTION_GOVERNED`
+
+`PYTHONPATH=agent` 可用于验证当前源码。
 
 ### 启动服务
 

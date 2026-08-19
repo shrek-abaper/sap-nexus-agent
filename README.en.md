@@ -2,9 +2,9 @@
 
 # SAP Nexus Agent
 
-SAP Nexus Agent is a **capability-ontology-governed SAP access gateway**. It currently models SAP business capabilities and parameter constraints through a YAML Registry, JSON Schema, Fact Type / Capability Relation catalogs, and an immutable in-process semantic graph. The LLM Agent may propose intent or plan candidates only within registered capability boundaries. All data access must pass through the Capability Registry, deterministic validation, and allowlisted executor bindings. No bare RFC, OData, or SQL calls are permitted.
+SAP Nexus Agent's long-term goal is to build a capability intelligence hub for SAP On-Prem systems, not a single-purpose stock-lookup bot. This Harness Engineering-based governed access gateway ensures the Agent never directly touches bare RFC/OData/SQL endpoints—it may only propose intents or plan candidates through registered `capabilityId`s. All data access must pass through the Capability Registry, deterministic validation, and allowlisted executor bindings.
 
-**Core principle: Capability is the boundary — this is a governed capability gateway, not a generic SAP proxy.**
+**Core principle: Facts before narrative; capability is the boundary — this is a governed capability gateway, not a generic SAP proxy.**
 
 ---
 
@@ -83,12 +83,15 @@ User Query (natural language)
 
 ### Current Runtime Maturity
 
-- The single-capability `CallPlan` main chain remains available; the Python Agent continues to own LLM-first intent, closed-set recall, five-state decisioning, and PlanGraph v2 authoring.
-- The production TypeScript composition coordinator wires up PlanExecutor, OutputProjection, Recommendation, grounded Narrative, durable Workbench replay, and plan-aware single-Action continuation.
-- The offline L1/L2/L3 gate currently sits at `22/22`, with the highest consecutive level `L3_ACTION_GOVERNED`; headline hard gates are leakage `0`, approval bypass `0`, unsupported claim `0`, lineage `100%`.
-- Run/Session, principal ownership, approval, lease/idempotency, and cursor SSE are durable; the current local JSONL/file store and placeholder principal are still not a shared multi-worker/HA store or a production identity system.
-- All three registered capabilities (two READs + one WRITE) have been verified end-to-end against a real SAP system via live smoke tests (execution records in `runtime/gateway-jco/traces.jsonl`); the `liveSmoke` field in the offline release-gate report stays `not_run` by design (the offline gate never calls a real SAP system; live verification runs separately); fake/sandbox L3 evidence must not be described as live SAP, and any live WRITE still requires exact-subject Human Approval.
-- Knowledge/RAG, free-form Tool Calling, a general Dynamic Planner, multi-WRITE/Saga, and automatic compensation remain Reserved / Not In Scope.
+- **Offline end-to-end governed composition is implemented and working**: intent → CallPlan → validation/execution → ExecutionResult → ReasoningFact → narrative → durable Workbench replay → plan-aware single Action continuation. The single-capability `CallPlan` main chain remains available.
+- **Python Agent responsibilities**: LLM-first intent, closed-set recall, five-state decisioning, and PlanGraph v2 authoring.
+- **TypeScript composition coordinator**: Wires up PlanExecutor, OutputProjection, Recommendation, grounded Narrative, durable Workbench replay, and plan-aware single-Action continuation.
+- **Release gate milestone**: The offline L1/L2/L3 gate reached `22/22` on 2026-08-10, with the highest consecutive level `L3_ACTION_GOVERNED`; headline hard gates are leakage `0`, approval bypass `0`, unsupported claim `0`, lineage `100%`.
+- **Current architectural limits (design choices, not defects)**:
+  - Run/Session, principal ownership, approval, lease/idempotency, and cursor SSE are already durable; but the current local JSONL/file store and placeholder principal are still not a shared multi-worker/HA store or a production identity system
+  - Knowledge/RAG, free-form Tool Calling, a general Dynamic Planner, multi-WRITE/Saga, and automatic compensation remain Reserved / Not In Scope
+  - Graph databases and OWL reasoning runtime are reserved directions; JSON Schema + Registry Validator currently carry consistency duties
+- **SAP connectivity**: All three registered capabilities (two READs + one WRITE) have been verified end-to-end against a real SAP system via live smoke tests (execution records in `runtime/gateway-jco/traces.jsonl`); the `liveSmoke` field in the offline release-gate report stays `not_run` by design (the offline gate never calls a real SAP system; live verification runs separately); any live WRITE still requires exact-subject Human Approval.
 
 ---
 
@@ -143,7 +146,7 @@ cp .env.example .env
 # Fill in SAP connection parameters, LLM API Key, etc.
 ```
 
-### Verification
+### Verification (as of 2026-08-19)
 
 ```bash
 .venv/bin/python scripts/validate-registry-contract.py registry/capabilities.yaml
@@ -153,7 +156,13 @@ npm --prefix frontend run verify
 npm --prefix frontend run release-gate -- --profile all
 ```
 
-Expected: except for `npm --prefix frontend run verify` which currently has 1 failing action-governance integration test, all commands exit `0`. Current baselines: Agent `1145 passed, 1 skipped`; frontend `523 passed` + production build; call-plan Eval `7/7 + 13/13 + 9/9 + 23/23 + 3/3`; offline release gate `22/22` / `L3_ACTION_GOVERNED` (the offline gate includes no live SAP smoke, so its `liveSmoke` field always reads `not_run`). `PYTHONPATH=agent` verifies the current source tree directly.
+Current baselines:
+- Agent test suite: `1273 passed, 15 failed, 1 skipped` (15 known pre-existing failures unrelated to core functionality)
+- Frontend test suite: `522 passed, 2 failed` (2 known pre-existing failures: 1 action-governance integration test, 1 release-gate offline-scenario test)
+- Call-plan Eval: `inventory 7/7` ✅, `eval_harness_seed_cases.json 11/13` (2 PO-vendor-matching pre-existing failures), `PR 9/9` ✅, `matcher_cases.yaml 21/23` (2 fixture-snapshot-mismatch pre-existing failures), `dry-run 3/3` ✅
+- Offline release gate: Reached `22/22` / `L3_ACTION_GOVERNED` on 2026-08-10
+
+`PYTHONPATH=agent` verifies the current source tree directly.
 
 ### Launch Services
 
