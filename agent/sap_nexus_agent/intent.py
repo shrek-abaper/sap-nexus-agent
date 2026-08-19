@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 import re
 import uuid
 from typing import TYPE_CHECKING
@@ -17,56 +17,6 @@ if TYPE_CHECKING:
     # data model with no runtime dependency on intent.py.
     from sap_nexus_agent.conversation_context import ConversationContext
 
-
-INVENTORY_KEYWORDS = ("库存", "可用量", "可用库存", "还有多少", "有没有")
-PURCHASE_ORDER_KEYWORDS = ("采购订单", "订单", "PO")
-UNIT_VALUES = ("EA", "PC", "KG", "G", "L", "M")
-
-# Primary/weak keyword tables for is_ambiguous detection (Design Doc § 多意图检测 Q2).
-# Primary = unambiguous capability signal; weak = ambiguous cross-capability signal.
-# These tables are SEPARATE from INVENTORY_KEYWORDS / _PURCHASE_ORDER_KEYWORD_PATTERN /
-# PR_CREATE_KEYWORDS (which drive matched_intents collection). A weak-only match
-# across >=2 capabilities with no primary hit -> is_ambiguous=True (SHOW_OPTIONS).
-#
-# "采购" appears in both PO_WEAK and PR_WEAK per Design Doc: '采购' 模糊匹配 PO 查询
-# 与 PR 创建 ("采购" fuzzy-matches PO query and PR creation).
-INVENTORY_PRIMARY_KEYWORDS = ("库存", "可用量", "可用库存", "还有多少")
-INVENTORY_WEAK_KEYWORDS = ("有没有",)
-PURCHASE_ORDER_PRIMARY_KEYWORDS = ("采购订单",)
-PURCHASE_ORDER_WEAK_KEYWORDS = ("订单", "PO", "采购")
-# PR_CREATE_PRIMARY_KEYWORDS mirrors PR_CREATE_KEYWORDS from pr_intent.py (all are
-# unambiguous PR signals). Hardcoded here because pr_intent.py imports from
-# intent.py at module level, so a reverse module-level import would be circular.
-PR_CREATE_PRIMARY_KEYWORDS = (
-    "采购申请", "创建采购", "建PR", "建 PR", "创建PR", "创建 PR", "PR草稿", "PR 草稿",
-)
-PR_CREATE_WEAK_KEYWORDS = ("采购",)
-PLANT_PATTERN = re.compile(r"(?:在\s*([A-Z]\d{3}|\d{4}))|(?:([A-Z]\d{3}|\d{4})\s*工厂)")
-TOKEN_PATTERN = re.compile(r"(?<![A-Za-z0-9-])[A-Z0-9][A-Z0-9-]{1,39}(?![A-Za-z0-9-])")
-
-# PO keyword detection: Chinese substrings are safe; bare "PO" must be isolated
-# from ASCII letters so words like "IMPORT" / "POSITION" do not false-positive.
-_PURCHASE_ORDER_KEYWORD_PATTERN = re.compile(r"采购订单|订单|(?<![A-Za-z])PO(?![A-Za-z])")
-
-# PO filter parameter patterns.
-PO_VENDOR_PATTERN = re.compile(r"供应商\s*(\d+)")
-PO_PLANT_PATTERN = re.compile(r"(?:工厂\s*(\d{4}|[A-Z]\d{3}))|(?:(\d{4}|[A-Z]\d{3})\s*工厂)")
-PO_MATERIAL_PATTERN = re.compile(r"物料\s*([A-Za-z0-9][A-Za-z0-9\-/]+)")
-PO_NUMBER_PATTERN = re.compile(r"(?<!\d)(\d{10})(?!\d)")
-
-# Capability-id closed set mapped from intent names; used to populate
-# MatchedIntent.capability_id for the multi-intent collection (D-1 fix).
-_INVENTORY_CAPABILITY_ID = "MM.Inventory.GetAvailability"
-_PURCHASE_ORDER_CAPABILITY_ID = "MM.PurchaseOrder.GetList"
-_PR_CREATE_CAPABILITY_ID = "MM.PR.CreateDraft"
-
-# Migration seam (tasks.md 2.5, removed by 4.3): declared+migrated capabilities
-# run on the extraction engine; everything else keeps this module's legacy path.
-_ENGINE_MIGRATED_CAPABILITIES: set[str] = {
-    "MM.PR.CreateDraft",
-    "MM.Inventory.GetAvailability",
-    "MM.PurchaseOrder.GetList",
-}
 
 # OData / technical-override detection. Forms a double-layer defense with the
 # Java-side CapabilityRequest guard (Task 6): Agent rejects first, Java rejects
@@ -167,170 +117,41 @@ def parse_intent(
     return _parse_single_turn(normalized, contains_rfc_name, contains_odata_override)
 
 
-def _legacy_keyword_hits(normalized: str) -> list[tuple[str, bool, bool]]:
-    hits: list[tuple[str, bool, bool]] = []
-    if _INVENTORY_CAPABILITY_ID not in _ENGINE_MIGRATED_CAPABILITIES:
-        hits.append((
-            _INVENTORY_CAPABILITY_ID,
-            any(k in normalized for k in INVENTORY_PRIMARY_KEYWORDS),
-            any(k in normalized for k in INVENTORY_WEAK_KEYWORDS),
-        ))
-    if _PURCHASE_ORDER_CAPABILITY_ID not in _ENGINE_MIGRATED_CAPABILITIES:
-        hits.append((
-            _PURCHASE_ORDER_CAPABILITY_ID,
-            any(k in normalized for k in PURCHASE_ORDER_PRIMARY_KEYWORDS),
-            any(k in normalized for k in PURCHASE_ORDER_WEAK_KEYWORDS),
-        ))
-    if _PR_CREATE_CAPABILITY_ID not in _ENGINE_MIGRATED_CAPABILITIES:
-        hits.append((
-            _PR_CREATE_CAPABILITY_ID,
-            any(k in normalized for k in PR_CREATE_PRIMARY_KEYWORDS),
-            any(k in normalized for k in PR_CREATE_WEAK_KEYWORDS),
-        ))
-    return hits
-
-
 def _parse_single_turn(
     normalized: str,
     contains_rfc_name: bool,
     contains_odata_override: bool,
 ) -> IntentParseResult:
-    # Lazy import: pr_intent imports IntentParseResult from this module, so a
-    # top-level import would create a circular dependency. MatchedIntent is
-    # co-located with the selector layer (match_decision -> capability_selector
-    # -> intent), so it is also lazy to break the same cycle.
     from sap_nexus_agent.extraction import engine
-    from sap_nexus_agent.match_decision import MatchedIntent
-    from sap_nexus_agent.pr_intent import PR_CREATE_KEYWORDS, parse_pr_create_intent
+    from sap_nexus_agent.registry_loader import load_intent_catalog
 
-    hits = _legacy_keyword_hits(normalized)
-    per_capability: list[tuple[str, IntentParseResult]] = []
-    migrated_results: dict[str, IntentParseResult] = {}
-
-    if _ENGINE_MIGRATED_CAPABILITIES:
-        from sap_nexus_agent.registry_loader import load_intent_catalog
-
-        catalog = load_intent_catalog()
-        for cap in catalog.capabilities:
-            if cap.intent_config is None or cap.capability_id not in _ENGINE_MIGRATED_CAPABILITIES:
-                continue
-            primary, weak = engine.keyword_hits(normalized, cap)
-            hits.append((cap.capability_id, primary, weak))
-            if engine.triggered(normalized, cap):
-                migrated_results[cap.capability_id] = engine.build_capability_result(
-                    normalized,
-                    cap,
-                    catalog,
-                    contains_rfc_name=contains_rfc_name,
-                    contains_odata_override=contains_odata_override,
-                )
-
-    is_ambiguous = engine.is_ambiguous((primary, weak) for _cap_id, primary, weak in hits)
-
-    # Detect each capability's keyword set independently (D-1 fix).
-    matches_inventory = (
-        _INVENTORY_CAPABILITY_ID not in _ENGINE_MIGRATED_CAPABILITIES
-        and any(keyword in normalized for keyword in INVENTORY_KEYWORDS)
-    )
-    matches_po = (
-        _PURCHASE_ORDER_CAPABILITY_ID not in _ENGINE_MIGRATED_CAPABILITIES
-        and _PURCHASE_ORDER_KEYWORD_PATTERN.search(normalized) is not None
-    )
-    matches_pr = (
-        _PR_CREATE_CAPABILITY_ID not in _ENGINE_MIGRATED_CAPABILITIES
-        and any(keyword in normalized for keyword in PR_CREATE_KEYWORDS)
-    )
-
-    if _INVENTORY_CAPABILITY_ID in migrated_results:
-        per_capability.append((_INVENTORY_CAPABILITY_ID, migrated_results[_INVENTORY_CAPABILITY_ID]))
-    elif matches_inventory:
-        per_capability.append((
-            _INVENTORY_CAPABILITY_ID,
-            _build_inventory_result(normalized, contains_rfc_name, contains_odata_override),
-        ))
-    if _PURCHASE_ORDER_CAPABILITY_ID in migrated_results:
-        per_capability.append((_PURCHASE_ORDER_CAPABILITY_ID, migrated_results[_PURCHASE_ORDER_CAPABILITY_ID]))
-    elif matches_po:
-        per_capability.append((
-            _PURCHASE_ORDER_CAPABILITY_ID,
-            _build_purchase_order_result(normalized, contains_rfc_name, contains_odata_override),
-        ))
-    if _PR_CREATE_CAPABILITY_ID in migrated_results:
-        per_capability.append((_PR_CREATE_CAPABILITY_ID, migrated_results[_PR_CREATE_CAPABILITY_ID]))
-    elif matches_pr:
-        per_capability.append((
-            _PR_CREATE_CAPABILITY_ID,
-            parse_pr_create_intent(normalized),
-        ))
-
-    matched_intents = [
-        MatchedIntent(
-            capability_id=cap_id,
-            parameters=res.parameters,
-            missing=list(res.missing_parameters),
-        )
-        for cap_id, res in per_capability
-    ]
-
-    if len(per_capability) == 0:
-        return IntentParseResult(
-            intent=None,
-            parameters={},
-            missing_parameters=[],
-            contains_rfc_name=contains_rfc_name,
-            contains_odata_override=contains_odata_override,
-            matched_intents=[],
-            is_ambiguous=is_ambiguous,
-        )
-
-    if len(per_capability) == 1:
-        # Single-intent path: keep existing extraction (backward compat) and
-        # mirror the result into matched_intents (length 1).
-        _cap_id, single = per_capability[0]
-        return IntentParseResult(
-            intent=single.intent,
-            parameters=single.parameters,
-            missing_parameters=single.missing_parameters,
-            clarification=single.clarification,
-            contains_rfc_name=contains_rfc_name,
-            contains_odata_override=contains_odata_override,
-            capability_id=single.capability_id if _cap_id == _PR_CREATE_CAPABILITY_ID else None,
-            matched_intents=matched_intents,
-            is_ambiguous=is_ambiguous,
-        )
-
-    # Multi-intent: top-level intent/capability_id None (selector decides
-    # ESCALATE_TO_PLANNER). Parameters live on each MatchedIntent so the
-    # planner can compose without re-parsing the utterance.
-    return IntentParseResult(
-        intent=None,
-        parameters={},
-        missing_parameters=[],
+    parsed = engine.parse_declared(
+        normalized,
+        load_intent_catalog(),
         contains_rfc_name=contains_rfc_name,
         contains_odata_override=contains_odata_override,
-        capability_id=None,
-        matched_intents=matched_intents,
-        is_ambiguous=is_ambiguous,
     )
+    if parsed.capability_id in {"MM.Inventory.GetAvailability", "MM.PurchaseOrder.GetList"}:
+        return replace(parsed, capability_id=None)
+    return parsed
 
 
 def parse_inventory_intent(
     text: str,
     context: "ConversationContext | None" = None,
 ) -> IntentParseResult:
-    """Backward-compatible inventory-only parser (does not route to PO).
-
-    Task 2: ``context`` parameter is accepted for signature compatibility
-    (this parser is the default adapter for ``run_inventory_query``). The
-    context is currently ignored; sticky continuation arrives in Task 3.
-    """
+    """Backward-compatible inventory-only parser (does not route to PO)."""
+    from sap_nexus_agent.extraction import engine
     from sap_nexus_agent.match_decision import MatchedIntent
+    from sap_nexus_agent.registry_loader import load_intent_catalog
 
     normalized = text.strip()
     contains_rfc_name = _detect_rfc_name(normalized)
     contains_odata_override = _detect_odata_override(normalized)
+    catalog = load_intent_catalog()
+    cap = catalog.find("MM.Inventory.GetAvailability")
 
-    if not any(keyword in normalized for keyword in INVENTORY_KEYWORDS):
+    if cap is None or cap.intent_config is None or not engine.triggered(normalized, cap):
         return IntentParseResult(
             intent=None,
             parameters={},
@@ -340,90 +161,22 @@ def parse_inventory_intent(
             matched_intents=[],
         )
 
-    single = _build_inventory_result(normalized, contains_rfc_name, contains_odata_override)
-    return IntentParseResult(
-        intent=single.intent,
-        parameters=single.parameters,
-        missing_parameters=single.missing_parameters,
-        clarification=single.clarification,
+    single = engine.build_capability_result(
+        normalized,
+        cap,
+        catalog,
         contains_rfc_name=contains_rfc_name,
         contains_odata_override=contains_odata_override,
-        capability_id=single.capability_id,
+    )
+    return replace(
+        single,
         matched_intents=[
             MatchedIntent(
-                capability_id=_INVENTORY_CAPABILITY_ID,
+                capability_id=cap.capability_id,
                 parameters=single.parameters,
                 missing=list(single.missing_parameters),
             )
         ],
-    )
-
-
-def _build_inventory_result(
-    normalized: str, contains_rfc_name: bool, contains_odata_override: bool
-) -> IntentParseResult:
-    plant = _extract_plant(normalized)
-    unit = _extract_unit(normalized)
-    material = _extract_material(normalized, plant=plant, unit=unit)
-
-    parameters: dict[str, str] = {}
-    if material:
-        parameters["material"] = material
-    if plant:
-        parameters["plant"] = plant
-    if unit:
-        parameters["unit"] = unit
-
-    missing = [name for name in ("material", "plant") if name not in parameters]
-    return IntentParseResult(
-        intent="inventory_availability",
-        parameters=parameters,
-        missing_parameters=missing,
-        clarification=_clarification(missing),
-        contains_rfc_name=contains_rfc_name,
-        contains_odata_override=contains_odata_override,
-    )
-
-
-def _build_purchase_order_result(
-    normalized: str, contains_rfc_name: bool, contains_odata_override: bool
-) -> IntentParseResult:
-    parameters: dict[str, str] = {}
-
-    vendor = _extract_po_vendor(normalized)
-    if vendor:
-        parameters["vendor"] = vendor
-
-    plant = _extract_po_plant(normalized)
-    if plant:
-        parameters["plant"] = plant
-
-    material = _extract_po_material(normalized)
-    if material:
-        parameters["material"] = material
-
-    po_number = _extract_po_number(normalized, excluded={vendor, plant})
-    if po_number:
-        parameters["poNumber"] = po_number
-
-    # All four PO filters are individually optional, but at least one is required.
-    if not parameters:
-        return IntentParseResult(
-            intent="purchase_order_list",
-            parameters={},
-            missing_parameters=["filter"],
-            clarification="请至少提供一个过滤条件（采购订单号、供应商、工厂或物料）。",
-            contains_rfc_name=contains_rfc_name,
-            contains_odata_override=contains_odata_override,
-        )
-
-    return IntentParseResult(
-        intent="purchase_order_list",
-        parameters=parameters,
-        missing_parameters=[],
-        clarification=None,
-        contains_rfc_name=contains_rfc_name,
-        contains_odata_override=contains_odata_override,
     )
 
 
@@ -433,105 +186,6 @@ def _detect_rfc_name(text: str) -> bool:
 
 def _detect_odata_override(text: str) -> bool:
     return bool(_ODATA_OVERRIDE_PATTERN.search(text))
-
-
-def _detect_keyword_ambiguity(normalized: str) -> bool:
-    """Keyword ambiguity threshold (Design Doc § 多意图检测 Q2).
-
-    Returns True when the utterance weakly matches >=2 capabilities' keyword
-    sets but NO capability has a primary keyword hit (all weak matches across
-    capabilities, no clear primary intent). This distinguishes keyword
-    ambiguity (SHOW_OPTIONS) from clear multi-intent (ESCALATE_TO_PLANNER).
-
-    Primary vs weak per capability:
-      - Inventory primary: 库存/可用量/可用库存/还有多少; weak: 有没有
-      - PO primary: 采购订单; weak: 订单/PO/采购
-      - PR primary: 采购申请/创建采购/建PR/...; weak: 采购
-    """
-    inv_primary = any(k in normalized for k in INVENTORY_PRIMARY_KEYWORDS)
-    po_primary = any(k in normalized for k in PURCHASE_ORDER_PRIMARY_KEYWORDS)
-    pr_primary = any(k in normalized for k in PR_CREATE_PRIMARY_KEYWORDS)
-
-    inv_weak = any(k in normalized for k in INVENTORY_WEAK_KEYWORDS)
-    po_weak = any(k in normalized for k in PURCHASE_ORDER_WEAK_KEYWORDS)
-    pr_weak = any(k in normalized for k in PR_CREATE_WEAK_KEYWORDS)
-
-    matched_count = sum([inv_primary or inv_weak, po_primary or po_weak, pr_primary or pr_weak])
-    primary_count = sum([inv_primary, po_primary, pr_primary])
-
-    return matched_count >= 2 and primary_count == 0
-
-
-def _extract_plant(text: str) -> str | None:
-    for match in PLANT_PATTERN.finditer(text):
-        token = match.group(1) or match.group(2)
-        if len(token) <= 4:
-            return token
-    # Fallback: bare plant code (e.g. "5200呢", "F201呢", "在工厂 5100").
-    # Lookbehind/lookahead on non-digits avoids matching inside long
-    # material numbers like DEMOA2. Material requires len>4 and unit
-    # is 2 chars, so a 4-char plant code never collides with them.
-    bare = re.search(r"(?<!\d)([A-Z]\d{3}|\d{4})(?!\d)", text)
-    if bare:
-        return bare.group(1)
-    return None
-
-
-def _extract_unit(text: str) -> str | None:
-    for unit in UNIT_VALUES:
-        if re.search(rf"\b{re.escape(unit)}\b", text):
-            return unit
-    return None
-
-
-def _extract_material(text: str, plant: str | None, unit: str | None) -> str | None:
-    excluded = {value for value in (plant, unit) if value}
-    excluded.update({"RFCNAME"})
-    for match in TOKEN_PATTERN.finditer(text):
-        token = match.group(0)
-        if token.upper() in excluded:
-            continue
-        if token.startswith("BAPI_"):
-            continue
-        if len(token) > 4:
-            return token
-    return None
-
-
-def _extract_po_vendor(text: str) -> str | None:
-    match = PO_VENDOR_PATTERN.search(text)
-    return match.group(1) if match else None
-
-
-def _extract_po_plant(text: str) -> str | None:
-    match = PO_PLANT_PATTERN.search(text)
-    if match:
-        return match.group(1) or match.group(2)
-    return None
-
-
-def _extract_po_material(text: str) -> str | None:
-    match = PO_MATERIAL_PATTERN.search(text)
-    return match.group(1) if match else None
-
-
-def _extract_po_number(text: str, excluded: set[str | None]) -> str | None:
-    for match in PO_NUMBER_PATTERN.finditer(text):
-        number = match.group(1)
-        if number in excluded:
-            continue
-        return number
-    return None
-
-
-def _clarification(missing: list[str]) -> str | None:
-    if missing == ["material"]:
-        return "请提供要查询的物料编号。"
-    if missing == ["plant"]:
-        return "请提供要查询的工厂。"
-    if missing:
-        return "请提供要查询的物料编号和工厂。"
-    return None
 
 
 def parse_intent_envelope(

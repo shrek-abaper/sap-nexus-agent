@@ -7,23 +7,12 @@ from typing import TYPE_CHECKING, Protocol
 
 from sap_nexus_agent.extraction.clarify import ACTIVE_LOCALE, render_clarify, rephrase_clarify
 from sap_nexus_agent.intent import (
-    INVENTORY_PRIMARY_KEYWORDS,
     IntentParseResult,
-    PR_CREATE_PRIMARY_KEYWORDS,
-    PURCHASE_ORDER_PRIMARY_KEYWORDS,
-    _ENGINE_MIGRATED_CAPABILITIES,
-    _INVENTORY_CAPABILITY_ID,
-    _PURCHASE_ORDER_CAPABILITY_ID,
-    _build_inventory_result,
-    _build_purchase_order_result,
     _detect_odata_override,
-    _INVENTORY_CAPABILITY_ID,
-    _PR_CREATE_CAPABILITY_ID,
     parse_intent,
 )
 from sap_nexus_agent.llm_client import LlmUnavailable, OpenAiCompatibleLlmClient
 from sap_nexus_agent.match_decision import MatchedIntent
-from sap_nexus_agent.pr_intent import parse_pr_create_intent
 from sap_nexus_agent.registry_loader import (
     CapabilityDescriptor,
     InputDescriptor,
@@ -510,19 +499,6 @@ def _parameter_key(key: str) -> str | None:
 # Task 3: sticky continuation (conversational context)
 # ---------------------------------------------------------------------------
 
-_PRIMARY_KEYWORD_SETS = (
-    INVENTORY_PRIMARY_KEYWORDS,
-    PURCHASE_ORDER_PRIMARY_KEYWORDS,
-    PR_CREATE_PRIMARY_KEYWORDS,
-)
-
-_LEGACY_PRIMARY_KEYWORD_SETS = (
-    (_INVENTORY_CAPABILITY_ID, INVENTORY_PRIMARY_KEYWORDS),
-    (_PURCHASE_ORDER_CAPABILITY_ID, PURCHASE_ORDER_PRIMARY_KEYWORDS),
-    (_PR_CREATE_CAPABILITY_ID, PR_CREATE_PRIMARY_KEYWORDS),
-)
-
-
 def _contains_any_primary_keyword(text: str) -> bool:
     """Return True if text contains any registered capability's primary keyword.
 
@@ -531,23 +507,9 @@ def _contains_any_primary_keyword(text: str) -> bool:
     count as a new-turn trigger, so a follow-up that merely adds a weak keyword
     still inherits the prior capability via sticky continuation.
     """
-    legacy_hit = any(
-        cap_id not in _ENGINE_MIGRATED_CAPABILITIES
-        and any(kw in text for kw in keyword_set)
-        for cap_id, keyword_set in _LEGACY_PRIMARY_KEYWORD_SETS
-    )
-    if legacy_hit:
-        return True
-    if not _ENGINE_MIGRATED_CAPABILITIES:
-        return False
-
     from sap_nexus_agent.extraction import engine
 
-    return engine.any_primary_keyword(
-        text,
-        load_intent_catalog(),
-        restrict_to=_ENGINE_MIGRATED_CAPABILITIES,
-    )
+    return engine.any_primary_keyword(text, load_intent_catalog())
 
 
 def _extract_params_for(capability_id: str, text: str) -> dict[str, str]:
@@ -559,20 +521,12 @@ def _extract_params_for(capability_id: str, text: str) -> dict[str, str]:
     caller against the catalog descriptor (the merged result may satisfy inputs
     the extractor alone would have flagged missing).
     """
-    if capability_id in _ENGINE_MIGRATED_CAPABILITIES:
-        from sap_nexus_agent.extraction import engine
+    from sap_nexus_agent.extraction import engine
 
-        catalog = load_intent_catalog()
-        cap = catalog.find(capability_id)
-        if cap is not None and cap.intent_config is not None:
-            return engine.extract_parameters(text, cap, catalog)
-
-    if capability_id == _INVENTORY_CAPABILITY_ID:
-        return _build_inventory_result(text, False, False).parameters
-    if capability_id == _PURCHASE_ORDER_CAPABILITY_ID:
-        return _build_purchase_order_result(text, False, False).parameters
-    if capability_id == _PR_CREATE_CAPABILITY_ID:
-        return parse_pr_create_intent(text).parameters
+    catalog = load_intent_catalog()
+    cap = catalog.find(capability_id)
+    if cap is not None and cap.intent_config is not None:
+        return engine.extract_parameters(text, cap, catalog)
     return {}
 
 
@@ -652,7 +606,7 @@ def resolve_with_context(
     # 物料 token (len>=5 字母数字串, 排除 plant/unit 的 4 字符), 说明物料解析可能
     # 失败 (如小写物料)。CLARIFY 追问而非用旧物料查询, 避免错误物料。
     if (
-        cap_id == _INVENTORY_CAPABILITY_ID
+        cap_id == "MM.Inventory.GetAvailability"
         and "material" not in extracted
         and "material" in (context.last_context.parameters or {})
         and re.search(r"[A-Za-z0-9][A-Za-z0-9-]{4,}", text)

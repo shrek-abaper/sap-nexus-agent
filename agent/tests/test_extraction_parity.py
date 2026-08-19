@@ -6,12 +6,9 @@ from typing import Any
 import pytest
 import yaml
 
-from legacy_intent_reference import parse as legacy_parse
-from legacy_intent_reference import sticky as legacy_sticky
 from sap_nexus_agent.capability_selector import select_capability
 from sap_nexus_agent.conversation_context import ConversationContext, LastContext
-from sap_nexus_agent.extraction import engine
-from sap_nexus_agent.intent import _detect_odata_override, _detect_rfc_name, parse_intent
+from sap_nexus_agent.intent import parse_intent
 from sap_nexus_agent.llm_intent import resolve_with_context
 from sap_nexus_agent.registry_loader import load_intent_catalog
 
@@ -81,27 +78,6 @@ def _assert_row(row: dict[str, Any], result, produced_by: str) -> None:
         assert summary["clarification"] == expect["clarification"], (produced_by, row["name"])
     else:
         assert bool(summary["clarification"]) == (expect["clarification"] is not None)
-
-
-@pytest.mark.parametrize(("table", "name", "row"), _all_rows())
-def test_legacy_matches_frozen_table(table: str, name: str, row: dict[str, Any]) -> None:
-    result = legacy_sticky(row["utterance"], _context(row)) if row["mode"] == "sticky" else legacy_parse(row["utterance"])
-    _assert_row(row, result, "legacy")
-
-
-@pytest.mark.parametrize(("table", "name", "row"), _all_rows())
-def test_engine_matches_frozen_table(table: str, name: str, row: dict[str, Any]) -> None:
-    catalog = load_intent_catalog()
-    if row["mode"] == "sticky":
-        result = engine.sticky_parse(row["utterance"], _context(row), catalog)
-    else:
-        result = engine.parse_declared(
-            row["utterance"],
-            catalog,
-            contains_rfc_name=_detect_rfc_name(row["utterance"]),
-            contains_odata_override=_detect_odata_override(row["utterance"]),
-        )
-    _assert_row(row, result, "engine")
 
 
 @pytest.mark.parametrize(("table", "name", "row"), _all_rows())

@@ -2101,20 +2101,15 @@ def _match_selected_capability(text: str, candidates) -> str | None:
     keyword set matches the utterance. Used by ``_resolve_pending_state``
     to detect a SHOW_OPTIONS selection on turn N+1.
     """
-    from sap_nexus_agent.intent import (
-        INVENTORY_PRIMARY_KEYWORDS,
-        PR_CREATE_PRIMARY_KEYWORDS,
-        PURCHASE_ORDER_PRIMARY_KEYWORDS,
-    )
+    from sap_nexus_agent.extraction._matching import keyword_matches
+    from sap_nexus_agent.registry_loader import load_intent_catalog
 
-    keyword_map = {
-        "MM.Inventory.GetAvailability": INVENTORY_PRIMARY_KEYWORDS,
-        "MM.PurchaseOrder.GetList": PURCHASE_ORDER_PRIMARY_KEYWORDS,
-        "MM.PR.CreateDraft": PR_CREATE_PRIMARY_KEYWORDS,
-    }
+    catalog = load_intent_catalog()
     for cand in candidates:
         cid = cand.capability_id
-        keywords = keyword_map.get(cid)
-        if keywords and any(k in text for k in keywords):
+        cap = catalog.find(cid)
+        if cap is not None and cap.intent_config is not None and any(
+            keyword_matches(keyword, text) for keyword in cap.intent_config.primary_keywords
+        ):
             return cid
     return None

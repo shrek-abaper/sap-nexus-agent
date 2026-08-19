@@ -159,23 +159,20 @@ def test_duplicate_catalog_id_allowed_by_schema():
 
 import yaml
 
-from sap_nexus_agent import intent as legacy_intent
-from sap_nexus_agent import pr_intent as legacy_pr
-
 CATALOG_PATH = REPO_ROOT / "registry" / "semantic-types.yaml"
 
 EXPECTED_PATTERN_PARITY = {
     "Plant": [
-        legacy_intent.PLANT_PATTERN.pattern,
+        r"(?:在\s*([A-Z]\d{3}|\d{4}))|(?:([A-Z]\d{3}|\d{4})\s*工厂)",
         r"(?<!\d)([A-Z]\d{3}|\d{4})(?!\d)",
     ],
-    "MaterialNumber": [legacy_intent.TOKEN_PATTERN.pattern],
-    "Quantity": [legacy_pr.QUANTITY_PATTERN.pattern],
-    "Unit": [legacy_pr.UNIT_PATTERN.pattern],
-    "Date": [legacy_pr.DATE_PATTERN.pattern],
-    "PurchasingGroup": [legacy_pr.PURCHASING_GROUP_PATTERN.pattern],
-    "Vendor": [legacy_intent.PO_VENDOR_PATTERN.pattern],
-    "PONumber": [legacy_intent.PO_NUMBER_PATTERN.pattern],
+    "MaterialNumber": [r"(?<![A-Za-z0-9-])[A-Z0-9][A-Z0-9-]{1,39}(?![A-Za-z0-9-])"],
+    "Quantity": [r"(\d+(?:\.\d+)?)\s*(?:EA|PC|KG|G|L|M)"],
+    "Unit": [r"\b(EA|PC|KG|G|L|M)\b"],
+    "Date": [r"(\d{4}-\d{2}-\d{2})"],
+    "PurchasingGroup": [r"采购组\s*([A-Za-z0-9]{1,3})"],
+    "Vendor": [r"供应商\s*(\d+)"],
+    "PONumber": [r"(?<!\d)(\d{10})(?!\d)"],
 }
 
 
