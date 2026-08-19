@@ -183,6 +183,114 @@ def test_rephrase_rejects_timeout():
     assert result is None
 
 
+def test_pr_strategy_renders_one_prompt_per_group():
+    pr = _cap("MM.PR.CreateDraft")
+    # One prompt carries all missing fields of the (single) group.
+    assert render_clarify(pr, ["quantity"]) == "请提供: 数量"
+    assert render_clarify(pr, ["quantity", "unit"]) == "请提供: 数量, 单位"
+    assert render_clarify(
+        pr, ["material", "plant", "quantity", "unit", "delivery_date", "purchasing_group"]
+    ) == "请提供: 物料编号, 工厂, 数量, 单位, 交货日期, 采购组"
+
+
+def test_strategy_round_budget_respected_and_degrades_to_fallback():
+    from sap_nexus_agent.extraction.clarify import render_clarify_round
+
+    pr = _cap("MM.PR.CreateDraft")
+    missing = ["plant", "unit", "delivery_date"]
+    text, rounds = render_clarify_round(pr, missing, {})
+    assert text == "请提供: 工厂, 单位, 交货日期"
+    assert rounds == {"MM.PR.CreateDraft": 1}
+    text, rounds = render_clarify_round(pr, missing, rounds)
+    assert text == "请提供: 工厂, 单位, 交货日期"
+    assert rounds == {"MM.PR.CreateDraft": 2}
+    # Budget exhausted: degrade to the declared fallback template; no increment.
+    text, rounds = render_clarify_round(pr, missing, rounds)
+    assert text == "请提供: 工厂, 单位, 交货日期"
+    assert rounds is None
+
+
+def test_strategy_rounds_reset_on_capability_switch():
+    from sap_nexus_agent.extraction.clarify import render_clarify_round
+
+    pr = _cap("MM.PR.CreateDraft")
+    text, rounds = render_clarify_round(pr, ["plant"], {"MM.Inventory.GetAvailability": 2})
+    assert rounds == {"MM.PR.CreateDraft": 1}  # different capability: reset, then count
+
+
+def test_strategy_groups_by_binding_source_kind(tmp_path):
+    from sap_nexus_agent.extraction.clarify import render_clarify_with_kind
+    from sap_nexus_agent.registry_loader import load_intent_catalog
+
+    registry = tmp_path / "registry"
+    registry.mkdir()
+    (registry / "semantic-types.yaml").write_text(
+        "version: 2\nsemanticTypes:\n  - id: MaterialNumber\n    description: synthetic\n"
+        "    priority: 1\n    matchers:\n      - kind: regex\n        pattern: '[A-Z0-9]+'\n"
+        "        justification: synthetic fixture\n",
+        encoding="utf-8",
+    )
+    (registry / "capabilities.yaml").write_text(
+        "capabilities:\n"
+        "  - capabilityId: Test.Groups\n"
+        "    status: active\n"
+        "    intent:\n"
+        "      intentName: test_groups\n"
+        "      primaryKeywords: [测试]\n"
+        "      fieldNames:\n"
+        "        zh-CN:\n"
+        "          vendor: 供应商\n"
+        "          quantity: 数量\n"
+        "      clarifyPrompt:\n"
+        "        zh-CN:\n"
+        "          strategy: groupByBindingKind\n"
+        "          maxRounds: 2\n"
+        "          cases:\n"
+        "            - missing: [vendor]\n"
+        "              text: '请提供供应商。'\n"
+        "          fallback:\n"
+        "            template: '请提供: {fields}'\n"
+        "    inputs:\n"
+        "      - name: vendor\n"
+        "        semanticName: supplier\n"
+        "        semanticType: sapnexus:Supplier\n"
+        "        bindingKind: identifier\n"
+        "        required: true\n"
+        "        type: string\n"
+        "        sapParameter: VENDOR\n"
+        "        binding:\n"
+        "          sources:\n"
+        "            - kind: userUtterance\n"
+        "              matchers:\n"
+        "                - kind: regex\n"
+        "                  pattern: '供应商\\s*([A-Z0-9]+)'\n"
+        "      - name: quantity\n"
+        "        semanticName: quantity\n"
+        "        semanticType: sapnexus:Quantity\n"
+        "        bindingKind: identifier\n"
+        "        required: true\n"
+        "        type: number\n"
+        "        sapParameter: QTY\n"
+        "        binding:\n"
+        "          sources:\n"
+        "            - kind: default\n"
+        "              value: '1'\n",
+        encoding="utf-8",
+    )
+    catalog = load_intent_catalog(str(tmp_path))
+    cap = catalog.find("Test.Groups")
+    assert cap is not None
+
+    text, kind = render_clarify_with_kind(cap, ["vendor", "quantity"])
+    assert kind == "strategy"
+    # One prompt per group, groups in first-seen order of missing fields.
+    assert text == "请提供: 供应商 请提供: 数量"
+
+    # Explicit cases override strategy rendering (spec scenario).
+    text, kind = render_clarify_with_kind(cap, ["vendor"])
+    assert (text, kind) == ("请提供供应商。", "cases")
+
+
 def test_hybrid_clarify_falls_back_to_template_on_model_failure():
     catalog = load_intent_catalog()
     model = _FakeModel([
