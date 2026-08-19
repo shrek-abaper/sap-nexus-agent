@@ -16,6 +16,16 @@ rows:
       missing: []
       clarification: null
       is_ambiguous: false
+      matched_intents:
+        - capability_id: MM.PR.CreateDraft
+          parameters:
+            material: DEMOA2
+            plant: '1000'
+            quantity: '100'
+            unit: EA
+            delivery_date: '2026-09-01'
+            purchasing_group: '001'
+          missing: []
       clarification_strict: true
   - name: pr-missing-most
     mode: single
@@ -33,6 +43,16 @@ rows:
         - purchasing_group
       clarification: '请提供: 数量, 单位, 交货日期, 采购组'
       is_ambiguous: false
+      matched_intents:
+        - capability_id: MM.PR.CreateDraft
+          parameters:
+            material: DEMOA2
+            plant: '1000'
+          missing:
+            - quantity
+            - unit
+            - delivery_date
+            - purchasing_group
       clarification_strict: true
   - name: pr-indirect-full
     mode: single
@@ -50,6 +70,16 @@ rows:
       missing: []
       clarification: null
       is_ambiguous: false
+      matched_intents:
+        - capability_id: MM.PR.CreateDraft
+          parameters:
+            material: DEMOA2
+            plant: '1000'
+            quantity: '10'
+            unit: PC
+            delivery_date: '2026-10-01'
+            purchasing_group: '002'
+          missing: []
       clarification_strict: true
   - name: pr-indirect-missing-cost-center
     mode: single
@@ -67,6 +97,16 @@ rows:
       missing: []
       clarification: null
       is_ambiguous: false
+      matched_intents:
+        - capability_id: MM.PR.CreateDraft
+          parameters:
+            material: DEMOA2
+            plant: '1000'
+            quantity: '10'
+            unit: PC
+            delivery_date: '2026-10-01'
+            purchasing_group: '002'
+          missing: []
       clarification_strict: true
   - name: pr-lowercase-unit
     mode: single
@@ -84,6 +124,16 @@ rows:
       missing: []
       clarification: null
       is_ambiguous: false
+      matched_intents:
+        - capability_id: MM.PR.CreateDraft
+          parameters:
+            material: DEMOA2
+            plant: '1000'
+            quantity: '5'
+            unit: EA
+            delivery_date: '2026-01-01'
+            purchasing_group: '001'
+          missing: []
       clarification_strict: true
   - name: pr-no-trigger
     mode: single
@@ -95,6 +145,7 @@ rows:
       missing: []
       clarification: null
       is_ambiguous: false
+      matched_intents: []
       clarification_strict: true
   - name: pr-technical-override
     mode: single
@@ -106,6 +157,7 @@ rows:
       missing: []
       clarification: null
       is_ambiguous: false
+      matched_intents: []
       clarification_strict: true
   - name: pr-multi-with-inventory
     mode: single
@@ -117,6 +169,21 @@ rows:
       missing: []
       clarification: null
       is_ambiguous: false
+      matched_intents:
+        - capability_id: MM.Inventory.GetAvailability
+          parameters:
+            material: DEMOA2
+            plant: '5100'
+          missing: []
+        - capability_id: MM.PR.CreateDraft
+          parameters:
+            material: DEMOA2
+            plant: '1000'
+          missing:
+            - quantity
+            - unit
+            - delivery_date
+            - purchasing_group
       clarification_strict: true
   - name: pr-ambiguous-show-options
     mode: single
@@ -130,6 +197,12 @@ rows:
         - plant
       clarification: 请提供要查询的物料编号和工厂。
       is_ambiguous: true
+      matched_intents:
+        - capability_id: MM.Inventory.GetAvailability
+          parameters: {}
+          missing:
+            - material
+            - plant
       clarification_strict: true
   - name: pr-sticky-merge
     mode: sticky
@@ -152,6 +225,16 @@ rows:
         - purchasing_group
       clarification: 请提供以下参数：quantity, unit, delivery_date, purchasing_group。
       is_ambiguous: false
+      matched_intents:
+        - capability_id: MM.PR.CreateDraft
+          parameters:
+            material: DEMOA2
+            plant: '1000'
+          missing:
+            - quantity
+            - unit
+            - delivery_date
+            - purchasing_group
       clarification_strict: false
   - name: pr-sticky-new-turn
     mode: sticky
@@ -170,6 +253,12 @@ rows:
       missing: []
       clarification: null
       is_ambiguous: false
+      matched_intents:
+        - capability_id: MM.Inventory.GetAvailability
+          parameters:
+            material: DEMOA1
+            plant: '5100'
+          missing: []
       clarification_strict: true
   - name: pr-sticky-new-turn-inherit
     mode: sticky
@@ -197,4 +286,14 @@ rows:
       missing: []
       clarification: null
       is_ambiguous: false
+      matched_intents:
+        - capability_id: MM.PR.CreateDraft
+          parameters:
+            material: DEMOA2
+            plant: '1000'
+            quantity: '100'
+            unit: EA
+            delivery_date: '2026-09-01'
+            purchasing_group: '001'
+          missing: []
       clarification_strict: false

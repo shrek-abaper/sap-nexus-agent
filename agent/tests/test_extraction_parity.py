@@ -56,6 +56,17 @@ def _summary(result) -> dict[str, Any]:
     }
 
 
+def _matched_intents(result) -> list[dict[str, Any]]:
+    return [
+        {
+            "capability_id": matched.capability_id,
+            "parameters": matched.parameters,
+            "missing": matched.missing,
+        }
+        for matched in result.matched_intents
+    ]
+
+
 def _assert_row(row: dict[str, Any], result, produced_by: str) -> None:
     expect = row["expect"]
     summary = _summary(result)
@@ -64,6 +75,7 @@ def _assert_row(row: dict[str, Any], result, produced_by: str) -> None:
     assert summary["capability_id"] == expect["capability_id"], (produced_by, row["name"])
     assert summary["parameters"] == expect["parameters"], (produced_by, row["name"])
     assert summary["missing"] == expect["missing"], (produced_by, row["name"])
+    assert _matched_intents(result) == expect["matched_intents"], (produced_by, row["name"])
     assert summary["is_ambiguous"] == expect["is_ambiguous"], (produced_by, row["name"])
     if expect.get("clarification_strict", True):
         assert summary["clarification"] == expect["clarification"], (produced_by, row["name"])

@@ -12,6 +12,12 @@ rows:
       missing: []
       clarification: null
       is_ambiguous: false
+      matched_intents:
+        - capability_id: MM.Inventory.GetAvailability
+          parameters:
+            material: DEMOA2
+            plant: '1000'
+          missing: []
       clarification_strict: true
   - name: inv-missing-plant
     mode: single
@@ -25,6 +31,12 @@ rows:
         - plant
       clarification: 请提供要查询的工厂。
       is_ambiguous: false
+      matched_intents:
+        - capability_id: MM.Inventory.GetAvailability
+          parameters:
+            material: DEMOA2
+          missing:
+            - plant
       clarification_strict: true
   - name: inv-missing-material
     mode: single
@@ -38,6 +50,12 @@ rows:
         - material
       clarification: 请提供要查询的物料编号。
       is_ambiguous: false
+      matched_intents:
+        - capability_id: MM.Inventory.GetAvailability
+          parameters:
+            plant: '5100'
+          missing:
+            - material
       clarification_strict: true
   - name: inv-missing-both
     mode: single
@@ -51,6 +69,12 @@ rows:
         - plant
       clarification: 请提供要查询的物料编号和工厂。
       is_ambiguous: false
+      matched_intents:
+        - capability_id: MM.Inventory.GetAvailability
+          parameters: {}
+          missing:
+            - material
+            - plant
       clarification_strict: true
   - name: inv-unit-optional
     mode: single
@@ -65,6 +89,13 @@ rows:
       missing: []
       clarification: null
       is_ambiguous: false
+      matched_intents:
+        - capability_id: MM.Inventory.GetAvailability
+          parameters:
+            material: DEMOA2
+            plant: '5100'
+            unit: EA
+          missing: []
       clarification_strict: true
   - name: inv-plant-exclusion
     mode: single
@@ -78,6 +109,12 @@ rows:
       missing: []
       clarification: null
       is_ambiguous: false
+      matched_intents:
+        - capability_id: MM.Inventory.GetAvailability
+          parameters:
+            material: DEMOA2
+            plant: '1000'
+          missing: []
       clarification_strict: true
   - name: inv-bapi-blacklist
     mode: single
@@ -91,6 +128,12 @@ rows:
         - plant
       clarification: 请提供要查询的工厂。
       is_ambiguous: false
+      matched_intents:
+        - capability_id: MM.Inventory.GetAvailability
+          parameters:
+            material: MATERIAL
+          missing:
+            - plant
       clarification_strict: true
   - name: inv-ambiguous-show-options
     mode: single
@@ -104,6 +147,12 @@ rows:
         - plant
       clarification: 请提供要查询的物料编号和工厂。
       is_ambiguous: true
+      matched_intents:
+        - capability_id: MM.Inventory.GetAvailability
+          parameters: {}
+          missing:
+            - material
+            - plant
       clarification_strict: true
   - name: inv-multi-with-po
     mode: single
@@ -115,6 +164,16 @@ rows:
       missing: []
       clarification: null
       is_ambiguous: false
+      matched_intents:
+        - capability_id: MM.Inventory.GetAvailability
+          parameters:
+            material: DEMOA2
+            plant: '5100'
+          missing: []
+        - capability_id: MM.PurchaseOrder.GetList
+          parameters: {}
+          missing:
+            - filter
       clarification_strict: true
   - name: inv-technical-override
     mode: single
@@ -126,6 +185,7 @@ rows:
       missing: []
       clarification: null
       is_ambiguous: false
+      matched_intents: []
       clarification_strict: true
   - name: inv-sticky-overlay
     mode: sticky
@@ -145,6 +205,12 @@ rows:
       missing: []
       clarification: null
       is_ambiguous: false
+      matched_intents:
+        - capability_id: MM.Inventory.GetAvailability
+          parameters:
+            material: DEMOA2
+            plant: '5200'
+          missing: []
       clarification_strict: true
   - name: inv-sticky-reask-suspect
     mode: sticky
@@ -164,6 +230,12 @@ rows:
         - material
       clarification: 请提供要查询的物料编号。
       is_ambiguous: false
+      matched_intents:
+        - capability_id: MM.Inventory.GetAvailability
+          parameters:
+            plant: '5200'
+          missing:
+            - material
       clarification_strict: true
   - name: inv-sticky-new-turn-inherit
     mode: sticky
@@ -183,4 +255,10 @@ rows:
         - plant
       clarification: 请提供要查询的物料编号和工厂。
       is_ambiguous: false
+      matched_intents:
+        - capability_id: MM.Inventory.GetAvailability
+          parameters: {}
+          missing:
+            - material
+            - plant
       clarification_strict: true

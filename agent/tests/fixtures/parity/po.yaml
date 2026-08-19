@@ -11,6 +11,11 @@ rows:
       missing: []
       clarification: null
       is_ambiguous: false
+      matched_intents:
+        - capability_id: MM.PurchaseOrder.GetList
+          parameters:
+            poNumber: '4500000001'
+          missing: []
       clarification_strict: true
   - name: po-by-vendor
     mode: single
@@ -23,6 +28,11 @@ rows:
       missing: []
       clarification: null
       is_ambiguous: false
+      matched_intents:
+        - capability_id: MM.PurchaseOrder.GetList
+          parameters:
+            vendor: '1000'
+          missing: []
       clarification_strict: true
   - name: po-by-material-and-plant
     mode: single
@@ -36,6 +46,12 @@ rows:
       missing: []
       clarification: null
       is_ambiguous: false
+      matched_intents:
+        - capability_id: MM.PurchaseOrder.GetList
+          parameters:
+            plant: '5300'
+            material: DEMOA4B
+          missing: []
       clarification_strict: true
   - name: po-no-filter
     mode: single
@@ -48,6 +64,11 @@ rows:
         - filter
       clarification: 请至少提供一个过滤条件（采购订单号、供应商、工厂或物料）。
       is_ambiguous: false
+      matched_intents:
+        - capability_id: MM.PurchaseOrder.GetList
+          parameters: {}
+          missing:
+            - filter
       clarification_strict: true
   - name: po-number-value-excluded
     mode: single
@@ -60,6 +81,11 @@ rows:
       missing: []
       clarification: null
       is_ambiguous: false
+      matched_intents:
+        - capability_id: MM.PurchaseOrder.GetList
+          parameters:
+            vendor: '4500000001'
+          missing: []
       clarification_strict: true
   - name: po-bare-po-trigger
     mode: single
@@ -72,6 +98,11 @@ rows:
       missing: []
       clarification: null
       is_ambiguous: false
+      matched_intents:
+        - capability_id: MM.PurchaseOrder.GetList
+          parameters:
+            poNumber: '4500000001'
+          missing: []
       clarification_strict: true
   - name: po-import-no-false-positive
     mode: single
@@ -83,6 +114,7 @@ rows:
       missing: []
       clarification: null
       is_ambiguous: false
+      matched_intents: []
       clarification_strict: true
   - name: po-weak-ambiguous-escalate
     mode: single
@@ -94,6 +126,16 @@ rows:
       missing: []
       clarification: null
       is_ambiguous: true
+      matched_intents:
+        - capability_id: MM.Inventory.GetAvailability
+          parameters: {}
+          missing:
+            - material
+            - plant
+        - capability_id: MM.PurchaseOrder.GetList
+          parameters: {}
+          missing:
+            - filter
       clarification_strict: true
   - name: po-technical-override
     mode: single
@@ -105,6 +147,7 @@ rows:
       missing: []
       clarification: null
       is_ambiguous: false
+      matched_intents: []
       clarification_strict: true
   - name: po-sticky-merge
     mode: sticky
@@ -123,6 +166,12 @@ rows:
       missing: []
       clarification: null
       is_ambiguous: false
+      matched_intents:
+        - capability_id: MM.PurchaseOrder.GetList
+          parameters:
+            vendor: '1000'
+            plant: '5300'
+          missing: []
       clarification_strict: true
   - name: weak-only-no-trigger-ambiguous
     mode: single
@@ -134,4 +183,5 @@ rows:
       missing: []
       clarification: null
       is_ambiguous: true
+      matched_intents: []
       clarification_strict: true
