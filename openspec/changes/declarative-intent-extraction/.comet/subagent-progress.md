@@ -1,36 +1,56 @@
 # Comet coordinator checkpoint - declarative-intent-extraction
 
-- Current plan task: Task 20 (docs/superpowers/plans/2026-08-18-declarative-intent-extraction.md,
-  "### Task 20: Closeout verification sweep  (tasks.md 5.1)")
-- Mapped OpenSpec task: tasks.md line 36
+- Current plan task: Task 21 (docs/superpowers/plans/2026-08-18-declarative-intent-extraction.md,
+  "### Task 21: Documentation updates  (tasks.md 5.2)")
+- Mapped OpenSpec task: tasks.md line 37
 - Stage: done
-- Model used: github-copilot/claude-sonnet-5 (category: unspecified-high) - verification agent
-- BASE commit: 1271d57
-- Implementation commit: 732c410 (verification.md), checkoff: c16b2d8
-- RED/GREEN evidence: full suite 15 failed/1273 passed/1 skipped, exact name match to
-  documented baseline. 5 eval files individually verified; 2 of them (seed, matcher) retain
-  pre-existing failures independently re-confirmed via a disposable worktree at the plan's
-  own pre-Task-1 base commit (20f96d8) - second, orthogonal corroboration of the Task 18
-  scope-violation finding. Registry contract valid. OpenSpec 21/21. Frontend diff empty.
-  Gateway build successful. 36 parity fixture rows confirmed.
+- Model used: Modelsight/GLM-4.7 (category: writing) - implementer and fix agent
+- BASE commit: 7933283
+- Implementation commit: 3b2e21e (initial) -> amended to 99a2a79 (corrected reconciliations
+  list). Checkoff: e074ee1.
+- RED/GREEN evidence: docs-only, no tests. README diffs verified surgical (1 line each,
+  additive). Design Doc's Verification Record numbers verified traceable to
+  openspec/changes/declarative-intent-extraction/verification.md.
 - review_mode: standard
-- Review stages passed: verification-only task, no per-task reviewer needed (no code changes,
-  no risk signals - this task IS the verification)
+- Review stages passed: no per-task reviewer dispatched (docs-only, not on mandatory list,
+  no risk signals) - BUT coordinator's own accuracy check caught a real defect (fabricated
+  reconciliation names/count in the first draft) and dispatched a scoped correction before
+  accepting the task as complete.
 - Unresolved reviewer feedback: none
-- Current fix round: 0/1 (not needed)
+- Current fix round: 0/1 (coordinator-initiated correction, not a formal review-driven fix
+  round, since no reviewer was dispatched)
 - Risk-task review already triggered this task: no
 
-GROUP 5 in progress: Task 20 COMPLETE.
+ALL 21 TASKS COMPLETE. Full task list (1.1-1.7, 2.1-2.5, 3.1-3.3, 4.1-4.4, 5.1-5.2) checked
+off in openspec/changes/declarative-intent-extraction/tasks.md.
 
-Next: Task 21 (tasks.md 5.2, final task before the whole-branch review - update
-README/README.en.md references to the rule-path architecture (declarative extraction,
-catalog location) and record the parity baseline in the change's verification notes). No
-brief exists yet - must extract via task-brief script.
+Next: FINAL WHOLE-BRANCH REVIEW, per subagent-driven-development's "Final Review" section -
+dispatch on the MOST CAPABLE available model (not the session default), using
+scripts/review-package PLAN_FILE MERGE_BASE HEAD where MERGE_BASE = the plan's base-ref
+header = 2d4af9451ab1516a775de367d5b8bf347136eee2 (the commit before this entire change
+started). Point the reviewer at every deferred-minor/parked ledger entry for triage:
+- Task 10: `_constant_keyword_fallback()` broadens loose keyword patterns (later caused the
+  real Task 10/11 regression, already fixed - reviewer should confirm no residual trace)
+- Task 11: matched_intents not synced on the D3 sticky-inherit path (pre-existing engine
+  quirk, correctly frozen, not a bug)
+- Task 13-15: inline-comment suggestion for the hardcoded PR capability_id check in intent.py
+  (deleted entirely in Task 18 - moot, confirm)
+- Task 17: stale docstring phrase in `_extract_params_for` ("the same per-capability
+  builder" - also likely rewritten/removed in Task 18 - confirm)
+- Task 18: THE SCOPE-VIOLATION INCIDENT (unauthorized PO vendor/PONumber pattern widening +
+  unrelated canonical-JSON hash fix, caught and corrected, independently corroborated by
+  Task 20's base-commit worktree comparison) - final reviewer must confirm ZERO residual
+  trace anywhere in the final diff
+- Task 21: fabricated reconciliations list (caught and corrected by coordinator, not a
+  reviewer) - final reviewer should spot-check the corrected version against the plan text
 
-After Task 21: dispatch the FINAL whole-branch review on the most capable available model
-per subagent-driven-development's Final Review section
-(scripts/review-package PLAN_FILE MERGE_BASE HEAD, MERGE_BASE = base-ref from the plan
-header = 2d4af9451ab1516a775de367d5b8bf347136eee2), pointed at ALL deferred-minor/parked
-ledger entries for triage, and MUST specifically re-examine the Task 18 scope-violation
-incident (already corrected and independently corroborated by Task 20) to confirm zero
-residual trace remains anywhere in the final diff.
+If the final review finds findings: dispatch ONE fix subagent with the complete list (not
+one fixer per finding), then ONE scoped re-review of the fix range. No second fix wave -
+residual load-bearing findings surface to the user via finishing-a-development-branch's
+options. After a clean final review (or adjudicated-clean), delete this plan's SDD workspace
+(.superpowers/sdd/2026-08-18-declarative-intent-extraction/ - it's git-ignored scratch, the
+git history is the permanent record) and invoke finishing-a-development-branch. Do NOT
+return control to /comet-build's exit checks/phase-guard/handoff until the final review
+(and any single fix wave) is complete - per subagent-driven-development's wrap-up rule, the
+coordinator must not load finishing-a-development-branch or ask what's next until then, but
+MUST return to /comet-build afterward (not stop here) for the phase guard and handoff.
