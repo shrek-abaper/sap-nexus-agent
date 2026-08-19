@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Mapping
 
 import yaml
 
@@ -31,6 +32,10 @@ class MatcherConfig:
     ref: str | None = None
     ignore_case: bool = False
     scan: str = "first"
+    prefix: tuple[str, ...] = ()
+    suffix: tuple[str, ...] = ()
+    value_shape: str | None = None
+    justification: str | None = None
 
 
 @dataclass(frozen=True)
@@ -103,6 +108,7 @@ class SemanticTypeEntry:
 @dataclass(frozen=True)
 class SemanticTypeCatalog:
     entries: tuple[SemanticTypeEntry, ...] = ()
+    value_shapes: Mapping[str, str] = field(default_factory=dict)
 
     def find(self, entry_id: str) -> SemanticTypeEntry | None:
         for entry in self.entries:
@@ -184,6 +190,10 @@ def _parse_matcher(raw: object) -> MatcherConfig | None:
         ref=str(raw["ref"]) if raw.get("ref") is not None else None,
         ignore_case=bool(raw.get("ignoreCase", False)),
         scan=str(raw.get("scan", "first")),
+        prefix=tuple(str(token) for token in raw.get("prefix") or []),
+        suffix=tuple(str(token) for token in raw.get("suffix") or []),
+        value_shape=str(raw["valueShape"]) if raw.get("valueShape") is not None else None,
+        justification=str(raw["justification"]) if raw.get("justification") is not None else None,
     )
 
 
@@ -327,7 +337,11 @@ def _parse_semantic_type_catalog(raw: object) -> SemanticTypeCatalog:
                 filters=_parse_value_filters(entry.get("filters")),
             )
         )
-    return SemanticTypeCatalog(entries=tuple(entries))
+    value_shapes: dict[str, str] = {}
+    raw_shapes = raw.get("valueShapes")
+    if isinstance(raw_shapes, dict):
+        value_shapes = {str(key): str(shape) for key, shape in raw_shapes.items() if shape}
+    return SemanticTypeCatalog(entries=tuple(entries), value_shapes=value_shapes)
 
 
 def _load_semantic_types(registry_dir: Path) -> SemanticTypeCatalog:

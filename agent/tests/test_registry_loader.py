@@ -220,3 +220,32 @@ def test_load_intent_catalog_without_catalog_file_degrades(tmp_path, monkeypatch
     catalog = load_intent_catalog()
     assert catalog.capabilities == ()
     assert catalog.semantic_types.entries == ()
+
+
+def test_parse_matcher_accepts_named_kind_fields():
+    from sap_nexus_agent.registry_loader import _parse_matcher
+
+    prefixed = _parse_matcher({"kind": "prefixed", "prefix": ["在"], "valueShape": "plantCode"})
+    assert prefixed is not None
+    assert prefixed.prefix == ("在",)
+    assert prefixed.value_shape == "plantCode"
+    assert prefixed.pattern is None
+
+    regex = _parse_matcher({"kind": "regex", "pattern": "x", "justification": "why"})
+    assert regex is not None and regex.justification == "why"
+
+
+def test_catalog_value_shapes_parsed_from_document():
+    from sap_nexus_agent.registry_loader import _parse_semantic_type_catalog
+
+    catalog = _parse_semantic_type_catalog({
+        "valueShapes": {"plantCode": "^[A-Z0-9]{4}$"},
+        "semanticTypes": [{
+            "id": "X",
+            "priority": 1,
+            "matchers": [{"kind": "valueShape", "valueShape": "plantCode"}],
+        }],
+    })
+    assert catalog.value_shapes == {"plantCode": "^[A-Z0-9]{4}$"}
+    assert catalog.find("X") is not None
+    assert catalog.find("X").matchers[0].value_shape == "plantCode"

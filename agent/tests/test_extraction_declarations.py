@@ -94,7 +94,8 @@ VALID_CATALOG = {
             "id": "MaterialNumber",
             "priority": 10,
             "matchers": [
-                {"kind": "regex", "pattern": "[A-Z0-9]+", "scan": "all"}
+                {"kind": "regex", "pattern": "[A-Z0-9]+", "scan": "all",
+                 "justification": "synthetic fixture"}
             ],
             "filters": {
                 "minLength": 5,
@@ -147,9 +148,11 @@ def test_duplicate_catalog_id_allowed_by_schema():
         **VALID_CATALOG,
         "semanticTypes": [
             {"id": "X", "priority": 1,
-             "matchers": [{"kind": "regex", "pattern": "x"}]},
+             "matchers": [{"kind": "regex", "pattern": "x",
+                           "justification": "synthetic fixture"}]},
             {"id": "X", "priority": 2,
-             "matchers": [{"kind": "regex", "pattern": "y"}]},
+             "matchers": [{"kind": "regex", "pattern": "y",
+                           "justification": "synthetic fixture"}]},
         ],
     }
     jsonschema.validate(payload, _load("semantic-type-catalog.schema.json"))
@@ -633,3 +636,29 @@ def test_canonical_extraction_block_accepted_by_both_schemas():
     assert jsonschema.Draft202012Validator(
         _capability_block_schema("extractionBlock")
     ).is_valid(VALID_INPUT_EXTRACTION)
+
+
+# --- Task 1.1: named matcher kinds, valueShapes, regex justification ---
+
+
+def test_catalog_schema_accepts_named_kinds_and_value_shapes():
+    payload = {
+        **VALID_CATALOG,
+        "valueShapes": {"plantCode": "^[A-Z0-9]{4}$"},
+        "semanticTypes": [
+            {"id": "P", "priority": 1, "matchers": [
+                {"kind": "prefixed", "prefix": ["在"], "valueShape": "plantCode"},
+                {"kind": "suffixed", "suffix": ["工厂"], "valueShape": "plantCode"},
+                {"kind": "valueShape", "valueShape": "plantCode"},
+            ]},
+        ],
+    }
+    jsonschema.validate(payload, _load("semantic-type-catalog.schema.json"))
+
+
+def test_catalog_schema_rejects_regex_without_justification():
+    payload = {**VALID_CATALOG, "semanticTypes": [
+        {"id": "P", "priority": 1, "matchers": [{"kind": "regex", "pattern": "x"}]},
+    ]}
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.validate(payload, _load("semantic-type-catalog.schema.json"))

@@ -37,20 +37,48 @@
               "type": "object",
               "required": ["kind"],
               "properties": {
-                "kind": {"enum": ["keyword", "regex", "semanticType"]},
+                "kind": {"enum": ["keyword", "regex", "semanticType", "prefixed", "suffixed", "valueShape"]},
                 "pattern": {"type": "string", "minLength": 1},
                 "value": {"type": "string", "minLength": 1},
                 "ref": {"type": "string", "minLength": 1},
                 "ignoreCase": {"type": "boolean"},
-                "scan": {"enum": ["first", "all"]}
+                "scan": {"enum": ["first", "all"]},
+                "prefix": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {"type": "string", "minLength": 1},
+                  "description": "Literal tokens anchoring the value BEFORE them; alternated when multiple."
+                },
+                "suffix": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {"type": "string", "minLength": 1},
+                  "description": "Literal tokens anchoring the value AFTER them; alternated when multiple."
+                },
+                "valueShape": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Name of a catalog-level valueShapes entry supplying the capture shape."
+                },
+                "justification": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Required for kind regex: why the named kinds cannot express this matcher (escape hatch)."
+                }
               },
               "allOf": [
                 {"if": {"properties": {"kind": {"const": "keyword"}}},
                  "then": {"required": ["pattern", "value"]}},
                 {"if": {"properties": {"kind": {"const": "regex"}}},
-                 "then": {"required": ["pattern"]}},
+                 "then": {"required": ["pattern", "justification"]}},
                 {"if": {"properties": {"kind": {"const": "semanticType"}}},
-                 "then": {"required": ["ref"]}}
+                 "then": {"required": ["ref"]}},
+                {"if": {"properties": {"kind": {"const": "prefixed"}}},
+                 "then": {"required": ["prefix", "valueShape"]}},
+                {"if": {"properties": {"kind": {"const": "suffixed"}}},
+                 "then": {"required": ["suffix", "valueShape"]}},
+                {"if": {"properties": {"kind": {"const": "valueShape"}}},
+                 "then": {"required": ["valueShape"]}}
               ]
             }
           },
@@ -67,6 +95,11 @@
           }
         }
       }
+    },
+    "valueShapes": {
+      "type": "object",
+      "additionalProperties": {"type": "string", "minLength": 1},
+      "description": "Named value shapes referenced by prefixed/suffixed/valueShape matchers via the matcher's valueShape key (e.g. plantCode: '^[A-Z0-9]{4}$')."
     }
   }
 }
