@@ -86,7 +86,7 @@ def test_extract_parameters_pr_conditional_cost_center():
     catalog = _catalog()
     pr = _cap(catalog, "MM.PR.CreateDraft")
     with_acct = engine.extract_parameters(
-        "创建PR 间采 物料 DEMOA2 工厂 1000 数量 10 EA 交货日期 2026-10-01 采购组 002 成本中心 4700", pr, catalog)
+        "创建PR 间采K 物料 DEMOA2 工厂 1000 数量 10 EA 交货日期 2026-10-01 采购组 002 成本中心 4700", pr, catalog)
     assert with_acct["acct_assgn_cat"] == "K"
     assert with_acct["cost_center"] == "4700"
     without = engine.extract_parameters(

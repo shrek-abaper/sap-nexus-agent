@@ -47,7 +47,7 @@ def match_value(
         return None
     regex_match = compiled.search(text)
     if regex_match is None:
-        return _constant_keyword_fallback(matcher, text)
+        return None
     value = _captured_value(regex_match, matcher)
     return value if _accepted(value, filters, excluded_values) else None
 

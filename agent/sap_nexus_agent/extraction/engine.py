@@ -240,13 +240,10 @@ def _inherit_material_for_same_capability(
     parameters = dict(parsed.parameters)
     parameters["material"] = context.last_context.parameters["material"]
     missing = [name for name in parsed.missing_parameters if name != "material"]
-    descriptor = catalog.find(context.last_context.capability_id)
-    clarification = render_clarify(descriptor, missing) if descriptor is not None else parsed.clarification
     return replace(
         parsed,
         parameters=parameters,
         missing_parameters=missing,
-        clarification=clarification,
         capability_id=context.last_context.capability_id,
     )
 
