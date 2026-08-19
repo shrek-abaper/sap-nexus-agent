@@ -894,7 +894,7 @@ git commit -m "feat(declarative-intent): B1.5 PR.CreateDraft.plant pattern ^[A-Z
   - `_clarify_locale_errors` treats `strategy` as covering every required input.
   - localePrompt schema (both files, identical): `strategy` enum `["groupByBindingKind"]`, `maxRounds` integer minimum 1 default 2, `cases` documented as optional override.
 
-- [ ] **Step 1: Write the failing tests** (append to `agent/tests/test_extraction_declarations.py`; extend `INTENT_PARITY_MUTATIONS`)
+- [x] **Step 1: Write the failing tests** (append to `agent/tests/test_extraction_declarations.py`; extend `INTENT_PARITY_MUTATIONS`)
 
 ```python
 INTENT_PARITY_MUTATIONS += [
@@ -924,12 +924,12 @@ def test_loader_parses_strategy_and_max_rounds():
     assert _parse_clarify_prompt({"fallback": {"template": "t"}}).max_rounds is None
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd agent && python3 -m pytest tests/test_extraction_declarations.py -q -k "strategy or clarify_prompt or clarify_locale or parity"`
 Expected: FAIL — unknown `strategy` property rejected by `additionalProperties: false` on both schemas; `_parse_clarify_prompt` returns None for strategy-only input (`ClarifyPromptConfig` has no strategy/max_rounds attributes).
 
-- [ ] **Step 3: Implement the schema changes**
+- [x] **Step 3: Implement the schema changes**
 
 In `schemas/extraction-declaration.schema.json`, replace `$defs.localePrompt` (lines 64–91):
 
@@ -978,7 +978,7 @@ In `schemas/extraction-declaration.schema.json`, replace `$defs.localePrompt` (l
 
 Mirror the identical change into `schemas/capability.schema.json` `$defs.localePrompt` (the drift-guard parity tests require both to accept/reject the same instances).
 
-- [ ] **Step 4: Implement the loader change** in `agent/sap_nexus_agent/registry_loader.py`
+- [x] **Step 4: Implement the loader change** in `agent/sap_nexus_agent/registry_loader.py`
 
 Extend `ClarifyPromptConfig` (add the two fields with defaults) and replace `_parse_clarify_prompt`:
 
@@ -1007,7 +1007,7 @@ def _parse_clarify_prompt(raw: object) -> ClarifyPromptConfig | None:
     )
 ```
 
-- [ ] **Step 5: Implement the validator change** in `scripts/validate_registry_contract.py`
+- [x] **Step 5: Implement the validator change** in `scripts/validate_registry_contract.py`
 
 Update `_clarify_locale_errors` (line 231) — strategy rendering covers every required input of the group, so no coverage error is reported:
 
@@ -1029,7 +1029,7 @@ Update `_clarify_locale_errors` (line 231) — strategy rendering covers every r
         )
 ```
 
-- [ ] **Step 6: Run the tests and CLI to verify**
+- [x] **Step 6: Run the tests and CLI to verify**
 
 Run:
 ```bash
@@ -1038,7 +1038,7 @@ python3 scripts/validate-registry-contract.py registry/capabilities.yaml
 ```
 Expected: PASS — parity mutation tests (both schemas reject/accept identically, including the new strategy/maxRounds mutations), loader tests pass, validator unchanged for the current registry (PR still covered via fallback; strategy not yet in data).
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add schemas/extraction-declaration.schema.json schemas/capability.schema.json agent/sap_nexus_agent/registry_loader.py scripts/validate_registry_contract.py agent/tests/test_extraction_declarations.py

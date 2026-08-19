@@ -10,7 +10,7 @@
 
 ## 2. B2 — Clarify de-enumeration
 
-- [ ] 2.1 Extend `schemas/capability.schema.json` clarifyPrompt: `strategy` (enum: `groupByBindingKind`) and `maxRounds` (default 2); `cases` becomes optional override documented as such.
+- [x] 2.1 Extend `schemas/capability.schema.json` clarifyPrompt: `strategy` (enum: `groupByBindingKind`) and `maxRounds` (default 2); `cases` becomes optional override documented as such.
 - [ ] 2.2 Restructure `MM.PR.CreateDraft` clarifyPrompt to `strategy: groupByBindingKind` + `maxRounds: 2` (no hand-written case enumeration); keep `MM.Inventory.GetAvailability` cases as the override mechanism.
 - [ ] 2.3 Implement strategy rendering in `agent/sap_nexus_agent/extraction/clarify.py`: group missing fields by binding source group, render one prompt per group from `intent.fieldNames` templates, exact missing-set `cases` override checked first, fallback on budget exhaustion.
 - [ ] 2.4 Add clarify-round budget tracking to the turn state (single-shot today); budget exhaustion degrades to the declared `fallback` template.
