@@ -363,6 +363,8 @@ capabilities:
           cost_center: 成本中心(间采 PR 需提供)
       clarifyPrompt:
         zh-CN:
+          strategy: groupByBindingKind
+          maxRounds: 2
           fallback:
             template: '请提供: {fields}'
     inputs:

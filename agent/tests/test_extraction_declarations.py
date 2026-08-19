@@ -505,6 +505,8 @@ def test_pr_declaration_parity_constants():
     assert intent["triggerKeywords"] == [
         "采购申请", "建PR", "建 PR", "创建PR", "创建 PR", "PR草稿", "PR 草稿",
     ]
+    assert intent["clarifyPrompt"]["zh-CN"]["strategy"] == "groupByBindingKind"
+    assert intent["clarifyPrompt"]["zh-CN"]["maxRounds"] == 2
     assert intent["clarifyPrompt"]["zh-CN"]["fallback"] == {"template": "请提供: {fields}"}
     assert intent["fieldNames"]["zh-CN"] == {
         "material": "物料编号", "plant": "工厂", "quantity": "数量", "unit": "单位",
