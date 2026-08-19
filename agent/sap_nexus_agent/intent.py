@@ -131,6 +131,9 @@ def _parse_single_turn(
         contains_rfc_name=contains_rfc_name,
         contains_odata_override=contains_odata_override,
     )
+    # Legacy compatibility: Inventory/PO single-turn results expose their
+    # capability only through matched_intents[0].capability_id. Selector routing
+    # still maps these intents to capability ids, and tests document this contract.
     if parsed.capability_id in {"MM.Inventory.GetAvailability", "MM.PurchaseOrder.GetList"}:
         return replace(parsed, capability_id=None)
     return parsed

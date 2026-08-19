@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from dataclasses import replace
 import json
-import re
 from typing import TYPE_CHECKING, Protocol
 
 from sap_nexus_agent.extraction.clarify import ACTIVE_LOCALE, render_clarify, rephrase_clarify
+from sap_nexus_agent.extraction.engine import _SUSPECT_TOKEN
 from sap_nexus_agent.intent import (
     IntentParseResult,
     _detect_odata_override,
@@ -602,17 +602,18 @@ def resolve_with_context(
         inp.name for inp in descriptor.inputs if inp.required and inp.name not in merged
     ]
 
-    # 修复2: 疑似物料 CLARIFY。本轮没提取到 material 但上轮有, 且用户输入含疑似
-    # 物料 token (len>=5 字母数字串, 排除 plant/unit 的 4 字符), 说明物料解析可能
-    # 失败 (如小写物料)。CLARIFY 追问而非用旧物料查询, 避免错误物料。
-    if (
-        cap_id == "MM.Inventory.GetAvailability"
-        and "material" not in extracted
-        and "material" in (context.last_context.parameters or {})
-        and re.search(r"[A-Za-z0-9][A-Za-z0-9-]{4,}", text)
-    ):
-        merged = {k: v for k, v in merged.items() if k != "material"}
-        missing = ["material"] + [m for m in missing if m != "material"]
+    if _SUSPECT_TOKEN.search(text) is not None:
+        reask_fields = [
+            inp.name
+            for inp in descriptor.inputs
+            if inp.extraction is not None
+            and inp.extraction.reask_suspect
+            and inp.name in context.last_context.parameters
+            and inp.name not in extracted
+        ]
+        if reask_fields:
+            merged = {name: value for name, value in merged.items() if name not in reask_fields}
+            missing = [*reask_fields, *(name for name in missing if name not in reask_fields)]
 
     clarification = render_clarify(descriptor, missing)
     return IntentParseResult(
