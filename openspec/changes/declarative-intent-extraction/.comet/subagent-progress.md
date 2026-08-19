@@ -1,23 +1,25 @@
 # Comet coordinator checkpoint - declarative-intent-extraction
 
-- Current plan task: Task 9 (docs/superpowers/plans/2026-08-18-declarative-intent-extraction.md,
-  "### Task 9: Generic value resolvers  (tasks.md 2.2)")
-- Mapped OpenSpec task: tasks.md line 16 - "2.2 Implement generic value resolvers (`date`,
-  `quantity`, `text`) lifted verbatim from current extractor logic"
+- Current plan task: Task 10 (docs/superpowers/plans/2026-08-18-declarative-intent-extraction.md,
+  "### Task 10: The extraction engine  (tasks.md 2.3)")
+- Mapped OpenSpec task: tasks.md line 17 - "2.3 Implement the generic extraction engine..."
 - Stage: done
-- Model used: github-copilot/gpt-5-mini (category: quick)
-- BASE commit: 22e826d11801c8bffb8afb072aaf3a3229f0bdca
-- Implementation commit: 83eabc2 (checkoff commit: 9c75c74)
-- RED/GREEN evidence: RED - `pytest agent/tests/test_extraction_engine.py -q` failed (module
-  missing); GREEN - same command, 5/5 passed. Full suite: 15 failed/1212 passed/1 skipped
-  (matches pre-existing baseline, no new failures).
+- Model used: github-copilot/gpt-5.5 (category: ultrabrain) - implementer and reviewer
+- BASE commit: 9c75c74
+- Implementation commit: 5cd7b3a (checkoff commit: 923290d)
+- RED/GREEN evidence: RED failed as expected; targeted GREEN 20/20 passed; full suite 15
+  failed/1227 passed/1 skipped (matches baseline).
 - review_mode: standard
-- Review stages passed: no per-task reviewer dispatched (no risk signal in implementer
-  self-report; coordinator diff review confirmed - 46-line mechanical diff, no
-  cross-module/security/concurrency/schema/API-contract signal)
-- Unresolved reviewer feedback: none
+- Review stages passed: per-task reviewer dispatched per ledger's pre-flight plan (Task 10
+  is on the mandatory-reviewer list). Verdict: spec compliant, Approved, 0 Critical/Important
+  code findings.
+- Unresolved reviewer feedback: none (one "Important" finding about an unrelated file in the
+  diff range was adjudicated as a review-package range artifact, not a code defect - see SDD
+  ledger). One minor deferred to final review.
 - Current fix round: 0/1 (not needed)
-- Risk-task review already triggered this task: no
+- Risk-task review already triggered this task: yes (mandatory per ledger, also self-reported
+  by implementer: cross-module, public API/export change, diff >200 lines)
 
-Task 9 COMPLETE. Next: Task 10 (tasks.md 2.3, extraction engine) - brief already exists at
-task-10-brief.md.
+Task 10 COMPLETE. Next: Task 11 (tasks.md 2.4, parity harness) - brief already exists at
+task-11-brief.md. Ledger's review-dispatch plan also requires a mandatory per-task reviewer
+for Task 11.
