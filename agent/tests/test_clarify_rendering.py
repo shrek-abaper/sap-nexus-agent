@@ -32,3 +32,40 @@ def test_missing_locale_falls_back_to_names():
 def test_po_filter_case():
     po = _cap("MM.PurchaseOrder.GetList")
     assert render_clarify(po, ["filter"]) == "请至少提供一个过滤条件（采购订单号、供应商、工厂或物料）。"
+
+
+def test_sticky_clarify_rendered_from_declaration():
+    from sap_nexus_agent.conversation_context import ConversationContext, LastContext
+    from sap_nexus_agent.llm_intent import resolve_with_context
+
+    context = ConversationContext(
+        history=(),
+        last_context=LastContext(
+            capability_id="MM.PR.CreateDraft",
+            decision_type="CLARIFY",
+            parameters={"material": "DEMOA2", "quantity": "50"},
+            missing_parameters=["plant", "unit", "delivery_date", "purchasing_group"],
+        ),
+    )
+    result = resolve_with_context("工厂 1000 数量 50", context, load_intent_catalog())
+    # Reconciliation #5: sticky PR clarification is now the declared text.
+    assert result.clarification == "请提供: 单位, 交货日期, 采购组"
+    assert result.missing_parameters == ["unit", "delivery_date", "purchasing_group"]
+
+
+def test_sticky_inventory_clarify_matches_legacy_exactly():
+    from sap_nexus_agent.conversation_context import ConversationContext, LastContext
+    from sap_nexus_agent.llm_intent import resolve_with_context
+
+    context = ConversationContext(
+        history=(),
+        last_context=LastContext(
+            capability_id="MM.Inventory.GetAvailability",
+            decision_type="CLARIFY",
+            parameters={"plant": "1000"},
+            missing_parameters=["material"],
+        ),
+    )
+    result = resolve_with_context("继续查一下", context, load_intent_catalog())
+    # Inventory single-turn and sticky texts coincide - stays strict.
+    assert result.clarification == "请提供要查询的物料编号。"

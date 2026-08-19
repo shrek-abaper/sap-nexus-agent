@@ -17,7 +17,7 @@ from sap_nexus_agent.intent import (
     _detect_odata_override,
     _detect_rfc_name,
 )
-from sap_nexus_agent.llm_intent import _clarification_for, _extract_params_for
+from sap_nexus_agent.llm_intent import _extract_params_for
 from sap_nexus_agent.match_decision import MatchedIntent
 from sap_nexus_agent.pr_intent import PR_CREATE_KEYWORDS, parse_pr_create_intent
 from sap_nexus_agent.registry_loader import load_intent_catalog
@@ -160,7 +160,7 @@ def sticky(text: str, context: ConversationContext) -> IntentParseResult:
         merged = {k: v for k, v in merged.items() if k != "material"}
         missing = ["material"] + [m for m in missing if m != "material"]
 
-    clarification = _clarification_for(cap_id, missing)
+    clarification = _legacy_sticky_clarify(cap_id, missing)
     return IntentParseResult(
         intent=None,
         capability_id=cap_id,
@@ -184,3 +184,17 @@ def _contains_any_primary_keyword(text: str) -> bool:
             PR_CREATE_PRIMARY_KEYWORDS,
         )
     )
+
+
+def _legacy_sticky_clarify(capability_id: str, missing: list[str]) -> str | None:
+    if capability_id == "MM.Inventory.GetAvailability":
+        if missing == ["material"]:
+            return "请提供要查询的物料编号。"
+        if missing == ["plant"]:
+            return "请提供要查询的工厂。"
+        if missing:
+            return "请提供要查询的物料编号和工厂。"
+        return None
+    if missing:
+        return f"请提供以下参数：{', '.join(missing)}。"
+    return None

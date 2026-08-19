@@ -4,6 +4,7 @@ import json
 import re
 from typing import TYPE_CHECKING, Protocol
 
+from sap_nexus_agent.extraction.clarify import render_clarify
 from sap_nexus_agent.intent import (
     INVENTORY_PRIMARY_KEYWORDS,
     IntentParseResult,
@@ -359,7 +360,8 @@ def _payload_to_parse_result(payload: dict[str, object], catalog: IntentCatalog)
         if len(matched_intents) == 1:
             # Single surviving candidate: keep existing single-intent behavior.
             single = matched_intents[0]
-            clarification = _clarification_for(single.capability_id, single.missing)
+            descriptor = catalog.find(single.capability_id)
+            clarification = render_clarify(descriptor, single.missing) if descriptor else None
             return IntentParseResult(
                 intent=None,
                 capability_id=single.capability_id,
@@ -409,7 +411,7 @@ def _payload_to_parse_result(payload: dict[str, object], catalog: IntentCatalog)
     parameters = _extract_parameters(raw_parameters, descriptor)
 
     missing = [inp.name for inp in descriptor.inputs if inp.required and inp.name not in parameters]
-    clarification = _clarification_for(str(capability_id), missing)
+    clarification = render_clarify(descriptor, missing)
 
     return IntentParseResult(
         intent=None,
@@ -440,20 +442,6 @@ def _extract_parameters(raw_parameters: object, descriptor: CapabilityDescriptor
         if normalized and normalized in allowed and value is not None and str(value).strip():
             parameters[normalized] = str(value).strip()
     return parameters
-
-
-def _clarification_for(capability_id: str, missing: list[str]) -> str | None:
-    if capability_id == "MM.Inventory.GetAvailability":
-        if missing == ["material"]:
-            return "请提供要查询的物料编号。"
-        if missing == ["plant"]:
-            return "请提供要查询的工厂。"
-        if missing:
-            return "请提供要查询的物料编号和工厂。"
-        return None
-    if missing:
-        return f"请提供以下参数：{', '.join(missing)}。"
-    return None
 
 
 _ALIASES = {
@@ -636,7 +624,7 @@ def resolve_with_context(
         merged = {k: v for k, v in merged.items() if k != "material"}
         missing = ["material"] + [m for m in missing if m != "material"]
 
-    clarification = _clarification_for(cap_id, missing)
+    clarification = render_clarify(descriptor, missing)
     return IntentParseResult(
         intent=None,
         capability_id=cap_id,
