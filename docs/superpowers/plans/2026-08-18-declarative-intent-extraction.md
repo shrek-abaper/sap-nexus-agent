@@ -2,6 +2,7 @@
 change: declarative-intent-extraction
 design-doc: docs/superpowers/specs/2026-08-18-declarative-intent-extraction-design.md
 base-ref: 2d4af9451ab1516a775de367d5b8bf347136eee2
+archived-with: 2026-08-19-declarative-intent-extraction
 ---
 
 # Declarative Intent Extraction Implementation Plan
@@ -3053,4 +3054,3 @@ git commit -m "docs: declarative intent extraction verification record and READM
   `grep -rn "MM\." agent/sap_nexus_agent/intent.py` -> empty).
 - The declaration-only capability test (Task 19) proves the extension contract.
 - Frontend untouched; gateway behavior unchanged (Task 6 test green).
-

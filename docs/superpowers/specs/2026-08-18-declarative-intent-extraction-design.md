@@ -2,6 +2,8 @@
 comet_change: declarative-intent-extraction
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-08-19-declarative-intent-extraction
+status: final
 ---
 
 # Design Doc: declarative-intent-extraction
