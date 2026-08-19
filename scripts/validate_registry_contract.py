@@ -124,7 +124,12 @@ def validate_extraction_declarations(
     for entry_id, entry in catalog_entries.items():
         for matcher in (entry.get("matchers") or []) if isinstance(entry, dict) else []:
             errors.extend(
-                _validate_matcher(matcher, catalog_entries, f"semantic-type catalog entry {entry_id}")
+                _validate_matcher(
+                    matcher,
+                    catalog_entries,
+                    f"semantic-type catalog entry {entry_id}",
+                    require_justification=True,
+                )
             )
 
     schema_path = repo_root / "schemas" / "extraction-declaration.schema.json"
@@ -211,7 +216,38 @@ def validate_extraction_declarations(
     return errors
 
 
-def _validate_matcher(matcher: Any, catalog_entries: dict[str, dict], context: str) -> list[str]:
+def count_regex_matchers(contract: RegistryContract, catalog_entries: dict[str, dict]) -> tuple[int, int]:
+    """Count regex matchers: (semantic-type catalog, capability-level).
+
+    Observable metric only (Design §3.3): a count, never a gate. The
+    justification gate applies to catalog regex matchers; capability-level
+    regexes remain legal but visible.
+    """
+    catalog_count = sum(
+        1
+        for entry in catalog_entries.values()
+        for matcher in (entry.get("matchers") or []) if isinstance(entry, dict)
+        if isinstance(matcher, dict) and matcher.get("kind") == "regex"
+    )
+    capability_count = 0
+    for capability in contract.capabilities:
+        raw = capability.raw if isinstance(capability.raw, dict) else {}
+        inputs = raw.get("inputs") if isinstance(raw.get("inputs"), list) else []
+        for input_field in inputs:
+            if not isinstance(input_field, dict):
+                continue
+            extraction = input_field.get("extraction")
+            if not isinstance(extraction, dict):
+                continue
+            capability_count += sum(
+                1
+                for matcher in extraction.get("matchers") or []
+                if isinstance(matcher, dict) and matcher.get("kind") == "regex"
+            )
+    return catalog_count, capability_count
+
+
+def _validate_matcher(matcher: Any, catalog_entries: dict[str, dict], context: str, require_justification: bool = False) -> list[str]:
     """Resolve semanticType refs and guard every inline regex/keyword pattern."""
     if not isinstance(matcher, dict):
         return [f"{context}: matcher must be a mapping"]
@@ -220,6 +256,10 @@ def _validate_matcher(matcher: Any, catalog_entries: dict[str, dict], context: s
         if ref not in catalog_entries:
             return [f"{context}: semanticType ref not found in catalog: {ref}"]
         return []
+    if require_justification and matcher.get("kind") == "regex":
+        justification = matcher.get("justification")
+        if not isinstance(justification, str) or not justification.strip():
+            return [f"{context}: regex matcher requires a non-empty justification (escape hatch)"]
     pattern = matcher.get("pattern")
     if isinstance(pattern, str):
         guard_error = regex_backtracking_guard(pattern)

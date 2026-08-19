@@ -237,9 +237,11 @@ from sap_nexus_agent.semantic_planning.loader import load_semantic_sources
 from sap_nexus_agent.semantic_planning.validation import build_semantic_contracts
 
 from scripts.validate_registry_contract import (
+    count_regex_matchers,
     load_registry_contract,
     load_semantic_type_catalog,
     regex_backtracking_guard,
+    validate_extraction_declarations,
     validate_registry_contract,
 )
 
@@ -677,3 +679,32 @@ def test_catalog_schema_rejects_regex_without_justification():
     ]}
     with pytest.raises(jsonschema.ValidationError):
         jsonschema.validate(payload, _load("semantic-type-catalog.schema.json"))
+
+
+def test_unjustified_catalog_regex_rejected(tmp_path):
+    contract = load_registry_contract(_write_registry(tmp_path, _capability_yaml(_valid_intent(), VALID_EXTRACTION)))
+    errors = validate_extraction_declarations(
+        contract, {"X": {"id": "X", "matchers": [{"kind": "regex", "pattern": "x"}]}}, REPO_ROOT
+    )
+    assert any("justification" in e and "X" in e for e in errors)
+
+
+def test_justified_catalog_regex_accepted(tmp_path):
+    contract = load_registry_contract(_write_registry(tmp_path, _capability_yaml(_valid_intent(), VALID_EXTRACTION)))
+    errors = validate_extraction_declarations(
+        contract,
+        {"X": {"id": "X", "matchers": [{"kind": "regex", "pattern": "x", "justification": "synthetic"}]}},
+        REPO_ROOT,
+    )
+    assert not any("justification" in e for e in errors)
+
+
+def test_regex_matcher_count_is_observable_metric():
+    contract = load_registry_contract(REPO_ROOT / "registry" / "capabilities.yaml")
+    entries, _ = load_semantic_type_catalog(REPO_ROOT)
+    catalog_count, capability_count = count_regex_matchers(contract, entries)
+    # Catalog: Plant 1 + MaterialNumber/Quantity/Unit/Date/PurchasingGroup/
+    # Vendor 1 each + PONumber 2 = 9. Capability-level regexes: all current
+    # declarations still use extraction with inline regexes (e.g. PR material).
+    assert catalog_count == 9
+    assert capability_count >= 1
