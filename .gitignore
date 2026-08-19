@@ -87,3 +87,8 @@ Thumbs.db
 
 # Tangential wiki archive (not core project docs)
 docs/wiki/archive/
+
+# OhMyOpenCode local session/run-continuation tracking (agent tooling artifact,
+# not a project file - accidentally committed by a fix subagent in
+# declarative-intent-extraction Task 17's fix round, removed in this commit)
+.omo/
