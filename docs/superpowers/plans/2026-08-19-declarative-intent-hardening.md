@@ -326,7 +326,7 @@ def test_named_kind_compiled_patterns_pinned():
     ).pattern == r"([A-Z0-9]{4})\s*(?:工厂)"
     assert _compile_named_kind(
         _matcher("valueShape", value_shape="plantCode"), CATALOG
-    ).pattern == r"(?<![A-Z0-9])([A-Z0-9]{4})(?![A-Z0-9])"
+    ).pattern == r"(?<![A-Za-z0-9])([A-Z0-9]{4})(?![A-Za-z0-9])"
     # Unknown shape -> None (matcher never matches; safe degrade).
     assert _compile_named_kind(_matcher("prefixed", prefix=("在",), value_shape="nope"), CATALOG) is None
     # Anchor stripping: shape '^...$' anchors live at shape level, not in the
@@ -436,7 +436,7 @@ def _compile_named_kind(matcher: MatcherConfig, catalog: IntentCatalog) -> re.Pa
             return None
         return re.compile(rf"({inner})\s*(?:{tokens})", flags)
     if matcher.kind == "valueShape":
-        return re.compile(rf"(?<![A-Z0-9])({inner})(?![A-Z0-9])", flags)
+        return re.compile(rf"(?<![A-Za-z0-9])({inner})(?![A-Za-z0-9])", flags)
     return None
 ```
 
