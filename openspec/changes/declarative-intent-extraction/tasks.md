@@ -12,7 +12,7 @@
 
 ## 2. Extraction Engine and Parity Harness
 
-- [ ] 2.1 Load extraction declarations and the semantic-type catalog atomically in the agent registry loader; snapshot id covers both artifacts
+- [x] Load extraction declarations and the semantic-type catalog atomically in the agent registry loader; snapshot id covers both artifacts
 - [ ] 2.2 Implement generic value resolvers (`date`, `quantity`, `text`) lifted verbatim from current extractor logic
 - [ ] 2.3 Implement the generic extraction engine: primary-keyword trigger scan, ordered matcher evaluation, token claiming with `excludes` and `priority`, MatchedIntent production - zero capability branches
 - [ ] 2.4 Build the differential parity harness: committed utterance fixtures (single-intent, multi-intent, ambiguous, partial params, technical override, sticky follow-ups) asserting identical decisions/parameters/clarification text between legacy path and engine
