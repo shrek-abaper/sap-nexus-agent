@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+from dataclasses import replace
 import json
 import re
 from typing import TYPE_CHECKING, Protocol
 
-from sap_nexus_agent.extraction.clarify import render_clarify
+from sap_nexus_agent.extraction.clarify import ACTIVE_LOCALE, render_clarify, rephrase_clarify
 from sap_nexus_agent.intent import (
     INVENTORY_PRIMARY_KEYWORDS,
     IntentParseResult,
@@ -100,7 +101,8 @@ def parse_with_llm(
         payload = client.chat_json(_messages(text, catalog, context=context), temperature=0.0, max_tokens=400)
     except (LlmUnavailable, json.JSONDecodeError, ValueError, TypeError):
         raise LlmUnavailable("LLM intent parsing unavailable")
-    return _payload_to_parse_result(payload, catalog)
+    result = _payload_to_parse_result(payload, catalog)
+    return _with_rephrased_clarification(result, catalog, client)
 
 
 def parse_with_hybrid(
@@ -154,6 +156,40 @@ def _requires_safe_fallback(result: IntentParseResult) -> bool:
     if len(result.matched_intents) > 1:
         return False
     return result.capability_id is None and result.intent is None
+
+
+def _with_rephrased_clarification(
+    result: IntentParseResult,
+    catalog: IntentCatalog,
+    client: JsonLlmClient,
+) -> IntentParseResult:
+    if result.clarification is None or result.capability_id is None or not result.missing_parameters:
+        return result
+    descriptor = catalog.find(result.capability_id)
+    if descriptor is None or descriptor.intent_config is None:
+        return result
+    field_names = _intent_field_names(descriptor)
+    all_declared_fields = {inp.name for inp in descriptor.inputs} | set(field_names)
+    rephrased = rephrase_clarify(
+        result.clarification,
+        list(result.missing_parameters),
+        field_names,
+        all_declared_fields,
+        client,
+    )
+    if rephrased is None:
+        return result
+    return replace(result, clarification=rephrased)
+
+
+def _intent_field_names(descriptor: CapabilityDescriptor) -> dict[str, str]:
+    intent_config = descriptor.intent_config
+    if intent_config is None:
+        return {}
+    for locale, names in intent_config.field_names:
+        if locale == ACTIVE_LOCALE:
+            return dict(names)
+    return {}
 
 
 _AUTHORITY_CONTRACT = (

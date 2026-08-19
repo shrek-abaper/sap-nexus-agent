@@ -1,4 +1,8 @@
+import time
+
+from sap_nexus_agent.extraction import clarify
 from sap_nexus_agent.extraction.clarify import render_clarify
+from sap_nexus_agent.llm_intent import parse_with_hybrid
 from sap_nexus_agent.registry_loader import load_intent_catalog
 
 
@@ -69,3 +73,94 @@ def test_sticky_inventory_clarify_matches_legacy_exactly():
     result = resolve_with_context("继续查一下", context, load_intent_catalog())
     # Inventory single-turn and sticky texts coincide - stays strict.
     assert result.clarification == "请提供要查询的物料编号。"
+
+
+class _FakeModel:
+    def __init__(self, payload, *, delay=None, raise_exc=None):
+        self.payload = payload
+        self.delay = delay
+        self.raise_exc = raise_exc
+        self.calls = []
+
+    def chat_json(self, messages, temperature=0.0, max_tokens=200):
+        self.calls.append({"messages": messages, "temperature": temperature, "max_tokens": max_tokens})
+        if self.delay is not None:
+            time.sleep(self.delay)
+        if self.raise_exc is not None:
+            raise self.raise_exc
+        if isinstance(self.payload, list):
+            next_payload = self.payload.pop(0)
+            if isinstance(next_payload, BaseException):
+                raise next_payload
+            return next_payload
+        return self.payload
+
+
+def test_rephrase_accepts_in_scope_question():
+    model = _FakeModel({"question": "想查哪个物料编号？"})
+
+    result = clarify.rephrase_clarify(
+        "请提供要查询的物料编号。",
+        ["material"],
+        {"material": "物料编号", "plant": "工厂"},
+        {"material", "plant"},
+        model,
+    )
+
+    assert result == "想查哪个物料编号？"
+
+
+def test_rephrase_rejects_out_of_scope_field():
+    model = _FakeModel({"question": "请告诉我要查的物料编号和工厂。"})
+
+    result = clarify.rephrase_clarify(
+        "请提供要查询的物料编号。",
+        ["material"],
+        {"material": "物料编号", "plant": "工厂"},
+        {"material", "plant"},
+        model,
+    )
+
+    assert result is None
+
+
+def test_rephrase_rejects_malformed_json():
+    model = _FakeModel({"notQuestion": "想查哪个物料编号？"})
+
+    result = clarify.rephrase_clarify(
+        "请提供要查询的物料编号。",
+        ["material"],
+        {"material": "物料编号"},
+        {"material"},
+        model,
+    )
+
+    assert result is None
+
+
+def test_rephrase_rejects_timeout():
+    model = _FakeModel({"question": "想查哪个物料编号？"}, delay=0.02)
+
+    result = clarify.rephrase_clarify(
+        "请提供要查询的物料编号。",
+        ["material"],
+        {"material": "物料编号"},
+        {"material"},
+        model,
+        timeout_ms=1,
+    )
+
+    assert result is None
+
+
+def test_hybrid_clarify_falls_back_to_template_on_model_failure():
+    catalog = load_intent_catalog()
+    model = _FakeModel([
+        {"capabilityId": "MM.Inventory.GetAvailability", "parameters": {"plant": "1000"}},
+        ValueError("rephrase failed"),
+    ])
+
+    result = parse_with_hybrid("查一下 1000 工厂库存", client=model, catalog=catalog)
+
+    assert result.clarification == "请提供要查询的物料编号。"
+    assert len(model.calls) == 2
