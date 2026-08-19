@@ -151,7 +151,7 @@ Modified files:
   the capabilities.yaml integration is checked by the validator in Task 4). Consumed
   by Task 4 (validator mirrors it) and Task 5 (real registry declarations).
 
-- [ ] **Step 1: Write the failing schema test**
+- [x] **Step 1: Write the failing schema test**
 
 Create `agent/tests/test_extraction_declarations.py`:
 
@@ -245,12 +245,12 @@ def test_invalid_input_extraction_rejected(mutation):
         jsonschema.validate(payload, resolver)
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_extraction_declarations.py -q`
 Expected: FAIL / ERROR (`schemas/extraction-declaration.schema.json` does not exist).
 
-- [ ] **Step 3: Write the schema**
+- [x] **Step 3: Write the schema**
 
 Create `schemas/extraction-declaration.schema.json`. Structure (abridged to the
 load-bearing parts - write it fully, no `TBD`):
@@ -362,12 +362,12 @@ root so the test can validate a bare extraction object. JSON Schema keyword choi
 the repo's existing schemas (e.g. `schemas/capability.schema.json`) use draft 2020-12;
 follow whichever draft the existing files declare if different.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_extraction_declarations.py -q`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add schemas/extraction-declaration.schema.json agent/tests/test_extraction_declarations.py
@@ -390,7 +390,7 @@ git commit -m "feat: JSON Schema for capability extraction declarations"
   Matcher shape reuses Task 1's matcher definition (duplicate it inline; catalog
   entries use `id` instead of `ref`).
 
-- [ ] **Step 1: Write the failing test** (append to `agent/tests/test_extraction_declarations.py`)
+- [x] **Step 1: Write the failing test** (append to `agent/tests/test_extraction_declarations.py`)
 
 ```python
 VALID_CATALOG = {
@@ -439,12 +439,12 @@ def test_invalid_catalog_rejected(mutation):
                             _load("semantic-type-catalog.schema.json"))
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_extraction_declarations.py -q`
 Expected: FAIL (schema file missing)
 
-- [ ] **Step 3: Write the schema**
+- [x] **Step 3: Write the schema**
 
 Create `schemas/semantic-type-catalog.schema.json`:
 
@@ -500,12 +500,12 @@ Create `schemas/semantic-type-catalog.schema.json`:
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_extraction_declarations.py -q`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add schemas/semantic-type-catalog.schema.json agent/tests/test_extraction_declarations.py
@@ -527,7 +527,7 @@ git commit -m "feat: JSON Schema for the semantic-type extraction catalog"
   design doc §3). Consumed by Task 4 (reference resolution), Task 5 (declarations),
   Task 8 (loader), Task 10 (engine).
 
-- [ ] **Step 1: Write the failing test** (append to `agent/tests/test_extraction_declarations.py`)
+- [x] **Step 1: Write the failing test** (append to `agent/tests/test_extraction_declarations.py`)
 
 The test pins "lifted verbatim" mechanically: every catalog pattern must equal the
 legacy compiled pattern source, so drift is caught at test time.
@@ -582,12 +582,12 @@ def test_material_filters_reproduce_legacy_guards():
     }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_extraction_declarations.py -q`
 Expected: FAIL (`registry/semantic-types.yaml` missing)
 
-- [ ] **Step 3: Write the catalog**
+- [x] **Step 3: Write the catalog**
 
 Create `registry/semantic-types.yaml`. In YAML single-quoted scalars a backslash is
 literal - write patterns exactly as the Python source strings:
@@ -674,12 +674,12 @@ Semantics notes that Tasks 4/8/10 implement (also written into the schema file's
   `_extract_unit` iterates unit values in list order (`EA` first) rather than taking
   the leftmost match, and is case-sensitive.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_extraction_declarations.py -q`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add registry/semantic-types.yaml agent/tests/test_extraction_declarations.py
@@ -705,7 +705,7 @@ git commit -m "feat: semantic-type extraction catalog lifted verbatim from legac
   error message or `None`). Wired into `validate_registry_contract()` so every
   invocation validates extraction declarations and the catalog.
 
-- [ ] **Step 1: Write the failing tests** (append to `agent/tests/test_extraction_declarations.py`)
+- [x] **Step 1: Write the failing tests** (append to `agent/tests/test_extraction_declarations.py`)
 
 ```python
 from scripts.validate_registry_contract import (
@@ -842,12 +842,12 @@ declarations; mark the two "real registry" tests with
 Task 4 and remove the marker in Task 5. Alternatively implement Task 5 first within
 the same session - but keep the commits separate as ordered.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_extraction_declarations.py -q`
 Expected: FAIL (`load_semantic_type_catalog` not importable)
 
-- [ ] **Step 3: Implement the validator additions**
+- [x] **Step 3: Implement the validator additions**
 
 In `scripts/validate_registry_contract.py`:
 
@@ -927,7 +927,7 @@ must be covered - covered means appearing in some `case.missing` of that locale 
     errors.extend(validate_extraction_declarations(contract, catalog_entries, repo_root))
 ```
 
-- [ ] **Step 4: Run tests to verify they pass (except the two xfail-marked real-registry ones)**
+- [x] **Step 4: Run tests to verify they pass (except the two xfail-marked real-registry ones)**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_extraction_declarations.py -q`
 Expected: PASS
@@ -935,7 +935,7 @@ Expected: PASS
 Also run the existing validator suite for regressions:
 `.venv/bin/python -m pytest agent/tests/test_registry_contract.py -q` - PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add scripts/validate_registry_contract.py agent/tests/test_extraction_declarations.py
@@ -956,7 +956,7 @@ git commit -m "feat: extraction declaration + catalog validation in registry con
   with strict-parity values (patterns and strings copied verbatim from
   `intent.py` / `pr_intent.py`). Consumed by Tasks 8 and 10.
 
-- [ ] **Step 1: Write the failing test** (append; and un-xfail the Task 4 real-registry tests)
+- [x] **Step 1: Write the failing test** (append; and un-xfail the Task 4 real-registry tests)
 
 ```python
 def _registry_intent_blocks() -> dict:
@@ -1051,12 +1051,12 @@ def test_pr_declaration_parity_constants():
     assert inputs["cost_center"]["extraction"]["requiredWhen"] == {"field": "acct_assgn_cat", "equals": "K"}
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_extraction_declarations.py -q`
 Expected: FAIL (no `intent` blocks in the registry yet)
 
-- [ ] **Step 3: Add the declarations to `registry/capabilities.yaml`**
+- [x] **Step 3: Add the declarations to `registry/capabilities.yaml`**
 
 Add a capability-level `intent` block and per-input `extraction` blocks. Full YAML
 for each capability (input entries show only the added keys - keep every existing
@@ -1292,7 +1292,7 @@ Parity rationale (do not "fix" any of these while porting):
   `("material", "plant")` for inventory; PR's `cost_center` has the lowest priority
   so it lands last, reproducing the legacy append.
 
-- [ ] **Step 4: Run tests and the registry validator**
+- [x] **Step 4: Run tests and the registry validator**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_extraction_declarations.py agent/tests/test_registry_contract.py -q`
 Expected: PASS (remove the xfail markers added in Task 4)
@@ -1300,7 +1300,7 @@ Expected: PASS (remove the xfail markers added in Task 4)
 Run: `.venv/bin/python scripts/validate-registry-contract.py registry/capabilities.yaml`
 Expected: `Registry contract valid: registry/capabilities.yaml`
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add registry/capabilities.yaml agent/tests/test_extraction_declarations.py
@@ -1321,13 +1321,13 @@ git commit -m "feat: strict-parity extraction declarations for inventory, PO, an
 - Produces: proof that loading a registry with extraction metadata yields an
   identical registry to the same registry without the metadata.
 
-- [ ] **Step 1: Read the existing test conventions**
+- [x] **Step 1: Read the existing test conventions**
 
 Read
 `services/gateway/core/src/test/java/com/sapnexus/gateway/registry/CapabilityRegistryLoaderTest.java`
 and mirror its YAML fixture style (inline strings or temp files) and its assertions.
 
-- [ ] **Step 2: Write the test**
+- [x] **Step 2: Write the test**
 
 ```java
 package com.sapnexus.gateway.registry;
@@ -1470,19 +1470,19 @@ exist; adjust to the real accessors and to how the existing loader test reaches
 fixture files). If the loader test uses a resources directory instead of temp
 files, follow that pattern instead of `@TempDir`.
 
-- [ ] **Step 3: Run the gateway test**
+- [x] **Step 3: Run the gateway test**
 
 Run: `scripts/comet-verify-gateway.sh`
 Expected: BUILD SUCCESSFUL (all gateway tests, including the two new ones, pass).
 If `CapabilityDefinition` exposes `equals`, tighten the first assertion to
 `assertEquals(loadedWithout, loadedWith)`.
 
-- [ ] **Step 4: Run the agent suite to confirm nothing regressed**
+- [x] **Step 4: Run the agent suite to confirm nothing regressed**
 
 Run: `.venv/bin/python -m pytest agent/tests -q`
 Expected: PASS (1145 passed baseline + new tests; no failures)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/gateway/core/src/test/java/com/sapnexus/gateway/registry/ExtractionMetadataIndifferenceTest.java
@@ -1495,7 +1495,7 @@ git commit -m "test: gateway indifference to extraction metadata"
 
 **Files:** none (verification only)
 
-- [ ] **Step 1: Run the sweep**
+- [x] **Step 1: Run the sweep**
 
 ```bash
 git status --short
@@ -1507,7 +1507,7 @@ openspec list --json && openspec validate --all --strict
 Expected: working tree contains only this change's files; registry valid; full
 agent suite green; openspec validation passes.
 
-- [ ] **Step 2: Record the baseline test count**
+- [x] **Step 2: Record the baseline test count**
 
 Note the pytest total in the transcript (e.g. `1234 passed`) - this is the parity
 baseline every later task must preserve. No commit needed (no file changes beyond
@@ -1547,7 +1547,7 @@ what Tasks 1-6 already committed).
   `build_registry_snapshot` covers both artifacts under one snapshot id;
   `load_semantic_sources` loads the new file.
 
-- [ ] **Step 1: Write the failing tests** (append to `agent/tests/test_registry_loader.py`)
+- [x] **Step 1: Write the failing tests** (append to `agent/tests/test_registry_loader.py`)
 
 ```python
 def test_load_intent_catalog_pairs_declarations_with_catalog_atomically():
@@ -1608,12 +1608,12 @@ def test_snapshot_id_changes_when_catalog_changes():
     assert build_registry_snapshot(changed).snapshot_id != first.snapshot_id
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_registry_loader.py agent/tests/test_semantic_planning_contract.py -q`
 Expected: FAIL (no `intent_config`, four-source pin, no `semantic_types`)
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 In `registry_loader.py`, add the dataclasses above plus parsers mirroring the
 existing `_parse_narrative` style (return `None` on malformed input rather than
@@ -1670,12 +1670,12 @@ In `semantic_planning/contracts.py` add the field
 `documents_by_path()` entry; in `semantic_planning/loader.py` add
 `semantic_types=load_yaml_mapping(repo_root / "registry/semantic-types.yaml")`.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_registry_loader.py agent/tests/test_semantic_planning_contract.py agent/tests/test_governed_context.py -q`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add agent/sap_nexus_agent/registry_loader.py agent/sap_nexus_agent/semantic_planning/contracts.py agent/sap_nexus_agent/semantic_planning/loader.py agent/tests/test_registry_loader.py agent/tests/test_semantic_planning_contract.py
@@ -1700,7 +1700,7 @@ git commit -m "feat: atomic agent-side load of extraction declarations and seman
   resolver name raises `ValueError` (validator prevents this from firing at
   runtime).
 
-- [ ] **Step 1: Write the failing test** (create `agent/tests/test_extraction_engine.py`)
+- [x] **Step 1: Write the failing test** (create `agent/tests/test_extraction_engine.py`)
 
 ```python
 from sap_nexus_agent.extraction.resolvers import resolve
@@ -1732,12 +1732,12 @@ def test_unknown_resolver_raises():
         resolve("x", "decimal", ValueFilters())
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_extraction_engine.py -q`
 Expected: FAIL (module missing)
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Create `agent/sap_nexus_agent/extraction/__init__.py` (empty for now) and
 `agent/sap_nexus_agent/extraction/resolvers.py`:
@@ -1762,12 +1762,12 @@ def resolve(value: str, resolver: str, filters: ValueFilters) -> str:
     return value
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_extraction_engine.py -q`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add agent/sap_nexus_agent/extraction/__init__.py agent/sap_nexus_agent/extraction/resolvers.py agent/tests/test_extraction_engine.py
@@ -1801,7 +1801,7 @@ git commit -m "feat: generic date/quantity/text value resolvers lifted verbatim"
   - `render_clarify(cap: CapabilityDescriptor, missing: list[str], locale: str = "zh-CN") -> str | None` - deterministic cases/fallback rendering with `{fields}` expansion via `fieldNames`; default-locale-derived prompt when the locale entry is missing (never fails)
   - `ACTIVE_LOCALE = "zh-CN"`
 
-- [ ] **Step 1: Write the failing engine tests** (append to `agent/tests/test_extraction_engine.py`)
+- [x] **Step 1: Write the failing engine tests** (append to `agent/tests/test_extraction_engine.py`)
 
 ```python
 from sap_nexus_agent.extraction import engine
@@ -1953,12 +1953,12 @@ def test_po_filter_case():
     assert render_clarify(po, ["filter"]) == "请至少提供一个过滤条件（采购订单号、供应商、工厂或物料）。"
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_extraction_engine.py agent/tests/test_clarify_rendering.py -q`
 Expected: FAIL (engine/clarify modules missing)
 
-- [ ] **Step 3: Implement `clarify.py`**
+- [x] **Step 3: Implement `clarify.py`**
 
 ```python
 """Deterministic CLARIFY rendering from clarifyPrompt declarations (rule mode)."""
@@ -1998,7 +1998,7 @@ def render_clarify(cap: CapabilityDescriptor, missing: list[str], locale: str = 
     return None
 ```
 
-- [ ] **Step 4: Implement `engine.py`**
+- [x] **Step 4: Implement `engine.py`**
 
 Core algorithm (write the full module; the load-bearing pieces):
 
@@ -2160,14 +2160,14 @@ from sap_nexus_agent.extraction import clarify, resolvers
 __all__ = ["engine", "clarify", "resolvers"]
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_extraction_engine.py agent/tests/test_clarify_rendering.py -q`
 Expected: PASS. Iterate on parity-sensitive details (unit matcher order, plant
 fallback, PO exclusion) until green - if a fixture-level mismatch appears, fix the
 engine, never the expectation.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add agent/sap_nexus_agent/extraction/ agent/tests/test_extraction_engine.py agent/tests/test_clarify_rendering.py
@@ -2195,7 +2195,7 @@ git commit -m "feat: generic declaration-driven extraction engine and CLARIFY re
 - Consumes: `engine.parse_declared` (single-turn rows), `engine.sticky_parse`
   (sticky rows), legacy reference module, `select_capability` for decision types.
 
-- [ ] **Step 1: Freeze the legacy reference**
+- [x] **Step 1: Freeze the legacy reference**
 
 Create `agent/tests/legacy_intent_reference.py` as a verbatim copy of today's
 `parse_intent` body (trigger scan, ambiguity, per-capability builders, single/multi
@@ -2212,7 +2212,7 @@ def sticky(text: str, context: ConversationContext) -> IntentParseResult: ...
 Do not "clean up" the copy - it is the frozen oracle. Header comment:
 `# FROZEN legacy oracle for differential parity. Deleted with the legacy path (tasks.md 4.3).`
 
-- [ ] **Step 2: Author the fixture tables**
+- [x] **Step 2: Author the fixture tables**
 
 Freeze each row's `expect` from the legacy oracle by actually running it (write the
 rows, then a one-off command prints any mismatch; adjust the table, not the
@@ -2324,7 +2324,7 @@ keep it in `po.yaml` to avoid a fourth file):
     `is_ambiguous: true`, decision REJECT (spec scenario "Weak keyword alone does
     not trigger but counts toward ambiguity" made executable).
 
-- [ ] **Step 3: Write the harness test**
+- [x] **Step 3: Write the harness test**
 
 Create `agent/tests/test_extraction_parity.py`:
 
@@ -2456,14 +2456,14 @@ Notes:
   (fields like `capability_id`, `decision_type`, `parameters`, `reference_turn_id`)
   and adapt `_context` accordingly.
 
-- [ ] **Step 4: Run the harness**
+- [x] **Step 4: Run the harness**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_extraction_parity.py -q`
 Expected: PASS (all three legs). If a leg disagrees, the frozen table is wrong only
 if the oracle disagrees with reality - re-run the oracle to regenerate; otherwise
 fix the engine (never weaken an assertion).
 
-- [ ] **Step 5: Run the full agent suite + commit**
+- [x] **Step 5: Run the full agent suite + commit**
 
 Run: `.venv/bin/python -m pytest agent/tests -q` - PASS.
 
@@ -2493,7 +2493,7 @@ git commit -m "test: frozen parity fixture tables and differential legacy-vs-eng
   capabilities to `engine.extract_parameters`; `_contains_any_primary_keyword`
   ORs `engine.any_primary_keyword` with the legacy primary sets.
 
-- [ ] **Step 1: Add the seam to `parse_intent`**
+- [x] **Step 1: Add the seam to `parse_intent`**
 
 In `intent.py`, after the override-rejection and sticky-routing blocks (both stay
 exactly as they are), replace the keyword-scan/build section with a merged scan:
@@ -2562,7 +2562,7 @@ migration). Keep the 0/1/multi composition tail byte-identical to the current
 code. `parse_intent` then calls `_parse_single_turn(normalized)`; the contains
 flags flow through as today.
 
-- [ ] **Step 2: Add the seam to sticky continuation**
+- [x] **Step 2: Add the seam to sticky continuation**
 
 In `llm_intent.py`:
 
@@ -2604,14 +2604,14 @@ over migrated+declared capabilities only, and (b) the legacy
 `engine.any_primary_keyword` (default `None` = all declared capabilities) rather
 than contorting the call site. Do NOT change `resolve_with_context`'s algorithm.
 
-- [ ] **Step 3: Verify zero behavior change**
+- [x] **Step 3: Verify zero behavior change**
 
 Run: `.venv/bin/python -m pytest agent/tests -q`
 Expected: PASS - identical count to the Task 7 baseline. The seam is inert
 (`_ENGINE_MIGRATED_CAPABILITIES` is empty), so every existing test and the parity
 production leg must be untouched.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add agent/sap_nexus_agent/intent.py agent/sap_nexus_agent/llm_intent.py
@@ -2629,13 +2629,13 @@ git commit -m "feat: per-capability migration seam between legacy extractors and
 - Consumes: Task 12 seam, Task 11 harness.
 - Produces: `_ENGINE_MIGRATED_CAPABILITIES = {"MM.PR.CreateDraft"}`.
 
-- [ ] **Step 1: Flip the seam**
+- [x] **Step 1: Flip the seam**
 
 ```python
 _ENGINE_MIGRATED_CAPABILITIES: set[str] = {"MM.PR.CreateDraft"}
 ```
 
-- [ ] **Step 2: Run the parity harness and full suite**
+- [x] **Step 2: Run the parity harness and full suite**
 
 ```bash
 .venv/bin/python -m pytest agent/tests/test_extraction_parity.py -q
@@ -2646,13 +2646,13 @@ Expected: both PASS. Failures here mean an engine parity gap for PR (single-turn
 or sticky) - fix the engine or the declaration (e.g. matcher order, priority,
 clarification template), never a fixture or an existing test.
 
-- [ ] **Step 3: Run the call-plan eval**
+- [x] **Step 3: Run the call-plan eval**
 
 Run: `PYTHONPATH=agent scripts/verify-agent-callplan-evidence.sh`
 Expected: exit 0 (includes the full agent suite plus all eval files, among them
 `evals/pr_create_cases.json`).
 
-- [ ] **Step 4: Standalone commit (required: one commit per migration step)**
+- [x] **Step 4: Standalone commit (required: one commit per migration step)**
 
 ```bash
 git add agent/sap_nexus_agent/intent.py
@@ -2669,11 +2669,11 @@ git commit -m "feat: migrate MM.PR.CreateDraft to declaration-driven extraction"
 **Interfaces:**
 - Produces: `_ENGINE_MIGRATED_CAPABILITIES = {"MM.PR.CreateDraft", "MM.Inventory.GetAvailability"}`.
 
-- [ ] **Step 1: Flip the seam**
+- [x] **Step 1: Flip the seam**
 
 Add `"MM.Inventory.GetAvailability"` to the set.
 
-- [ ] **Step 2: Run parity + full suite + eval**
+- [x] **Step 2: Run parity + full suite + eval**
 
 ```bash
 .venv/bin/python -m pytest agent/tests/test_extraction_parity.py -q
@@ -2686,7 +2686,7 @@ Expected: all green. The inventory-specific sticky material-CLARIFY quirk
 this row is the one most likely to fail if the flag's generic logic drifted; if it
 fails, fix `engine.sticky_parse`'s reask block, not the fixture.
 
-- [ ] **Step 3: Standalone commit**
+- [x] **Step 3: Standalone commit**
 
 ```bash
 git add agent/sap_nexus_agent/intent.py
@@ -2703,11 +2703,11 @@ git commit -m "feat: migrate MM.Inventory.GetAvailability to declaration-driven 
 **Interfaces:**
 - Produces: `_ENGINE_MIGRATED_CAPABILITIES = {"MM.PR.CreateDraft", "MM.Inventory.GetAvailability", "MM.PurchaseOrder.GetList"}`.
 
-- [ ] **Step 1: Flip the seam**
+- [x] **Step 1: Flip the seam**
 
 Add `"MM.PurchaseOrder.GetList"`.
 
-- [ ] **Step 2: Run parity + full suite + eval**
+- [x] **Step 2: Run parity + full suite + eval**
 
 ```bash
 .venv/bin/python -m pytest agent/tests/test_extraction_parity.py -q
@@ -2718,7 +2718,7 @@ PYTHONPATH=agent scripts/verify-agent-callplan-evidence.sh
 Expected: all green. Watch `po-number-value-excluded` and `po-no-filter`
 (`requireAny`) - the exclusion-heavy PO logic is the most entangled.
 
-- [ ] **Step 3: Standalone commit**
+- [x] **Step 3: Standalone commit**
 
 ```bash
 git add agent/sap_nexus_agent/intent.py
@@ -2743,7 +2743,7 @@ git commit -m "feat: migrate MM.PurchaseOrder.GetList to declaration-driven extr
   rule-mode clarification (single-turn via Task 10, sticky via this task) is
   declaration-driven and deterministic.
 
-- [ ] **Step 1: Write the failing test** (append to `agent/tests/test_clarify_rendering.py`)
+- [x] **Step 1: Write the failing test** (append to `agent/tests/test_clarify_rendering.py`)
 
 ```python
 def test_sticky_clarify_rendered_from_declaration():
@@ -2785,12 +2785,12 @@ def test_sticky_inventory_clarify_matches_legacy_exactly():
 
 (Adapt `LastContext` field names to `conversation_context.py` if they differ.)
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_clarify_rendering.py -q`
 Expected: FAIL (sticky still renders `请提供以下参数：...` via `_clarification_for`).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 In `resolve_with_context`, replace `clarification = _clarification_for(cap_id, missing)`
 with `clarification = render_clarify(descriptor, missing)` (`descriptor` is already
@@ -2798,14 +2798,14 @@ resolved above the call site). Delete `_clarification_for` and every clarificati
 string table it owned. Grep for remaining `_clarification_for` references
 (`grep -rn "_clarification_for" agent/`) and remove them all.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `.venv/bin/python -m pytest agent/tests -q`
 Expected: PASS - including the parity production leg (sticky PR rows carry
 `clarification_strict: false` during differential mode per reconciliation #5, so
 the sanctioned text change does not break the harness).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add agent/sap_nexus_agent/llm_intent.py agent/tests/test_clarify_rendering.py
@@ -2850,7 +2850,7 @@ def rephrase_clarify(
   has no client and never reaches this code.
 - Consumes: existing `OpenAiCompatibleLlmClient.chat_json`.
 
-- [ ] **Step 1: Write the failing tests** (append; use a fake model object)
+- [x] **Step 1: Write the failing tests** (append; use a fake model object)
 
 ```python
 class _FakeModel:
@@ -2864,22 +2864,22 @@ def test_rephrase_rejects_timeout():                # -> None (template used by 
 def test_hybrid_clarify_falls_back_to_template_on_model_failure():  # llm_intent wiring
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_clarify_rendering.py -q`
 Expected: FAIL (`rephrase_clarify` missing).
 
-- [ ] **Step 3: Implement** per Interfaces. Keep the rephrase prompt free of any
+- [x] **Step 3: Implement** per Interfaces. Keep the rephrase prompt free of any
   capability-specific text; the closed set comes entirely from the declaration.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `.venv/bin/python -m pytest agent/tests/test_clarify_rendering.py agent/tests -q`
 Expected: PASS (existing tests unaffected - rephrase only fires when a client is
 present and its output passes the closed-set check; all recorded-model tests use
 fixtures whose clarification path stays templated).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add agent/sap_nexus_agent/extraction/clarify.py agent/sap_nexus_agent/llm_intent.py agent/tests/test_clarify_rendering.py
@@ -2914,7 +2914,7 @@ git commit -m "feat: optional grounded LLM rephrase for CLARIFY in llm/hybrid mo
   they only wrap the deleted oracle) - the frozen-table production leg becomes
   the permanent regression test.
 
-- [ ] **Step 1: Survey blast radius**
+- [x] **Step 1: Survey blast radius**
 
 ```bash
 grep -rn "pr_intent\|_build_inventory_result\|_build_purchase_order_result\|INVENTORY_KEYWORDS\|PR_CREATE_KEYWORDS\|_PRIMARY_KEYWORD_SETS\|_extract_params_for\|legacy_intent_reference" agent/ --include="*.py" | grep -v "extraction/"
@@ -2926,7 +2926,7 @@ If a test exercises a legacy-only quirk that has a sanctioned deviation
 (reconciliation #5), update the expectation and note the reconciliation number
 in a comment.
 
-- [ ] **Step 2: Delete in dependency order**
+- [x] **Step 2: Delete in dependency order**
 
 1. `intent.py`: collapse `_parse_single_turn` to engine-only (remove the legacy
    scan branch and the migrated-set checks); delete the constant tables and
@@ -2938,7 +2938,7 @@ in a comment.
 4. `rm agent/tests/legacy_intent_reference.py`; strip the two differential legs
    from `test_extraction_parity.py` (keep `test_production_parse_matches_frozen_table`).
 
-- [ ] **Step 3: Verify nothing regressed**
+- [x] **Step 3: Verify nothing regressed**
 
 ```bash
 .venv/bin/python -m pytest agent/tests -q
@@ -2949,7 +2949,7 @@ Expected: PASS with the same passing count as the Task 15 state (minus deleted
 differential-leg tests). Any failure = a legacy behavior still depended on -
 fix by declaration or engine, never by reintroducing legacy code.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add -A agent/
@@ -2975,7 +2975,7 @@ git commit -m "refactor: delete legacy extraction path; engine is the only rule-
   referencing the capability. This is the executable form of the delta spec's
   "Declared capability recognized without code change" scenario.
 
-- [ ] **Step 1: Write the test** (it passes only if Tasks 8-18 are complete)
+- [x] **Step 1: Write the test** (it passes only if Tasks 8-18 are complete)
 
 ```python
 def test_declaration_only_capability_full_rule_mode_flow(tmp_path, monkeypatch):
@@ -2984,9 +2984,9 @@ def test_declaration_only_capability_full_rule_mode_flow(tmp_path, monkeypatch):
     # assert: no source change needed - capability id appears nowhere in agent/sap_nexus_agent
 ```
 
-- [ ] **Step 2: Run** - `.venv/bin/python -m pytest agent/tests/test_declaration_only_capability.py -q` -> PASS.
+- [x] **Step 2: Run** - `.venv/bin/python -m pytest agent/tests/test_declaration_only_capability.py -q` -> PASS.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add agent/tests/test_declaration_only_capability.py
@@ -2999,7 +2999,7 @@ git commit -m "test: declaration-only capability is rule-mode usable end to end"
 
 **Files:** none (verification only; fixes follow the debug gate if anything fails)
 
-- [ ] **Step 1: Run the full matrix**
+- [x] **Step 1: Run the full matrix**
 
 ```bash
 git status --short                     # expect only tracked-change files, no strays
@@ -3012,7 +3012,7 @@ git diff --stat 2d4af9451ab1516a775de367d5b8bf347136eee2..HEAD -- frontend/   # 
 
 Gateway test (Task 6): re-run once via the same gradle invocation used there.
 
-- [ ] **Step 2: Record results** in the change's verification notes
+- [x] **Step 2: Record results** in the change's verification notes
   (`openspec/changes/declarative-intent-extraction/` - append to the Design Doc's
   verification section or a `verification.md`), including the final agent suite
   pass count and the parity-table row count. No claim without output.
@@ -3026,16 +3026,16 @@ Gateway test (Task 6): re-run once via the same gradle invocation used there.
 - Modify: `docs/superpowers/specs/2026-08-18-declarative-intent-extraction-design.md`
   (append verification record from Task 20; mark reconciliations as applied)
 
-- [ ] **Step 1: Update READMEs** - one bullet each (zh + en): rule-mode intent
+- [x] **Step 1: Update READMEs** - one bullet each (zh + en): rule-mode intent
   extraction is declaration-driven (`registry/capabilities.yaml` intent blocks +
   `registry/semantic-types.yaml`); adding a capability needs no agent code.
   Keep it to the existing maturity/feature bullet style; do not restructure.
 
-- [ ] **Step 2: Append the parity baseline** (frozen-table row counts per
+- [x] **Step 2: Append the parity baseline** (frozen-table row counts per
   capability, final suite counts, sanctioned deviation list) to the Design Doc
   as a "Verification Record" section.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add README.md README.en.md docs/superpowers/specs/2026-08-18-declarative-intent-extraction-design.md
