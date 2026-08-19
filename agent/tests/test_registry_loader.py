@@ -4,6 +4,7 @@ from pathlib import Path
 from sap_nexus_agent.call_plan import CallPlan, create_call_plan
 from sap_nexus_agent.registry_loader import (
     CapabilityDescriptor,
+    ConditionConfig,
     InputDescriptor,
     IntentCatalog,
     load_intent_catalog,
@@ -123,6 +124,7 @@ def test_registry_v2_metadata_does_not_change_runtime_descriptors():
         "examples",
         "side_effect",
         "narrative",
+        "intent_config",
     )
     assert inventory.narrative is not None
     assert inventory.narrative.fact_shape == "single-value"
@@ -137,6 +139,7 @@ def test_registry_v2_metadata_does_not_change_runtime_descriptors():
         "min_length",
         "max_length",
         "pattern",
+        "extraction",
     )
 
     plan = create_call_plan(inventory.capability_id, {"material": "MAT-1"})
@@ -185,3 +188,35 @@ def test_load_intent_catalog_capabilities_without_aliases_examples_still_load():
     for cap in catalog.capabilities:
         assert isinstance(cap.aliases, tuple)
         assert isinstance(cap.examples, tuple)
+
+
+def test_load_intent_catalog_pairs_declarations_with_catalog_atomically():
+    catalog = load_intent_catalog()
+    pr = catalog.find("MM.PR.CreateDraft")
+    assert pr is not None and pr.intent_config is not None
+    assert pr.intent_config.intent_name == "pr_create"
+    inputs = {i.name: i for i in pr.inputs}
+    assert inputs["cost_center"].extraction is not None
+    assert inputs["cost_center"].extraction.required_when == ConditionConfig(
+        field="acct_assgn_cat", equals="K")
+    material_entry = catalog.semantic_types.find("MaterialNumber")
+    assert material_entry is not None
+    assert material_entry.filters.to_upper_compare is True
+    assert material_entry.filters.min_length == 5
+    # same call returned both artifacts
+    assert {e.entry_id for e in catalog.semantic_types.entries} >= {
+        "Plant", "MaterialNumber", "Quantity", "Unit", "Date",
+        "PurchasingGroup", "Vendor", "PONumber"}
+
+
+def test_load_intent_catalog_without_catalog_file_degrades(tmp_path, monkeypatch):
+    # capabilities.yaml present, semantic-types.yaml absent -> capabilities still load
+    # (loader resolves <root>/registry/capabilities.yaml for SAP_NEXUS_AGENT_ROOT)
+    registry_dir = tmp_path / "registry"
+    registry_dir.mkdir()
+    (registry_dir / "capabilities.yaml").write_text(
+        "version: 2\ncapabilities: []\n", encoding="utf-8")
+    monkeypatch.setenv("SAP_NEXUS_AGENT_ROOT", str(tmp_path))
+    catalog = load_intent_catalog()
+    assert catalog.capabilities == ()
+    assert catalog.semantic_types.entries == ()

@@ -11,8 +11,8 @@
     "snapshotId": { "$ref": "#/$defs/sha256" },
     "sources": {
       "type": "array",
-      "minItems": 4,
-      "maxItems": 4,
+      "minItems": 5,
+      "maxItems": 5,
       "uniqueItems": true,
       "prefixItems": [
         {
@@ -38,6 +38,12 @@
             { "$ref": "#/$defs/source" },
             { "properties": { "path": { "const": "registry/executor-bindings.yaml" } } }
           ]
+        },
+        {
+          "allOf": [
+            { "$ref": "#/$defs/source" },
+            { "properties": { "path": { "const": "registry/semantic-types.yaml" } } }
+          ]
         }
       ],
       "items": false
@@ -59,7 +65,8 @@
             "ontology/capability-relations.yaml",
             "ontology/fact-types.yaml",
             "registry/capabilities.yaml",
-            "registry/executor-bindings.yaml"
+            "registry/executor-bindings.yaml",
+            "registry/semantic-types.yaml"
           ]
         },
         "documentVersion": { "type": "integer", "minimum": 1 },

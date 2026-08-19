@@ -88,6 +88,7 @@ class SemanticSourceDocuments:
     executor_bindings: Mapping[str, Any]
     fact_types: Mapping[str, Any]
     relations: Mapping[str, Any]
+    semantic_types: Mapping[str, Any] = MappingProxyType({})
 
     def __post_init__(self) -> None:
         for field_name in (
@@ -95,20 +96,22 @@ class SemanticSourceDocuments:
             "executor_bindings",
             "fact_types",
             "relations",
+            "semantic_types",
         ):
             object.__setattr__(
                 self, field_name, _deep_freeze(getattr(self, field_name))
             )
 
     def documents_by_path(self) -> Mapping[str, Mapping[str, Any]]:
-        return MappingProxyType(
-            {
-                "ontology/capability-relations.yaml": self.relations,
-                "ontology/fact-types.yaml": self.fact_types,
-                "registry/capabilities.yaml": self.capabilities,
-                "registry/executor-bindings.yaml": self.executor_bindings,
-            }
-        )
+        result: dict[str, Mapping[str, Any]] = {
+            "ontology/capability-relations.yaml": self.relations,
+            "ontology/fact-types.yaml": self.fact_types,
+            "registry/capabilities.yaml": self.capabilities,
+            "registry/executor-bindings.yaml": self.executor_bindings,
+        }
+        if self.semantic_types:
+            result["registry/semantic-types.yaml"] = self.semantic_types
+        return MappingProxyType(result)
 
 
 def sorted_issues(issues: list[ValidationIssue]) -> tuple[ValidationIssue, ...]:

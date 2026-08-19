@@ -33,4 +33,7 @@ def load_semantic_sources(repo_root: Path) -> SemanticSourceDocuments:
         ),
         fact_types=load_yaml_mapping(repo_root / "ontology/fact-types.yaml"),
         relations=load_yaml_mapping(repo_root / "ontology/capability-relations.yaml"),
+        semantic_types=load_yaml_mapping(
+            repo_root / "registry/semantic-types.yaml"
+        ),
     )

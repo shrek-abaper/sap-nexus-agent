@@ -2211,14 +2211,25 @@ def test_action_fact_reachability_respects_execution_mode_governance(
     assert graph.capabilities[action_id] is action_before
 
 
-def test_loads_exactly_four_snapshot_sources():
+def test_loads_exactly_five_snapshot_sources():
     sources = load_semantic_sources(REPO_ROOT)
     assert tuple(sources.documents_by_path()) == (
         "ontology/capability-relations.yaml",
         "ontology/fact-types.yaml",
         "registry/capabilities.yaml",
         "registry/executor-bindings.yaml",
+        "registry/semantic-types.yaml",
     )
+
+
+def test_snapshot_id_changes_when_catalog_changes():
+    sources = load_semantic_sources(REPO_ROOT)
+    first = build_registry_snapshot(sources)
+    changed = replace(
+        sources,
+        semantic_types={**dict(sources.semantic_types), "version": 999},
+    )
+    assert build_registry_snapshot(changed).snapshot_id != first.snapshot_id
 
 
 def test_loaded_source_tree_rejects_top_level_and_nested_mutation():
