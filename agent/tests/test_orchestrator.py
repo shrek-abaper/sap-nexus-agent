@@ -1182,13 +1182,17 @@ def test_python_hashes_match_typescript_canonical_json_for_unicode():
         requires_approval=False,
     )
 
+    # Constants cross-verified against the TypeScript canonical-json
+    # implementation (frontend/src/runtime/durable/canonical-json.ts):
+    # both sides independently produce these exact digests. The previous
+    # constants never matched either implementation (stale since 7106eeb).
     assert ReadExecutionBinding.hash_call_plan(call_plan) == (
-        "5eb7ff7f2c42fd9ed10b91556dbfbf7b056b0fd53b1302e1294e0b923a0ade66"
+        "23985c4785d750bfbfd2268933b97cedb0ee4485cc8e311afd65cf2a3f7ea999"
     )
     assert _pending_payload_ref({
         "callPlan": {"parameters": {"material": "物料-甲", "plant": "1000"}},
         "combinations": [{"material": "物料-甲", "plant": "1000"}],
-    }) == "sha256:1f7dee1fb86ac76e8ed589b96d358937231d4726f2df30f723b40d55d66f958f"
+    }) == "sha256:a369c970c590c9549eda0752ceff94ed969092fc74e0d632f7b935db09ba8e9e"
 
 
 def test_authoritative_read_write_shaped_values_never_create_approval(monkeypatch):
