@@ -1,0 +1,14 @@
+{
+  "change": "declarative-intent-hardening",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "77353016486164883d6bc2983a93d53387a509ed525d1829d78a74b8923bee18",
+  "files": [
+    { "path": "openspec/changes/declarative-intent-hardening/proposal.md", "sha256": "82fce6f983b17188ddf7ec4ea3a70ac701aa0106779227a19aca66f5908d8e12" },
+    { "path": "openspec/changes/declarative-intent-hardening/design.md", "sha256": "92a87960d6437ffef77702f8f53ea9bb359cb6b86f17c9c9ea1a83c743938b77" },
+    { "path": "openspec/changes/declarative-intent-hardening/tasks.md", "sha256": "1f914b5d32cb871ecf01b57b5450fa0145c67429859333fe7b1b795206d7eead" },
+    { "path": "openspec/changes/declarative-intent-hardening/specs/declarative-intent-extraction/spec.md", "sha256": "d110906e71f68c52301142ae474867a7d1d15d2c355acf0e0c7f51935d1c2c65" }
+  ]
+}

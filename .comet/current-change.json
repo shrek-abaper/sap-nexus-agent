@@ -1,0 +1,6 @@
+{
+  "schema": "comet.selection.v2",
+  "workflow": "classic",
+  "change": "declarative-intent-hardening",
+  "branch": "main"
+}
