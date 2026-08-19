@@ -210,3 +210,42 @@ extraction metadata.
 - Fixture capability (declarations only, no code) end-to-end rule-mode test:
   recognize, slot-fill, CLARIFY
 - Full agent suite + call-plan eval green at every migration step
+
+---
+
+## Verification Record
+
+Task 20 performed a full closeout verification sweep on 2026-08-19 (HEAD `1271d57`, verification recorded in `openspec/changes/declarative-intent-extraction/verification.md`). All completion criteria passed:
+- Registry contract validation: `EXIT CODE: 0`, contract valid
+- Full agent test suite: `15 failed, 1273 passed, 1 skipped` — **exact match to documented pre-existing baseline** (9 test_eval_runner, 1 test_intent, 1 test_llm_intent, 4 test_orchestrator). These 15 failures are confirmed pre-existing PO vendor/PONumber alphanumeric-matching gaps and a stale canonical-JSON hash test vector — both explicitly ruled out of scope during Task 18. They existed identically at the plan's own pre-Task-1 base commit `20f96d8` (verified empirically via disposable git worktree). This is NOT a regression introduced by declarative-intent-extraction.
+- Call-plan eval results: inventory `7/7`, PR `9/9`, dry-run `3/3` (+1 documented pending/skip)
+- OpenSpec validate: `21/21 passed`, `0 failed`
+- Gateway tests: `BUILD SUCCESSFUL`, `exit 0`
+- Frontend untouched: empty diff from base commit through current HEAD
+- Parity-table fixture row counts (frozen baseline):
+  - Inventory: 13 rows
+  - PO: 11 rows
+  - PR: 12 rows
+  - Total: 36 rows
+
+### Sanctioned Design Reconciliations (Marked Applied)
+
+1. **`triggerKeywords` added to the intent block** (Task 5, 10)
+   Legacy trigger sets differ from primary/weak ambiguity tables per capability (e.g. inventory triggers on `有没有` which is a weak keyword, PR primary list has `创建采购` while trigger list lacks it). `triggerKeywords` defaults to `primaryKeywords` when absent; ambiguity counting and sticky new-turn detection use `primaryKeywords`/`weakKeywords` only.
+
+2. **`clarifyPrompt` lives at capability level** (Task 5, 10)
+   `clarifyPrompt` is capability-level (`intent.clarifyPrompt.<locale>`) not inside a single input, to support exact missing-set matches spanning inputs and PO's virtual `filter` missing name expression.
+
+3. **`requireAny` group requiredness** (Task 5)
+   PO synthesizes `missing_parameters=["filter"]` when no filter was extracted. Expressed as `intent.requireAny: {inputs: [...], missingName: filter}` - engine-generic any-of requiredness, not a PO branch.
+
+4. **`toUpperCase` split into `toUpperCaseCompare` / `toUpperCaseOutput`** (Task 2, 3)
+   Inventory material compares uppercased but returns original token; PR unit and purchasing group return uppercased values. Separated into `toUpperCaseCompare` (for value comparison, including `excludes`) and `toUpperCaseOutput` (for returned values).
+
+5. **Sticky non-inventory clarification text changes** (sanctioned micro-deviation) (Task 11, 16)
+   Legacy sticky CLARIFY for PR uses generic `请提供以下参数：{names}。` declaration renders `请提供: 物料编号, ...`. Parity harness marks these rows `clarification_strict: false` during differential mode; other sticky texts coincide exactly.
+
+6. **`test_loads_exactly_four_snapshot_sources` updated to five sources** (Task 2.1)
+   Test updated to expect five sources instead of four because Task 2.1's requirement is that the snapshot id must cover `registry/semantic-types.yaml`.
+
+All reconciliations confirmed applied in implementation and verified via parity harness and test suite.

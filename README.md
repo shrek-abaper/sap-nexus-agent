@@ -61,6 +61,7 @@ SAP Nexus Agent 是一个**基于能力本体建模的 SAP 治理型接入网关
 - **语义参数映射** ─ 能力输入参数通过 `semanticName`/`semanticType` 关联到本体概念（如 `MaterialNumber`、`Plant`），与 SAP 技术参数（`MATERIAL`、`PLANT`）分离
 - **执行器绑定** ─ 能力绑定到特定执行器（`JCO_RFC` / `ODATA`），通过白名单 `bindingId` 控制，运行时不允许替换
 - **OWL 预留** ─ `ontologyIri` 和 `semanticType` 为未来 OWL 本体推理预留迁移路径，当前一致性门禁由 JSON Schema + Registry Validator 承担
+- **声明式意图解析** ─ Rule 模式意图解析完全声明驱动（`registry/capabilities.yaml` 的 `intent` 块 + `registry/semantic-types.yaml` 语义类型目录），添加新能力无需修改 Agent 代码，Task 19 的纯声明能力证明已验证扩展契约
 
 ### 治理与安全
 
