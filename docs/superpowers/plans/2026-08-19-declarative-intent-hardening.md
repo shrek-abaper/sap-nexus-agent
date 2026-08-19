@@ -1694,7 +1694,7 @@ git commit -m "test(declarative-intent): B2.5 PR missing 1/2/3+ fields — test_
   - Schema `$defs.bindingSource`: `kind` in `["userUtterance", "capabilityOutput", "default"]` with kind-specific requirements: userUtterance→`matchers` (minItems 1), capabilityOutput→`factType`+`field`, default→`value`; `additionalProperties: false`.
   - Validator: binding blocks validated against `inputBinding`; matchers inside userUtterance sources validated by `_validate_matcher`; `binding`+`extraction` together → error; `collect_deprecation_warnings(contract) -> list[str]` with the migration text; CLI prints `warning: ...` lines.
 
-- [ ] **Step 1: Write the failing tests** (append to `agent/tests/test_extraction_declarations.py`)
+- [x] **Step 1: Write the failing tests** (append to `agent/tests/test_extraction_declarations.py`)
 
 ```python
 VALID_BINDING = {
@@ -1803,12 +1803,12 @@ def test_binding_and_extraction_together_rejected(tmp_path):
     assert any("both binding and deprecated extraction" in e for e in errors)
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd agent && python3 -m pytest tests/test_extraction_declarations.py -q -k "binding or deprecation"`
 Expected: FAIL — `KeyError: 'inputBinding'` (schema), `ImportError: cannot import name 'collect_deprecation_warnings'`, and `ioField` rejects the `binding` property (`additionalProperties: false`).
 
-- [ ] **Step 3: Implement the schema changes** in `schemas/extraction-declaration.schema.json`
+- [x] **Step 3: Implement the schema changes** in `schemas/extraction-declaration.schema.json`
 
 - Mark `inputExtraction` deprecated: add `"description": "DEPRECATED: use definitions.inputBinding instead. Replace extraction.matchers with binding.sources[{kind: userUtterance, matchers: [...]}]."` to the `inputExtraction` definition object.
 - Add `definitions.inputBinding` (sibling of `inputExtraction`):
@@ -1876,7 +1876,7 @@ In `schemas/capability.schema.json`:
 - In `$defs.ioField.properties`, add `"binding": {"$ref": "#/$defs/inputBindingBlock"}`.
 - Mark `extractionBlock` deprecated with the same description text as `inputExtraction`.
 
-- [ ] **Step 4: Implement the validator changes** in `scripts/validate_registry_contract.py`
+- [x] **Step 4: Implement the validator changes** in `scripts/validate_registry_contract.py`
 
 In `validate_extraction_declarations`, load the binding validator alongside the extraction validator (after line 134):
 
@@ -1988,7 +1988,7 @@ Update the CLI `main` in `scripts/validate-registry-contract.py` (after the metr
 
 (add `collect_deprecation_warnings` to the import from `validate_registry_contract`.)
 
-- [ ] **Step 5: Run the tests and CLI to verify**
+- [x] **Step 5: Run the tests and CLI to verify**
 
 Run:
 ```bash
@@ -1998,7 +1998,7 @@ python3 scripts/validate-registry-contract.py registry/capabilities.yaml
 Expected: PASS — binding schema/parity tests green; real registry still valid (extraction alias accepted with warnings); CLI prints the metric, then the `warning:` lines, then `Registry contract valid: registry/capabilities.yaml`, exit 0.
 Note: the condition/excludes error message lost the `.extraction` qualifier for shared paths — if any existing test pins the old full string, update that assertion; no current test does (verified: existing assertions match substrings like "semanticType"/"compile").
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add schemas/extraction-declaration.schema.json schemas/capability.schema.json scripts/validate_registry_contract.py scripts/validate-registry-contract.py agent/tests/test_extraction_declarations.py

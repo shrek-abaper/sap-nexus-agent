@@ -18,7 +18,7 @@
 
 ## 3. B3 — Extraction generalized to binding
 
-- [ ] 3.1 Extend `schemas/extraction-declaration.schema.json`: `binding.sources[]` with kinds `userUtterance`, `capabilityOutput` (factType + field), `default` (value); keep `extraction` as a deprecated alias shape; validator emits a warning per `extraction:` usage with migration guidance.
+- [x] 3.1 Extend `schemas/extraction-declaration.schema.json`: `binding.sources[]` with kinds `userUtterance`, `capabilityOutput` (factType + field), `default` (value); keep `extraction` as a deprecated alias shape; validator emits a warning per `extraction:` usage with migration guidance.
 - [ ] 3.2 Loader normalization: `extraction:` parses into a single-`userUtterance`-source binding; engine resolves sources in priority `capabilityOutput > userUtterance > default`.
 - [ ] 3.3 Implement the `capabilityOutput` branch as NotImplemented with a clear error; add an xfail test pinning the future landing point (fails with not-implemented reason until the branch exists).
 - [ ] 3.4 Tests: binding priority ordering (capabilityOutput beats userUtterance; default fills only when nothing else does), alias warning emitted by validator, xfail placeholder test.
