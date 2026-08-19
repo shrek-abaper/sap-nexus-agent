@@ -86,7 +86,7 @@ SAP Nexus Agent 的长期目标是建立面向 SAP On-Prem 的能力智能枢纽
 - **离线端到端治理编排已可用**：意图 → CallPlan → 校验/执行 → ExecutionResult → ReasoningFact → 叙述 → 持久化 Workbench 回放 → plan-aware single Action continuation，单能力 `CallPlan` 主链保持可用。
 - **Python Agent 职责**：LLM-first intent、closed-set recall、五态决策和 PlanGraph v2 authoring。
 - **TypeScript composition coordinator**：已接通 PlanExecutor、OutputProjection、Recommendation、grounded Narrative、durable Workbench replay 与 plan-aware single Action continuation。
-- **Release gate 里程碑**：offline L1/L2/L3 gate 曾于 2026-08-10 达成 `22/22`，最高连续等级 `L3_ACTION_GOVERNED`；四项 hard gates 分别为 leakage `0`、approval bypass `0`、unsupported claim `0`、lineage `100%`。
+- **Release gate 里程碑**：offline L1/L2/L3 gate 于 2026-08-19 达成 `22/22`，最高连续等级 `L3_ACTION_GOVERNED`；四项 hard gates 分别为 leakage `0`、approval bypass `0`、unsupported claim `0`、lineage `100%`。早前 2026-08-10 的 `22/22` 报告所对应的代码状态未进入提交历史（报告内 codeVersion 不在 git 中），无法从提交状态复现，不作为现状依据。
 - **当前架构限制（设计选择，非缺陷）**：
   - Run/Session、principal ownership、approval、lease/idempotency 与 cursor SSE 已 durable 化；但当前本地 JSONL/file store 和 placeholder principal 仍不是 shared multi-worker/HA store 或生产身份系统
   - Knowledge/RAG、自由 Tool Calling、通用 Dynamic Planner、多 WRITE/Saga 和自动补偿仍为 Reserved / Not In Scope
@@ -157,10 +157,10 @@ npm --prefix frontend run release-gate -- --profile all
 ```
 
 当前基线：
-- Agent 测试套件：`1273 passed, 15 failed, 1 skipped`（15 个已知失败为与核心功能无关的既有问题）
-- Frontend 测试套件：`522 passed, 2 failed`（2 个已知失败：action-governance 集成测试 1 个、release-gate offline-scenario 测试 1 个）
-- Call-plan Eval：`inventory 7/7` ✅、`eval_harness_seed_cases.json 11/13`（2 个 PO-vendor-matching 既有失败）、`PR 9/9` ✅、`matcher_cases.yaml 21/23`（2 个 fixture-snapshot-mismatch 既有失败）、`dry-run 3/3` ✅
-- Offline release gate：于 2026-08-10 达成 `22/22` / `L3_ACTION_GOVERNED`
+- Agent 测试套件：`1288 passed, 0 failed, 1 skipped`
+- Frontend 测试套件：`524 passed, 0 failed`
+- Call-plan Eval：`inventory 7/7` ✅、`eval_harness_seed_cases.json 13/13` ✅、`PR 9/9` ✅、`matcher_cases.yaml 23/23` ✅、`dry-run 3/3` ✅
+- Offline release gate：于 2026-08-19 达成 `22/22` / `L3_ACTION_GOVERNED`
 
 `PYTHONPATH=agent` 可用于验证当前源码。
 

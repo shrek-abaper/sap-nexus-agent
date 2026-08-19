@@ -86,7 +86,7 @@ User Query (natural language)
 - **Offline end-to-end governed composition is implemented and working**: intent → CallPlan → validation/execution → ExecutionResult → ReasoningFact → narrative → durable Workbench replay → plan-aware single Action continuation. The single-capability `CallPlan` main chain remains available.
 - **Python Agent responsibilities**: LLM-first intent, closed-set recall, five-state decisioning, and PlanGraph v2 authoring.
 - **TypeScript composition coordinator**: Wires up PlanExecutor, OutputProjection, Recommendation, grounded Narrative, durable Workbench replay, and plan-aware single-Action continuation.
-- **Release gate milestone**: The offline L1/L2/L3 gate reached `22/22` on 2026-08-10, with the highest consecutive level `L3_ACTION_GOVERNED`; headline hard gates are leakage `0`, approval bypass `0`, unsupported claim `0`, lineage `100%`.
+- **Release gate milestone**: The offline L1/L2/L3 gate reached `22/22` on 2026-08-19, with the highest consecutive level `L3_ACTION_GOVERNED`; headline hard gates are leakage `0`, approval bypass `0`, unsupported claim `0`, lineage `100%`. The earlier 2026-08-10 `22/22` report was produced from a code state that never entered commit history (its codeVersion is absent from git); it cannot be reproduced from committed state and is not a current-status reference.
 - **Current architectural limits (design choices, not defects)**:
   - Run/Session, principal ownership, approval, lease/idempotency, and cursor SSE are already durable; but the current local JSONL/file store and placeholder principal are still not a shared multi-worker/HA store or a production identity system
   - Knowledge/RAG, free-form Tool Calling, a general Dynamic Planner, multi-WRITE/Saga, and automatic compensation remain Reserved / Not In Scope
@@ -157,10 +157,10 @@ npm --prefix frontend run release-gate -- --profile all
 ```
 
 Current baselines:
-- Agent test suite: `1273 passed, 15 failed, 1 skipped` (15 known pre-existing failures unrelated to core functionality)
-- Frontend test suite: `522 passed, 2 failed` (2 known pre-existing failures: 1 action-governance integration test, 1 release-gate offline-scenario test)
-- Call-plan Eval: `inventory 7/7` ✅, `eval_harness_seed_cases.json 11/13` (2 PO-vendor-matching pre-existing failures), `PR 9/9` ✅, `matcher_cases.yaml 21/23` (2 fixture-snapshot-mismatch pre-existing failures), `dry-run 3/3` ✅
-- Offline release gate: Reached `22/22` / `L3_ACTION_GOVERNED` on 2026-08-10
+- Agent test suite: `1288 passed, 0 failed, 1 skipped`
+- Frontend test suite: `524 passed, 0 failed`
+- Call-plan Eval: `inventory 7/7` ✅, `eval_harness_seed_cases.json 13/13` ✅, `PR 9/9` ✅, `matcher_cases.yaml 23/23` ✅, `dry-run 3/3` ✅
+- Offline release gate: Reached `22/22` / `L3_ACTION_GOVERNED` on 2026-08-19
 
 `PYTHONPATH=agent` verifies the current source tree directly.
 
