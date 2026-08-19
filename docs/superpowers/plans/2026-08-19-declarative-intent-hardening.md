@@ -1625,7 +1625,7 @@ git commit -m "feat(declarative-intent): B2.4 durable clarify round budget in Co
 - Consumes: 2.1–2.4.
 - Produces: the B2 contract evidence: rounds never exceed `maxRounds`; one prompt carries all missing fields of a group; cases override still wins.
 
-- [ ] **Step 1: Write the final B2 scenario tests**
+- [x] **Step 1: Write the final B2 scenario tests**
 
 ```python
 def test_pr_missing_1_2_3_plus_fields_rounds_never_exceed_max_rounds():
@@ -1657,17 +1657,17 @@ def test_inventory_cases_still_override_strategy_path():
     assert render_clarify(inv, []) is None
 ```
 
-- [ ] **Step 2: Run to verify fail then pass**
+- [x] **Step 2: Run to verify fail then pass**
 
 Run: `cd agent && python3 -m pytest tests/test_clarify_rendering.py -q`
 Expected: PASS (these tests are already green after 2.3/2.4 — run them to confirm; if they fail, they pin a regression introduced between 2.3 and 2.5, fix the rendering, do not weaken the tests).
 
-- [ ] **Step 3: Run the full agent suite**
+- [x] **Step 3: Run the full agent suite**
 
 Run: `cd agent && python3 -m pytest tests/ -q`
 Expected: PASS.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add agent/tests/test_clarify_rendering.py
