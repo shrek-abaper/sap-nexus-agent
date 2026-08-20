@@ -412,3 +412,127 @@ the exposure.
    the only validator-legal migration off `extraction:` silently drops six keys
    the schema accepts and the validator partly validates. Out of this change's
    spec scope, but it should be closed before the alias is removed.
+
+---
+
+## Post-audit corrections (final review, fix round 1/1)
+
+Two items surfaced by the final review after all 16 plan tasks were committed
+(`e1a7a6e`). Item (a) was a live regression and is fixed; item (b) is a latent
+divergence between the design doc and the end-to-end runtime, recorded here
+rather than fixed, because closing it means redesigning the selector's missing
+recompute — out of scope for this change.
+
+### (a) FINDING 1 — prefixed/suffixed named kinds carved the value shape out of a longer adjacent token (FIXED)
+
+`agent/sap_nexus_agent/extraction/_matching.py:89-98` compiled the three named
+kinds asymmetrically: the bare `valueShape` kind received alphanumeric
+lookaround guards on both sides, while `prefixed` and `suffixed` received none
+on their free side. Combined with the B1.3/B1.5 loosening of
+`valueShapes.plantCode` to `^[A-Z0-9]{4}$` (`registry/semantic-types.yaml:106`),
+a 4-character window was carved out of the *middle* of any longer alphanumeric
+token adjacent to the affix.
+
+Live consumer: `MM.Inventory.GetAvailability.plant`
+(`registry/capabilities.yaml:83-84`) binds `semanticType ref: Plant`, whose
+first two matchers are `prefixed 在` / `suffixed 工厂`
+(`registry/semantic-types.yaml:6-12`). Measured against the real registry via
+`engine.extract_parameters`:
+
+| utterance | base `c2828842` | HEAD `e1a7a6e` (regressed) | after fix |
+| --- | --- | --- | --- |
+| `查询库存 DEMOA2 工厂 1000` | `1000` | `MOA2` (tail of material `DEMOA2`) | `1000` |
+| `查询 DEMOA2 在 5100 的库存` | `5100` | `5100` | `5100` |
+| `物料 1000 工厂库存` | `1000` | `1000` | `1000` |
+| `查询在 DEMOA2 的库存` | `None` | `DEMO` | `None` |
+
+Severity: `MOA2` satisfies the input's declared `pattern: ^[A-Z0-9]{4}$`, so the
+gateway validator accepts it. A wrong plant reached SAP with `missing=[]` and no
+clarification — a silently wrong READ result, not a validation error.
+
+Fix: add the missing guard to each side that lacked one, leaving the
+`valueShape` line unchanged.
+
+```
+prefixed: (?:{tokens})\s*({inner})(?![A-Za-z0-9])
+suffixed: (?<![A-Za-z0-9])({inner})\s*(?:{tokens})
+```
+
+Regression coverage added to `agent/tests/test_named_kind_matching.py`:
+
+- `test_named_kinds_do_not_carve_shape_window_out_of_longer_adjacent_token` —
+  `suffixed` on `DEMOA2 工厂` and `prefixed` on `在 DEMOA2` both yield `None`.
+- `test_inventory_plant_ignores_material_tail_adjacent_to_suffix_token` —
+  end-to-end `extract_parameters` on `MM.Inventory.GetAvailability` with
+  `查询库存 DEMOA2 工厂 1000` yields `plant == "1000"`, `material == "DEMOA2"`.
+
+Why the existing suite missed it: `test_named_kind_compiled_patterns_pinned`
+(`agent/tests/test_named_kind_matching.py:17`) snapshots the compiled regex
+*strings*, not extraction behavior. It went red on this fix — as expected, and
+its snapshot was updated — but a pattern-text snapshot cannot fail on a wrong
+extraction, so it never flagged the missing guard. The behavioral tests that did
+exist (`test_prefixed_matches_value_after_token`,
+`test_plant_named_kinds_extract_letter_mixed_code_ab12`) only ever exercised
+affixes adjacent to a token of exactly the shape width, so the carve-out case
+was outside their input space.
+
+Must-not-break checks re-verified green:
+`test_plant_named_kinds_extract_letter_mixed_code_ab12` (`在 AB12` → `AB12`,
+`AB12 工厂` → `AB12`), `test_plant_named_kinds_preserve_legacy_alternation`,
+`agent/tests` 1345 passed / 1 skipped / 2 xfailed / 0 failed,
+`scripts/validate-registry-contract.py` exit 0 (`regex matchers in use: 17`,
+15 deprecation warnings), `evals/matcher_cases.yaml` 23/23,
+`openspec validate --all --strict` 22 passed / 0 failed.
+
+`registry/semantic-types.yaml:4` was reviewed and left unchanged: it attributes
+"lookaround guards" to the bare regex fallback, which is still accurate, and
+makes no claim about the prefixed/suffixed guards. The `_compile_named_kind`
+docstring did misstate the new behavior and was corrected in the same commit.
+
+### (b) Design doc's `elicitIfMissing` claim holds only at the `missing_parameters()` layer (LATENT DIVERGENCE, NOT FIXED)
+
+`docs/superpowers/specs/2026-08-19-declarative-intent-hardening-design.md:162`
+states that `elicitIfMissing: false` skips clarification for the field. That is
+true of `engine.missing_parameters()`
+(`agent/sap_nexus_agent/extraction/engine.py:149-161`, which `continue`s past
+any input whose binding sets `elicit_if_missing=False`) and is pinned by
+`test_elicit_if_missing_false_skips_clarification`. It is **contradicted
+end-to-end.**
+
+`agent/sap_nexus_agent/capability_selector.py:226-242` branches on
+`parse_result.missing_parameters`. Suppressing the field makes that list *empty*,
+which is exactly the condition for the `else` branch — added for the LLM path
+that sets `capability_id` + `multi_parameters` only. That branch reloads the
+descriptor and recomputes missing from `inp.required` alone
+(`capability_selector.py:238-242`), with no `elicit_if_missing` consultation, and
+re-adds the suppressed field. The suppression is inverted into its own trigger.
+
+Measured (synthetic `elicitIfMissing: false` on
+`MM.Inventory.GetAvailability.plant`, utterance `查询库存 DEMOA2`):
+
+| layer | result |
+| --- | --- |
+| `engine.missing_parameters()` | `[]` — suppressed as designed |
+| `parse_result.missing_parameters` | `[]` |
+| `parse_result.clarification` | `None` |
+| `select_capability(...).decision_type` | `CLARIFY` — **suppression defeated** |
+| `select_capability(...).missing_parameters` | `['plant']` — field re-added |
+| `select_capability(...).rationale` | `请补充缺失的参数` (hard-coded, `capability_selector.py:254`) |
+
+Second-order harm: because the parser produced no `clarification`, the selector
+falls back to the hard-coded `请补充缺失的参数` instead of the capability's own
+declared prompt. For this capability `render_clarify(cap, ['plant'])` yields
+`请提供要查询的工厂。`, so declaring `elicitIfMissing: false` would produce a
+*worse* clarification than not declaring it — the declarative
+`clarifyPrompt.cases` work of B2.x is bypassed on exactly this path.
+
+Latent, not live: zero `elicitIfMissing` declarations exist anywhere in
+`registry/`, so no production path reaches this today. Nothing was changed in
+`capability_selector.py` or `engine.py` for this finding.
+
+**Flagged to close before any capability declares `elicitIfMissing`.** The fix
+belongs in the selector: the `else` recompute must either consult
+`binding.elicit_if_missing` (and render the declared `clarifyPrompt`) or be
+replaced by a call to `engine.missing_parameters()`, so that suppression is
+decided in one place. Until then, `elicitIfMissing: false` must be treated as
+unsupported in the registry regardless of the schema accepting it.
