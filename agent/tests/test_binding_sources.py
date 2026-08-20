@@ -133,6 +133,37 @@ def _fake_resolve_source(kind, source, text, catalog, excluded_values, resolver)
     return values.get(kind)
 
 
+# Fix round 1 (coordinator ruling): in BINDING_PRIORITY_YAML the declared source
+# order already equals _SOURCE_PRIORITY, so iterating binding.sources in
+# DECLARATION order would pass every priority test above. Here `default` is
+# declared BEFORE `userUtterance` so the two orders disagree.
+_USER_UTTERANCE_SOURCE = (
+    "            - kind: userUtterance\n"
+    "              matchers:\n"
+    "                - kind: regex\n"
+    "                  pattern: '供应商\\s*([A-Z0-9]{1,10})'\n"
+)
+_DEFAULT_SOURCE = "            - kind: default\n              value: 'V-DEFAULT'\n"
+DECLARATION_ORDER_REVERSED_YAML = BINDING_PRIORITY_YAML.replace(
+    _USER_UTTERANCE_SOURCE + _DEFAULT_SOURCE,
+    _DEFAULT_SOURCE + _USER_UTTERANCE_SOURCE,
+)
+
+
+def test_source_priority_beats_declaration_order(tmp_path):
+    catalog, cap = _load_binding_fixture(tmp_path, DECLARATION_ORDER_REVERSED_YAML)
+    inp = cap.inputs[0]
+    # Fixture guard: the reorder must have actually happened, otherwise this
+    # test silently degrades into a duplicate of the priority tests above.
+    assert [s.kind for s in inp.binding.sources] == [
+        "capabilityOutput",
+        "default",
+        "userUtterance",
+    ]
+    # Declaration order would return 'V-DEFAULT'; priority order returns the hit.
+    assert engine.resolve_input_binding("供应商 V72719", inp, catalog, set()) == "V72719"
+
+
 @pytest.mark.xfail(
     raises=NotImplementedError,
     strict=True,
@@ -157,8 +188,52 @@ ELICIT_FALSE_YAML = BINDING_PRIORITY_YAML.replace(
     "        binding:\n          elicitIfMissing: false\n          sources:\n",
 )
 
+# Fix round 1 (coordinator ruling): ELICIT_FALSE_YAML keeps the `default`
+# source, so `vendor` is always filled and `missing == []` holds regardless of
+# the elicit_if_missing skip — the original assertion was tautological. Drop the
+# default source so NOTHING can fill the field; then `missing == []` can only
+# come from the skip itself.
+_NO_DEFAULT_SOURCE_YAML = BINDING_PRIORITY_YAML.replace(
+    "            - kind: default\n              value: 'V-DEFAULT'\n", ""
+)
+ELICIT_FALSE_UNFILLABLE_YAML = _NO_DEFAULT_SOURCE_YAML.replace(
+    "        binding:\n          sources:\n",
+    "        binding:\n          elicitIfMissing: false\n          sources:\n",
+)
+ELICIT_TRUE_UNFILLABLE_YAML = _NO_DEFAULT_SOURCE_YAML.replace(
+    "        binding:\n          sources:\n",
+    "        binding:\n          elicitIfMissing: true\n          sources:\n",
+)
+
 
 def test_elicit_if_missing_false_skips_clarification(tmp_path):
+    catalog, cap = _load_binding_fixture(tmp_path, ELICIT_FALSE_UNFILLABLE_YAML)
+    inp = cap.inputs[0]
+    # Fixture guard: required, and no source can produce a value for it.
+    assert inp.required is True
+    assert inp.binding.elicit_if_missing is False
+    assert [s.kind for s in inp.binding.sources] == ["capabilityOutput", "userUtterance"]
+
+    parameters = engine.extract_parameters("没有任何匹配内容", cap, catalog)
+    assert "vendor" not in parameters
+    # Only the elicit_if_missing skip can make this empty now.
+    assert engine.missing_parameters(cap, parameters) == []
+
+
+def test_elicit_if_missing_true_still_clarifies_the_same_unfillable_field(tmp_path):
+    """Contrast case proving causation: the sole difference is the elicit flag."""
+    catalog, cap = _load_binding_fixture(tmp_path, ELICIT_TRUE_UNFILLABLE_YAML)
+    inp = cap.inputs[0]
+    assert inp.binding.elicit_if_missing is True
+
+    parameters = engine.extract_parameters("没有任何匹配内容", cap, catalog)
+    assert "vendor" not in parameters
+    assert engine.missing_parameters(cap, parameters) == ["vendor"]
+
+
+def test_default_source_still_fills_and_suppresses_clarify_with_elicit_false(tmp_path):
+    """The original default-source case, kept — it pins filling, not the skip."""
     catalog, cap = _load_binding_fixture(tmp_path, ELICIT_FALSE_YAML)
     parameters = engine.extract_parameters("没有任何匹配内容", cap, catalog)
+    assert parameters["vendor"] == "V-DEFAULT"
     assert engine.missing_parameters(cap, parameters) == []
