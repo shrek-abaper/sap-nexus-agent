@@ -2025,7 +2025,7 @@ git commit -m "feat(declarative-intent): B3.1 binding.sources[] schema + depreca
   - `engine.resolve_input_binding(text, inp, catalog, excluded_values) -> str | None`; `engine._resolve_source(kind, source, text, catalog, excluded_values, resolver) -> str | None`; `_SOURCE_PRIORITY = ("capabilityOutput", "userUtterance", "default")`; `_WIRED_SOURCE_KINDS: frozenset[str] = frozenset({"userUtterance", "default"})`.
   - `extract_parameters`/`missing_parameters`/`_drop_reask_suspects` read `inp.binding` (behavior-preserving: binding present exactly when extraction was).
 
-- [ ] **Step 1: Write the failing tests** — create `agent/tests/test_binding_sources.py`
+- [x] **Step 1: Write the failing tests** — create `agent/tests/test_binding_sources.py`
 
 ```python
 """Binding-source resolution, loader normalization, and the xfail placeholder (Design §3.6)."""
@@ -2182,12 +2182,12 @@ def test_elicit_if_missing_false_skips_clarification(tmp_path):
     assert engine.missing_parameters(cap, parameters) == []
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd agent && python3 -m pytest tests/test_binding_sources.py -q`
 Expected: FAIL — `ImportError: cannot import name 'BindingConfig'` / `_parse_input_binding` missing; `engine.resolve_input_binding` missing; `extract_parameters` returns `{}` (no `binding` on the descriptor, so nothing extracts).
 
-- [ ] **Step 3: Implement the loader models and normalization** in `agent/sap_nexus_agent/registry_loader.py`
+- [x] **Step 3: Implement the loader models and normalization** in `agent/sap_nexus_agent/registry_loader.py`
 
 Add the two dataclasses after `ExtractionConfig` (line 52) — `MatcherConfig` (line 25) is already defined above them:
 
@@ -2270,7 +2270,7 @@ def _parse_input_binding(raw: object) -> BindingConfig | None:
 
 In `load_intent_catalog` (line 405), add `binding=_parse_input_binding(inp)` to the `InputDescriptor(...)` construction.
 
-- [ ] **Step 4: Implement the engine resolution** in `agent/sap_nexus_agent/extraction/engine.py`
+- [x] **Step 4: Implement the engine resolution** in `agent/sap_nexus_agent/extraction/engine.py`
 
 Add the module constants near the top (after imports):
 
@@ -2423,13 +2423,13 @@ Update the reask block in `llm_intent.resolve_with_context` (lines 606–613) th
         ]
 ```
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `cd agent && python3 -m pytest tests/test_binding_sources.py -q`
 Expected: PASS (all 8 tests).
 Then run the broader suite for regressions: `cd agent && python3 -m pytest tests/test_extraction_engine.py tests/test_registry_loader.py tests/test_llm_intent.py tests/test_clarify_rendering.py -q` — Expected: PASS (engine now consumes `inp.binding`; the alias normalization makes behavior identical for every current declaration).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add agent/sap_nexus_agent/registry_loader.py agent/sap_nexus_agent/extraction/engine.py agent/sap_nexus_agent/llm_intent.py agent/tests/test_binding_sources.py
