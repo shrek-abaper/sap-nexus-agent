@@ -2526,7 +2526,7 @@ git commit -m "test(declarative-intent): B3.4 binding priority ordering, alias d
 **Files:**
 - None (evidence only).
 
-- [ ] **Step 1: Run the full verification battery**
+- [x] **Step 1: Run the full verification battery**
 
 ```bash
 git status --short
@@ -2545,7 +2545,7 @@ Expected:
 - OpenSpec: green (schemas and spec artifacts consistent).
 - `git status --short`: only intended files changed.
 
-- [ ] **Step 2: Record the evidence** in the change's verification log (per the project's Classic closeout flow, keep the output of the four gates; do not hand-edit `.comet.yaml`).
+- [x] **Step 2: Record the evidence** in the change's verification log (per the project's Classic closeout flow, keep the output of the four gates; do not hand-edit `.comet.yaml`).
 
 ---
 
