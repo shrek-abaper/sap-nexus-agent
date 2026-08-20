@@ -2448,7 +2448,7 @@ git commit -m "feat(declarative-intent): B3.2 loader normalizes extraction alias
 - Consumes: `_resolve_source` capabilityOutput branch (3.2), `resolve_input_binding` (3.2).
 - Produces: the failing xfail placeholder per spec ("an unimplemented path SHALL be surfaced by a failing xfail placeholder test so future implementation has a fixed landing point").
 
-- [ ] **Step 1: Write the xfail placeholder test** (append to `agent/tests/test_binding_sources.py`)
+- [x] **Step 1: Write the xfail placeholder test** (append to `agent/tests/test_binding_sources.py`)
 
 ```python
 @pytest.mark.xfail(strict=True, reason="capabilityOutput execution is out of scope for declarative-intent-hardening")
@@ -2471,12 +2471,12 @@ def test_binding_capability_output_not_implemented(tmp_path):
         engine.resolve_input_binding("供应商 V72719", inp, catalog, set())
 ```
 
-- [ ] **Step 2: Run to verify the placeholder fails as expected**
+- [x] **Step 2: Run to verify the placeholder fails as expected**
 
 Run: `cd agent && python3 -m pytest tests/test_binding_sources.py::test_binding_capability_output_not_implemented -rx`
 Expected: XFAIL (strict) — the run reports `XFAIL` with the reason `capabilityOutput execution is out of scope for declarative-intent-hardening`; the test body failed with `DID NOT RAISE <class 'NotImplementedError'>` because the branch is unwired. The suite stays green.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add agent/tests/test_binding_sources.py
