@@ -123,11 +123,13 @@ Catalog matchers SHALL use named kinds `prefixed` (value following a declared
 prefix token), `suffixed` (value preceding a declared suffix token), and
 `valueShape` (value matching a named shape defined in the catalog-level
 `valueShapes` section, e.g. `plantCode`). Free-form `regex` matchers SHALL be
-an escape hatch only: every regex matcher MUST carry a `justification` field
-explaining why the named kinds cannot express it, and the registry validator
-SHALL report the total number of regex matchers in use so the count is an
-observable, reducible metric. Named shapes duplicated across capability
-inputs SHALL be consolidated into `valueShapes` entries.
+an escape hatch only: every regex matcher in the semantic-type catalog MUST
+carry a `justification` field explaining why the named kinds cannot express it,
+and the registry validator SHALL report the total number of regex matchers in
+use — catalog and capability-level counted separately — so the count is an
+observable, reducible metric. A pattern duplicated across capability inputs
+SHALL be defined once as a `valueShapes` entry, and the duplicated input
+patterns SHALL be aligned to that shape.
 
 #### Scenario: Two capabilities share one concept matcher
 
@@ -155,16 +157,19 @@ inputs SHALL be consolidated into `valueShapes` entries.
 
 #### Scenario: Regex escape hatch requires justification
 
-- **WHEN** the registry is validated and a matcher uses the `regex` kind
-  without a non-empty `justification`
+- **WHEN** the registry is validated and a semantic-type catalog matcher uses
+  the `regex` kind without a non-empty `justification`
 - **THEN** validation fails with an error naming the matcher
+- **AND** capability-level regex matchers are included in the reported count
+  without being rejected, so the metric stays reducible as they migrate to
+  named kinds
 
 #### Scenario: Named shape consolidates duplicated patterns
 
 - **WHEN** two capability inputs constrain a value with the same pattern (e.g.
   `^[A-Z0-9]{4}$` for plant)
-- **THEN** the pattern is defined once in the catalog `valueShapes` section
-  and both inputs reference that named shape
+- **THEN** the pattern is defined once in the catalog `valueShapes` section and
+  the duplicated input patterns are aligned to that shape
 
 #### Scenario: Named kinds rewrite preserves matcher behavior
 

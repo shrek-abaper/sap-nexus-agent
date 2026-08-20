@@ -2,6 +2,8 @@
 comet_change: declarative-intent-hardening
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-08-20-declarative-intent-hardening
+status: final
 ---
 
 # Declarative Intent Hardening — Technical Design
@@ -37,7 +39,10 @@ binding sources with defined priority, NotImplemented capabilityOutput pinned
 by xfail, deprecated extraction alias with warning.
 
 Non-goals: capabilityOutput execution, dependency edges (D2), approval
-semantics (D4), frontend/Gateway changes, new dependencies.
+semantics (D4), Gateway changes, new dependencies. Frontend changes are a
+non-goal with one sanctioned exception recorded in proposal.md (the offline
+release gate's spawn env, which was making live LLM calls with inherited
+credentials).
 
 ## 3. Decisions
 
@@ -45,14 +50,26 @@ semantics (D4), frontend/Gateway changes, new dependencies.
 
 Matcher kinds compile to bounded regexes at load time:
 
-- `prefixed: {prefix: ['在']}` → `(?:在)\s*(<shape>)` — value captured after
-  the prefix token(s); prefixes are literal tokens, alternated when multiple.
-- `suffixed: {suffix: ['工厂']}` → `(<shape>)\s*(?:工厂)` — value captured
-  before the suffix token(s).
+- `prefixed: {prefix: ['在']}` → `(?:在)\s*(<shape>)(?![A-Za-z0-9])` — value
+  captured after the prefix token(s); prefixes are literal tokens, alternated
+  when multiple.
+- `suffixed: {suffix: ['工厂']}` → `(?<![A-Za-z0-9])(<shape>)\s*(?:工厂)` — value
+  captured before the suffix token(s).
 - `valueShape: {shape: plantCode}` — standalone bare scan:
-  `(?<![A-Za-z0-9])(<shape compiled>)(?![A-Za-z0-9])`; as a component of
-  prefixed/suffixed it supplies the capture shape without boundary guards
-  (guards come from the prefix/suffix anchors).
+  `(?<![A-Za-z0-9])(<shape compiled>)(?![A-Za-z0-9])`.
+
+Every kind carries an alphanumeric lookaround guard on each side of the captured
+value that is not anchored by an affix token. **Corrected 2026-08-20:** this
+document previously specified that the value component of `prefixed`/`suffixed`
+needed no boundary guards because "guards come from the prefix/suffix anchors".
+That is false — the affix anchors only one side, so the free side carved a
+4-character window out of the middle of any longer adjacent alphanumeric token
+(`DEMOA2 工厂` → `MOA2`). Because the carved value still satisfies the input's
+declared `pattern`, a wrong plant reached SAP with `missing=[]` and no
+clarification. See the verification report's Correctness section for the measured
+table; regression pins are
+`test_named_kinds_do_not_carve_shape_window_out_of_longer_adjacent_token` and
+`test_inventory_plant_ignores_material_tail_adjacent_to_suffix_token`.
 
 `valueShapes` is a catalog-level section: `{plantCode: '^[A-Z0-9]{4}$', ...}`.
 The matcher compilation layer (`_matching.py`) gains a `_compile_named_kind`
@@ -97,8 +114,10 @@ new unit test asserting the AB12 case extracts (contract, not accident).
 
 - `semantic-type-catalog.schema.json`: matcher kinds enum gains prefixed /
   suffixed / valueShape; a regex matcher requires non-empty `justification`.
-- `scripts/validate-registry-contract.py`: (a) error when a regex matcher
-  lacks justification; (b) print "regex matchers in use: N (semantic-type
+- `scripts/validate-registry-contract.py`: (a) error when a **semantic-type
+  catalog** regex matcher lacks justification — capability-level regex matchers
+  are counted but not rejected, so migrating them to named kinds is a reduction
+  path rather than a hard gate; (b) print "regex matchers in use: N (semantic-type
   catalog M + capability-level K)" as an observable metric — a count, never a
   gate.
 

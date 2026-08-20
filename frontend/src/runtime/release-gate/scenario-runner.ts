@@ -1036,7 +1036,12 @@ function runProcess(command: string, args: string[], cwd: string): Promise<{
   stdout: string;
 }> {
   return new Promise((resolve, reject) => {
-    const child = spawn(command, args, { cwd, stdio: ["ignore", "pipe", "pipe"] });
+    const child = spawn(command, args, {
+      cwd,
+      stdio: ["ignore", "pipe", "pipe"],
+      // This gate is offline by contract: keep the eval off the network.
+      env: { ...process.env, LLM_API_KEY: "", LLM_BASE_URL: "" },
+    });
     let stdout = "";
     child.stdout.on("data", (chunk) => { stdout += String(chunk); });
     child.once("error", reject);

@@ -26,7 +26,10 @@ against `schemas/*.schema.json`. See proposal.md for motivation.
 
 - No capabilityOutput execution implementation
 - No capability dependency edges (D2), no approval/subject-hash changes (D4)
-- No frontend or Gateway changes, no new dependencies
+- No Gateway changes, no new dependencies
+- No frontend changes, with one sanctioned exception recorded in proposal.md: the
+  offline release gate's spawn env (`scenario-runner.ts`), which was making live LLM
+  calls with inherited credentials
 - No new matcher kinds beyond the three named kinds in this batch
 
 ## Decisions

@@ -12,27 +12,28 @@ The rule-based intent path SHALL detect capabilities and extract slot
 parameters exclusively from registry declarations: capability-level
 `primaryKeywords` for trigger detection, optional `weakKeywords` that
 participate in ambiguity counting only (never trigger), and per-input
-`extraction` matchers (keyword, regex, or semantic-type reference) for slot
-filling. The extraction engine SHALL contain no capability-specific branches:
-adding a capability with valid extraction declarations SHALL make it
-recognizable and slot-fillable in rule mode without code changes.
-Ambiguity SHALL be flagged when two or more capabilities weakly or primarily
-match while no capability has a primary keyword hit. Technical-override
-rejection (RFC name / OData override detection) SHALL take priority over
-declaration-driven matching, unchanged from the legacy behavior.
+`binding` sources (matchers from the `userUtterance` kind, semantic-type
+references, or keyword constants) for slot filling. The extraction engine
+SHALL contain no capability-specific branches: adding a capability with valid
+extraction declarations SHALL make it recognizable and slot-fillable in rule
+mode without code changes. Ambiguity SHALL be flagged when two or more
+capabilities weakly or primarily match while no capability has a primary
+keyword hit. Technical-override rejection (RFC name / OData override
+detection) SHALL take priority over declaration-driven matching, unchanged
+from the legacy behavior.
 
 #### Scenario: Declared capability recognized without code change
 
-- **WHEN** a capability with `primaryKeywords` and input extraction
-  declarations is registered in the registry and a user utterance contains one
-  of its primary keywords
+- **WHEN** a capability with `primaryKeywords` and input binding declarations
+  is registered in the registry and a user utterance contains one of its
+  primary keywords
 - **THEN** the rule path surfaces that capability as a matched intent with
   parameters extracted per its declarations
 - **AND** no agent source file needed modification to enable it
 
 #### Scenario: Undeclared keyword does not trigger
 
-- **WHEN** a capability has no extraction declarations and a user utterance
+- **WHEN** a capability has no binding declarations and a user utterance
   matches nothing else
 - **THEN** the rule path produces no matched intent for that capability
 
@@ -55,7 +56,7 @@ declaration-driven matching, unchanged from the legacy behavior.
 The system SHALL provide a semantic-type extraction catalog
 (`registry/semantic-types.yaml`) defining concept-level matchers keyed by
 semantic type (e.g. `Plant`, `MaterialNumber`, `Quantity`, `Date`). Input
-extraction declarations SHALL be able to reference a catalog entry by
+binding declarations SHALL be able to reference a catalog entry by
 `semanticType` instead of inlining a matcher, so the same concept-level
 extraction knowledge is defined once and reused across capabilities.
 Capability-level matchers SHALL be able to override or supplement the catalog
@@ -64,9 +65,21 @@ inputs. Cross-field exclusion SHALL be value-based: a field's extracted value
 SHALL be rejected when it equals an extracted value of a field listed in its
 `excludes` declaration.
 
+Catalog matchers SHALL use named kinds `prefixed` (value following a declared
+prefix token), `suffixed` (value preceding a declared suffix token), and
+`valueShape` (value matching a named shape defined in the catalog-level
+`valueShapes` section, e.g. `plantCode`). Free-form `regex` matchers SHALL be
+an escape hatch only: every regex matcher in the semantic-type catalog MUST
+carry a `justification` field explaining why the named kinds cannot express it,
+and the registry validator SHALL report the total number of regex matchers in
+use — catalog and capability-level counted separately — so the count is an
+observable, reducible metric. A pattern duplicated across capability inputs
+SHALL be defined once as a `valueShapes` entry, and the duplicated input
+patterns SHALL be aligned to that shape.
+
 #### Scenario: Two capabilities share one concept matcher
 
-- **WHEN** two capabilities declare inputs whose extraction references the same
+- **WHEN** two capabilities declare inputs whose binding references the same
   semantic type in the catalog
 - **THEN** both extract that field using the single catalog matcher definition
 
@@ -87,6 +100,29 @@ SHALL be rejected when it equals an extracted value of a field listed in its
   the condition holds
 - **AND** when the condition does not hold, the dependent input is neither
   extracted nor reported missing
+
+#### Scenario: Regex escape hatch requires justification
+
+- **WHEN** the registry is validated and a semantic-type catalog matcher uses
+  the `regex` kind without a non-empty `justification`
+- **THEN** validation fails with an error naming the matcher
+- **AND** capability-level regex matchers are included in the reported count
+  without being rejected, so the metric stays reducible as they migrate to
+  named kinds
+
+#### Scenario: Named shape consolidates duplicated patterns
+
+- **WHEN** two capability inputs constrain a value with the same pattern (e.g.
+  `^[A-Z0-9]{4}$` for plant)
+- **THEN** the pattern is defined once in the catalog `valueShapes` section and
+  the duplicated input patterns are aligned to that shape
+
+#### Scenario: Named kinds rewrite preserves matcher behavior
+
+- **WHEN** a catalog matcher is rewritten from regex to the named kinds
+  (prefixed / suffixed / valueShape)
+- **THEN** every previously passing matcher eval case still passes with the
+  same extracted values
 
 ### Requirement: Behavioral parity for migrated capabilities
 
@@ -138,12 +174,18 @@ against declared required inputs) SHALL be preserved.
 
 When a matched capability is missing required inputs, the clarification text
 SHALL be rendered from the capability's declared `clarifyPrompt` for the
-active locale. `clarifyPrompt` SHALL support exact missing-set `cases`
-(checked first) and a `fallback` join template expanded with per-field display
-names. In rule mode rendering SHALL be deterministic template rendering with
-no LLM call. In llm/hybrid modes an LLM MAY rephrase the clarification, but
-the LLM-rendered question SHALL only reference declared required inputs of the
-matched capability and SHALL fall back to the template rendering on timeout,
+active locale. The default rendering strategy SHALL be
+`strategy: groupByBindingKind`: missing fields from the same source group
+SHALL be merged into a single prompt whose copy is generated from
+`intent.fieldNames` templates, with at most one prompt per group per round.
+The clarify budget SHALL be `maxRounds` (default 2); when the budget is
+exhausted the system SHALL degrade to the declared `fallback` template.
+Hand-written exact missing-set `cases` SHALL remain supported as an optional
+override checked before the strategy rendering, not as the main path. In rule
+mode rendering SHALL be deterministic template rendering with no LLM call. In
+llm/hybrid modes an LLM MAY rephrase the clarification, but the LLM-rendered
+question SHALL only reference declared required inputs of the matched
+capability and SHALL fall back to the template rendering on timeout,
 malformed output, or unavailable model.
 
 #### Scenario: Rule mode renders declared prompt deterministically
@@ -167,4 +209,81 @@ malformed output, or unavailable model.
 - **WHEN** a declaration lacks a `clarifyPrompt` for the active locale
 - **THEN** the system falls back to a default locale prompt derived from the
   missing input names rather than failing
+
+#### Scenario: Grouped prompt carries all missing fields of one group
+
+- **WHEN** a capability with multiple required fields is missing several
+  fields from the same source group (e.g. all six PR required inputs)
+- **THEN** one clarification prompt lists all of them
+- **AND** the number of clarify rounds does not exceed `maxRounds`
+
+#### Scenario: Budget exhaustion degrades to fallback
+
+- **WHEN** clarification rounds reach `maxRounds` and required fields are
+  still missing
+- **THEN** the system renders the declared `fallback` template instead of
+  starting another clarify round
+
+#### Scenario: Explicit cases still override strategy rendering
+
+- **WHEN** the declaration carries a hand-written `cases` entry whose missing
+  set matches the current missing fields exactly
+- **THEN** that entry's text is rendered, taking precedence over
+  `groupByBindingKind` copy generation
+
+### Requirement: Input binding sources and priority
+
+Per-input declarations SHALL support a `binding` block with a `sources[]`
+list of three kinds: `userUtterance` (matcher-driven extraction from the user
+utterance, equivalent to today's extraction matchers), `capabilityOutput` (a
+value derived from another capability's fact, reserved for future dependency
+edges), and `default` (a constant fallback value). Source priority SHALL be
+`capabilityOutput > userUtterance > default`: when a capabilityOutput source
+can produce a value the system MUST NOT elicit the field from the user and
+MUST NOT fall back to a default. The `capabilityOutput` kind SHALL be
+accepted and validated by the schema and validator, but its execution path
+MAY remain unimplemented in this batch; an unimplemented path SHALL be
+surfaced by a failing xfail placeholder test so future implementation has a
+fixed landing point.
+
+#### Scenario: capabilityOutput beats user utterance
+
+- **WHEN** an input declares both a `capabilityOutput` source and a
+  `userUtterance` matcher and the capabilityOutput source can produce a value
+- **THEN** the resolved value comes from the capabilityOutput source
+- **AND** no clarification question for that field is raised
+
+#### Scenario: default only fills when no other source produces
+
+- **WHEN** an input declares a `default` source and no higher-priority source
+  produces a value
+- **THEN** the default value fills the input
+
+#### Scenario: unimplemented capabilityOutput has a failing placeholder
+
+- **WHEN** the capabilityOutput execution path is not yet implemented
+- **THEN** an xfail-marked test referencing that path fails with a clear
+  not-implemented reason instead of being silently absent
+
+### Requirement: Deprecated extraction alias with migration warning
+
+The pre-existing `extraction:` declaration shape SHALL remain valid as a
+deprecated alias of `binding:` with a single `userUtterance` source. The
+registry validator SHALL emit a warning for every `extraction:` usage and the
+warning SHALL carry migration guidance pointing at the `binding.sources[]`
+shape. Declarations that use neither `binding` nor `extraction` for an input
+that requires extraction SHALL be reported as invalid exactly as before.
+
+#### Scenario: extraction alias still works with a warning
+
+- **WHEN** the registry is validated and an input declares `extraction:`
+  matchers
+- **THEN** validation succeeds
+- **AND** a warning naming the deprecated shape and its `binding.sources[]`
+  replacement is reported
+
+#### Scenario: binding shape validates without warnings
+
+- **WHEN** the registry is validated and an input declares `binding.sources[]`
+- **THEN** validation succeeds with no deprecation warning
 

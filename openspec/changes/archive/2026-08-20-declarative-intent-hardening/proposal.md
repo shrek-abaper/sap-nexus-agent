@@ -66,7 +66,14 @@ the lowest cost point.
 - `scripts/validate-registry-contract.py`
 - Tests: matcher equivalence must stay green (matcher_cases 23/23), new B2
   clarify-round tests, B3 xfail placeholder and validator warning tests
-- Not touched: frontend, Gateway, approval semantics, SAP execution paths
+- Not touched: Gateway, approval semantics, SAP execution paths
+- Frontend, sanctioned exception: `frontend/src/runtime/release-gate/scenario-runner.ts`
+  spawns the offline eval with `LLM_API_KEY`/`LLM_BASE_URL` blanked, plus a pin
+  `scenario-runner.offline-env.test.ts`. The release gate is offline by contract but
+  inherited real credentials from the parent test process and made live LLM calls
+  (~83.5s of a 90s budget). Pre-existing hazard, exposed while verifying this change;
+  fixed here on an explicit user ruling rather than deferred. No agent, registry, or
+  schema behavior is affected.
 - No new dependencies
 
 ## Scope note (no-split decision)
