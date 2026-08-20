@@ -34,9 +34,13 @@ Key files (read on demand):
 
 - `docs/wiki/sap-nexus-agent-technical-architecture.md`
 - `docs/wiki/sap-nexus-agent-implementation-roadmap.md`
-- `docs/runbooks/README.md` — then open the current workstream runbook
+- `docs/runbooks/README.md` — supplementary lookup only, not a source of truth. All 22 runbooks are
+  archived and unmaintained; there is no current workstream runbook. Use one to recover historical
+  design rationale, then re-verify anything load-bearing against the wiki docs, `openspec/specs/`,
+  or the code.
 
-If this file and the wiki docs disagree, follow the wiki docs.
+If this file and the wiki docs disagree, follow the wiki docs. If a runbook disagrees with either,
+the runbook is stale — follow this file and the wiki docs.
 
 ---
 
@@ -158,8 +162,8 @@ Any one of these → open a change instead of editing directly:
 - **Per change:** the workflow's own Archive step updates specs and archives. Do not hand-edit
   `.comet.yaml`, `comet-state.yaml`, or archive paths.
   Native follows the configured `archive_confirmation` mode (`automatic` or `required`).
-- **Per workstream archive ONLY:** update the runbook + `docs/runbooks/README.md`, update
-  roadmap / wiki progress with links.
+- **Per workstream archive ONLY:** update roadmap / wiki progress with links. Runbooks are archived
+  and unmaintained — do not write one back (see §1).
 
 ---
 

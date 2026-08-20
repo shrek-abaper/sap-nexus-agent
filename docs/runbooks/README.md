@@ -2,24 +2,22 @@
 
 This directory stores on-demand reference guides for SAP Nexus Agent work across workstreams and sessions.
 
-These runbooks are **not** auto-loaded at session start. Consult a runbook only when a task touches the subsystem it covers, so that change starts from the same source of truth, current scope, verification targets, and safety constraints. For the on-demand loading policy, see `AGENTS.md` §1.
+These runbooks are **not** auto-loaded at session start, and they are **not** the source of truth. Consult one only when a task touches the subsystem it covers, to recover that subsystem's historical scope, design rationale, and safety constraints — then confirm the current position from the source of truth listed below. For the on-demand loading policy, see `AGENTS.md` §1.
 
 ---
 
 ## How To Use This Directory
 
-All 22 workstream runbooks are now `Archived`, `Implemented`, or `Reserved` (see the index below). There is **no active workstream runbook** to continue. Each archived runbook still encodes its subsystem's scope, verification targets, safety boundaries, and design rationale, so it remains the fastest source of truth when changing that subsystem (e.g. runbook 05 for the Gateway execution path, runbook 11/21 for the SAP WRITE path, runbook 16 for the READ PlanExecutor).
+All 22 workstream runbooks are now `Archived`, `Implemented`, or `Reserved` (see the index below). There is **no active workstream runbook** to continue, and this directory is **not a source of truth**. It is a supplementary lookup: each archived runbook preserves its subsystem's historical scope, verification targets, safety boundaries, and design rationale, which makes it a fast way to recover *why* a subsystem looks the way it does (e.g. runbook 05 for the Gateway execution path, runbook 11/21 for the SAP WRITE path, runbook 16 for the READ PlanExecutor). Any load-bearing conclusion drawn from a runbook MUST be re-verified against the current source of truth below before you act on it — archived content drifts and is not maintained.
 
 When a task does require a runbook:
 
 1. Find the matching workstream in the index below, cross-referenced by name, not by number.
 2. Read only that runbook.
 3. Check `git status --short` and `openspec list --json` for active changes before editing.
-4. When closing a session that opened or advanced a Comet change, update the corresponding runbook version (or create the next numbered workstream runbook) with:
-   - what changed
-   - what was verified
-   - blockers
-   - exact next action
+4. Do **not** write the runbook back. Runbooks are no longer maintained, so closing a Comet change
+   does not update one. Closeout is tiered in `AGENTS.md` §3.8; spec deltas land in
+   `openspec/specs/` via the workflow's own Archive step.
 
 ---
 
@@ -115,7 +113,8 @@ Runbooks are numbered by workstream creation order, not by roadmap row or calend
 | `21` | `21-read-to-write-action-governance.md` | `v0.2.0` | Completed / Archived | `2026-08-05` | Human-approved, exactly-once single Action after multi-READ reasoning; fake/sandbox evidence only |
 | `22` | `22-end-to-end-agent-eval-release-gate.md` | `v0.2.0` | Completed / Archived | `2026-08-05` | Production composition coordinator plus offline L1/L2/L3 release gates; Native archive `docs/comet/archive/2026-08-05-sap-nexus-end-to-end-agent-eval-release-gate/`; live SAP smoke not run |
 
-Versioning rules:
+Versioning rules (**historical** — they applied while runbooks were maintained, and apply again only
+if a new workstream runbook is ever deliberately opened):
 
 - Increment the runbook version when the source-of-truth status, next action, or verification evidence changes.
 - Append session closeout notes inside the same workstream runbook when the work continues in that stream.
@@ -126,7 +125,8 @@ Versioning rules:
 
 ## Session Closeout Template
 
-Use this structure when writing the next runbook or appending session notes:
+**Historical.** Closing a Comet change no longer writes a runbook (see "How To Use This Directory").
+This structure is retained only for the case where a new workstream runbook is deliberately opened:
 
 ```markdown
 ## Session Closeout - YYYY-MM-DD
