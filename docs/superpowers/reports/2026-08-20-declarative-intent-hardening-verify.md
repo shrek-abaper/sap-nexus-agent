@@ -29,7 +29,8 @@ was modified during verify. The user ruled on each: narrow the spec to what ship
 and 2), keep the frontend gate fix and correct the artifacts that excluded it (Divergence 3). The
 design-of-record safety correction (Divergence 4) was applied as documentation.
 
-Twelve items are carried forward in the deferred ledger. Two of them are gates on future work rather
+Fourteen items are carried forward in the deferred ledger; items 13 and 14 were filed during verify
+as the follow-ups to Divergences 1 and 2. Two of them are gates on future work rather
 than on this change and must be closed before the actions that would make them live.
 
 ## Completeness
