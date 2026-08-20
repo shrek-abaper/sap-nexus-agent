@@ -5,6 +5,7 @@ from sap_nexus_agent.extraction._matching import (
     _merge_matcher,
     match_value,
 )
+from sap_nexus_agent.extraction.engine import extract_parameters
 from sap_nexus_agent.registry_loader import MatcherConfig, load_intent_catalog
 
 CATALOG = load_intent_catalog()
@@ -18,10 +19,10 @@ def test_named_kind_compiled_patterns_pinned():
     # Design §3.7: unit tests pin the compiled regex per kind.
     assert _compile_named_kind(
         _matcher("prefixed", prefix=("在",), value_shape="plantCode"), CATALOG
-    ).pattern == r"(?:在)\s*([A-Z0-9]{4})"
+    ).pattern == r"(?:在)\s*([A-Z0-9]{4})(?![A-Za-z0-9])"
     assert _compile_named_kind(
         _matcher("suffixed", suffix=("工厂",), value_shape="plantCode"), CATALOG
-    ).pattern == r"([A-Z0-9]{4})\s*(?:工厂)"
+    ).pattern == r"(?<![A-Za-z0-9])([A-Z0-9]{4})\s*(?:工厂)"
     assert _compile_named_kind(
         _matcher("valueShape", value_shape="plantCode"), CATALOG
     ).pattern == r"(?<![A-Za-z0-9])([A-Z0-9]{4})(?![A-Za-z0-9])"
@@ -75,6 +76,27 @@ def test_plant_named_kinds_preserve_legacy_alternation():
     assert match_value(plant.matchers[0], "在 1000", CATALOG, EMPTY_FILTERS, set()) == "1000"
     assert match_value(plant.matchers[1], "1000 工厂", CATALOG, EMPTY_FILTERS, set()) == "1000"
     assert match_value(plant.matchers[0], "在 1000 工厂", CATALOG, EMPTY_FILTERS, set()) == "1000"
+
+
+def test_named_kinds_do_not_carve_shape_window_out_of_longer_adjacent_token():
+    # Regression: prefixed/suffixed lacked the alnum guard on their free side,
+    # so the 4-char plantCode window was carved out of the middle of a longer
+    # adjacent token ("DEMOA2 工厂" -> "MOA2", "在 DEMOA2" -> "DEMO").
+    plant = CATALOG.semantic_types.find("Plant")
+    prefixed, suffixed, _bare = plant.matchers
+    assert match_value(suffixed, "DEMOA2 工厂", CATALOG, EMPTY_FILTERS, set()) is None
+    assert match_value(prefixed, "在 DEMOA2", CATALOG, EMPTY_FILTERS, set()) is None
+
+
+def test_inventory_plant_ignores_material_tail_adjacent_to_suffix_token():
+    # End-to-end user-visible harm: a wrong plant reached the gateway with
+    # missing=[] because "MOA2" still satisfies ^[A-Z0-9]{4}$.
+    cap = next(
+        c for c in CATALOG.capabilities if c.capability_id == "MM.Inventory.GetAvailability"
+    )
+    params = extract_parameters("查询库存 DEMOA2 工厂 1000", cap, CATALOG)
+    assert params["plant"] == "1000"
+    assert params["material"] == "DEMOA2"
 
 
 def test_semantic_type_wrapper_merges_named_kind_fields():

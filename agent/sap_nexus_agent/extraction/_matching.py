@@ -74,8 +74,10 @@ def _compile_named_kind(matcher: MatcherConfig, catalog: IntentCatalog) -> re.Pa
     """Compile a named-kind matcher against a catalog-level value shape.
 
     The shape's ^/$ anchors are stripped: in a prefixed/suffixed composition
-    the prefix/suffix tokens provide the left/right anchor; in the bare
-    valueShape scan alphanumeric lookaround guards provide both.
+    the prefix/suffix token anchors one side and an alphanumeric lookaround
+    guard anchors the free side (without it the shape window is carved out of
+    the middle of a longer adjacent token); the bare valueShape scan uses
+    alphanumeric lookaround guards on both sides.
     """
     shape = (catalog.semantic_types.value_shapes or {}).get(matcher.value_shape or "")
     if not shape:
@@ -90,12 +92,12 @@ def _compile_named_kind(matcher: MatcherConfig, catalog: IntentCatalog) -> re.Pa
         tokens = "|".join(re.escape(token) for token in matcher.prefix)
         if not tokens:
             return None
-        return re.compile(rf"(?:{tokens})\s*({inner})", flags)
+        return re.compile(rf"(?:{tokens})\s*({inner})(?![A-Za-z0-9])", flags)
     if matcher.kind == "suffixed":
         tokens = "|".join(re.escape(token) for token in matcher.suffix)
         if not tokens:
             return None
-        return re.compile(rf"({inner})\s*(?:{tokens})", flags)
+        return re.compile(rf"(?<![A-Za-z0-9])({inner})\s*(?:{tokens})", flags)
     if matcher.kind == "valueShape":
         return re.compile(rf"(?<![A-Za-z0-9])({inner})(?![A-Za-z0-9])", flags)
     return None
