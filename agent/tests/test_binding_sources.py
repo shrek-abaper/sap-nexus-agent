@@ -237,3 +237,40 @@ def test_default_source_still_fills_and_suppresses_clarify_with_elicit_false(tmp
     parameters = engine.extract_parameters("没有任何匹配内容", cap, catalog)
     assert parameters["vendor"] == "V-DEFAULT"
     assert engine.missing_parameters(cap, parameters) == []
+
+
+@pytest.mark.xfail(
+    raises=pytest.fail.Exception,
+    strict=True,
+    reason=(
+        "capabilityOutput execution is out of scope for declarative-intent-hardening: "
+        "the public path skips the unwired source, so the raise-assertion DID NOT RAISE"
+    ),
+)
+def test_binding_capability_output_not_implemented(tmp_path):
+    """Failing placeholder (Design §3.6) pinning the capabilityOutput landing
+    point on the PUBLIC resolution path.
+
+    Today `capabilityOutput` is absent from `_WIRED_SOURCE_KINDS`, so
+    `resolve_input_binding` skips that source and falls through to
+    `userUtterance`: it returns a value instead of raising. The `pytest.raises`
+    block therefore fails with `Failed: DID NOT RAISE NotImplementedError` ->
+    strict XFAIL, suite green. `raises=` is pinned to `pytest.fail.Exception`
+    (the DID-NOT-RAISE outcome) instead of being left blank, so ONLY that exact
+    failure mode is absorbed by the marker.
+
+    When dependency-edge binding (D2) wires the source, the precondition assert
+    below fails with `AssertionError` — not the pinned `raises=` type — so this
+    test becomes a real FAILURE rather than a silent XFAIL, and D2 must drop the
+    marker and rewrite the body to assert value resolution. The sibling
+    placeholder `test_capability_output_source_resolution_is_not_implemented_yet`
+    pins the private branch body and its message; this one pins the *unwired*
+    state of the public path. Both go red in D2, by design.
+    """
+    catalog, cap = _load_binding_fixture(tmp_path, BINDING_PRIORITY_YAML)
+    inp = cap.inputs[0]
+    # Precondition: the source is still unwired. If it ever gets wired, this
+    # AssertionError is not the pinned raises= type -> real failure, not xfail.
+    assert "capabilityOutput" not in engine._WIRED_SOURCE_KINDS
+    with pytest.raises(NotImplementedError, match="dependency-edge binding"):
+        engine.resolve_input_binding("供应商 V72719", inp, catalog, set())
