@@ -2495,22 +2495,22 @@ git commit -m "test(declarative-intent): B3.3 xfail placeholder pins capabilityO
 - Consumes: 3.1–3.3.
 - Produces: the B3 contract evidence per Design §3.7 matrix rows (priority, alias, xfail).
 
-- [ ] **Step 1: Run the B3 test files**
+- [x] **Step 1: Run the B3 test files**
 
 Run: `cd agent && python3 -m pytest tests/test_binding_sources.py tests/test_extraction_declarations.py -q`
 Expected: PASS — 8 binding-resolution tests, 6 binding/schema/validator tests, plus the strict XFAIL placeholder (reported as expected failure, not counted as failure).
 
-- [ ] **Step 2: Run the full agent suite**
+- [x] **Step 2: Run the full agent suite**
 
 Run: `cd agent && python3 -m pytest tests/ -q`
 Expected: PASS (including the xfail placeholder and matcher_cases 23/23 via `test_eval_runner.py`).
 
-- [ ] **Step 3: Verify the real registry end-to-end**
+- [x] **Step 3: Verify the real registry end-to-end**
 
 Run: `python3 scripts/validate-registry-contract.py registry/capabilities.yaml`
 Expected: metric line, deprecation warning lines, `Registry contract valid`, exit 0.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit** — _coordinator ruling: no commit. `git add` stages nothing (both test files were already committed by tasks 3.1/3.2/3.3) and no drift surfaced, so an empty commit was refused. The checkoff commit is the marker._
 
 ```bash
 git add agent/tests/test_binding_sources.py agent/tests/test_extraction_declarations.py
