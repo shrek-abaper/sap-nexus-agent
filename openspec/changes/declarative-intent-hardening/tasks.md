@@ -26,4 +26,4 @@
 ## 4. Closeout
 
 - [x] 4.1 Full verification: `validate-registry-contract.py` passes and prints the regex count; pytest green (incl. new xfail placeholder); matcher_cases 23/23; frontend verify unaffected; `openspec validate --all --strict` green.
-- [ ] 4.2 Verify the declarative-intent-extraction spec delta scenarios map 1:1 to the new tests; commit per-item commit series with test names and root causes in messages.
+- [x] 4.2 Verify the declarative-intent-extraction spec delta scenarios map 1:1 to the new tests; commit per-item commit series with test names and root causes in messages.

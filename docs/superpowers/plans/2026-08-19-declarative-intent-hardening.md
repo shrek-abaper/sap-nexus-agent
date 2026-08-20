@@ -2554,7 +2554,7 @@ Expected:
 **Files:**
 - None (audit only).
 
-- [ ] **Step 1: Map every spec-delta scenario to its test** (1:1, from `openspec/changes/declarative-intent-hardening/specs/declarative-intent-extraction/spec.md`):
+- [x] **Step 1: Map every spec-delta scenario to its test** (1:1, from `openspec/changes/declarative-intent-hardening/specs/declarative-intent-extraction/spec.md`) — _coordinator ruling: the mapping was performed and recorded in `openspec/changes/declarative-intent-hardening/verification.md`, but the "1:1" premise of this step is **disproved**: the table below has 17 rows against 21 actual spec scenarios; rows 10/11 and 2 of row 21's 3 tests are FALSE mappings; 4 scenarios are unlisted here (all in fact covered elsewhere in the suite); 1 scenario ("two capabilities share one concept matcher") is genuinely unpinned. The step is checked off for the audit having been done and its result recorded honestly — NOT for the table being correct as written._
 
 | Spec scenario | Pinning test |
 |---|---|
@@ -2576,11 +2576,11 @@ Expected:
 | budget exhaustion degrades to fallback | `test_strategy_round_budget_respected_and_degrades_to_fallback`, `test_sticky_clarify_rounds_capped_via_read_state` |
 | explicit cases still override strategy rendering | `test_inventory_cases_exact_missing_sets`, `test_inventory_cases_still_override_strategy_path`, `test_strategy_groups_by_binding_source_kind` (cases branch) |
 
-- [ ] **Step 2: Audit the commit series**
+- [x] **Step 2: Audit the commit series**
 
 Run: `git log --oneline main..HEAD` (or the change branch) and confirm the series: B1 (1.1–1.5) → B2 (2.1–2.5) → B3 (3.1–3.4) → closeout, each message naming its tests and root cause (Design §5). Rebase/squash only if the series is not in order — do not reorder commits across the B-item boundaries.
 
-- [ ] **Step 3: Final closeout commit** (only if 4.1/4.2 produced a tracked artifact, e.g. a verification note in the change folder; otherwise the last B3.4 commit is the final commit)
+- [x] **Step 3: Final closeout commit** (only if 4.1/4.2 produced a tracked artifact, e.g. a verification note in the change folder; otherwise the last B3.4 commit is the final commit) — _coordinator pre-ruling: made unconditional. A 17-row traceability claim is load-bearing archive evidence and must survive as a reviewable file, so `verification.md` was produced and committed (`3caab7a`, 1 file, +414). `openspec validate --all --strict` re-run after the file existed: 22 passed / 0 failed, unchanged._
 
 ```bash
 git add <verification artifact>
