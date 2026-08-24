@@ -5,10 +5,10 @@
 | 字段 | 内容 |
 |---|---|
 | 文档名称 | `SAP Nexus Agent 技术选型与工程路线决策` |
-| 当前版本 | `v0.2.18` |
+| 当前版本 | `v0.2.19` |
 | 状态 | `Decision Baseline Draft` |
 | 创建日期 | `2026-06-19` |
-| 最近更新 | `2026-08-05` |
+| 最近更新 | `2026-08-24` |
 | 维护目录 | `docs/wiki/` |
 | 文档定位 | 指导 SAP Nexus Agent 工程骨架、技术栈和 AI Native 工程产物组织的技术选型基线 |
 | 关联技术架构 | `docs/wiki/sap-nexus-agent-technical-architecture.md` |
@@ -20,6 +20,7 @@
 
 | 版本 | 日期 | 变更摘要 | 决策状态 |
 |---|---|---|---|
+| `v0.2.19` | `2026-08-24` | 增加 §5.9 主流 Agent 编排框架（LangGraph / CrewAI / AutoGen(AG2) / Semantic Kernel / OpenAI Agents SDK / Google ADK / Vercel AI SDK / Mastra）横向复核：均不引入为 runtime 依赖，原因与 OpenHarness/DeerFlow 一致——通用框架默认模型驱动 tool loop 或工作流自治，不天然支持"Capability Registry + 确定性 PlanCompiler + Java Gateway 拥有最终执行权"的治理内核；LangGraph/Semantic Kernel/Mastra/ADK 的确定性图控制流机制列为后续 durable runtime 阶段的设计参考 | 当前技术基线 |
 | `v0.2.18` | `2026-08-05` | Runbook 22 Native change 已归档：选择现有 Next.js/TypeScript server runtime 承载薄 composition coordinator，复用 Python Agent 的 LLM-first/PlanGraph authoring 与 Runbooks 16-21 的确定性组件；offline L1/L2/L3 gate `9/9`、Native acceptance 42/42，live SAP READ/WRITE `not_run` | 当前技术基线 |
 | `v0.2.17` | `2026-08-05` | 同步 Runbook 21 已归档事实：plan-aware single-user HITL、完整 subject revalidation、durable exactly-once continuation 与 Gateway atomic claim 已完成 fake/sandbox 验证；未执行 live SAP WRITE，production orchestration 与 L1/L2/L3 release gate 仍由 Runbook 22 证明；当前入口转为 Runbook 22 | 当前技术基线 |
 | `v0.2.16` | `2026-08-05` | 同步 Runbook 20 已归档事实：governed event allowlist/redaction projection、strict durable replay 与 responsive Workbench component/UI integration 已验证；proposal-only 不构成 Human Approval，生产 orchestrator 与 SAP WRITE 未接入；当前入口转为 Runbook 21 | 当前技术基线 |
@@ -76,6 +77,7 @@ docs/runbooks/22-end-to-end-agent-eval-release-gate.md
 | Knowledge Graph | Not runtime in MVP | 能力关系用三元组模型 + 文件存储（edge list）+ 内存图；图数据库为 Phase 8 触发式 Reserved 决策，引擎待 ROI spike（RDF store vs Neo4j） |
 | OpenHarness | 设计参考，不增加依赖 | 借鉴 Agent loop、Tool Schema、Permission/Hook、Dry-run、Memory/Resume；拒绝第二运行时和模型自由 SAP Tool Calling |
 | DeerFlow Runtime | 设计参考，不增加依赖 | 不引入 `deerflow-harness`、DeerFlow Gateway、默认 lead agent 或 frontend；避免第二 Agent runtime 和执行权威 |
+| Mainstream Agent Framework | 设计参考，不增加依赖 | LangGraph / CrewAI / AutoGen(AG2) / Semantic Kernel / OpenAI Agents SDK / Google ADK / Vercel AI SDK / Mastra 均不引入为 runtime；详见 §5.9 |
 | Baseline Semantic Matcher | S2-A 已完成并归档 | 规则 + alias + domain/businessObject + deterministic parameter fit；五态 `MatchDecision`、多意图检测、`SHOW_OPTIONS` 和 `ESCALATE_TO_PLANNER` 已实现，不依赖 embedding |
 | Progressive Capability Disclosure | S2-B 内适配 | metadata-first `CapabilityCard` -> 小候选集合 -> optional LLM candidate；deterministic MatchDecision / PlanCompiler 最终裁决 |
 | Scale-stage Retrieval | Phase 3+ Triggered | 只在规模与 Eval bad case 触发后评估 semantic index、embedding/hybrid retrieval、跨域 router 和 LLM rerank |
@@ -432,6 +434,37 @@ Phase 3+ 才评估：
 
 触发依据同时包含能力规模、同域相似度、`topKRecall`、`falseSelectRate`、歧义校准、multi-capability 请求比例、候选 prompt token 和 visibility complexity，不能只用 capability 数量判断。
 
+### 5.9 主流 Agent 编排框架横向复核
+
+背景：§5.6（OpenHarness）与 §5.7（DeerFlow）已分别完成源码级评估，结论均为"设计参考，不引入 runtime"。本节针对当前（2026）更广义的"主流 Agent 编排/harness 框架"补做横向核实，确认该结论不因换一批更知名的框架而改变。
+
+评估对象（8 个）：LangGraph、CrewAI、AutoGen / AG2、Semantic Kernel、OpenAI Agents SDK、Google ADK、Vercel AI SDK、Mastra。
+
+评估维度：默认执行权归属（模型自主选工具 vs 外部确定性图/工作流控制优先）、human-in-the-loop 是否可持久化跨重启恢复、工具/能力 schema 白名单强度、是否原生支持与 Java Gateway 的多语言互操作。
+
+| 框架 | 默认执行模型 | HITL 可持久化恢复 | Schema/白名单强度 | Java 原生 | 治理契合度 |
+|---|---|---|---|---|---|
+| LangGraph | 外部图控制优先；`interrupt()` + checkpoint 为核心机制 | 强（`SqliteSaver` 等 checkpoint 可跨重启恢复） | 中 | 否 | 高 |
+| Semantic Kernel | 应用管理 runtime lifecycle，非模型自掌权 | 中强（Dapr runtime + `FunctionInvocationFilter`） | 强 | 是（.NET/Python/Java 三语言） | 中高 |
+| Mastra | Workflow-first；`branch()` / `suspend()` / `resume()` | 强（storage-backed suspended runs） | 中强（Zod schema） | 否（TypeScript-first） | 中高 |
+| Google ADK | Workflow/DAG 优先，原生暂停恢复 | 有 | 中 | 否 | 中高 |
+| OpenAI Agents SDK | 模型驱动 tool loop（agent → tool/handoff → loop） | 有（`needs_approval`、`RunState`） | 中 | 否 | 低到中 |
+| Vercel AI SDK | 偏手写 loop，可由应用完全握有执行权 | 中（`WorkflowAgent` 支持 durable/approval） | 强（Zod `inputSchema`） | 否（TypeScript-first） | 中 |
+| CrewAI | 默认 autonomous team/task 自治 | 有（`@human_feedback` + `@persist`） | 中低 | 否 | 低 |
+| AutoGen / AG2 | 对话/轮转驱动；`UserProxyAgent` 插人工 | 有但不够正式化 | 偏弱 | 否 | 低 |
+
+结论：
+
+- 没有一个框架天然具备"Capability Registry + 确定性 PlanCompiler + Gateway 拥有最终执行权、LLM 仅提候选"的治理内核；这与 §5.6/§5.7 对 OpenHarness、DeerFlow 的判断一致——问题不在框架新旧，而在通用 Agent 框架的默认哲学是"模型驱动 tool loop"或"工作流自治"，与本项目"确定性权威优先"的边界结构性冲突。
+- LangGraph / Semantic Kernel / Mastra / Google ADK 的图/工作流控制流和可持久化 HITL 机制最接近本项目需求，但均不自带 capability 闭集白名单、READ 不可 COMMIT/ROLLBACK、WRITE exact-subject Human Approval 等领域治理规则，引入后仍需自行实现这些约束，且除 Semantic Kernel 外均无 Java 原生绑定，与现有 Java Gateway 集成需额外 HTTP adapter 层。
+- CrewAI、AutoGen/AG2、OpenAI Agents SDK 默认更偏模型自治或产品化 agent 层，治理契合度更低。
+
+决策：
+
+- 不引入以上任一框架作为 Agent runtime 依赖；继续以现有 Python Agent + 确定性 PlanCompiler + Java Gateway 作为执行权威。
+- LangGraph 的 `interrupt()` + checkpoint 语义、Mastra 的 `suspend()/resume()` 语义列为 D3（Trusted Durable Agent Runtime Foundation，见 `sap-nexus-agent-deerflow-adoption-analysis.md` §11 D3）阶段的设计参考，不作为代码依赖引入。
+- 触发再评估的条件与 OpenHarness/DeerFlow 一致：仅当出现需要跨进程/跨重启恢复、multi-worker/HA 部署、或现有自研 checkpoint/HITL 机制被 Eval/生产事故证明不足以支撑共享环境时，才启动独立 spike，且 spike 范围仅限于借鉴具体机制，不整体替换执行权威。
+
 ---
 
 ## 6. Python Agent 选型
@@ -682,6 +715,7 @@ sap-nexus-capability-registry-gateway
 | 能力关系是否上图数据库 | MVP / Pilot 不上；用三元组模型 + 文件 + 内存图；满足 Phase 8 触发条件并通过 ROI spike 后再评估引擎（RDF store vs Neo4j） |
 | OpenHarness 是否作为 runtime 依赖 | 否；只作为 Agent loop、Tool Schema、Permission/Hook、Dry-run 和 Memory/Resume 的设计参考 |
 | DeerFlow 是否作为 runtime 依赖 | 否；只借鉴 progressive discovery、task lifecycle、durable context 和受限 memory 机制 |
+| 主流 Agent 编排框架（LangGraph/CrewAI/AutoGen/Semantic Kernel/OpenAI Agents SDK/ADK/Vercel AI SDK/Mastra）是否引入 | 否；仅 LangGraph/Semantic Kernel/Mastra/ADK 的确定性图控制流与可持久化 HITL 机制列为 D3 durable runtime 阶段设计参考，见 §5.9 |
 | Durable Runtime Store 何时选型 | P0B 本地 durable 实现已归档；multi-worker / HA 或量产部署前再选择共享 store，且保持现有接口与一致性契约 |
 | UserPreferenceMemory 何时试点 | 身份、tenant、retention、查看/更正/删除和审计契约成熟后；不进入 S2/S3 |
 | 首个多能力组合场景 | “物料库存 + 采购订单供给概览”已由 Runbook 22 production coordinator 完成 offline fake/sandbox 接线，并通过 L1/L2/L3 release gate；live SAP multi-READ/WRITE 均 `not_run` |
