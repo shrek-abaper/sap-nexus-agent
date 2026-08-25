@@ -312,8 +312,6 @@ capabilities:
       factShape: list
       promptTemplate: purchase-order-list
       fallbackTemplate: purchase-order-list
-      fieldMapping:
-        itemFields: purchaseOrder,supplier,material,plant,orderQuantity,purchaseOrderUnit
       detailFormatter: po-list
   - capabilityId: MM.PR.CreateDraft
     name: Purchase Requisition Create Draft

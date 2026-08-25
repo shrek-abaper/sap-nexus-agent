@@ -125,7 +125,7 @@ def _plan_graph() -> dict:
 def _registry_snapshot() -> dict:
     source_versions = {
         "ontology/capability-relations.yaml": 1,
-        "ontology/fact-types.yaml": 2,
+        "ontology/fact-types.yaml": 3,
         "registry/capabilities.yaml": 2,
         "registry/executor-bindings.yaml": 1,
         "registry/semantic-types.yaml": 3,

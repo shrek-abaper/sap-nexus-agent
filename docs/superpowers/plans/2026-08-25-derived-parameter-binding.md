@@ -164,7 +164,7 @@ Named baseline non-passes — these are **pre-existing and must stay honest**, n
 ## Corrections to `openspec/changes/derived-parameter-binding/tasks.md`
 
 Six findings from the pre-build fact check (C1–C6 before build, **C7 found at T1 entry, C8 found at
-task 2.2 entry**).
+task 2.2 entry, C9 and C10 found at task 2.7 entry**).
 **Where tasks.md and this plan disagree, this plan wins**, because these were verified against
 source.
 
@@ -179,6 +179,8 @@ source.
 | C7 | 2.1 bumps `ontology/fact-types.yaml` to `version: 2` with "fields land in 2.5", and 2.8 recomputes the snapshot pins as a separate step | Two verified couplings make that split impossible. (a) 2.1.2 adds `fields` to `$defs/factType.required`, so the instant the schema lands, a catalog without `fields` is **invalid** — the 2.1→2.5 window would leave `ontology/fact-types.yaml` failing its own schema. (b) `snapshot.py:44` hashes `dict(documents)` — the **whole** document set — so the `version: 1 → 2` bump *alone* invalidates all **14** `sha256:e6d329bc…e599ed95` pins in `evals/matcher_cases.yaml` (count verified), independently of the field content | **2.1 + 2.5 + 2.8 are one atomic commit.** Same class of defect as C6, same fix: never leave an intermediate commit whose governed sources fail validation or whose pins are stale |
 | C7a | (my own C7 first draft claimed `registry/semantic-types.yaml` is **not** a snapshot source, so 2.2/2.3 could not move the digest) | **That was wrong and is withdrawn.** `contracts.py:105-113` `documents_by_path()` returns **five** paths: the matcher catalog is included whenever `semantic_types` is non-empty, and the live snapshot lists it at `document_version: 2`, digest `sha256:173b31f2…cc8f406e` | 2.3's `extracts:` keys **do** move the digest, so T1 needs **two** documented pin recomputes: one for the fact-types change (2.1/2.5), one for the matcher-catalog change (2.3). Two documented recomputes are preferable to one giant commit — invariant 9 forbids *silent* refreshes, not documented ones. 2.2 is digest-neutral: `yaml.safe_load` discards comments |
 | C8 | 2.4.1 reads "every `sapnexus:*` reference **anywhere** must exist in the ontology vocabulary" | Not implementable as written. Enumerating every reference site shows the `sapnexus:` namespace holds **five disjoint tiers**: ① value types (the Decision-1 vocabulary, 15 members, declared by capability `inputs`/`outputs.semanticType`); ② Fact Type ids (`*Fact`, declared by `factType.factTypeId`, already governed by `UNKNOWN_FACT_TYPE`); ③ Fact class types (`factType.semanticType` — `sapnexus:InventoryAvailability` etc., **not** in ① and self-declaring); ④ predicates (`factType.predicate` — `sapnexus:hasInventoryAvailability`, self-declaring); ⑤ capability individuals / function classes (`ontologyIri`, `capability.semanticType` — `ontologyIri` is already validated against the OWL skeleton by the registry validator). A literal tier-blind rule would reject tiers ③④⑤ | 2.4.1 is scoped to **tier ①**. Its only *uncovered* reference site is `factType.keyedBy` (`fields.semanticType` landed in 2.1.4), so 2.4.1's real deliverable is extending the tier-① check there. Tiers ③④ stay unvalidated by design — nothing declares them, so a rule could only be vacuous or wrong. Record that as a known limit rather than inventing a registry to check against |
+| C9 | 2.7's **Files** list names `frontend/src/runtime/plan-evidence/event-projector.ts:69` as a Fact field-list restatement site | It is **not one**. Line 69 is `ALLOWED_PAYLOAD_KEYS.fact` — a ReasoningFact **envelope** key allowlist (it contains `factId`, `factTypeId`, `agentTraceId`, `traceRef`, `sourceSummary`, `asOf` alongside `availableQuantity`/`orderQuantity`/`unit`, and does **not** contain `purchaseOrder` or `supplier`). It governs which keys survive projection into a reasoning payload, a different vocabulary from a Fact Type's field list | Locking it against `ontology/fact-types.yaml` would be a category error — a `⊆`/`==` assertion between two unrelated sets. 2.7.4 records it as **"not a restatement site"** with that evidence instead of locking it. The genuine restatement family is: `ontology/fact-types.yaml` (authority) · `registry/capabilities.yaml:316` `itemFields` · `narrator.py:55` `_PO_REQUIRED_EVIDENCE` · the hardcoded label lines in `narrator.py` `_build_list_messages` / `_list_fallback` · `fact-builder.ts:246-278` evidence literal |
+| C10 | 2.5 reported "**zero** new semantic types", and 2.7 assumed the TS evidence literal and the declared field list are the same set | Both are wrong, and the second exposes a real gap in Decision 1. `fact-builder.ts`'s evidence object has **seven** keys; the seventh, `purchaseOrderItem`, is load-bearing on the TS side (a member of `PurchaseOrderRow` at `:130` **and** a component of `rowSortKey` at `:232`, so it affects deterministic ordering) yet is absent from `ontology/fact-types.yaml`, from `itemFields`, and from `_PO_REQUIRED_EVIDENCE`. It is a genuine seventh item-level field that 2.5 missed. It cannot be declared under Decision 1 as written: tier ① is *"the set declared by capability `inputs`/`outputs.semanticType`"*, and the six existing PO field types pass that check **only by coincidence** — each happens to also be a PO or PR `input`. `purchaseOrderItem` is the first field type with no such coincidence, and `sapnexus:PurchaseOrderItem` is already taken by the container output `purchaseOrders` (the item *object*, not its *number*) | **User decisions at 2.7 entry: (a) extend the ontology with a new value type; (b) delete `itemFields` from the registry.** Both edit governed sources, so they land as **one atomic commit** with **one** documented snapshot recompute (#3). Three rejected alternatives, recorded because each is a green-washing trap: *declaring `purchaseOrderItem` as a sibling top-level output of PO* misrepresents the shape (it is a per-row field inside the array, not an output of the capability); *widening the vocabulary to include Fact Type `fields[].semanticType`* would make `_validate_fact_type_fields`' own semanticType check **vacuous** (invariant 9); *a sixth governed source file* is disproportionate. The chosen channel is a new **optional top-level `valueTypes:` block in `ontology/fact-types.yaml`**, with the vocabulary redefined as *capability-declared ∪ `valueTypes[].id`*, kept tight by two new rules so it cannot become a dumping ground: `VALUE_TYPE_SHADOWS_CAPABILITY` (an id already declared by a capability is rejected) and `VALUE_TYPE_NOT_USED` (an id no Fact Type references is rejected). A typo still fails closed, because a typo is in neither set |
 
 ## Task order
 
@@ -554,33 +556,112 @@ MM.PR.CreateDraft (Action):              prNumber          / sapnexus:PrNumber  
   `cardinality: many` fields are exempt.** Verify it holds for all three existing Fact Types
   *before* T3 adds a fourth.
 
-## Task 2.6 — Derive or conformance-lock `narrative.fieldMapping.itemFields`
+## Task 2.6 — Delete `narrative.fieldMapping.itemFields` (user decision at 2.7 entry)
+
+**Verified before deciding:** `itemFields` has **no consumer**. `field_mapping` is read at exactly one
+place, `narrator.py:157` `_resolve_template_vars`, which is called from exactly one place,
+`narrator.py:187` `_inventory_narrative_body` — the `factShape: single-value` path. The
+`factShape: list` path (`_build_list_messages` / `_list_fallback`) hardcodes the six names with
+Chinese labels and never reads `config.field_mapping`. So "deriving" `itemFields` would be pure
+ceremony: a derived value nothing reads. Conformance-locking it would lock a dead copy in place.
+The user chose deletion; that is the only option that actually removes the restatement.
 
 **Steps**
 
-- [ ] 2.6.1 Attempt full derivation of `itemFields` from the authoritative field list.
-- [ ] 2.6.2 If derivation cannot be reached without changing narration behaviour, add a conformance
-  test that fails on any divergence instead. Record which of the two was done and why.
-- [ ] 2.6.3 Verify by mutating one declared field name and observing the failure. Restore.
+- [x] 2.6.1 Remove the whole `narrative.fieldMapping` block from `MM.PurchaseOrder.GetList`
+  (`itemFields` is its only key, and `fieldMapping` carries `minProperties: 1`, so an empty object
+  is invalid — the block goes, not just the key).
+- [x] 2.6.2 `schemas/capability.schema.json`: drop `fieldMapping` from `narrative.required` and add
+  an `if factShape == single-value then required: [fieldMapping]` guard. This is **stricter than
+  plain-optional** and matches the consumer reality exactly: only the single-value path reads it.
+- [x] 2.6.3 **Do not bump `registry/capabilities.yaml` `version`.** The rule, stated so it is
+  reviewable: *bump when a document gains or requires a key a reader must newly understand; do not
+  bump when a key merely becomes omittable and every reader already handles its absence.*
+  `registry_loader.py:200` was written tolerant (`raw.get("fieldMapping") or {}` → `()`), so no
+  reader needs a lockstep update. Contrast 2.6a below, which **does** bump, because `valueTypes` is
+  a new top-level key the validator must read.
+- [x] 2.6.4 Fix the now-stale parenthetical at `narrator.py:168` naming `po itemFields` as the
+  example of a comma-separated expression. Orphaned by this change, so in scope.
+- [x] 2.6.5 `receiptId` in `MM.PR.CreateDraft`'s `fieldMapping` is **also** dead by the same
+  analysis (`action-receipt` never reaches `_resolve_template_vars`). **Out of scope** — not asked
+  for. Record it as a figure-(b) cleanup candidate, do not delete it.
+
+## Task 2.6a — Declare `purchaseOrderItem` and open the `valueTypes` channel (correction C10)
+
+**Steps**
+
+- [x] 2.6a.1 `schemas/fact-type-catalog.schema.json`: `version` const `2 → 3`; add an optional
+  top-level `valueTypes` array (`uniqueItems`, items `{id, description}`, both required,
+  `additionalProperties: false`).
+- [x] 2.6a.2 `ontology/fact-types.yaml`: `version: 2 → 3`; add
+  `valueTypes: [{id: sapnexus:PurchaseOrderItemNumber, description: …}]`; add `purchaseOrderItem`
+  as the **seventh** `cardinality: many` field of `sapnexus:PurchaseOrderSupplyFact`, positioned
+  after `purchaseOrder` to match the TS evidence order.
+- [x] 2.6a.3 `validation.py`: rename `_semantic_types_declared_by_capabilities` →
+  `_ontology_value_type_vocabulary` (the old name becomes a lie once `valueTypes` is a source) and
+  union in `valueTypes[].id`. Two call sites: `_validate_fact_type_fields`,
+  `_validate_vocabulary_references`.
+- [x] 2.6a.4 `validation.py`: new `_validate_value_type_declarations` emitting
+  `VALUE_TYPE_SHADOWS_CAPABILITY` and `VALUE_TYPE_NOT_USED` at `/valueTypes/{i}/id`. Wire it into
+  `build_semantic_contracts`. **Verified non-blockers:** the OWL skeleton check at
+  `validate_registry_contract.py:421` applies only to `ontologyIri`, never to a `semanticType`, so
+  the new value type needs no `.owl` entry; the registry validator has no `narrative` requirement.
+- [x] 2.6a.5 Update the `fact_types` exact-version case in `test_semantic_planning_contract.py`:
+  it currently mutates `version` to **3** to force a failure, which becomes a **no-op** once 3 is
+  the valid version. It must become 4, or the test silently stops testing anything.
+- [x] 2.6a.6 Update the `ontology/fact-types.yaml` version pin in `test_contract_files.py`
+  `_registry_snapshot` (`2 → 3`) and the isolated `factTypes` fixture at
+  `test_registry_contract.py:100`.
 
 ## Task 2.7 — Cross-check every other field-list restatement site
 
-**Files**
+**Files** — corrected by C9; `event-projector.ts:69` is **not** a restatement site.
 
-- `frontend/src/runtime/projection/fact-builder.ts:130-140`
-- `frontend/src/runtime/plan-evidence/event-projector.ts:69`
+- `frontend/src/runtime/projection/fact-builder.ts:246-278` (evidence literal, 7 keys)
+- `agent/sap_nexus_agent/narrator.py:55` `_PO_REQUIRED_EVIDENCE`
+- `agent/sap_nexus_agent/narrator.py` `_build_list_messages` / `_list_fallback` hardcoded labels
 - any Java DTO restating a Fact field list
 
 **Steps**
 
-- [ ] 2.7.1 Implement the **option A** lock: a Python conformance test that reads the two TS source
-  files as text and asserts their field lists match `ontology/fact-types.yaml`.
-- [ ] 2.7.2 Enumerate Java DTOs restating a Fact field list; for each, record **derived** or
+- [x] 2.7.1 Implement the **option A** lock: a Python conformance test reading the TS source as text
+  and asserting its field list matches `ontology/fact-types.yaml`. With 2.6a landed the assertion
+  is **exact equality**, not `⊆` — that was the whole point of declaring the seventh field.
+- [x] 2.7.2 Lock `_PO_REQUIRED_EVIDENCE` as a **set** equality (it orders `plant` before `material`
+  while the old `itemFields` ordered `material` before `plant` — real drift between two restatements
+  of the same list; the ordering is not itself governed, so only the set is locked).
+- [x] 2.7.3 Enumerate Java DTOs restating a Fact field list; for each, record **derived** or
   **conformance-locked**.
-- [ ] 2.7.3 Verify each locked site **fails** when the authoritative list changes (mutate, observe,
+- [x] 2.7.4 Verify each locked site **fails** when the authoritative list changes (mutate, observe,
   restore).
-- [ ] 2.7.4 Produce the table: every site, its lock mechanism, its failing evidence. **No site may
-  remain an unchecked independent copy.** If any site cannot be locked under option A, stop and ask.
+- [x] 2.7.5 Produce the table: every site, its lock mechanism, its failing evidence. **No site may
+  remain an unchecked independent copy.**
+
+**2.7.5 result** — all locks live in `agent/tests/test_fact_field_restatement_locks.py` (12 tests).
+Lock strength follows producer/consumer role, not convenience: the producer must publish *precisely*
+the declared set, a consumer may legitimately read fewer.
+
+| Site | Role | Lock mechanism | Failing evidence |
+|---|---|---|---|
+| `ontology/fact-types.yaml` `sapnexus:PurchaseOrderSupplyFact.fields` | **authority** (7 fields) | none needed — it is the source | `test_purchase_order_item_is_a_declared_field` |
+| `frontend/src/runtime/projection/fact-builder.ts:246-278` evidence literal | producer | **exact set equality** with the authority, parsed from TS source text | `test_ts_evidence_lock_fails_when_the_authority_renames_a_field` — rename `supplier` in the authority → lock fails |
+| `narrator.py:55` `_PO_REQUIRED_EVIDENCE` | consumer (narration **precondition**) | **subset** of the authority | `test_narrator_locks_fail_when_the_authority_renames_a_consumed_field[_PO_REQUIRED_EVIDENCE]` |
+| `narrator.py:274-278` `_build_list_messages` (`ev.get('…')`) | consumer | **subset**, parsed from source | same test, `_build_list_messages` case |
+| `narrator.py:318-322` `_list_fallback` (`evidence['…']`) | consumer | **subset**, parsed from source | same test, `_list_fallback` case |
+| `event-projector.ts:69` `ALLOWED_PAYLOAD_KEYS.fact` | **not a restatement site** (C9) | asserted positively: it is a ReasoningFact *envelope* allowlist (`factId`, `factTypeId`, `agentTraceId`, `traceRef`, `sourceSummary`, `asOf`) and contains neither `purchaseOrder` nor `supplier` | `test_event_projector_fact_allowlist_is_not_a_field_list_restatement` |
+| Java `src/main/java/**/*.java` | — | **tripwire**: no main source may name a PO-only Fact field. The exclusion set is *derived* from registry `inputs`/`outputs` names, never hand-picked | `test_no_java_main_source_restates_a_purchase_order_only_field` (asserts the derived `fact_only` set is non-empty first, so the tripwire cannot go vacuous) |
+| `registry/capabilities.yaml` `MM.PurchaseOrder.GetList` `narrative.fieldMapping.itemFields` | dead copy | **deleted** (task 2.6) | `test_purchase_order_narrative_declares_no_field_mapping` |
+
+Why `PurchaseOrderSupplyFact` needed its own locks while the other two Fact Types did not: every one
+of its fields is `cardinality: many`, so the C5 rule ("a `cardinality: one` field must be published
+as a same-named capability output") exempts all of them. The Java main sources name only
+`availableQuantity`, `mrpElementLines` and `prNumber` — all declared outputs, already bound by C5.
+
+**Subset, not equality, for the three narrator sites** — deliberate. `_PO_REQUIRED_EVIDENCE` is not a
+description of the Fact, it is a precondition: `_assert_po_evidence_complete` and `_list_fallback`
+both raise `NarrativeGuardError` when a listed field is absent or `None`. Adding `purchaseOrderItem`
+to it to satisfy an equality assertion would make narration *reject* facts lacking that field —
+changing runtime behaviour to satisfy a test (invariant 9).
 
 ## Task 2.8 — Recompute the snapshot pins, with the semantic reason recorded
 

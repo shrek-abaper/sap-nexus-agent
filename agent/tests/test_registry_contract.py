@@ -97,7 +97,7 @@ def test_unsafe_rest_json_binding_fails(tmp_path):
         encoding="utf-8",
     )
     (repo_root / "ontology" / "fact-types.yaml").write_text(
-        """version: 2
+        """version: 3
 factTypes:
   - factTypeId: sapnexus:CustomerCreditStatusFact
     name: Customer Credit Status Fact

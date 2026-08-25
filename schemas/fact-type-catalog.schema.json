@@ -6,15 +6,30 @@
   "additionalProperties": false,
   "required": ["version", "factTypes"],
   "properties": {
-    "version": { "type": "integer", "const": 2 },
+    "version": { "type": "integer", "const": 3 },
     "factTypes": {
       "type": "array",
       "minItems": 1,
       "uniqueItems": true,
       "items": { "$ref": "#/$defs/factType" }
+    },
+    "valueTypes": {
+      "type": "array",
+      "uniqueItems": true,
+      "description": "Second declaration channel for the tier-① semantic-type vocabulary. The primary channel is capability `inputs`/`outputs.semanticType`; this block exists for value types that appear ONLY as a field inside a Fact and that therefore no capability signature mentions (the first such type is the purchase-order line item number). Declaring one here is deliberate and reviewed, so a typo still fails closed: a typo belongs to neither channel. Kept tight by two validator rules — an id already declared by a capability is rejected (VALUE_TYPE_SHADOWS_CAPABILITY), and an id no Fact Type references is rejected (VALUE_TYPE_NOT_USED).",
+      "items": { "$ref": "#/$defs/valueType" }
     }
   },
   "$defs": {
+    "valueType": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "description"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "minLength": 1 }
+      }
+    },
     "factType": {
       "type": "object",
       "additionalProperties": false,

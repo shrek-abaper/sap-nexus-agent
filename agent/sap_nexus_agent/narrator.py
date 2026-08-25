@@ -165,7 +165,7 @@ def _resolve_one_var(source_expr: str, fact: ReasoningFact, evidence: dict) -> s
     Supports:
       - {material}/{plant}/{value}/{unit} placeholders filled from fact fixed fields
       - a bare evidence field name (e.g. mrpElementLines) -> rendered detail (handled by formatter)
-      - comma-separated evidence field names (po itemFields) -> kept as-is for list builders
+      - comma-separated evidence field names -> kept as-is for list builders
     """
     if "{" in source_expr and "}" in source_expr:
         return source_expr.format(

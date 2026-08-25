@@ -2809,10 +2809,12 @@ def test_independent_same_path_schema_violations_are_all_preserved():
         ),
         (
             "fact_types",
-            # The catalog is now at version 2 (derived-parameter-binding added
-            # `fields`), so 3 is the off-by-one that must fail closed — mirrors
-            # `capabilities-exact-version`, whose catalog is also at 2.
-            lambda document: document.__setitem__("version", 3),
+            # The catalog is now at version 3 (derived-parameter-binding added
+            # `fields` at v2, then `valueTypes` at v3), so 4 is the off-by-one
+            # that must fail closed. This number MUST move with every version
+            # bump: pinning it at the current valid version turns the mutation
+            # into a no-op and the case silently stops testing anything.
+            lambda document: document.__setitem__("version", 4),
             "/factTypeCatalog/version",
         ),
         (

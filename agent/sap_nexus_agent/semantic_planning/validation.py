@@ -33,6 +33,7 @@ def build_semantic_contracts(sources: SemanticSourceDocuments) -> ContractBuildR
     _validate_executor_bindings(sources, issues)
     _validate_unique_ids(sources, issues)
     _validate_fact_references(sources, issues)
+    _validate_value_type_declarations(sources, issues)
     _validate_fact_type_fields(sources, issues)
     _validate_vocabulary_references(sources, issues)
     _validate_relation_endpoints(sources, issues)
@@ -927,7 +928,7 @@ def _validate_source_schemas(
             "factTypes",
             "/factTypeCatalog",
             "/factTypes",
-            2,
+            3,
         ),
         (
             sources.relations,
@@ -1471,14 +1472,24 @@ def _validate_fact_references(
                 )
 
 
-def _semantic_types_declared_by_capabilities(
+def _ontology_value_type_vocabulary(
     sources: SemanticSourceDocuments,
 ) -> set[str]:
-    """The ontology vocabulary, as declared by capability inputs and outputs.
+    """The tier-① value type vocabulary, from its two declaration channels.
 
     Fact Type field semantic types are drawn from this set (design Decision 1),
     which is what keeps ``registry/semantic-types.yaml`` — the extraction
     matcher catalog, with its bare ids — from being mistaken for the authority.
+
+    The primary channel is capability ``inputs``/``outputs.semanticType``. The
+    second channel, ``valueTypes`` in the Fact Type catalog, exists because
+    Decision 1's original wording could not express a value type that appears
+    *only* as a field inside a Fact: the six ``PurchaseOrderSupplyFact`` item
+    fields satisfied the capability-only rule by coincidence — each happens to
+    also be a purchase-order or purchase-requisition input — and
+    ``purchaseOrderItem`` is the first field type with no such coincidence
+    (correction C10). ``_validate_value_type_declarations`` keeps that channel
+    from becoming an escape hatch.
     """
     declared: set[str] = set()
     for capability in _items(sources.capabilities, "capabilities"):
@@ -1490,7 +1501,72 @@ def _semantic_types_declared_by_capabilities(
                     field.get("semanticType"), str
                 ):
                     declared.add(field["semanticType"])
+    for value_type in _items(sources.fact_types, "valueTypes"):
+        if isinstance(value_type, Mapping) and isinstance(value_type.get("id"), str):
+            declared.add(value_type["id"])
     return declared
+
+
+def _validate_value_type_declarations(
+    sources: SemanticSourceDocuments,
+    issues: list[ValidationIssue],
+) -> None:
+    """Keep the ``valueTypes`` channel from becoming a vocabulary escape hatch.
+
+    Two rules, both narrowing:
+
+    * ``VALUE_TYPE_SHADOWS_CAPABILITY`` — an id a capability already declares as
+      an input or output ``semanticType`` must not be restated here. One type,
+      one declaration site, so there is never a question which one is authority.
+    * ``VALUE_TYPE_NOT_USED`` — an id no Fact Type references (by a field's
+      ``semanticType`` or by a ``keyedBy`` entry) must not sit here. The channel
+      exists for types a Fact needs and no capability signature mentions; an
+      unreferenced entry is a declaration in search of a use, and would let the
+      block accumulate types that widen the vocabulary for nothing.
+    """
+    capability_declared: set[str] = set()
+    for capability in _items(sources.capabilities, "capabilities"):
+        if not isinstance(capability, Mapping):
+            continue
+        for container in ("inputs", "outputs"):
+            for field in capability.get(container) or ():
+                if isinstance(field, Mapping) and isinstance(
+                    field.get("semanticType"), str
+                ):
+                    capability_declared.add(field["semanticType"])
+
+    referenced_by_fact_types: set[str] = set()
+    for fact_type in _items(sources.fact_types, "factTypes"):
+        if not isinstance(fact_type, Mapping):
+            continue
+        for semantic_type in fact_type.get("keyedBy") or ():
+            if isinstance(semantic_type, str):
+                referenced_by_fact_types.add(semantic_type)
+        for field in fact_type.get("fields") or ():
+            if isinstance(field, Mapping) and isinstance(
+                field.get("semanticType"), str
+            ):
+                referenced_by_fact_types.add(field["semanticType"])
+
+    for index, value_type in enumerate(_items(sources.fact_types, "valueTypes")):
+        if not isinstance(value_type, Mapping):
+            continue
+        value_type_id = value_type.get("id")
+        path = f"/valueTypes/{index}/id"
+        if value_type_id in capability_declared:
+            _add_issue(
+                issues,
+                path,
+                "VALUE_TYPE_SHADOWS_CAPABILITY",
+                f"{value_type_id} is already declared by a capability input or output",
+            )
+        if value_type_id not in referenced_by_fact_types:
+            _add_issue(
+                issues,
+                path,
+                "VALUE_TYPE_NOT_USED",
+                f"{value_type_id} is referenced by no Fact Type field or key",
+            )
 
 
 def _validate_fact_type_fields(
@@ -1508,7 +1584,7 @@ def _validate_fact_type_fields(
       an array payload whose container output name is deliberately not declared
       as a field.
     """
-    declared_semantic_types = _semantic_types_declared_by_capabilities(sources)
+    declared_semantic_types = _ontology_value_type_vocabulary(sources)
     published: set[tuple[str, str, str]] = set()
     for capability in _items(sources.capabilities, "capabilities"):
         if not isinstance(capability, Mapping) or capability.get("status") != "active":
@@ -1575,7 +1651,7 @@ def _validate_vocabulary_references(
       the ontology type it extracts. A bare matcher id is rejected here, which
       is what keeps the mapping one-way.
     """
-    declared_semantic_types = _semantic_types_declared_by_capabilities(sources)
+    declared_semantic_types = _ontology_value_type_vocabulary(sources)
 
     for fact_index, fact_type in enumerate(_items(sources.fact_types, "factTypes")):
         if not isinstance(fact_type, Mapping):

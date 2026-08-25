@@ -1,4 +1,15 @@
-version: 2
+version: 3
+# Second declaration channel for the tier-① semantic-type vocabulary, for value
+# types that appear only as a field inside a Fact and that therefore no
+# capability signature mentions. See schemas/fact-type-catalog.schema.json.
+valueTypes:
+  - id: sapnexus:PurchaseOrderItemNumber
+    description: >-
+      Line item number of a purchase-order item. Distinct from
+      sapnexus:PurchaseOrderItem, which is the item itself (the semantic type of
+      the container output `purchaseOrders`); this is that item's number. No
+      capability takes or returns it as a top-level parameter, so it is declared
+      here rather than in a capability signature.
 factTypes:
   - factTypeId: sapnexus:InventoryAvailabilityFact
     name: Inventory Availability Fact
@@ -37,6 +48,11 @@ factTypes:
         cardinality: many
         optional: false
         description: Purchase order number of a supply item.
+      - name: purchaseOrderItem
+        semanticType: sapnexus:PurchaseOrderItemNumber
+        cardinality: many
+        optional: false
+        description: Line item number of a supply item within its purchase order.
       - name: supplier
         semanticType: sapnexus:Supplier
         cardinality: many

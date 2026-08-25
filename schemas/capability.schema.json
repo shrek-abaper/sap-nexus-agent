@@ -233,7 +233,14 @@
     "narrative": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["factShape", "promptTemplate", "fallbackTemplate", "fieldMapping", "detailFormatter"],
+      "required": ["factShape", "promptTemplate", "fallbackTemplate", "detailFormatter"],
+      "allOf": [
+        {
+          "description": "`fieldMapping` is consumed by exactly one code path: `_resolve_template_vars` (narrator.py), reached only from the `single-value` narration body. The `list` and `action-receipt` paths never read it, so requiring it there would mandate a value nothing consumes.",
+          "if": { "properties": { "factShape": { "const": "single-value" } }, "required": ["factShape"] },
+          "then": { "required": ["fieldMapping"] }
+        }
+      ],
       "properties": {
         "factShape": { "type": "string", "enum": ["single-value", "list", "action-receipt"] },
         "promptTemplate": { "type": "string", "minLength": 1 },
