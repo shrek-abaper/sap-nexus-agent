@@ -1,4 +1,4 @@
-version: 1
+version: 2
 factTypes:
   - factTypeId: sapnexus:InventoryAvailabilityFact
     name: Inventory Availability Fact
@@ -9,6 +9,19 @@ factTypes:
     keyedBy:
       - sapnexus:MaterialNumber
       - sapnexus:Plant
+    fields:
+      - name: availableQuantity
+        semanticType: sapnexus:AvailableQuantity
+        cardinality: one
+        optional: false
+        description: Available quantity for the keyed material and plant.
+      - name: mrpElementLines
+        semanticType: sapnexus:MrpElementLine
+        cardinality: many
+        optional: true
+        description: >-
+          MRP element lines backing the availability figure, kept as one opaque
+          list: its interior is not decomposed into fields.
   - factTypeId: sapnexus:PurchaseOrderSupplyFact
     name: Purchase Order Supply Fact
     description: Purchase-order supply items for a material and plant.
@@ -18,6 +31,37 @@ factTypes:
     keyedBy:
       - sapnexus:MaterialNumber
       - sapnexus:Plant
+    fields:
+      - name: purchaseOrder
+        semanticType: sapnexus:PurchaseOrderNumber
+        cardinality: many
+        optional: false
+        description: Purchase order number of a supply item.
+      - name: supplier
+        semanticType: sapnexus:Supplier
+        cardinality: many
+        optional: false
+        description: Supplier of a supply item.
+      - name: material
+        semanticType: sapnexus:MaterialNumber
+        cardinality: many
+        optional: false
+        description: Material of a supply item.
+      - name: plant
+        semanticType: sapnexus:Plant
+        cardinality: many
+        optional: false
+        description: Receiving plant of a supply item.
+      - name: orderQuantity
+        semanticType: sapnexus:Quantity
+        cardinality: many
+        optional: false
+        description: Ordered quantity of a supply item.
+      - name: purchaseOrderUnit
+        semanticType: sapnexus:UnitOfMeasure
+        cardinality: many
+        optional: false
+        description: Order unit of a supply item.
   - factTypeId: sapnexus:PurchaseRequisitionCreatedFact
     name: Purchase Requisition Created Fact
     description: Identity of a purchase requisition created by an approved Action.
@@ -26,3 +70,9 @@ factTypes:
     semanticType: sapnexus:PurchaseRequisitionCreated
     keyedBy:
       - sapnexus:PrNumber
+    fields:
+      - name: prNumber
+        semanticType: sapnexus:PrNumber
+        cardinality: one
+        optional: false
+        description: Number of the created purchase requisition.

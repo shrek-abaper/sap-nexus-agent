@@ -2809,7 +2809,10 @@ def test_independent_same_path_schema_violations_are_all_preserved():
         ),
         (
             "fact_types",
-            lambda document: document.__setitem__("version", 2),
+            # The catalog is now at version 2 (derived-parameter-binding added
+            # `fields`), so 3 is the off-by-one that must fail closed — mirrors
+            # `capabilities-exact-version`, whose catalog is also at 2.
+            lambda document: document.__setitem__("version", 3),
             "/factTypeCatalog/version",
         ),
         (
@@ -3307,7 +3310,15 @@ def _semantic_rule_sources(mutation):
         ),
         (
             "unknown-output-fact-reference",
-            (("/capabilities/0/outputs/0/factTypeRef", "UNKNOWN_FACT_TYPE"),),
+            # Repointing the producer's `factTypeRef` away from
+            # `sapnexus:InventoryAvailabilityFact` does two things, and both are
+            # real: the reference dangles, AND the catalog's `availableQuantity`
+            # field (cardinality `one`) is left with no active capability
+            # publishing it. The publication rule reports the second.
+            (
+                ("/capabilities/0/outputs/0/factTypeRef", "UNKNOWN_FACT_TYPE"),
+                ("/factTypes/0/fields/0/name", "UNPUBLISHED_FACT_FIELD"),
+            ),
         ),
         ("authored-relation-not-allowed", (("/relations/0", "SCHEMA_INVALID"),)),
         (

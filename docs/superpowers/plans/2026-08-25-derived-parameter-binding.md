@@ -163,8 +163,9 @@ Named baseline non-passes — these are **pre-existing and must stay honest**, n
 
 ## Corrections to `openspec/changes/derived-parameter-binding/tasks.md`
 
-Five findings from the pre-build fact check. **Where tasks.md and this plan disagree, this plan
-wins**, because these were verified against source.
+Six findings from the pre-build fact check (C1–C6 before build, **C7 found at T1 entry**).
+**Where tasks.md and this plan disagree, this plan wins**, because these were verified against
+source.
 
 | # | tasks.md says | Verified truth | Consequence |
 |---|---|---|---|
@@ -174,6 +175,8 @@ wins**, because these were verified against source.
 | C4 | 5.5 implies validator work | `validation.py:483-496` keys `expected_data` to a **list**, so N sources per edge are already tolerated; only `validation.py:528-545` rejects duplicate *edges* | Defect 1 needs **zero** `validation.py` change. Only `plan_compiler_v2.py:277` moves. Keeps figure (b) small |
 | C5 | 2.5 "fields vs outputs" tension unresolved | Derived invariant, verified against all 3 existing facts + the planned one | **A Fact Type field with `cardinality: one` must be published as a same-named, same-`semanticType` output by at least one active producer; `cardinality: many` fields are exempt.** `PurchaseOrderSupplyFact`'s six item-level fields are all `many` (container output is `purchaseOrders`) → exempt, land in `needsReduction`. `InventoryAvailabilityFact.availableQuantity` (one) is published; `mrpElementLines` (many) exempt. `MaterialInfoFact`'s four `one` fields map 1:1 to four outputs |
 | C6 | 1.1 lands `satisfiableByFactType: sapnexus:MaterialInfoFact` in the registry during T0′ | That Fact Type is not published until 5.2, and the `UNKNOWN_FACT_TYPE` rule already exists (pinned by `test_semantic_planning_contract.py:3322-3324`). The spec delta mandates it: *"Identifier input references an unpublished Fact Type → contract validation fails and names the offending capability and input"* | **1.1's registry edit moves into 5.2 as one atomic registry change** (Fact Type + capability + the two `satisfiableByFactType` references together). T0′ becomes mechanism-only (1.2/1.3/1.4), tested against **fixtures**. Publishing `MaterialInfoFact` early is *not* an alternative: its four fields are all `cardinality: one`, so C5 would reject it for having no active producer. This is the only arrangement where every intermediate commit has a valid registry |
+| C7 | 2.1 bumps `ontology/fact-types.yaml` to `version: 2` with "fields land in 2.5", and 2.8 recomputes the snapshot pins as a separate step | Two verified couplings make that split impossible. (a) 2.1.2 adds `fields` to `$defs/factType.required`, so the instant the schema lands, a catalog without `fields` is **invalid** — the 2.1→2.5 window would leave `ontology/fact-types.yaml` failing its own schema. (b) `snapshot.py:44` hashes `dict(documents)` — the **whole** document set — so the `version: 1 → 2` bump *alone* invalidates all **14** `sha256:e6d329bc…e599ed95` pins in `evals/matcher_cases.yaml` (count verified), independently of the field content | **2.1 + 2.5 + 2.8 are one atomic commit.** Same class of defect as C6, same fix: never leave an intermediate commit whose governed sources fail validation or whose pins are stale |
+| C7a | (my own C7 first draft claimed `registry/semantic-types.yaml` is **not** a snapshot source, so 2.2/2.3 could not move the digest) | **That was wrong and is withdrawn.** `contracts.py:105-113` `documents_by_path()` returns **five** paths: the matcher catalog is included whenever `semantic_types` is non-empty, and the live snapshot lists it at `document_version: 2`, digest `sha256:173b31f2…cc8f406e` | 2.3's `extracts:` keys **do** move the digest, so T1 needs **two** documented pin recomputes: one for the fact-types change (2.1/2.5), one for the matcher-catalog change (2.3). Two documented recomputes are preferable to one giant commit — invariant 9 forbids *silent* refreshes, not documented ones. 2.2 is digest-neutral: `yaml.safe_load` discards comments |
 
 ## Task order
 
@@ -434,6 +437,11 @@ and ask** before considering C.
 
 ## Task 2.1 — Extend the Fact Type catalog schema with a required field list
 
+**Landing rule (correction C7): 2.1, 2.5 and 2.8 land as ONE commit.** The schema change makes
+`fields` required, so the catalog is invalid until 2.5 declares them; and the `version` bump alone
+moves the whole-documents digest, so 2.8's 14 pins are stale in the same instant. Steps below are
+still numbered per task, but the commit boundary is after 2.8.
+
 **Files**
 
 - `schemas/fact-type-catalog.schema.json`
@@ -459,21 +467,21 @@ Target field shape:
 
 **Steps**
 
-- [ ] 2.1.1 Failing test: `ontology/fact-types.yaml` validates and every Fact Type has a non-empty
+- [x] 2.1.1 Failing test: `ontology/fact-types.yaml` validates and every Fact Type has a non-empty
   `fields[]` whose entries carry all five keys.
-- [ ] 2.1.2 Add `fields` to `$defs/factType.properties` with its own `$defs/factTypeField`
+- [x] 2.1.2 Add `fields` to `$defs/factType.properties` with its own `$defs/factTypeField`
   (`additionalProperties: false`, `required: [name, semanticType, cardinality, optional, description]`,
   `cardinality` enum `[one, many]`). Add `fields` to `$defs/factType.required` — it is **required
   for every Fact Type**, which is what lets a consumer rely on it existing.
-- [ ] 2.1.3 Bump the catalog: `"version": {"const": 2}` in the schema and `version: 2` in
+- [x] 2.1.3 Bump the catalog: `"version": {"const": 2}` in the schema and `version: 2` in
   `ontology/fact-types.yaml`. A newly-required key is a breaking catalog change and the version is
   the mechanism that communicates it — `registry/semantic-types.yaml` already set the v2 precedent.
-- [ ] 2.1.4 Add the validator rule: each field's `semanticType` must be drawn from the `sapnexus:*`
+- [x] 2.1.4 Add the validator rule: each field's `semanticType` must be drawn from the `sapnexus:*`
   ontology vocabulary, validated against the set of semantic types declared by capability
   inputs/outputs (Decision 1).
-- [ ] 2.1.5 Verify a **matcher-catalog bare id** (e.g. `Unit`) fails, and an unknown
+- [x] 2.1.5 Verify a **matcher-catalog bare id** (e.g. `Unit`) fails, and an unknown
   `sapnexus:Nonexistent` fails, each naming the offending Fact Type **and** field.
-- [ ] 2.1.6 Verify `snapshot.py:37` `document_version=int(document["version"])` reads `2` without
+- [x] 2.1.6 Verify `snapshot.py:37` `document_version=int(document["version"])` reads `2` without
   error. (It is an unconstrained `int()`, so it will — assert it rather than assume it.)
 
 ## Task 2.2 — Label `registry/semantic-types.yaml` as the matcher catalog
@@ -532,14 +540,14 @@ MM.PR.CreateDraft (Action):              prNumber          / sapnexus:PrNumber  
 
 **Steps**
 
-- [ ] 2.5.1 `PurchaseOrderSupplyFact`: decompose the six item-level fields as
+- [x] 2.5.1 `PurchaseOrderSupplyFact`: decompose the six item-level fields as
   `cardinality: many`. The array **container output name (`purchaseOrders`) is not declared as a
   field**. Under C5 these `many` fields are exempt from the publication rule and land in
   `needsReduction` — they are never emitted as bindable edges.
-- [ ] 2.5.2 `InventoryAvailabilityFact`: `availableQuantity` as `cardinality: one`;
+- [x] 2.5.2 `InventoryAvailabilityFact`: `availableQuantity` as `cardinality: one`;
   `mrpElementLines` as **one opaque `many` field** (do not decompose it — the depth rule).
-- [ ] 2.5.3 `PurchaseRequisitionCreatedFact`: `prNumber` as `cardinality: one`.
-- [ ] 2.5.4 Add the C5 invariant as a validator rule + test: **a `cardinality: one` field must be
+- [x] 2.5.3 `PurchaseRequisitionCreatedFact`: `prNumber` as `cardinality: one`.
+- [x] 2.5.4 Add the C5 invariant as a validator rule + test: **a `cardinality: one` field must be
   published as a same-named, same-`semanticType` output by at least one active producer;
   `cardinality: many` fields are exempt.** Verify it holds for all three existing Fact Types
   *before* T3 adds a fourth.
@@ -599,11 +607,11 @@ This is a mechanical consequence, not a choice.
 
 **Steps**
 
-- [ ] 2.8.1 Recompute and update the 14 `evals/matcher_cases.yaml` pins.
-- [ ] 2.8.2 Write the semantic reason into the **commit body**: *"fact-types.yaml v1→v2 adds
+- [x] 2.8.1 Recompute and update the 14 `evals/matcher_cases.yaml` pins.
+- [x] 2.8.2 Write the semantic reason into the **commit body**: *"fact-types.yaml v1→v2 adds
   required `fields[]`; snapshot.py hashes whole documents, so the per-source digest and
   snapshot_id necessarily change."* Silently refreshing a snapshot is forbidden (invariant 9).
-- [ ] 2.8.3 Verify **no approval subject hash** in `agent/tests/test_approval.py` or
+- [x] 2.8.3 Verify **no approval subject hash** in `agent/tests/test_approval.py` or
   `agent/tests/test_orchestrator.py` is touched (invariant 5). Assert via `git diff` on those files
   being empty.
 

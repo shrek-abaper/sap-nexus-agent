@@ -6,7 +6,7 @@
   "additionalProperties": false,
   "required": ["version", "factTypes"],
   "properties": {
-    "version": { "type": "integer", "const": 1 },
+    "version": { "type": "integer", "const": 2 },
     "factTypes": {
       "type": "array",
       "minItems": 1,
@@ -25,7 +25,8 @@
         "businessObject",
         "predicate",
         "semanticType",
-        "keyedBy"
+        "keyedBy",
+        "fields"
       ],
       "properties": {
         "factTypeId": { "type": "string", "minLength": 1 },
@@ -39,7 +40,25 @@
           "minItems": 1,
           "uniqueItems": true,
           "items": { "type": "string", "minLength": 1 }
+        },
+        "fields": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/factTypeField" }
         }
+      }
+    },
+    "factTypeField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "semanticType", "cardinality", "optional", "description"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "semanticType": { "type": "string", "minLength": 1 },
+        "cardinality": { "enum": ["one", "many"] },
+        "optional": { "type": "boolean" },
+        "description": { "type": "string", "minLength": 1 }
       }
     }
   }

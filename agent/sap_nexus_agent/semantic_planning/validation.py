@@ -33,6 +33,7 @@ def build_semantic_contracts(sources: SemanticSourceDocuments) -> ContractBuildR
     _validate_executor_bindings(sources, issues)
     _validate_unique_ids(sources, issues)
     _validate_fact_references(sources, issues)
+    _validate_fact_type_fields(sources, issues)
     _validate_relation_endpoints(sources, issues)
     _validate_dependency_cycles(sources, issues)
     if issues:
@@ -925,7 +926,7 @@ def _validate_source_schemas(
             "factTypes",
             "/factTypeCatalog",
             "/factTypes",
-            1,
+            2,
         ),
         (
             sources.relations,
@@ -1466,6 +1467,91 @@ def _validate_fact_references(
                     f"{base_path}/factTypeRef",
                     "UNKNOWN_FACT_TYPE",
                     f"unknown Fact Type: {fact_type_ref}",
+                )
+
+
+def _semantic_types_declared_by_capabilities(
+    sources: SemanticSourceDocuments,
+) -> set[str]:
+    """The ontology vocabulary, as declared by capability inputs and outputs.
+
+    Fact Type field semantic types are drawn from this set (design Decision 1),
+    which is what keeps ``registry/semantic-types.yaml`` — the extraction
+    matcher catalog, with its bare ids — from being mistaken for the authority.
+    """
+    declared: set[str] = set()
+    for capability in _items(sources.capabilities, "capabilities"):
+        if not isinstance(capability, Mapping):
+            continue
+        for container in ("inputs", "outputs"):
+            for field in capability.get(container) or ():
+                if isinstance(field, Mapping) and isinstance(
+                    field.get("semanticType"), str
+                ):
+                    declared.add(field["semanticType"])
+    return declared
+
+
+def _validate_fact_type_fields(
+    sources: SemanticSourceDocuments,
+    issues: list[ValidationIssue],
+) -> None:
+    """Fact Type field lists are the authority data dependency edges derive from.
+
+    Two rules:
+
+    * the field's ``semanticType`` must exist in the ontology vocabulary;
+    * a ``cardinality: one`` field must be published as a same-named,
+      same-``semanticType`` output by at least one active producer of that Fact
+      Type. ``cardinality: many`` fields are exempt — they describe items inside
+      an array payload whose container output name is deliberately not declared
+      as a field.
+    """
+    declared_semantic_types = _semantic_types_declared_by_capabilities(sources)
+    published: set[tuple[str, str, str]] = set()
+    for capability in _items(sources.capabilities, "capabilities"):
+        if not isinstance(capability, Mapping) or capability.get("status") != "active":
+            continue
+        for output in capability.get("outputs") or ():
+            if not isinstance(output, Mapping):
+                continue
+            fact_type_ref = output.get("factTypeRef")
+            name = output.get("name")
+            semantic_type = output.get("semanticType")
+            if (
+                isinstance(fact_type_ref, str)
+                and isinstance(name, str)
+                and isinstance(semantic_type, str)
+            ):
+                published.add((fact_type_ref, name, semantic_type))
+
+    for fact_index, fact_type in enumerate(_items(sources.fact_types, "factTypes")):
+        if not isinstance(fact_type, Mapping):
+            continue
+        fact_type_id = fact_type.get("factTypeId")
+        for field_index, field in enumerate(fact_type.get("fields") or ()):
+            if not isinstance(field, Mapping):
+                continue
+            base_path = f"/factTypes/{fact_index}/fields/{field_index}"
+            name = field.get("name")
+            semantic_type = field.get("semanticType")
+            if semantic_type not in declared_semantic_types:
+                _add_issue(
+                    issues,
+                    f"{base_path}/semanticType",
+                    "UNKNOWN_SEMANTIC_TYPE",
+                    f"{fact_type_id}.{name}: unknown semantic type: {semantic_type}",
+                )
+            elif (
+                field.get("cardinality") == "one"
+                and (fact_type_id, name, semantic_type) not in published
+            ):
+                _add_issue(
+                    issues,
+                    f"{base_path}/name",
+                    "UNPUBLISHED_FACT_FIELD",
+                    f"{fact_type_id}.{name}: no active producer publishes an "
+                    f"output named {name} with semantic type {semantic_type}",
                 )
 
 
