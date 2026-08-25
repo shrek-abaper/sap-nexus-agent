@@ -766,3 +766,112 @@ def test_select_from_envelope_reject_technical_field():
     )
     assert decision.decision_type == "REJECT"
     assert "technical_field:rfcName" in decision.discard_reasons
+
+
+# ---- T5 task 7.1: a derivable parameter is not asked; the decision escalates ----
+#
+# Before this, the planner could derive `unit` and `purchasing_group` (6.1's table
+# fell from 4 to 2) but no conversational entry point reached that plan: the
+# selector still listed both in `missing_parameters` and returned CLARIFY, so the
+# user was asked for values the system could have read. The feature was half
+# delivered.
+#
+# A derivable parameter is dropped from `missing_parameters`, and because deriving
+# requires an upstream node plus a data edge (invariant 2), the decision escalates
+# to ESCALATE_TO_PLANNER rather than becoming a SELECT the single-capability
+# CallPlan path could not honour.
+#
+# Derivability is decided by reading the registry only - `satisfiableByFactType`
+# plus an active auto-pullable producer - never by calling anything. Task 5.8's
+# audit covers that: `derivation` performs no data fetch.
+
+
+def _pr_parse_result(**overrides):
+    from types import SimpleNamespace
+
+    base = dict(
+        intent="pr_create",
+        capability_id="MM.PR.CreateDraft",
+        parameters={
+            "material": "DEMOA2",
+            "plant": "5100",
+            "quantity": "10",
+            "delivery_date": "2026-09-30",
+        },
+        missing_parameters=["unit", "purchasing_group"],
+        matched_intents=[],
+        multi_parameters={},
+        clarification=None,
+        contains_rfc_name=False,
+        contains_odata_override=False,
+        is_ambiguous=False,
+        utterance="给 DEMOA2 在 5100 建一张采购申请，数量 10，交货日期 2026-09-30",
+        registry_snapshot_id="",
+    )
+    base.update(overrides)
+    return SimpleNamespace(**base)
+
+
+def test_a_derivable_parameter_is_not_asked_and_escalates_to_the_planner():
+    """Task 7.1 — the conversational half of the feature.
+
+    Both remaining "missing" parameters are derivable from
+    `sapnexus:MaterialInfoFact`, so neither is asked and the decision escalates so
+    a two-node plan can be authored.
+    """
+    decision = select_capability(_pr_parse_result())
+
+    assert decision.decision_type == "ESCALATE_TO_PLANNER"
+    assert decision.missing_parameters == []
+    assert decision.handoff is not None
+    assert [m.capability_id for m in decision.handoff.matched_intents] == [
+        "MM.PR.CreateDraft"
+    ]
+    assert decision.handoff.matched_intents[0].parameters == {
+        "material": "DEMOA2",
+        "plant": "5100",
+        "quantity": "10",
+        "delivery_date": "2026-09-30",
+    }
+
+
+def test_a_non_derivable_missing_parameter_still_clarifies():
+    """The escalation must not swallow a genuinely unanswerable gap.
+
+    `quantity` has no upstream producer — no SAP read can say how many the user
+    wants — so omitting it must still produce CLARIFY, and the CLARIFY must name
+    `quantity` alone rather than the derivable pair alongside it.
+    """
+    decision = select_capability(
+        _pr_parse_result(
+            parameters={
+                "material": "DEMOA2",
+                "plant": "5100",
+                "delivery_date": "2026-09-30",
+            },
+            missing_parameters=["quantity", "unit", "purchasing_group"],
+        )
+    )
+
+    assert decision.decision_type == "CLARIFY"
+    assert decision.missing_parameters == ["quantity"]
+
+
+def test_nothing_escalates_when_no_parameter_was_derivable():
+    """Non-vacuity guard: the escalation is caused by derivability, not by mood.
+
+    An inventory query with a genuinely missing `plant` has no derivable input at
+    all, so it must still CLARIFY. If this went to the planner, the previous test
+    would prove nothing about *why* the PR case escalated.
+    """
+    decision = select_capability(
+        _pr_parse_result(
+            intent="inventory_availability",
+            capability_id="MM.Inventory.GetAvailability",
+            parameters={"material": "DEMOA1"},
+            missing_parameters=["plant"],
+        )
+    )
+
+    assert decision.decision_type == "CLARIFY"
+    assert decision.missing_parameters == ["plant"]

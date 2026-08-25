@@ -762,6 +762,114 @@ def _assert_matcher_dry_run(case_id: str, outcome: Any, expected: dict[str, Any]
             raise AssertionError(
                 f"{case_id}: dryRun.rationaleNonEmpty=True but rationale is empty"
             )
+    _assert_parameter_provenance(case_id, plan_graph, dry_run_expected)
+    _assert_data_edge_fact_types(case_id, plan_graph, dry_run_expected)
+    _assert_ordered_before(case_id, plan_graph, dry_run_expected)
+
+
+# T5 task 7.1: the vocabulary the spec delta requires. `capability_derived` is an
+# eval-harness term, not a runtime enum (correction C12): the runtime carries the
+# provenance as the binding's own discriminant, so the mapping is defined here,
+# once, and every case reads through it.
+_PROVENANCE_BY_SOURCE_KIND = {
+    "factField": "capability_derived",
+    "literal": "user_supplied",
+    "goalConstraint": "goal_constraint",
+    "registeredDefault": "registered_default",
+}
+
+
+def _bindings_by_capability(plan_graph: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    return {
+        node.get("capabilityId"): {
+            binding["parameterName"]: binding["source"]
+            for binding in node.get("parameterBindings", [])
+        }
+        for node in plan_graph.get("nodes", [])
+    }
+
+
+def _assert_parameter_provenance(
+    case_id: str, plan_graph: dict[str, Any], expected: dict[str, Any]
+) -> None:
+    """``parameterProvenance``: {capabilityId: {parameter: provenance}}.
+
+    A parameter absent from the plan's bindings is reported as ``not_bound``
+    rather than omitted, so "the field was not elicited" and "the field silently
+    vanished" cannot produce the same green result. Asserted as an exact dict per
+    capability, so an extra derived parameter fails too.
+    """
+    wanted = expected.get("parameterProvenance")
+    if wanted is None:
+        return
+    bindings = _bindings_by_capability(plan_graph)
+    for capability_id, parameters in wanted.items():
+        node_bindings = bindings.get(capability_id)
+        if node_bindings is None:
+            raise AssertionError(
+                f"{case_id}: parameterProvenance names {capability_id}, which is "
+                f"not a node in the plan"
+            )
+        actual = {
+            name: _PROVENANCE_BY_SOURCE_KIND.get(
+                node_bindings[name].get("kind"), node_bindings[name].get("kind")
+            )
+            if name in node_bindings
+            else "not_bound"
+            for name in parameters
+        }
+        if actual != parameters:
+            raise AssertionError(
+                f"{case_id}: parameterProvenance mismatch for {capability_id} - "
+                f"expected {parameters}, got {actual}"
+            )
+
+
+def _assert_data_edge_fact_types(
+    case_id: str, plan_graph: dict[str, Any], expected: dict[str, Any]
+) -> None:
+    """``dataEdges``: the exact list of ``(from, to, factTypeId)`` triples.
+
+    A list, not a set, and exact: task 5.5's defect was a *duplicate* edge for one
+    triple, so a containment check would have passed straight through it.
+    """
+    wanted = expected.get("dataEdges")
+    if wanted is None:
+        return
+    actual = [
+        [edge.get("fromNodeId"), edge.get("toNodeId"), edge.get("factTypeId")]
+        for edge in plan_graph.get("edges", [])
+        if edge.get("kind") == "data"
+    ]
+    if actual != [list(item) for item in wanted]:
+        raise AssertionError(
+            f"{case_id}: dataEdges mismatch - expected {wanted}, got {actual}"
+        )
+
+
+def _assert_ordered_before(
+    case_id: str, plan_graph: dict[str, Any], expected: dict[str, Any]
+) -> None:
+    """``orderedBefore``: [[earlier, later], ...] against ``topologicalOrder``.
+
+    Both node ids must be present; a missing one is an error rather than a
+    vacuous pass, which is the failure mode a plain index comparison invites.
+    """
+    wanted = expected.get("orderedBefore")
+    if wanted is None:
+        return
+    order = list(plan_graph.get("topologicalOrder", []))
+    for earlier, later in wanted:
+        if earlier not in order or later not in order:
+            raise AssertionError(
+                f"{case_id}: orderedBefore names {earlier!r}/{later!r} but "
+                f"topologicalOrder is {order}"
+            )
+        if order.index(earlier) >= order.index(later):
+            raise AssertionError(
+                f"{case_id}: orderedBefore violated - {earlier} must precede "
+                f"{later} in {order}"
+            )
 
 
 def _assert_case(case: dict[str, Any], outcome: Any, gateway: FakeGatewayClient) -> None:

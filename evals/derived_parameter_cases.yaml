@@ -1,11 +1,11 @@
 {
   "suite": "derived-parameter-binding",
-  "note": "Conversation-sequence cases for parameter derivation (T5, plan task 4.1). All five are pending until MM.Material.GetInfo is registered (task 5.2) and the harness can assert parameter provenance. Each expected block uses ONLY keys the harness asserts today; every not-yet-assertable expectation is stated in this case's todo, so turning a case real means adding the assertion, never just deleting pending.",
+  "note": "Conversation-sequence cases for parameter derivation (T5, plan tasks 4.1 and 7.1-7.5). Cases 2 and 3 are live. Cases 1, 4 and 5 remain pending, each with a named cause and a named prerequisite - never as a known issue. Every expected block uses only keys the harness asserts; the derived-parameter keys (parameterProvenance / dataEdges / orderedBefore) were added by task 7.1. provenance=capability_derived is harness vocabulary mapped from source.kind=factField per correction C12.",
   "cases": [
     {
       "id": "derived-not-asked",
       "pending": true,
-      "todo": "Blocked on task 5.2 (register MM.Material.GetInfo + sapnexus:MaterialInfoFact) and on task 7.1 adding provenance assertions to the harness. Target, none of which the harness can assert yet: neither unit nor purchasing_group is elicited; both carry provenance=capability_derived; the MM.Material.GetInfo node exists in the plan; a data edge carries sapnexus:MaterialInfoFact; topologicalOrder places GetInfo before MM.PR.CreateDraft. Pairs with user-supplied-wins - see that case's todo.",
+      "todo": "UNREACHABLE THROUGH THE RULE PARSER, cause named. For BOTH unit and purchasing_group to be derived, the utterance must omit both - but quantity's extraction is coupled to an adjacent RECOGNISED unit token from the closed set {EA,PC,KG,G,L,M} (registry inputs[quantity].extraction, resolver: quantity), so dropping the unit also drops quantity, which is required and NOT derivable. Verified against the parser: '建 100 箱采购申请' and '建 100 TON 采购申请' and '数量 100' all yield CLARIFY missing=['quantity']. Prerequisite to make this case live: let the quantity matcher accept a bare number after 数量, which changes the extraction layer batch T deliberately left alone. THE PROPERTY ITSELF IS ASSERTED, at the planner layer rather than through the parser: agent/tests/test_planner_plan_compiler_v2.py::test_a_fully_specified_derived_plan_is_valid_and_still_demands_approval supplies material+plant+quantity+delivery_date and asserts BOTH unit and purchasing_group bind from factField while write_side_effect and approval_required remain. So this pending case is a missing conversational entry point, not a missing capability.",
       "userQuery": "给 DEMOA2 在 5100 建一张采购申请，数量 10，交货日期 2026-09-30",
       "expected": {
         "decisionType": "SELECT",
@@ -16,32 +16,68 @@
     },
     {
       "id": "user-supplied-wins",
-      "pending": true,
-      "todo": "Blocked on task 5.2 and on task 7.2. Target: the user supplies unit, so it binds from literal, NO factField source is authored for it, MM.Material.GetInfo is NOT pulled into desired_fact_types, and no extra READ is executed - asserted by the ABSENCE of the producer node, not merely the presence of the literal. Mandatory pair with derived-not-asked: without this case, 'the user's value won' and 'we never derived anything' produce the same observable outcome, so a green derived-not-asked alone cannot demonstrate the feature.",
-      "userQuery": "给 DEMOA2 在 5100 建一张采购申请，数量 10 个，交货日期 2026-09-30",
+      "userQuery": "给物料 M001 工厂 1000 建 100 EA 采购申请 交货 2026-08-01 采购组 601",
       "expected": {
         "decisionType": "SELECT",
         "capabilityId": "MM.PR.CreateDraft",
         "validateCalls": 1,
-        "executeCalls": 0
-      }
+        "executeCalls": 0,
+        "dryRun": {
+          "present": false
+        }
+      },
+      "note": "Task 7.2, live. The user states every value including unit and purchasing_group, so nothing is derivable, the decision stays SELECT and NO plan is authored at all - dryRun.present=False is the strongest available form of 'MM.Material.GetInfo was not pulled and no extra READ happened', because it asserts the ABSENCE of the producer rather than the presence of a literal. Mandatory pair with derived-not-asked / mixed: without this case, 'the user's value won' and 'we never derived anything' would produce the same green result. executeCalls=0 because the capability is a WRITE awaiting Human Approval."
     },
     {
       "id": "derived-and-user-supplied-mixed",
-      "pending": true,
-      "todo": "Blocked on task 5.2 and on task 7.3. Target: the user supplies unit and omits purchasing_group, so purchasing_group binds from factField, unit binds from literal, and there is EXACTLY ONE data edge for the (MM.Material.GetInfo -> MM.PR.CreateDraft, sapnexus:MaterialInfoFact) pair. This is the only path that exercises Defect 1 (duplicate data edge, task 5.5): a case where all parameters are derived, or none are, cannot produce the second edge at all. Defect 1 must be caught by this test, not by hope.",
-      "userQuery": "给 DEMOA2 在 5100 建一张采购申请，数量 10 个，交货日期 2026-09-30，采购组不确定",
+      "userQuery": "给物料 M001 工厂 1000 建 100 EA 采购申请 交货 2026-08-01",
       "expected": {
-        "decisionType": "SELECT",
-        "capabilityId": "MM.PR.CreateDraft",
-        "validateCalls": 1,
-        "executeCalls": 0
-      }
+        "decisionType": "ESCALATE_TO_PLANNER",
+        "validateCalls": 0,
+        "executeCalls": 0,
+        "dryRun": {
+          "present": true,
+          "nodeCount": 2,
+          "nodeCapabilities": [
+            "MM.Material.GetInfo",
+            "MM.PR.CreateDraft"
+          ],
+          "parameterProvenance": {
+            "MM.PR.CreateDraft": {
+              "material": "user_supplied",
+              "plant": "user_supplied",
+              "quantity": "user_supplied",
+              "delivery_date": "user_supplied",
+              "unit": "user_supplied",
+              "purchasing_group": "capability_derived"
+            },
+            "MM.Material.GetInfo": {
+              "material": "user_supplied",
+              "plant": "user_supplied"
+            }
+          },
+          "dataEdges": [
+            [
+              "node.MM.Material.GetInfo",
+              "node.MM.PR.CreateDraft",
+              "sapnexus:MaterialInfoFact"
+            ]
+          ],
+          "orderedBefore": [
+            [
+              "node.MM.Material.GetInfo",
+              "node.MM.PR.CreateDraft"
+            ]
+          ],
+          "flagsContain": "approval_required"
+        }
+      },
+      "note": "Task 7.3, live, and the load-bearing case of the suite. The user states unit (EA) and omits purchasing_group, so unit binds from literal and purchasing_group from factField in ONE plan - 用户明说优先 and upstream derivation observed side by side. dataEdges is asserted as an EXACT list because defect 1 (task 5.5) was a DUPLICATE data edge for one (producer, consumer, factType) triple: a containment check would pass straight through it, and a case where all parameters are derived or none are cannot produce the second edge at all. flagsContain approval_required is invariant 5: a derived parameter must not shorten Human Approval. MM.Material.GetInfo's own material/plant are user_supplied because task 5.4b propagates the consumer's keyedBy values into the pulled producer - without that the producer could never execute."
     },
     {
       "id": "upstream-empty-degrades-to-elicitation",
       "pending": true,
-      "todo": "Blocked on task 5.2 and on task 7.4. Target: MM.Material.GetInfo returns an empty or erroring result, so the run degrades to ELICITATION - never to a registeredDefault, never to a fabricated value. missingParameters must name the parameters that could not be derived.",
+      "todo": "PENDING, cause named: this case is about EXECUTION-time behaviour and the Python eval harness is planning-only. 'MM.Material.GetInfo returns an empty or erroring result' can only be observed after the Composition Runtime executes the producer node, and by invariant 2 the Agent never executes - it authors a plan. At authoring time the plan is authored identically whether or not the upstream will later return data, so there is nothing for this harness to assert. Prerequisite: a TS-side PlanExecutor + projection scenario in frontend/src/runtime, where a node result can be made empty and the degradation to elicitation observed. Related but NOT the same property, and already asserted: the planner refuses to invent a value when no source exists - agent/tests/test_planner_plan_compiler_v2.py::test_an_unsupplied_consumer_parameter_still_fails_closed shows PARAMETER_SOURCE_MISSING rather than a default.",
       "userQuery": "给 UNKNOWN-MAT 在 5100 建一张采购申请，数量 10，交货日期 2026-09-30",
       "expected": {
         "decisionType": "CLARIFY",
@@ -52,7 +88,7 @@
     {
       "id": "upstream-unreachable-emits-capability-gap",
       "pending": true,
-      "todo": "Blocked on task 5.2 and on task 7.5. Target: the upstream producer is unreachable, a CapabilityGap is emitted, and the run ERRORS rather than degrading into an attempt. Governance red line: an unreachable producer must never become a guessed parameter reaching SAP. Needs a harness that can make one node of a plan unreachable; today's FakeGatewayClient answers every capability identically.",
+      "todo": "PENDING, cause named: the harness cannot vary the governed capability set per case. run_query loads registry/capabilities.yaml internally, so there is no seam to remove MM.Material.GetInfo for one case and observe the CapabilityGap. Prerequisite: thread an explicit source-document set through run_query (a governedCapabilities case key), which is eval-harness surgery this change did not scope. Related but NOT the same property, and already asserted: agent/tests/test_derived_dependencies.py proves an input whose declared Fact Type has no active producer yields NO edge rather than a guessed one, and the planner records an ambiguous_producer / missing gap instead of authoring producers[0].",
       "userQuery": "给 DEMOA2 在 5100 建一张采购申请，数量 10，交货日期 2026-09-30",
       "expected": {
         "decisionType": "ESCALATE_TO_PLANNER",

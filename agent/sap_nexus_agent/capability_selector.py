@@ -17,6 +17,42 @@ if TYPE_CHECKING:
     from sap_nexus_agent.match_decision import EscalationHandoff, MatchDecision, MatchedIntent
 
 
+def _is_derivable_input(capability_id: str, input_name: str) -> bool:
+    """Whether the planner can bind ``input_name`` from an upstream capability.
+
+    T5 task 7.1. Decided by **reading the registry**: the derived data-dependency
+    view already answers exactly this question — it pairs a consumer input that
+    declares ``satisfiableByFactType`` with a producer output whose
+    ``semanticType`` matches — so the selector reuses that authority instead of
+    reimplementing the rule and letting the two drift.
+
+    Invariant 2 holds: `derivation` reads the governed source documents and
+    performs no Gateway, RFC or OData call, which task 5.8's audit asserts as a
+    file-level lock. This is a declaration lookup, not a data fetch.
+
+    Fails closed on any load or derivation error: an input that cannot be proven
+    derivable is treated as not derivable, so the user is asked rather than
+    silently left with an unbindable parameter.
+    """
+    try:
+        from pathlib import Path
+
+        from sap_nexus_agent.semantic_planning import load_semantic_sources
+        from sap_nexus_agent.semantic_planning.derivation import (
+            derive_data_dependencies,
+        )
+
+        repo_root = Path(__file__).resolve().parents[2]
+        view = derive_data_dependencies(load_semantic_sources(repo_root))
+    except Exception:  # noqa: BLE001 - fail closed, ask the user
+        return False
+    return any(
+        edge.consumer_capability_id == capability_id
+        and edge.consumer_input_name == input_name
+        for edge in view.edges
+    )
+
+
 # Intent -> capabilityId closed set. The Agent never senses the executor type
 # (JCO_RFC / ODATA); executor routing is the Gateway dispatcher's job.
 INTENT_TO_CAPABILITY = {
@@ -136,7 +172,11 @@ def select_capability(
     populating the flag (keyword-ambiguity threshold) will activate the branch.
     """
     # Lazy import breaks the capability_selector <-> match_decision cycle.
-    from sap_nexus_agent.match_decision import EscalationHandoff, MatchDecision
+    from sap_nexus_agent.match_decision import (
+        EscalationHandoff,
+        MatchDecision,
+        MatchedIntent,
+    )
 
     # When a VisibleCapabilitySet is provided, filter matched_intents to
     # only visible capabilities (double-check; the catalog was already
@@ -240,6 +280,53 @@ def select_capability(
                     for inp in descriptor.inputs
                     if inp.required and inp.name not in provided_keys
                 ]
+    # T5 task 7.1: a parameter the planner can derive must not be asked.
+    #
+    # Until this, `missing_parameters` listed every unbound required input, so the
+    # user was asked for `unit` and `purchasing_group` even though an upstream
+    # capability publishes both. 6.1's reduction existed in the plan layer with no
+    # conversational entry point reaching it.
+    #
+    # Derivable entries are removed here, and if any was removed the decision
+    # escalates: deriving requires an upstream node plus a data edge in a
+    # PlanGraph (invariant 2), which the single-capability SELECT/CallPlan path
+    # cannot express. A genuinely unanswerable gap still clarifies.
+    derivable_cap_id = parse_result.capability_id
+    if not derivable_cap_id and parse_result.matched_intents:
+        derivable_cap_id = parse_result.matched_intents[0].capability_id
+    derivable: list[str] = []
+    if missing and derivable_cap_id:
+        derivable = [
+            name
+            for name in missing
+            if _is_derivable_input(derivable_cap_id, name)
+        ]
+        if derivable:
+            missing = [name for name in missing if name not in derivable]
+
+    if not missing and derivable:
+        return MatchDecision(
+            decision_type="ESCALATE_TO_PLANNER",
+            handoff=EscalationHandoff(
+                reason="derived-parameter",
+                matched_intents=[
+                    MatchedIntent(
+                        capability_id=derivable_cap_id,
+                        parameters=dict(parse_result.parameters),
+                        missing=[],
+                    )
+                ],
+                utterance=getattr(parse_result, "utterance", ""),
+                registry_snapshot_id=visible_snapshot_id
+                or getattr(parse_result, "registry_snapshot_id", ""),
+            ),
+            missing_parameters=[],
+            rationale=(
+                "所有未提供的必需参数均可由上游能力推导，需规划器编排上游读取: "
+                + ", ".join(derivable)
+            ),
+        )
+
     if missing:
         clarify_cap_id = parse_result.capability_id
         if not clarify_cap_id and parse_result.matched_intents:

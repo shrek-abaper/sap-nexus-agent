@@ -20,7 +20,9 @@
         "capabilityId": "MM.PR.CreateDraft",
         "validateCalls": 1,
         "executeCalls": 1,
-        "responseContains": ["0010001234"]
+        "responseContains": [
+          "0010001234"
+        ]
       }
     },
     {
@@ -43,7 +45,9 @@
         "capabilityId": "MM.PR.CreateDraft",
         "validateCalls": 1,
         "executeCalls": 1,
-        "responseContains": ["0010001235"]
+        "responseContains": [
+          "0010001235"
+        ]
       }
     },
     {
@@ -51,17 +55,25 @@
       "userQuery": "建个采购申请",
       "expected": {
         "status": "clarification",
-        "missingParameters": ["material", "plant", "quantity", "unit", "delivery_date", "purchasing_group"],
+        "missingParameters": [
+          "material",
+          "plant",
+          "quantity",
+          "delivery_date"
+        ],
         "validateCalls": 0,
         "executeCalls": 0
-      }
+      },
+      "note": "T5 task 7.1 changed this expectation, and the change is the point of the round. unit and purchasing_group are no longer asked because MM.Material.GetInfo publishes both: asking for a value the system will derive is the defect this change removes. They are dropped even though the user supplied nothing at all - deriving them needs material and plant, which are still being asked for in this very CLARIFY, so the derivation becomes possible on the next turn rather than being impossible now. The four that remain are the four with no upstream producer. Was: [material, plant, quantity, unit, delivery_date, purchasing_group]."
     },
     {
       "id": "pr-create-indirect-missing-cost-center",
       "userQuery": "给物料 M001 工厂 1000 建 100 EA 采购申请 交货 2026-08-01 采购组 601 间采 K",
       "expected": {
         "status": "clarification",
-        "missingParameters": ["cost_center"],
+        "missingParameters": [
+          "cost_center"
+        ],
         "validateCalls": 0,
         "executeCalls": 0
       }
@@ -164,7 +176,12 @@
           "success": false,
           "prNumber": "",
           "commitStatus": "rolled_back",
-          "returnMessages": [{"type": "E", "message": "Material not found"}],
+          "returnMessages": [
+            {
+              "type": "E",
+              "message": "Material not found"
+            }
+          ],
           "durationMs": 80,
           "errorType": "SAP_BUSINESS_ERROR"
         }

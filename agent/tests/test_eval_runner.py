@@ -438,8 +438,21 @@ HARNESS_ASSERTED_KEYS = frozenset(
 )
 
 
-def test_derived_parameter_cases_exist_and_are_pending():
-    """Five stable case ids, each pending with attribution (T2 task 4.1)."""
+DERIVED_PARAMETER_LIVE_CASE_IDS = frozenset(
+    {"user-supplied-wins", "derived-and-user-supplied-mixed"}
+)
+
+
+def test_derived_parameter_cases_exist_and_are_live_or_attributed():
+    """Five stable case ids; T5 task 7.1 turned two of them live.
+
+    Before 7.1 every case was `pending` and this test pinned that. It now pins
+    the stronger property the spec delta actually requires: a case is either
+    **live** or **pending with an attribution long enough to name its cause**,
+    and it may never be silently dropped or left pending without one. The two
+    live ids are named explicitly, so a live case regressing to `pending` fails
+    here instead of quietly reducing coverage.
+    """
     payload = json.loads(
         (REPO_ROOT / "evals" / "derived_parameter_cases.yaml").read_text(
             encoding="utf-8"
@@ -450,11 +463,18 @@ def test_derived_parameter_cases_exist_and_are_pending():
     for case_id in DERIVED_PARAMETER_CASE_IDS:
         assert case_id in ids, f"missing case id: {case_id}"
 
+    live = {c.get("id") for c in payload["cases"] if not c.get("pending")}
+    assert live == set(DERIVED_PARAMETER_LIVE_CASE_IDS), (
+        f"live case set changed: expected {sorted(DERIVED_PARAMETER_LIVE_CASE_IDS)}, "
+        f"got {sorted(live)}"
+    )
+
     for case in payload["cases"]:
-        assert case.get("pending") is True, (
-            f"{case.get('id')}: not pending -- "
-            f"may not pass until MM.Material.GetInfo is registered"
-        )
+        if not case.get("pending"):
+            # A live case must not keep a `todo`: leaving one behind is how a
+            # case that already passes goes on reading as unfinished work.
+            assert "todo" not in case, f"{case.get('id')}: live case still has a todo"
+            continue
         todo = case.get("todo", "")
         assert isinstance(todo, str) and len(todo) > 20, (
             f"{case.get('id')}: todo is empty or too short"
@@ -466,18 +486,19 @@ def test_derived_parameter_cases_exist_and_are_pending():
         )
 
 
-def test_derived_parameter_eval_reports_zeros_not_passing():
-    """All five pending, so the eval reports 0/0 -- never 5/5.
+def test_derived_parameter_eval_counts_only_the_live_cases():
+    """Two live cases pass; the three pending ones are neither passed nor failed.
 
-    The summary prints "Eval passed: 0/0" which reads as a zero-empty suite.
-    That is a known limitation of the CLI (it does not separate skipped from
-    total), but the counts are accurate: 0 passed, 0 total, 0 failed.
+    Before T5 task 7.1 this asserted 0/0. The counts must equal the live-case
+    count exactly -- reporting 5/5 would mean a pending case was counted as
+    passing, which is the specific thing the spec delta's
+    "eval evidence reports pending cases as unresolved" requirement forbids.
     """
     summary = run_eval_file(
         REPO_ROOT / "evals" / "derived_parameter_cases.yaml"
     )
-    assert summary.total == 0
-    assert summary.passed == 0
+    assert summary.total == len(DERIVED_PARAMETER_LIVE_CASE_IDS)
+    assert summary.passed == len(DERIVED_PARAMETER_LIVE_CASE_IDS)
     assert summary.failed == 0
 
 

@@ -2266,15 +2266,15 @@ produced `field: ""` → `FACT_TYPE_MISMATCH` and a silently invalid plan. See C
 
 ## Task 7.2 — Case 2 real: *user-supplied-wins*
 
-- [ ] 7.2.1 The user supplies `unit` → it binds from `literal`; **no** `factField` source is
+- [x] 7.2.1 The user supplies `unit` → it binds from `literal`; **no** `factField` source is
   authored for it; the producer is **not** pulled into `desired_fact_types`; **no extra READ** is
   executed.
-- [ ] 7.2.2 Verify by asserting the **absence of the producer node**, not merely the presence of
+- [x] 7.2.2 Verify by asserting the **absence of the producer node**, not merely the presence of
   the literal. This is the half of the pair that makes case 1 meaningful.
 
 ## Task 7.3 — Case 3 real: *mixed*
 
-- [ ] 7.3.1 The user supplies `unit`, omits `purchasing_group` → **exactly one** `data` edge for
+- [x] 7.3.1 The user supplies `unit`, omits `purchasing_group` → **exactly one** `data` edge for
   the (GetInfo → CreateDraft, `MaterialInfoFact`) pair; `purchasing_group` binds from `factField`;
   `unit` binds from `literal`. **This is the assertion that proves 5.5's fix.**
 
@@ -2292,6 +2292,128 @@ produced `field: ""` → `FACT_TYPE_MISMATCH` and a silently invalid plan. See C
 - [ ] 7.6.1 Exercise the missing-producer gap against the **governed** capability set.
 - [ ] 7.6.2 Surface unbound inputs plus derivation diagnostics as gaps.
 - [ ] 7.6.3 Verify the previously `pending: true` dry-run case is **no longer pending**.
+
+## T5-full result (2026-08-25) — 2 of 5 cases live, 3 pending with named causes
+
+### The missing half the eval exposed, and the decision that resolved it
+
+Turning case 1 real showed the feature was **only half delivered**. 6.1's plan-layer table had fallen
+from 4 to 2, but the *conversation* layer still listed `unit` and `purchasing_group` in
+`missing_parameters` and returned **CLARIFY** — the user was still asked for values the system could
+read. No conversational entry point reached the two-node plan at all.
+
+**User decision (asked, because it changes observable behaviour and neither the design nor the plan
+settled it): escalate.** A derivable parameter is dropped from `missing_parameters`, and if any was
+dropped the decision becomes **`ESCALATE_TO_PLANNER`** rather than `SELECT`, because deriving requires
+an upstream node plus a data edge in a PlanGraph (invariant 2) and the single-capability
+SELECT/CallPlan path cannot express that.
+
+Derivability is decided by **reusing the derived-dependency view** (`derivation.derive_data_dependencies`)
+rather than reimplementing the rule, so the selector and the deriver cannot drift. Invariant 2 holds:
+that module reads the governed source documents and performs no Gateway/RFC/OData call, which task
+5.8's audit locks at file level. `_is_derivable_input` **fails closed** — any load error means "not
+derivable", so the user is asked rather than left with an unbindable parameter.
+
+Observed end to end:
+
+| Utterance | Decision | Outcome |
+|---|---|---|
+| `…建 100 EA 采购申请 交货 2026-08-01 采购组 601` | `SELECT` | every value stated; **no plan authored at all** (`dryRun.present: False`) |
+| `…建 100 EA 采购申请 交货 2026-08-01` | `ESCALATE_TO_PLANNER` | 2 nodes; `unit` ← `literal`, `purchasing_group` ← `factField`; **1** data edge; GetInfo first; `approval_required` still set |
+| `…建 100 采购申请 交货 2026-08-01` | `CLARIFY` | `missing == ['quantity']` — the non-derivable gap survives |
+
+### Harness extension (7.1)
+
+Three new `dryRun` assertion keys, all reading the PlanGraph the compiler already emits:
+`parameterProvenance`, `dataEdges`, `orderedBefore`. `capability_derived` is defined here as the
+harness-side name for `source.kind == factField`, which is what correction **C12** established.
+Details that are deliberate: an unbound parameter reports `not_bound` rather than being omitted, so
+"not elicited" and "silently vanished" cannot both be green; `dataEdges` is an **exact list** because
+defect 1 was a *duplicate* edge and a containment check passes straight through it; `orderedBefore`
+errors on an absent node id rather than passing vacuously. All three verified non-vacuous by mutating
+the expectations (provenance flip, duplicated edge, reversed order) — each produced a named failure.
+
+### Case status
+
+| Case | Task | Status |
+|---|---|---|
+| `user-supplied-wins` | 7.2 | **live** — asserts the *absence* of the producer node via `dryRun.present: False` |
+| `derived-and-user-supplied-mixed` | 7.3 | **live** — the load-bearing case: `literal` and `factField` side by side, exact `dataEdges` |
+| `derived-not-asked` | 7.1 | **pending**, cause named below |
+| `upstream-empty-degrades-to-elicitation` | 7.4 | **pending**, cause named below |
+| `upstream-unreachable-emits-capability-gap` | 7.5 | **pending**, cause named below |
+
+**7.1 — unreachable through the rule parser, and the property is asserted elsewhere.** For *both*
+values to be derived the utterance must omit both, but `quantity`'s extraction is coupled to an
+adjacent **recognised** unit token from `{EA, PC, KG, G, L, M}` (`inputs[quantity].extraction`,
+`resolver: quantity`), so dropping the unit also drops `quantity` — which is required and *not*
+derivable. Verified against the parser, not assumed: `建 100 箱采购申请`, `建 100 TON 采购申请` and
+`数量 100` all yield `CLARIFY missing=['quantity']`. Prerequisite: let the quantity matcher accept a
+bare number, which changes the extraction layer batch T deliberately left alone. **The property
+itself is asserted**, at the planner layer, by
+`test_a_fully_specified_derived_plan_is_valid_and_still_demands_approval` — both values bind from
+`factField` there. So this is a missing conversational entry point, not a missing capability.
+
+**7.4 — the property is execution-time and this harness is planning-only.** "The upstream returns
+empty" is only observable after the Composition Runtime executes the producer node, and by invariant 2
+the Agent never executes. At authoring time the plan is identical either way, so there is nothing to
+assert. Prerequisite: a TS-side `PlanExecutor`/projection scenario. Related and already asserted:
+`test_an_unsupplied_consumer_parameter_still_fails_closed` shows `PARAMETER_SOURCE_MISSING` rather
+than a default.
+
+**7.5 — no seam to vary the governed capability set per case.** `run_query` loads
+`registry/capabilities.yaml` internally. Prerequisite: thread an explicit source-document set through
+`run_query` (a `governedCapabilities` case key) — eval-harness surgery this change did not scope.
+Related and already asserted: an input whose declared Fact Type has no active producer yields **no**
+edge, and the planner records a gap instead of authoring `producers[0]`.
+
+**7.6 shares 7.5's blocker.** `dry-run-missing-producer` needs the same per-case registry seam, so it
+stays pending with that attribution. 7.6.1 and 7.6.2 are therefore **not** claimed.
+
+### One pre-existing eval case changed, and it is the point of the round
+
+`evals/pr_create_cases.json::pr-create-missing-param` (`建个采购申请`) asserted a CLARIFY listing all
+six inputs. It now lists **four**: `unit` and `purchasing_group` are no longer asked. They are dropped
+even though the user supplied nothing at all — deriving them needs `material` and `plant`, which this
+very CLARIFY is asking for, so the derivation becomes possible on the next turn rather than impossible
+now. The old expectation is recorded verbatim in the case's `note`.
+
+Two `test_eval_runner` pins were 4.1-era assertions that all five cases are `pending` and the suite
+reports `0/0`. Both were rewritten to the **stronger** property: the live-case id set is pinned
+exactly (so a live case regressing to `pending` fails), a live case may not keep a `todo`, a pending
+case must keep an attribution, and the counts must equal the live-case count — never 5/5, which would
+mean a pending case was counted as passing.
+
+### Finding G3 — `verify-agent-callplan-evidence.sh` is network-dependent and intermittently red
+
+**Pre-existing, not attributable to this change, and not "a known issue".**
+
+Observed: two full-script runs failed at *different* cases — `bc_mm_inventory_narrative_grounding_001`
+and then inventory `happy-path` — each with an **empty** assertion message.
+
+Mechanism, traced: `narrator.py:288` (and `:385`, `:613`) call a **live LLM**
+(`OpenAiCompatibleLlmClient.chat_text`). `.env` supplies a real `LLM_API_KEY` / `LLM_BASE_URL`
+(model `DeepSeek-V4-Flash`) and `load_llm_settings` loads it, so eval narration makes network calls.
+The failing assertions are bare `assert text in response` over `responseContains`, which is why the
+message is empty: the tokens (`"12"`, `"EA"`) must appear in free-form model output.
+
+Controlled comparison:
+
+| Condition | Result |
+|---|---|
+| `LLM_BASE_URL` unreachable → deterministic fallback template | 2 full-script runs **green**, plus 3 standalone inventory runs green |
+| real LLM from `.env` | 2 full-script runs green *now*; 2 earlier runs red at different cases |
+| each suite standalone | inventory 12/12 green, seed 13/13 green |
+
+Attribution: the failing case's decision path never reaches anything this batch changed — inventory
+`happy-path` has no missing parameters, so `_is_derivable_input` is never called. **I could not
+reproduce it on demand**, and that is stated rather than smoothed over.
+
+What was deliberately **not** done: the assertion was not relaxed, the case was not deleted or
+skipped, and no `try/except` was added. Remedy for whoever owns it: make eval narration deterministic
+(force the fallback template, or record and replay LLM responses) so the suite stops depending on a
+network round trip. That is outside batch T.
+
 
 ---
 
