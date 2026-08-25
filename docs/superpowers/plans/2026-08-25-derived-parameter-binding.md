@@ -1994,6 +1994,46 @@ produced `field: ""` → `FACT_TYPE_MISMATCH` and a silently invalid plan. See C
 **Never pipe these through `tail`/`head`.** A truncated log destroys its own evidence — this
 already happened once during baselining and cost a re-run.
 
+### Interim run (2026-08-25, at HEAD `5bc2f81`) — evidence only. **No 8.x box is checked.**
+
+Run because several commits had landed without the frontend and gate suites being exercised. This is
+*not* 8.1/8.2 satisfied: 8.1 is the exit gate and must be re-run after 5.2 onward land. Recorded so
+the next session does not re-derive it. Each command was run whole; nothing was piped through
+`tail`/`head` (the `grep` used to locate a line in a **saved full log** is not truncation — the logs
+are at `/tmp/fe_verify.log`, `/tmp/fe_gate.log`, `/tmp/callplan.log`).
+
+| Command | Result |
+|---|---|
+| `validate-registry-contract.py registry/capabilities.yaml` | `Registry contract valid`; 4 pre-existing `MM.PR.CreateDraft` `extraction` deprecation warnings, count unchanged |
+| `pytest agent/tests -q` | **1517 passed, 1 skipped, 2 xfailed** |
+| `PYTHONPATH=agent scripts/verify-agent-callplan-evidence.sh` | exit **0**; `openspec validate` 22 passed / 0 failed |
+| `npm --prefix frontend run verify` | **52 files, 525 tests passed**; Next build succeeded |
+| `npm --prefix frontend run release-gate -- --profile all` | exit 0 — `L3_ACTION_GOVERNED \| target=L3 \| passed=true \| cases=22/22 \| liveSmoke=not_run` |
+
+The five derived-parameter eval cases report `SKIP (pending)` with a named blocker each
+(`Eval passed: 0/0` for that suite). That is the spec delta's *"Eval evidence reports pending cases as
+unresolved with attribution"* behaving correctly, **not** a passing suite: nothing in T5 is asserted
+yet, and 7.6.3 is what closes it.
+
+**Task 5.11.1 interim evidence — empty, as required.**
+`git diff --stat ee46a98..HEAD` scoped to `agent/sap_nexus_agent/approval.py`,
+`gateway_client.py`, `frontend/src/runtime/action-governance/`, `agent/tests/test_approval.py`,
+`agent/tests/test_orchestrator.py` produces **no output**: no approval, subject-hash or anti-replay
+line has changed in this batch. The box stays unchecked because 5.2.2a has not landed and 5.11.1 must
+be re-run over the final diff to be evidence rather than a forecast.
+
+**Task 8.3 interim figures**, `ee46a98..HEAD`, file-partitioned:
+
+- Figure (a) — Python lines to add the 4th capability: **not yet measurable**, 5.2 has not landed.
+  The measurement command is 5.2.4's, and it is `git diff --stat` scoped to `*.py` for that step
+  alone.
+- Figure (b) — mechanism + defect lines, production Python only: **1101 insertions / 57 deletions**
+  across 10 files (`derivation.py` +372, `validation.py` +281, `goal_spec.py` +135,
+  `plan_compiler_v2.py` +130, `scripts/derive-data-dependencies.py` +131, `narrator.py` +76,
+  `plan_compiler.py` +13, `semantic_planning/__init__.py` +10, `graph.py` +5,
+  `scripts/validate_registry_contract.py` −5). Tests are **4230 insertions across 17 files** and are
+  reported separately, never folded into figure (b).
+
 ## Task 8.2 — Gate confirmation
 
 - [ ] 8.2.1 Release gate still reports **22/22** and `L3_ACTION_GOVERNED`.
