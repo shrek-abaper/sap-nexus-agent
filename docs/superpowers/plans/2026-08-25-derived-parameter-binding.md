@@ -2756,7 +2756,7 @@ summarised as a known issue, a pre-existing failure, or unrelated to core functi
 | # | Item | Attribution | Reason it is unresolved |
 |---|---|---|---|
 | U1 | Tasks **5.4a** and **5.9** — no box checked | defect **D4** via invariant 5 | Finding **G1**: `PlanExecutor.resolveParameters` skips `factField`, so no derived value exists at runtime to disclose; resolving it changes `computeInputHash`, which is anti-replay and reserved to D4. Current behaviour is fail-closed (no proposal), not under-disclosed |
-| U2 | Finding **G4** — `FactBuilderRegistry` is keyed by `capabilityId` | same defect class as C13, one layer up | Projecting `MaterialInfoFact` would need a new per-capability TS builder, i.e. a capability that cannot be added by declaration. Blocks 5.9.2's two allow-list edits, which would otherwise be dead entries |
+| U2 | Finding **G4** — `FactBuilderRegistry` is keyed by `capabilityId` | same defect class as C13, one layer up | Projecting `MaterialInfoFact` would need a new per-capability TS builder, i.e. a capability that cannot be added by declaration. Blocks 5.9.2's two allow-list edits, which would otherwise be dead entries. **Investigated and scoped** — see "Finding G4, scoped" at the end of this document: it needs a `factShape` generalisation of the `ReasoningFact` model plus a `factProjection` block in PlanGraph v2, i.e. a governed-contract change belonging to its own Classic change, and it has no functional payoff until D4 |
 | U3 | Eval case **`derived-not-asked`** (task 7.1) pending | `inputs[quantity].extraction` / `resolver: quantity` | Quantity extraction requires an adjacent recognised unit token, so omitting the unit also drops quantity. Verified against the parser. The property itself **is** asserted by `test_a_fully_specified_derived_plan_is_valid_and_still_demands_approval` |
 | U4 | Eval case **`upstream-empty-degrades-to-elicitation`** (7.4) pending | planning-vs-execution layer boundary | Execution-time property; by invariant 2 the Agent never executes. Needs a TS `PlanExecutor`/projection scenario |
 | U5 | Eval cases **`upstream-unreachable-emits-capability-gap`** (7.5) and **`dry-run-missing-producer`** (7.6.3) pending | `run_query` loads the registry internally | No per-case seam to vary the governed capability set. 7.6.1/7.6.2 are therefore **not** claimed |
@@ -2792,3 +2792,55 @@ harness vocabulary, not a slot token — and my own 5.4 result block was correct
 `ee46a98..HEAD` contains batch L work. The hard gate is respected: batch T's exit conditions are met
 except U1/U2, which are blocked by an invariant this batch may not relax, so **batch L must not start
 until D4 lands or the user rules otherwise**.
+
+---
+
+## Finding G4, scoped (2026-08-25) — the projection layer needs its own change
+
+G4 was accepted for work and then **stopped after investigation**, because it is not the ~50-line
+C13-shaped fix it looked like. Recording the real cost rather than starting a large model change
+inside a batch that is closing.
+
+**What G4 is.** `FactBuilderRegistry` (`frontend/src/runtime/projection/fact-builder.ts:5-18`) is a
+`Map<capabilityId, FactBuilderDeclaration>` whose `register` throws on a duplicate id, and the two
+shipped builders (`inventoryBuilder`, `purchaseOrderBuilder`) hardcode `domain`, `businessObject`,
+`predicate` and the field names they read. So projecting a new Fact Type requires per-capability TS —
+the same *"a capability that cannot be added by declaration alone"* defect as **C13**, one layer up.
+
+**Two things make it bigger than C13, both verified rather than assumed.**
+
+1. **The TS runtime has no registry access.** `grep -rn "capabilities.yaml\|fact-types.yaml" frontend/src`
+   returns one *comment*. So a declaration-driven builder needs the declaration to travel in the
+   **PlanGraph** — the channel `producesFactTypes` and `governance` already use. That means a
+   `factProjection` block added to `schemas/plan-graph-v2.schema.json` (a **governed contract**),
+   emitted by `plan_compiler_v2.py` from the registry, parsed by `plan-graph-v2-parser.ts`, plus tests
+   on both sides.
+2. **`ReasoningFact` is quantity-shaped, and that is load-bearing.** `value` is typed
+   `number | null` (`projection/types.ts:11`) and consumers *rely* on it:
+   `decision-engine.ts:252-254` guards `typeof fact.value === "number" && Number.isFinite(...) && >= 0`,
+   and `material-supply-snapshot.ts:62,68` dedups facts **by value**. `MaterialInfoFact`'s values are
+   strings (`"EA"`, `"601"`), so it can only be represented as `value: null` with the real content
+   buried in `evidence` — a fact with no value, which is hollow rather than generic.
+
+Doing it properly is the **projection-layer twin of task 5.7's narrator generalisation**: introduce a
+`factShape` to the projection model the way the narrator got `single-value` / `list` /
+`action-receipt`. That touches the `ReasoningFact` model, `material-supply-snapshot.ts`,
+`decision-engine.ts`, `event-projector.ts`'s allow-list, **and the `output-projection` OpenSpec
+spec** — a structural change whose spec delta must be reviewable, which is precisely the HEAVY signal
+that this project's own routing rules send to a separate Classic change.
+
+**It also has no functional payoff inside batch T.** The derived parameter reaches the consuming node
+through `factField` binding resolution, not through the projection. Projection feeds the *narrative*
+and the *recommendation*, i.e. exactly the surfaces already blocked by finding **G1** → defect
+**D4**. So fixing G4 now would remove a coupling but change nothing observable until D4 lands. It is
+worth doing on principle, not for an outcome in this batch.
+
+**A cheap partial was considered and rejected.** Resolving builders by `factTypeId` instead of
+`capabilityId` would remove the coupling for *quantity-shaped* facts only — and `MaterialInfoFact`,
+the one capability this batch added, is not quantity-shaped. A partial with no payoff for the actual
+case is not a fix.
+
+**Recommendation:** a separate change, `projection-fact-shape-generalisation`, whose scope is
+(a) a `factShape` in the projection model, (b) a `factProjection` declaration carried in PlanGraph v2,
+(c) one generic builder replacing the per-capability registry. G4 stays in this change's unresolved
+list as **U2**, now with its real cost attached.
