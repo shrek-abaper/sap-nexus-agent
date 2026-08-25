@@ -313,6 +313,116 @@ capabilities:
       promptTemplate: purchase-order-list
       fallbackTemplate: purchase-order-list
       detailFormatter: po-list
+  - capabilityId: MM.Material.GetInfo
+    name: Material Info
+    description: Read material master attributes for purchase requisition authoring - base unit of measure and purchasing group.
+    status: active
+    kind: Function
+    domain: MM
+    businessObject: MaterialInfo
+    ontologyIri: sapnexus:MM_Material_GetInfo
+    semanticType: sapnexus:MaterialInfoReadFunction
+    inputs:
+      - name: material
+        semanticName: materialNumber
+        semanticType: sapnexus:MaterialNumber
+        bindingKind: identifier
+        required: true
+        type: string
+        minLength: 1
+        maxLength: 40
+        sapParameter: MATERIAL_LONG
+        binding:
+          priority: 10
+          excludes:
+            - plant
+          resolver: text
+          reaskSuspect: true
+          sources:
+            - kind: userUtterance
+              matchers:
+                - kind: semanticType
+                  ref: MaterialNumber
+      - name: plant
+        semanticName: plant
+        semanticType: sapnexus:Plant
+        bindingKind: identifier
+        required: true
+        type: string
+        minLength: 1
+        maxLength: 4
+        pattern: ^[A-Z0-9]{4}$
+        sapParameter: PLANT
+        binding:
+          priority: 20
+          resolver: text
+          sources:
+            - kind: userUtterance
+              matchers:
+                - kind: semanticType
+                  ref: Plant
+    outputs:
+      - name: material
+        semanticType: sapnexus:MaterialNumber
+        type: string
+        evidenceRole: primaryFact
+        factTypeRef: sapnexus:MaterialInfoFact
+      - name: plant
+        semanticType: sapnexus:Plant
+        type: string
+        evidenceRole: primaryFact
+        factTypeRef: sapnexus:MaterialInfoFact
+      - name: baseUnitOfMeasure
+        semanticType: sapnexus:UnitOfMeasure
+        type: string
+        evidenceRole: primaryFact
+        factTypeRef: sapnexus:MaterialInfoFact
+      - name: purchasingGroup
+        semanticType: sapnexus:PurchasingGroup
+        type: string
+        evidenceRole: primaryFact
+        factTypeRef: sapnexus:MaterialInfoFact
+      - name: returnMessages
+        semanticType: sapnexus:SapReturnMessage
+        type: array
+        evidenceRole: executionEvidence
+    executor:
+      type: JCO_RFC
+      rfcName: BAPI_MATERIAL_GET_DETAIL
+      inputMapping:
+        material: MATERIAL_LONG,MATERIAL
+        plant: PLANT
+      outputMapping:
+        material: MATERIAL_GENERAL_DATA.MATERIAL
+        plant: MATERIALPLANTDATA.PLANT
+        baseUnitOfMeasure: MATERIAL_GENERAL_DATA.BASE_UOM
+        purchasingGroup: MATERIALPLANTDATA.PUR_GROUP
+        returnMessages: RETURN
+    executorBinding:
+      type: JCO_RFC
+      bindingId: sap.mm.material.get-detail
+    evalLinkage:
+      evalFile: evals/derived_parameter_cases.yaml
+      caseIds:
+        - derived-not-asked
+        - user-supplied-wins
+        - derived-and-user-supplied-mixed
+        - upstream-empty-degrades-to-elicitation
+        - upstream-unreachable-emits-capability-gap
+    governance:
+      sideEffect: none
+      requiresApproval: false
+      approvalPolicy: not_required
+      dataClassification: internal
+      auditRequired: true
+    narrative:
+      factShape: single-value
+      promptTemplate: material-info
+      fallbackTemplate: material-info
+      fieldMapping:
+        title: "物料 {material} 在工厂 {plant}"
+        primary: "{baseUnitOfMeasure} / {purchasingGroup}"
+      detailFormatter: none
   - capabilityId: MM.PR.CreateDraft
     name: Purchase Requisition Create Draft
     description: 创建采购申请 (PR) 草稿, 支持实物直采与间采 (成本中心)
@@ -419,6 +529,7 @@ capabilities:
         minLength: 1
         maxLength: 3
         sapParameter: PRITEM.UNIT
+        satisfiableByFactType: sapnexus:MaterialInfoFact
         extraction:
           matchers:
             - kind: semanticType
@@ -446,6 +557,7 @@ capabilities:
         minLength: 1
         maxLength: 3
         sapParameter: PRITEM.PUR_GROUP
+        satisfiableByFactType: sapnexus:MaterialInfoFact
         extraction:
           matchers:
             - kind: semanticType

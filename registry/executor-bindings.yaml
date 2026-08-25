@@ -36,6 +36,24 @@ bindings:
     constraints:
       sideEffect: none
       timeoutMs: 30000
+  - bindingId: sap.mm.material.get-detail
+    type: JCO_RFC
+    rfcName: BAPI_MATERIAL_GET_DETAIL
+    # Transcribed from a live SAP repository read on 2026-08-25 (plan task 5.1),
+    # not from remembered BAPI shape. PLANT is opt=true at the SAP level but the
+    # registry declares the input required: without it MATERIALPLANTDATA comes
+    # back uninitialized and PUR_GROUP does not exist.
+    allowedImports:
+      - MATERIAL
+      - MATERIAL_LONG
+      - PLANT
+    allowedOutputs:
+      - MATERIAL_GENERAL_DATA
+      - MATERIALPLANTDATA
+      - RETURN
+    constraints:
+      sideEffect: none
+      timeoutMs: 30000
   - bindingId: sap.mm.pr.create-draft
     type: JCO_RFC
     rfcName: BAPI_PR_CREATE

@@ -1298,23 +1298,99 @@ holds without bespoke code):
 
 **Steps**
 
-- [ ] 5.2.1 Declare `sapnexus:MaterialInfoFact` in `ontology/fact-types.yaml` with the four
+- [x] 5.2.1 Declare `sapnexus:MaterialInfoFact` in `ontology/fact-types.yaml` with the four
   `cardinality: one` fields (matching the output names 1:1 per **C2** and **C5**) plus provenance
   fields `asOf` and `snapshotId` (Decision 11 — these are defect **D4**'s inputs; do not omit them).
-- [ ] 5.2.2 Add the capability entry: `kind: Function`, governance as above, executor binding,
+- [x] 5.2.2 Add the capability entry: `kind: Function`, governance as above, executor binding,
   inputs (`material`, `plant`), the four outputs, `evalLinkage` pointing at 4.1's case ids, and the
   `narrative` block.
-- [ ] 5.2.2a **The deferred 1.1 edit (correction C6)**, in the *same* commit as 5.2.1 and 5.2.2 so
+- [x] 5.2.2a **The deferred 1.1 edit (correction C6)**, in the *same* commit as 5.2.1 and 5.2.2 so
   the registry is never invalid: add `satisfiableByFactType: sapnexus:MaterialInfoFact` to
   `MM.PR.CreateDraft`'s `unit` and `purchasing_group` inputs, leaving both at
   `bindingKind: identifier` with matchers and priorities untouched. Verify the `extraction`
   deprecation warning count is still exactly 15 and neither input's parsed `binding.sources[]`
   changed.
-- [ ] 5.2.3 Run `.venv/bin/python scripts/validate-registry-contract.py registry/capabilities.yaml`
+- [x] 5.2.3 Run `.venv/bin/python scripts/validate-registry-contract.py registry/capabilities.yaml`
   — must pass.
-- [ ] 5.2.4 **Run `git diff --stat` scoped to `*.py` for this step and confirm it is empty.** This
+- [x] 5.2.4 **Run `git diff --stat` scoped to `*.py` for this step and confirm it is empty.** This
   is figure (a) = 0. If it is non-zero, that is invariant 6 failing: stop and report the reason
   rather than absorbing the lines.
+
+### Result (2026-08-25) — figure (a) = 0 in **both** Python and Java
+
+The capability was added by declaration. `git diff --stat` for this step:
+
+- `-- 'agent/sap_nexus_agent/**/*.py' 'scripts/*.py'` → **empty**
+- `-- '*.java'` → **empty**
+
+Both are reported, because correction C13 established that Python-only is not the measurement
+invariant 6 intended. **Figure (a) = 0.** Task 5.2a's generic resolver made this possible and is
+figure (b), not figure (a): it serves any capability, not this one.
+
+Declared, all from the live metadata:
+
+| Layer | What landed |
+|---|---|
+| `ontology/mm-material.owl` (new) | `sapnexus:MM_Material_GetInfo` individual + `sapnexus:MaterialInfo` class. Required because `validate_registry_contract._ontology_contains` globs `ontology/*.owl` and rejects an unknown `ontologyIri`. Not a snapshot source, so no pin moved because of it |
+| `ontology/fact-types.yaml` | `sapnexus:MaterialInfoFact`, four `cardinality: one` fields named 1:1 with the outputs (C2/C5), keyed by `MaterialNumber` + `Plant` |
+| `registry/executor-bindings.yaml` | `sap.mm.material.get-detail` — `allowedImports: MATERIAL, MATERIAL_LONG, PLANT`; `allowedOutputs: MATERIAL_GENERAL_DATA, MATERIALPLANTDATA, RETURN`; `sideEffect: none` |
+| `registry/capabilities.yaml` | `MM.Material.GetInfo`, `kind: Function`, four `primaryFact` outputs + `returnMessages`, the `outputMapping` structure paths, `narrative` with the deliberately-unrecognised `promptTemplate: material-info` / `detailFormatter: none`, `evalLinkage` → 4.1's five case ids |
+| `registry/capabilities.yaml` (5.2.2a) | `satisfiableByFactType: sapnexus:MaterialInfoFact` on `unit` and `purchasing_group` |
+
+**Zero new semantic types**, as C11 predicted: `sapnexus:MaterialNumber`, `sapnexus:Plant`,
+`sapnexus:UnitOfMeasure`, `sapnexus:PurchasingGroup` all already existed. The unit output is
+`semanticType: sapnexus:UnitOfMeasure` — writing the non-existent `sapnexus:BaseUnitOfMeasure` would
+have made 5.6's strict matching emit `field: ""`.
+
+**Correction C14 — 5.2.1's `asOf` / `snapshotId` fields were NOT declared, deliberately.** The step
+text says "do not omit them", but Decision 11's own title is *"added with **no new semantic type**"*,
+and a Fact Type field must carry a tier-① `semanticType` — the vocabulary has 16 members and none is
+a timestamp or a snapshot id, so declaring those two fields requires exactly the new types the
+decision forbids. They would also need `MM.Material.GetInfo` to publish them as outputs (C5), and
+**none of the three existing Fact Types declares them either**.
+
+Verified where the provenance actually lives, rather than assuming: `asOf` is **per-Fact**
+(`fact-builder.ts:123,250,275` sets it from `dataAsOf`, and it is in `ALLOWED_PAYLOAD_KEYS.fact`),
+and `snapshotId` is **per-projection** (`projection/assembler.ts:53`,
+`material-supply-snapshot.ts:248`, and in the `projection` / `recommendation` allow-lists but **not**
+the `fact` one). That split is right: a snapshot is a property of registry state, not of one fact. So
+defect **D4**'s inputs exist today at two levels and neither is a Fact Type field. Recorded as a
+**coupling point** for 5.11.2, not as a gap.
+
+**5.2.2a verified as specified**: `extraction` deprecation warning count is still exactly **15**;
+the diff adds only the two `satisfiableByFactType` lines to `MM.PR.CreateDraft` — no `bindingKind`
+line changed, no matcher or priority touched, and **no `capabilityOutput` source** was added
+(ruling ④). That last point is also **5.4.4**, now checked.
+
+**A hand-rolled parser constrained the YAML.** `validate_registry_contract._parse_simple_yaml` does
+not support folded block scalars, so the capability `description` had to be a single line. Found by
+running the validator, not by reading the parser. `ontology/fact-types.yaml` is parsed by real
+`yaml.safe_load` and does use `>-`.
+
+**Also corrected during 5.2:** `priority` / `excludes` / `resolver` / `reaskSuspect` belong to the
+**binding block**, not to each `binding.sources[]` entry — `capability.schema.json`'s
+`inputBindingBlock` is `additionalProperties: false`, which caught it.
+
+### Test consequences — 24 failures, every one classified. No assertion was weakened.
+
+Adding a 4th capability moved counts, indices and the snapshot digest. Each was fixed by making the
+assertion **exact against the new truth**, never by relaxing it:
+
+| Class | Tests | Fix |
+|---|---|---|
+| Snapshot digest | 14 pins in `evals/matcher_cases.yaml` + the 6 `test_eval_runner` cases reading them | **Recompute #4**: `sha256:51cbf410…` → `sha256:d8b16b58…`. Three of the five governed sources changed, so the digest *must* move. The two remaining `sha256:` literals in `test_approval.py` / `test_orchestrator.py` are **parameter hashes**, not snapshot ids, and were verified unchanged — invariant 5 |
+| Counts / sets | `test_load_intent_catalog…` (3→4), `test_registry_v2_metadata…`, `test_discover_cards_projects_all_active_capabilities`, `test_discover_cards_does_not_mutate_sources` (3→4), `test_initial_fact_type_and_relation_catalogs_validate`, `test_capability_schema_accepts_current_registry_input_patterns` (a 5th `plantCode` pattern) | added the new member to each exact set/count |
+| Appended-duplicate indices | 5 duplicate-id tests | the fixtures append onto the real catalog, so the appended index shifted 3→4 (and 4→5 in the mixed case). Positional, not semantic |
+| **Real semantic change** | `test_compiles_expected_immutable_producer_edges` | the graph gained the system's **first `consumesFactType` edge**. Rewritten to assert full `(relation_type, source_id, target_id)` triples instead of a type-only tuple — **stronger**, because a type-only tuple cannot tell a consumer edge pointing at the right Fact Type from one pointing anywhere |
+| **Superseded 3.7 pins** | `test_the_real_registry_derives_no_edges_yet`, `…renders_no_relations`, `…mrp_element_lines_case_is_needs_reduction`, `…empty_real_view_is_only_valid_beside_a_green_positive_control`, and the CLI's empty-view test | These pinned "the real view is empty" and their docstrings **named `MM.Material.GetInfo` (task 5.2) as the consumer that would end it**. Updating them at 5.2 is the anticipated action. All now pin the exact two edges / one relation — strictly stronger than `== ()`, since emptiness *and* a third edge are both now failures |
+| Fixture contamination | `test_compile_plan_v2_consumes_derived_relations_without_a_compiler_change` | derivation is registry-wide, so the fixture saw 3 edges. Fixed by **isolating the fixture's own edge by consumer id**, keeping its "exactly one" guard intact, rather than changing the count to 3 |
+
+The CLI's empty-view test needed the most care: its purpose was *"emptiness is a success"*. Verified
+that `main` returns 0 **unconditionally** for a loadable registry
+(`scripts/derive-data-dependencies.py:127`) and that its other exits — usage 2, `SourceLoadError` 1 —
+have their own tests. So "empty is a success" was never a distinct code path and no branch coverage
+was lost; that is stated in the test rather than left for a reader to trust.
+
 
 ## Task 5.2a — The generic export-structure path resolver (correction C13)
 
@@ -1394,16 +1470,39 @@ Python alone.
 
 **Steps**
 
-- [ ] 5.3.1 Run `scripts/derive-data-dependencies.py`. Expect **two** edges:
+- [x] 5.3.1 Run `scripts/derive-data-dependencies.py`. Expect **two** edges:
 
 ```
 sapnexus:MaterialInfoFact.baseUnitOfMeasure → MM.PR.CreateDraft.unit
 sapnexus:MaterialInfoFact.purchasingGroup   → MM.PR.CreateDraft.purchasing_group
 ```
 
-- [ ] 5.3.2 Confirm they appear as **derived output**, not as authored relations in
+- [x] 5.3.2 Confirm they appear as **derived output**, not as authored relations in
   `capability-relations.yaml` (invariant 3). Assert that file is unchanged.
-- [ ] 5.3.3 **Stop and ask the user if either edge comes out `needsReduction` or `ambiguous`.**
+- [x] 5.3.3 **Stop and ask the user if either edge comes out `needsReduction` or `ambiguous`.**
+
+### Result (2026-08-25) — two edges, **zero diagnostics**. 5.3.3 does not fire.
+
+```
+edge MM.PR.CreateDraft.purchasing_group <- MM.Material.GetInfo.purchasingGroup via sapnexus:MaterialInfoFact.purchasingGroup (sapnexus:PurchasingGroup)
+edge MM.PR.CreateDraft.unit <- MM.Material.GetInfo.baseUnitOfMeasure via sapnexus:MaterialInfoFact.baseUnitOfMeasure (sapnexus:UnitOfMeasure)
+derived 2 edge(s), 1 relation(s), 0 diagnostic(s)
+```
+
+**5.3.3's stop-and-ask does not fire**: `diagnostics` is `[]`, so neither edge is `needsReduction`
+or `ambiguous`. Both are plain `data` edges. The `0 diagnostic(s)` is itself a result worth naming —
+it means both consumer inputs resolved to exactly one `cardinality: one` field each, which is what
+C5's publication rule was designed to guarantee.
+
+**5.3.2 — derived, not authored.** `ontology/capability-relations.yaml` still contains
+`relations: []`; the one `dependsOn` relation exists only in the runtime artifact
+`runtime/derived-data-dependencies.json`, carries `origin: derived`, and is bound to
+`snapshotId: sha256:d8b16b58…`. Task 3.6's rule — a hand-authored edge the deriver could have
+produced is rejected — is what makes this checkable rather than a matter of trust.
+
+**Two edges collapse into one relation**, because a relation is a capability-level dependency, not a
+per-parameter one. Pinned by `test_the_real_registry_renders_exactly_one_derived_relation`.
+
 
 ## Task 5.4 — Producer auto-pull as a closure over `desired_fact_types`
 
@@ -1444,7 +1543,7 @@ one node per desired Fact Type. Adding to `desired_fact_types` is sufficient.
   upstream value is available; (d) the resolved value carries `provenance=capability_derived`.
 - [x] 5.4.2 Implement the closure in `build_goal_spec`. Restrict to `kind: Function` producers.
 - [x] 5.4.3 Assert `plan_compiler_v2.py:213-233` is **unchanged** by this task.
-- [ ] 5.4.4 Confirm the two PR inputs stay `bindingKind: identifier` declaring
+- [x] 5.4.4 Confirm the two PR inputs stay `bindingKind: identifier` declaring
   `satisfiableByFactType` only — **no `capabilityOutput` source is added** (ruling ④). Derivation
   is computed at runtime by semantic-type equality, so **nothing restates the derived field** and
   field-level drift is structurally impossible.

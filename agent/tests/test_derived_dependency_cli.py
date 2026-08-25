@@ -68,15 +68,21 @@ def _governed_file_digest() -> dict[str, str]:
     return digests
 
 
-# ---- 3.5.3: the empty view is a success ----
+# ---- 3.5.3: the view is reported truthfully and exits 0 ----
 
 
-def test_the_cli_reports_the_empty_view_as_empty_and_exits_zero(tmp_path):
-    """Emptiness is a legitimate state, not a failure.
+def test_the_cli_reports_the_real_view_and_exits_zero(tmp_path):
+    """The command reports whatever the registry actually derives, and succeeds.
 
-    No shipped input declares `satisfiableByFactType` yet, so today's real
-    answer is zero edges. Task 3.7 records that result, and it can only be
-    recorded if the command that produces it succeeds.
+    Before task 5.2 this asserted zero edges, because no shipped input declared
+    `satisfiableByFactType`. `MM.Material.GetInfo` ended that, so the assertion
+    now pins the two real edges and the one relation they collapse into.
+
+    No branch coverage is lost by the change: `main` returns 0 unconditionally
+    for a loadable registry (`scripts/derive-data-dependencies.py:127`), and its
+    other exits — usage error 2, `SourceLoadError` 1 — are covered by their own
+    tests. "Empty is a success" was never a distinct code path, so there is no
+    now-untested case hiding behind this rewrite.
     """
     output = tmp_path / "view.json"
     completed = subprocess.run(
@@ -88,11 +94,17 @@ def test_the_cli_reports_the_empty_view_as_empty_and_exits_zero(tmp_path):
     )
     assert completed.returncode == 0, completed.stderr
     assert completed.stderr == ""
-    assert "derived 0 edge(s), 0 relation(s), 0 diagnostic(s)" in completed.stdout
+    assert "derived 2 edge(s), 1 relation(s), 0 diagnostic(s)" in completed.stdout
     artifact = json.loads(output.read_text(encoding="utf-8"))
-    assert artifact["edges"] == []
     assert artifact["diagnostics"] == []
-    assert artifact["relations"] == []
+    assert [
+        (edge["consumerInputName"], edge["producerCapabilityId"], edge["factFieldName"])
+        for edge in artifact["edges"]
+    ] == [
+        ("purchasing_group", "MM.Material.GetInfo", "purchasingGroup"),
+        ("unit", "MM.Material.GetInfo", "baseUnitOfMeasure"),
+    ]
+    assert [relation["origin"] for relation in artifact["relations"]] == ["derived"]
 
 
 def test_the_artifact_binds_the_view_to_the_snapshot_it_came_from(tmp_path):

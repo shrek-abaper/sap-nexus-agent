@@ -19,8 +19,9 @@ def test_load_intent_catalog_returns_active_capabilities():
 
     assert "MM.Inventory.GetAvailability" in catalog.capability_ids
     assert "MM.PurchaseOrder.GetList" in catalog.capability_ids
+    assert "MM.Material.GetInfo" in catalog.capability_ids
     assert "MM.PR.CreateDraft" in catalog.capability_ids
-    assert len(catalog.capabilities) == 3
+    assert len(catalog.capabilities) == 4
 
 
 def test_load_intent_catalog_filters_inactive():
@@ -107,6 +108,7 @@ def test_registry_v2_metadata_does_not_change_runtime_descriptors():
 
     assert tuple(sorted(catalog.capability_ids)) == (
         "MM.Inventory.GetAvailability",
+        "MM.Material.GetInfo",
         "MM.PR.CreateDraft",
         "MM.PurchaseOrder.GetList",
     )

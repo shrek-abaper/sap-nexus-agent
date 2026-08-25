@@ -83,6 +83,34 @@ EXPECTED_EDGE = DerivedDataEdge(
     semantic_type="test:WidgetUnit",
 )
 
+# T3 task 5.2/5.3: the real registry's derived view, now that `MM.Material.GetInfo`
+# is registered and `MM.PR.CreateDraft`'s two inputs declare
+# `satisfiableByFactType`. Ordered as the deriver emits them (consumer input name
+# sorted), and pinned by exact tuple equality: the point of 5.3 is that these two
+# edges are *derived* by matching Fact Type fields against semanticType, never
+# hand-authored, so a change in either registry that silently drops one must fail
+# here rather than shrink the view.
+REAL_DERIVED_EDGES = (
+    DerivedDataEdge(
+        consumer_capability_id="MM.PR.CreateDraft",
+        consumer_input_name="purchasing_group",
+        producer_capability_id="MM.Material.GetInfo",
+        producer_output_name="purchasingGroup",
+        fact_type_id="sapnexus:MaterialInfoFact",
+        fact_field_name="purchasingGroup",
+        semantic_type="sapnexus:PurchasingGroup",
+    ),
+    DerivedDataEdge(
+        consumer_capability_id="MM.PR.CreateDraft",
+        consumer_input_name="unit",
+        producer_capability_id="MM.Material.GetInfo",
+        producer_output_name="baseUnitOfMeasure",
+        fact_type_id="sapnexus:MaterialInfoFact",
+        fact_field_name="baseUnitOfMeasure",
+        semantic_type="sapnexus:UnitOfMeasure",
+    ),
+)
+
 
 def _producer() -> dict:
     return positive_control_capability(PRODUCER_ID)
@@ -195,18 +223,23 @@ def test_a_capability_never_derives_a_parameter_from_itself():
     assert derive_data_dependencies(documents).edges == ()
 
 
-def test_the_real_registry_derives_no_edges_yet():
-    """3.7's expectation, pinned as a unit fact.
+def test_the_real_registry_derives_exactly_the_two_material_info_edges():
+    """3.7's expectation, superseded by task 5.2 and tightened rather than relaxed.
 
-    No input in `registry/capabilities.yaml` declares `satisfiableByFactType`
-    yet — `MM.Material.GetInfo` (task 5.2) is the first consumer. An empty view
-    here is the correct result, and it is only meaningful because the positive
-    control above proves the deriver can produce a non-empty one.
+    Until 5.2 no input in `registry/capabilities.yaml` declared
+    `satisfiableByFactType`, so this test pinned an *empty* view and named
+    `MM.Material.GetInfo` as the consumer that would end that. It has. The
+    assertion is now exact tuple equality against the two edges the deriver
+    produces, which is strictly stronger than `== ()`: emptiness would now be a
+    regression, and so would a third edge.
+
+    Task 5.3's acceptance is this test plus `...derives_no_diagnostics`: the two
+    edges must be plain `data` edges, neither `needsReduction` nor `ambiguous`.
     """
     from sap_nexus_agent.semantic_planning import load_semantic_sources
 
     repo_root = Path(__file__).resolve().parents[2]
-    assert derive_data_dependencies(load_semantic_sources(repo_root)).edges == ()
+    assert derive_data_dependencies(load_semantic_sources(repo_root)).edges == REAL_DERIVED_EDGES
 
 
 # ---- 3.1.3: the satisfiableByFactType scoping is load-bearing ----
@@ -515,13 +548,29 @@ def test_the_semantic_graph_reads_a_derived_relation_as_a_depends_on_edge():
     }
 
 
-def test_the_real_registry_renders_no_relations():
-    """The empty case, reported as empty — task 3.5 requires exit 0 for it."""
+def test_the_real_registry_renders_exactly_one_derived_relation():
+    """Superseded by task 5.2, tightened rather than relaxed.
+
+    Two edges collapse into ONE `dependsOn` relation, because both derive the
+    same producer→consumer pair. That collapse is the point: a relation is a
+    capability-level dependency, not a per-parameter one, so declaring a third
+    derivable input on `MM.PR.CreateDraft` must not add a second relation.
+    `origin: derived` is asserted because task 3.6 forbids a hand-authored edge
+    that the deriver could have produced.
+    """
     from sap_nexus_agent.semantic_planning import load_semantic_sources
 
     repo_root = Path(__file__).resolve().parents[2]
     view = derive_data_dependencies(load_semantic_sources(repo_root))
-    assert view.to_relations() == ()
+    assert view.to_relations() == (
+        {
+            "relationId": "derived.dependsOn.MM.PR.CreateDraft~MM.Material.GetInfo",
+            "relationType": "dependsOn",
+            "capabilityId": "MM.PR.CreateDraft",
+            "dependsOnCapabilityId": "MM.Material.GetInfo",
+            "origin": "derived",
+        },
+    )
 
 
 # ---- 3.4: needsReduction and ambiguous diagnostics ----
@@ -610,7 +659,11 @@ def test_the_real_mrp_element_lines_case_is_needs_reduction():
     assert diagnostic.fact_type_id == "sapnexus:InventoryAvailabilityFact"
     assert diagnostic.semantic_type == "sapnexus:MrpElementLine"
     assert diagnostic.candidates == ("mrpElementLines",)
-    assert view.edges == ()
+    # The fabricated consumer adds a diagnostic, not an edge. The two real edges
+    # (task 5.2) are still derived alongside it, which is what keeps this test
+    # honest: asserting `== ()` here would now mean the real registry stopped
+    # deriving, and this test would pass through that regression.
+    assert view.edges == REAL_DERIVED_EDGES
 
 
 def test_two_matching_fields_are_reported_as_ambiguous():
@@ -729,20 +782,20 @@ def test_the_real_registry_reports_no_diagnostics():
 # ---- 3.7: the empty real view and the positive control, asserted together ----
 
 
-def test_the_empty_real_view_is_only_valid_beside_a_green_positive_control():
-    """Task 3.7.2 — one record, two facts.
+def test_the_real_view_and_the_positive_control_are_asserted_together():
+    """Task 3.7.2 — one record, two facts. Superseded by 5.2, kept as a pair.
 
-    `test_the_real_registry_derives_no_edges_yet` and
-    `test_a_declared_field_and_an_active_producer_yield_one_edge` already pin
-    each half, but as separate tests they cannot fail as a pair: a deriver
-    broken into always returning nothing would turn the positive control red and
-    leave the emptiness assertion green, and a reader looking only at "the real
-    view is empty" would read a defect as the expected state.
+    Before 5.2 the real view was legitimately empty and this test existed so that
+    emptiness could never be mistaken for a broken deriver: empty + green control
+    meant "no consumer declares `satisfiableByFactType` yet", empty + red control
+    meant the deriver was broken.
 
-    So both run through the same `derive_data_dependencies` call site here.
-    Empty + green means "no consumer declares `satisfiableByFactType` yet"
-    (`MM.Material.GetInfo`, task 5.2, is the first). Empty + red means the
-    deriver is broken, and this test says so instead of reporting emptiness.
+    5.2 registered that first consumer, so the real half now carries content and
+    the pairing serves the mirror-image purpose: the control proves the deriver
+    still discriminates (it must still refuse the `cardinality: many` input),
+    while the real half proves the shipped registry is what produces the two
+    edges. Both still run through the same call site so neither half can go green
+    on the other's behalf.
     """
     from sap_nexus_agent.semantic_planning import load_semantic_sources
 
@@ -750,7 +803,7 @@ def test_the_empty_real_view_is_only_valid_beside_a_green_positive_control():
     real = derive_data_dependencies(load_semantic_sources(repo_root))
     positive_control = derive_data_dependencies(_widget_documents())
 
-    assert (real.edges, real.diagnostics) == ((), ())
+    assert (real.edges, real.diagnostics) == (REAL_DERIVED_EDGES, ())
     assert positive_control.edges == (EXPECTED_EDGE,)
     # The control's `tags` input is `cardinality: many`, so it is a reduction
     # diagnostic by design. Naming it keeps this test from silently accepting a

@@ -347,8 +347,15 @@ def test_capability_schema_accepts_current_registry_input_patterns():
     ]
     # Input patterns in registry order: GetAvailability.plant, GetList.vendor
     # (added with the sanitized/real vendor-code shape fix), GetList.plant,
+    # Material.GetInfo.plant (T3 task 5.2, same plantCode shape),
     # PR.CreateDraft.plant (B1.5, aligned with plantCode).
-    assert patterns == ["^[A-Z0-9]{4}$", "^[A-Z0-9]{1,10}$", "^[A-Z0-9]{4}$", "^[A-Z0-9]{4}$"]
+    assert patterns == [
+        "^[A-Z0-9]{4}$",
+        "^[A-Z0-9]{1,10}$",
+        "^[A-Z0-9]{4}$",
+        "^[A-Z0-9]{4}$",
+        "^[A-Z0-9]{4}$",
+    ]
 
 
 @pytest.mark.parametrize(
@@ -381,6 +388,7 @@ def test_initial_fact_type_and_relation_catalogs_validate():
     assert {item["factTypeId"] for item in fact_types["factTypes"]} == {
         "sapnexus:InventoryAvailabilityFact",
         "sapnexus:PurchaseOrderSupplyFact",
+        "sapnexus:MaterialInfoFact",
         "sapnexus:PurchaseRequisitionCreatedFact",
     }
     assert relations == {"version": 2, "relations": []}

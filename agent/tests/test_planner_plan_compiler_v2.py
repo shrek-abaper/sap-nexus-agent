@@ -866,15 +866,30 @@ def test_compile_plan_v2_consumes_derived_relations_without_a_compiler_change():
 
     sources, _ = _sources_with_derivable_identifier()
     view = derive_data_dependencies(sources)
-    assert len(view.edges) == 1, (
+    # Derivation is registry-wide, and since task 5.2 the shipped registry derives
+    # two MM.PR.CreateDraft edges of its own. Only the fixture's edge is relevant
+    # here, so it is isolated by consumer id rather than by loosening the count:
+    # the guard still fails if the fixture stops deriving exactly one.
+    fixture_edges = [
+        edge
+        for edge in view.edges
+        if edge.consumer_capability_id == "Test.Consumer.UseQuantity"
+    ]
+    assert len(fixture_edges) == 1, (
         "the fixture must derive exactly one edge, otherwise this test proves "
         "nothing about what the compiler consumed"
     )
+    fixture_relations = [
+        relation
+        for relation in view.to_relations()
+        if relation["capabilityId"] == "Test.Consumer.UseQuantity"
+    ]
+    assert len(fixture_relations) == 1
     relations = _unfreeze(sources.relations)
     assert not [
         r for r in relations["relations"] if r.get("relationType") == "dependsOn"
     ], "the real catalog already carries a dependsOn — the count below would be vacuous"
-    relations["relations"].extend(view.to_relations())
+    relations["relations"].extend(fixture_relations)
     sources = SemanticSourceDocuments(
         capabilities=sources.capabilities,
         executor_bindings=sources.executor_bindings,

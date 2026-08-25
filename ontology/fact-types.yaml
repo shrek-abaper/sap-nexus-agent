@@ -78,6 +78,47 @@ factTypes:
         cardinality: many
         optional: false
         description: Order unit of a supply item.
+  - factTypeId: sapnexus:MaterialInfoFact
+    name: Material Info Fact
+    description: >-
+      Material master attributes needed to author a purchase requisition without
+      asking the user for them. Both keys are required because the two values sit
+      at different SAP levels: the base unit is client-level (MARA-MEINS, exposed
+      as BAPIMATDOA-BASE_UOM) and the purchasing group is the material plant view
+      (MARC-EKGRP, exposed as BAPIMATDOC-PUR_GROUP), so a material-only read
+      cannot yield the purchasing group. Field names match MM.Material.GetInfo's
+      output names 1:1 per corrections C2 and C5.
+    businessObject: MaterialInfo
+    predicate: sapnexus:hasMaterialInfo
+    semanticType: sapnexus:MaterialInfo
+    keyedBy:
+      - sapnexus:MaterialNumber
+      - sapnexus:Plant
+    fields:
+      - name: material
+        semanticType: sapnexus:MaterialNumber
+        cardinality: one
+        optional: false
+        description: Material the attributes belong to.
+      - name: plant
+        semanticType: sapnexus:Plant
+        cardinality: one
+        optional: false
+        description: Plant whose material view the purchasing group is read from.
+      - name: baseUnitOfMeasure
+        semanticType: sapnexus:UnitOfMeasure
+        cardinality: one
+        optional: false
+        description: >-
+          Base unit of measure of the material. Consumed by MM.PR.CreateDraft's
+          `unit` input through satisfiableByFactType.
+      - name: purchasingGroup
+        semanticType: sapnexus:PurchasingGroup
+        cardinality: one
+        optional: false
+        description: >-
+          Purchasing group responsible for the material at this plant. Consumed
+          by MM.PR.CreateDraft's `purchasing_group` input.
   - factTypeId: sapnexus:PurchaseRequisitionCreatedFact
     name: Purchase Requisition Created Fact
     description: Identity of a purchase requisition created by an approved Action.
