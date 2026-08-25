@@ -522,6 +522,236 @@ def test_two_derivable_inputs_share_one_data_edge():
     ], result.rationale
 
 
+# ---- Task 5.6: the producer field is picked by semanticType ----
+#
+# Per correction C3 a Fact Type's fields are published as *several* producer
+# outputs sharing one ``factTypeRef``, so "first output whose factTypeRef
+# matches" picks an arbitrary one. The discriminator is ``semanticType``.
+# ``MM.Inventory.GetAvailability`` already has that shape in the real registry
+# (``availableQuantity``/``sapnexus:AvailableQuantity`` and
+# ``mrpElementLines``/``sapnexus:MrpElementLine``), so these fixtures invent no
+# semantic types — they only add the consumer side.
+
+
+def _sources_with_two_typed_inputs(
+    second_semantic_type: str = "sapnexus:MrpElementLine",
+) -> tuple[SemanticSourceDocuments, RegistrySnapshot]:
+    """A consumer whose two derivable inputs want **different** fields of one
+    upstream Fact, told apart only by ``semanticType`` (task 5.6).
+
+    ``second_semantic_type`` is a parameter so the same fixture covers the
+    no-match case: a value type the producer does not publish must fail
+    visibly rather than silently binding the other field.
+    """
+    base = _real_sources()
+    caps = _unfreeze(base.capabilities)
+    facts = _unfreeze(base.fact_types)
+    caps["capabilities"].append({
+        "capabilityId": "MM.Consumer.UseTypedFields",
+        "name": "Test Typed Field Consumer",
+        "description": "Consumes two differently typed fields of one Fact",
+        "domain": "MM",
+        "businessObject": "Test",
+        "ontologyIri": "sapnexus:Test_Typed_Field_Consumer",
+        "semanticType": "sapnexus:TestTypedFieldConsumerReadFunction",
+        "aliases": [],
+        "status": "active",
+        "kind": "Function",
+        "inputs": [
+            {
+                "name": "quantity",
+                "semanticType": "sapnexus:AvailableQuantity",
+                "required": True,
+                "bindingKind": "identifier",
+                "satisfiableByFactType": "sapnexus:InventoryAvailabilityFact",
+                "type": "string",
+            },
+            {
+                "name": "lines",
+                "semanticType": second_semantic_type,
+                "required": True,
+                "bindingKind": "identifier",
+                "satisfiableByFactType": "sapnexus:InventoryAvailabilityFact",
+                "type": "string",
+            },
+        ],
+        "outputs": [
+            {"name": "summary", "factTypeRef": "sapnexus:TestTypedSummaryFact"}
+        ],
+        "governance": {
+            "sideEffect": "none",
+            "requiresApproval": False,
+            "approvalPolicy": "not_required",
+            "dataClassification": "internal",
+        },
+        "executor": {"type": "ODATA"},
+        "executorBinding": {"type": "ODATA", "bindingId": "test-binding"},
+    })
+    facts["factTypes"].append(
+        {"factTypeId": "sapnexus:TestTypedSummaryFact", "fields": []}
+    )
+    sources = SemanticSourceDocuments(
+        capabilities=caps,
+        executor_bindings=base.executor_bindings,
+        fact_types=facts,
+        relations=base.relations,
+    )
+    return sources, build_registry_snapshot(sources)
+
+
+def _typed_field_handoff(snapshot) -> EscalationHandoff:
+    return EscalationHandoff(
+        reason="typed-fields",
+        matched_intents=[
+            MatchedIntent(
+                capability_id="MM.Inventory.GetAvailability",
+                parameters={"material": "M1", "plant": "5300"},
+                missing=[],
+            ),
+            MatchedIntent(
+                capability_id="MM.Consumer.UseTypedFields",
+                parameters={},
+                missing=[],
+            ),
+        ],
+        utterance="two typed fields from one fact",
+        registry_snapshot_id=snapshot.snapshot_id,
+    )
+
+
+def _derived_fields(result, capability_id: str) -> dict[str, str]:
+    return {
+        b["parameterName"]: b["source"]["field"]
+        for n in result.plan_graph["nodes"]
+        if n["capabilityId"] == capability_id
+        for b in n["parameterBindings"]
+        if b["source"]["kind"] == "factField"
+    }
+
+
+def test_two_typed_inputs_bind_different_producer_fields():
+    """Task 5.6 — defect: ``_first_fact_field`` ignores semantic type.
+
+    Before the fix both inputs bound ``availableQuantity``, so the consumer
+    silently received the wrong value for ``lines``: a wrong *value*, not a
+    validator error, which is the worst failure mode available.
+    """
+    sources, snapshot = _sources_with_two_typed_inputs()
+    result = compile_plan_v2(_typed_field_handoff(snapshot), snapshot, sources)
+
+    assert _derived_fields(result, "MM.Consumer.UseTypedFields") == {
+        "quantity": "availableQuantity",
+        "lines": "mrpElementLines",
+    }
+    assert not [
+        f for f in result.governance_flags if f.kind == "invalid_plan_graph"
+    ], result.rationale
+
+
+def test_an_unpublished_value_type_fails_visibly_instead_of_binding_the_wrong_field():
+    """Task 5.6 — the no-match case must not fall back to "some other field".
+
+    ``sapnexus:PurchaseOrderItemNumber`` is a real declared value type
+    (``ontology/fact-types.yaml`` ``valueTypes``) that
+    ``MM.Inventory.GetAvailability`` does not publish as an output, so no field
+    can satisfy ``lines``. The compiler emits an empty ``field``, which the S1
+    validator rejects (schema ``minLength: 1``) -> ``invalid_plan_graph``.
+    """
+    sources, snapshot = _sources_with_two_typed_inputs(
+        second_semantic_type="sapnexus:PurchaseOrderItemNumber"
+    )
+    result = compile_plan_v2(_typed_field_handoff(snapshot), snapshot, sources)
+
+    derived = _derived_fields(result, "MM.Consumer.UseTypedFields")
+    assert derived["quantity"] == "availableQuantity"
+    assert derived["lines"] == ""
+    assert [f for f in result.governance_flags if f.kind == "invalid_plan_graph"]
+
+
+def test_the_data_edge_orders_the_producer_first_regardless_of_input_order():
+    """Task 5.6.3 — a derived parameter *causes* the execution order.
+
+    The consumer is listed **first** in the handoff on purpose: if
+    ``topologicalOrder`` merely echoed ``matched_intents``, the consumer would
+    run before the Fact it reads from exists. The only edge in this plan is the
+    ``data`` edge the compiler derived from ``satisfiableByFactType``, so the
+    ordering can have no other cause.
+
+    The real-registry form of this check (``MM.Material.GetInfo`` before
+    ``MM.PR.CreateDraft``) belongs to task 5.6.3 proper and is deferred with
+    the rest of 5.2; the mechanism it depends on is locked here.
+    """
+    sources, snapshot = _sources_with_two_typed_inputs()
+    handoff = EscalationHandoff(
+        reason="typed-fields",
+        matched_intents=[
+            MatchedIntent(
+                capability_id="MM.Consumer.UseTypedFields",
+                parameters={},
+                missing=[],
+            ),
+            MatchedIntent(
+                capability_id="MM.Inventory.GetAvailability",
+                parameters={"material": "M1", "plant": "5300"},
+                missing=[],
+            ),
+        ],
+        utterance="consumer listed first",
+        registry_snapshot_id=snapshot.snapshot_id,
+    )
+    result = compile_plan_v2(handoff, snapshot, sources)
+
+    # The consumer's node id also sorts *before* the producer's, so neither the
+    # handoff order nor the deterministic id tie-break can produce this result:
+    # only following the data edge can. (Verified by mutation M22 — dropping
+    # data edges from the sort makes this assertion fail.)
+    assert "node.MM.Consumer.UseTypedFields" < "node.MM.Inventory.GetAvailability"
+    assert result.plan_graph["topologicalOrder"] == [
+        "node.MM.Inventory.GetAvailability",
+        "node.MM.Consumer.UseTypedFields",
+    ]
+    assert not [
+        f for f in result.governance_flags if f.kind == "invalid_plan_graph"
+    ], result.rationale
+
+
+def test_a_fact_input_still_binds_the_representative_field():
+    """Task 5.6 — ``bindingKind: fact`` is the other tier and keeps its rule.
+
+    A ``fact`` input consumes the Fact as a whole, so its ``semanticType`` is a
+    Fact Type id (correction C8 tier 2), not a value type; there is nothing to
+    discriminate on and the first matching output stays correct. Without this
+    lock, keying the new rule on ``semanticType`` alone would break every
+    whole-Fact consumer.
+    """
+    sources, snapshot = _sources_with_fact_field()
+    handoff = EscalationHandoff(
+        reason="fact-field",
+        matched_intents=[
+            MatchedIntent(
+                capability_id="MM.Inventory.GetAvailability",
+                parameters={"material": "M1", "plant": "5300"},
+                missing=[],
+            ),
+            MatchedIntent(
+                capability_id="Test.Consumer.GetSummary",
+                parameters={},
+                missing=[],
+            ),
+        ],
+        utterance="summary from inventory",
+        registry_snapshot_id=snapshot.snapshot_id,
+    )
+    result = compile_plan_v2(handoff, snapshot, sources)
+
+    assert _derived_fields(result, "Test.Consumer.GetSummary") == {
+        "inventoryFact": "availableQuantity"
+    }
+    assert not any(
+        f.kind == "invalid_plan_graph" for f in result.governance_flags
+    )
+
+
 # ---- Task 9: dependency edge authoring + topological sort ----
 
 

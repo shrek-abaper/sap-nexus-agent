@@ -1456,12 +1456,73 @@ def _fact_field_for_input(
 
 **Steps**
 
-- [ ] 5.6.1 Failing test: the two PR inputs receive **different** fields
+- [x] 5.6.1 Failing test: the two PR inputs receive **different** fields
   (`unit` → `baseUnitOfMeasure`, `purchasing_group` → `purchasingGroup`).
-- [ ] 5.6.2 Implement the replacement and update its call site.
-- [ ] 5.6.3 Verify the emitted plan's `topologicalOrder` places `MM.Material.GetInfo` **before**
+- [x] 5.6.2 Implement the replacement and update its call site.
+- [x] 5.6.3 Verify the emitted plan's `topologicalOrder` places `MM.Material.GetInfo` **before**
   `MM.PR.CreateDraft`.
-- [ ] 5.6.4 Attribute to **figure (b), "defect: `_first_fact_field` ignores semantic type"**.
+- [x] 5.6.4 Attribute to **figure (b), "defect: `_first_fact_field` ignores semantic type"**.
+
+### Result (2026-08-25) — executed out of order, ahead of 5.1/5.2
+
+Task 5.1 is BLOCKED (see its note), so `MM.Material.GetInfo` is not registered yet and 5.6.1/5.6.3
+cannot name the real PR inputs. The defect and the fix are entirely independent of the live SAP
+metadata, so 5.6 was executed against a **real-registry producer** instead of a hypothetical one:
+`MM.Inventory.GetAvailability` already has exactly the C3 shape — two outputs sharing
+`factTypeRef: sapnexus:InventoryAvailabilityFact` with distinct `semanticType`s
+(`availableQuantity`/`sapnexus:AvailableQuantity`, `mrpElementLines`/`sapnexus:MrpElementLine`).
+**No semantic type was invented**; only the consumer side is a fixture.
+
+Two follow-ups remain bound to 5.2 and are listed in 8.4, not closed here:
+
+1. 5.6.1's real-registry form — assert `unit` → `baseUnitOfMeasure` and
+   `purchasing_group` → `purchasingGroup` on the actual `MM.PR.CreateDraft`.
+2. 5.6.3's real-registry form — assert `MM.Material.GetInfo` precedes `MM.PR.CreateDraft`.
+
+`_first_fact_field` → `_fact_field_for_input(producer_raw, fact_type, semantic_type, binding_kind)`
+(`plan_compiler_v2.py`). The discriminator is `semanticType`, but it is applied **per
+`bindingKind` tier**, because the same field means different things in the two tiers (C8):
+
+| `bindingKind` | its `semanticType` is | rule | no match |
+| --- | --- | --- | --- |
+| `identifier` | tier ① value type | strict `semanticType` equality | `""` → `FACT_TYPE_MISMATCH` |
+| `fact` | tier ② Fact Type id | nothing to discriminate → first matching output | `""` |
+
+Keying the rule on `semanticType` **without** the tier split would have broken every whole-Fact
+consumer — mutation M21 proves that, and it breaks a *pre-existing* test, not only a new one.
+
+`git diff --stat` on `validation.py` / `validation_v2.py` is **empty** — the emitted `field` is
+still a producer output name, so "zero validator change" holds as designed.
+
+| Check | Result |
+| --- | --- |
+| `pytest agent/tests/test_planner_plan_compiler_v2.py -q` | 30 passed (26 before 5.5, 29 before 5.6.3's lock) |
+| `pytest agent/tests -q` | 1504 passed, 1 skipped, 2 xfailed |
+| Failing-test-first | `lines` bound `availableQuantity` — a wrong **value**, not a validator error |
+| Mutation M20 (identifier branch reverts to first-match) | 2 FAILED (the typed-fields test + the no-match test); restored, green |
+| Mutation M21 (`fact` branch loses its fallback) | 2 FAILED, one of them **pre-existing** (`test_compile_plan_v2_authors_fact_field_source_and_data_edge`); restored, green |
+| Mutation M22 (`_topological_order` skips `data` edges) | 2 FAILED; restored, green — **but see the vacuity finding below** |
+
+**Vacuity found and fixed in my own test.** M22's first run passed 30/30. Cause: the fixture
+consumer was `Test.Consumer.UseTypedFields`, and `node.MM.Inventory...` sorts before
+`node.Test.Consumer...`, so the deterministic id tie-break produced the correct order by
+coincidence and the assertion never exercised the edge. Renamed the fixture consumer to
+`MM.Consumer.UseTypedFields` so its node id sorts **before** the producer's; the test now asserts
+that inequality explicitly, so the ordering can only come from following the `data` edge. M22 then
+failed as intended.
+
+**Observation for figure (b) — not fixed, not filed as a "known issue".** Probe mutation M23
+replaced the whole sort with `return sorted(node_ids)` and ran the full suite: exactly **two** of
+1504 tests failed, and both are the ones added by this task
+(`test_two_typed_inputs_bind_different_producer_fields`,
+`test_the_data_edge_orders_the_producer_first_regardless_of_input_order`). Every pre-existing
+ordering assertion in `agent/tests/` is therefore satisfied by plain alphabetical node-id order and
+never discriminates the topological sort. Attribution: pre-existing test weakness in the Task 9
+dependency-edge tests, not introduced by batch T. Left untouched because the brief forbids editing
+existing tests without instruction; recorded here and in 8.4 so it is a named item with a named
+cause, not a category.
+
+Attribution: **figure (b) — "defect: `_first_fact_field` ignores semantic type"**.
 
 ## Task 5.7 — Make `narrate_single_value`'s guard `fieldMapping`-driven
 

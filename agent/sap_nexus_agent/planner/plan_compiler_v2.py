@@ -328,7 +328,9 @@ def _build_plan_graph_v2(
                 n["capabilityId"] for n in nodes if n["nodeId"] == producer_node_id
             )
             producer_raw = raw_capabilities.get(producer_cap_id, {})
-            field_name = _first_fact_field(producer_raw, fact_type)
+            field_name = _fact_field_for_input(
+                producer_raw, fact_type, inp.semantic_type, inp.binding_kind
+            )
             node["parameterBindings"].append(
                 {
                     "parameterName": inp.name,
@@ -564,18 +566,40 @@ def _strip_v2_fields_for_gap_calc(plan_graph: dict[str, Any]) -> dict[str, Any]:
     return plan_graph
 
 
-def _first_fact_field(
-    producer_raw: Mapping[str, Any], fact_type: str
+def _fact_field_for_input(
+    producer_raw: Mapping[str, Any],
+    fact_type: str,
+    semantic_type: str,
+    binding_kind: str,
 ) -> str:
-    """Find the first producer output field whose factTypeRef matches.
+    """Find the producer output field that satisfies one consumer input.
 
     Returns the output ``name``. The S1 ``_validate_parameter_source``
     validator checks ``output["name"] == source["field"]`` and
     ``output.get("factTypeRef") == source["factTypeId"]``. An empty string
-    would fail schema ``minLength: 1`` -> ``FACT_TYPE_MISMATCH``; producers
-    are expected to have a named output for the declared Fact Type.
+    fails schema ``minLength: 1`` -> ``FACT_TYPE_MISMATCH``, which is the
+    intended outcome when nothing satisfies the input.
+
+    T3 task 5.6. Per correction C3 a Fact Type's fields are published as
+    *several* outputs sharing one ``factTypeRef``, so matching on
+    ``factTypeRef`` alone picks an arbitrary one. The two ``bindingKind``
+    tiers are told apart because their ``semanticType`` means different
+    things (correction C8):
+
+    - ``identifier`` wants one value, and its ``semanticType`` is a tier-1
+      value type, so that is the discriminator. No match is a real failure.
+    - ``fact`` wants the Fact as a whole, and its ``semanticType`` is a
+      tier-2 Fact Type id, so there is nothing to discriminate on: the first
+      matching output is the Fact's representative field.
     """
-    for output in producer_raw.get("outputs", []):
-        if output.get("factTypeRef") == fact_type and output.get("name"):
-            return output["name"]
-    return ""
+    matching = [
+        output
+        for output in producer_raw.get("outputs", [])
+        if output.get("factTypeRef") == fact_type and output.get("name")
+    ]
+    if binding_kind == _IDENTIFIER_BINDING_KIND:
+        for output in matching:
+            if output.get("semanticType") == semantic_type:
+                return output["name"]
+        return ""
+    return matching[0]["name"] if matching else ""
