@@ -531,3 +531,98 @@ These are deferrable: none of them changes the specs, the approach, or the task 
 3. What `freshnessTolerance` values are defensible. Explicitly out of scope: the thresholds must
    come from `asOf` drift measured in a live composition smoke, and this change only produces the
    first composition from which that drift could later be measured.
+
+---
+
+## Implementation Divergence (recorded 2026-08-25, verify phase)
+
+Written during `/comet-verify` because the implementation diverges from decisions above. Each entry
+names the divergence, the reason, and the explicit decision that authorised it. Nothing here is a
+silent deviation, and none of it is a defect: every item either has a user decision behind it or is a
+correction found by running the code rather than reading it.
+
+### 1. Goal not met — `provenance=capability_derived` reaching the narrative and approval surface
+
+The **Goals** list states *"One real derived edge in production use, with `provenance=capability_derived`
+reaching the narrative and the approval surface."* The derived edge exists in production use and is
+verified live against SAP, but **the provenance does not reach either surface**, so this Goal is
+**not met**.
+
+Reason, traced rather than asserted. Two links are missing and the second is closed by an invariant
+this change may not relax:
+
+- **Finding G1** — `PlanExecutor.resolveParameters` handles `literal` only and silently skips a
+  `factField` binding, so no derived value exists at runtime for a surface to disclose. Resolving it
+  changes what `computeInputHash` hashes, and that is anti-replay machinery which **invariant 5**
+  reserves to defect **D4** — declared out of scope for this batch by the task brief.
+- **Finding G4** — `FactBuilderRegistry` is keyed by `capabilityId`, so projecting
+  `sapnexus:MaterialInfoFact` requires per-capability TypeScript. Generalising it needs a `factShape`
+  in the `ReasoningFact` model (`value` is typed `number | null` and consumers depend on that), which
+  is a governed-contract change belonging to its own Classic change.
+
+Current behaviour is **fail-closed, not under-disclosed**: a derived `purchasing_group` never reaches
+`constraints.purchasingGroup`, the rule set's `requiredConstraints` is unsatisfied, and **no action
+proposal is created**. An unapproved WRITE, never an under-disclosed one.
+
+**Authorised by:** user decision at the build→verify guard — tasks 5.4a / 5.9 / 7.4 descoped to a
+follow-up change `derived-parameter-runtime-disclosure`, recorded in `tasks.md` under *"Descoped from
+this change"* with the original task text retained verbatim.
+
+### 2. Decision 11's `asOf` / `snapshotId` provenance fields were not declared as Fact Type fields
+
+Decision 11 lists the four `MaterialInfoFact` fields *"plus the `asOf` / snapshot provenance every fact
+carries (invariant 5)"*. They were **not** added to `ontology/fact-types.yaml`, because Decision 11's
+own title is *"added with **no new semantic type**"* and a Fact Type field must carry a tier-① value
+type — the vocabulary has 16 members and none is a timestamp or a snapshot id, so declaring those two
+fields requires exactly the new types the decision forbids. They would additionally need publishing as
+capability outputs under the C5 rule, and **none of the three pre-existing Fact Types declares them
+either**.
+
+Verified where the provenance actually lives instead of assuming: `asOf` is **per-Fact**
+(`fact-builder.ts:123,250,275`; present in `ALLOWED_PAYLOAD_KEYS.fact`) and `snapshotId` is
+**per-projection** (`projection/assembler.ts:53`, `material-supply-snapshot.ts:248`; present in the
+`projection` and `recommendation` allow-lists and deliberately **not** in the `fact` one). That split is
+correct — a snapshot is a property of registry state, not of one fact. D4's three inputs therefore all
+exist today at two levels; D4's work is to *join* them into the approval subject, not to create them.
+
+Recorded in the plan as correction **C14**.
+
+### 3. Mechanisms added that this design did not anticipate
+
+All three were found by running the code or the live system, not by review, and each is covered by
+tests and mutation checks recorded in the plan:
+
+- **C13 / task 5.2a — a generic export-structure path resolver in the Gateway.** The design assumed the
+  Gateway was capability-agnostic. It was not where it mattered: `outputMapping` values were read only
+  as top-level export parameters, and the registry's **existing** dotted path
+  (`MRP_IND_LINES.WB.AVAIL_QTY1`) was resolved by nothing — the value came from hardcoded logic, so the
+  declaration was decorative. Registering `MM.Material.GetInfo` declaratively would have yielded no
+  value at all. Consequence for the design's measurement: **figure (a) must be reported for Java as
+  well as Python**; it is 0 in both.
+- **Task 5.4b — an auto-pulled producer's key inputs are propagated from the consumer**, gated on the
+  produced Fact Type's `keyedBy`. Without it the pulled producer had no bindings at all and every
+  derived plan was invalid, so Decision 16's auto-pull could not execute.
+- **Finding G5 — a blank structure field is treated as absent.** Live SAP returned
+  `MATERIALPLANTDATA` initialised with `PUR_GROUP` blank; emitting `""` would turn *"this could not be
+  derived, ask the user"* into *"an empty value was derived"*. Invisible to 1525 unit tests.
+
+### 4. A behaviour change this design did not specify: a derivable parameter escalates
+
+The design specifies the planner-layer mechanism but not what the **conversation** layer should do when
+a required parameter is derivable and the user did not supply it. Implemented behaviour: the parameter
+is dropped from `missing_parameters` and the decision becomes **`ESCALATE_TO_PLANNER`** rather than
+`SELECT`, because deriving requires an upstream node plus a data edge in a PlanGraph (invariant 2),
+which the single-capability `SELECT`/CallPlan path cannot express.
+
+**Authorised by:** an explicit user decision during task 7.1, chosen over two alternatives (keep
+`SELECT` and make CallPlan multi-step; or leave the conversation layer untouched). Without it the
+feature was half delivered — the plan layer derived, and the user was still asked.
+
+### 5. `proposal.md`'s T0′ bullet is stale relative to Decision 12
+
+`proposal.md` still describes T0′ as migrating the two `MM.PR.CreateDraft` inputs off the deprecated
+`extraction:` alias. **Decision 12** above dropped that migration, and the implementation follows
+Decision 12: both inputs still carry `extraction:` and gained only `satisfiableByFactType`. The design
+doc is correct and the proposal is the un-updated artifact. Flagged rather than edited, because
+`proposal.md` records what was proposed and Decision 12 already records why it changed. The
+`extraction` deprecation warning count is pinned at exactly **15** so this debt cannot grow silently.

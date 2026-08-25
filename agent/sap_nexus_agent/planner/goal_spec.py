@@ -166,20 +166,35 @@ def build_goal_spec(
         auto_pulled=auto_pulled,
     )
 
-def _is_auto_pullable(card: CapabilityCard) -> bool:
-    """Whether ``card`` may be pulled into the plan without the user asking.
+def is_auto_pullable_governance(
+    side_effect: object, requires_approval: object
+) -> bool:
+    """The single rule for "may this producer be pulled in without being asked for".
 
     Invariant 5: auto-pull must not drag in a WRITE, and must not become a
     reason to skip or shorten Human Approval. The registry schema binds
     ``kind: Function`` to ``sideEffect: none`` + ``requiresApproval: false``,
-    and ``CapabilityCard`` projects those two governance fields rather than
-    the ``kind`` label, so the restriction is enforced on the fields that
-    actually gate execution. Both are checked: a capability with a side
-    effect is not a READ even if it forgot to demand approval.
+    so the restriction is enforced on the two governance fields that actually
+    gate execution rather than on the ``kind`` label that only implies them.
+    Both are checked: a capability with a side effect is not a READ even if it
+    forgot to demand approval.
+
+    Exported and takes raw values because there were briefly **two** notions of
+    this rule — the closure's, and the selector's derivability lookup, which
+    reused the derived-dependency view whose producer index filters on
+    ``status: active`` alone. They disagreed silently and in the worst
+    direction: an input whose only producer was an Action was reported
+    derivable, so it was dropped from ``missing_parameters`` and never asked,
+    and then the closure refused to pull the Action, so it was never bound
+    either. One rule, two callers, and a test that locks them together.
     """
-    return (
-        card.governance.side_effect == "none"
-        and not card.governance.requires_approval
+    return side_effect == "none" and not requires_approval
+
+
+def _is_auto_pullable(card: CapabilityCard) -> bool:
+    """``is_auto_pullable_governance`` applied to a projected ``CapabilityCard``."""
+    return is_auto_pullable_governance(
+        card.governance.side_effect, card.governance.requires_approval
     )
 
 

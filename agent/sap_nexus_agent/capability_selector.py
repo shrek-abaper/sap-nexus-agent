@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import dataclasses
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -61,11 +62,32 @@ def _is_derivable_input(
         view = derive_data_dependencies(sources)
     except Exception:  # noqa: BLE001 - fail closed, ask the user
         return False
-    return any(
-        edge.consumer_capability_id == capability_id
-        and edge.consumer_input_name == input_name
-        for edge in view.edges
-    )
+
+    # The derived view answers "is there a producer of this field", filtering
+    # producers on ``status: active`` alone. Auto-pull additionally requires a
+    # READ producer (invariant 5), so an edge whose producer would never be
+    # pulled must NOT count as derivable -- otherwise the input is dropped from
+    # ``missing_parameters`` and then never bound. One rule, imported rather
+    # than restated, so the two cannot drift apart again.
+    from sap_nexus_agent.planner.goal_spec import is_auto_pullable_governance
+
+    governance_by_capability = {
+        capability.get("capabilityId"): capability.get("governance") or {}
+        for capability in (sources.capabilities.get("capabilities") or ())
+        if isinstance(capability, Mapping)
+    }
+    for edge in view.edges:
+        if (
+            edge.consumer_capability_id != capability_id
+            or edge.consumer_input_name != input_name
+        ):
+            continue
+        governance = governance_by_capability.get(edge.producer_capability_id) or {}
+        if is_auto_pullable_governance(
+            governance.get("sideEffect"), governance.get("requiresApproval")
+        ):
+            return True
+    return False
 
 
 # Intent -> capabilityId closed set. The Agent never senses the executor type

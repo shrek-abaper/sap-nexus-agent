@@ -20,6 +20,8 @@ from __future__ import annotations
 
 import types
 
+from pathlib import Path
+
 from sap_nexus_agent.capability_selector import select_capability
 from sap_nexus_agent.intent import IntentParseResult
 from sap_nexus_agent.match_decision import (
@@ -27,6 +29,8 @@ from sap_nexus_agent.match_decision import (
     MatchDecision,
     MatchedIntent,
 )
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 def _inventory_matched(material="DEMOA1", plant="1000", missing=None) -> MatchedIntent:
@@ -875,3 +879,145 @@ def test_nothing_escalates_when_no_parameter_was_derivable():
 
     assert decision.decision_type == "CLARIFY"
     assert decision.missing_parameters == ["plant"]
+
+
+# ---- Verify-phase finding R1: derivability must mirror auto-pullability ----
+#
+# Found by the verify-phase spec-scenario audit, not by review. Task 7.1 made the
+# selector reuse `derive_data_dependencies` as the authority for "is this
+# parameter derivable". That view's producer index filters on `status: active`
+# ONLY (`derivation._active_capabilities`), while `goal_spec._is_auto_pullable`
+# additionally requires a READ producer (invariant 5: auto-pull must never drag in
+# a WRITE).
+#
+# The two notions therefore disagreed, and the disagreement is silent in the worst
+# direction: an input whose only producer is an Action was reported derivable, so
+# it was dropped from `missing_parameters` and the user was NOT asked -- and then
+# the closure refused to pull the Action producer, so it was never bound either.
+# Neither asked nor bound.
+#
+# `MM.PR.CreateDraft` is a real registry Action publishing `prNumber` /
+# `sapnexus:PrNumber` into `sapnexus:PurchaseRequisitionCreatedFact`, so the
+# fixture needs no fabricated producer -- only a consumer of that Fact.
+
+
+def _sources_with_a_consumer_of_an_action_produced_fact():
+    from dataclasses import replace
+
+    from sap_nexus_agent.semantic_planning import load_semantic_sources
+
+    sources = load_semantic_sources(REPO_ROOT)
+    caps = {
+        key: [dict(item) for item in value] if isinstance(value, list) else value
+        for key, value in dict(sources.capabilities).items()
+    }
+    caps["capabilities"] = [dict(c) for c in caps["capabilities"]]
+    caps["capabilities"].append({
+        "capabilityId": "Test.Consumer.WantsPrNumber",
+        "name": "Test PR Number Consumer",
+        "description": "Consumes a PR number that only an Action publishes",
+        "domain": "MM",
+        "businessObject": "Test",
+        "ontologyIri": "sapnexus:Test_Pr_Number_Consumer",
+        "semanticType": "sapnexus:TestPrNumberConsumerReadFunction",
+        "aliases": [],
+        "status": "active",
+        "kind": "Function",
+        "inputs": [
+            {
+                "name": "pr_number",
+                "semanticType": "sapnexus:PrNumber",
+                "required": True,
+                "bindingKind": "identifier",
+                "satisfiableByFactType": "sapnexus:PurchaseRequisitionCreatedFact",
+                "type": "string",
+            }
+        ],
+        "outputs": [],
+        "governance": {
+            "sideEffect": "none",
+            "requiresApproval": False,
+            "approvalPolicy": "not_required",
+            "dataClassification": "internal",
+        },
+        "executor": {"type": "ODATA"},
+        "executorBinding": {"type": "ODATA", "bindingId": "test-binding"},
+    })
+    return replace(sources, capabilities=caps)
+
+
+def test_an_input_only_an_action_can_produce_is_not_treated_as_derivable():
+    """R1 — derivability must mirror auto-pullability, or the user is not asked.
+
+    The deriver legitimately reports this edge: `MM.PR.CreateDraft` publishes
+    `prNumber` into the declared Fact Type. But that producer is an Action, so
+    `goal_spec` will refuse to pull it (invariant 5). If the selector treated the
+    input as derivable, `pr_number` would be dropped from `missing_parameters` and
+    then never bound -- neither asked nor derived.
+    """
+    from sap_nexus_agent.capability_selector import _is_derivable_input
+    from sap_nexus_agent.semantic_planning.derivation import derive_data_dependencies
+
+    sources = _sources_with_a_consumer_of_an_action_produced_fact()
+
+    # Non-vacuity: the deriver DOES report the edge, so the guard under test is
+    # the only thing standing between it and a dropped clarification.
+    assert any(
+        edge.consumer_capability_id == "Test.Consumer.WantsPrNumber"
+        and edge.producer_capability_id == "MM.PR.CreateDraft"
+        for edge in derive_data_dependencies(sources).edges
+    )
+
+    assert _is_derivable_input(
+        "Test.Consumer.WantsPrNumber", "pr_number", sources
+    ) is False
+
+
+def test_a_read_produced_input_is_still_derivable():
+    """Positive control for R1: the guard must not refuse everything.
+
+    Without this, returning a constant False would satisfy the test above and
+    silently disable the whole feature.
+    """
+    from sap_nexus_agent.capability_selector import _is_derivable_input
+
+    assert _is_derivable_input("MM.PR.CreateDraft", "unit", None) is True
+
+
+def test_the_selector_and_the_closure_share_one_pullability_rule():
+    """R1's root cause was two copies of one rule, so lock them together.
+
+    Not a style assertion: the selector decides *whether to ask the user* and the
+    closure decides *whether to pull the producer*. If those two answers can
+    differ for the same capability, a parameter falls through the gap between
+    them. Asserted over the real registry's four capabilities plus both failure
+    shapes, so a future edit that reintroduces a second rule fails here.
+    """
+    from sap_nexus_agent.planner.capability_card import discover_cards
+    from sap_nexus_agent.planner.goal_spec import (
+        _is_auto_pullable,
+        is_auto_pullable_governance,
+    )
+    from sap_nexus_agent.semantic_planning import (
+        build_registry_snapshot,
+        load_semantic_sources,
+    )
+
+    sources = load_semantic_sources(REPO_ROOT)
+    cards = discover_cards(build_registry_snapshot(sources), sources)
+    assert len(cards) == 4  # non-vacuity: the loop below has something to check
+    for card in cards:
+        raw = next(
+            c
+            for c in sources.capabilities["capabilities"]
+            if c["capabilityId"] == card.capability_id
+        )
+        governance = raw["governance"]
+        assert _is_auto_pullable(card) is is_auto_pullable_governance(
+            governance["sideEffect"], governance["requiresApproval"]
+        ), f"{card.capability_id}: card view and raw view disagree on pullability"
+
+    # Both failure shapes, so the rule is not merely "sideEffect == none".
+    assert is_auto_pullable_governance("sap_write", False) is False
+    assert is_auto_pullable_governance("none", True) is False
+    assert is_auto_pullable_governance("none", False) is True

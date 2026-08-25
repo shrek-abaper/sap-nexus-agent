@@ -395,3 +395,87 @@ def test_missing_ontology_identity_fails(tmp_path):
     errors = validate_registry_contract(contract, repo_root=repo_root)
 
     assert any("ontologyIri not found in ontology skeleton" in error for error in errors)
+
+
+# ---- Verify-phase finding R4: the read-only binding rule covered only REST_JSON ----
+#
+# The spec delta requires that registering a READ capability "cannot introduce
+# write semantics ... rejects any binding that would commit or roll back". That
+# was enforced ONLY for REST_JSON (`_validate_rest_json_binding`), so a
+# `Function` capability pointing at a JCO_RFC binding whose constraints declare a
+# write side effect, or at a transaction-control RFC, passed contract validation.
+#
+# The brief's own red line is: READ capabilities must have sideEffect none and
+# must not trigger BAPI_TRANSACTION_COMMIT / BAPI_TRANSACTION_ROLLBACK. The
+# capability-level half was already checked; the BINDING-level half was not.
+
+
+def test_function_binding_declaring_a_write_side_effect_fails():
+    """The rule itself, exercised directly.
+
+    `load_registry_contract` reads `registry/executor-bindings.yaml` from the
+    repo root rather than from beside the registry file, so a tmp-dir bindings
+    fixture never takes effect -- discovered by writing one and watching it pass
+    for the wrong reason. The rule is therefore asserted on the function, and the
+    two tests below prove it is wired in and that the real registry satisfies it.
+    """
+    from scripts.validate_registry_contract import (
+        CapabilityEntry,
+        _validate_read_only_binding,
+    )
+
+    read = CapabilityEntry.__new__(CapabilityEntry)
+    object.__setattr__(read, "capability_id", "T.Read.Thing")
+    object.__setattr__(read, "kind", "Function")
+
+    write_binding = {"type": "JCO_RFC", "rfcName": "BAPI_MATERIAL_GET_DETAIL",
+                     "constraints": {"sideEffect": "sap_write"}}
+    errors = _validate_read_only_binding(read, write_binding)
+    assert any("read-only" in error for error in errors), errors
+
+    commit_binding = {"type": "JCO_RFC", "rfcName": "BAPI_TRANSACTION_COMMIT",
+                      "constraints": {"sideEffect": "none"}}
+    errors = _validate_read_only_binding(read, commit_binding)
+    assert any("BAPI_TRANSACTION_COMMIT" in error for error in errors), errors
+
+    clean = {"type": "JCO_RFC", "rfcName": "BAPI_MATERIAL_GET_DETAIL",
+             "constraints": {"sideEffect": "none"}}
+    assert _validate_read_only_binding(read, clean) == []
+
+    action = CapabilityEntry.__new__(CapabilityEntry)
+    object.__setattr__(action, "capability_id", "T.Write.Thing")
+    object.__setattr__(action, "kind", "Action")
+    assert _validate_read_only_binding(action, write_binding) == []
+
+
+def test_the_read_only_binding_rule_is_wired_into_contract_validation(tmp_path):
+    """Wiring proof, end to end, with a registry-only edit.
+
+    Points the READ capability `MM.Material.GetInfo` at the real
+    `sap.mm.pr.create-draft` binding, whose constraints declare `sap_write`. No
+    bindings fixture is needed, so this exercises the genuine load path. Without
+    this test the rule could be unwired and the unit test above would still pass.
+    """
+    registry = tmp_path / "capabilities.yaml"
+    registry.write_text(
+        Path("registry/capabilities.yaml").read_text(encoding="utf-8").replace(
+            "      bindingId: sap.mm.material.get-detail",
+            "      bindingId: sap.mm.pr.create-draft",
+            1,
+        ),
+        encoding="utf-8",
+    )
+
+    contract = load_registry_contract(registry)
+    errors = validate_registry_contract(contract, repo_root=Path("."))
+
+    assert any(
+        "MM.Material.GetInfo" in error and "read-only" in error for error in errors
+    ), errors
+
+
+def test_the_shipped_registry_passes_the_binding_read_only_rule():
+    """Positive control: the new rule must not reject the real registry."""
+    contract = load_registry_contract(Path("registry/capabilities.yaml"))
+    errors = validate_registry_contract(contract, repo_root=Path("."))
+    assert [e for e in errors if "read-only" in e or "TRANSACTION" in e] == []

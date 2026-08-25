@@ -422,6 +422,7 @@ def validate_registry_contract(contract: RegistryContract, repo_root: Path) -> l
             errors.append(f"{capability.capability_id}: ontologyIri not found in ontology skeleton")
         errors.extend(_validate_eval_linkage(capability, repo_root))
         errors.extend(_validate_rest_json_binding(capability, binding))
+        errors.extend(_validate_read_only_binding(capability, binding))
     catalog_entries, catalog_errors = load_semantic_type_catalog(repo_root)
     errors.extend(catalog_errors)
     errors.extend(validate_extraction_declarations(contract, catalog_entries, repo_root))
@@ -527,6 +528,47 @@ def _validate_eval_linkage(capability: CapabilityEntry, repo_root: Path) -> list
     if missing:
         return [f"{capability.capability_id}: evalLinkage cases not found: {', '.join(missing)}"]
     return []
+
+
+# Transaction-control functions. A READ capability must never reach these, and
+# the rule is stated once here rather than spelled inline at each call site.
+_TRANSACTION_CONTROL_RFCS = frozenset(
+    {"BAPI_TRANSACTION_COMMIT", "BAPI_TRANSACTION_ROLLBACK"}
+)
+
+
+def _validate_read_only_binding(
+    capability: CapabilityEntry, binding: dict[str, Any]
+) -> list[str]:
+    """A ``Function`` capability's binding must be read-only, whatever its type.
+
+    Verify-phase finding R4. The equivalent rule existed only for ``REST_JSON``
+    (`_validate_rest_json_binding`), so a READ capability bound to a JCO_RFC or
+    ODATA binding that declared a write side effect, or that named a
+    transaction-control RFC, passed contract validation. The capability-level
+    check (`governance.sideEffect == none`) does not imply the binding-level one:
+    the two are declared in different files and nothing tied them together.
+
+    Two independent conditions, because neither implies the other: a binding may
+    declare ``sideEffect: none`` and still name ``BAPI_TRANSACTION_COMMIT``.
+    """
+    if capability.kind != "Function" or not binding:
+        return []
+    errors: list[str] = []
+    constraints = binding.get("constraints") or {}
+    if constraints.get("sideEffect") != "none":
+        errors.append(
+            f"{capability.capability_id}: Function capability binding must be "
+            f"read-only (binding constraints.sideEffect="
+            f"{constraints.get('sideEffect')!r})"
+        )
+    rfc_name = binding.get("rfcName")
+    if isinstance(rfc_name, str) and rfc_name.upper() in _TRANSACTION_CONTROL_RFCS:
+        errors.append(
+            f"{capability.capability_id}: Function capability must not bind a "
+            f"transaction-control function ({rfc_name})"
+        )
+    return errors
 
 
 def _validate_rest_json_binding(capability: CapabilityEntry, binding: dict[str, Any]) -> list[str]:
