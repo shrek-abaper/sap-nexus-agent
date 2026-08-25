@@ -191,3 +191,28 @@ def test_fact_field_source_eligibility_keys_on_declaration_not_binding_kind(
     )
 
     assert issues == []
+
+
+def test_the_unknown_fact_type_failure_names_the_capability_and_the_input():
+    """R3 — the spec clause "names the offending capability and input".
+
+    Previously the message was only `unknown Fact Type: <id>`, so the offending
+    capability and input were identified positionally by JSON Pointer, which a
+    human reading CI output has to resolve by counting array indices. Asserted on
+    the message text rather than the pointer, because the pointer was already
+    there and the clause is about naming.
+    """
+    sources, capabilities = _capabilities_with_first_input(
+        satisfiableByFactType=UNPUBLISHED_FACT_TYPE
+    )
+    expected_capability = capabilities["capabilities"][0]["capabilityId"]
+    expected_input = capabilities["capabilities"][0]["inputs"][0]["name"]
+
+    result = build_semantic_contracts(replace(sources, capabilities=capabilities))
+
+    unknown = [i for i in result.report.issues if i.code == "UNKNOWN_FACT_TYPE"]
+    assert unknown, result.report.issues
+    assert any(
+        expected_capability in issue.message and expected_input in issue.message
+        for issue in unknown
+    ), [i.message for i in unknown]

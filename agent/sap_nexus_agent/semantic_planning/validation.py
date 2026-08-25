@@ -1440,10 +1440,15 @@ def _validate_fact_references(
                     "satisfiableByFactType must be a string",
                 )
             elif fact_type_ref and fact_type_ref not in fact_type_ids:
+                # Verify-phase finding R3. The spec delta requires the failure to
+                # "name the offending capability and input"; a JSON Pointer
+                # identifies them positionally, which a human reading CI output
+                # has to resolve by counting array indices.
                 _add_issue(
                     issues,
                     f"{base_path}/satisfiableByFactType",
                     "UNKNOWN_FACT_TYPE",
+                    f"{capability.get('capabilityId')}.{input_field.get('name')}: "
                     f"unknown Fact Type: {fact_type_ref}",
                 )
         for output_index, output in enumerate(capability.get("outputs") or ()):

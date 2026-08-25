@@ -17,11 +17,24 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 def test_load_intent_catalog_returns_active_capabilities():
     catalog = load_intent_catalog(str(REPO_ROOT))
 
-    assert "MM.Inventory.GetAvailability" in catalog.capability_ids
-    assert "MM.PurchaseOrder.GetList" in catalog.capability_ids
-    assert "MM.Material.GetInfo" in catalog.capability_ids
-    assert "MM.PR.CreateDraft" in catalog.capability_ids
-    assert len(catalog.capabilities) == 4
+    # R5 — the spec clause requires this asserted "against the Registry content
+    # rather than a hardcoded number", so the expected set is read from
+    # registry/capabilities.yaml. A hardcoded 4 passes whether or not the loader
+    # actually reflects the registry, and silently becomes wrong when a fifth
+    # capability is registered.
+    import yaml
+
+    declared = yaml.safe_load(
+        (REPO_ROOT / "registry" / "capabilities.yaml").read_text(encoding="utf-8")
+    )
+    expected_active = {
+        capability["capabilityId"]
+        for capability in declared["capabilities"]
+        if capability.get("status") == "active"
+    }
+    assert expected_active  # non-vacuity: the registry declares active capabilities
+    assert set(catalog.capability_ids) == expected_active
+    assert len(catalog.capabilities) == len(expected_active)
 
 
 def test_load_intent_catalog_filters_inactive():

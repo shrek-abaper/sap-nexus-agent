@@ -495,6 +495,29 @@ def test_derived_parameter_cases_exist_and_are_live_or_attributed():
         )
 
 
+def test_the_eval_summary_counts_pending_cases_as_unresolved():
+    """R2 — the spec clause "counted as unresolved rather than ... silently omitted".
+
+    Before this the summary carried only total/passed/failed, so a suite with
+    three live and two pending cases reported `Eval passed: 3/3` and the two
+    unresolved cases appeared only as stderr lines. "Not counted as passed" was
+    satisfied; "counted as unresolved" was not.
+    """
+    payload = json.loads(
+        (REPO_ROOT / "evals" / "derived_parameter_cases.yaml").read_text(
+            encoding="utf-8"
+        )
+    )
+    expected_pending = sum(1 for case in payload["cases"] if case.get("pending"))
+    assert expected_pending > 0  # non-vacuity: there is something to count
+
+    summary = run_eval_file(REPO_ROOT / "evals" / "derived_parameter_cases.yaml")
+
+    assert summary.unresolved == expected_pending
+    assert summary.passed == len(DERIVED_PARAMETER_LIVE_CASE_IDS)
+    assert summary.failed == 0
+
+
 def test_derived_parameter_eval_counts_only_the_live_cases():
     """Two live cases pass; the three pending ones are neither passed nor failed.
 

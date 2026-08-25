@@ -24,6 +24,12 @@ class EvalSummary:
     total: int
     passed: int
     failed: int
+    unresolved: int = 0
+    """Cases that did not execute (``pending``), per the agent-callplan-evidence
+    spec: such a case SHALL be *counted as unresolved* rather than passed or
+    silently omitted. Verify-phase finding R2 - the count existed nowhere, so a
+    suite with three live and two pending cases reported ``3/3`` and the two
+    unresolved cases were visible only as stderr lines."""
 
 
 class FakeGatewayClient:
@@ -295,7 +301,7 @@ def run_matcher_cases(
 
     if failures:
         raise AssertionError("\n".join(failures))
-    return EvalSummary(total=passed, passed=passed, failed=0)
+    return EvalSummary(total=passed, passed=passed, failed=0, unresolved=skipped)
 
 
 def _governed_source_override(case: dict[str, Any]) -> dict[str, Any]:
@@ -1057,6 +1063,12 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     summary = run_eval_file(Path(args[0]))
     print(f"Eval passed: {summary.passed}/{summary.total}")
+    # Verify-phase finding R2. The spec requires a case that did not execute to be
+    # counted as unresolved, not merely excluded from the pass count. Printed on a
+    # line of its own and only when non-zero, so a fully-live suite reads exactly
+    # as before and an unresolved case cannot be mistaken for an empty suite.
+    if summary.unresolved:
+        print(f"Eval unresolved (did not execute): {summary.unresolved}")
     return 0
 
 
