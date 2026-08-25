@@ -95,6 +95,7 @@ class DerivedDataEdge:
 
     def to_dict(self) -> dict[str, Any]:
         return {
+            "relationId": self.relation_id,
             "consumerCapabilityId": self.consumer_capability_id,
             "consumerInputName": self.consumer_input_name,
             "producerCapabilityId": self.producer_capability_id,
