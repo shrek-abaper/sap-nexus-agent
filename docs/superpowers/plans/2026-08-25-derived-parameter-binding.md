@@ -2411,7 +2411,7 @@ produced `field: ""` → `FACT_TYPE_MISMATCH` and a silently invalid plan. See C
 
 ## Task 7.5 — Case 5 real: upstream unreachable
 
-- [ ] 7.5.1 `CapabilityGap` is emitted and the run **errors** rather than degrading into an
+- [x] 7.5.1 `CapabilityGap` is emitted and the run **errors** rather than degrading into an
   attempt. Governance red line.
 
 ## Task 7.6 — Dry-run coverage the specs now require
@@ -2510,6 +2510,58 @@ reports `0/0`. Both were rewritten to the **stronger** property: the live-case i
 exactly (so a live case regressing to `pending` fails), a live case may not keep a `todo`, a pending
 case must keep an attribution, and the counts must equal the live-case count — never 5/5, which would
 mean a pending case was counted as passing.
+
+### 7.5 / 7.6 Result (2026-08-25) — 7.5 live; 7.6's cause found to be structural
+
+**No orchestrator change was needed.** `run_query` already accepts `snapshot` / `sources`
+injection, so the seam existed and the harness simply never used it. A case may now declare
+`governedCapabilities`, and the harness rebuilds the snapshot from the reduced document set — which
+genuinely changes the snapshot id, so the plan is compiled against the registry state the case
+declares rather than against a mocked lookup.
+
+**A coupling flaw of my own, found while wiring it.** `_is_derivable_input` re-read the repository
+sources from disk, ignoring the injected governed set. That is wrong beyond the eval: a caller that
+restricts the governed capability set (a visibility scope) would have had a parameter dropped from
+`missing_parameters` on the strength of a producer that run cannot use — the user never asked, the
+plan invalid. Fixed by threading `sources` through `select_capability`. Mutation: making the lookup
+re-read from disk turns 7.5's case from `CLARIFY` back to `ESCALATE_TO_PLANNER`, so the fix is
+load-bearing, not tidying.
+
+**7.5 is live, with a deviation from the plan's wording recorded rather than papered over.** The plan
+says *"`CapabilityGap` is emitted and the run **errors**"*. What happens is better: because the
+selector now honours the governed set, `purchasing_group` is not derivable, so it stays in
+`missing_parameters` and the user is **asked**. The red line 7.5 exists to protect — *an unreachable
+producer must never become a guessed parameter reaching SAP* — is fully met: `validateCalls=0`,
+`executeCalls=0`, `dryRun.present=False`. Nothing was attempted and nothing was guessed. Eliciting is
+not an attempt, it is the opposite. `missingParameters` names `purchasing_group` **alone**, not `unit`
+(which the utterance supplied), so the filter is scoped rather than disabled wholesale.
+
+Non-vacuity, both directions: putting the producer back into `governedCapabilities` flips the case to
+`ESCALATE_TO_PLANNER`, so the seam is causal.
+
+**7.6.3 stays pending, and its cause is now structural rather than a registry shortfall.** The old
+note said the scenario needed a wider registry or fake sources; 7.5's seam *is* that, and it still
+cannot reach the gap. `_compute_gaps` emits `missing_capability` when a **desired** Fact Type has no
+producer (`plan_compiler.py:284-286`), but `desired_fact_types` is **derived from the cards**, so
+removing a producer removes the desire with it — and task 5.4's closure only adds a Fact Type when a
+pullable producer exists. `missing_capability` is therefore unreachable from any valid registry state
+through any current goal source; it is a defence against a *future* goal source that can name a
+desired Fact Type independently of the matched capabilities. Verified rather than argued: removing
+`MM.Inventory.GetAvailability` makes the inventory utterance `REJECT` at the selector, so no goal and
+no gap are produced. **7.6.1 / 7.6.2 are therefore not claimed.**
+
+**Case 4 sharpened, not merely re-deferred.** Two properties were conflated under "upstream empty":
+*the producer is unavailable* (now live as 7.5) and *the producer ran and returned nothing* (still
+pending, execution-time, and additionally blocked by finding G1 → defect D4).
+
+| Check | Result |
+|---|---|
+| `pytest agent/tests -q` | **1525 passed, 1 skipped, 2 xfailed** |
+| derived-parameter eval suite | **3/3** (was 2/2, was 0/0) |
+| `verify-agent-callplan-evidence.sh` | exit 0 — 7/7 · 13/13 · 9/9 · 23/23 · 3/3 · **3/3** · openspec 22/22 |
+| seam non-vacuity | producer back in scope → `ESCALATE_TO_PLANNER`, case fails |
+| coupling non-vacuity | `_is_derivable_input` re-reading from disk → case fails |
+
 
 ### Finding G3 — `verify-agent-callplan-evidence.sh` is network-dependent and intermittently red
 

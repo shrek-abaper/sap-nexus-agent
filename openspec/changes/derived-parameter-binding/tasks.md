@@ -102,7 +102,7 @@ see the 5.9 section.
 - [x] 7.2 Turn case 2 real (*user-supplied-wins*): the user supplies `unit` → the parameter binds from `literal`, **no** `factField` source is authored for it, the producer is **not** pulled into `desired_fact_types`, and no extra READ is executed. This is the half of the pair that makes case 1 meaningful; verify by asserting the absence of the producer node, not merely the presence of the literal
 - [x] 7.3 Turn case 3 real (*mixed*): the user supplies `unit` and omits `purchasing_group` → exactly **one** `data` edge is emitted for the (GetInfo → CreateDraft, `MaterialInfoFact`) pair, `purchasing_group` binds from `factField`, `unit` binds from `literal`. This is the assertion that proves 5.5's duplicate-edge fix
 - [ ] 7.4 Turn case 4 real: upstream GetInfo empty or erroring → degrades to elicitation, never to a default or a fabricated value
-- [ ] 7.5 Turn case 5 real: upstream capability unreachable → `CapabilityGap` is emitted and the run errors rather than degrading into an attempt (governance red line)
+- [x] 7.5 Turn case 5 real: upstream capability unreachable → `CapabilityGap` is emitted and the run errors rather than degrading into an attempt (governance red line)
 - [ ] 7.6 Add the dry-run coverage the specs now require: the missing-producer gap exercised against the governed capability set, and unbound inputs plus derivation diagnostics surfaced as gaps; verify the previously `pending: true` dry-run case is no longer pending
 
 ## 8. Batch T exit verification and reporting

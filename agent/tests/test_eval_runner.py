@@ -437,9 +437,18 @@ HARNESS_ASSERTED_KEYS = frozenset(
     }
 )
 
+# T5 task 7.5 added a case-level key that restricts the governed capability set.
+# Listed separately from the `expected` keys because it is an *input*, not an
+# assertion: it changes which registry state the case runs against.
+HARNESS_CASE_LEVEL_KEYS = frozenset({"governedCapabilities"})
+
 
 DERIVED_PARAMETER_LIVE_CASE_IDS = frozenset(
-    {"user-supplied-wins", "derived-and-user-supplied-mixed"}
+    {
+        "user-supplied-wins",
+        "derived-and-user-supplied-mixed",
+        "upstream-unreachable-emits-capability-gap",
+    }
 )
 
 

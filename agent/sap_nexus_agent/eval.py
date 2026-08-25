@@ -275,7 +275,9 @@ def run_matcher_cases(
             continue
 
         gateway = FakeGatewayClient(case)
-        outcome = run_query(_case_utterance(case), gateway)
+        outcome = run_query(
+            _case_utterance(case), gateway, **_governed_source_override(case)
+        )
         expected = case["expected"]
         decision = outcome.match_decision
         if decision is None:
@@ -294,6 +296,52 @@ def run_matcher_cases(
     if failures:
         raise AssertionError("\n".join(failures))
     return EvalSummary(total=passed, passed=passed, failed=0)
+
+
+def _governed_source_override(case: dict[str, Any]) -> dict[str, Any]:
+    """T5 tasks 7.5/7.6: let a case restrict the **governed** capability set.
+
+    ``run_query`` already accepts ``snapshot`` / ``sources`` injection, so no new
+    seam is needed in the orchestrator: the harness loads the real governed
+    documents, keeps only the capability ids the case names, and rebuilds the
+    snapshot from the reduced set. That is how "the upstream producer is
+    unreachable" is expressed without editing `registry/capabilities.yaml`.
+
+    Reducing the set genuinely changes the snapshot id, which is the point: the
+    plan is compiled against the registry state the case declares, not against a
+    mocked-out lookup.
+
+    Absent key -> no override, so every existing case is untouched.
+    """
+    wanted = case.get("governedCapabilities")
+    if wanted is None:
+        return {}
+    from dataclasses import replace as _replace
+
+    from sap_nexus_agent.semantic_planning import (
+        build_registry_snapshot,
+        load_semantic_sources,
+    )
+
+    repo_root = Path(__file__).resolve().parents[2]
+    sources = load_semantic_sources(repo_root)
+    keep = set(wanted)
+    reduced = {
+        key: list(value) if isinstance(value, list) else value
+        for key, value in dict(sources.capabilities).items()
+    }
+    reduced["capabilities"] = [
+        capability
+        for capability in sources.capabilities.get("capabilities", [])
+        if capability.get("capabilityId") in keep
+    ]
+    missing = keep - {c.get("capabilityId") for c in reduced["capabilities"]}
+    if missing:
+        raise AssertionError(
+            f"governedCapabilities names unknown capability ids: {sorted(missing)}"
+        )
+    sources = _replace(sources, capabilities=reduced)
+    return {"snapshot": build_registry_snapshot(sources), "sources": sources}
 
 
 def _run_governed_read_context_case(

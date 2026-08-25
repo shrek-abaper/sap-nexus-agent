@@ -1325,7 +1325,7 @@ def run_query(
             parsed, visible_capability_set, lease
         )
     else:
-        decision = select_capability(parsed, visible=visible_capability_set)
+        decision = select_capability(parsed, visible=visible_capability_set, sources=sources)
         envelope = None
 
     if (

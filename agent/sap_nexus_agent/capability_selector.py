@@ -14,10 +14,15 @@ if TYPE_CHECKING:
     # pattern used in intent.py for the same cycle.
     from sap_nexus_agent.governed_context import VisibleCapabilitySet
     from sap_nexus_agent.intent_envelope import IntentEnvelope
+    from sap_nexus_agent.semantic_planning import SemanticSourceDocuments
     from sap_nexus_agent.match_decision import EscalationHandoff, MatchDecision, MatchedIntent
 
 
-def _is_derivable_input(capability_id: str, input_name: str) -> bool:
+def _is_derivable_input(
+    capability_id: str,
+    input_name: str,
+    sources: "SemanticSourceDocuments | None" = None,
+) -> bool:
     """Whether the planner can bind ``input_name`` from an upstream capability.
 
     T5 task 7.1. Decided by **reading the registry**: the derived data-dependency
@@ -29,6 +34,14 @@ def _is_derivable_input(capability_id: str, input_name: str) -> bool:
     Invariant 2 holds: `derivation` reads the governed source documents and
     performs no Gateway, RFC or OData call, which task 5.8's audit asserts as a
     file-level lock. This is a declaration lookup, not a data fetch.
+
+    ``sources`` is the **governed** document set for this run. It matters that it
+    is honoured rather than re-read from disk: a caller that restricts the
+    governed capability set (a visibility scope, or an eval case exercising an
+    unreachable producer) must not have the selector answer from the full
+    registry, or a parameter would be dropped from ``missing_parameters`` on the
+    strength of a producer this run cannot use. Falls back to loading the
+    repository sources when no set is supplied, which is the single-turn default.
 
     Fails closed on any load or derivation error: an input that cannot be proven
     derivable is treated as not derivable, so the user is asked rather than
@@ -42,8 +55,10 @@ def _is_derivable_input(capability_id: str, input_name: str) -> bool:
             derive_data_dependencies,
         )
 
-        repo_root = Path(__file__).resolve().parents[2]
-        view = derive_data_dependencies(load_semantic_sources(repo_root))
+        if sources is None:
+            repo_root = Path(__file__).resolve().parents[2]
+            sources = load_semantic_sources(repo_root)
+        view = derive_data_dependencies(sources)
     except Exception:  # noqa: BLE001 - fail closed, ask the user
         return False
     return any(
@@ -154,6 +169,7 @@ class SelectionResult:
 def select_capability(
     parse_result: IntentParseResult,
     visible: "VisibleCapabilitySet | None" = None,
+    sources: "SemanticSourceDocuments | None" = None,
 ) -> MatchDecision:
     """Five-state capability match decision (Design Doc § selector).
 
@@ -299,7 +315,7 @@ def select_capability(
         derivable = [
             name
             for name in missing
-            if _is_derivable_input(derivable_cap_id, name)
+            if _is_derivable_input(derivable_cap_id, name, sources)
         ]
         if derivable:
             missing = [name for name in missing if name not in derivable]

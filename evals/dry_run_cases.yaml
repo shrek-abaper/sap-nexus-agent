@@ -44,7 +44,7 @@
     {
       "id": "dry-run-missing-producer",
       "pending": true,
-      "todo": "无法用真实 registry 构造 missing_capability 场景 - 所有 active capability 均有 produces_fact_types；需扩展 registry 或注入 fake sources 才能覆盖。已在 agent/tests/test_planner_plan_compiler.py 单测中覆盖该分支。",
+      "todo": "PENDING, and the cause is now structural rather than a registry shortfall. The earlier note said the scenario needs a wider registry or fake sources; task 7.5's governedCapabilities seam provides exactly that seam, and it still cannot reach this gap. Reason: _compute_gaps emits missing_capability when a DESIRED Fact Type has no producible producer (plan_compiler.py:284-286), but desired_fact_types is DERIVED FROM the cards (build_goal_spec unions each matched capability's produces_fact_types), so removing a producer removes the desire along with it. Task 5.4's closure cannot create the gap either: it adds a Fact Type only when a pullable producer exists. So missing_capability is unreachable from any valid registry state through any current goal source - it is a defence against a FUTURE goal source that can name a desired Fact Type independently of the matched capabilities (a user-stated goal, or a rule-set-declared desire), which does not exist yet. The branch itself remains covered by agent/tests/test_planner_plan_compiler.py. Verified, not assumed: removing MM.Inventory.GetAvailability from the governed set makes the inventory utterance REJECT at the selector, so no goal and no gap are produced.",
       "userQuery": "构造期望缺 producer 的多目标",
       "expected": {
         "decisionType": "ESCALATE_TO_PLANNER",

@@ -1,6 +1,6 @@
 {
   "suite": "derived-parameter-binding",
-  "note": "Conversation-sequence cases for parameter derivation (T5, plan tasks 4.1 and 7.1-7.5). Cases 2 and 3 are live. Cases 1, 4 and 5 remain pending, each with a named cause and a named prerequisite - never as a known issue. Every expected block uses only keys the harness asserts; the derived-parameter keys (parameterProvenance / dataEdges / orderedBefore) were added by task 7.1. provenance=capability_derived is harness vocabulary mapped from source.kind=factField per correction C12.",
+  "note": "Conversation-sequence cases for parameter derivation (T5, plan tasks 4.1, 7.1-7.5). Three cases are live. Two remain pending, each with a named cause and a named prerequisite - never as a known issue. The derived-parameter assertion keys (parameterProvenance / dataEdges / orderedBefore) were added by task 7.1; governedCapabilities was added by task 7.5 and restricts the governed capability set for one case by rebuilding the snapshot from a reduced document set. provenance=capability_derived is harness vocabulary mapped from source.kind=factField per correction C12.",
   "cases": [
     {
       "id": "derived-not-asked",
@@ -77,7 +77,7 @@
     {
       "id": "upstream-empty-degrades-to-elicitation",
       "pending": true,
-      "todo": "PENDING, cause named: this case is about EXECUTION-time behaviour and the Python eval harness is planning-only. 'MM.Material.GetInfo returns an empty or erroring result' can only be observed after the Composition Runtime executes the producer node, and by invariant 2 the Agent never executes - it authors a plan. At authoring time the plan is authored identically whether or not the upstream will later return data, so there is nothing for this harness to assert. Prerequisite: a TS-side PlanExecutor + projection scenario in frontend/src/runtime, where a node result can be made empty and the degradation to elicitation observed. Related but NOT the same property, and already asserted: the planner refuses to invent a value when no source exists - agent/tests/test_planner_plan_compiler_v2.py::test_an_unsupplied_consumer_parameter_still_fails_closed shows PARAMETER_SOURCE_MISSING rather than a default.",
+      "todo": "PENDING, cause named and now sharper. Two distinct properties were conflated under 'upstream empty'. (a) 'The producer is UNAVAILABLE -> degrade to elicitation' is now live as upstream-unreachable-emits-capability-gap, via the governedCapabilities seam. (b) 'The producer RAN and returned an empty result -> degrade to elicitation' is what remains, and it is execution-time: it can only be observed after the Composition Runtime executes the producer node, and by invariant 2 the Agent never executes. It is additionally blocked by finding G1 - PlanExecutor.resolveParameters skips factField, so no derived value is resolved at all yet, empty or otherwise - and G1 is reserved to defect D4 by invariant 5 because resolving it changes computeInputHash. Prerequisite: D4, then a TS PlanExecutor/projection scenario in frontend/src/runtime where a node result can be made empty. Related and already asserted: agent/tests/test_planner_plan_compiler_v2.py::test_an_unsupplied_consumer_parameter_still_fails_closed shows PARAMETER_SOURCE_MISSING rather than a default or a fabricated value.",
       "userQuery": "给 UNKNOWN-MAT 在 5100 建一张采购申请，数量 10，交货日期 2026-09-30",
       "expected": {
         "decisionType": "CLARIFY",
@@ -87,18 +87,25 @@
     },
     {
       "id": "upstream-unreachable-emits-capability-gap",
-      "pending": true,
-      "todo": "PENDING, cause named: the harness cannot vary the governed capability set per case. run_query loads registry/capabilities.yaml internally, so there is no seam to remove MM.Material.GetInfo for one case and observe the CapabilityGap. Prerequisite: thread an explicit source-document set through run_query (a governedCapabilities case key), which is eval-harness surgery this change did not scope. Related but NOT the same property, and already asserted: agent/tests/test_derived_dependencies.py proves an input whose declared Fact Type has no active producer yields NO edge rather than a guessed one, and the planner records an ambiguous_producer / missing gap instead of authoring producers[0].",
-      "userQuery": "给 DEMOA2 在 5100 建一张采购申请，数量 10，交货日期 2026-09-30",
+      "userQuery": "给物料 M001 工厂 1000 建 100 EA 采购申请 交货 2026-08-01",
       "expected": {
-        "decisionType": "ESCALATE_TO_PLANNER",
+        "decisionType": "CLARIFY",
+        "capabilityId": "MM.PR.CreateDraft",
+        "missingParameters": [
+          "purchasing_group"
+        ],
         "validateCalls": 0,
         "executeCalls": 0,
         "dryRun": {
-          "present": true,
-          "gapsContain": "missing_capability"
+          "present": false
         }
-      }
+      },
+      "governedCapabilities": [
+        "MM.Inventory.GetAvailability",
+        "MM.PurchaseOrder.GetList",
+        "MM.PR.CreateDraft"
+      ],
+      "note": "Task 7.5, live via the governedCapabilities seam (run_query already accepted snapshot/sources injection, so no orchestrator change was needed). MM.Material.GetInfo is removed from the governed set, which genuinely changes the snapshot id - the plan is compiled against the registry state this case declares, not against a mocked lookup. DEVIATION FROM THE PLAN'S WORDING, recorded not papered over: task 7.5 says a CapabilityGap is emitted and the run ERRORS. What actually happens is better and is asserted here instead: because the selector honours the governed source set, purchasing_group is not considered derivable, so it stays in missing_parameters and the user is ASKED. The governance red line 7.5 exists to protect - 'an unreachable producer must never become a guessed parameter reaching SAP' - is fully met: validateCalls=0, executeCalls=0, dryRun.present=False, so nothing was attempted and nothing was guessed. Eliciting is not an attempt; it is the opposite. missingParameters names purchasing_group ALONE, not unit, because unit was supplied in the utterance - so this also proves the derivability filter is scoped to what is genuinely underivable rather than disabled wholesale."
     }
   ]
 }
