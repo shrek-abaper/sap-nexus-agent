@@ -746,12 +746,12 @@ Design Decision 13, ruling ③ (the user made this **mandatory**).
 
 **Steps**
 
-- [ ] 3.2.1 Build two **fabricated** capabilities whose fields make **exactly one** edge derivable.
-- [ ] 3.2.2 Assert the deriver produces that edge.
-- [ ] 3.2.3 Verify the fixture contributes **nothing** to the Registry Snapshot and its
+- [x] 3.2.1 Build two **fabricated** capabilities whose fields make **exactly one** edge derivable.
+- [x] 3.2.2 Assert the deriver produces that edge.
+- [x] 3.2.3 Verify the fixture contributes **nothing** to the Registry Snapshot and its
   capabilities are **absent** from the active set. A test fixture must never enter the execution
   boundary.
-- [ ] 3.2.4 Record why this exists: an empty real view is only meaningful if the deriver is proven
+- [x] 3.2.4 Record why this exists: an empty real view is only meaningful if the deriver is proven
   capable of producing a non-empty one. Empty + red positive control = deriver defect (3.7).
 
 ## Task 3.3 — Emit derived edges in `dependsOn` shape with `origin: derived`

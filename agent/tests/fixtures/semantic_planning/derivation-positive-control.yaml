@@ -1,0 +1,81 @@
+# Positive control for the data dependency deriver (T2: task 3.2).
+#
+# NOT a registry, and never loaded by the runtime. Its whole reason for
+# existing: the derived view over the *real* registry is currently empty, and an
+# empty view only means "nothing is derivable yet" if the deriver is
+# independently proven able to produce a non-empty one. Empty real view + green
+# positive control = a legitimate empty result. Empty real view + red positive
+# control = a deriver defect (plan task 3.7).
+#
+# Every id here is deliberately prefixed so contamination is detectable by
+# shape, not by memory: capability ids start with `T.`, ontology ids with
+# `test:`. `agent/tests/test_derivation_positive_control.py` asserts no such id
+# reaches the five governed snapshot sources or the active capability set — a
+# test fixture must never enter the execution boundary.
+#
+# Exactly one edge is derivable from this pair. That is a real constraint, not
+# an artefact of there being only one field: `widgetTags` is declared, is
+# published by the producer under the same `factTypeRef`, and is wanted by the
+# consumer — it is excluded solely because `cardinality: many` would need a
+# reduction operator, and choosing one is not the deriver's decision.
+
+factTypes:
+  version: 3
+  factTypes:
+    - factTypeId: test:WidgetFact
+      name: Widget Fact
+      description: Fabricated Fact Type. Never registered, never projected.
+      businessObject: Widget
+      predicate: test:hasWidget
+      semanticType: test:Widget
+      keyedBy:
+        - test:WidgetNumber
+      fields:
+        - name: widgetUnit
+          semanticType: test:WidgetUnit
+          cardinality: one
+          optional: false
+          description: Base unit of the widget. The one derivable field.
+        - name: widgetTags
+          semanticType: test:WidgetTag
+          cardinality: many
+          optional: false
+          description: >-
+            Tags of the widget. Blocked from derivation by cardinality alone:
+            the producer publishes it and the consumer wants it.
+
+capabilities:
+  version: 2
+  capabilities:
+    - capabilityId: T.Widget.GetInfo
+      status: active
+      kind: Function
+      inputs:
+        - name: widget
+          semanticType: test:WidgetNumber
+          bindingKind: identifier
+          required: true
+      outputs:
+        - name: widgetUnit
+          semanticType: test:WidgetUnit
+          evidenceRole: primaryFact
+          factTypeRef: test:WidgetFact
+        - name: widgetTags
+          semanticType: test:WidgetTag
+          evidenceRole: primaryFact
+          factTypeRef: test:WidgetFact
+    - capabilityId: T.Widget.Order
+      status: active
+      kind: Action
+      inputs:
+        - name: unit
+          semanticType: test:WidgetUnit
+          bindingKind: identifier
+          satisfiableByFactType: test:WidgetFact
+          required: true
+        - name: tags
+          semanticType: test:WidgetTag
+          bindingKind: identifier
+          satisfiableByFactType: test:WidgetFact
+          required: true
+      outputs: []
