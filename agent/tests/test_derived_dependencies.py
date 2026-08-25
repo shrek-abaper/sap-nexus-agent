@@ -1,4 +1,4 @@
-"""The deterministic data dependency deriver (T2: tasks 3.1 and 3.3).
+"""The deterministic data dependency deriver (T2: tasks 3.1, 3.3 and 3.4).
 
 Requirement: openspec/changes/derived-parameter-binding/specs/
 registry-ontology-contract/spec.md — producer→consumer data dependency edges
@@ -28,10 +28,11 @@ Candidate scoping, in the order the deriver applies it:
 *can* be derived; whether the planner pulls it in is an authoring policy that
 lives in `plan_compiler_v2`, not a property of the registry.
 
-Cases that are neither an edge nor an error — zero matches, more than one
-match, or a `cardinality: many` field — are skipped here and become explicit
-diagnostics in task 3.4. They are asserted as skips below so the interim
-behaviour is pinned rather than assumed.
+Cases that are neither an edge nor an error are split two ways. More than one
+match, or a `cardinality: many` field, is *reported* — the 3.4 section pins the
+diagnostic that names every candidate and picks none. Zero matches is neither:
+an input that is simply not derivable is not an ambiguity a registry author has
+to break, and reporting it would make every unrelated input a finding.
 
 The fabricated capability pair these tests vary comes from
 `agent/tests/fixtures/semantic_planning/derivation-positive-control.yaml` via
@@ -44,6 +45,7 @@ including proof that it never reaches the execution boundary.
 from __future__ import annotations
 
 import ast
+import dataclasses
 import json
 from pathlib import Path
 
@@ -52,7 +54,9 @@ from positive_control import (
     positive_control_documents,
     positive_control_fact_type,
 )
+from sap_nexus_agent.semantic_planning.contracts import SemanticSourceDocuments
 from sap_nexus_agent.semantic_planning.derivation import (
+    DerivationDiagnostic,
     DerivedDataEdge,
     derive_data_dependencies,
 )
@@ -261,13 +265,14 @@ def test_an_unknown_declared_fact_type_derives_nothing_and_does_not_raise():
     assert derive_data_dependencies(documents).edges == ()
 
 
-# ---- skips that task 3.4 turns into diagnostics ----
+# ---- shapes that produce no edge (task 3.4 adds the matching diagnostics) ----
 
 
 def test_the_cardinality_many_field_is_skipped_pending_reduction():
     """A list cannot bind a scalar parameter without an operator, and the
-    deriver never selects one. Task 3.4 makes this a `needsReduction`
-    diagnostic; until then it must be a skip, not a silently wrong edge."""
+    deriver never selects one. It must be a skip, not a silently wrong edge —
+    the `needsReduction` diagnostic that names it is asserted in the 3.4
+    section below."""
     view = derive_data_dependencies(_widget_documents())
     assert "tags" not in {edge.consumer_input_name for edge in view.edges}
 
@@ -286,7 +291,7 @@ def test_cardinality_is_the_only_thing_blocking_the_many_field():
 
 
 def test_two_matching_fields_are_skipped_rather_than_resolved():
-    """Task 3.4's `ambiguous`, trigger (i). The deriver reports; it never
+    """`ambiguous` trigger (i), on the edge side: the deriver reports; it never
     resolves by declaration order."""
     fact = _widget_fact()
     alternate = dict(next(f for f in fact["fields"] if f["name"] == "widgetUnit"))
@@ -297,7 +302,7 @@ def test_two_matching_fields_are_skipped_rather_than_resolved():
 
 
 def test_two_active_producers_are_skipped_rather_than_resolved():
-    """Task 3.4's `ambiguous`, trigger (ii) — and the shape that makes
+    """`ambiguous` trigger (ii) — and the shape that makes
     `plan_compiler_v2`'s `producers[0]` a defect rather than a latency."""
     second_producer = _producer()
     second_producer["capabilityId"] = "T.Widget.GetInfoAlternate"
@@ -516,3 +521,205 @@ def test_the_real_registry_renders_no_relations():
     repo_root = Path(__file__).resolve().parents[2]
     view = derive_data_dependencies(load_semantic_sources(repo_root))
     assert view.to_relations() == ()
+
+
+# ---- 3.4: needsReduction and ambiguous diagnostics ----
+
+
+def _real_documents_with(consumer: dict):
+    """The real registry and ontology, plus one fabricated consumer.
+
+    Built by spreading the frozen documents rather than unfreezing them: the
+    point of these cases is that the Fact Type field and the producer are the
+    *real* ones, so nothing about them may be rewritten to make a case fire.
+    """
+    from sap_nexus_agent.semantic_planning import load_semantic_sources
+
+    documents = load_semantic_sources(Path(__file__).resolve().parents[2])
+    return SemanticSourceDocuments(
+        capabilities={
+            **documents.capabilities,
+            "capabilities": [
+                *documents.capabilities["capabilities"],
+                consumer,
+            ],
+        },
+        executor_bindings=documents.executor_bindings,
+        fact_types=documents.fact_types,
+        relations=documents.relations,
+        semantic_types=documents.semantic_types,
+    )
+
+
+def _only(diagnostics, kind: str):
+    matching = [d for d in diagnostics if d.kind == kind]
+    assert len(matching) == 1, f"expected exactly one {kind}, got {diagnostics}"
+    return matching[0]
+
+
+def test_a_list_field_is_reported_as_needs_reduction():
+    """3.4.1 — the positive control's `tags`, now reported rather than dropped.
+
+    The companion `test_cardinality_is_the_only_thing_blocking_the_many_field`
+    proves the field is otherwise fully derivable, so this diagnostic is about
+    shape and nothing else.
+    """
+    view = derive_data_dependencies(_widget_documents())
+    diagnostic = _only(view.diagnostics, "needsReduction")
+    assert diagnostic.consumer_capability_id == CONSUMER_ID
+    assert diagnostic.consumer_input_name == "tags"
+    assert diagnostic.fact_type_id == WIDGET_FACT_ID
+    assert diagnostic.semantic_type == "test:WidgetTag"
+    assert diagnostic.candidate_kind == "field"
+    assert diagnostic.candidates == ("widgetTags",)
+
+
+def test_the_real_mrp_element_lines_case_is_needs_reduction():
+    """3.4.2 — checked against the real `mrpElementLines`, not a lookalike.
+
+    `sapnexus:MrpElementLine` is `cardinality: many` on the real
+    `sapnexus:InventoryAvailabilityFact` and the real active
+    `MM.Inventory.GetAvailability` publishes it, so everything here is genuine
+    except the consumer that wants it — which cannot exist in the registry yet,
+    since no shipped input declares `satisfiableByFactType` (task 5.2 is the
+    first). Fabricating only the consumer is the smallest possible deviation
+    from the shipped state.
+    """
+    view = derive_data_dependencies(
+        _real_documents_with(
+            {
+                "capabilityId": "T.Mrp.ConsumeLines",
+                "status": "active",
+                "kind": "Function",
+                "inputs": [
+                    {
+                        "name": "line",
+                        "semanticType": "sapnexus:MrpElementLine",
+                        "bindingKind": "identifier",
+                        "satisfiableByFactType": "sapnexus:InventoryAvailabilityFact",
+                        "required": True,
+                    }
+                ],
+                "outputs": [],
+            }
+        )
+    )
+    diagnostic = _only(view.diagnostics, "needsReduction")
+    assert diagnostic.consumer_capability_id == "T.Mrp.ConsumeLines"
+    assert diagnostic.fact_type_id == "sapnexus:InventoryAvailabilityFact"
+    assert diagnostic.semantic_type == "sapnexus:MrpElementLine"
+    assert diagnostic.candidates == ("mrpElementLines",)
+    assert view.edges == ()
+
+
+def test_two_matching_fields_are_reported_as_ambiguous():
+    """3.4.3 trigger (i) — two matching fields in the declared Fact Type.
+
+    Both names are reported. Reporting one would be the silent pick this task
+    exists to remove, and reporting none would lose the reason.
+    """
+    fact = _widget_fact()
+    alternate = dict(next(f for f in fact["fields"] if f["name"] == "widgetUnit"))
+    alternate["name"] = "widgetUnitAlternate"
+    fact["fields"].append(alternate)
+    view = derive_data_dependencies(_documents([_producer(), _consumer()], [fact]))
+    diagnostic = _only(
+        [d for d in view.diagnostics if d.candidate_kind == "field" and d.kind == "ambiguous"],
+        "ambiguous",
+    )
+    assert diagnostic.consumer_input_name == "unit"
+    assert diagnostic.candidates == ("widgetUnit", "widgetUnitAlternate")
+
+
+def test_two_active_producers_are_reported_as_ambiguous():
+    """3.4.3 trigger (ii) — two active producers of the declared Fact Type.
+
+    Candidates are named at `<capabilityId>.<outputName>` granularity, so one
+    capability publishing two matching outputs is reported as the ambiguity it
+    is instead of collapsing to a single id.
+    """
+    second_producer = _producer()
+    second_producer["capabilityId"] = "T.Widget.GetInfoAlternate"
+    view = derive_data_dependencies(
+        _documents([_producer(), second_producer, _consumer()], [_widget_fact()])
+    )
+    diagnostic = _only(
+        [d for d in view.diagnostics if d.candidate_kind == "producerOutput"],
+        "ambiguous",
+    )
+    assert diagnostic.consumer_input_name == "unit"
+    assert diagnostic.candidates == (
+        "T.Widget.GetInfo.widgetUnit",
+        "T.Widget.GetInfoAlternate.widgetUnit",
+    )
+    assert view.edges == ()
+
+
+def test_a_diagnostic_records_no_selection_and_no_operator():
+    """3.4.1 — the deriver reports; it never resolves.
+
+    Locked as field-set equality rather than by checking a few forbidden names:
+    a `selected_producer`, `chosen_field` or `reduction_operator` field would
+    be exactly how a resolution sneaks in, and any of them fails this.
+    """
+    assert {field.name for field in dataclasses.fields(DerivationDiagnostic)} == {
+        "kind",
+        "consumer_capability_id",
+        "consumer_input_name",
+        "fact_type_id",
+        "semantic_type",
+        "candidate_kind",
+        "candidates",
+    }
+
+
+def test_an_ambiguous_input_renders_no_relation():
+    """A relation asserts a dependency exists. An ambiguity asserts the registry
+    does not yet say which one — rendering it would launder the ambiguity into
+    a governance edge."""
+    second_producer = _producer()
+    second_producer["capabilityId"] = "T.Widget.GetInfoAlternate"
+    view = derive_data_dependencies(
+        _documents([_producer(), second_producer, _consumer()], [_widget_fact()])
+    )
+    assert view.diagnostics
+    assert view.to_relations() == ()
+
+
+def test_a_semantic_type_no_field_declares_is_not_a_diagnostic():
+    """Neither kind applies, and inventing a third would make every
+    unrelated input a finding. Not a source is not an ambiguity."""
+    consumer = _consumer()
+    for input_field in consumer["inputs"]:
+        input_field["semanticType"] = "test:NothingDeclaresThis"
+    view = derive_data_dependencies(
+        _documents([_producer(), consumer], [_widget_fact()])
+    )
+    assert view.diagnostics == ()
+    assert view.edges == ()
+
+
+def test_diagnostics_are_deterministic_and_ordered():
+    second_consumer = _consumer()
+    second_consumer["capabilityId"] = "T.Widget.Reserve"
+    fact_types = [_widget_fact()]
+    forward = derive_data_dependencies(
+        _documents([_producer(), _consumer(), second_consumer], fact_types)
+    )
+    reversed_order = derive_data_dependencies(
+        _documents([second_consumer, _consumer(), _producer()], fact_types)
+    )
+    assert len(forward.diagnostics) == 2
+    assert forward.diagnostics == reversed_order.diagnostics
+    assert forward.diagnostics == tuple(sorted(forward.diagnostics))
+    assert forward.to_dict() == reversed_order.to_dict()
+
+
+def test_the_real_registry_reports_no_diagnostics():
+    """The shipped state: nothing derived and nothing unresolved, because no
+    shipped input declares `satisfiableByFactType` yet. An empty diagnostics
+    tuple here is only meaningful next to the non-empty ones above."""
+    from sap_nexus_agent.semantic_planning import load_semantic_sources
+
+    repo_root = Path(__file__).resolve().parents[2]
+    assert derive_data_dependencies(load_semantic_sources(repo_root)).diagnostics == ()

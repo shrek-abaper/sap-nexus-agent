@@ -9,6 +9,7 @@ from .contracts import (
     sorted_issues,
 )
 from .derivation import (
+    DerivationDiagnostic,
     DerivedDataEdge,
     DerivedDependencyView,
     derive_data_dependencies,
@@ -18,6 +19,7 @@ from .snapshot import build_registry_snapshot, canonical_json_bytes
 
 __all__ = [
     "ContractValidationReport",
+    "DerivationDiagnostic",
     "DerivedDataEdge",
     "DerivedDependencyView",
     "GoalReachabilityReport",

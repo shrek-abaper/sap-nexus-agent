@@ -30,6 +30,7 @@ from sap_nexus_agent.planner.plan_compiler import (
     _plan_id_for,
     _project_node_governance,
     _FLAG_INVALID_PLAN_GRAPH,
+    _GAP_AMBIGUOUS_PRODUCER,
 )
 from sap_nexus_agent.semantic_planning import (
     RegistrySnapshot,
@@ -65,6 +66,34 @@ class PlanCompileResult:
 
 
 _IDENTIFIER_BINDING_KIND = "identifier"
+
+
+def _ambiguous_producer_fact_types(
+    goal: GoalSpec, cards: list[CapabilityCard]
+) -> dict[str, tuple[str, ...]]:
+    """Desired Fact Types with more than one active producer (T2 task 3.4.4).
+
+    The single authority for that judgement: ``_build_plan_graph_v2`` refuses to
+    author a node from these, and ``compile_plan_v2`` records the matching
+    ``ambiguous_producer`` gap. Deriving it twice would let the graph and the
+    gap list disagree — a plan silently missing a node with nothing recorded is
+    worse than no plan at all.
+
+    Latent while every Fact Type has exactly one producer, load-bearing once the
+    planner auto-pulls producers in: ``producers[0]`` would then pick a *SAP
+    call* by list order.
+
+    Candidate order is inherited from ``_index_producers_by_fact_type``, which
+    already sorts by ``capability_id``. Re-sorting here would be a second
+    authority for the same ordering — and one no test could tell apart.
+    """
+    producers_by_fact = _index_producers_by_fact_type(cards)
+    ambiguous: dict[str, tuple[str, ...]] = {}
+    for fact_type in goal.desired_fact_types:
+        producers = producers_by_fact.get(fact_type) or []
+        if len(producers) > 1:
+            ambiguous[fact_type] = tuple(card.capability_id for card in producers)
+    return ambiguous
 
 
 def _build_goal_v2(
@@ -160,6 +189,20 @@ def compile_plan_v2(
     goal = _build_goal_v2(handoff, cards)
     plan_graph = _build_plan_graph_v2(goal, snapshot, cards, raw_capabilities, handoff, sources)
     gaps = _compute_gaps(goal, cards, _strip_v2_fields_for_gap_calc(plan_graph))
+    # T2 task 3.4.4. Recorded here rather than in the shared ``_compute_gaps``:
+    # the v1 compiler shares that function but still authors ``producers[0]``,
+    # so reporting the gap there would give v1 a gap next to the arbitrary node
+    # it went ahead and built.
+    for fact_type, candidates in sorted(
+        _ambiguous_producer_fact_types(goal, cards).items()
+    ):
+        gaps.append(
+            Gap(
+                _GAP_AMBIGUOUS_PRODUCER,
+                f"{fact_type}: {len(candidates)} active producers "
+                f"({', '.join(candidates)}); registry must disambiguate",
+            )
+        )
 
     graph = SemanticGraphCompiler().compile(sources)
     report = validate_plan_graph_v2(graph, snapshot, goal.to_dict(), plan_graph)
@@ -200,6 +243,7 @@ def _build_plan_graph_v2(
     sources: SemanticSourceDocuments,
 ) -> dict[str, Any]:
     producers_by_fact = _index_producers_by_fact_type(cards)
+    ambiguous_fact_types = _ambiguous_producer_fact_types(goal, cards)
     params_by_capability: dict[str, dict[str, Any]] = {}
     for matched in handoff.matched_intents:
         params_by_capability.setdefault(matched.capability_id, {}).update(
@@ -213,6 +257,12 @@ def _build_plan_graph_v2(
     for fact_type in goal.desired_fact_types:
         producers = producers_by_fact.get(fact_type)
         if not producers:
+            continue
+        if fact_type in ambiguous_fact_types:
+            # T2 task 3.4.4: more than one active producer. Authoring
+            # ``producers[0]`` would resolve a registry ambiguity by list order.
+            # ``compile_plan_v2`` records the ``ambiguous_producer`` gap for the
+            # same Fact Types, so the omission is never silent.
             continue
         card = producers[0]
         node_id = node_id_by_capability.get(card.capability_id)

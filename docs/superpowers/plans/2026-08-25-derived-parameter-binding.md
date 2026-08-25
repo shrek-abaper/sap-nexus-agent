@@ -803,12 +803,12 @@ gap: the rendering is an in-memory projection, and writing it back into
 
 **Steps**
 
-- [ ] 3.4.1 Implement both diagnostics with **no operator selection and no self-selection** — the
+- [x] 3.4.1 Implement both diagnostics with **no operator selection and no self-selection** — the
   deriver reports, it never resolves.
-- [ ] 3.4.2 Verify `needsReduction` against the **real** `mrpElementLines` case.
-- [ ] 3.4.3 Verify `ambiguous` against **both** trigger shapes: (i) two matching fields in the
+- [x] 3.4.2 Verify `needsReduction` against the **real** `mrpElementLines` case.
+- [x] 3.4.3 Verify `ambiguous` against **both** trigger shapes: (i) two matching fields in the
   declared Fact Type; (ii) two active producers of it.
-- [ ] 3.4.4 Fix the `producers[0]` silently-picks-one defect. Today (`plan_compiler_v2.py:213-217`):
+- [x] 3.4.4 Fix the `producers[0]` silently-picks-one defect. Today (`plan_compiler_v2.py:213-217`):
 
 ```python
 213	    for fact_type in goal.desired_fact_types:
@@ -822,6 +822,67 @@ gap: the rendering is an in-memory projection, and writing it back into
   load-bearing. Two producers must surface as **`ambiguous`**, never resolve by list order.
   Verify with a fixture having two producers of one Fact Type. Attribute to **figure (b),
   "producers[0] silently-picks-one"**.
+
+**Result** — `1447 passed, 1 skipped, 2 xfailed`; registry validator exit 0;
+`verify-agent-callplan-evidence.sh` `22 passed, 0 failed`.
+
+The diagnostic vocabulary is **exactly two kinds**, and the boundary is deliberate:
+
+| Shape | Treatment | Why |
+| --- | --- | --- |
+| only `cardinality: many` fields match | `needsReduction` | a reduction operator is needed and choosing one is a modelling decision |
+| >1 matching field in the declared Fact Type | `ambiguous` (`candidateKind: field`) | the registry has not said which |
+| >1 active producer output | `ambiguous` (`candidateKind: producerOutput`) | ditto, one level up |
+| no matching field at all | silent skip | not a source is not an ambiguity — no author decision is pending |
+| matching field, no producer | silent skip | ditto |
+
+A third kind for the last two rows would make every unrelated input a finding. `DerivationDiagnostic`
+carries **no** `selected_*` and **no** `operator` field, locked as field-set equality by
+`test_a_diagnostic_records_no_selection_and_no_operator` — that is the mechanical form of 3.4.1.
+Candidates are named at `<capabilityId>.<outputName>` granularity so one capability publishing two
+matching outputs is reported as the ambiguity it is instead of collapsing to one id.
+
+**3.4.4 mechanism.** A new gap kind `ambiguous_producer`, not a new `PlannerErrorType`:
+`PlannerErrorType` is a closed `Literal`, so adding to it widens a contract three modules read,
+while `DryRunGap.kind` is an open `string` in `view-model.ts:77` and
+`runtime/composition/handoff.ts:34` already throws `COMPOSITION_PLAN_GAPS` on **any** non-empty
+`gaps` array. So the gap is fail-closed at the composition boundary with **zero frontend change**.
+Recorded in `compile_plan_v2`, not in the shared `_compute_gaps`, because v1 shares that function
+and would otherwise report a gap next to the arbitrary node it still authors.
+
+Refusing the node and recording the gap had to land together: `_compute_gaps` derives
+`producible_fact_types` from **cards**, not nodes, so an ambiguous Fact Type has producers and
+raises no `missing_capability` — skipping alone would have yielded a plan quietly missing a node,
+worse than the defect.
+
+| Mutation | Caught by |
+| --- | --- |
+| `needsReduction` never emitted | the positive-control and the real `mrpElementLines` test |
+| field ambiguity resolved by declaration order | both trigger-(i) tests |
+| producer ambiguity resolved by list order | trigger-(ii) + `renders_no_relation` |
+| only the first producer candidate reported | trigger-(ii) test |
+| diagnostics not sorted | the determinism test |
+| `producers[0]` restored (node authored anyway) | `test_two_producers_of_one_fact_type_are_a_gap_not_a_list_index` |
+| node refused but gap not recorded | same test |
+| gap detail names only the first candidate | same test |
+| `_index_producers_by_fact_type`'s sort removed | `test_the_ambiguous_producer_gap_is_independent_of_declaration_order` |
+
+The last row is a correction, not a pass. My first ordering test compared **two runs of one
+fixture**, which cannot distinguish "sorted" from "stably wrong" — a `reversed(producers)` mutation
+passed it. Two findings followed: `_index_producers_by_fact_type` (`plan_compiler.py:353`) already
+sorts by `capability_id`, so the `sorted()` I had added in the helper was a second authority for the
+same ordering that **no** test could distinguish; it was removed. The test now compares two fixtures
+differing **only** in declaration order, and fails when that single sort is removed.
+
+**Untouched, named per invariant 10** — not "unrelated", not "known issues":
+
+- `plan_compiler.py:168-172` carries the **identical** `producers[0]`. Left as is because v1 is on
+  no production path (`orchestrator.py:1963` calls `compile_plan_v2_from_handoff` only; v1's
+  `compile_dry_run` is referenced from tests alone), and because fixing it would require v1 to grow
+  a gap kind it has no consumer for. It is a figure-(b) line.
+- `_first_fact_field` (`plan_compiler_v2.py:507-521`) is a **second** silent-pick site — it returns
+  the first output matching a Fact Type and `""` when none match. Task 3.4.4 does not name it, so it
+  is reported here rather than fixed silently. Also a figure-(b) line.
 
 ## Task 3.5 — Expose the derived view
 

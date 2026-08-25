@@ -543,6 +543,113 @@ def test_compile_plan_v2_consumes_derived_relations_without_a_compiler_change():
     assert not any(f.kind == "invalid_plan_graph" for f in result.governance_flags)
 
 
+def _sources_with_two_producers_of_one_fact_type(
+    clone_first: bool = False,
+) -> tuple[SemanticSourceDocuments, RegistrySnapshot]:
+    """Two active producers of ``sapnexus:InventoryAvailabilityFact``.
+
+    Built by cloning the real ``MM.Inventory.GetAvailability`` under a second id
+    rather than inventing a producer: the point is that both candidates are
+    equally legitimate, which is exactly what makes picking by list order wrong.
+
+    ``clone_first`` places the clone *before* the original in the document, which
+    is the only difference between the two fixtures the order-independence test
+    below compares.
+    """
+    base = _real_sources()
+    caps = _unfreeze(base.capabilities)
+    original = next(
+        c
+        for c in caps["capabilities"]
+        if c["capabilityId"] == "MM.Inventory.GetAvailability"
+    )
+    clone = _unfreeze(original)
+    clone["capabilityId"] = "Test.Inventory.GetAvailabilityAlternate"
+    clone["name"] = "Test Alternate Availability"
+    clone["ontologyIri"] = "sapnexus:Test_Inventory_GetAvailabilityAlternate"
+    if clone_first:
+        caps["capabilities"].insert(0, clone)
+    else:
+        caps["capabilities"].append(clone)
+    sources = SemanticSourceDocuments(
+        capabilities=caps,
+        executor_bindings=base.executor_bindings,
+        fact_types=_unfreeze(base.fact_types),
+        relations=base.relations,
+    )
+    return sources, build_registry_snapshot(sources)
+
+
+def test_two_producers_of_one_fact_type_are_a_gap_not_a_list_index():
+    """T2 task 3.4.4 — figure (b), "producers[0] silently-picks-one".
+
+    Before this fix ``_build_plan_graph_v2`` authored ``producers[0]``, so the
+    plan named one of two equally valid SAP calls by declaration order and said
+    nothing about it. Latent while every Fact Type has one producer; load-bearing
+    once the planner auto-pulls producers in (task 5.4).
+
+    Both halves are asserted together on purpose. Refusing to author the node
+    without recording the gap would be worse than the defect: ``_compute_gaps``
+    derives ``missing_capability`` from *cards*, not nodes, so an ambiguous Fact
+    Type has producers and would raise no gap at all — a plan quietly missing a
+    node.
+    """
+    sources, snapshot = _sources_with_two_producers_of_one_fact_type()
+    result = compile_plan_v2(_dual_read_handoff(snapshot), snapshot, sources)
+
+    authored = {node["capabilityId"] for node in result.plan_graph["nodes"]}
+    assert "MM.Inventory.GetAvailability" not in authored
+    assert "Test.Inventory.GetAvailabilityAlternate" not in authored
+
+    ambiguous = [g for g in result.gaps if g.kind == "ambiguous_producer"]
+    assert len(ambiguous) == 1, result.gaps
+    detail = ambiguous[0].detail
+    assert "sapnexus:InventoryAvailabilityFact" in detail
+    # Both candidates named. Naming one would be the silent pick, relocated.
+    assert "MM.Inventory.GetAvailability" in detail
+    assert "Test.Inventory.GetAvailabilityAlternate" in detail
+
+
+def test_the_ambiguous_producer_gap_is_independent_of_declaration_order():
+    """The detail string is what a human reads to disambiguate, so its candidate
+    order must not come from the document's.
+
+    Compared across two *different* fixtures rather than two runs of one: running
+    the same input twice cannot distinguish "sorted" from "stably wrong", which
+    is how the first version of this test passed a mutation it should have
+    caught. The ordering authority is
+    ``_index_producers_by_fact_type``; remove its sort and this fails.
+    """
+    appended, appended_snapshot = _sources_with_two_producers_of_one_fact_type()
+    inserted, inserted_snapshot = _sources_with_two_producers_of_one_fact_type(
+        clone_first=True
+    )
+    first = compile_plan_v2(
+        _dual_read_handoff(appended_snapshot), appended_snapshot, appended
+    )
+    second = compile_plan_v2(
+        _dual_read_handoff(inserted_snapshot), inserted_snapshot, inserted
+    )
+    details = [g.detail for g in first.gaps if g.kind == "ambiguous_producer"]
+    assert details, "no ambiguity gap — the comparison below would be vacuous"
+    assert details == [
+        g.detail for g in second.gaps if g.kind == "ambiguous_producer"
+    ]
+    # And it is the alphabetical order, not merely a stable one.
+    assert details[0].index("MM.Inventory.GetAvailability") < details[0].index(
+        "Test.Inventory.GetAvailabilityAlternate"
+    )
+
+
+def test_one_producer_per_fact_type_records_no_ambiguity_gap():
+    """The shipped registry. An `ambiguous_producer` gap that fired here would
+    block every plan at the composition boundary."""
+    snapshot = _real_snapshot()
+    result = compile_plan_v2(_dual_read_handoff(snapshot), snapshot, _real_sources())
+    assert [g for g in result.gaps if g.kind == "ambiguous_producer"] == []
+    assert result.plan_graph["nodes"], "no nodes — the assertion above is vacuous"
+
+
 def test_compile_plan_v2_topological_order_no_edges_falls_back_to_node_id_order():
     """No edges -> topologicalOrder falls back to nodeId sorted order (deterministic)."""
     snapshot = _real_snapshot()

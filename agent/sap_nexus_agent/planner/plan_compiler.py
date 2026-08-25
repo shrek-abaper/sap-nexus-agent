@@ -39,6 +39,7 @@ _FLAG_APPROVAL_REQUIRED = "approval_required"
 # Gap kinds (Design Doc §错误处理 "PlanCompiler 缺口").
 _GAP_MISSING_CAPABILITY = "missing_capability"
 _GAP_MISSING_PARAMETER = "missing_parameter"
+_GAP_AMBIGUOUS_PRODUCER = "ambiguous_producer"
 
 # Side effects that count as write side effects for governance flags.
 _WRITE_SIDE_EFFECTS = frozenset({"write", "sap_write"})
@@ -52,9 +53,19 @@ class Gap:
       capability in the registry.
     - ``missing_parameter``: a producer node's required input has no
       parameter source (goalConstraint / literal / factField).
+    - ``ambiguous_producer``: a desired Fact Type has more than one active
+      producer, so which one to author is a registry decision, not a list
+      index. Recorded by ``compile_plan_v2`` only — the v1 compiler still
+      picks by list order (``plan_compiler.py`` below), which is why this
+      constant lives here but is not raised here.
+
+    "Advisory" describes the compiler's authority, not the consumer's
+    reaction: ``frontend/src/runtime/composition/handoff.ts`` refuses any
+    plan carrying a non-empty ``gaps`` array, so a recorded gap is
+    fail-closed at the composition boundary.
     """
 
-    kind: str  # "missing_capability" | "missing_parameter"
+    kind: str  # "missing_capability" | "missing_parameter" | "ambiguous_producer"
     detail: str
 
 

@@ -26,10 +26,19 @@ Candidate scoping, in order:
 derived; whether the planner pulls a producer node in is an authoring policy
 belonging to ``plan_compiler_v2``.
 
-Non-derivable shapes — no match, more than one match, or a ``cardinality: many``
-field the deriver would have to reduce — are skipped rather than resolved. The
-deriver never picks by declaration order. Task 3.4 turns each skip into an
-explicit diagnostic.
+Non-derivable shapes are reported, never resolved. Task 3.4 gives each one an
+explicit diagnostic:
+
+* ``needsReduction`` — the only matching fields are ``cardinality: many``.
+  Turning a list into a scalar needs a reduction operator, and choosing one is
+  a modelling decision, not a derivation.
+* ``ambiguous`` — more than one matching field in the declared Fact Type, or
+  more than one producer output that could supply it.
+
+Two shapes are *not* diagnostics, because nothing is unresolved: an input that
+declares no ``satisfiableByFactType`` is not a derivation candidate at all, and
+a declared Fact Type with no matching field and no producer is simply not a
+source. Neither is an ambiguity the registry author has to break.
 
 **Rendering (task 3.3).** ``to_relations()`` projects the view into the shape
 ``ontology/capability-relations.yaml`` already defines for ``dependsOn``, so
@@ -37,7 +46,8 @@ explicit diagnostic.
 at all. Derivedness travels as an ``origin`` *field*, never as a new relation
 kind: ruling ① keeps the relation catalog at ``dependsOn`` + ``precondition``,
 additive only. The projection is in-memory — writing it back into the catalog is
-exactly what invariant 3 forbids.
+exactly what invariant 3 forbids. Diagnostics render no relation: an ambiguity
+is the absence of an edge, not an edge of unknown provenance.
 """
 
 from __future__ import annotations
@@ -51,6 +61,19 @@ from .contracts import SemanticSourceDocuments
 DERIVED_RELATION_TYPE = "dependsOn"
 #: Provenance marker. Task 3.6 admits it in the schema alongside ``manual``.
 DERIVED_ORIGIN = "derived"
+
+#: The matching fields are all ``cardinality: many`` — a reduction operator would
+#: be needed, and the deriver never selects one.
+DIAGNOSTIC_NEEDS_REDUCTION = "needsReduction"
+#: More than one candidate. The deriver reports every one of them and picks none.
+DIAGNOSTIC_AMBIGUOUS = "ambiguous"
+
+#: The candidates are field names of the declared Fact Type.
+CANDIDATE_KIND_FIELD = "field"
+#: The candidates are ``<capabilityId>.<outputName>`` producer outputs. Named at
+#: output granularity rather than capability, so one capability publishing two
+#: matching outputs is reported as the ambiguity it is instead of collapsing.
+CANDIDATE_KIND_PRODUCER_OUTPUT = "producerOutput"
 
 
 @dataclass(frozen=True, order=True)
@@ -107,12 +130,48 @@ class DerivedDataEdge:
         }
 
 
+@dataclass(frozen=True, order=True)
+class DerivationDiagnostic:
+    """A parameter the registry cannot resolve to exactly one source.
+
+    Deliberately carries no chosen candidate and no reduction operator: the
+    fields below are the whole story, so a reader cannot mistake a report for a
+    decision. `agent/tests/test_derived_dependencies.py` locks the field set for
+    that reason — adding a `selected_*` or `operator` field fails the test.
+    """
+
+    kind: str
+    consumer_capability_id: str
+    consumer_input_name: str
+    fact_type_id: str
+    semantic_type: str
+    candidate_kind: str
+    candidates: tuple[str, ...]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "kind": self.kind,
+            "consumerCapabilityId": self.consumer_capability_id,
+            "consumerInputName": self.consumer_input_name,
+            "factTypeId": self.fact_type_id,
+            "semanticType": self.semantic_type,
+            "candidateKind": self.candidate_kind,
+            "candidates": list(self.candidates),
+        }
+
+
 @dataclass(frozen=True)
 class DerivedDependencyView:
     edges: tuple[DerivedDataEdge, ...]
+    diagnostics: tuple[DerivationDiagnostic, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
-        return {"edges": [edge.to_dict() for edge in self.edges]}
+        return {
+            "edges": [edge.to_dict() for edge in self.edges],
+            "diagnostics": [
+                diagnostic.to_dict() for diagnostic in self.diagnostics
+            ],
+        }
 
     def to_relations(self) -> tuple[dict[str, Any], ...]:
         """Render the view as ``dependsOn`` relations, one per capability pair.
@@ -122,6 +181,10 @@ class DerivedDependencyView:
         Rendering both would make the compiler author two identical
         ``dependency`` edges, and the S1 validator expects exactly one.
         ``edges`` is already sorted, so insertion order is deterministic.
+
+        Diagnostics contribute nothing here. A relation asserts that a
+        dependency exists; an ambiguity asserts that the registry does not yet
+        say which one.
         """
         relations: dict[str, dict[str, Any]] = {}
         for edge in self.edges:
@@ -146,6 +209,7 @@ def derive_data_dependencies(
     producers = _producers_by_fact_type_and_semantic_type(active)
 
     edges: list[DerivedDataEdge] = []
+    diagnostics: list[DerivationDiagnostic] = []
     for capability in active:
         consumer_id = capability.get("capabilityId")
         if not isinstance(consumer_id, str):
@@ -167,15 +231,55 @@ def derive_data_dependencies(
                 # UNKNOWN_FACT_TYPE is the validator's diagnostic. The deriver
                 # stays usable on documents the validator has already rejected.
                 continue
-            field_names = _matching_field_names(fact_type, semantic_type)
-            if len(field_names) != 1:
+
+            context: dict[str, str] = {
+                "consumer_capability_id": consumer_id,
+                "consumer_input_name": input_name,
+                "fact_type_id": fact_type_id,
+                "semantic_type": semantic_type,
+            }
+            scalar_fields, list_fields = _matching_fields(fact_type, semantic_type)
+            if len(scalar_fields) > 1:
+                diagnostics.append(
+                    DerivationDiagnostic(
+                        kind=DIAGNOSTIC_AMBIGUOUS,
+                        candidate_kind=CANDIDATE_KIND_FIELD,
+                        candidates=scalar_fields,
+                        **context,
+                    )
+                )
+                continue
+            if not scalar_fields:
+                if list_fields:
+                    diagnostics.append(
+                        DerivationDiagnostic(
+                            kind=DIAGNOSTIC_NEEDS_REDUCTION,
+                            candidate_kind=CANDIDATE_KIND_FIELD,
+                            candidates=list_fields,
+                            **context,
+                        )
+                    )
+                # No matching field of either shape: not a source, not an
+                # ambiguity. Nothing for a registry author to break.
                 continue
             candidates = tuple(
                 candidate
                 for candidate in producers.get((fact_type_id, semantic_type), ())
                 if candidate[0] != consumer_id
             )
-            if len(candidates) != 1:
+            if not candidates:
+                continue
+            if len(candidates) > 1:
+                diagnostics.append(
+                    DerivationDiagnostic(
+                        kind=DIAGNOSTIC_AMBIGUOUS,
+                        candidate_kind=CANDIDATE_KIND_PRODUCER_OUTPUT,
+                        candidates=tuple(
+                            sorted(f"{cap}.{output}" for cap, output in candidates)
+                        ),
+                        **context,
+                    )
+                )
                 continue
             producer_id, output_name = candidates[0]
             edges.append(
@@ -185,30 +289,41 @@ def derive_data_dependencies(
                     producer_capability_id=producer_id,
                     producer_output_name=output_name,
                     fact_type_id=fact_type_id,
-                    fact_field_name=field_names[0],
+                    fact_field_name=scalar_fields[0],
                     semantic_type=semantic_type,
                 )
             )
-    return DerivedDependencyView(edges=tuple(sorted(edges)))
-
-
-def _matching_field_names(
-    fact_type: Mapping[str, Any], semantic_type: str
-) -> tuple[str, ...]:
-    """Field names of this Fact Type that can bind a scalar of this type.
-
-    A ``cardinality: many`` field is excluded rather than reduced: turning a
-    list into a scalar needs an operator, and choosing one is not the deriver's
-    decision to make.
-    """
-    return tuple(
-        field["name"]
-        for field in fact_type.get("fields") or ()
-        if isinstance(field, Mapping)
-        and isinstance(field.get("name"), str)
-        and field.get("semanticType") == semantic_type
-        and field.get("cardinality") == "one"
+    return DerivedDependencyView(
+        edges=tuple(sorted(edges)), diagnostics=tuple(sorted(diagnostics))
     )
+
+
+def _matching_fields(
+    fact_type: Mapping[str, Any], semantic_type: str
+) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """Split this Fact Type's fields of the given semantic type by cardinality.
+
+    Returns ``(scalar_fields, list_fields)`` — the ``cardinality: one`` names
+    that can bind a scalar parameter directly, and the ``cardinality: many``
+    names that would need a reduction operator first. A field declaring neither
+    is in neither tuple: an absent or unknown cardinality is a schema violation
+    the Registry Validator reports, and guessing one here would hide it.
+    """
+    scalar_fields: list[str] = []
+    list_fields: list[str] = []
+    for field in fact_type.get("fields") or ():
+        if not isinstance(field, Mapping):
+            continue
+        name = field.get("name")
+        if not isinstance(name, str):
+            continue
+        if field.get("semanticType") != semantic_type:
+            continue
+        if field.get("cardinality") == "one":
+            scalar_fields.append(name)
+        elif field.get("cardinality") == "many":
+            list_fields.append(name)
+    return tuple(scalar_fields), tuple(list_fields)
 
 
 def _active_capabilities(
