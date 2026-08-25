@@ -1416,6 +1416,54 @@ Attribution: **figure (b) — "producer auto-pull (Decision 16)", 95 lines in `g
 - [ ] 5.4a.4 Verify **no approval step is skipped or shortened** because a value was derived
   (invariant 5). A derived parameter goes through byte-identical approval.
 
+### Foundation landed (2026-08-25) — the audit record. No 5.4a box checked.
+
+**Task 5.4's rationale asserted a behaviour it did not implement, and this is the correction.** The
+`build_goal_spec` docstring said the closure lives there *"so the `GoalSpec` records **why** the extra
+node exists: the extra SAP read is auditable instead of being a silent planner side effect"*. Reading
+the shipped code, it recorded nothing: the pulled Fact Type was appended to `desired_fact_types`
+indistinguishable from one the user asked for. So 5.4a's disclosure had **nothing to disclose from**,
+and the docstring was an overstatement in the exact shape invariant 9 targets — a claim that reads as
+a property and is asserted by nothing.
+
+Added `AutoPulledFactType(fact_type, producer_capability_id, consumer_capability_id, consumer_input)`
+and `GoalSpec.auto_pulled`. Four fields, not one flag, because 5.9.3 refuses a value "merely labelled
+derived with no provenance chain": disclosure must name *which* read, *for whom*, and *for which
+parameter*. A second-hop pull is attributed to the **pulled producer**, not to the matched
+capability — misattributing a read is worse than not disclosing it.
+
+**Deliberately not emitted by `to_dict()`.** `schemas/goal-spec.schema.json` is
+`additionalProperties: false`, so an extra key makes every emitted GoalSpec fail S1's
+`validate_goal_spec`. The field stays Python-side.
+
+**Why no 5.4a box is checked.** All four sub-items are *surfacing* steps. Reaching the narration and
+the approval card means carrying the record GoalSpec → PlanGraph → projection → narrative, i.e.
+extending `plan-graph-v2`'s governed schema and the TS parser, for a value that **no real plan
+produces yet** (`grep satisfiableByFactType registry/capabilities.yaml` is still empty). That is the
+same dead-contract objection recorded against 5.9.2's allow-list edits. 5.4a is blocked on 5.2, and
+the audit record is the half that is not.
+
+**Finding G2 — the GoalSpec emitter was never validated against its own schema.** Mutation M29
+(emit `autoPulled` from `to_dict()`) broke **zero** pre-existing tests out of 1515. Cause, named:
+every existing schema test validates a hand-built fixture — `test_contract_files.py:474` and
+`test_semantic_planning_contract.py:1728` — and none validates `build_goal_spec(...).to_dict()`,
+even though `validation._validate_goal_shape:765` runs that schema through `jsonschema` at runtime.
+Unlike the M23 topological-sort finding, this one is closed here, by **adding** a round-trip test
+against the same validator the runtime uses. No existing test was edited.
+
+| Check | Result |
+|---|---|
+| Failing-test-first | all 5 new tests failed with `AttributeError: 'GoalSpec' object has no attribute 'auto_pulled'` |
+| `pytest agent/tests/test_planner_capability_card.py -q` | **50 passed** (was 44 at 5.4, 49 after the audit record) |
+| `pytest agent/tests -q` | **1517 passed, 1 skipped, 2 xfailed** |
+| `validate-registry-contract.py` | `Registry contract valid` (same 4 pre-existing `MM.PR.CreateDraft` deprecation warnings, unchanged) |
+| M28 attribute every pull to `matched_cards[0]` | 1 FAILED — `…records_every_hop_with_its_own_consumer`. Restored, `diff -q` clean |
+| M29 leak `autoPulled` into `to_dict()` | **2 FAILED** — the key-set lock and the new schema round trip. Before the round-trip test existed it was 1 FAILED out of 1515, which is finding G2. Restored, `diff -q` clean |
+| Files touched | `goal_spec.py` (+66/-14) and its test file only. No governed source, no schema, no snapshot recompute |
+
+Attribution: **figure (b) — "producer auto-pull (Decision 16)"**, which grows from 95 to **~130
+lines** in `goal_spec.py`. Reported as growth of the existing line, not as a new item.
+
 ## Task 5.5 — Fix the duplicate-`data`-edge defect
 
 Design Decision 5, **defect 1**. **On the critical path** — it blocks T3's headline edge, so it is

@@ -948,3 +948,144 @@ def test_the_closure_is_transitive_and_terminates():
         "sapnexus:MaterialInfoFact",
         "sapnexus:MaterialGroupFact",
     )
+
+
+# ---- Task 5.4a foundation: the GoalSpec must record *why* the extra node exists ----
+#
+# 5.4's own rationale claims the closure lives in ``build_goal_spec`` "so the
+# GoalSpec records *why* the extra node exists: the extra SAP read is auditable
+# instead of being a silent planner side effect". As first implemented it did not:
+# the pulled Fact Type was appended to ``desired_fact_types`` indistinguishably
+# from one the user asked for, leaving 5.4a's disclosure with nothing to disclose
+# *from*. These tests are that claim made checkable.
+#
+# The record stays a Python-side dataclass field and is deliberately **not** added
+# to ``to_dict()``: ``schemas/goal-spec.schema.json`` is ``additionalProperties:
+# false``, so emitting a new key would break S1's ``validate_goal_spec``. The
+# surfacing of the record into the PlanGraph, narration and approval card is
+# 5.4a/5.9's work and needs a real derived value, hence 5.2.
+
+
+def test_an_auto_pulled_fact_type_records_its_producer_consumer_and_input():
+    """Task 5.4a.1 foundation — "an extra read occurred" needs a subject.
+
+    Disclosure has to name *which* read, *for whom*, and *for which parameter*.
+    A bare "something was derived" label is the thing 5.9.3 explicitly refuses.
+    """
+    handoff, cards = _consumer_needing_an_upstream_unit()
+    goal = build_goal_spec(handoff, cards)
+    assert len(goal.auto_pulled) == 1
+    record = goal.auto_pulled[0]
+    assert record.fact_type == "sapnexus:MaterialInfoFact"
+    assert record.producer_capability_id == "MM.Material.GetInfo"
+    assert record.consumer_capability_id == "MM.PR.CreateDraft"
+    assert record.consumer_input == "unit"
+
+
+def test_a_user_requested_fact_type_is_not_recorded_as_auto_pulled():
+    """The record must *discriminate*, not label everything derived.
+
+    ``sapnexus:PrCreateFact`` is in ``desired_fact_types`` because the user asked
+    for the PR. If it appeared in ``auto_pulled`` too, the disclosure would
+    over-claim and the narration would report a read that never happened.
+    """
+    handoff, cards = _consumer_needing_an_upstream_unit()
+    goal = build_goal_spec(handoff, cards)
+    pulled = {record.fact_type for record in goal.auto_pulled}
+    assert "sapnexus:PrCreateFact" not in pulled
+    assert "sapnexus:PrCreateFact" in goal.desired_fact_types
+
+
+def test_nothing_is_recorded_when_nothing_was_pulled():
+    """No pull, no disclosure. Ruling 4: a stated value must not trigger a read.
+
+    Pairs with ``test_the_closure_does_not_pull_when_the_user_supplied_the_value``:
+    that one proves the read does not happen, this one proves the surfaces are not
+    told it did.
+    """
+    handoff, cards = _consumer_needing_an_upstream_unit()
+    handoff.matched_intents[0].parameters["unit"] = "ST"
+    goal = build_goal_spec(handoff, cards)
+    assert goal.auto_pulled == ()
+
+
+def test_the_transitive_pull_records_every_hop_with_its_own_consumer():
+    """A two-hop closure discloses two reads, each attributed to its own cause.
+
+    The second hop's consumer is the *pulled producer*, not the matched
+    capability. Collapsing both records onto ``MM.PR.CreateDraft`` would
+    misattribute the read, which is worse than not disclosing it.
+    """
+    handoff, cards = _consumer_needing_an_upstream_unit()
+    cards[1] = _make_card(
+        capability_id="MM.Material.GetInfo",
+        inputs=(
+            _make_input(
+                name="group",
+                semantic_type="sapnexus:PurchasingGroup",
+                satisfiable_by_fact_type="sapnexus:MaterialGroupFact",
+            ),
+        ),
+        produces_fact_types=("sapnexus:MaterialInfoFact",),
+    )
+    cards.append(
+        _make_card(
+            capability_id="MM.Material.GetGroup",
+            produces_fact_types=("sapnexus:MaterialGroupFact",),
+        )
+    )
+    goal = build_goal_spec(handoff, cards)
+    assert [
+        (r.fact_type, r.consumer_capability_id, r.consumer_input, r.producer_capability_id)
+        for r in goal.auto_pulled
+    ] == [
+        ("sapnexus:MaterialInfoFact", "MM.PR.CreateDraft", "unit", "MM.Material.GetInfo"),
+        ("sapnexus:MaterialGroupFact", "MM.Material.GetInfo", "group", "MM.Material.GetGroup"),
+    ]
+
+
+def test_to_dict_still_emits_exactly_the_six_schema_keys():
+    """The audit record must not leak into the S1 JSON contract.
+
+    ``schemas/goal-spec.schema.json`` is ``additionalProperties: false``, so an
+    extra key would make every emitted GoalSpec fail ``validate_goal_spec``. This
+    is the guard that keeps the new field Python-side, asserted by exact set
+    equality rather than by "the expected keys are present".
+    """
+    handoff, cards = _consumer_needing_an_upstream_unit()
+    goal = build_goal_spec(handoff, cards)
+    assert goal.auto_pulled != ()  # non-vacuity: there *is* a record to leak
+    assert set(goal.to_dict()) == {
+        "goalSpecVersion",
+        "goalId",
+        "goalType",
+        "executionMode",
+        "desiredFactTypes",
+        "constraints",
+    }
+
+
+def test_the_emitted_goal_spec_validates_against_its_own_json_schema():
+    """Finding G2 — the emitter was never checked against the schema it claims.
+
+    ``semantic_planning.validation._validate_goal_shape`` runs the real
+    ``goal-spec.schema.json`` through ``jsonschema`` at runtime, so an extra key
+    in ``to_dict()`` ships a GoalSpec that fails S1 validation. Yet mutation M29
+    (emitting ``autoPulled``) broke **no** pre-existing test: every existing
+    schema test validates a hand-built fixture
+    (``test_contract_files.py:474``, ``test_semantic_planning_contract.py:1728``),
+    never ``build_goal_spec(...).to_dict()``. This closes the round trip against
+    the same validator the runtime uses, which is strictly stronger than the
+    key-set assertion above.
+    """
+    import json
+
+    import jsonschema
+
+    handoff, cards = _consumer_needing_an_upstream_unit()
+    goal = build_goal_spec(handoff, cards)
+    schema = json.loads(
+        (REPO_ROOT / "schemas" / "goal-spec.schema.json").read_text(encoding="utf-8")
+    )
+    assert schema["additionalProperties"] is False  # the property being relied on
+    jsonschema.Draft202012Validator(schema).validate(goal.to_dict())
