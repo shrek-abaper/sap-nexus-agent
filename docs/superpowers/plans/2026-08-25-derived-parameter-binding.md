@@ -899,10 +899,50 @@ subparsers anywhere in `agent/` or `scripts/` — do not introduce one.**
 
 **Steps**
 
-- [ ] 3.5.1 Emit the `runtime/` artifact carrying **full provenance per edge and per diagnostic**.
-- [ ] 3.5.2 Add the thin wrapper matching the existing pattern exactly.
-- [ ] 3.5.3 Verify the **empty view is reported as empty**, exit 0 — not as an error. Emptiness is
+- [x] 3.5.1 Emit the `runtime/` artifact carrying **full provenance per edge and per diagnostic**.
+- [x] 3.5.2 Add the thin wrapper matching the existing pattern exactly.
+- [x] 3.5.3 Verify the **empty view is reported as empty**, exit 0 — not as an error. Emptiness is
   a legitimate state at 3.7.
+
+**Result**
+
+`scripts/derive-data-dependencies.py` writes `runtime/derived-data-dependencies.json`:
+
+```
+$ .venv/bin/python scripts/derive-data-dependencies.py
+derived 0 edge(s), 0 relation(s), 0 diagnostic(s)
+Derived data dependency view written: runtime/derived-data-dependencies.json
+EXIT=0
+```
+
+The artifact carries `snapshotId` beside the view. A derived view is only meaningful against one
+registry state, and the upstream nodes this batch enables are inputs to defect D4's approval
+subject — so the view must say which registry it was derived from, not just what it found.
+
+Artifact assembly (`build_artifact`) lives in the script, **not** in `derivation.py`. That module's
+import set is asserted against an allowlist (`__future__`, `dataclasses`, `typing`, `.contracts`)
+so nothing can smuggle an execution path into the deriver per invariant 2; importing the snapshot
+builder there would widen the allowlist for a formatting concern.
+
+Each edge dict leads with `relationId` (`derived.dependsOn.<consumer>~<producer>`) so a reader can
+match a derived edge against an authored relation without recomputing the id — which is what task
+3.6's validator does.
+
+`agent/tests/test_derived_dependency_cli.py`, 11 tests. Two are about invariant 3 by *content*
+rather than intent:
+
+| Test | What it would catch |
+| --- | --- |
+| `test_the_cli_writes_under_runtime_and_never_into_registry_or_ontology` | sha256 of every file under `registry/` and `ontology/` compared before and after a run — a write that preserved mtime is still caught |
+| `test_the_default_output_path_is_gitignored` | `git check-ignore` on the default output — a committed derived artifact invites diff review of a file no human authors |
+
+Plus: exit 0 on the empty view (via subprocess, so the real exit code is asserted), snapshot
+binding, edge key-set locked against `dataclasses.fields(DerivedDataEdge)` ∪ `{"relationId"}`,
+diagnostic key-set lock, the summary names every candidate, `relations` present beside `edges` with
+`origin == "derived"`, usage error → 2, `SourceLoadError` → 1 with no artifact written, and
+byte-identical output across runs.
+
+8 mutations applied and reverted; each was caught by the intended test.
 
 ## Task 3.6 — `origin: derived | manual` on relation edges
 
@@ -910,12 +950,60 @@ Design Decision 8. This is invariant 3's enforcement mechanism.
 
 **Steps**
 
-- [ ] 3.6.1 Add the `origin: derived | manual` field to relation edges; require `justification` on
+- [x] 3.6.1 Add the `origin: derived | manual` field to relation edges; require `justification` on
   `manual`.
-- [ ] 3.6.2 Add the validator rule **rejecting an `origin: manual` edge the deriver can compute** —
+- [x] 3.6.2 Add the validator rule **rejecting an `origin: manual` edge the deriver can compute** —
   this is what structurally prevents hand-writing derivable edges to make the file look non-empty.
-- [ ] 3.6.3 Verify a manual-without-justification edge fails, and a manual-but-derivable edge fails.
-- [ ] 3.6.4 Verify existing `dependsOn` / `precondition` authoring still validates (additive only).
+- [x] 3.6.3 Verify a manual-without-justification edge fails, and a manual-but-derivable edge fails.
+- [x] 3.6.4 Verify existing `dependsOn` / `precondition` authoring still validates (additive only).
+
+**Result**
+
+`origin` is **required**, not optional, and `schemas/capability-relation.schema.json` bumps
+`version` 1 → 2 accordingly (`ontology/capability-relations.yaml` → `version: 2`,
+`_validate_source_schemas`'s own `expected_version` → 2 — both must move together). Plan step 3.6.4
+says "additive only", and I first designed `origin` as optional to honour that. The spec settles it:
+*"Every relation SHALL declare `origin`"*. Optional `origin` would make an unlabelled edge
+indistinguishable from a derived one and leave the derivability rule nothing to attach to, so the
+version bump is the correct reading of "a document requires a key a reader must newly understand".
+3.6.4 still holds in the sense that matters: both relation types remain hand-authorable.
+
+`_validate_derivable_relations` in `validation.py` emits `RELATION_IS_DERIVABLE` when an authored
+`dependsOn` names a pair `derive_data_dependencies` already computes. Two scope decisions:
+
+- **Applied regardless of `origin`** — a deliberate superset of the spec, which names
+  `origin: manual`. Enforcing only `manual` would leave a one-word escape: relabel the same
+  hand-written edge `origin: derived` and the claim moves without the file changing. The deriver is
+  the authority on what is derivable; the label cannot buy admission either way.
+- **`precondition` out of scope** — the deriver computes data dependencies only. A precondition is
+  not a data edge, so there is nothing to compare it against.
+
+| Mutation | Caught by |
+| --- | --- |
+| M1 remove `origin` from `dependsOn.required` | `test_relation_without_origin_is_rejected` |
+| M2 neuter `manualRequiresJustification` | `test_manual_relation_without_justification_is_rejected` |
+| M3 scope the rule to `origin == "manual"` | `test_relabelling_a_derivable_relation_as_derived_does_not_admit_it` |
+| M4 make `_validate_derivable_relations` a no-op | both derivable tests |
+| M5 relations `expected_version` back to 1 | the source-schema matrix (fails at collection) |
+
+**The rule fired on an existing fixture, and that was the right outcome.** `_fact_plan_inputs(
+with_dependency=True)` in `test_semantic_planning_contract.py` hand-authored
+`MM.Supply.Summarize dependsOn MM.Inventory.GetAvailability` for a consumer whose input declares
+`bindingKind: fact` + `satisfiableByFactType` — i.e. exactly the derivable shape invariant 3
+forbids authoring. Five PlanGraph tests depended on it. I did not weaken the rule or delete the
+tests. The fixture now clones the producer under `with_dependency`, making the Fact Type ambiguous:
+the deriver refuses to pick one and emits no edge, so a hand-asserted ordering becomes legitimate
+and all five tests keep testing authored-dependency validation unchanged. First attempt — dropping
+`satisfiableByFactType` — was reverted: plan validation then reported
+`fact source cannot satisfy parameter Fact Type`, so it changed what the tests test.
+
+**Snapshot id changed, with a stated cause.** `ontology/capability-relations.yaml` is one of the
+five sources hashed by RegistrySnapshot v1, so bumping its `version` changes the snapshot id:
+`sha256:9694cc4b…` → `sha256:51cbf410…`. 14 pinned occurrences in `evals/matcher_cases.yaml` were
+updated. This is a document-version change to a hashed governed source, not a re-baselined
+assertion.
+
+Suite: `1463 passed, 1 skipped, 2 xfailed`.
 
 ## Task 3.7 — Run the derived view against the current three capabilities
 

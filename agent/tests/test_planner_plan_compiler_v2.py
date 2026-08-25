@@ -437,6 +437,8 @@ def _sources_with_depends_on() -> tuple[SemanticSourceDocuments, RegistrySnapsho
     relations["relations"].append({
         "relationId": "rel.test.dependsOn",
         "relationType": "dependsOn",
+        "origin": "manual",
+        "justification": "fixture-authored relation",
         "capabilityId": "Test.Consumer.GetSummary",
         "dependsOnCapabilityId": "MM.Inventory.GetAvailability",
     })

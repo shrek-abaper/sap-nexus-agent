@@ -40,6 +40,13 @@ from scripts.validate_registry_contract import (
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SEMANTIC_CLI_PATH = REPO_ROOT / "scripts/validate-semantic-planning-contract.py"
+# Every relation authored in a fixture here is hand-written by definition, so the
+# schema requires both fields (T2 task 3.6). Spread instead of repeated so each
+# fixture stays about the rule it exercises.
+AUTHORED_RELATION = {
+    "origin": "manual",
+    "justification": "fixture-authored relation",
+}
 EXPECTED_EVIDENCE_COMMANDS = [
     '"$PYTHON_BIN" scripts/validate-semantic-planning-contract.py',
     '"$PYTHON_BIN" -m pytest agent/tests',
@@ -164,6 +171,24 @@ def _fact_plan_inputs(*, with_dependency=False, same_fact_inputs=1):
     consumer["name"] = "Supply Summary"
     consumer["ontologyIri"] = "sapnexus:MM_Supply_Summarize"
     consumer["semanticType"] = "sapnexus:SupplySummaryReadFunction"
+    if with_dependency:
+        # An authored dependency is only legitimate for a pair the deriver
+        # cannot compute (T2 task 3.6.2). Cloning the producer makes
+        # sapnexus:InventoryAvailabilityFact ambiguous, so the deriver refuses
+        # to pick one and emits no edge -- leaving the ordering to be asserted
+        # by hand. The plan names its producer node explicitly, so plan shape
+        # is unchanged.
+        alternate = deepcopy(
+            next(
+                capability
+                for capability in capabilities["capabilities"]
+                if capability["capabilityId"] == "MM.Inventory.GetAvailability"
+            )
+        )
+        alternate["capabilityId"] = "Test.Inventory.GetAvailabilityAlternate"
+        alternate["name"] = "Alternate Availability"
+        alternate["ontologyIri"] = "sapnexus:Test_Inventory_GetAvailabilityAlternate"
+        capabilities["capabilities"].append(alternate)
     consumer["inputs"] = [
         {
             "name": f"availability{index}",
@@ -186,6 +211,7 @@ def _fact_plan_inputs(*, with_dependency=False, same_fact_inputs=1):
             {
                 "relationId": "relation.supply-summary-needs-inventory",
                 "relationType": "dependsOn",
+                **AUTHORED_RELATION,
                 "capabilityId": "MM.Supply.Summarize",
                 "dependsOnCapabilityId": "MM.Inventory.GetAvailability",
             }
@@ -2394,6 +2420,7 @@ def mutated_sources(sources, mutation):
             {
                 "relationId": "relation.unknown-capability",
                 "relationType": "dependsOn",
+                **AUTHORED_RELATION,
                 "capabilityId": "MM.Unknown.Read",
                 "dependsOnCapabilityId": purchase_orders["capabilityId"],
             }
@@ -2403,6 +2430,7 @@ def mutated_sources(sources, mutation):
             {
                 "relationId": "relation.unknown-fact",
                 "relationType": "precondition",
+                **AUTHORED_RELATION,
                 "capabilityId": inventory["capabilityId"],
                 "requiredFactType": "sapnexus:UnknownFact",
             }
@@ -2410,6 +2438,7 @@ def mutated_sources(sources, mutation):
     elif mutation == "duplicate-authored-relation":
         edge = {
             "relationType": "dependsOn",
+            **AUTHORED_RELATION,
             "capabilityId": inventory["capabilityId"],
             "dependsOnCapabilityId": purchase_orders["capabilityId"],
         }
@@ -2422,12 +2451,14 @@ def mutated_sources(sources, mutation):
             {
                 "relationId": "relation.cycle-1",
                 "relationType": "dependsOn",
+                **AUTHORED_RELATION,
                 "capabilityId": inventory["capabilityId"],
                 "dependsOnCapabilityId": purchase_orders["capabilityId"],
             },
             {
                 "relationId": "relation.cycle-2",
                 "relationType": "dependsOn",
+                **AUTHORED_RELATION,
                 "capabilityId": purchase_orders["capabilityId"],
                 "dependsOnCapabilityId": inventory["capabilityId"],
             },
@@ -2517,6 +2548,7 @@ def test_exact_duplicate_relation_reports_id_and_semantic_edge_duplicates():
     relation = {
         "relationId": "relation.exact-duplicate",
         "relationType": "dependsOn",
+        **AUTHORED_RELATION,
         "capabilityId": capabilities[0]["capabilityId"],
         "dependsOnCapabilityId": capabilities[1]["capabilityId"],
     }
@@ -2594,12 +2626,14 @@ def test_mixed_relation_duplicates_report_every_id_and_semantic_edge_issue():
     base_relation = {
         "relationId": "relation.mixed-duplicate",
         "relationType": "dependsOn",
+        **AUTHORED_RELATION,
         "capabilityId": capabilities[0]["capabilityId"],
         "dependsOnCapabilityId": capabilities[1]["capabilityId"],
     }
     same_id_different_edge = {
         "relationId": base_relation["relationId"],
         "relationType": "precondition",
+        **AUTHORED_RELATION,
         "capabilityId": capabilities[0]["capabilityId"],
         "requiredFactType": fact_types[0]["factTypeId"],
     }
@@ -2662,12 +2696,14 @@ def test_exact_relation_duplicate_does_not_hide_unknown_endpoint_issue():
     base_relation = {
         "relationId": "relation.exact-with-unknown-endpoint",
         "relationType": "dependsOn",
+        **AUTHORED_RELATION,
         "capabilityId": capabilities[0]["capabilityId"],
         "dependsOnCapabilityId": capabilities[1]["capabilityId"],
     }
     unknown_endpoint_relation = {
         "relationId": "relation.unknown-endpoint",
         "relationType": "dependsOn",
+        **AUTHORED_RELATION,
         "capabilityId": capabilities[0]["capabilityId"],
         "dependsOnCapabilityId": "MM.Unknown.Read",
     }
@@ -2711,6 +2747,214 @@ def test_exact_relation_duplicate_does_not_hide_unknown_endpoint_issue():
             ),
         ),
     )
+
+
+def _derivable_consumer_sources(relations: list[dict]):
+    """Real sources plus a consumer the deriver CAN match, and hand-authored
+    relations (T2 task 3.6.3).
+
+    ``MM.Supply.Summarize`` declares one ``bindingKind: fact`` input satisfied
+    by ``sapnexus:InventoryAvailabilityFact``, whose ``availableQuantity`` field
+    is published by the single active producer ``MM.Inventory.GetAvailability``.
+    So ``derive_data_dependencies`` computes that edge, and any hand-authored
+    relation for the same pair is redundant by construction.
+    """
+    sources = load_semantic_sources(REPO_ROOT)
+    capabilities = _mutable_document(sources.capabilities)
+    consumer = deepcopy(capabilities["capabilities"][1])
+    consumer["capabilityId"] = "MM.Supply.Summarize"
+    consumer["name"] = "Supply Summary"
+    consumer["ontologyIri"] = "sapnexus:MM_Supply_Summarize"
+    consumer["semanticType"] = "sapnexus:SupplySummaryReadFunction"
+    consumer["inputs"] = [
+        {
+            "name": "availability0",
+            "semanticType": "sapnexus:AvailableQuantity",
+            "bindingKind": "fact",
+            "satisfiableByFactType": "sapnexus:InventoryAvailabilityFact",
+            "required": True,
+            "type": "number",
+            "sapParameter": "AVAILABILITY_0",
+        }
+    ]
+    capabilities["capabilities"].append(consumer)
+    return replace(
+        sources,
+        capabilities=capabilities,
+        relations={"version": 2, "relations": relations},
+    )
+
+
+def test_relation_without_origin_is_rejected():
+    """T2 task 3.6.1: ``origin`` is required, not optional.
+
+    Left optional, an unlabelled edge would be indistinguishable from a derived
+    one, and the derivability rule below would have nothing to attach to.
+    """
+    sources = load_semantic_sources(REPO_ROOT)
+    capabilities = _mutable_document(sources.capabilities)["capabilities"]
+    mutated = _replace_source_document(
+        sources,
+        "relations",
+        lambda document: document.__setitem__(
+            "relations",
+            [
+                {
+                    "relationId": "relation.without-origin",
+                    "relationType": "dependsOn",
+                    "capabilityId": capabilities[0]["capabilityId"],
+                    "dependsOnCapabilityId": capabilities[1]["capabilityId"],
+                }
+            ],
+        ),
+    )
+
+    result = build_semantic_contracts(mutated)
+
+    assert result.report.valid is False
+    assert result.graph is None and result.snapshot is None
+    assert [(issue.path, issue.code) for issue in result.report.issues] == [
+        ("/relations/0", "SCHEMA_INVALID")
+    ]
+
+
+def test_manual_relation_without_justification_is_rejected():
+    sources = load_semantic_sources(REPO_ROOT)
+    capabilities = _mutable_document(sources.capabilities)["capabilities"]
+    mutated = _replace_source_document(
+        sources,
+        "relations",
+        lambda document: document.__setitem__(
+            "relations",
+            [
+                {
+                    "relationId": "relation.manual-without-justification",
+                    "relationType": "dependsOn",
+                    "origin": "manual",
+                    "capabilityId": capabilities[0]["capabilityId"],
+                    "dependsOnCapabilityId": capabilities[1]["capabilityId"],
+                }
+            ],
+        ),
+    )
+
+    result = build_semantic_contracts(mutated)
+
+    assert result.report.valid is False
+    assert result.graph is None and result.snapshot is None
+    assert [(issue.path, issue.code) for issue in result.report.issues] == [
+        ("/relations/0", "SCHEMA_INVALID")
+    ]
+    assert "justification" in result.report.issues[0].message
+
+
+def test_manual_relation_the_deriver_can_compute_is_rejected():
+    sources = _derivable_consumer_sources(
+        [
+            {
+                "relationId": "relation.supply-summary-needs-inventory",
+                "relationType": "dependsOn",
+                "origin": "manual",
+                "justification": "asserted by hand to make the catalog non-empty",
+                "capabilityId": "MM.Supply.Summarize",
+                "dependsOnCapabilityId": "MM.Inventory.GetAvailability",
+            }
+        ]
+    )
+
+    result = build_semantic_contracts(sources)
+
+    _assert_exact_fail_closed_issues(
+        result,
+        (
+            ValidationIssue(
+                path="/relations/0",
+                code="RELATION_IS_DERIVABLE",
+                message=(
+                    "authored relation 'relation.supply-summary-needs-inventory' "
+                    "duplicates the derivable edge "
+                    "'derived.dependsOn.MM.Supply.Summarize~"
+                    "MM.Inventory.GetAvailability': MM.Supply.Summarize depends "
+                    "on MM.Inventory.GetAvailability; delete it and read the "
+                    "derived view instead"
+                ),
+            ),
+        ),
+    )
+
+
+def test_relabelling_a_derivable_relation_as_derived_does_not_admit_it():
+    """The rule applies regardless of ``origin`` (T2 task 3.6.2).
+
+    The spec names ``origin: manual``; enforcing only that would leave a
+    one-word escape -- relabel the same hand-written edge ``origin: derived``
+    and the claim moves without the file changing. The deriver is the authority
+    on what is derivable, so the label cannot buy admission either way.
+    """
+    sources = _derivable_consumer_sources(
+        [
+            {
+                "relationId": "relation.supply-summary-needs-inventory",
+                "relationType": "dependsOn",
+                "origin": "derived",
+                "capabilityId": "MM.Supply.Summarize",
+                "dependsOnCapabilityId": "MM.Inventory.GetAvailability",
+            }
+        ]
+    )
+
+    result = build_semantic_contracts(sources)
+
+    assert result.report.valid is False
+    assert [(issue.path, issue.code) for issue in result.report.issues] == [
+        ("/relations/0", "RELATION_IS_DERIVABLE")
+    ]
+
+
+def test_non_derivable_dependson_and_precondition_still_validate():
+    """T2 task 3.6.4: the relation catalog stays authorable.
+
+    ``MM.Supply.Summarize`` here declares no ``satisfiableByFactType``, so the
+    deriver computes nothing and both relation types remain hand-authorable
+    with ``origin`` and ``justification``.
+    """
+    sources = load_semantic_sources(REPO_ROOT)
+    capabilities = _mutable_document(sources.capabilities)["capabilities"]
+    fact_types = _mutable_document(sources.fact_types)["factTypes"]
+    mutated = _replace_source_document(
+        sources,
+        "relations",
+        lambda document: document.__setitem__(
+            "relations",
+            [
+                {
+                    "relationId": "relation.authored-ordering",
+                    "relationType": "dependsOn",
+                    "origin": "manual",
+                    "justification": (
+                        "ordering asserted by process, not implied by any "
+                        "Fact Type field"
+                    ),
+                    "capabilityId": capabilities[0]["capabilityId"],
+                    "dependsOnCapabilityId": capabilities[1]["capabilityId"],
+                },
+                {
+                    "relationId": "relation.authored-precondition",
+                    "relationType": "precondition",
+                    "origin": "manual",
+                    "justification": "required Fact Type is a policy gate",
+                    "capabilityId": capabilities[0]["capabilityId"],
+                    "requiredFactType": fact_types[0]["factTypeId"],
+                },
+            ],
+        ),
+    )
+
+    result = build_semantic_contracts(mutated)
+
+    assert result.report.issues == ()
+    assert result.report.valid is True
+    assert result.graph is not None and result.snapshot is not None
 
 
 def test_independent_same_path_schema_violations_are_all_preserved():
@@ -2830,6 +3074,7 @@ def test_independent_same_path_schema_violations_are_all_preserved():
                     {
                         "relationId": "relation.invalid-shape",
                         "relationType": "dependsOn",
+                        **AUTHORED_RELATION,
                         "capabilityId": "MM.Inventory.GetAvailability",
                         "requiredFactType": "sapnexus:InventoryAvailabilityFact",
                     }
@@ -2839,7 +3084,7 @@ def test_independent_same_path_schema_violations_are_all_preserved():
         ),
         (
             "relations",
-            lambda document: document.__setitem__("version", 2),
+            lambda document: document.__setitem__("version", 3),
             "/capabilityRelationCatalog/version",
         ),
     ],
@@ -3157,12 +3402,14 @@ def _semantic_rule_sources(mutation):
             {
                 "relationId": "relation.duplicate-id",
                 "relationType": "dependsOn",
+                **AUTHORED_RELATION,
                 "capabilityId": inventory["capabilityId"],
                 "dependsOnCapabilityId": purchase_orders["capabilityId"],
             },
             {
                 "relationId": "relation.duplicate-id",
                 "relationType": "precondition",
+                **AUTHORED_RELATION,
                 "capabilityId": inventory["capabilityId"],
                 "requiredFactType": fact_types["factTypes"][0]["factTypeId"],
             },
@@ -3195,6 +3442,7 @@ def _semantic_rule_sources(mutation):
             {
                 "relationId": "relation.producer",
                 "relationType": "producesFactType",
+                **AUTHORED_RELATION,
                 "capabilityId": inventory["capabilityId"],
                 "requiredFactType": fact_types["factTypes"][0]["factTypeId"],
             }
@@ -3204,6 +3452,7 @@ def _semantic_rule_sources(mutation):
             {
                 "relationId": "relation.unknown-capability",
                 "relationType": "dependsOn",
+                **AUTHORED_RELATION,
                 "capabilityId": "MM.Unknown.Read",
                 "dependsOnCapabilityId": purchase_orders["capabilityId"],
             }
@@ -3213,6 +3462,7 @@ def _semantic_rule_sources(mutation):
             {
                 "relationId": "relation.unknown-dependency",
                 "relationType": "dependsOn",
+                **AUTHORED_RELATION,
                 "capabilityId": inventory["capabilityId"],
                 "dependsOnCapabilityId": "MM.Unknown.Read",
             }
@@ -3222,6 +3472,7 @@ def _semantic_rule_sources(mutation):
             {
                 "relationId": "relation.unknown-fact",
                 "relationType": "precondition",
+                **AUTHORED_RELATION,
                 "capabilityId": inventory["capabilityId"],
                 "requiredFactType": "sapnexus:UnknownFact",
             }
@@ -3229,6 +3480,7 @@ def _semantic_rule_sources(mutation):
     elif mutation == "duplicate-authored-edge":
         edge = {
             "relationType": "dependsOn",
+            **AUTHORED_RELATION,
             "capabilityId": inventory["capabilityId"],
             "dependsOnCapabilityId": purchase_orders["capabilityId"],
         }
@@ -3241,6 +3493,7 @@ def _semantic_rule_sources(mutation):
             {
                 "relationId": "relation.self",
                 "relationType": "dependsOn",
+                **AUTHORED_RELATION,
                 "capabilityId": inventory["capabilityId"],
                 "dependsOnCapabilityId": inventory["capabilityId"],
             }
@@ -3250,12 +3503,14 @@ def _semantic_rule_sources(mutation):
             {
                 "relationId": "relation.cycle-1",
                 "relationType": "dependsOn",
+                **AUTHORED_RELATION,
                 "capabilityId": inventory["capabilityId"],
                 "dependsOnCapabilityId": purchase_orders["capabilityId"],
             },
             {
                 "relationId": "relation.cycle-2",
                 "relationType": "dependsOn",
+                **AUTHORED_RELATION,
                 "capabilityId": purchase_orders["capabilityId"],
                 "dependsOnCapabilityId": inventory["capabilityId"],
             },
@@ -3368,12 +3623,14 @@ def test_graph_records_provenance_folds_derived_edges_and_is_deeply_immutable():
         {
             "relationId": "relation.depends",
             "relationType": "dependsOn",
+            **AUTHORED_RELATION,
             "capabilityId": inventory["capabilityId"],
             "dependsOnCapabilityId": purchase_orders["capabilityId"],
         },
         {
             "relationId": "relation.precondition",
             "relationType": "precondition",
+            **AUTHORED_RELATION,
             "capabilityId": purchase_orders["capabilityId"],
             "requiredFactType": inventory_fact,
         },

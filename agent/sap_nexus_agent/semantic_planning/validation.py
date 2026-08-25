@@ -20,6 +20,7 @@ from .contracts import (
     ValidationIssue,
     sorted_issues,
 )
+from .derivation import derive_data_dependencies
 from .graph import ImmutableSemanticGraph, SemanticGraphCompiler
 from .snapshot import build_registry_snapshot
 
@@ -37,6 +38,7 @@ def build_semantic_contracts(sources: SemanticSourceDocuments) -> ContractBuildR
     _validate_fact_type_fields(sources, issues)
     _validate_vocabulary_references(sources, issues)
     _validate_relation_endpoints(sources, issues)
+    _validate_derivable_relations(sources, issues)
     _validate_dependency_cycles(sources, issues)
     if issues:
         return _invalid_result(issues)
@@ -936,7 +938,7 @@ def _validate_source_schemas(
             "relations",
             "/capabilityRelationCatalog",
             "/relations",
-            1,
+            2,
         ),
     )
     candidates: list[tuple[str, ValidationIssue]] = []
@@ -1747,6 +1749,57 @@ def _validate_relation_endpoints(
                 )
             else:
                 seen_edges.add(edge)
+
+
+def _validate_derivable_relations(
+    sources: SemanticSourceDocuments,
+    issues: list[ValidationIssue],
+) -> None:
+    """Reject an authored ``dependsOn`` the deriver can compute (T2 task 3.6.2).
+
+    This is invariant 3's enforcement mechanism, and it is deliberately
+    mechanical: the prohibition on hand-authoring a derivable data dependency is
+    enforced by *running the deriver*, not by review. Without it, the file could
+    be made to look non-empty with edges the derived view already produces, and
+    "the relation catalog has entries" would quietly replace "the derived view
+    has entries" as the acceptance criterion.
+
+    Applied regardless of ``origin``. The spec names the ``origin: manual``
+    case, which is the one an author reaches for, but relabelling the same edge
+    ``origin: derived`` would not make hand-writing it correct — it would only
+    move the claim. A superset rule satisfies the spec scenario and leaves no
+    relabelling escape.
+
+    ``precondition`` relations are out of scope: they assert a required Fact
+    Type, which is not a producer→consumer parameter flow and cannot be derived
+    from field semantic types.
+    """
+    derivable = {
+        (edge.consumer_capability_id, edge.producer_capability_id): edge.relation_id
+        for edge in derive_data_dependencies(sources).edges
+    }
+    if not derivable:
+        return
+    for index, relation in enumerate(_items(sources.relations, "relations")):
+        if not isinstance(relation, Mapping):
+            continue
+        if relation.get("relationType") != "dependsOn":
+            continue
+        pair = (relation.get("capabilityId"), relation.get("dependsOnCapabilityId"))
+        derived_relation_id = derivable.get(pair)
+        if derived_relation_id is None:
+            continue
+        _add_issue(
+            issues,
+            f"/relations/{index}",
+            "RELATION_IS_DERIVABLE",
+            (
+                f"authored relation {relation.get('relationId')!r} duplicates the "
+                f"derivable edge {derived_relation_id!r}: "
+                f"{pair[0]} depends on {pair[1]}; delete it and read the derived "
+                f"view instead"
+            ),
+        )
 
 
 def _validate_dependency_cycles(

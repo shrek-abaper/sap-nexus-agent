@@ -6,7 +6,7 @@
   "additionalProperties": false,
   "required": ["version", "relations"],
   "properties": {
-    "version": { "type": "integer", "const": 1 },
+    "version": { "type": "integer", "const": 2 },
     "relations": {
       "type": "array",
       "uniqueItems": true,
@@ -23,24 +23,46 @@
     "dependsOn": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["relationId", "relationType", "capabilityId", "dependsOnCapabilityId"],
+      "required": ["relationId", "relationType", "capabilityId", "dependsOnCapabilityId", "origin"],
       "properties": {
         "relationId": { "type": "string", "minLength": 1 },
         "relationType": { "const": "dependsOn" },
         "capabilityId": { "type": "string", "minLength": 1 },
-        "dependsOnCapabilityId": { "type": "string", "minLength": 1 }
-      }
+        "dependsOnCapabilityId": { "type": "string", "minLength": 1 },
+        "origin": { "$ref": "#/$defs/origin" },
+        "justification": { "$ref": "#/$defs/justification" }
+      },
+      "allOf": [{ "$ref": "#/$defs/manualRequiresJustification" }]
     },
     "precondition": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["relationId", "relationType", "capabilityId", "requiredFactType"],
+      "required": ["relationId", "relationType", "capabilityId", "requiredFactType", "origin"],
       "properties": {
         "relationId": { "type": "string", "minLength": 1 },
         "relationType": { "const": "precondition" },
         "capabilityId": { "type": "string", "minLength": 1 },
-        "requiredFactType": { "type": "string", "minLength": 1 }
-      }
+        "requiredFactType": { "type": "string", "minLength": 1 },
+        "origin": { "$ref": "#/$defs/origin" },
+        "justification": { "$ref": "#/$defs/justification" }
+      },
+      "allOf": [{ "$ref": "#/$defs/manualRequiresJustification" }]
+    },
+    "origin": {
+      "description": "How this relation came to exist. 'derived' means the deriver computes it from Fact Type field semantic types; 'manual' means it cannot be computed and a human asserted it.",
+      "enum": ["derived", "manual"]
+    },
+    "justification": {
+      "description": "Why a manual relation cannot be computed. Required on origin: manual.",
+      "type": "string",
+      "minLength": 1
+    },
+    "manualRequiresJustification": {
+      "if": {
+        "properties": { "origin": { "const": "manual" } },
+        "required": ["origin"]
+      },
+      "then": { "required": ["justification"] }
     }
   }
 }

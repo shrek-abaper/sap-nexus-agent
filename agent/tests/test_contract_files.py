@@ -124,7 +124,7 @@ def _plan_graph() -> dict:
 
 def _registry_snapshot() -> dict:
     source_versions = {
-        "ontology/capability-relations.yaml": 1,
+        "ontology/capability-relations.yaml": 2,
         "ontology/fact-types.yaml": 3,
         "registry/capabilities.yaml": 2,
         "registry/executor-bindings.yaml": 1,
@@ -383,7 +383,7 @@ def test_initial_fact_type_and_relation_catalogs_validate():
         "sapnexus:PurchaseOrderSupplyFact",
         "sapnexus:PurchaseRequisitionCreatedFact",
     }
-    assert relations == {"version": 1, "relations": []}
+    assert relations == {"version": 2, "relations": []}
 
 
 def test_executor_binding_catalog_with_sap_write_validates():
