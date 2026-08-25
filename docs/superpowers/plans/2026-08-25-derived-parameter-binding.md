@@ -1150,6 +1150,40 @@ skipped count is not in this batch's scope.
 - [ ] 5.1.4 **Stop and ask the user if the live metadata contradicts the registry expectation.**
   Do not "adjust" the registry to match a guess.
 
+**BLOCKED (2026-08-25) — stale SAP credential, not a design problem.**
+
+Everything needed to run 5.1 without SAP GUI is in place and proven, except the password:
+
+- Tooling: `services/gateway/jco/lib/sapjco3.jar` + `lib/linux/libsapjco3.so` + JDK 17 all present.
+  A throwaway read-only metadata probe was written to `/tmp/sapmeta/MetaProbe.java` (deliberately
+  outside the repo — it adds zero project lines) and compiles clean. It reads
+  `BAPI_MATERIAL_GET_DETAIL`'s interface from the JCo repository and `MARA-MEINS` / `MARC-EKGRP`
+  from `DDIF_FIELDINFO_GET`, which is the non-interactive equivalent of SE37 + SE11 and is still a
+  *real* execution, not memory.
+- Reachability: TCP 3310 / 3210 / 8000 / 8010 all OPEN (`SAP_SYSNR=10`, so 3310 is the RFC
+  dispatcher — an earlier 3300 probe was refused because of my own wrong port derivation).
+- Logon: the probe reached the SAP kernel and was rejected by the application server —
+  `JCO_ERROR_LOGON_FAILURE (103): Name or password is incorrect (repeat logon)`, raised by
+  `system [SAT|NEVSSAS4HX01|10]` for the `.env` user. Host / sysnr / client / user are therefore
+  all resolving correctly; only the password is wrong or expired.
+- **Exactly one logon attempt was made and then stopped deliberately.** SAP locks a user after a
+  small number of failed logons, so no retry and no credential guessing happened. No credential
+  value was printed to any log, file, or this document.
+
+5.2's executor binding needs the real RFC import/export parameter and structure names, so 5.2
+onward genuinely cannot proceed — writing the binding from remembered BAPI shape is exactly what
+`design.md:467-470` forbids. Once the password in `.env` is refreshed, re-run:
+
+```bash
+cd /tmp/sapmeta && . ./loadenv.sh /home/shrek/projects/GitHub_Projects/sap-nexus-agent/.env \
+  && java -Djava.library.path=/home/shrek/projects/GitHub_Projects/sap-nexus-agent/services/gateway/jco/lib/linux \
+     -cp ".:/home/shrek/projects/GitHub_Projects/sap-nexus-agent/services/gateway/jco/lib/sapjco3.jar" MetaProbe
+```
+
+Note for whoever refreshes it: `.env`'s `SAP_PASSWORD` value contains a character that plain
+`set -a; . .env` mangles into an empty string — `loadenv.sh` exists because of that, and any other
+consumer that sources `.env` with the shell has the same latent bug.
+
 ## Task 5.2 — Register the capability by declaration only
 
 **This is figure (a). Target: zero Python lines.**
@@ -1348,13 +1382,42 @@ and `plan_compiler_v2.py:277` appends one edge **per binding**:
 
 **Steps**
 
-- [ ] 5.5.1 Failing test: two `factField` bindings on one pair → exactly **one** `data` edge with
+- [x] 5.5.1 Failing test: two `factField` bindings on one pair → exactly **one** `data` edge with
   **two** sources.
-- [ ] 5.5.2 Change `plan_compiler_v2.py:277` to emit one edge keyed `(producer, consumer, factType)`
+- [x] 5.5.2 Change `plan_compiler_v2.py:277` to emit one edge keyed `(producer, consumer, factType)`
   carrying both sources.
-- [ ] 5.5.3 Verify existing **single-binding** plans still emit exactly one edge (regression guard).
-- [ ] 5.5.4 Assert `git diff` on `validation.py` is empty for this task.
-- [ ] 5.5.5 Attribute to **figure (b), "defect 1: duplicate data edge"**.
+- [x] 5.5.3 Verify existing **single-binding** plans still emit exactly one edge (regression guard).
+- [x] 5.5.4 Assert `git diff` on `validation.py` is empty for this task.
+- [x] 5.5.5 Attribute to **figure (b), "defect 1: duplicate data edge"**.
+
+**Result (5.5).** Done **out of plan order**: 5.1 is blocked on a stale SAP credential (see above) and
+5.5 does not depend on the live metadata, so it was taken next rather than idling.
+
+Test: `test_two_derivable_inputs_share_one_data_edge` with the new
+`_sources_with_two_derivable_inputs()` fixture — a consumer whose two required inputs both declare
+`satisfiableByFactType: sapnexus:InventoryAvailabilityFact`, neither supplied. This is exactly T3's
+headline shape (user states the material, omits both `unit` and `purchasing_group`).
+
+Reproduced before fixing: `assert 2 == 1`, both edges `edge.data.0` / `edge.data.1` carrying the
+same `(node.MM.Inventory.GetAvailability → node.Test.Consumer.UseTwoFields,
+sapnexus:InventoryAvailabilityFact)` triple. The test also asserts no `invalid_plan_graph` flag,
+which is the half that matters: the duplicate made `validate_plan_graph_v2` emit
+`EDGE_INCONSISTENT` "duplicate semantic data edge", so the plan T3 needs could not compile at all.
+
+Fix: `data_edge_keys: set[tuple[str, str, str]]` guards the append. The **binding** is still
+authored for every derived parameter — only the edge is deduplicated — so `expected_data[key]`
+legitimately collects two source paths against one edge, which is the list shape `validation.py`
+already had.
+
+| Check | Result |
+|---|---|
+| `pytest agent/tests/test_planner_plan_compiler_v2.py` | 26 passed (was 25) |
+| `pytest agent/tests -q` | **1467 passed, 1 skipped, 2 xfailed** |
+| 5.5.3 single-binding regression | `test_unsupplied_derivable_identifier_is_authored_as_fact_field`, `test_compile_plan_v2_authors_fact_field_source_and_data_edge`, `test_fact_field_fixture_produces_data_edge_and_stable` all green — still exactly one edge |
+| 5.5.4 `git diff --stat -- …/validation.py` | empty ✅ |
+| Mutation M11 (`if data_edge_key in data_edge_keys` → `if False`) | new test FAILED (`assert 2 == 1`); restored, green |
+
+Attribution: **figure (b) — "defect 1: duplicate data edge"**.
 
 ## Task 5.6 — Select the producer field by semantic type
 

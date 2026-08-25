@@ -294,6 +294,12 @@ def _build_plan_graph_v2(
     # matches, and author a factField source binding + a 1:1 data edge
     # (S1 validator requires EDGE_INCONSISTENT if missing/mismatched).
     data_edges: list[dict[str, Any]] = []
+    # T3 task 5.5 (defect 1). A ``data`` edge identifies the
+    # ``(producer, consumer, factType)`` triple, not the individual binding, so
+    # two derived parameters drawn from one upstream Fact share one edge. The
+    # validator agrees on both halves: ``expected_data[key]`` is a list of
+    # source paths, and duplicate edges for one key are ``EDGE_INCONSISTENT``.
+    data_edge_keys: set[tuple[str, str, str]] = set()
     edge_counter = 0
     cards_by_id = {c.capability_id: c for c in cards}
     for node in nodes:
@@ -334,6 +340,10 @@ def _build_plan_graph_v2(
                     },
                 }
             )
+            data_edge_key = (producer_node_id, node["nodeId"], fact_type)
+            if data_edge_key in data_edge_keys:
+                continue
+            data_edge_keys.add(data_edge_key)
             data_edges.append(
                 {
                     "edgeId": f"edge.data.{edge_counter}",

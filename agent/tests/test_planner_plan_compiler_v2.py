@@ -390,6 +390,138 @@ def test_user_supplied_value_suppresses_the_fact_field_source():
     ], "no data edge may be authored for a parameter the user supplied"
 
 
+# ---- Task 5.5: one data edge per (producer, consumer, factType) ----
+
+
+def _sources_with_two_derivable_inputs() -> tuple[
+    SemanticSourceDocuments, RegistrySnapshot
+]:
+    """A consumer with **two** required inputs derivable from the **same**
+    upstream Fact Type (task 5.5).
+
+    This is the shape T3's headline plan has: the user states the material and
+    omits both ``unit`` and ``purchasing_group``, so one
+    ``(producer, consumer, factType)`` pair yields two ``factField`` bindings.
+    The pair is what an edge identifies, so it must stay one edge.
+    """
+    base = _real_sources()
+    caps = _unfreeze(base.capabilities)
+    facts = _unfreeze(base.fact_types)
+    caps["capabilities"].append({
+        "capabilityId": "Test.Consumer.UseTwoFields",
+        "name": "Test Two Field Consumer",
+        "description": "Consumes two values derived from one upstream Fact",
+        "domain": "MM",
+        "businessObject": "Test",
+        "ontologyIri": "sapnexus:Test_Two_Field_Consumer",
+        "semanticType": "sapnexus:TestTwoFieldConsumerReadFunction",
+        "aliases": [],
+        "status": "active",
+        "kind": "Function",
+        "inputs": [
+            {
+                "name": "quantity",
+                "semanticType": "sapnexus:AvailableQuantity",
+                "required": True,
+                "bindingKind": "identifier",
+                "satisfiableByFactType": "sapnexus:InventoryAvailabilityFact",
+                "type": "string",
+            },
+            {
+                "name": "quantityAgain",
+                "semanticType": "sapnexus:AvailableQuantity",
+                "required": True,
+                "bindingKind": "identifier",
+                "satisfiableByFactType": "sapnexus:InventoryAvailabilityFact",
+                "type": "string",
+            },
+        ],
+        "outputs": [
+            {"name": "summary", "factTypeRef": "sapnexus:TestTwoFieldSummaryFact"}
+        ],
+        "governance": {
+            "sideEffect": "none",
+            "requiresApproval": False,
+            "approvalPolicy": "not_required",
+            "dataClassification": "internal",
+        },
+        "executor": {"type": "ODATA"},
+        "executorBinding": {"type": "ODATA", "bindingId": "test-binding"},
+    })
+    facts["factTypes"].append(
+        {"factTypeId": "sapnexus:TestTwoFieldSummaryFact", "fields": []}
+    )
+    sources = SemanticSourceDocuments(
+        capabilities=caps,
+        executor_bindings=base.executor_bindings,
+        fact_types=facts,
+        relations=base.relations,
+    )
+    return sources, build_registry_snapshot(sources)
+
+
+def _two_field_handoff(snapshot) -> EscalationHandoff:
+    return EscalationHandoff(
+        reason="two-field",
+        matched_intents=[
+            MatchedIntent(
+                capability_id="MM.Inventory.GetAvailability",
+                parameters={"material": "M1", "plant": "5300"},
+                missing=[],
+            ),
+            MatchedIntent(
+                capability_id="Test.Consumer.UseTwoFields",
+                parameters={},
+                missing=[],
+            ),
+        ],
+        utterance="two derived fields from one fact",
+        registry_snapshot_id=snapshot.snapshot_id,
+    )
+
+
+def test_two_derivable_inputs_share_one_data_edge():
+    """Task 5.5 — defect 1. Two bindings, one edge, and a valid plan.
+
+    Before the fix the compiler appended one edge per binding, so the pair
+    appeared twice and ``validate_plan_graph_v2`` raised ``EDGE_INCONSISTENT``
+    ("duplicate semantic data edge") — the plan T3 needs could not compile.
+    """
+    sources, snapshot = _sources_with_two_derivable_inputs()
+    result = compile_plan_v2(_two_field_handoff(snapshot), snapshot, sources)
+
+    consumer_node_id = next(
+        n["nodeId"]
+        for n in result.plan_graph["nodes"]
+        if n["capabilityId"] == "Test.Consumer.UseTwoFields"
+    )
+    fact_field_bindings = [
+        b
+        for n in result.plan_graph["nodes"]
+        if n["nodeId"] == consumer_node_id
+        for b in n["parameterBindings"]
+        if b["source"]["kind"] == "factField"
+    ]
+    data_edges = [
+        e
+        for e in result.plan_graph["edges"]
+        if e["kind"] == "data" and e["toNodeId"] == consumer_node_id
+    ]
+
+    # Two parameters really are derived...
+    assert sorted(b["parameterName"] for b in fact_field_bindings) == [
+        "quantity",
+        "quantityAgain",
+    ]
+    # ...from one edge, because the edge identifies the pair, not the binding.
+    assert len(data_edges) == 1
+    assert data_edges[0]["factTypeId"] == "sapnexus:InventoryAvailabilityFact"
+    # And the plan is valid: no duplicate-edge issue.
+    assert not [
+        f for f in result.governance_flags if f.kind == "invalid_plan_graph"
+    ], result.rationale
+
+
 # ---- Task 9: dependency edge authoring + topological sort ----
 
 
