@@ -1469,11 +1469,11 @@ Design Decision 6, **defect 2**.
 
 **Steps**
 
-- [ ] 5.7.1 Failing test: a `single-value` narrative whose `fieldMapping` does not mention the
+- [x] 5.7.1 Failing test: a `single-value` narrative whose `fieldMapping` does not mention the
   inventory value label still narrates.
-- [ ] 5.7.2 Make the required-field guard `fieldMapping`-driven; stop hardcoding the inventory
+- [x] 5.7.2 Make the required-field guard `fieldMapping`-driven; stop hardcoding the inventory
   value label.
-- [ ] 5.7.3 Verify the **inventory narration is unchanged** (regression guard — the existing
+- [x] 5.7.3 Verify the **inventory narration is unchanged** (regression guard — the existing
   `narrative` block is the reference):
 
 ```yaml
@@ -1487,9 +1487,60 @@ Design Decision 6, **defect 2**.
       detailFormatter: mrp-table
 ```
 
-- [ ] 5.7.4 Verify a template referencing a **missing** field still raises `NarrativeGuardError` —
+- [x] 5.7.4 Verify a template referencing a **missing** field still raises `NarrativeGuardError` —
   the guard must get more general, not weaker (invariant 9).
-- [ ] 5.7.5 Attribute to **figure (b), "defect 2: hardcoded inventory value label"**.
+- [x] 5.7.5 Attribute to **figure (b), "defect 2: hardcoded inventory value label"**.
+
+**Result (5.7).** Also taken out of plan order — independent of 5.1's blocked metadata.
+
+`narrate_single_value` demanded `material` / `plant` / `value` / `unit` from every `single-value`
+fact regardless of what the declaration asked for, so a `single-value` capability narrating anything
+other than a quantity could not use the generic framework at all.
+
+Three pieces, all in `agent/sap_nexus_agent/narrator.py`:
+
+- `_fact_field_values(fact)` — **one** lookup: the leading evidence record's keys, overlaid by the
+  fact's fixed fields. The guard and `_resolve_one_var` both read it, which is what makes the guard
+  `fieldMapping`-driven rather than fact-field-driven: a placeholder is checkable exactly when it is
+  renderable.
+- `_declared_placeholders(config)` — the `{name}`s the `fieldMapping` actually references, in
+  first-appearance order so guard messages are deterministic. A bare expression such as
+  `detailRows: mrpElementLines` is not a placeholder, so it is never required.
+- The guard: `required = declared or _UNDECLARED_SINGLE_VALUE_FIELDS`. Callers with **no**
+  `narrative` block have nothing to read, so they keep the inventory-shaped set they always had —
+  the generalisation does not loosen them.
+
+`_resolve_one_var` moved from `str.format(material=…, plant=…, value=…, unit=…)` to
+`format_map(_fact_field_values(fact))`. Before the change `{sourceField}` raised a raw `KeyError`
+from inside the narrator; now an unresolvable placeholder is refused by the guard with the field
+name in the message.
+
+**5.7.3 is enforced, not asserted by eye.** `test_the_real_inventory_declaration_still_requires_exactly_the_old_four`
+reads `registry/capabilities.yaml` and derives the required set from the live
+`MM.Inventory.GetAvailability` declaration, so it equals exactly the four fields the code used to
+hardcode. Editing the declaration to demand less now fails a test instead of quietly loosening a
+guard.
+
+| Check | Result |
+|---|---|
+| `pytest agent/tests/test_reasoning_narrator.py` | 59 passed (was 53) |
+| `pytest agent/tests -q` | **1473 passed, 1 skipped, 2 xfailed** |
+| M12 `required = ()` | 4 FAILED, incl. the **pre-existing** `test_narrator_rejects_missing_quantity` |
+| M13 `required = _UNDECLARED_SINGLE_VALUE_FIELDS` (back to hardcoded) | 2 FAILED: `…omits_the_value_label`, `…placeholder_nothing_can_resolve` |
+| M15 evidence keys dropped from the lookup | 1 FAILED: `…resolves_a_placeholder_from_evidence` |
+| M16 real registry stops naming `{value}` | 2 FAILED, incl. the pre-existing `test_narrator_rejects_missing_quantity` |
+
+All four restored; `git diff --stat` on `registry/capabilities.yaml` empty afterwards.
+
+Attribution: **figure (b) — "defect 2: hardcoded inventory value label"**.
+
+**Finding carried forward to 5.2 / 5.9, not a known issue.** `_fact_field_values` resolves
+placeholders from the leading **evidence** record, but the `ReasoningFact` builders are still
+per-capability (`build_availability_fact` / `build_purchase_order_facts` /
+`build_pr_create_fact`). So 5.2's declared `primary: "{baseUnitOfMeasure} / {purchasingGroup}"`
+resolves only if whatever produces the `MaterialInfoFact` puts those keys in evidence. This is
+exactly what 5.2.4's "`git diff --stat` on `*.py` is empty" measures — if a new Python fact builder
+turns out to be required, that is figure (a) ≠ 0 and must be reported as such, not absorbed.
 
 ## Task 5.8 — Audit: no synchronous data fetch under `agent/`
 

@@ -946,6 +946,184 @@ def test_unknown_detail_formatter_falls_back_to_none():
 
 
 # ---------------------------------------------------------------------------
+# Task 5.7 — the single-value guard is fieldMapping-driven (defect 2)
+# ---------------------------------------------------------------------------
+
+
+def _blank_value_fact():
+    """An availability fact with the inventory value label emptied.
+
+    ``value``/``unit`` are what the old guard hardcoded, so blanking them is
+    how a non-inventory single-value capability looks to the narrator.
+    """
+    import dataclasses
+
+    return dataclasses.replace(
+        build_availability_fact("agent-1", successful_execution()),
+        value=None,
+        unit=None,
+    )
+
+
+def test_single_value_narrates_when_the_template_omits_the_value_label():
+    """Task 5.7.1 — a ``single-value`` narrative whose ``fieldMapping`` never
+    mentions the inventory value label still narrates.
+
+    The old guard demanded ``material``/``plant``/``value``/``unit`` from every
+    ``single-value`` fact regardless of what the declaration asked for, so a
+    capability that narrates something other than a quantity could not use the
+    generic framework at all.
+    """
+    from sap_nexus_agent.narrator import narrate_single_value
+    from sap_nexus_agent.registry_loader import NarrativeConfig
+
+    config = NarrativeConfig(
+        fact_shape="single-value",
+        prompt_template="material-info",
+        fallback_template="material-info",
+        field_mapping=(
+            ("title", "物料 {material} 在工厂 {plant}"),
+            ("primary", "{material}"),
+        ),
+        detail_formatter="none",
+    )
+
+    result = narrate_single_value(
+        _blank_value_fact(), config, client=FakeNarratorLlmClient(unavailable=True)
+    )
+
+    assert "DEMOA1" in result
+    assert "1000" in result
+
+
+def test_single_value_guard_fires_for_a_field_the_template_does_name():
+    """Task 5.7.4 — more general, not weaker. The same blank fact is refused
+    the moment the declaration actually asks for the missing field."""
+    from sap_nexus_agent.narrator import narrate_single_value
+    from sap_nexus_agent.registry_loader import NarrativeConfig
+
+    config = NarrativeConfig(
+        fact_shape="single-value",
+        prompt_template="inventory-md04",
+        fallback_template="inventory-md04",
+        field_mapping=(("primary", "{value} {unit}"),),
+        detail_formatter="none",
+    )
+
+    with pytest.raises(NarrativeGuardError) as excinfo:
+        narrate_single_value(
+            _blank_value_fact(), config, client=FakeNarratorLlmClient(unavailable=True)
+        )
+
+    assert "value" in str(excinfo.value)
+    assert "unit" in str(excinfo.value)
+
+
+def test_single_value_guard_fires_for_a_placeholder_nothing_can_resolve():
+    """Task 5.7.4 — a template naming a field the fact does not carry at all is
+    a declaration error, not a silently empty string."""
+    from sap_nexus_agent.narrator import narrate_single_value
+    from sap_nexus_agent.registry_loader import NarrativeConfig
+
+    config = NarrativeConfig(
+        fact_shape="single-value",
+        prompt_template="material-info",
+        fallback_template="material-info",
+        field_mapping=(("primary", "{purchasingGroup}"),),
+        detail_formatter="none",
+    )
+
+    with pytest.raises(NarrativeGuardError) as excinfo:
+        narrate_single_value(
+            build_availability_fact("agent-1", successful_execution()),
+            config,
+            client=FakeNarratorLlmClient(unavailable=True),
+        )
+
+    assert "purchasingGroup" in str(excinfo.value)
+
+
+def test_single_value_resolves_a_placeholder_from_evidence():
+    """The guard and the resolver share one lookup, so any evidence key the
+    declaration names is both checkable and renderable — this is what makes
+    the guard fieldMapping-driven rather than fact-field-driven."""
+    from sap_nexus_agent.narrator import narrate_single_value
+    from sap_nexus_agent.registry_loader import NarrativeConfig
+
+    config = NarrativeConfig(
+        fact_shape="single-value",
+        prompt_template="material-info",
+        fallback_template="material-info",
+        field_mapping=(("title", "来源字段 {sourceField}"),),
+        detail_formatter="none",
+    )
+
+    result = narrate_single_value(
+        build_availability_fact("agent-1", successful_execution()),
+        config,
+        client=FakeNarratorLlmClient(unavailable=True),
+    )
+
+    assert "AV_QTY_PLT" in result
+
+
+def test_single_value_without_a_narrative_block_keeps_the_inventory_guard():
+    """Regression: callers with no ``narrative`` declaration still get the
+    inventory-shaped guard, so nothing that relied on it silently loosened."""
+    from sap_nexus_agent.narrator import narrate_single_value
+
+    with pytest.raises(NarrativeGuardError) as excinfo:
+        narrate_single_value(
+            _blank_value_fact(), None, client=FakeNarratorLlmClient(unavailable=True)
+        )
+
+    assert "value" in str(excinfo.value)
+
+
+def test_the_real_inventory_declaration_still_requires_exactly_the_old_four():
+    """Task 5.7.3 — the regression guard that actually bites.
+
+    The generalisation is only safe if the *real* inventory declaration derives
+    the same required set the code used to hardcode. Read it from
+    ``registry/capabilities.yaml`` rather than restating it, so editing the
+    declaration to demand less fails here instead of quietly loosening the
+    guard.
+    """
+    from pathlib import Path
+
+    import yaml
+
+    from sap_nexus_agent.narrator import _declared_placeholders
+    from sap_nexus_agent.registry_loader import NarrativeConfig
+
+    repo_root = Path(__file__).resolve().parents[2]
+    document = yaml.safe_load(
+        (repo_root / "registry" / "capabilities.yaml").read_text(encoding="utf-8")
+    )
+    declaration = next(
+        capability["narrative"]
+        for capability in document["capabilities"]
+        if capability["capabilityId"] == "MM.Inventory.GetAvailability"
+    )
+    config = NarrativeConfig(
+        fact_shape=declaration["factShape"],
+        prompt_template=declaration["promptTemplate"],
+        fallback_template=declaration["fallbackTemplate"],
+        field_mapping=tuple(declaration["fieldMapping"].items()),
+        detail_formatter=declaration["detailFormatter"],
+    )
+
+    # `detailRows: mrpElementLines` is a bare evidence field name, not a
+    # placeholder, so it is rendered by the formatter and never required.
+    assert set(_declared_placeholders(config)) == {
+        "material",
+        "plant",
+        "value",
+        "unit",
+    }
+
+
+# ---------------------------------------------------------------------------
 # Action-receipt narration (PR create) via the framework
 # ---------------------------------------------------------------------------
 

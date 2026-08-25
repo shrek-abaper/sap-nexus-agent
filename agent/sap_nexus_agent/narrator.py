@@ -148,6 +148,52 @@ def _resolve_detail_formatter(config: NarrativeConfig | None):
 # ---------------------------------------------------------------------------
 
 
+_PLACEHOLDER_RE = re.compile(r"\{([A-Za-z_][A-Za-z0-9_]*)\}")
+
+#: Fields the ``single-value`` guard demands when a capability declares no
+#: ``narrative`` block. Task 5.7 replaced the hardcoded inventory list with the
+#: placeholders the declaration actually names; callers with no declaration have
+#: nothing to read, so they keep the inventory shape they always had.
+_UNDECLARED_SINGLE_VALUE_FIELDS = ("material", "plant", "value", "unit")
+
+
+def _fact_field_values(fact: ReasoningFact) -> dict[str, str]:
+    """The one lookup both the guard and the resolver read (task 5.7).
+
+    Fact fixed fields first, then the leading evidence record's keys, so a
+    declaration may name any field the Fact actually carries. Sharing the
+    lookup is what makes the guard ``fieldMapping``-driven: a placeholder is
+    checkable exactly when it is renderable.
+    """
+    evidence = fact.evidence[0] if fact.evidence else {}
+    values: dict[str, str] = {
+        key: "" if value is None else str(value)
+        for key, value in evidence.items()
+        if isinstance(key, str)
+    }
+    values.update(
+        {
+            "material": fact.material or "",
+            "plant": fact.plant or "",
+            "value": _qty_str(fact.value),
+            "unit": fact.unit or "",
+        }
+    )
+    return values
+
+
+def _declared_placeholders(config: NarrativeConfig | None) -> tuple[str, ...]:
+    """Every ``{name}`` the declaration's ``fieldMapping`` references, in
+    first-appearance order so guard messages are deterministic."""
+    if config is None:
+        return ()
+    seen: dict[str, None] = {}
+    for _, source_expr in config.field_mapping:
+        for name in _PLACEHOLDER_RE.findall(source_expr):
+            seen.setdefault(name, None)
+    return tuple(seen)
+
+
 def _resolve_template_vars(fact: ReasoningFact, config: NarrativeConfig | None) -> dict[str, str]:
     """Resolve fieldMapping to concrete values from a single fact."""
     if config is None:
@@ -163,17 +209,13 @@ def _resolve_one_var(source_expr: str, fact: ReasoningFact, evidence: dict) -> s
     """Resolve one fieldMapping source expression to a string value.
 
     Supports:
-      - {material}/{plant}/{value}/{unit} placeholders filled from fact fixed fields
+      - any ``{name}`` placeholder resolvable from ``_fact_field_values``
+        (fact fixed fields plus the leading evidence record)
       - a bare evidence field name (e.g. mrpElementLines) -> rendered detail (handled by formatter)
       - comma-separated evidence field names -> kept as-is for list builders
     """
     if "{" in source_expr and "}" in source_expr:
-        return source_expr.format(
-            material=fact.material or "",
-            plant=fact.plant or "",
-            value=_qty_str(fact.value),
-            unit=fact.unit or "",
-        )
+        return source_expr.format_map(_fact_field_values(fact))
     return source_expr
 
 
@@ -232,16 +274,14 @@ def narrate_single_value(
     client=None,
 ) -> str:
     """Generic single-value narration (factShape: single-value)."""
-    missing = [
-        name
-        for name, value in {
-            "material": fact.material,
-            "plant": fact.plant,
-            "value": fact.value,
-            "unit": fact.unit,
-        }.items()
-        if value is None or value == ""
-    ]
+    # Task 5.7 (defect 2): the required-field set comes from the declaration,
+    # not from the inventory shape. A placeholder the declaration never names is
+    # not required; a placeholder nothing can resolve is missing, so the guard
+    # became more general without becoming weaker.
+    values = _fact_field_values(fact)
+    declared = _declared_placeholders(config)
+    required = declared or _UNDECLARED_SINGLE_VALUE_FIELDS
+    missing = [name for name in required if not values.get(name)]
     if missing:
         raise NarrativeGuardError(f"ReasoningFact missing fields for narration: {', '.join(missing)}")
     try:
