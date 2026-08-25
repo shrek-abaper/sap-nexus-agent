@@ -164,7 +164,8 @@ Named baseline non-passes — these are **pre-existing and must stay honest**, n
 ## Corrections to `openspec/changes/derived-parameter-binding/tasks.md`
 
 Six findings from the pre-build fact check (C1–C6 before build, **C7 found at T1 entry, C8 found at
-task 2.2 entry, C9 and C10 found at task 2.7 entry**).
+task 2.2 entry, C9 and C10 found at task 2.7 entry, C11 found while computing 6.1's table, C12 found
+at the 5.9 feasibility check**).
 **Where tasks.md and this plan disagree, this plan wins**, because these were verified against
 source.
 
@@ -182,6 +183,7 @@ source.
 | C9 | 2.7's **Files** list names `frontend/src/runtime/plan-evidence/event-projector.ts:69` as a Fact field-list restatement site | It is **not one**. Line 69 is `ALLOWED_PAYLOAD_KEYS.fact` — a ReasoningFact **envelope** key allowlist (it contains `factId`, `factTypeId`, `agentTraceId`, `traceRef`, `sourceSummary`, `asOf` alongside `availableQuantity`/`orderQuantity`/`unit`, and does **not** contain `purchaseOrder` or `supplier`). It governs which keys survive projection into a reasoning payload, a different vocabulary from a Fact Type's field list | Locking it against `ontology/fact-types.yaml` would be a category error — a `⊆`/`==` assertion between two unrelated sets. 2.7.4 records it as **"not a restatement site"** with that evidence instead of locking it. The genuine restatement family is: `ontology/fact-types.yaml` (authority) · `registry/capabilities.yaml:316` `itemFields` · `narrator.py:55` `_PO_REQUIRED_EVIDENCE` · the hardcoded label lines in `narrator.py` `_build_list_messages` / `_list_fallback` · `fact-builder.ts:246-278` evidence literal |
 | C10 | 2.5 reported "**zero** new semantic types", and 2.7 assumed the TS evidence literal and the declared field list are the same set | Both are wrong, and the second exposes a real gap in Decision 1. `fact-builder.ts`'s evidence object has **seven** keys; the seventh, `purchaseOrderItem`, is load-bearing on the TS side (a member of `PurchaseOrderRow` at `:130` **and** a component of `rowSortKey` at `:232`, so it affects deterministic ordering) yet is absent from `ontology/fact-types.yaml`, from `itemFields`, and from `_PO_REQUIRED_EVIDENCE`. It is a genuine seventh item-level field that 2.5 missed. It cannot be declared under Decision 1 as written: tier ① is *"the set declared by capability `inputs`/`outputs.semanticType`"*, and the six existing PO field types pass that check **only by coincidence** — each happens to also be a PO or PR `input`. `purchaseOrderItem` is the first field type with no such coincidence, and `sapnexus:PurchaseOrderItem` is already taken by the container output `purchaseOrders` (the item *object*, not its *number*) | **User decisions at 2.7 entry: (a) extend the ontology with a new value type; (b) delete `itemFields` from the registry.** Both edit governed sources, so they land as **one atomic commit** with **one** documented snapshot recompute (#3). Three rejected alternatives, recorded because each is a green-washing trap: *declaring `purchaseOrderItem` as a sibling top-level output of PO* misrepresents the shape (it is a per-row field inside the array, not an output of the capability); *widening the vocabulary to include Fact Type `fields[].semanticType`* would make `_validate_fact_type_fields`' own semanticType check **vacuous** (invariant 9); *a sixth governed source file* is disproportionate. The chosen channel is a new **optional top-level `valueTypes:` block in `ontology/fact-types.yaml`**, with the vocabulary redefined as *capability-declared ∪ `valueTypes[].id`*, kept tight by two new rules so it cannot become a dumping ground: `VALUE_TYPE_SHADOWS_CAPABILITY` (an id already declared by a capability is rejected) and `VALUE_TYPE_NOT_USED` (an id no Fact Type references is rejected). A typo still fails closed, because a typo is in neither set |
 | C11 | 5.2 / 5.6.1 name the derived unit as `baseUnitOfMeasure` and the design's prose implies a `sapnexus:BaseUnitOfMeasure` semantic type | **`sapnexus:BaseUnitOfMeasure` does not exist anywhere** — `grep -rn BaseUnitOfMeasure registry/ ontology/ schemas/` returns nothing. `MM.PR.CreateDraft`'s `unit` input carries `semanticType: sapnexus:UnitOfMeasure` (`registry/capabilities.yaml:415`), and task 5.6's rule is **strict `semanticType` equality**, so declaring `MM.Material.GetInfo`'s unit output as `sapnexus:BaseUnitOfMeasure` would make the derivation emit `field: ""` → `FACT_TYPE_MISMATCH` → `invalid_plan_graph`. The **output name** may be `baseUnitOfMeasure` (names are free); the **semanticType must be `sapnexus:UnitOfMeasure`**. `purchasing_group` is already consistent (`sapnexus:PurchasingGroup`, `:442`). This also confirms 5.2's "**zero new semantic types**" is achievable rather than aspirational: both derived fields reuse existing tier-① ids. Found by computing 6.1's table from the code instead of copying it |
+| C12 | 5.9 is described as owning "the provenance token", and my own 5.4 result block claimed it must be added to `read_context._SLOT_PROVENANCES` (a 6-file blast radius) | **Both wrong.** The slot vocabulary governs the READ multi-turn **elicitation** path only; a derived parameter is never elicited, so it never becomes a `ReadContextSlot`. `grep -rn provenance agent/sap_nexus_agent/planner/` returns only two prose mentions (`plan_compiler_v2.py:5`, `:429`) — the planner emits no `provenance` field. The literal string `capability_derived` appears in **no** `.py` or `.ts` file; per `openspec/changes/derived-parameter-binding/specs/agent-callplan-evidence/spec.md:10` it is **eval-harness** vocabulary, i.e. **task 7.1's** assertion. The runtime provenance chain already exists as the binding's own discriminant: `source.kind: factField` carries `producerNodeId` + `factTypeId` + `field` (`frontend/src/runtime/plan-executor/types.ts:29`) | No enum is widened anywhere. 5.4.1(d)'s owner is **7.1** (assert `provenance=capability_derived` in the harness) plus **5.9** (surface the existing `factField` provenance in the two runtime surfaces). The "1 file → 6 files" figure in the 5.4 result block is **void** and is corrected in place there. 8.4 carries the corrected attribution |
 
 ## Task order
 
@@ -1356,6 +1358,32 @@ slot vocabulary admits: `read_context._SLOT_PROVENANCES` is
 allow-lists — none of which are in 5.4's declared file list. Implementing it inside 5.4 would have
 silently widened 5.4's blast radius from 1 file to 6. It belongs with **task 5.9**, which owns the
 provenance token and both surfaces, and is listed in 8.4 as an open item with that attribution.
+
+> **Correction to the paragraph above, recorded 2026-08-25 during the 5.9 feasibility check —
+> C12.** The paragraph's *conclusion* (split 5.4.1(d) out of 5.4) stands; its *reason* was wrong and
+> is corrected here rather than edited away.
+>
+> `read_context._SLOT_PROVENANCES` is **not** where `capability_derived` belongs, so "a sixth slot
+> token" was never the work. The slot vocabulary governs the READ multi-turn **elicitation** path
+> (`read_context` → `context_candidates` → `context_reducer` → `context_decision_gate`); a derived
+> parameter is by definition never elicited, so it never becomes a `ReadContextSlot` and the
+> five-token set does not need widening. Verified: `grep -rn provenance agent/sap_nexus_agent/planner/`
+> returns only two prose mentions in `plan_compiler_v2.py` (lines 5 and 429) — the planner has no
+> `provenance` field at all.
+>
+> The provenance chain already exists, one layer up, as the **binding's own discriminant**:
+> `source.kind: factField` carries `producerNodeId` + `factTypeId` + `field`
+> (`plan_compiler_v2.py`, and `frontend/src/runtime/plan-executor/types.ts:29`). That *is* "the
+> derived value and its source node". The literal string `capability_derived` appears nowhere in any
+> `.py` or `.ts` file today; per
+> `openspec/changes/derived-parameter-binding/specs/agent-callplan-evidence/spec.md:10` it is an
+> **eval-harness** vocabulary item — "each such resolved parameter carries
+> `provenance=capability_derived`" — which makes it **task 7.1's** assertion, not a runtime enum.
+>
+> Consequence for the record: 5.4.1(d)'s true owner is **7.1** (assert the provenance) plus **5.9**
+> (surface the existing `factField` provenance in narrative + approval payload). The "blast radius 1
+> file → 6 files" figure in the paragraph above is void — the six-file estimate was derived from the
+> wrong mechanism. 8.4 must carry the corrected attribution, not the original one.
 5.4.1(c) is covered here at the level 5.4 can observe — *the producer is never pulled*, so the extra
 SAP read does not happen — which is the stronger half of "not elicited".
 
@@ -1726,6 +1754,64 @@ fails closed, and M19 is the mutation that demonstrates the detection itself.
 - [ ] 5.9.2 Make the two frontend allow-list edits.
 - [ ] 5.9.3 Verify the derived value is **traceable to its producing node** in both surfaces — not
   merely labelled "derived" with no provenance chain.
+
+### Feasibility assessment (2026-08-25) — blocked on 5.2. No box checked.
+
+5.9 was audited for metadata-independence, the same audit that legitimately reordered 5.5 / 5.7 /
+5.8 / 5.6 / 5.4 ahead of the blocked 5.1. **5.9 does not qualify.** Two independent reasons, plus one
+finding that is larger than 5.9.
+
+**Reason 1 — 5.9.2's two edits are field-name edits, and the field names are 5.2's output.** The two
+sites are `frontend/src/runtime/projection/fact-builder.ts:130-140` (`PurchaseOrderRow`) and
+`event-projector.ts:69` (`ALLOWED_PAYLOAD_KEYS.fact`). Both are *literal key sets*. What they must
+gain is `baseUnitOfMeasure` / `purchasingGroup` — names that do not exist until 5.2 declares
+`MM.Material.GetInfo`'s outputs. Adding them now would add keys no producer emits, i.e. dead
+allow-list entries, which is the shape invariant 9 calls green-washing (a widened allow-list looks
+like coverage and asserts nothing).
+
+**Reason 2 — there is no derived value to make traceable yet.** `grep satisfiableByFactType
+registry/capabilities.yaml` is still empty, so no real plan emits a `factField` binding; only
+fixtures do. 5.9.3's "traceable to its producing node" has no subject.
+
+**Finding G1 — the plan has no task that resolves a `factField` binding at execution time. This is
+a gap in the plan, not in 5.9, and it is reported rather than absorbed.**
+
+Every non-test consumer of `source.kind` in the TS runtime — all three of them — handles `literal`
+only:
+
+| Site | Behaviour on a `factField` binding |
+|---|---|
+| `plan-executor.ts:405` `resolveParameters` | **silently skipped.** Only `kind === "literal"` writes into `params`. The comment at `:409` says `goalConstraint`/`factField` are *"deferred to an enhanced executor"* — an executor this plan never schedules |
+| `plan-executor.ts:419` `computeInputHash` | derives from `resolveParameters`, so a derived parameter contributes **nothing** to the node input hash |
+| `coordinator.ts:171` `actionConstraints` (approval payload) | `literalValue` at `:187` returns `null` for non-literals, so a derived `quantity` / `purchasing_group` is **dropped from the approval card constraints** |
+
+Consequence, stated plainly: at batch T's exit the compiler will *author* a correct derived binding
+(`source.kind: factField` with `producerNodeId` + `factTypeId` + `field`), the deriver will show the
+edge, and 7.1 can assert `provenance=capability_derived` in the harness — but the value will **not**
+reach the Gateway, because the executor drops it. Batch T makes derivation *authorable and
+assertable*, not *executable*. This must appear in 8.4's unresolved list and in 8.5's exit statement
+in exactly those terms; it must not be phrased as "known issue" or "unrelated to core functionality".
+
+**Why G1 is deliberately not fixed here, and why that is not evasion.** Making `resolveParameters`
+resolve a `factField` changes what `computeInputHash` hashes. The input hash is anti-replay
+machinery, and invariant 5 forbids changing approval / subject-hash / anti-replay semantics in this
+batch — it is precisely **defect D4**'s subject ("WRITE parameters + upstream Fact `asOf` + snapshot
+id"). So G1 lands *inside* D4, not beside it: D4 cannot be implemented without executor-side
+resolution, and executor-side resolution cannot be implemented without touching D4's hash. Recorded
+here as a **coupling point**, which is the same disclosure 5.11 already owes.
+
+**C12 correction issued.** The audit also proved my 5.4 result block's `_SLOT_PROVENANCES` claim
+wrong. `capability_derived` is neither a slot token nor a runtime enum member — it is eval-harness
+vocabulary owned by 7.1, and the runtime provenance chain is the `factField` discriminant that
+already exists. Corrected in place in the 5.4 result block and entered in the corrections table.
+
+| Check | Result |
+|---|---|
+| `grep -rn 'source\.kind' frontend/src --include=*.ts` (non-test) | 3 sites, all `literal`-only — the table above |
+| `grep -rn factField frontend/src --include=*.ts` | `types.ts:29` (type), `plan-executor.ts:409` (the deferral comment), one test fixture at `plan-executor.test.ts:565`. **No resolution site** |
+| `grep -rn 'provenance' agent/sap_nexus_agent/planner/` | 2 prose mentions only (`plan_compiler_v2.py:5`, `:429`); no field |
+| `grep -rn 'capability_derived' --include=*.py --include=*.ts` | **zero** — it exists only in evals, specs and docs |
+| Files changed by this assessment | plan + `tasks.md` only. No source file touched, no test added or altered |
 
 ## Task 5.10 — Live READ smoke against real SAP
 
