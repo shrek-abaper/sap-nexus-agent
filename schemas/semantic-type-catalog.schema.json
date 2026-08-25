@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:sap-nexus:semantic-type-catalog:v1",
   "title": "Semantic-type extraction catalog",
-  "description": "Shared semantic-type catalog (registry/semantic-types.yaml). Each entry is keyed by its `id`, which capability input matchers reference via {\"kind\": \"semanticType\", \"ref\": \"<entryId>\"}. Duplicate entry ids are allowed by this schema and rejected by the registry validator.",
+  "description": "Extraction matcher catalog (registry/semantic-types.yaml) — NOT the semantic-type authority. Each entry is keyed by its bare `id`, which capability input matchers reference via {\"kind\": \"semanticType\", \"ref\": \"<entryId>\"}; those ids are matcher names, not semantic types. The authority is the `sapnexus:*` ontology vocabulary declared by capability inputs/outputs, reached from here through the one-way `extracts` key. Duplicate entry ids are allowed by this schema and rejected by the registry validator.",
   "type": "object",
   "additionalProperties": false,
   "required": ["version", "semanticTypes"],
@@ -18,12 +18,17 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "matchers", "priority"],
+        "required": ["id", "extracts", "matchers", "priority"],
         "properties": {
           "id": {
             "type": "string",
             "minLength": 1,
             "description": "Stable identifier referenced by capability matchers."
+          },
+          "extracts": {
+            "type": "string",
+            "minLength": 1,
+            "description": "One-way mapping to the semantic-type authority: the single `sapnexus:*` ontology type this matcher extracts from user text. Several matchers may extract the same ontology type; a single matcher may never extract two, which is why this is a string and not an array. Not every ontology type has a matcher — derived-only types have none."
           },
           "description": {"type": "string"},
           "priority": {

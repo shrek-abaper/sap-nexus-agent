@@ -34,6 +34,7 @@ def build_semantic_contracts(sources: SemanticSourceDocuments) -> ContractBuildR
     _validate_unique_ids(sources, issues)
     _validate_fact_references(sources, issues)
     _validate_fact_type_fields(sources, issues)
+    _validate_vocabulary_references(sources, issues)
     _validate_relation_endpoints(sources, issues)
     _validate_dependency_cycles(sources, issues)
     if issues:
@@ -1553,6 +1554,55 @@ def _validate_fact_type_fields(
                     f"{fact_type_id}.{name}: no active producer publishes an "
                     f"output named {name} with semantic type {semantic_type}",
                 )
+
+
+def _validate_vocabulary_references(
+    sources: SemanticSourceDocuments,
+    issues: list[ValidationIssue],
+) -> None:
+    """The two remaining tier-① reference sites (correction C8).
+
+    The ``sapnexus:`` namespace holds five disjoint tiers, and only tier ① —
+    value types, i.e. the set declared by capability inputs/outputs — is a
+    vocabulary a reference can be checked against. Fact Type ids are governed by
+    ``UNKNOWN_FACT_TYPE``; a Fact Type's own ``semanticType`` and ``predicate``
+    are self-declaring, so no rule can check them without inventing a registry;
+    and ``ontologyIri`` is checked against the OWL skeleton by the registry
+    validator. That leaves two sites, both handled here:
+
+    * ``factTypes[].keyedBy[]`` — the key semantic types of a Fact Type;
+    * ``semanticTypes[].extracts`` — the one-way mapping from a matcher id to
+      the ontology type it extracts. A bare matcher id is rejected here, which
+      is what keeps the mapping one-way.
+    """
+    declared_semantic_types = _semantic_types_declared_by_capabilities(sources)
+
+    for fact_index, fact_type in enumerate(_items(sources.fact_types, "factTypes")):
+        if not isinstance(fact_type, Mapping):
+            continue
+        fact_type_id = fact_type.get("factTypeId")
+        for key_index, semantic_type in enumerate(fact_type.get("keyedBy") or ()):
+            if semantic_type not in declared_semantic_types:
+                _add_issue(
+                    issues,
+                    f"/factTypes/{fact_index}/keyedBy/{key_index}",
+                    "UNKNOWN_SEMANTIC_TYPE",
+                    f"{fact_type_id}: unknown semantic type: {semantic_type}",
+                )
+
+    for entry_index, entry in enumerate(
+        _items(sources.semantic_types, "semanticTypes")
+    ):
+        if not isinstance(entry, Mapping):
+            continue
+        target = entry.get("extracts")
+        if target not in declared_semantic_types:
+            _add_issue(
+                issues,
+                f"/semanticTypes/{entry_index}/extracts",
+                "UNKNOWN_SEMANTIC_TYPE",
+                f"{entry.get('id')}: unknown semantic type: {target}",
+            )
 
 
 def _validate_relation_endpoints(

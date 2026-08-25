@@ -1,6 +1,23 @@
-version: 2
+# Extraction MATCHER catalog — NOT the semantic-type authority.
+#
+# Each entry is a way of *recognising a value in user text*, keyed by a bare
+# `id` that capability input matchers reference via
+# {kind: semanticType, ref: <id>}. These bare ids are matcher names, not
+# semantic types.
+#
+# The semantic-type authority is the `sapnexus:*` ontology vocabulary — the set
+# declared by capability `inputs`/`outputs.semanticType`. The two vocabularies
+# are joined by the ONE-WAY `extracts:` key below: every matcher declares which
+# ontology type it extracts, but not every ontology type has a matcher. Types
+# that are only ever derived from an upstream Fact (e.g.
+# sapnexus:AvailableQuantity) correctly have no entry here.
+#
+# Several matchers may extract the same ontology type; a single matcher may
+# never extract two.
+version: 3
 semanticTypes:
   - id: Plant
+    extracts: sapnexus:Plant
     description: SAP plant code - 在-prefixed and 工厂-suffixed named kinds, bare 4-char code regex fallback with lookaround guards
     priority: 20
     matchers:
@@ -17,6 +34,7 @@ semanticTypes:
           named-kind bare scan uses alnum guards and would change behavior
           for digit-adjacent tokens.
   - id: MaterialNumber
+    extracts: sapnexus:MaterialNumber
     description: Bare uppercase token scan with material guards
     priority: 10
     matchers:
@@ -33,6 +51,7 @@ semanticTypes:
       toUpperCaseCompare: true
       toUpperCaseOutput: false
   - id: Quantity
+    extracts: sapnexus:Quantity
     description: Numeric capture optionally followed by a unit token
     priority: 30
     matchers:
@@ -43,6 +62,7 @@ semanticTypes:
           Numeric capture with an optional alternated unit token set and
           case-insensitive match; named kinds cannot express the alternation.
   - id: Unit
+    extracts: sapnexus:UnitOfMeasure
     description: Unit-of-measure token, uppercased on output
     priority: 25
     matchers:
@@ -55,6 +75,7 @@ semanticTypes:
     filters:
       toUpperCaseOutput: true
   - id: Date
+    extracts: sapnexus:DeliveryDate
     description: ISO date capture
     priority: 20
     matchers:
@@ -64,6 +85,7 @@ semanticTypes:
           ISO date capture; a named shape matches one literal only and Date
           is its sole user, so no duplication exists to consolidate.
   - id: PurchasingGroup
+    extracts: sapnexus:PurchasingGroup
     description: 采购组-prefixed code, uppercased on output
     priority: 15
     matchers:
@@ -75,6 +97,7 @@ semanticTypes:
     filters:
       toUpperCaseOutput: true
   - id: Vendor
+    extracts: sapnexus:Supplier
     description: PO vendor number, 供应商-prefixed alphanumeric code (e.g. V72719; digit-only also accepted)
     priority: 40
     matchers:
@@ -84,6 +107,7 @@ semanticTypes:
           供应商-prefixed alphanumeric code capture; named kinds cannot
           express the 1-10 character width constraint on the captured value.
   - id: PONumber
+    extracts: sapnexus:PurchaseOrderNumber
     description: PO number - bare 10-digit form, or 采购订单-prefixed alphanumeric code for sanitized values (e.g. DEMOPO1)
     priority: 10
     matchers:

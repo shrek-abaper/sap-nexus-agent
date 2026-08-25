@@ -163,7 +163,8 @@ Named baseline non-passes — these are **pre-existing and must stay honest**, n
 
 ## Corrections to `openspec/changes/derived-parameter-binding/tasks.md`
 
-Six findings from the pre-build fact check (C1–C6 before build, **C7 found at T1 entry**).
+Six findings from the pre-build fact check (C1–C6 before build, **C7 found at T1 entry, C8 found at
+task 2.2 entry**).
 **Where tasks.md and this plan disagree, this plan wins**, because these were verified against
 source.
 
@@ -177,6 +178,7 @@ source.
 | C6 | 1.1 lands `satisfiableByFactType: sapnexus:MaterialInfoFact` in the registry during T0′ | That Fact Type is not published until 5.2, and the `UNKNOWN_FACT_TYPE` rule already exists (pinned by `test_semantic_planning_contract.py:3322-3324`). The spec delta mandates it: *"Identifier input references an unpublished Fact Type → contract validation fails and names the offending capability and input"* | **1.1's registry edit moves into 5.2 as one atomic registry change** (Fact Type + capability + the two `satisfiableByFactType` references together). T0′ becomes mechanism-only (1.2/1.3/1.4), tested against **fixtures**. Publishing `MaterialInfoFact` early is *not* an alternative: its four fields are all `cardinality: one`, so C5 would reject it for having no active producer. This is the only arrangement where every intermediate commit has a valid registry |
 | C7 | 2.1 bumps `ontology/fact-types.yaml` to `version: 2` with "fields land in 2.5", and 2.8 recomputes the snapshot pins as a separate step | Two verified couplings make that split impossible. (a) 2.1.2 adds `fields` to `$defs/factType.required`, so the instant the schema lands, a catalog without `fields` is **invalid** — the 2.1→2.5 window would leave `ontology/fact-types.yaml` failing its own schema. (b) `snapshot.py:44` hashes `dict(documents)` — the **whole** document set — so the `version: 1 → 2` bump *alone* invalidates all **14** `sha256:e6d329bc…e599ed95` pins in `evals/matcher_cases.yaml` (count verified), independently of the field content | **2.1 + 2.5 + 2.8 are one atomic commit.** Same class of defect as C6, same fix: never leave an intermediate commit whose governed sources fail validation or whose pins are stale |
 | C7a | (my own C7 first draft claimed `registry/semantic-types.yaml` is **not** a snapshot source, so 2.2/2.3 could not move the digest) | **That was wrong and is withdrawn.** `contracts.py:105-113` `documents_by_path()` returns **five** paths: the matcher catalog is included whenever `semantic_types` is non-empty, and the live snapshot lists it at `document_version: 2`, digest `sha256:173b31f2…cc8f406e` | 2.3's `extracts:` keys **do** move the digest, so T1 needs **two** documented pin recomputes: one for the fact-types change (2.1/2.5), one for the matcher-catalog change (2.3). Two documented recomputes are preferable to one giant commit — invariant 9 forbids *silent* refreshes, not documented ones. 2.2 is digest-neutral: `yaml.safe_load` discards comments |
+| C8 | 2.4.1 reads "every `sapnexus:*` reference **anywhere** must exist in the ontology vocabulary" | Not implementable as written. Enumerating every reference site shows the `sapnexus:` namespace holds **five disjoint tiers**: ① value types (the Decision-1 vocabulary, 15 members, declared by capability `inputs`/`outputs.semanticType`); ② Fact Type ids (`*Fact`, declared by `factType.factTypeId`, already governed by `UNKNOWN_FACT_TYPE`); ③ Fact class types (`factType.semanticType` — `sapnexus:InventoryAvailability` etc., **not** in ① and self-declaring); ④ predicates (`factType.predicate` — `sapnexus:hasInventoryAvailability`, self-declaring); ⑤ capability individuals / function classes (`ontologyIri`, `capability.semanticType` — `ontologyIri` is already validated against the OWL skeleton by the registry validator). A literal tier-blind rule would reject tiers ③④⑤ | 2.4.1 is scoped to **tier ①**. Its only *uncovered* reference site is `factType.keyedBy` (`fields.semanticType` landed in 2.1.4), so 2.4.1's real deliverable is extending the tier-① check there. Tiers ③④ stay unvalidated by design — nothing declares them, so a rule could only be vacuous or wrong. Record that as a known limit rather than inventing a registry to check against |
 
 ## Task order
 
@@ -488,9 +490,9 @@ Target field shape:
 
 **Steps**
 
-- [ ] 2.2.1 Add a header comment stating this file is the **extraction matcher catalog**, not the
+- [x] 2.2.1 Add a header comment stating this file is the **extraction matcher catalog**, not the
   semantic-type authority; the authority is the `sapnexus:*` ontology vocabulary.
-- [ ] 2.2.2 Do **not** rename the file — no `matchers: [{kind: semanticType, ref: <bare id>}]` site
+- [x] 2.2.2 Do **not** rename the file — no `matchers: [{kind: semanticType, ref: <bare id>}]` site
   changes. Verify by grepping that every `ref:` still resolves.
 
 ## Task 2.3 — Add the one-way `extracts:` mapping
@@ -505,19 +507,19 @@ Target field shape:
 
 **Steps**
 
-- [ ] 2.3.1 Failing tests for the three properties below, then add `extracts:` to each entry.
-- [ ] 2.3.2 Verify **several matchers may extract one ontology type** (many-to-one is legal).
-- [ ] 2.3.3 Verify a matcher declaring **two different** ontology types is rejected.
-- [ ] 2.3.4 Verify `sapnexus:AvailableQuantity` having **no** matcher entry passes with no
+- [x] 2.3.1 Failing tests for the three properties below, then add `extracts:` to each entry.
+- [x] 2.3.2 Verify **several matchers may extract one ontology type** (many-to-one is legal).
+- [x] 2.3.3 Verify a matcher declaring **two different** ontology types is rejected.
+- [x] 2.3.4 Verify `sapnexus:AvailableQuantity` having **no** matcher entry passes with no
   back-fill prompt — the mapping is one-way; not every ontology type is user-extractable.
 
 ## Task 2.4 — Two vocabulary-integrity validator rules
 
 **Steps**
 
-- [ ] 2.4.1 Rule: every `sapnexus:*` reference anywhere must exist in the ontology vocabulary.
-- [ ] 2.4.2 Rule: every `extracts:` target must exist in the ontology vocabulary.
-- [ ] 2.4.3 Verify each rule fails naming **the offending reference and its declaring entry**.
+- [x] 2.4.1 Rule: every `sapnexus:*` reference anywhere must exist in the ontology vocabulary.
+- [x] 2.4.2 Rule: every `extracts:` target must exist in the ontology vocabulary.
+- [x] 2.4.3 Verify each rule fails naming **the offending reference and its declaring entry**.
 
 ## Task 2.5 — Declare field lists for the three existing Fact Types
 

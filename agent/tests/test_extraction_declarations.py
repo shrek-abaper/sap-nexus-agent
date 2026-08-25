@@ -92,6 +92,7 @@ VALID_CATALOG = {
     "semanticTypes": [
         {
             "id": "MaterialNumber",
+            "extracts": "sapnexus:MaterialNumber",
             "priority": 10,
             "matchers": [
                 {"kind": "regex", "pattern": "[A-Z0-9]+", "scan": "all",
@@ -130,11 +131,15 @@ def _apply_catalog_mutation(mutation: dict) -> dict:
 @pytest.mark.parametrize("mutation", [
     {"semanticTypes": _MISSING},                           # semanticTypes required
     {"semanticTypes": [{"id": "X"}]},                      # matcher + priority required
-    {"semanticTypes": [{"id": "X", "priority": 1,
+    {"semanticTypes": [{"id": "X", "extracts": "sapnexus:Plant", "priority": 1,
                         "matchers": [{"kind": "regex"}]}]},# pattern required
-    {"semanticTypes": [{"id": "X", "priority": 1,
+    {"semanticTypes": [{"id": "X", "extracts": "sapnexus:Plant", "priority": 1,
                         "matchers": [{"kind": "regex", "pattern": "x"}],
                         "filters": {"minLength": "five"}}]},# minLength integer
+    {"semanticTypes": [{"id": "X", "priority": 1,
+                        "matchers": [{"kind": "regex", "pattern": "x",
+                                      "justification": "synthetic fixture"}]}]},
+                                                           # extracts required
 ])
 def test_invalid_catalog_rejected(mutation):
     with pytest.raises(jsonschema.ValidationError):
@@ -147,10 +152,10 @@ def test_duplicate_catalog_id_allowed_by_schema():
     payload = {
         **VALID_CATALOG,
         "semanticTypes": [
-            {"id": "X", "priority": 1,
+            {"id": "X", "extracts": "sapnexus:Plant", "priority": 1,
              "matchers": [{"kind": "regex", "pattern": "x",
                            "justification": "synthetic fixture"}]},
-            {"id": "X", "priority": 2,
+            {"id": "X", "extracts": "sapnexus:Plant", "priority": 2,
              "matchers": [{"kind": "regex", "pattern": "y",
                            "justification": "synthetic fixture"}]},
         ],
@@ -671,7 +676,7 @@ def test_catalog_schema_accepts_named_kinds_and_value_shapes():
         **VALID_CATALOG,
         "valueShapes": {"plantCode": "^[A-Z0-9]{4}$"},
         "semanticTypes": [
-            {"id": "P", "priority": 1, "matchers": [
+            {"id": "P", "extracts": "sapnexus:Plant", "priority": 1, "matchers": [
                 {"kind": "prefixed", "prefix": ["在"], "valueShape": "plantCode"},
                 {"kind": "suffixed", "suffix": ["工厂"], "valueShape": "plantCode"},
                 {"kind": "valueShape", "valueShape": "plantCode"},
@@ -682,8 +687,11 @@ def test_catalog_schema_accepts_named_kinds_and_value_shapes():
 
 
 def test_catalog_schema_rejects_regex_without_justification():
+    # `extracts` is supplied so the only missing key is `justification` — the
+    # rejection must be attributable to the reason this test names.
     payload = {**VALID_CATALOG, "semanticTypes": [
-        {"id": "P", "priority": 1, "matchers": [{"kind": "regex", "pattern": "x"}]},
+        {"id": "P", "extracts": "sapnexus:Plant", "priority": 1,
+         "matchers": [{"kind": "regex", "pattern": "x"}]},
     ]}
     with pytest.raises(jsonschema.ValidationError):
         jsonschema.validate(payload, _load("semantic-type-catalog.schema.json"))

@@ -128,7 +128,7 @@ def _registry_snapshot() -> dict:
         "ontology/fact-types.yaml": 2,
         "registry/capabilities.yaml": 2,
         "registry/executor-bindings.yaml": 1,
-        "registry/semantic-types.yaml": 2,
+        "registry/semantic-types.yaml": 3,
     }
     return {
         "snapshotVersion": 1,
