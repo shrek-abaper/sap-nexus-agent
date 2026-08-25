@@ -8,11 +8,18 @@ from .contracts import (
     ValidationIssue,
     sorted_issues,
 )
+from .derivation import (
+    DerivedDataEdge,
+    DerivedDependencyView,
+    derive_data_dependencies,
+)
 from .loader import SourceLoadError, load_semantic_sources, load_yaml_mapping
 from .snapshot import build_registry_snapshot, canonical_json_bytes
 
 __all__ = [
     "ContractValidationReport",
+    "DerivedDataEdge",
+    "DerivedDependencyView",
     "GoalReachabilityReport",
     "PlanValidationReport",
     "RegistrySnapshot",
@@ -22,6 +29,7 @@ __all__ = [
     "ValidationIssue",
     "build_registry_snapshot",
     "canonical_json_bytes",
+    "derive_data_dependencies",
     "load_semantic_sources",
     "load_yaml_mapping",
     "sorted_issues",

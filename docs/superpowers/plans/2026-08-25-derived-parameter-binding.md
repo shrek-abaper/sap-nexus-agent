@@ -732,12 +732,12 @@ Candidate scoping, in order:
 
 **Steps**
 
-- [ ] 3.1.1 Failing test for determinism: run the deriver twice on the same documents, assert
+- [x] 3.1.1 Failing test for determinism: run the deriver twice on the same documents, assert
   byte-identical output (including ordering).
-- [ ] 3.1.2 Implement the pure function.
-- [ ] 3.1.3 Verify a field with a **matching semantic type in an undeclared Fact Type** is **not**
+- [x] 3.1.2 Implement the pure function.
+- [x] 3.1.3 Verify a field with a **matching semantic type in an undeclared Fact Type** is **not**
   a candidate — the `satisfiableByFactType` scoping is load-bearing, not decorative.
-- [ ] 3.1.4 Assert by source inspection that `derivation.py` imports nothing that can perform I/O
+- [x] 3.1.4 Assert by source inspection that `derivation.py` imports nothing that can perform I/O
   to the Gateway or SAP (invariant 2).
 
 ## Task 3.2 — The positive control fixture
