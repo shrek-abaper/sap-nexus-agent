@@ -55,6 +55,7 @@ EXPECTED_EVIDENCE_COMMANDS = [
     '"$PYTHON_BIN" -m sap_nexus_agent.eval evals/pr_create_cases.json',
     '"$PYTHON_BIN" -m sap_nexus_agent.eval evals/matcher_cases.yaml',
     '"$PYTHON_BIN" -m sap_nexus_agent.eval evals/dry_run_cases.yaml',
+    '"$PYTHON_BIN" -m sap_nexus_agent.eval evals/derived_parameter_cases.yaml',
     "openspec validate --all --strict",
 ]
 EXPECTED_EVIDENCE_ACTIVE_LINES = [

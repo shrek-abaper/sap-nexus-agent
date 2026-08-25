@@ -1063,7 +1063,7 @@ Design Decision 9. These must exist before T3 5.2 can reference them via `evalLi
 
 **Steps**
 
-- [ ] 4.1.1 Create the five skeletons with stable case ids:
+- [x] 4.1.1 Create the five skeletons with stable case ids:
 
 | # | Case | Shape |
 |---|---|---|
@@ -1073,13 +1073,66 @@ Design Decision 9. These must exist before T3 5.2 can reference them via `evalLi
 | 4 | upstream empty/error | degrades to elicitation |
 | 5 | upstream unreachable | emits `CapabilityGap`, run errors |
 
-- [ ] 4.1.2 Record why **1 and 2 are a mandatory pair**: without case 2, "the user's value won" and
+- [x] 4.1.2 Record why **1 and 2 are a mandatory pair**: without case 2, "the user's value won" and
   "we never derived anything" are indistinguishable, so a green case 1 **alone cannot demonstrate
   the feature**.
-- [ ] 4.1.3 Record that **case 3 is the only path exercising Defect 1 (task 5.5)** — it must be a
+- [x] 4.1.3 Record that **case 3 is the only path exercising Defect 1 (task 5.5)** — it must be a
   test, not a hope.
-- [ ] 4.1.4 Verify the eval harness **discovers all five** and reports them as **pending with
+- [x] 4.1.4 Verify the eval harness **discovers all five** and reports them as **pending with
   attribution** — not as passing (invariant 9).
+
+**Result**
+
+`evals/derived_parameter_cases.yaml`, five stable ids: `derived-not-asked`, `user-supplied-wins`,
+`derived-and-user-supplied-mixed`, `upstream-empty-degrades-to-elicitation`,
+`upstream-unreachable-emits-capability-gap`. Wired into
+`scripts/verify-agent-callplan-evidence.sh` (and its pinned command list in
+`test_semantic_planning_contract.py`) — a suite the project's own evidence gate does not run is not
+discovered, it is just a file.
+
+Verbatim harness output:
+
+```
+$ .venv/bin/python -m sap_nexus_agent.eval evals/derived_parameter_cases.yaml
+SKIP (pending): derived-not-asked: Blocked on task 5.2 …
+SKIP (pending): user-supplied-wins: Blocked on task 5.2 and on task 7.2 …
+SKIP (pending): derived-and-user-supplied-mixed: Blocked on task 5.2 and on task 7.3 …
+SKIP (pending): upstream-empty-degrades-to-elicitation: Blocked on task 5.2 and on task 7.4 …
+SKIP (pending): upstream-unreachable-emits-capability-gap: Blocked on task 5.2 and on task 7.5 …
+Eval passed: 0/0
+EXIT=0
+```
+
+**A trap closed while writing these.** The natural way to author a skeleton is to write the target
+assertions into `expected` — `parameterProvenance`, `dataEdgeCount`, and so on. But
+`_assert_matcher_*` ignores any key it does not know, so once `pending` came off, such a case would
+go **green while asserting nothing**. Every `expected` block therefore uses only keys the harness
+reads today, and each case's `todo` states the not-yet-assertable expectations in prose.
+`HARNESS_ASSERTED_KEYS` in `test_eval_runner.py` locks this: an unknown key fails the test, so
+turning a case real forces adding the assertion rather than deleting `pending`.
+
+4.1.2 and 4.1.3 are recorded in the case files themselves, not only here — the reason case 2 exists
+lives in case 2's `todo`, where anyone tempted to delete it will read it. Case 3's `todo` states
+that a case where *all* parameters are derived, or none are, cannot produce Defect 1's second edge
+at all, so case 3 is the only path that exercises it.
+
+Case 5's `todo` also records a harness gap of its own: today's `FakeGatewayClient` answers every
+capability identically, so "one node of the plan is unreachable" is not yet constructible. Task 7.5
+owns that.
+
+| Mutation | Caught by |
+| --- | --- |
+| M7 drop `pending` from case 1 | `..._exist_and_are_pending`, `..._reports_zeros_not_passing` |
+| M8 add `expected.parameterProvenance` (a key the harness ignores) | `..._exist_and_are_pending` |
+| M9 rename `derived-and-user-supplied-mixed` → `mixed` | `..._exist_and_are_pending` |
+| M10 replace a `todo` with `"TODO"` | `..._exist_and_are_pending` |
+
+**Known limitation, stated rather than papered over:** the CLI prints `Eval passed: 0/0` because
+`EvalSummary` does not carry a skipped count. The numbers are accurate (0 passed, 0 total, 0 failed)
+and the five `SKIP` lines with attribution precede them, but the summary line alone does not say
+five cases are waiting. `test_derived_parameter_eval_reports_zeros_not_passing` pins the zeros so
+this can never drift into `5/5` without the assertions existing. Extending `EvalSummary` with a
+skipped count is not in this batch's scope.
 
 ---
 

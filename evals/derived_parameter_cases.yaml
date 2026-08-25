@@ -1,0 +1,68 @@
+{
+  "suite": "derived-parameter-binding",
+  "note": "Conversation-sequence cases for parameter derivation (T5, plan task 4.1). All five are pending until MM.Material.GetInfo is registered (task 5.2) and the harness can assert parameter provenance. Each expected block uses ONLY keys the harness asserts today; every not-yet-assertable expectation is stated in this case's todo, so turning a case real means adding the assertion, never just deleting pending.",
+  "cases": [
+    {
+      "id": "derived-not-asked",
+      "pending": true,
+      "todo": "Blocked on task 5.2 (register MM.Material.GetInfo + sapnexus:MaterialInfoFact) and on task 7.1 adding provenance assertions to the harness. Target, none of which the harness can assert yet: neither unit nor purchasing_group is elicited; both carry provenance=capability_derived; the MM.Material.GetInfo node exists in the plan; a data edge carries sapnexus:MaterialInfoFact; topologicalOrder places GetInfo before MM.PR.CreateDraft. Pairs with user-supplied-wins - see that case's todo.",
+      "userQuery": "给 DEMOA2 在 5100 建一张采购申请，数量 10，交货日期 2026-09-30",
+      "expected": {
+        "decisionType": "SELECT",
+        "capabilityId": "MM.PR.CreateDraft",
+        "validateCalls": 1,
+        "executeCalls": 0
+      }
+    },
+    {
+      "id": "user-supplied-wins",
+      "pending": true,
+      "todo": "Blocked on task 5.2 and on task 7.2. Target: the user supplies unit, so it binds from literal, NO factField source is authored for it, MM.Material.GetInfo is NOT pulled into desired_fact_types, and no extra READ is executed - asserted by the ABSENCE of the producer node, not merely the presence of the literal. Mandatory pair with derived-not-asked: without this case, 'the user's value won' and 'we never derived anything' produce the same observable outcome, so a green derived-not-asked alone cannot demonstrate the feature.",
+      "userQuery": "给 DEMOA2 在 5100 建一张采购申请，数量 10 个，交货日期 2026-09-30",
+      "expected": {
+        "decisionType": "SELECT",
+        "capabilityId": "MM.PR.CreateDraft",
+        "validateCalls": 1,
+        "executeCalls": 0
+      }
+    },
+    {
+      "id": "derived-and-user-supplied-mixed",
+      "pending": true,
+      "todo": "Blocked on task 5.2 and on task 7.3. Target: the user supplies unit and omits purchasing_group, so purchasing_group binds from factField, unit binds from literal, and there is EXACTLY ONE data edge for the (MM.Material.GetInfo -> MM.PR.CreateDraft, sapnexus:MaterialInfoFact) pair. This is the only path that exercises Defect 1 (duplicate data edge, task 5.5): a case where all parameters are derived, or none are, cannot produce the second edge at all. Defect 1 must be caught by this test, not by hope.",
+      "userQuery": "给 DEMOA2 在 5100 建一张采购申请，数量 10 个，交货日期 2026-09-30，采购组不确定",
+      "expected": {
+        "decisionType": "SELECT",
+        "capabilityId": "MM.PR.CreateDraft",
+        "validateCalls": 1,
+        "executeCalls": 0
+      }
+    },
+    {
+      "id": "upstream-empty-degrades-to-elicitation",
+      "pending": true,
+      "todo": "Blocked on task 5.2 and on task 7.4. Target: MM.Material.GetInfo returns an empty or erroring result, so the run degrades to ELICITATION - never to a registeredDefault, never to a fabricated value. missingParameters must name the parameters that could not be derived.",
+      "userQuery": "给 UNKNOWN-MAT 在 5100 建一张采购申请，数量 10，交货日期 2026-09-30",
+      "expected": {
+        "decisionType": "CLARIFY",
+        "validateCalls": 0,
+        "executeCalls": 0
+      }
+    },
+    {
+      "id": "upstream-unreachable-emits-capability-gap",
+      "pending": true,
+      "todo": "Blocked on task 5.2 and on task 7.5. Target: the upstream producer is unreachable, a CapabilityGap is emitted, and the run ERRORS rather than degrading into an attempt. Governance red line: an unreachable producer must never become a guessed parameter reaching SAP. Needs a harness that can make one node of a plan unreachable; today's FakeGatewayClient answers every capability identically.",
+      "userQuery": "给 DEMOA2 在 5100 建一张采购申请，数量 10，交货日期 2026-09-30",
+      "expected": {
+        "decisionType": "ESCALATE_TO_PLANNER",
+        "validateCalls": 0,
+        "executeCalls": 0,
+        "dryRun": {
+          "present": true,
+          "gapsContain": "missing_capability"
+        }
+      }
+    }
+  ]
+}

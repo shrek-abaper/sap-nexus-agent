@@ -410,6 +410,77 @@ def test_dry_run_eval_file_passes():
     assert summary.passed == summary.total
 
 
+# --- S3 derived-parameter Eval (T2 task 4.1) ---
+
+
+DERIVED_PARAMETER_CASE_IDS = (
+    "derived-not-asked",
+    "user-supplied-wins",
+    "derived-and-user-supplied-mixed",
+    "upstream-empty-degrades-to-elicitation",
+    "upstream-unreachable-emits-capability-gap",
+)
+
+#: Keys the harness reads from ``expected``, kept in sync with the assertion
+#: functions at ``eval.py:634-760``. Any key the file carries that is NOT in
+#: this set would be silently ignored -- so the test below locks every present
+#: key against this set.
+HARNESS_ASSERTED_KEYS = frozenset(
+    {
+        "decisionType",
+        "capabilityId",
+        "missingParameters",
+        "errorType",
+        "validateCalls",
+        "executeCalls",
+        "dryRun",
+    }
+)
+
+
+def test_derived_parameter_cases_exist_and_are_pending():
+    """Five stable case ids, each pending with attribution (T2 task 4.1)."""
+    payload = json.loads(
+        (REPO_ROOT / "evals" / "derived_parameter_cases.yaml").read_text(
+            encoding="utf-8"
+        )
+    )
+    ids = [case.get("id") for case in payload["cases"]]
+
+    for case_id in DERIVED_PARAMETER_CASE_IDS:
+        assert case_id in ids, f"missing case id: {case_id}"
+
+    for case in payload["cases"]:
+        assert case.get("pending") is True, (
+            f"{case.get('id')}: not pending -- "
+            f"may not pass until MM.Material.GetInfo is registered"
+        )
+        todo = case.get("todo", "")
+        assert isinstance(todo, str) and len(todo) > 20, (
+            f"{case.get('id')}: todo is empty or too short"
+        )
+        expected = case.get("expected", {})
+        unknown = set(expected.keys()) - HARNESS_ASSERTED_KEYS
+        assert not unknown, (
+            f"{case.get('id')}: expected keys not asserted by harness: {unknown}"
+        )
+
+
+def test_derived_parameter_eval_reports_zeros_not_passing():
+    """All five pending, so the eval reports 0/0 -- never 5/5.
+
+    The summary prints "Eval passed: 0/0" which reads as a zero-empty suite.
+    That is a known limitation of the CLI (it does not separate skipped from
+    total), but the counts are accurate: 0 passed, 0 total, 0 failed.
+    """
+    summary = run_eval_file(
+        REPO_ROOT / "evals" / "derived_parameter_cases.yaml"
+    )
+    assert summary.total == 0
+    assert summary.passed == 0
+    assert summary.failed == 0
+
+
 def test_dry_run_eval_file_includes_multi_goal_case():
     """dry_run_cases.yaml must include the multi-goal case asserting
     nodeCount=2 (inventory + purchase_order) for an ESCALATE utterance."""
