@@ -1548,11 +1548,59 @@ turns out to be required, that is figure (a) ≠ 0 and must be reported as such,
 
 **Steps**
 
-- [ ] 5.8.1 Inspect the entire intent path for any Gateway / RFC / OData call. Grep for the
+- [x] 5.8.1 Inspect the entire intent path for any Gateway / RFC / OData call. Grep for the
   Gateway client, `requests`, `httpx`, `urllib`, and any execute entry point under `agent/`.
-- [ ] 5.8.2 Add the eval assertion that **intent parsing performs zero execute calls**.
-- [ ] 5.8.3 Record the audit result explicitly. If anything is found, **roll back and redo** — this
+- [x] 5.8.2 Add the eval assertion that **intent parsing performs zero execute calls**.
+- [x] 5.8.3 Record the audit result explicitly. If anything is found, **roll back and redo** — this
   is not a fixable finding, it is a design violation.
+
+**Result (5.8). Audit outcome: clean. Nothing found, so nothing was rolled back.**
+
+A grep is a snapshot, so the audit was written as `agent/tests/test_intent_path_no_data_fetch.py`
+(27 tests) — three independent locks:
+
+1. **Transitive static audit.** For each of the 24 intent-path modules, a *fresh interpreter*
+   imports it and reports which of `sap_nexus_agent.gateway_client` / `requests` / `httpx` /
+   `urllib.request` / `http.client` ended up in `sys.modules`. A grep sees one file; an import sees
+   the whole closure. All 24 clean.
+2. **File-level lock.** Exactly three modules import `gateway_client`: `cli.py`,
+   `orchestrator.py`, `workbench_output.py` — the runtime entry points. The set is asserted for
+   equality in both directions, so a new importer fails a test rather than merging silently.
+   `eval.py` is deliberately absent: it drives the runtime through its own `FakeGatewayClient` and
+   never imports the real one.
+3. **Behavioural lock at the point of temptation.**
+   `test_authoring_a_derived_parameter_performs_zero_gateway_calls` compiles a plan whose consumer
+   parameter is available *only* from an upstream capability's output — the exact case where "just
+   look the unit up first" would be written. It asserts the parameter really was derived (a
+   `factField` source **and** a `data` edge exist, so the zero-call assertion cannot be vacuous),
+   that both call lists on a recording Gateway double are empty, and that no `GatewayClient` was
+   constructed.
+
+Manual findings recorded for completeness:
+
+| Grep | Finding |
+|---|---|
+| HTTP libraries under `agent/sap_nexus_agent/` | Only `gateway_client.py` (`urllib.request` / `urllib.parse`). Nothing else. |
+| `rfcName` outside the runtime entry points | Every occurrence is **rejection** logic — `intent.py` / `capability_selector.py` / `discard.py` detect a technical override and refuse it (`UNSUPPORTED_RFC_NAME`), and `llm_intent.py` instructs the model never to emit one. `reasoning_fact.py` only reads `rfcName` back off an `ExecutionResult` for provenance. **No RFC name is ever generated.** |
+| `socket` / `subprocess` / `os.system` / `Popen` under `agent/sap_nexus_agent/` | None. |
+
+Positive control: `test_the_probe_itself_is_not_vacuous` asserts the probe *does* report
+`gateway_client` for `sap_nexus_agent.orchestrator`, which legitimately reaches the Gateway. Without
+it the 24 green results would prove nothing.
+
+| Check | Result |
+|---|---|
+| `pytest agent/tests/test_intent_path_no_data_fetch.py` | 27 passed |
+| `pytest agent/tests -q` | **1500 passed, 1 skipped, 2 xfailed** |
+| M17 `recall.py` imports `gateway_client` | 2 FAILED (the `recall` probe + the file-level lock) |
+| M18 `derivation.py` imports `gateway_client` | caught — every module that transitively imports `derivation` failed |
+| M19 `derivation.py` adds `import urllib.request` | **16 FAILED** — the clean demonstration that detection is transitive, not per-file |
+
+All three mutations restored; `git diff --stat` empty on both mutated files afterwards.
+
+Note on M17/M18: both fail with an *import error* rather than a forbidden-module report, because
+`gateway_client` imports back into the intent path and the cycle breaks the import. The audit still
+fails closed, and M19 is the mutation that demonstrates the detection itself.
 
 ## Task 5.9 — Carry `provenance=capability_derived` through to both surfaces
 
