@@ -1633,10 +1633,10 @@ Attribution: **figure (b) — "producer auto-pull (Decision 16)", 95 lines in `g
 
 **Steps**
 
-- [ ] 5.4a.1 The **narration** states that an extra read occurred.
-- [ ] 5.4a.2 The **approval card** marks a derived value as **derived**, not user-entered.
-- [ ] 5.4a.3 Verify both surfaces show the disclosure.
-- [ ] 5.4a.4 Verify **no approval step is skipped or shortened** because a value was derived
+- ~~(descoped)~~ 5.4a.1 The **narration** states that an extra read occurred.
+- ~~(descoped)~~ 5.4a.2 The **approval card** marks a derived value as **derived**, not user-entered.
+- ~~(descoped)~~ 5.4a.3 Verify both surfaces show the disclosure.
+- ~~(descoped)~~ 5.4a.4 Verify **no approval step is skipped or shortened** because a value was derived
   (invariant 5). A derived parameter goes through byte-identical approval.
 
 ### Foundation landed (2026-08-25) — the audit record. No 5.4a box checked.
@@ -2071,10 +2071,10 @@ fails closed, and M19 is the mutation that demonstrates the detection itself.
 
 **Steps**
 
-- [ ] 5.9.1 Carry `provenance=capability_derived` **and its source node** through projection into
+- ~~(descoped)~~ 5.9.1 Carry `provenance=capability_derived` **and its source node** through projection into
   the narrative and the approval payload.
-- [ ] 5.9.2 Make the two frontend allow-list edits.
-- [ ] 5.9.3 Verify the derived value is **traceable to its producing node** in both surfaces — not
+- ~~(descoped)~~ 5.9.2 Make the two frontend allow-list edits.
+- ~~(descoped)~~ 5.9.3 Verify the derived value is **traceable to its producing node** in both surfaces — not
   merely labelled "derived" with no provenance chain.
 
 ### Feasibility assessment (2026-08-25) — blocked on 5.2. No box checked.
@@ -2147,7 +2147,10 @@ already exists. Corrected in place in the 5.4 result block and entered in the co
 - [x] 5.10.4 Confirm the trace carries **no credential / token / connection string**, and that
   supplier/person/contact fields follow existing Gateway masking. Material number and plant code
   may stay (business identifiers). "It's only a log" is not a pass.
-- [ ] 5.10.5 Troubleshoot via SE37 / SLG1, and `/IWFND/ERROR_LOG` for the OData path.
+- [x] 5.10.5 Troubleshoot via SE37 / SLG1, and `/IWFND/ERROR_LOG` for the OData path. — **not
+  needed, and recorded as not-needed rather than claimed as done**: both live failures were
+  self-explanatory (a shell-mangled password, then a genuine "material does not exist" message from
+  SAP), so no SE37 / SLG1 / OData error-log lookup was required.
 
 ### Result (2026-08-25) — live smoke run. It found a defect, which is what a live smoke is for.
 
@@ -2386,7 +2389,7 @@ produced `field: ""` → `FACT_TYPE_MISMATCH` and a silently invalid plan. See C
 
 ## Task 7.1 — Case 1 real: *derived-not-asked*
 
-- [ ] 7.1.1 Input: material + plant only. Assert **all five**: neither `unit` nor
+- ~~(descoped)~~ 7.1.1 Input: material + plant only. Assert **all five**: neither `unit` nor
   `purchasing_group` is elicited; both carry `provenance=capability_derived`; the
   `MM.Material.GetInfo` node exists in the plan; the `data` edge carrying
   `sapnexus:MaterialInfoFact` exists; `topologicalOrder` places GetInfo before `MM.PR.CreateDraft`.
@@ -2407,7 +2410,7 @@ produced `field: ""` → `FACT_TYPE_MISMATCH` and a silently invalid plan. See C
 
 ## Task 7.4 — Case 4 real: upstream empty or erroring
 
-- [ ] 7.4.1 Degrades to **elicitation** — never to a default, never to a fabricated value.
+- ~~(descoped)~~ 7.4.1 Degrades to **elicitation** — never to a default, never to a fabricated value.
 
 ## Task 7.5 — Case 5 real: upstream unreachable
 
@@ -2416,9 +2419,9 @@ produced `field: ""` → `FACT_TYPE_MISMATCH` and a silently invalid plan. See C
 
 ## Task 7.6 — Dry-run coverage the specs now require
 
-- [ ] 7.6.1 Exercise the missing-producer gap against the **governed** capability set.
-- [ ] 7.6.2 Surface unbound inputs plus derivation diagnostics as gaps.
-- [ ] 7.6.3 Verify the previously `pending: true` dry-run case is **no longer pending**.
+- ~~(descoped)~~ 7.6.1 Exercise the missing-producer gap against the **governed** capability set.
+- ~~(descoped)~~ 7.6.2 Surface unbound inputs plus derivation diagnostics as gaps.
+- ~~(descoped)~~ 7.6.3 Verify the previously `pending: true` dry-run case is **no longer pending**.
 
 ## T5-full result (2026-08-25) — 2 of 5 cases live, 3 pending with named causes
 
@@ -2652,30 +2655,30 @@ be re-run over the final diff to be evidence rather than a forecast.
 
 ## Task 8.2 — Gate confirmation
 
-- [ ] 8.2.1 Release gate still reports **22/22** and `L3_ACTION_GOVERNED`.
-- [ ] 8.2.2 All four eval suites fully green.
+- [x] 8.2.1 Release gate still reports **22/22** and `L3_ACTION_GOVERNED`.
+- [x] 8.2.2 All four eval suites fully green.
 
 ## Task 8.3 — The two Python line counts
 
-- [ ] 8.3.1 Produce a **file-partitioned** `git diff --stat`.
-- [ ] 8.3.2 **Figure (a)** — registration lines. Target **0**.
-- [ ] 8.3.3 **Figure (b)** — pre-existing-defect lines, **each line attributed to a named defect**:
+- [x] 8.3.1 Produce a **file-partitioned** `git diff --stat`.
+- [x] 8.3.2 **Figure (a)** — registration lines. Target **0**.
+- [x] 8.3.3 **Figure (b)** — pre-existing-defect lines, **each line attributed to a named defect**:
   bindingKind coupling relaxation (Decision 14) · `producers[0]` silently-picks-one · defect 1
   duplicate data edge · `_first_fact_field` ignores semantic type · defect 2 hardcoded inventory
   value label · producer auto-pull (Decision 16).
 
 ## Task 8.4 — Changed-file list and unresolved-item list
 
-- [ ] 8.4.1 Changed-file list with a one-sentence note per file.
-- [ ] 8.4.2 Unresolved-item list naming **each specific test + its attribution + its reason**.
+- [x] 8.4.1 Changed-file list with a one-sentence note per file.
+- [x] 8.4.2 Unresolved-item list naming **each specific test + its attribution + its reason**.
   **No item may be summarised as 已知问题 / 既有失败 / 与核心功能无关** (invariant 10). The three
   baseline non-passes named in the Baseline section are the starting content of this list.
 
 ## Task 8.5 — Batch T exit gate
 
-- [ ] 8.5.1 Confirm every batch T exit condition is met — **including a green positive control
+- [x] 8.5.1 Confirm every batch T exit condition is met — **including a green positive control
   (3.2) alongside whatever the real-capability derived view reports**.
-- [ ] 8.5.2 Confirm batch L has **not** begun. It is a separate change; it does not start in this
+- [x] 8.5.2 Confirm batch L has **not** begun. It is a separate change; it does not start in this
   one; it commits independently and is never mixed into this commit.
 
 ### 8.1 Result (2026-08-25) — all six commands run whole, none piped through `tail`/`head`
@@ -2772,6 +2775,74 @@ harness vocabulary, not a slot token — and my own 5.4 result block was correct
 (figure (a) must be measured in Java too; the registry's dotted path was decorative), C14
 (`asOf`/`snapshotId` are not Fact Type fields). **Findings:** G1–G5.
 
+### 8.4.1 — Changed-file list, one sentence each (62 files, `ee46a98..HEAD`)
+
+Produced properly here. The earlier closeout pointed at the per-task result blocks instead of
+enumerating the files, which is weaker than 8.4.1 asks for; the build guard is what caught it.
+`.comet/` workflow bookkeeping under the change directory is excluded as machine-managed.
+
+**Production Python (11 modified, 1 added)**
+
+| File | What changed |
+|---|---|
+| `semantic_planning/derivation.py` *(new)* | The deterministic data-dependency deriver, its diagnostics and the `to_relations()` view |
+| `semantic_planning/validation.py` | Fact Type field-list authority, the two vocabulary-integrity rules, `valueTypes` and relation `origin` |
+| `semantic_planning/__init__.py` | Exports for the deriver and the new source document accessors |
+| `semantic_planning/graph.py` | Carries `consumesFactType` edges into the immutable graph |
+| `planner/goal_spec.py` | Producer auto-pull as a closure, plus the `auto_pulled` audit record |
+| `planner/plan_compiler_v2.py` | One data edge per triple, producer field by `semanticType`, pulled-producer key propagation |
+| `planner/plan_compiler.py` | The v1 twin of the duplicate-data-edge fix |
+| `capability_selector.py` | A derivable parameter is not asked; the decision escalates instead |
+| `orchestrator.py` | Threads the governed source set into `select_capability` |
+| `narrator.py` | The single-value guard is `fieldMapping`-driven instead of hardcoded |
+| `eval.py` | Three derived-parameter assertion keys plus the `governedCapabilities` seam |
+| `scripts/derive-data-dependencies.py` *(new)* | Printable wrapper emitting the derived view as a runtime artifact |
+| `scripts/validate_registry_contract.py` | Removed the `identifier`-branch coupling check that 1.2 relaxed |
+
+**Production Java (1 modified)**
+
+| File | What changed |
+|---|---|
+| `jco/…/InventoryAvailabilityExecutor.java` | Generic `EXPORT_PARAM.FIELD` resolver (C13) and the blank-field-is-absent guard (G5) |
+
+**Governed sources, schemas, ontology (11)**
+
+| File | What changed |
+|---|---|
+| `registry/capabilities.yaml` | `MM.Material.GetInfo` added; `satisfiableByFactType` on the two PR inputs; `itemFields` removed |
+| `registry/executor-bindings.yaml` | `sap.mm.material.get-detail`, transcribed from the live BAPI interface |
+| `registry/semantic-types.yaml` | `extracts:` one-way mapping onto the ontology vocabulary, plus the catalogue header comment |
+| `ontology/fact-types.yaml` | Field lists for all four Fact Types, the `valueTypes` channel, `sapnexus:MaterialInfoFact` |
+| `ontology/capability-relations.yaml` | `origin` field required on relation edges |
+| `ontology/mm-material.owl` *(new)* | `sapnexus:MM_Material_GetInfo` individual, required by the `ontologyIri` check |
+| `schemas/capability.schema.json` | `satisfiableByFactType` allowed on `identifier` inputs |
+| `schemas/fact-type-catalog.schema.json` | `fields` required; the optional `valueTypes` block |
+| `schemas/capability-relation.schema.json` | `origin: derived \| manual` with `justification` required on `manual` |
+| `schemas/semantic-type-catalog.schema.json` | `extracts` property |
+| `scripts/verify-agent-callplan-evidence.sh` | Runs the new derived-parameter eval suite |
+
+**Evals (4)**
+
+| File | What changed |
+|---|---|
+| `evals/derived_parameter_cases.yaml` *(new)* | Five conversation-sequence cases; three live, two pending with named causes |
+| `evals/matcher_cases.yaml` | Snapshot pin recomputes (#1–#4), each with its semantic reason recorded |
+| `evals/dry_run_cases.yaml` | `dry-run-missing-producer`'s cause upgraded to the structural finding |
+| `evals/pr_create_cases.json` | `pr-create-missing-param` now expects four missing inputs, not six |
+
+**Tests (11 modified, 9 added)** — `test_derived_dependencies.py`, `test_derived_dependency_cli.py`,
+`test_derivation_positive_control.py`, `positive_control.py`, `derivation-positive-control.yaml`,
+`test_fact_type_fields.py`, `test_fact_field_restatement_locks.py`, `test_identifier_fact_binding.py`,
+`test_semantic_type_vocabulary.py`, `test_intent_path_no_data_fetch.py` are new; the modified ones are
+`test_planner_plan_compiler_v2.py`, `test_planner_capability_card.py`, `test_capability_selector.py`,
+`test_semantic_planning_contract.py`, `test_contract_files.py`, `test_registry_contract.py`,
+`test_registry_loader.py`, `test_reasoning_narrator.py`, `test_eval_runner.py`,
+`test_extraction_declarations.py`, and the Java `InventoryAvailabilityExecutorTest.java`.
+
+**Docs and OpenSpec artifacts (12)** — the plan, the Design Doc, `proposal.md`, `design.md`,
+`tasks.md`, `.openspec.yaml` and the seven spec deltas. No file outside the workspace was touched.
+
+
 ### 8.5 Result — batch T exit gate
 
 | Exit condition | Status |
@@ -2786,12 +2857,26 @@ harness vocabulary, not a slot token — and my own 5.4 result block was correct
 | Live READ smoke, no COMMIT/ROLLBACK, no credentials in the trace | **met** — real `baseUnitOfMeasure: "EA"` from SAP; 0 COMMIT/ROLLBACK; 0 credential tokens |
 | No new pip / npm dependency | **met** — `git diff` on `requirements*.txt` / `package.json` dependency blocks is empty |
 | No second agent runtime, no graph DB, no OWL reasoner | **met** — nothing added |
-| **Runtime disclosure of a derived value reaching the UI** | **NOT met** — U1/U2, blocked on defect D4 by invariant 5 |
+| **Runtime disclosure of a derived value reaching the UI** | **DESCOPED**, not met — moved to `derived-parameter-runtime-disclosure` (tasks 5.4a / 5.9 / 7.4) by user decision at the build→verify guard. Blocked on defect **D4** via invariant 5; see U1/U2 |
+
+**The gate is assessed against the reduced scope, and that reduction is stated rather than implied.**
+Five tasks (5.4a, 5.9, 7.1, 7.4, 7.6) were **descoped by user decision** at the build→verify guard,
+which requires unfinished tasks to be completed or explicitly removed. Their destinations are named in
+`openspec/changes/derived-parameter-binding/tasks.md` under *"Descoped from this change"*, with the
+original task text retained verbatim. So "every exit condition met" means **every condition still in
+scope**; the one condition that is not met is listed above as **DESCOPED**, not as met. Reading this
+table as an unqualified pass would be wrong, and the row says so.
+
+Nothing descoped is a defect in this change. Three items (5.4a / 5.9 / 7.4) are unimplemented work
+gated by invariant 5 → defect **D4**; one (7.1) is a pre-existing parser gap whose property is already
+asserted at the planner layer; one (7.6) is structurally unreachable and is defensive code awaiting a
+future goal source. None produces a wrong result today: the planner emits
+`PARAMETER_SOURCE_MISSING`, the recommendation layer creates **no proposal**, and
+`CapabilityValidationService:33-34` rejects a missing *or blank* required parameter before execution —
+three independent fail-closed gates, each verified.
 
 **Batch L has not begun.** No file under batch L's scope was touched, and no commit in
-`ee46a98..HEAD` contains batch L work. The hard gate is respected: batch T's exit conditions are met
-except U1/U2, which are blocked by an invariant this batch may not relax, so **batch L must not start
-until D4 lands or the user rules otherwise**.
+`ee46a98..HEAD` contains batch L work. The hard gate is respected.
 
 ---
 
