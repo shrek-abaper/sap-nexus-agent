@@ -2387,10 +2387,6 @@ def mutated_sources(sources, mutation):
     if mutation == "fact-input-without-reference":
         inventory["inputs"][0]["bindingKind"] = "fact"
         inventory["inputs"][0].pop("satisfiableByFactType", None)
-    elif mutation == "identifier-with-fact-reference":
-        inventory["inputs"][0]["satisfiableByFactType"] = (
-            "sapnexus:InventoryAvailabilityFact"
-        )
     elif mutation == "primary-output-without-fact-type":
         inventory["outputs"][0].pop("factTypeRef")
     elif mutation == "unknown-relation-capability":
@@ -2446,7 +2442,6 @@ def mutated_sources(sources, mutation):
     ("mutation", "expected_code"),
     [
         ("fact-input-without-reference", "SCHEMA_INVALID"),
-        ("identifier-with-fact-reference", "SCHEMA_INVALID"),
         ("primary-output-without-fact-type", "SCHEMA_INVALID"),
         ("unknown-relation-capability", "RELATION_ENDPOINT_NOT_FOUND"),
         ("unknown-precondition-fact", "RELATION_ENDPOINT_NOT_FOUND"),
@@ -2465,10 +2460,6 @@ def test_contract_negative_matrix(mutation, expected_code):
     ("mutation", "expected_error"),
     [
         ("fact-input-without-reference", "satisfiableByFactType is required"),
-        (
-            "identifier-with-fact-reference",
-            "identifier must not declare satisfiableByFactType",
-        ),
         ("primary-output-without-fact-type", "factTypeRef is required"),
     ],
 )
@@ -2481,10 +2472,6 @@ def test_legacy_validator_enforces_v2_semantic_io_invariants(
     if mutation == "fact-input-without-reference":
         raw["inputs"][0]["bindingKind"] = "fact"
         raw["inputs"][0].pop("satisfiableByFactType", None)
-    elif mutation == "identifier-with-fact-reference":
-        raw["inputs"][0]["satisfiableByFactType"] = (
-            "sapnexus:InventoryAvailabilityFact"
-        )
     elif mutation == "primary-output-without-fact-type":
         raw["outputs"][0].pop("factTypeRef")
     else:
@@ -3049,7 +3036,11 @@ def test_semantic_builder_malformed_io_containers_fail_closed(
 
     result = build_semantic_contracts(sources)
 
-    expected_count = 2 if field_name == "inputs" and path_suffix == "/0" else 1
+    # One SCHEMA_INVALID per malformed container: the `ioField` object-type
+    # check. Dropping the identifier `not.required` branch removed a spurious
+    # second error ("should not be valid under {'required': [...]}") that the
+    # branch produced when applied to a non-object.
+    expected_count = 1
     _assert_fail_closed(
         result,
         tuple(
@@ -3187,10 +3178,6 @@ def _semantic_rule_sources(mutation):
     elif mutation == "fact-input-reference-missing":
         inventory["inputs"][0]["bindingKind"] = "fact"
         inventory["inputs"][0].pop("satisfiableByFactType", None)
-    elif mutation == "identifier-has-fact-reference":
-        inventory["inputs"][0]["satisfiableByFactType"] = fact_types["factTypes"][
-            0
-        ]["factTypeId"]
     elif mutation == "primary-output-reference-missing":
         inventory["outputs"][0].pop("factTypeRef")
     elif mutation == "unknown-input-fact-reference":
@@ -3308,10 +3295,6 @@ def _semantic_rule_sources(mutation):
         ),
         (
             "fact-input-reference-missing",
-            (("/capabilities/0/inputs/0/satisfiableByFactType", "SCHEMA_INVALID"),),
-        ),
-        (
-            "identifier-has-fact-reference",
             (("/capabilities/0/inputs/0/satisfiableByFactType", "SCHEMA_INVALID"),),
         ),
         (

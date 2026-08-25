@@ -65,12 +65,13 @@ class SemanticGraphCompiler:
                         )
                     )
             for input_field in capability["inputs"]:
-                if input_field["bindingKind"] == "fact":
+                satisfiable_by = input_field.get("satisfiableByFactType")
+                if satisfiable_by:
                     edges.add(
                         SemanticEdge(
                             "consumesFactType",
                             capability_id,
-                            input_field["satisfiableByFactType"],
+                            satisfiable_by,
                         )
                     )
         for relation in sources.relations["relations"]:

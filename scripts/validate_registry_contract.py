@@ -492,11 +492,6 @@ def _validate_semantic_io_fields(capability: CapabilityEntry) -> list[str]:
             errors.append(
                 f"{capability.capability_id}: inputs[{name}].satisfiableByFactType is required"
             )
-        if binding_kind == "identifier" and "satisfiableByFactType" in input_field:
-            errors.append(
-                f"{capability.capability_id}: inputs[{name}] identifier must not declare "
-                "satisfiableByFactType"
-            )
     outputs = capability.raw.get("outputs")
     if not isinstance(outputs, list):
         outputs = []

@@ -138,13 +138,6 @@
             "required": ["bindingKind"]
           },
           "then": { "required": ["satisfiableByFactType"] }
-        },
-        {
-          "if": {
-            "properties": { "bindingKind": { "const": "identifier" } },
-            "required": ["bindingKind"]
-          },
-          "then": { "not": { "required": ["satisfiableByFactType"] } }
         }
       ]
     },

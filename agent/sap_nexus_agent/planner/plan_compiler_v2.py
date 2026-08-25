@@ -237,11 +237,12 @@ def _build_plan_graph_v2(
         for ft, nid in fact_type_to_node.items()
     ]
     edges: list[dict[str, Any]] = []
-    # Second pass: author factField sources + data edges for fact-bound inputs.
-    # For each consumer node's required ``fact`` input, resolve the producer
-    # node (from fact_type_to_node), find the producer output field whose
-    # factTypeRef matches, and author a factField source binding + a 1:1
-    # data edge (S1 validator requires EDGE_INCONSISTENT if missing/mismatched).
+    # Second pass: author factField sources + data edges for inputs that
+    # declare ``satisfiableByFactType`` (regardless of ``bindingKind``).
+    # For each such required input, resolve the producer node (from
+    # fact_type_to_node), find the producer output field whose factTypeRef
+    # matches, and author a factField source binding + a 1:1 data edge
+    # (S1 validator requires EDGE_INCONSISTENT if missing/mismatched).
     data_edges: list[dict[str, Any]] = []
     edge_counter = 0
     cards_by_id = {c.capability_id: c for c in cards}
@@ -250,11 +251,9 @@ def _build_plan_graph_v2(
         if card is None:
             continue
         for inp in card.inputs:
-            if inp.binding_kind != "fact" or not inp.required:
+            if not inp.satisfiable_by_fact_type or not inp.required:
                 continue
             fact_type = inp.satisfiable_by_fact_type
-            if fact_type is None:
-                continue
             producer_node_id = fact_type_to_node.get(fact_type)
             if producer_node_id is None or producer_node_id == node["nodeId"]:
                 continue

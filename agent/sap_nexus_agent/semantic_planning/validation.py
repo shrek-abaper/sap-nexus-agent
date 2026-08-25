@@ -435,10 +435,7 @@ def _validate_parameter_source(
 
     producer = node_index.get(source["producerNodeId"])
     expected_fact_type = input_field.get("satisfiableByFactType")
-    if (
-        input_field["bindingKind"] != "fact"
-        or source["factTypeId"] != expected_fact_type
-    ):
+    if not expected_fact_type or source["factTypeId"] != expected_fact_type:
         issues.append(
             ValidationIssue(
                 f"{base_path}/factTypeId",
@@ -1429,13 +1426,6 @@ def _validate_fact_references(
                     f"{base_path}/satisfiableByFactType",
                     "SCHEMA_INVALID",
                     "fact input requires satisfiableByFactType",
-                )
-            elif binding_kind == "identifier" and "satisfiableByFactType" in input_field:
-                _add_issue(
-                    issues,
-                    f"{base_path}/satisfiableByFactType",
-                    "SCHEMA_INVALID",
-                    "identifier input must not declare satisfiableByFactType",
                 )
             if fact_type_ref is not None and not isinstance(fact_type_ref, str):
                 _add_issue(

@@ -409,12 +409,16 @@ def test_capability_v2_rejects_invalid_binding_variants():
     registry = _load_yaml("registry/capabilities.yaml")
     schema = _load_schema("capability.schema.json")
 
+    # An identifier input MAY declare satisfiableByFactType: bindingKind says
+    # what the parameter is, satisfiableByFactType says where it may also come
+    # from. Requirement: registry-ontology-contract, scenario "Identifier input
+    # declares Fact Type reference". Positive coverage lives in
+    # agent/tests/test_identifier_fact_binding.py.
     identifier_with_fact = json.loads(json.dumps(registry))
     identifier_with_fact["capabilities"][0]["inputs"][0]["satisfiableByFactType"] = (
         "sapnexus:InventoryAvailabilityFact"
     )
-    with pytest.raises(jsonschema.ValidationError):
-        jsonschema.validate(identifier_with_fact, schema)
+    jsonschema.validate(identifier_with_fact, schema)
 
     fact_without_reference = json.loads(json.dumps(registry))
     fact_without_reference["capabilities"][0]["inputs"][0]["bindingKind"] = "fact"

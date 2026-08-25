@@ -1,0 +1,20 @@
+{
+  "change": "derived-parameter-binding",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "565867878d275f962a77b4d6b454f5e8a93db0e64829642593730f9d2de5a684",
+  "files": [
+    { "path": "openspec/changes/derived-parameter-binding/proposal.md", "sha256": "9f61f7348a7a9e93739336fdee9c50a811d6720e4a92b9fe64a1ae93a3d80ac3" },
+    { "path": "openspec/changes/derived-parameter-binding/design.md", "sha256": "6c1f277ee392f0839360b320d7f36b66ccc83eb3fee5dd632ff3112b5822651d" },
+    { "path": "openspec/changes/derived-parameter-binding/tasks.md", "sha256": "def7bdab4ee107fe911bd440cc7e4f6e9e178e424f6d5af531189d3d54ee74a1" },
+    { "path": "openspec/changes/derived-parameter-binding/specs/agent-callplan-evidence/spec.md", "sha256": "57cd2c1d331445ce47f9389ecb4a560dbf06050f1034f890b319a5319fec3553" },
+    { "path": "openspec/changes/derived-parameter-binding/specs/declarative-intent-extraction/spec.md", "sha256": "5d03ab109f5349d9f50c89a35ff5d928cc8deb581285867e1e8d7bd897d3afae" },
+    { "path": "openspec/changes/derived-parameter-binding/specs/output-projection/spec.md", "sha256": "2cb122e02772363241da363b6420b3a03d54e0716352e6f13bf917ad9344554d" },
+    { "path": "openspec/changes/derived-parameter-binding/specs/planner-dry-run/spec.md", "sha256": "4b9511c1b0a6c59b820109201c5aaec9870f6c971123aceb93880c389316466f" },
+    { "path": "openspec/changes/derived-parameter-binding/specs/registry-ontology-contract/spec.md", "sha256": "957d514f27d1470253e3dea817db79f66016fd93d874aed83f930f0d894656ec" },
+    { "path": "openspec/changes/derived-parameter-binding/specs/semantic-plan-authoring-v2/spec.md", "sha256": "d7a23b631da6992dce9d50add6c4c5f95e9f9106f49ec552cff953145f7e8230" },
+    { "path": "openspec/changes/derived-parameter-binding/specs/semantic-planning-foundation/spec.md", "sha256": "002604f5d2d36694678b546757e9b004c864441316b03af5b13550e22d61f542" }
+  ]
+}
