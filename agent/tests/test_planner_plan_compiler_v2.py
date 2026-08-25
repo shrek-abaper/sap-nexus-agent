@@ -251,6 +251,145 @@ def test_compile_plan_v2_authors_fact_field_source_and_data_edge():
     )
 
 
+# ---- Task 1.3: user-supplied beats upstream-derived (authoring-time precedence) ----
+#
+# Requirement: openspec/changes/derived-parameter-binding/specs/
+# semantic-plan-authoring-v2/spec.md — a value the user stated explicitly must
+# not be overwritten by, or duplicated with, an upstream-derived one. Precedence
+# is applied at *authoring* time, so exactly one source is authored per
+# parameter and the duplicate-parameterBindings hazard cannot arise.
+
+
+def _sources_with_derivable_identifier() -> tuple[
+    SemanticSourceDocuments, RegistrySnapshot
+]:
+    """Consumer with an ``identifier`` input that declares
+    ``satisfiableByFactType``, i.e. a parameter that *may* be derived from an
+    upstream Fact but is still an identifier the user can simply state.
+
+    The producer (``MM.Inventory.GetAvailability``) publishes
+    ``availableQuantity`` / ``sapnexus:AvailableQuantity`` on
+    ``sapnexus:InventoryAvailabilityFact``, so the consumer input's semantic
+    type matches a real producer output field.
+    """
+    base = _real_sources()
+    caps = _unfreeze(base.capabilities)
+    facts = _unfreeze(base.fact_types)
+    caps["capabilities"].append({
+        "capabilityId": "Test.Consumer.UseQuantity",
+        "name": "Test Quantity Consumer",
+        "description": "Consumes a quantity that may be derived upstream",
+        "domain": "MM",
+        "businessObject": "Test",
+        "ontologyIri": "sapnexus:Test_Quantity_Consumer",
+        "semanticType": "sapnexus:TestQuantityConsumerReadFunction",
+        "aliases": [],
+        "status": "active",
+        "kind": "Function",
+        "inputs": [
+            {
+                "name": "quantity",
+                "semanticType": "sapnexus:AvailableQuantity",
+                "required": True,
+                "bindingKind": "identifier",
+                "satisfiableByFactType": "sapnexus:InventoryAvailabilityFact",
+                "type": "string",
+            }
+        ],
+        "outputs": [
+            {"name": "summary", "factTypeRef": "sapnexus:TestQuantitySummaryFact"}
+        ],
+        "governance": {
+            "sideEffect": "none",
+            "requiresApproval": False,
+            "approvalPolicy": "not_required",
+            "dataClassification": "internal",
+        },
+        "executor": {"type": "ODATA"},
+        "executorBinding": {"type": "ODATA", "bindingId": "test-binding"},
+    })
+    facts["factTypes"].append(
+        {"factTypeId": "sapnexus:TestQuantitySummaryFact", "fields": []}
+    )
+    sources = SemanticSourceDocuments(
+        capabilities=caps,
+        executor_bindings=base.executor_bindings,
+        fact_types=facts,
+        relations=base.relations,
+    )
+    return sources, build_registry_snapshot(sources)
+
+
+def _quantity_handoff(snapshot, consumer_parameters) -> EscalationHandoff:
+    return EscalationHandoff(
+        reason="precedence",
+        matched_intents=[
+            MatchedIntent(
+                capability_id="MM.Inventory.GetAvailability",
+                parameters={"material": "M1", "plant": "5300"},
+                missing=[],
+            ),
+            MatchedIntent(
+                capability_id="Test.Consumer.UseQuantity",
+                parameters=consumer_parameters,
+                missing=[],
+            ),
+        ],
+        utterance="quantity precedence",
+        registry_snapshot_id=snapshot.snapshot_id,
+    )
+
+
+def _bindings_for(plan_graph, capability_id, parameter_name):
+    node = next(
+        n for n in plan_graph["nodes"] if n["capabilityId"] == capability_id
+    )
+    return [
+        b for b in node["parameterBindings"] if b["parameterName"] == parameter_name
+    ]
+
+
+def test_unsupplied_derivable_identifier_is_authored_as_fact_field():
+    """Control: with the value absent, the compiler DOES derive it."""
+    sources, snapshot = _sources_with_derivable_identifier()
+    result = compile_plan_v2(_quantity_handoff(snapshot, {}), snapshot, sources)
+
+    bindings = _bindings_for(
+        result.plan_graph, "Test.Consumer.UseQuantity", "quantity"
+    )
+    assert [b["source"]["kind"] for b in bindings] == ["factField"]
+    data_edges = [e for e in result.plan_graph["edges"] if e["kind"] == "data"]
+    assert len(data_edges) == 1
+
+
+def test_user_supplied_value_suppresses_the_fact_field_source():
+    """User-supplied beats upstream-derived, even though the producer node is
+    present in the plan and the Fact Type is available."""
+    sources, snapshot = _sources_with_derivable_identifier()
+    result = compile_plan_v2(
+        _quantity_handoff(snapshot, {"quantity": "17"}), snapshot, sources
+    )
+
+    bindings = _bindings_for(
+        result.plan_graph, "Test.Consumer.UseQuantity", "quantity"
+    )
+    # Exactly one source, and it is the user's — not a second, derived one.
+    assert len(bindings) == 1
+    assert bindings[0]["source"]["kind"] in {"literal", "goalConstraint"}
+    assert not [
+        e
+        for e in result.plan_graph["edges"]
+        if e["kind"] == "data"
+        and e["factTypeId"] == "sapnexus:InventoryAvailabilityFact"
+        and e["toNodeId"]
+        == next(
+            n["nodeId"]
+            for n in result.plan_graph["nodes"]
+            if n["capabilityId"] == "Test.Consumer.UseQuantity"
+        )
+    ], "no data edge may be authored for a parameter the user supplied"
+
+
 # ---- Task 9: dependency edge authoring + topological sort ----
 
 

@@ -151,9 +151,14 @@ Named baseline non-passes — these are **pre-existing and must stay honest**, n
 - XFAIL `agent/tests/test_binding_sources.py::test_capability_output_source_resolution_is_not_implemented_yet`
   — the fixed landing point for defect **D2**. Must be **preserved** (ruling ④, task 1.4).
 - XFAIL `agent/tests/test_binding_sources.py::test_binding_capability_output_not_implemented`
-  — must be preserved. **Substantive caveat:** its own xfail reason says the raise-assertion
-  "DID NOT RAISE" — it is xfail *for the wrong reason*. Once `factField` authoring becomes real,
-  its semantics must be made honest rather than left coincidentally-still-xfail. Task 1.4 owns this.
+  — must be preserved. **Caveat resolved by task 1.4.3 (verified by reading the body, not the
+  reason string alone):** the DID-NOT-RAISE outcome is *deliberate and documented*. The marker pins
+  `raises=pytest.fail.Exception` so **only** that exact mode is absorbed, and the body opens with
+  `assert "capabilityOutput" not in engine._WIRED_SOURCE_KINDS`, which raises `AssertionError` —
+  not the pinned type — the moment the source is wired, converting the test into a real failure.
+  So it is xfail for a reason that is true and stated. My earlier note that it was "xfail for the
+  wrong reason" was based on the reason string in isolation and is **withdrawn**. Nothing to
+  correct; the placeholder is preserved as-is.
 - SKIPPED `agent/tests/test_llm_live.py:9` — env-gated on `SAP_NEXUS_LLM_LIVE=1`.
 
 ## Corrections to `openspec/changes/derived-parameter-binding/tasks.md`
@@ -370,15 +375,15 @@ decision in the compiler.
 
 **Steps**
 
-- [ ] 1.3.1 Failing test: a goal where the user supplied `unit` explicitly →
+- [x] 1.3.1 Failing test: a goal where the user supplied `unit` explicitly →
   `unit`'s `parameterBindings` entry has `source.kind == "literal"` (or `goalConstraint`),
   **no** `factField` source, and **no** `MM.Material.GetInfo` node in the plan.
-- [ ] 1.3.2 In the second pass, skip authoring a `factField` source when the parameter already
+- [x] 1.3.2 In the second pass, skip authoring a `factField` source when the parameter already
   carries a `literal` or `goalConstraint` binding.
-- [ ] 1.3.3 Note the structural payoff in the task record: because precedence applies at
+- [x] 1.3.3 Note the structural payoff in the task record: because precedence applies at
   *authoring* time, **exactly one source is authored per parameter**, so the
   duplicate-`parameterBindings` hazard is dissolved mechanically rather than validated against.
-- [ ] 1.3.4 Assert `git diff` touches neither `extraction/engine.py` nor
+- [x] 1.3.4 Assert `git diff` touches neither `extraction/engine.py` nor
   `test_binding_sources.py:112-166`.
 
 ## Task 1.4 — Pin the source-kind enum and preserve the `capabilityOutput` placeholder
@@ -387,13 +392,13 @@ Design Decision 15, ruling ④.
 
 **Steps**
 
-- [ ] 1.4.1 Add a schema-enum assertion test: the `binding.sources[].kind` enum is **exactly**
+- [x] 1.4.1 Add a schema-enum assertion test: the `binding.sources[].kind` enum is **exactly**
   `["userUtterance", "capabilityOutput", "default"]`. No `sessionContext` kind exists or is
   introduced.
-- [ ] 1.4.2 Assert both `test_binding_sources.py` xfail placeholders still exist and are still
+- [x] 1.4.2 Assert both `test_binding_sources.py` xfail placeholders still exist and are still
   xfail. `capabilityOutput` remains deliberately unwired — it is defect **D2**'s fixed landing
   point and this change does not enable it.
-- [ ] 1.4.3 **Honesty check** (see Baseline): `test_binding_capability_output_not_implemented` is
+- [x] 1.4.3 **Honesty check** (see Baseline): `test_binding_capability_output_not_implemented` is
   currently xfail because its raise-assertion "DID NOT RAISE" — i.e. xfail for the wrong reason.
   Once `factField` authoring is real, re-read it and confirm it is *still xfail for a reason that
   is true*. If it becomes coincidentally-xfail, correct the test's assertion or its reason string.

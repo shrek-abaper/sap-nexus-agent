@@ -431,6 +431,45 @@ def test_capability_v2_rejects_invalid_binding_variants():
         jsonschema.validate(primary_without_fact, schema)
 
 
+def test_binding_source_kind_enum_is_exactly_three_kinds():
+    """The `binding.sources[].kind` enum is pinned: no `sessionContext` kind
+    exists or is introduced by derived-parameter-binding (design Decision 15).
+
+    `capabilityOutput` stays deliberately unwired at the extraction layer — it
+    is defect D2's fixed landing point, pinned by the two xfail placeholders in
+    agent/tests/test_binding_sources.py. Upstream derivation in this change is
+    authored as a plan-graph `factField` source instead, which is a different
+    vocabulary in a different schema.
+    """
+    expected = ["userUtterance", "capabilityOutput", "default"]
+
+    def _source_kind_enums(node):
+        """Every `kind` enum that declares a binding source, at any depth.
+
+        `extraction-declaration.schema.json` declares its enum inline rather
+        than under `$defs`, so the walk is recursive; the `userUtterance`
+        membership test is what distinguishes a source-kind enum from the
+        unrelated `capability.kind` and `extractionMatcher.kind` enums.
+        """
+        if isinstance(node, dict):
+            enum = (node.get("properties") or {}).get("kind", {})
+            if isinstance(enum, dict) and "userUtterance" in (enum.get("enum") or []):
+                yield enum["enum"]
+            for value in node.values():
+                yield from _source_kind_enums(value)
+        elif isinstance(node, list):
+            for item in node:
+                yield from _source_kind_enums(item)
+
+    for schema_name in ("capability.schema.json", "extraction-declaration.schema.json"):
+        raw = (REPO_ROOT / "schemas" / schema_name).read_text(encoding="utf-8")
+        assert "sessionContext" not in raw, schema_name
+        enums = list(_source_kind_enums(_load_schema(schema_name)))
+        assert enums, f"{schema_name}: no source-kind enum found"
+        for enum in enums:
+            assert enum == expected, schema_name
+
+
 def test_goal_spec_accepts_compact_instance():
     jsonschema.validate(_goal_spec(), _load_schema("goal-spec.schema.json"))
 

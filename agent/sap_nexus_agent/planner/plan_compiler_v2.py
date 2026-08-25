@@ -250,8 +250,19 @@ def _build_plan_graph_v2(
         card = cards_by_id.get(node["capabilityId"])
         if card is None:
             continue
+        # User-supplied beats upstream-derived: precedence is applied at
+        # authoring time, so exactly one source is authored per parameter and
+        # the duplicate-``parameterBindings`` hazard cannot arise.
+        already_bound = {
+            binding["parameterName"]
+            for binding in node["parameterBindings"]
+            if binding["source"]["kind"]
+            in (_SOURCE_KIND_GOAL_CONSTRAINT, "literal")
+        }
         for inp in card.inputs:
             if not inp.satisfiable_by_fact_type or not inp.required:
+                continue
+            if inp.name in already_bound:
                 continue
             fact_type = inp.satisfiable_by_fact_type
             producer_node_id = fact_type_to_node.get(fact_type)
