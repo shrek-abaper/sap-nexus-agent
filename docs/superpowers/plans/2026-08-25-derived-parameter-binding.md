@@ -1009,10 +1009,49 @@ Suite: `1463 passed, 1 skipped, 2 xfailed`.
 
 **Steps**
 
-- [ ] 3.7.1 Run it and record the raw result verbatim.
-- [ ] 3.7.2 An **empty real view is the expected outcome at this point** — the fourth capability
+- [x] 3.7.1 Run it and record the raw result verbatim.
+- [x] 3.7.2 An **empty real view is the expected outcome at this point** — the fourth capability
   does not exist yet — **but only if 3.2's positive control is green**. Assert both facts together
   in one record. Empty + red positive control is a deriver defect, not a legitimate empty result.
+
+**Result**
+
+Raw run, verbatim:
+
+```
+$ .venv/bin/python scripts/derive-data-dependencies.py
+derived 0 edge(s), 0 relation(s), 0 diagnostic(s)
+Derived data dependency view written: runtime/derived-data-dependencies.json
+EXIT=0
+```
+
+```json
+{
+  "artifact": "derived-data-dependencies",
+  "version": 1,
+  "snapshotId": "sha256:51cbf4100c9c1d8ca47b732f3a3d9eaad38596912868dc3125ac056cbf255a15",
+  "edges": [],
+  "diagnostics": [],
+  "relations": []
+}
+```
+
+Empty is correct: no input in `registry/capabilities.yaml` declares `satisfiableByFactType` yet.
+`MM.Material.GetInfo` (task 5.2) is the first consumer that will.
+
+`test_the_empty_real_view_is_only_valid_beside_a_green_positive_control` asserts both halves through
+the same `derive_data_dependencies` call site. Each half was already pinned separately
+(`test_the_real_registry_derives_no_edges_yet`, `test_a_declared_field_and_an_active_producer_
+yield_one_edge`), but separate tests **cannot fail as a pair**: a deriver broken into always
+returning nothing turns the control red and leaves the emptiness assertion green, so a reader
+looking only at "the real view is empty" would read a defect as the expected state.
+
+Verified by mutation: an early `return DerivedDependencyView(edges=(), diagnostics=())` in
+`derive_data_dependencies` — the exact shape of "the deriver reports nothing" — leaves
+`test_the_real_registry_derives_no_edges_yet` **green** and fails this test. Restored.
+
+The control's own `needsReduction` diagnostic for `tags` is named rather than asserted absent, so a
+control that grew a *new* unresolved input would not pass unnoticed.
 
 ---
 

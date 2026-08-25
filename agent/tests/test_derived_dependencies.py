@@ -56,6 +56,7 @@ from positive_control import (
 )
 from sap_nexus_agent.semantic_planning.contracts import SemanticSourceDocuments
 from sap_nexus_agent.semantic_planning.derivation import (
+    DIAGNOSTIC_NEEDS_REDUCTION,
     DerivationDiagnostic,
     DerivedDataEdge,
     derive_data_dependencies,
@@ -723,3 +724,38 @@ def test_the_real_registry_reports_no_diagnostics():
 
     repo_root = Path(__file__).resolve().parents[2]
     assert derive_data_dependencies(load_semantic_sources(repo_root)).diagnostics == ()
+
+
+# ---- 3.7: the empty real view and the positive control, asserted together ----
+
+
+def test_the_empty_real_view_is_only_valid_beside_a_green_positive_control():
+    """Task 3.7.2 — one record, two facts.
+
+    `test_the_real_registry_derives_no_edges_yet` and
+    `test_a_declared_field_and_an_active_producer_yield_one_edge` already pin
+    each half, but as separate tests they cannot fail as a pair: a deriver
+    broken into always returning nothing would turn the positive control red and
+    leave the emptiness assertion green, and a reader looking only at "the real
+    view is empty" would read a defect as the expected state.
+
+    So both run through the same `derive_data_dependencies` call site here.
+    Empty + green means "no consumer declares `satisfiableByFactType` yet"
+    (`MM.Material.GetInfo`, task 5.2, is the first). Empty + red means the
+    deriver is broken, and this test says so instead of reporting emptiness.
+    """
+    from sap_nexus_agent.semantic_planning import load_semantic_sources
+
+    repo_root = Path(__file__).resolve().parents[2]
+    real = derive_data_dependencies(load_semantic_sources(repo_root))
+    positive_control = derive_data_dependencies(_widget_documents())
+
+    assert (real.edges, real.diagnostics) == ((), ())
+    assert positive_control.edges == (EXPECTED_EDGE,)
+    # The control's `tags` input is `cardinality: many`, so it is a reduction
+    # diagnostic by design. Naming it keeps this test from silently accepting a
+    # control that grew a *new* unresolved input.
+    assert tuple(
+        (diagnostic.kind, diagnostic.consumer_input_name)
+        for diagnostic in positive_control.diagnostics
+    ) == ((DIAGNOSTIC_NEEDS_REDUCTION, "tags"),)
