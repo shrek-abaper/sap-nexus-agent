@@ -773,7 +773,7 @@ def _consumer_needing_an_upstream_unit() -> tuple[EscalationHandoff, list[Capabi
             _make_input(name="plant", semantic_type="sapnexus:Plant"),
             _make_input(
                 name="unit",
-                semantic_type="sapnexus:BaseUnitOfMeasure",
+                semantic_type="sapnexus:UnitOfMeasure",
                 satisfiable_by_fact_type="sapnexus:MaterialInfoFact",
             ),
         ),
@@ -874,7 +874,7 @@ def test_the_closure_ignores_an_optional_derivable_input():
             _make_input(name="plant", semantic_type="sapnexus:Plant"),
             _make_input(
                 name="unit",
-                semantic_type="sapnexus:BaseUnitOfMeasure",
+                semantic_type="sapnexus:UnitOfMeasure",
                 required=False,
                 satisfiable_by_fact_type="sapnexus:MaterialInfoFact",
             ),
@@ -935,7 +935,7 @@ def test_the_closure_is_transitive_and_terminates():
             inputs=(
                 _make_input(
                     name="unit",
-                    semantic_type="sapnexus:BaseUnitOfMeasure",
+                    semantic_type="sapnexus:UnitOfMeasure",
                     satisfiable_by_fact_type="sapnexus:MaterialInfoFact",
                 ),
             ),

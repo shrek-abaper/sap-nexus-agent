@@ -181,6 +181,7 @@ source.
 | C8 | 2.4.1 reads "every `sapnexus:*` reference **anywhere** must exist in the ontology vocabulary" | Not implementable as written. Enumerating every reference site shows the `sapnexus:` namespace holds **five disjoint tiers**: ① value types (the Decision-1 vocabulary, 15 members, declared by capability `inputs`/`outputs.semanticType`); ② Fact Type ids (`*Fact`, declared by `factType.factTypeId`, already governed by `UNKNOWN_FACT_TYPE`); ③ Fact class types (`factType.semanticType` — `sapnexus:InventoryAvailability` etc., **not** in ① and self-declaring); ④ predicates (`factType.predicate` — `sapnexus:hasInventoryAvailability`, self-declaring); ⑤ capability individuals / function classes (`ontologyIri`, `capability.semanticType` — `ontologyIri` is already validated against the OWL skeleton by the registry validator). A literal tier-blind rule would reject tiers ③④⑤ | 2.4.1 is scoped to **tier ①**. Its only *uncovered* reference site is `factType.keyedBy` (`fields.semanticType` landed in 2.1.4), so 2.4.1's real deliverable is extending the tier-① check there. Tiers ③④ stay unvalidated by design — nothing declares them, so a rule could only be vacuous or wrong. Record that as a known limit rather than inventing a registry to check against |
 | C9 | 2.7's **Files** list names `frontend/src/runtime/plan-evidence/event-projector.ts:69` as a Fact field-list restatement site | It is **not one**. Line 69 is `ALLOWED_PAYLOAD_KEYS.fact` — a ReasoningFact **envelope** key allowlist (it contains `factId`, `factTypeId`, `agentTraceId`, `traceRef`, `sourceSummary`, `asOf` alongside `availableQuantity`/`orderQuantity`/`unit`, and does **not** contain `purchaseOrder` or `supplier`). It governs which keys survive projection into a reasoning payload, a different vocabulary from a Fact Type's field list | Locking it against `ontology/fact-types.yaml` would be a category error — a `⊆`/`==` assertion between two unrelated sets. 2.7.4 records it as **"not a restatement site"** with that evidence instead of locking it. The genuine restatement family is: `ontology/fact-types.yaml` (authority) · `registry/capabilities.yaml:316` `itemFields` · `narrator.py:55` `_PO_REQUIRED_EVIDENCE` · the hardcoded label lines in `narrator.py` `_build_list_messages` / `_list_fallback` · `fact-builder.ts:246-278` evidence literal |
 | C10 | 2.5 reported "**zero** new semantic types", and 2.7 assumed the TS evidence literal and the declared field list are the same set | Both are wrong, and the second exposes a real gap in Decision 1. `fact-builder.ts`'s evidence object has **seven** keys; the seventh, `purchaseOrderItem`, is load-bearing on the TS side (a member of `PurchaseOrderRow` at `:130` **and** a component of `rowSortKey` at `:232`, so it affects deterministic ordering) yet is absent from `ontology/fact-types.yaml`, from `itemFields`, and from `_PO_REQUIRED_EVIDENCE`. It is a genuine seventh item-level field that 2.5 missed. It cannot be declared under Decision 1 as written: tier ① is *"the set declared by capability `inputs`/`outputs.semanticType`"*, and the six existing PO field types pass that check **only by coincidence** — each happens to also be a PO or PR `input`. `purchaseOrderItem` is the first field type with no such coincidence, and `sapnexus:PurchaseOrderItem` is already taken by the container output `purchaseOrders` (the item *object*, not its *number*) | **User decisions at 2.7 entry: (a) extend the ontology with a new value type; (b) delete `itemFields` from the registry.** Both edit governed sources, so they land as **one atomic commit** with **one** documented snapshot recompute (#3). Three rejected alternatives, recorded because each is a green-washing trap: *declaring `purchaseOrderItem` as a sibling top-level output of PO* misrepresents the shape (it is a per-row field inside the array, not an output of the capability); *widening the vocabulary to include Fact Type `fields[].semanticType`* would make `_validate_fact_type_fields`' own semanticType check **vacuous** (invariant 9); *a sixth governed source file* is disproportionate. The chosen channel is a new **optional top-level `valueTypes:` block in `ontology/fact-types.yaml`**, with the vocabulary redefined as *capability-declared ∪ `valueTypes[].id`*, kept tight by two new rules so it cannot become a dumping ground: `VALUE_TYPE_SHADOWS_CAPABILITY` (an id already declared by a capability is rejected) and `VALUE_TYPE_NOT_USED` (an id no Fact Type references is rejected). A typo still fails closed, because a typo is in neither set |
+| C11 | 5.2 / 5.6.1 name the derived unit as `baseUnitOfMeasure` and the design's prose implies a `sapnexus:BaseUnitOfMeasure` semantic type | **`sapnexus:BaseUnitOfMeasure` does not exist anywhere** — `grep -rn BaseUnitOfMeasure registry/ ontology/ schemas/` returns nothing. `MM.PR.CreateDraft`'s `unit` input carries `semanticType: sapnexus:UnitOfMeasure` (`registry/capabilities.yaml:415`), and task 5.6's rule is **strict `semanticType` equality**, so declaring `MM.Material.GetInfo`'s unit output as `sapnexus:BaseUnitOfMeasure` would make the derivation emit `field: ""` → `FACT_TYPE_MISMATCH` → `invalid_plan_graph`. The **output name** may be `baseUnitOfMeasure` (names are free); the **semanticType must be `sapnexus:UnitOfMeasure`**. `purchasing_group` is already consistent (`sapnexus:PurchasingGroup`, `:442`). This also confirms 5.2's "**zero new semantic types**" is achievable rather than aspirational: both derived fields reuse existing tier-① ids. Found by computing 6.1's table from the code instead of copying it |
 
 ## Task order
 
@@ -1527,7 +1528,9 @@ metadata, so 5.6 was executed against a **real-registry producer** instead of a 
 Two follow-ups remain bound to 5.2 and are listed in 8.4, not closed here:
 
 1. 5.6.1's real-registry form — assert `unit` → `baseUnitOfMeasure` and
-   `purchasing_group` → `purchasingGroup` on the actual `MM.PR.CreateDraft`.
+   `purchasing_group` → `purchasingGroup` on the actual `MM.PR.CreateDraft`. **See C11 first:** the
+   output *name* may be `baseUnitOfMeasure`, but its `semanticType` must be
+   `sapnexus:UnitOfMeasure`, or this strict match cannot succeed.
 2. 5.6.3's real-registry form — assert `MM.Material.GetInfo` precedes `MM.PR.CreateDraft`.
 
 `_first_fact_field` → `_fact_field_for_input(producer_raw, fact_type, semantic_type, binding_kind)`
@@ -1765,6 +1768,41 @@ fails closed, and M19 is the mutation that demonstrates the detection itself.
 - [ ] 6.1.3 **Report the computed number even if it is 4 rather than 3**, and state the missing
   item's prerequisite.
 - [ ] 6.1.4 **Stop and ask the user if the computed number differs from the target.**
+
+### Pre-change baseline (2026-08-25) — computed, not copied. No box checked.
+
+6.1 asks for the **post-change** table, which needs 5.2.2a. The **pre-change** half is computable
+now and is recorded so the post-change number is measured against something derived rather than
+remembered. Method: load the real `registry/capabilities.yaml` through `discover_cards`, run the
+real `compile_plan_v2` on a handoff carrying only the two values the headline utterance states
+(`material`, `plant`), and read each source kind off the emitted PlanGraph. No design document was
+consulted.
+
+`snapshot: sha256:51cbf410…f255a15` · `nodes in plan: ['MM.PR.CreateDraft']`
+
+| input | semanticType | bindingKind | satisfiableByFactType | source kind | needs asking |
+| --- | --- | --- | --- | --- | --- |
+| `material` | `sapnexus:MaterialNumber` | `identifier` | `—` | `literal` | no |
+| `plant` | `sapnexus:Plant` | `identifier` | `—` | `literal` | no |
+| `quantity` | `sapnexus:Quantity` | `identifier` | `—` | `—` | **yes** |
+| `unit` | `sapnexus:UnitOfMeasure` | `identifier` | `—` | `—` | **yes** |
+| `delivery_date` | `sapnexus:DeliveryDate` | `identifier` | `—` | `—` | **yes** |
+| `purchasing_group` | `sapnexus:PurchasingGroup` | `identifier` | `—` | `—` | **yes** |
+
+**Required inputs: 6. Still needing to be asked: 4.** Post-change, `unit` and `purchasing_group`
+become `factField`, so the expected number is **2** (`quantity`, `delivery_date`) — both are genuine
+user intent that no upstream Fact can supply, so 2 is the floor, not a shortfall. That prediction is
+**not** a result; 6.1.1–6.1.4 stay open until the same script is re-run after 5.2.2a.
+
+`governance flags: ['invalid_plan_graph']` is expected here and is not a defect: four required
+inputs are unbound because the handoff deliberately supplies only two. Recorded so the flag is not
+later misread as a regression.
+
+**This computation produced correction C11** — a load-bearing one. `unit`'s semanticType is
+`sapnexus:UnitOfMeasure`, and `sapnexus:BaseUnitOfMeasure` exists nowhere in the repository. Since
+task 5.6 matches on **strict `semanticType` equality**, writing 5.2 from the plan's prose would have
+produced `field: ""` → `FACT_TYPE_MISMATCH` and a silently invalid plan. See C11.
+
 
 ---
 
