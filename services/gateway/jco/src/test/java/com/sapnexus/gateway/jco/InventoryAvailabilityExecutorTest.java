@@ -4,6 +4,7 @@ import com.sap.conn.jco.JCoDestination;
 import com.sap.conn.jco.JCoFunction;
 import com.sap.conn.jco.JCoParameterList;
 import com.sap.conn.jco.JCoRepository;
+import com.sap.conn.jco.JCoStructure;
 import com.sap.conn.jco.JCoTable;
 import com.sapnexus.gateway.registry.CapabilityDefinition;
 import com.sapnexus.gateway.registry.CapabilityKind;
@@ -143,6 +144,131 @@ class InventoryAvailabilityExecutorTest {
                 ),
                 List.of(),
                 new CapabilityDefinition.Executor("JCO_RFC", "BAPI_MATERIAL_AVAILABILITY", Map.of("material", "MATERIAL", "plant", "PLANT"), Map.of("availableQuantity", "AV_QTY_PLT", "returnMessages", "RETURN")),
+                new CapabilityDefinition.Governance(SideEffect.none, false, "not_required", "internal", true)
+        );
+    }
+
+    // ---- T3 task 5.2: an export STRUCTURE field path, resolved from the registry ----
+    //
+    // BAPI_MATERIAL_GET_DETAIL returns the values MM.Material.GetInfo needs *inside*
+    // export structures, verified live on 2026-08-25:
+    //   MATERIAL_GENERAL_DATA -> BAPIMATDOA -> BASE_UOM  (CHAR 3, = MARA-MEINS)
+    //   MATERIALPLANTDATA     -> BAPIMATDOC -> PUR_GROUP (CHAR 3, = MARC-EKGRP)
+    // The generic executor previously read only top-level export parameters, so a
+    // capability declaring that path got no value at all. Registering the capability
+    // would then have required a bespoke per-capability Java executor, which is the
+    // "capability force-called from code logic" shape the project forbids: the RFC a
+    // capability calls, and the fields it reads, must come from the registry only.
+
+    @Test
+    void anOutputMappingPathReachesAFieldInsideAnExportStructure() throws Exception {
+        JCoDestination destination = mock(JCoDestination.class);
+        JCoRepository repository = mock(JCoRepository.class);
+        JCoFunction function = mock(JCoFunction.class);
+        JCoParameterList imports = mock(JCoParameterList.class);
+        JCoParameterList exports = mock(JCoParameterList.class);
+        JCoStructure generalData = mock(JCoStructure.class);
+        JCoStructure plantData = mock(JCoStructure.class);
+
+        when(destination.getRepository()).thenReturn(repository);
+        when(repository.getFunction("BAPI_MATERIAL_GET_DETAIL")).thenReturn(function);
+        when(function.getImportParameterList()).thenReturn(imports);
+        when(function.getExportParameterList()).thenReturn(exports);
+        when(function.getTableParameterList()).thenReturn(null);
+        doNothing().when(function).execute(destination);
+        when(exports.isInitialized("RETURN")).thenReturn(false);
+        when(exports.isInitialized("MATERIAL_GENERAL_DATA")).thenReturn(true);
+        when(exports.isInitialized("MATERIALPLANTDATA")).thenReturn(true);
+        when(exports.getStructure("MATERIAL_GENERAL_DATA")).thenReturn(generalData);
+        when(exports.getStructure("MATERIALPLANTDATA")).thenReturn(plantData);
+        when(generalData.isInitialized("BASE_UOM")).thenReturn(true);
+        when(generalData.getValue("BASE_UOM")).thenReturn("ST");
+        when(plantData.isInitialized("PUR_GROUP")).thenReturn(true);
+        when(plantData.getValue("PUR_GROUP")).thenReturn("001");
+
+        InventoryAvailabilityExecutor executor = new InventoryAvailabilityExecutor(
+                new FixedDestinationFactory(destination), new SapReturnNormalizer());
+
+        ExecutionResult result = executor.execute(
+                materialGetInfoCapability(), Map.of("material", "DEMOA1", "plant", "1000"), "trace-getinfo");
+
+        assertThat(result.success()).isTrue();
+        assertThat(result.data()).containsEntry("baseUnitOfMeasure", "ST");
+        assertThat(result.data()).containsEntry("purchasingGroup", "001");
+    }
+
+    @Test
+    void anUninitializedExportStructureYieldsNoValueRatherThanAGuess() throws Exception {
+        // PLANT is opt=true on the real BAPI, so MATERIALPLANTDATA can come back
+        // uninitialized. The absence must stay absent: a fabricated, defaulted or blank
+        // purchasing group reaching a purchase requisition is a governance failure, not
+        // a convenience.
+        //
+        // This models real JCo rather than a convenient mock: getStructure() on an
+        // uninitialized export parameter returns a live structure whose fields read as
+        // blank, NOT null. So the parameter-level isInitialized check is the only thing
+        // that tells "SAP did not return this structure" apart from "SAP returned it
+        // empty". Mutation M32 was not caught until the mock was corrected to behave
+        // this way.
+        JCoDestination destination = mock(JCoDestination.class);
+        JCoRepository repository = mock(JCoRepository.class);
+        JCoFunction function = mock(JCoFunction.class);
+        JCoParameterList imports = mock(JCoParameterList.class);
+        JCoParameterList exports = mock(JCoParameterList.class);
+        JCoStructure generalData = mock(JCoStructure.class);
+        JCoStructure blankPlantData = mock(JCoStructure.class);
+
+        when(destination.getRepository()).thenReturn(repository);
+        when(repository.getFunction("BAPI_MATERIAL_GET_DETAIL")).thenReturn(function);
+        when(function.getImportParameterList()).thenReturn(imports);
+        when(function.getExportParameterList()).thenReturn(exports);
+        when(function.getTableParameterList()).thenReturn(null);
+        doNothing().when(function).execute(destination);
+        when(exports.isInitialized("RETURN")).thenReturn(false);
+        when(exports.isInitialized("MATERIAL_GENERAL_DATA")).thenReturn(true);
+        when(exports.isInitialized("MATERIALPLANTDATA")).thenReturn(false);
+        when(exports.getStructure("MATERIAL_GENERAL_DATA")).thenReturn(generalData);
+        when(exports.getStructure("MATERIALPLANTDATA")).thenReturn(blankPlantData);
+        when(generalData.isInitialized("BASE_UOM")).thenReturn(true);
+        when(generalData.getValue("BASE_UOM")).thenReturn("ST");
+        when(blankPlantData.isInitialized("PUR_GROUP")).thenReturn(true);
+        when(blankPlantData.getValue("PUR_GROUP")).thenReturn("");
+
+        InventoryAvailabilityExecutor executor = new InventoryAvailabilityExecutor(
+                new FixedDestinationFactory(destination), new SapReturnNormalizer());
+
+        ExecutionResult result = executor.execute(
+                materialGetInfoCapability(), Map.of("material", "DEMOA1"), "trace-getinfo-nopl");
+
+        assertThat(result.success()).isTrue();
+        assertThat(result.data()).containsEntry("baseUnitOfMeasure", "ST");
+        assertThat(result.data()).doesNotContainKey("purchasingGroup");
+    }
+
+    private CapabilityDefinition materialGetInfoCapability() {
+        return new CapabilityDefinition(
+                "MM.Material.GetInfo",
+                "Material Info",
+                "Read base unit of measure and purchasing group for a material.",
+                CapabilityStatus.active,
+                CapabilityKind.Function,
+                "MM",
+                "MaterialInfo",
+                "sapnexus:MM_Material_GetInfo",
+                "sapnexus:MaterialInfoReadFunction",
+                List.of(
+                        new CapabilityDefinition.InputField("material", "materialNumber", "sapnexus:MaterialNumber", true, "string", 1, 40, "MATERIAL_LONG"),
+                        new CapabilityDefinition.InputField("plant", "plant", "sapnexus:Plant", true, "string", 1, 4, "PLANT")
+                ),
+                List.of(),
+                new CapabilityDefinition.Executor(
+                        "JCO_RFC",
+                        "BAPI_MATERIAL_GET_DETAIL",
+                        Map.of("material", "MATERIAL_LONG,MATERIAL", "plant", "PLANT"),
+                        Map.of(
+                                "baseUnitOfMeasure", "MATERIAL_GENERAL_DATA.BASE_UOM",
+                                "purchasingGroup", "MATERIALPLANTDATA.PUR_GROUP",
+                                "returnMessages", "RETURN")),
                 new CapabilityDefinition.Governance(SideEffect.none, false, "not_required", "internal", true)
         );
     }

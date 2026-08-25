@@ -5,6 +5,7 @@ import com.sap.conn.jco.JCoException;
 import com.sap.conn.jco.JCoFunction;
 import com.sap.conn.jco.JCoParameterList;
 import com.sap.conn.jco.JCoRecord;
+import com.sap.conn.jco.JCoStructure;
 import com.sap.conn.jco.JCoTable;
 import com.sapnexus.gateway.registry.CapabilityDefinition;
 import com.sapnexus.gateway.result.ErrorType;
@@ -17,6 +18,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Component
 public class InventoryAvailabilityExecutor implements JcoCapabilityExecutor {
@@ -141,13 +143,62 @@ public class InventoryAvailabilityExecutor implements JcoCapabilityExecutor {
         JCoParameterList exports = function.getExportParameterList();
         if (exports != null) {
             capability.executor().outputMapping().forEach((name, sapName) -> {
-                if (!"RETURN".equals(sapName) && safeIsInitialized(exports, sapName)) {
-                    data.put(name, exports.getValue(sapName));
+                if ("RETURN".equals(sapName)) {
+                    return;
                 }
+                if (safeIsInitialized(exports, sapName)) {
+                    data.put(name, exports.getValue(sapName));
+                    return;
+                }
+                resolveExportStructureField(exports, sapName).ifPresent(value -> data.put(name, value));
             });
         }
         addMd04StockRowData(function.getTableParameterList(), data);
         return data;
+    }
+
+    /**
+     * Resolves an {@code outputMapping} value of the form {@code EXPORT_PARAM.FIELD}
+     * against an export structure.
+     * <p>
+     * Driven entirely by the registry: the export parameter name and the field name
+     * both come from {@code outputMapping}, so a capability whose values live inside
+     * an export structure needs no executor code of its own. Without this, such a
+     * capability could only be added by writing a bespoke per-capability executor,
+     * i.e. by force-calling the RFC from code logic instead of declaring it.
+     * <p>
+     * Deliberately splits on the FIRST separator only, so the field segment is taken
+     * verbatim. A three-segment table-row path such as {@code MRP_IND_LINES.WB.AVAIL_QTY1}
+     * selects a row by value rather than a field of a structure; it falls out here
+     * because no export structure named {@code MRP_IND_LINES} exists, and it stays with
+     * {@link #addMd04StockRowData}. An explicit segment-count guard was written first and
+     * then removed: mutation M30 showed it unreachable, because the field-level
+     * initialization check already rejects a residual dotted name. Unkillable defensive
+     * code reads as protection and asserts nothing.
+     * <p>
+     * An absent or uninitialized structure yields {@link Optional#empty()} so the key
+     * stays out of the result. A missing value must remain missing: a defaulted or
+     * fabricated value flowing into a purchase requisition is a governance failure.
+     */
+    private Optional<Object> resolveExportStructureField(JCoParameterList exports, String path) {
+        int separator = path.indexOf('.');
+        if (separator <= 0 || separator == path.length() - 1) {
+            return Optional.empty();
+        }
+        String parameterName = path.substring(0, separator);
+        String fieldName = path.substring(separator + 1);
+        if (!safeIsInitialized(exports, parameterName)) {
+            return Optional.empty();
+        }
+        try {
+            JCoStructure structure = exports.getStructure(parameterName);
+            if (structure == null || !safeIsInitialized(structure, fieldName)) {
+                return Optional.empty();
+            }
+            return Optional.ofNullable(structure.getValue(fieldName));
+        } catch (RuntimeException ignored) {
+            return Optional.empty();
+        }
     }
 
     private void addMd04StockRowData(JCoParameterList tables, Map<String, Object> data) {

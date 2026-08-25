@@ -165,7 +165,7 @@ Named baseline non-passes — these are **pre-existing and must stay honest**, n
 
 Six findings from the pre-build fact check (C1–C6 before build, **C7 found at T1 entry, C8 found at
 task 2.2 entry, C9 and C10 found at task 2.7 entry, C11 found while computing 6.1's table, C12 found
-at the 5.9 feasibility check**).
+at the 5.9 feasibility check, C13 found at task 5.2 entry from live SAP metadata**).
 **Where tasks.md and this plan disagree, this plan wins**, because these were verified against
 source.
 
@@ -184,6 +184,7 @@ source.
 | C10 | 2.5 reported "**zero** new semantic types", and 2.7 assumed the TS evidence literal and the declared field list are the same set | Both are wrong, and the second exposes a real gap in Decision 1. `fact-builder.ts`'s evidence object has **seven** keys; the seventh, `purchaseOrderItem`, is load-bearing on the TS side (a member of `PurchaseOrderRow` at `:130` **and** a component of `rowSortKey` at `:232`, so it affects deterministic ordering) yet is absent from `ontology/fact-types.yaml`, from `itemFields`, and from `_PO_REQUIRED_EVIDENCE`. It is a genuine seventh item-level field that 2.5 missed. It cannot be declared under Decision 1 as written: tier ① is *"the set declared by capability `inputs`/`outputs.semanticType`"*, and the six existing PO field types pass that check **only by coincidence** — each happens to also be a PO or PR `input`. `purchaseOrderItem` is the first field type with no such coincidence, and `sapnexus:PurchaseOrderItem` is already taken by the container output `purchaseOrders` (the item *object*, not its *number*) | **User decisions at 2.7 entry: (a) extend the ontology with a new value type; (b) delete `itemFields` from the registry.** Both edit governed sources, so they land as **one atomic commit** with **one** documented snapshot recompute (#3). Three rejected alternatives, recorded because each is a green-washing trap: *declaring `purchaseOrderItem` as a sibling top-level output of PO* misrepresents the shape (it is a per-row field inside the array, not an output of the capability); *widening the vocabulary to include Fact Type `fields[].semanticType`* would make `_validate_fact_type_fields`' own semanticType check **vacuous** (invariant 9); *a sixth governed source file* is disproportionate. The chosen channel is a new **optional top-level `valueTypes:` block in `ontology/fact-types.yaml`**, with the vocabulary redefined as *capability-declared ∪ `valueTypes[].id`*, kept tight by two new rules so it cannot become a dumping ground: `VALUE_TYPE_SHADOWS_CAPABILITY` (an id already declared by a capability is rejected) and `VALUE_TYPE_NOT_USED` (an id no Fact Type references is rejected). A typo still fails closed, because a typo is in neither set |
 | C11 | 5.2 / 5.6.1 name the derived unit as `baseUnitOfMeasure` and the design's prose implies a `sapnexus:BaseUnitOfMeasure` semantic type | **`sapnexus:BaseUnitOfMeasure` does not exist anywhere** — `grep -rn BaseUnitOfMeasure registry/ ontology/ schemas/` returns nothing. `MM.PR.CreateDraft`'s `unit` input carries `semanticType: sapnexus:UnitOfMeasure` (`registry/capabilities.yaml:415`), and task 5.6's rule is **strict `semanticType` equality**, so declaring `MM.Material.GetInfo`'s unit output as `sapnexus:BaseUnitOfMeasure` would make the derivation emit `field: ""` → `FACT_TYPE_MISMATCH` → `invalid_plan_graph`. The **output name** may be `baseUnitOfMeasure` (names are free); the **semanticType must be `sapnexus:UnitOfMeasure`**. `purchasing_group` is already consistent (`sapnexus:PurchasingGroup`, `:442`). This also confirms 5.2's "**zero new semantic types**" is achievable rather than aspirational: both derived fields reuse existing tier-① ids. Found by computing 6.1's table from the code instead of copying it |
 | C12 | 5.9 is described as owning "the provenance token", and my own 5.4 result block claimed it must be added to `read_context._SLOT_PROVENANCES` (a 6-file blast radius) | **Both wrong.** The slot vocabulary governs the READ multi-turn **elicitation** path only; a derived parameter is never elicited, so it never becomes a `ReadContextSlot`. `grep -rn provenance agent/sap_nexus_agent/planner/` returns only two prose mentions (`plan_compiler_v2.py:5`, `:429`) — the planner emits no `provenance` field. The literal string `capability_derived` appears in **no** `.py` or `.ts` file; per `openspec/changes/derived-parameter-binding/specs/agent-callplan-evidence/spec.md:10` it is **eval-harness** vocabulary, i.e. **task 7.1's** assertion. The runtime provenance chain already exists as the binding's own discriminant: `source.kind: factField` carries `producerNodeId` + `factTypeId` + `field` (`frontend/src/runtime/plan-executor/types.ts:29`) | No enum is widened anywhere. 5.4.1(d)'s owner is **7.1** (assert `provenance=capability_derived` in the harness) plus **5.9** (surface the existing `factField` provenance in the two runtime surfaces). The "1 file → 6 files" figure in the 5.4 result block is **void** and is corrected in place there. 8.4 carries the corrected attribution |
+| C13 | Invariant 6 and task 5.2 measure "lines of code to add the 4th capability" as **`git diff --stat` scoped to `*.py`**, target 0, on the assumption that the Gateway is capability-agnostic | **The Python-only measurement cannot see the real cost, and the Gateway was not capability-agnostic where it mattered.** `JcoRfcTechnicalAdapter.selectExecutor` routes `MM.PR.CreateDraft` to `PrCreateDraftExecutor` and *everything else* to `findFirst()` of the remaining executors — so a new READ capability is served by the existing generic executor, and no new Java class is needed for dispatch. But `InventoryAvailabilityExecutor.extractOutputData` read **only top-level export parameters** (`exports.getValue(sapName)`), and `BAPI_MATERIAL_GET_DETAIL` returns both wanted values *inside* export structures (`MATERIAL_GENERAL_DATA.BASE_UOM`, `MATERIALPLANTDATA.PUR_GROUP`). Worse, the registry **already declares** a dotted path — `MM.Inventory.GetAvailability`'s `outputMapping.availableQuantity: MRP_IND_LINES.WB.AVAIL_QTY1` — and **no Java code resolved it** (`grep` for a path split across `services/gateway/**/*.java`: no hits). The value came from the hardcoded `addMd04StockRowData`, which writes `MRP_IND_LINES`, `WB` and `AVAIL_QTY1` into code. So the declaration was decorative and the behaviour was hardcoded | Declaring `MM.Material.GetInfo` with a structure path would have silently produced **no value**, and the only way to make it work without this fix is a bespoke per-capability Java executor — the "capability force-called from code logic" shape the project forbids. Fixed by teaching the **generic** executor to resolve an `EXPORT_PARAM.FIELD` path from `outputMapping`; no capability id, RFC name or field name enters the code. Consequences for reporting: **8.3 must report figure (a) for Java as well as Python** — Python-only is not the measurement invariant 6 intended. Figure (a) stays **0 in both languages** because the resolver is generic and serves any capability; the resolver itself is **figure (b)**, a mechanism line. The 3-segment table-row path stays hardcoded and is a named unresolved item, not a known issue |
 
 ## Task order
 
@@ -1145,16 +1146,65 @@ skipped count is not in this batch's scope.
 
 **Steps**
 
-- [ ] 5.1.1 Execute `BAPI_MATERIAL_GET_DETAIL` live in SE37.
-- [ ] 5.1.2 Transcribe the **real** import/export parameter names, structure names, and field names
+- [x] 5.1.1 Execute `BAPI_MATERIAL_GET_DETAIL` live in SE37.
+- [x] 5.1.2 Transcribe the **real** import/export parameter names, structure names, and field names
   for `MARA-MEINS` (base unit, client level) and `MARC-EKGRP` (purchasing group, material plant
   view). Use SE11 where table structure is in doubt.
-- [ ] 5.1.3 Paste the verification output into the report.
-- [ ] 5.1.4 **Stop and ask the user if the live metadata contradicts the registry expectation.**
+- [x] 5.1.3 Paste the verification output into the report.
+- [x] 5.1.4 **Stop and ask the user if the live metadata contradicts the registry expectation.**
   Do not "adjust" the registry to match a guess.
 
-**BLOCKED (2026-08-25) — stale SAP credential, not a design problem.**
+### Result (2026-08-25) — RESOLVED. Live metadata transcribed; the blocker below is history.
 
+The password was wrong; the user replaced it. The probe now reports `PING OK` and the metadata is
+**transcribed from a real SAP repository read**, not remembered. Read-only throughout:
+`getRepository().getFunction()` and `getStructureDefinition()` return metadata, `DDIF_FIELDINFO_GET`
+is a DDIC lookup. `BAPI_MATERIAL_GET_DETAIL` itself was **never executed**, so no
+`BAPI_TRANSACTION_COMMIT` / `ROLLBACK` was reachable. Full output kept at `/tmp/sapmeta/probe.out`;
+no credential value was printed to any log, file or document.
+
+`BAPI_MATERIAL_GET_DETAIL` interface, as reported by the system:
+
+| Direction | Name | Type | Notes |
+|---|---|---|---|
+| IMPORT | `MATERIAL` | CHAR 18 | `opt=true` |
+| IMPORT | `MATERIAL_LONG` | CHAR 40 | `opt=true` — the long-form key |
+| IMPORT | `PLANT` | CHAR 4 | **`opt=true`** — see the constraint below |
+| IMPORT | `VALUATIONAREA` / `VALUATIONTYPE` / `MATERIAL_EVG` | — | not used |
+| EXPORT | `MATERIAL_GENERAL_DATA` | STRUCTURE `BAPIMATDOA` (42 fields) | client-level view |
+| EXPORT | `MATERIALPLANTDATA` | STRUCTURE `BAPIMATDOC` (2 fields) | plant-level view |
+| EXPORT | `MATERIALVALUATIONDATA` | STRUCTURE `BAPIMATDOBEW` | not used |
+| EXPORT | `RETURN` | STRUCTURE `BAPIRETURN` | |
+| TABLES | *(none)* | | |
+
+The two fields the derivation needs:
+
+| Wanted | Real path | Type |
+|---|---|---|
+| base unit of measure (`MARA-MEINS`) | `MATERIAL_GENERAL_DATA` → `BAPIMATDOA` → **`BASE_UOM`** | CHAR 3 |
+| purchasing group (`MARC-EKGRP`) | `MATERIALPLANTDATA` → `BAPIMATDOC` → **`PUR_GROUP`** | CHAR 3 |
+
+**5.1.4 — does the live metadata contradict the registry expectation? No, but it constrains it in
+three ways that were not in the plan.** None is a contradiction requiring escalation, so work
+continued; all three are recorded because each would otherwise be discovered as a bug later.
+
+1. **The field names are `BASE_UOM` and `PUR_GROUP`**, not `MEINS` / `EKGRP` and not the plan's
+   output names. The plan's `baseUnitOfMeasure` / `purchasingGroup` remain valid as **output
+   names** — those are registry-side and free (C2 only requires output `name` to equal the Fact
+   Type field name). The real SAP names belong in the **executor mapping**, which is where the
+   transcription lands.
+2. **`PLANT` is `opt=true` at the SAP level, but must be `required` in the registry.** Omit it and
+   `MATERIALPLANTDATA` comes back uninitialized, so `PUR_GROUP` does not exist. The registry is
+   therefore *stricter* than SAP on purpose: a capability that silently returns no purchasing group
+   would make the derived parameter empty and push the user back to being asked, which is the exact
+   outcome this change exists to remove. Stated here so the stricter constraint is a decision, not
+   an accident.
+3. **`BAPIMATDOB` does not exist** — my probe guessed it. The plant view is `BAPIMATDOC` and
+   valuation is `BAPIMATDOBEW`. This is the concrete instance of the risk `design.md:466-470` names:
+   had the binding been written from memory, it would have named a structure that is not there.
+
+
+**Superseded blocker record, kept for the audit trail — resolved 2026-08-25.**
 Everything needed to run 5.1 without SAP GUI is in place and proven, except the password:
 
 - Tooling: `services/gateway/jco/lib/sapjco3.jar` + `lib/linux/libsapjco3.so` + JDK 17 all present.
@@ -1265,6 +1315,80 @@ holds without bespoke code):
 - [ ] 5.2.4 **Run `git diff --stat` scoped to `*.py` for this step and confirm it is empty.** This
   is figure (a) = 0. If it is non-zero, that is invariant 6 failing: stop and report the reason
   rather than absorbing the lines.
+
+## Task 5.2a — The generic export-structure path resolver (correction C13)
+
+**Not in the original plan. Created by C13, which live SAP metadata exposed at 5.2's entry.**
+Prerequisite for 5.2 being declarative at all.
+
+**Files** — `services/gateway/jco/src/main/java/com/sapnexus/gateway/jco/InventoryAvailabilityExecutor.java`
+(the *generic* JCO_RFC READ executor; the class name is misleading and was left alone) and its test.
+
+**Steps**
+
+- [x] 5.2a.1 Teach `extractOutputData` to resolve an `outputMapping` value of the form
+  `EXPORT_PARAM.FIELD` against an export structure. Registry-driven only: no capability id, RFC
+  name or field name may appear in the code.
+- [x] 5.2a.2 A missing or uninitialized structure yields **no key**, never a blank or defaulted
+  value. An empty purchasing group reaching a purchase requisition is a governance failure.
+- [x] 5.2a.3 Verify the existing inventory capability is unchanged — the 3-segment table-row path
+  must not be claimed by the new resolver.
+- [x] 5.2a.4 Report what stays hardcoded.
+
+### Result (2026-08-25)
+
+The mechanism is 3 lines at the call site plus one 20-line helper. It reads the export parameter name
+and the field name out of `outputMapping`, so **any** capability whose values sit in an export
+structure is now declarable with no executor code of its own. That is the difference between
+registering a capability and force-calling an RFC from code logic.
+
+**Two pieces of my own work were deleted rather than shipped, both because mutation testing showed
+them worthless.**
+
+- An explicit segment-count guard (`fieldName.indexOf('.') >= 0`). **M30 removed it and nothing
+  failed**: the field-level initialization check already rejects a residual dotted name. Defensive
+  code no mutation can kill reads as protection and asserts nothing — the same objection this plan
+  raises against green-washing. Removed, with the reason recorded in the Javadoc.
+- A third test asserting that `md04InventoryCapability().executor().outputMapping()` still contains
+  `MRP_IND_LINES.WB.AVAIL_QTY1`. That asserts a **fixture string**, not behaviour; the real
+  regression cover is the pre-existing MD04 test, which passes unchanged. Deleted rather than kept
+  for the appearance of coverage.
+
+**M32 exposed a wrong mock, not a wrong guard.** Dropping the parameter-level
+`safeIsInitialized(exports, parameterName)` check initially failed nothing, because the mock returned
+`null` for an unstubbed `getStructure`. Real JCo returns a **live structure whose fields read blank**
+for an uninitialized export parameter, so that check is the only thing distinguishing "SAP did not
+return this structure" from "SAP returned it empty" — and without it a **blank** purchasing group
+would flow onward. The test was corrected to model real JCo (`getStructure` returns a structure whose
+`PUR_GROUP` is initialized to `""`), after which M32 fails. The lesson is that a mock convenient
+enough to pass is not evidence.
+
+**What stays hardcoded, named (5.2a.4).** `addMd04StockRowData` still writes `MRP_IND_LINES`, the
+`WB` / `Stock` row selector and `AVAIL_QTY1` into Java. The registry's
+`availableQuantity: MRP_IND_LINES.WB.AVAIL_QTY1` is therefore **still decorative** — a 3-segment
+table-row path selects a row *by value*, which the 2-segment structure resolver deliberately does not
+claim. Making it declarative needs a row-selector syntax, which is a mechanism this change did not
+scope. This is an **unresolved item for 8.4** with that attribution; it is not a known issue and not
+unrelated to core functionality — it is the same defect class as C13, one layer further in.
+`JcoRfcTechnicalAdapter.selectExecutor`'s `findFirst()` over non-WRITE executors is a second
+silently-picks-one site of the same shape as `producers[0]`, correct today only because exactly one
+READ executor exists. Also reported, not fixed.
+
+| Check | Result |
+|---|---|
+| Failing-test-first | both new tests FAILED (`2 failed` of 16) before the resolver existed |
+| `./gradlew :jco:test --offline` | **BUILD SUCCESSFUL**, 15 tests |
+| `./gradlew test --offline` (whole gateway) | **BUILD SUCCESSFUL** |
+| M31 return the structure instead of the field | 2 FAILED. Restored |
+| M32 drop the parameter-level init guard | 1 FAILED *after* the mock was corrected; 0 before — recorded above. Restored |
+| M33 never call the resolver | 2 FAILED. Restored |
+| M30 drop the segment-count guard | 0 failed -> the guard was deleted, not kept |
+| `diff -q` after every mutation | byte-identical each time |
+| Python touched | **none.** `git diff --stat` shows only the two Java files |
+
+Attribution: **figure (b) — mechanism**, ~53 Java lines. Figure (a) is unaffected and stays **0 in
+both Python and Java**, which is the claim C13 requires 8.3 to state in both languages rather than
+Python alone.
 
 ## Task 5.3 — Confirm the derived view now contains the two candidate edges
 
