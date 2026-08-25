@@ -1687,6 +1687,57 @@ against the same validator the runtime uses. No existing test was edited.
 Attribution: **figure (b) — "producer auto-pull (Decision 16)"**, which grows from 95 to **~130
 lines** in `goal_spec.py`. Reported as growth of the existing line, not as a new item.
 
+## Task 5.4b — Bind a pulled producer's own key inputs (found by 6.1)
+
+**Not in the original plan. Without it the whole feature emits an invalid plan.**
+
+### Result (2026-08-25)
+
+Computing 6.1's table exposed it: the closure put `node.MM.Material.GetInfo` into the plan, the
+second pass authored the consumer's two `factField` bindings — and the producer node had
+**`parameterBindings: []`**, because `_build_node_v2` sources literals from
+`handoff.matched_intents` and an auto-pulled producer is by definition never matched. The plan
+carried `PARAMETER_SOURCE_MISSING ... material`, so the producer could never execute and neither
+derived value could ever exist. Found by computation, not by review — 6.1's real value.
+
+**The rule is registry-driven.** A producer input may be filled from the consumer only when its
+`semanticType` is one of the produced Fact Type's **`keyedBy`** types, read from
+`ontology/fact-types.yaml`. That is what makes the pulled read *the same material's* info rather than
+an arbitrary same-typed value. Only `literal` and `goalConstraint` sources are copied — the values
+the user actually supplied.
+
+**Three mutations, and two of them initially proved nothing. Both were closed by building the
+fixture that makes them observable, not by deleting the guard.**
+
+| Mutation | First run | Resolution |
+|---|---|---|
+| M36 drop the propagation entirely | 3 FAILED | load-bearing from the start |
+| M34 drop the `keyedBy` gate | **0 failed** — the real registry's producer inputs are *both* keys, so the gate never bites there | Added `_sources_with_a_non_key_producer_input`: a Fact keyed by `MaterialNumber` alone whose producer also requires a `Plant`. M34 now → **2 FAILED**. Without the gate, a consumer's `plant` literal would be invented as an argument to a SAP read the user never asked for |
+| M35 copy `factField` sources too | **0 failed** twice — with the `keyedBy` gate in place no realistic registry reaches it | Added `_sources_where_the_key_type_is_also_the_derived_type`: a Fact keyed by `sapnexus:Quantity` whose producer requires a `Quantity` and whose consumer derives a `Quantity` from it. Degenerate but expressible, so the guard is written for it. M35 now → **1 FAILED** |
+
+The contrast with task 5.2a's deleted segment guard is deliberate and is the rule I applied
+throughout: a guard that another check already subsumes gets **deleted** (M30); a guard that nothing
+else enforces gets a **fixture built for it** (M34, M35). "Mutation not caught" is a question, not a
+verdict.
+
+**A wrong assertion of my own, corrected into a stronger one.** I first asserted the valid plan has
+**no** governance flags. It has two — `write_side_effect` and `approval_required` — and they **must**
+be there: two of the WRITE's parameters are now derived rather than typed, and invariant 5 says that
+must not shorten Human Approval by one step. The test now asserts that exact flag set, which also
+discharges part of **5.4a.4**.
+
+| Check | Result |
+|---|---|
+| Failing-test-first | 3 new tests FAILED on the empty `parameterBindings` |
+| `pytest agent/tests/test_planner_plan_compiler_v2.py -q` | **35 passed** (was 30) |
+| `pytest agent/tests -q` | **1522 passed, 1 skipped, 2 xfailed** |
+| M34 / M35 / M36 | 2 / 1 / 3 FAILED after the fixtures; all restored byte-identical |
+
+Attribution: **figure (b) — "producer auto-pull (Decision 16)"**, ~70 further lines in
+`plan_compiler_v2.py`. Figure (a) is untouched: this is mechanism, and it serves any
+consumer/producer pair.
+
+
 ## Task 5.5 — Fix the duplicate-`data`-edge defect
 
 Design Decision 5, **defect 1**. **On the critical path** — it blocks T3's headline edge, so it is
@@ -2118,13 +2169,54 @@ already exists. Corrected in place in the 5.4 result block and entered in the co
 
 **Steps**
 
-- [ ] 6.1.1 Produce the required-parameter table for `MM.PR.CreateDraft` **by computation** — one
+- [x] 6.1.1 Produce the required-parameter table for `MM.PR.CreateDraft` **by computation** — one
   row per required input, with its post-change source kind and whether it still needs asking.
-- [ ] 6.1.2 **Do not copy any figure from a design document.** The number must come from running
+- [x] 6.1.2 **Do not copy any figure from a design document.** The number must come from running
   the code.
-- [ ] 6.1.3 **Report the computed number even if it is 4 rather than 3**, and state the missing
+- [x] 6.1.3 **Report the computed number even if it is 4 rather than 3**, and state the missing
   item's prerequisite.
-- [ ] 6.1.4 **Stop and ask the user if the computed number differs from the target.**
+- [x] 6.1.4 **Stop and ask the user if the computed number differs from the target.**
+
+### Result (2026-08-25) — computed. **4 → 2. Target met, so 6.1.4 does not fire.**
+
+Computed by loading the real `registry/capabilities.yaml`, running `compile_plan_v2`, and reading
+`parameterBindings[].source.kind` off the emitted PlanGraph. No figure copied from any document.
+
+| input | semanticType | `satisfiableByFactType` | source kind | needs asking |
+|---|---|---|---|---|
+| `material` | `sapnexus:MaterialNumber` | — | `literal` | no |
+| `plant` | `sapnexus:Plant` | — | `literal` | no |
+| `quantity` | `sapnexus:Quantity` | — | — | **yes** |
+| `unit` | `sapnexus:UnitOfMeasure` | `sapnexus:MaterialInfoFact` | **`factField`** | no |
+| `delivery_date` | `sapnexus:DeliveryDate` | — | — | **yes** |
+| `purchasing_group` | `sapnexus:PurchasingGroup` | `sapnexus:MaterialInfoFact` | **`factField`** | no |
+
+**6 required inputs; 2 still need asking** — `quantity` and `delivery_date`, exactly the two the plan
+predicted. Pre-change the same computation gave **4**. The two that moved are the two that have an
+upstream producer; the two that remain have none, and neither may be defaulted or guessed.
+
+**6.1.3 — the prerequisite for the remaining two, stated.** `quantity` and `delivery_date` are
+genuinely user intent: no SAP read can tell you how many the user wants or when they want it. They
+are not blocked on a missing producer, they are outside the derivable set by nature. Reducing them
+further would mean inventing a value, which is what invariant 9 and the *upstream-empty* eval case
+forbid.
+
+**The `invalid_plan_graph` flag in the probe output is the system working.** The probe supplies only
+`material` + `plant`, so `quantity` and `delivery_date` have no source and the plan **fails closed**
+rather than fabricating them. With all four user values supplied the flag set is exactly
+`{write_side_effect, approval_required}` — no `invalid_plan_graph`, and approval still demanded
+(`test_a_fully_specified_derived_plan_is_valid_and_still_demands_approval`).
+
+**5.6.1 and 5.6.3's real-registry follow-ups are discharged here**, against the shipped registry
+rather than a fixture:
+
+| Claim | Observed |
+|---|---|
+| 5.6.1 — the right field per input | `unit` → `baseUnitOfMeasure`, `purchasing_group` → `purchasingGroup` |
+| 5.6.3 — producer ordered first | `topologicalOrder == ['node.MM.Material.GetInfo', 'node.MM.PR.CreateDraft']` |
+| 5.5 — one `data` edge per triple | **1** `data` edge for two derived parameters |
+| partitions | `readPartition: [GetInfo]`, `actionPartition: [PR.CreateDraft]` |
+
 
 ### Pre-change baseline (2026-08-25) — computed, not copied. No box checked.
 

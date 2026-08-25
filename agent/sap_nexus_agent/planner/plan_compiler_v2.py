@@ -359,6 +359,23 @@ def _build_plan_graph_v2(
 
     edges.extend(data_edges)
 
+    # T3 task 5.4b: give an auto-pulled producer its own key inputs.
+    #
+    # The closure (task 5.4) puts the producer node into the plan and the pass
+    # above binds the *consumer's* parameters from it, but the producer's own
+    # required inputs came from ``handoff.matched_intents`` and an auto-pulled
+    # producer was never matched — so it had zero bindings and the plan carried
+    # ``invalid_plan_graph``. Found by computing 6.1's table, not by review.
+    #
+    # The rule is registry-driven: a producer input may be filled from the
+    # consumer only when its ``semanticType`` is one of the produced Fact Type's
+    # ``keyedBy`` types. That is what makes the pulled read *the same* material's
+    # info rather than an arbitrary same-typed value, and it keeps an unrelated
+    # required input unbound so it still fails closed.
+    _propagate_keys_to_pulled_producers(
+        nodes, cards_by_id, fact_type_to_node, data_edges, sources
+    )
+
     # Third pass: author dependency edges from dependsOn relations.
     # For each snapshot dependsOn relation where both capabilities are in
     # the plan, author a ``dependency`` edge (fromNodeId=prerequisite,
@@ -473,6 +490,79 @@ def _build_node_v2(
         "producesFactTypes": sorted(card.produces_fact_types),
         "governance": _project_node_governance(raw_capability),
     }
+
+
+def _keyed_by_semantic_types(
+    sources: SemanticSourceDocuments, fact_type_id: str
+) -> frozenset[str]:
+    """The semantic types that identify one instance of ``fact_type_id``.
+
+    Read from ``ontology/fact-types.yaml``'s ``keyedBy``, which is already
+    governed: every entry must be a tier-1 value type
+    (``_validate_vocabulary_references``). Returns an empty set for an unknown
+    Fact Type, which makes the caller propagate nothing rather than guess.
+    """
+    for fact_type in sources.fact_types.get("factTypes", ()) or ():
+        if fact_type.get("factTypeId") == fact_type_id:
+            return frozenset(fact_type.get("keyedBy") or ())
+    return frozenset()
+
+
+def _propagate_keys_to_pulled_producers(
+    nodes: list[dict[str, Any]],
+    cards_by_id: Mapping[str, CapabilityCard],
+    fact_type_to_node: Mapping[str, str],
+    data_edges: list[dict[str, Any]],
+    sources: SemanticSourceDocuments,
+) -> None:
+    """Bind a pulled producer's key inputs from the consumer that pulled it.
+
+    T3 task 5.4b. Only ``literal`` and ``goalConstraint`` sources are copied:
+    those are the values the user actually supplied. A ``factField`` source is
+    deliberately not chained, because copying one derived value into another
+    node's input would make the plan depend on an execution order the data edges
+    do not express.
+
+    Mutates ``nodes`` in place, matching how the surrounding passes are written.
+    """
+    nodes_by_id = {node["nodeId"]: node for node in nodes}
+    for edge in data_edges:
+        producer = nodes_by_id.get(edge["fromNodeId"])
+        consumer = nodes_by_id.get(edge["toNodeId"])
+        if producer is None or consumer is None:
+            continue
+        producer_card = cards_by_id.get(producer["capabilityId"])
+        if producer_card is None:
+            continue
+        keyed_by = _keyed_by_semantic_types(sources, edge["factTypeId"])
+        if not keyed_by:
+            continue
+        consumer_card = cards_by_id.get(consumer["capabilityId"])
+        if consumer_card is None:
+            continue
+        consumer_types = {inp.name: inp.semantic_type for inp in consumer_card.inputs}
+        supplied: dict[str, dict[str, Any]] = {}
+        for binding in consumer["parameterBindings"]:
+            if binding["source"]["kind"] not in (
+                _SOURCE_KIND_GOAL_CONSTRAINT,
+                "literal",
+            ):
+                continue
+            semantic_type = consumer_types.get(binding["parameterName"])
+            if semantic_type is not None:
+                supplied.setdefault(semantic_type, binding["source"])
+        bound = {b["parameterName"] for b in producer["parameterBindings"]}
+        for inp in producer_card.inputs:
+            if not inp.required or inp.name in bound:
+                continue
+            if inp.semantic_type not in keyed_by:
+                continue
+            source = supplied.get(inp.semantic_type)
+            if source is None:
+                continue
+            producer["parameterBindings"].append(
+                {"parameterName": inp.name, "source": dict(source)}
+            )
 
 
 def _topological_order(node_ids: list[str], edges: list[dict[str, Any]]) -> list[str]:

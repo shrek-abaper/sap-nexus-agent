@@ -1313,3 +1313,422 @@ def test_v1_compiler_still_produces_v1_plan_graph():
     # v1 不含 v2 字段
     for field in ("readPartition", "actionPartition", "projectionRef", "ruleSetRefs"):
         assert field not in result.plan_graph
+
+
+# ---- Task 5.4b: an auto-pulled producer's own key inputs must be bound ----
+#
+# Found by computing 6.1's post-change table against the real registry. The
+# closure (task 5.4) puts the producer node into the plan and the second pass
+# authors the consumer's factField bindings, but nobody bound the *producer's*
+# own required inputs, because `_build_node_v2` sources literals from
+# `handoff.matched_intents` and an auto-pulled producer was never matched. The
+# result was a node with zero parameterBindings and an `invalid_plan_graph` flag:
+# the feature could not execute at all.
+#
+# The binding rule is registry-driven, not name-driven: a producer input may be
+# filled from the consumer only when its `semanticType` is one of the produced
+# Fact Type's `keyedBy` types. That is what makes the pulled read *the same
+# material's* info rather than an arbitrary same-typed value, and it means an
+# unrelated required input on the producer stays unbound and fails closed.
+
+
+def _real_pr_handoff(snapshot, parameters):
+    return EscalationHandoff(
+        reason="derived-parameter",
+        matched_intents=[
+            MatchedIntent(
+                capability_id="MM.PR.CreateDraft", parameters=parameters, missing=[]
+            )
+        ],
+        utterance="给 DEMOA2 在 5100 建一张采购申请",
+        registry_snapshot_id=snapshot.snapshot_id,
+    )
+
+
+_FULL_PR_PARAMS = {
+    "material": "DEMOA2",
+    "plant": "5100",
+    "quantity": "10",
+    "delivery_date": "2026-09-30",
+}
+
+
+def _node_by_capability(graph, capability_id):
+    return next(n for n in graph["nodes"] if n["capabilityId"] == capability_id)
+
+
+def test_the_auto_pulled_producer_gets_its_key_inputs_from_the_consumer():
+    """5.4b — the plan must be executable, not merely well-shaped.
+
+    Asserted against the **real** registry, because the defect only appears once
+    a real consumer declares `satisfiableByFactType` and a real producer needs
+    its own keys.
+    """
+    sources = _real_sources()
+    snapshot = build_registry_snapshot(sources)
+    result = compile_plan_v2(_real_pr_handoff(snapshot, _FULL_PR_PARAMS), snapshot, sources)
+
+    producer = _node_by_capability(result.plan_graph, "MM.Material.GetInfo")
+    assert {
+        binding["parameterName"]: binding["source"]
+        for binding in producer["parameterBindings"]
+    } == {
+        "material": {
+            "kind": "literal",
+            "semanticType": "sapnexus:MaterialNumber",
+            "value": "DEMOA2",
+        },
+        "plant": {
+            "kind": "literal",
+            "semanticType": "sapnexus:Plant",
+            "value": "5100",
+        },
+    }
+
+
+def test_a_fully_specified_derived_plan_is_valid_and_still_demands_approval():
+    """The whole point of the round, plus invariant 5, in one assertion.
+
+    Every required input of both nodes has a source — four literals and two
+    factFields on the consumer, two propagated literals on the producer — so
+    `invalid_plan_graph` must be absent. That is what makes 6.1's reduction a
+    real reduction rather than a smaller table beside a broken plan.
+
+    The `write_side_effect` and `approval_required` flags must **still be
+    present**: two of the WRITE's parameters are now derived rather than typed by
+    the user, and invariant 5 says that must not shorten Human Approval by one
+    step. Asserted as an exact set, so a flag silently disappearing fails here.
+    """
+    sources = _real_sources()
+    snapshot = build_registry_snapshot(sources)
+    result = compile_plan_v2(_real_pr_handoff(snapshot, _FULL_PR_PARAMS), snapshot, sources)
+
+    assert {flag.kind for flag in result.governance_flags} == {
+        "write_side_effect",
+        "approval_required",
+    }
+
+
+def test_an_unsupplied_consumer_parameter_still_fails_closed():
+    """Propagation must not become invention.
+
+    With `delivery_date` omitted the plan is still invalid, and it must be — a
+    required parameter with no source may never be defaulted or fabricated. The
+    producer's keys are still bound, so this test also proves the propagation is
+    not what rescues the plan.
+    """
+    sources = _real_sources()
+    snapshot = build_registry_snapshot(sources)
+    params = {k: v for k, v in _FULL_PR_PARAMS.items() if k != "delivery_date"}
+    result = compile_plan_v2(_real_pr_handoff(snapshot, params), snapshot, sources)
+
+    kinds = [flag.kind for flag in result.governance_flags]
+    assert "invalid_plan_graph" in kinds
+    assert any("delivery_date" in (flag.detail or "") for flag in result.governance_flags)
+    producer = _node_by_capability(result.plan_graph, "MM.Material.GetInfo")
+    assert {b["parameterName"] for b in producer["parameterBindings"]} == {
+        "material",
+        "plant",
+    }
+
+
+def _sources_with_a_non_key_producer_input() -> tuple[
+    SemanticSourceDocuments, RegistrySnapshot
+]:
+    """A producer whose required inputs are one key and one **non**-key.
+
+    `test:KeyedFact` is keyed by `sapnexus:MaterialNumber` alone, while the
+    producer also requires a `sapnexus:Plant`. The consumer supplies literals for
+    both semantic types, so only the `keyedBy` gate decides whether `plant` gets
+    propagated — which is exactly what mutation M34 removes.
+    """
+    base = _real_sources()
+    caps = _unfreeze(base.capabilities)
+    facts = _unfreeze(base.fact_types)
+    caps["capabilities"].append({
+        "capabilityId": "Test.Producer.KeyedByMaterialOnly",
+        "name": "Test Keyed Producer",
+        "description": "Produces a Fact keyed by material only",
+        "domain": "MM",
+        "businessObject": "Test",
+        "ontologyIri": "sapnexus:Test_Keyed_Producer",
+        "semanticType": "sapnexus:TestKeyedProducerReadFunction",
+        "aliases": [],
+        "status": "active",
+        "kind": "Function",
+        "inputs": [
+            {
+                "name": "material",
+                "semanticType": "sapnexus:MaterialNumber",
+                "required": True,
+                "bindingKind": "identifier",
+                "type": "string",
+            },
+            {
+                "name": "plant",
+                "semanticType": "sapnexus:Plant",
+                "required": True,
+                "bindingKind": "identifier",
+                "type": "string",
+            },
+        ],
+        "outputs": [
+            {
+                "name": "keyedValue",
+                "semanticType": "sapnexus:Quantity",
+                "factTypeRef": "test:KeyedFact",
+            }
+        ],
+        "governance": {
+            "sideEffect": "none",
+            "requiresApproval": False,
+            "approvalPolicy": "not_required",
+            "dataClassification": "internal",
+        },
+        "executor": {"type": "ODATA"},
+        "executorBinding": {"type": "ODATA", "bindingId": "test-binding"},
+    })
+    caps["capabilities"].append({
+        "capabilityId": "Test.Consumer.WantsKeyedValue",
+        "name": "Test Keyed Consumer",
+        "description": "Consumes a value from a Fact keyed by material only",
+        "domain": "MM",
+        "businessObject": "Test",
+        "ontologyIri": "sapnexus:Test_Keyed_Consumer",
+        "semanticType": "sapnexus:TestKeyedConsumerReadFunction",
+        "aliases": [],
+        "status": "active",
+        "kind": "Function",
+        "inputs": [
+            {
+                "name": "material",
+                "semanticType": "sapnexus:MaterialNumber",
+                "required": True,
+                "bindingKind": "identifier",
+                "type": "string",
+            },
+            {
+                "name": "plant",
+                "semanticType": "sapnexus:Plant",
+                "required": True,
+                "bindingKind": "identifier",
+                "type": "string",
+            },
+            {
+                "name": "amount",
+                "semanticType": "sapnexus:Quantity",
+                "required": True,
+                "bindingKind": "identifier",
+                "satisfiableByFactType": "test:KeyedFact",
+                "type": "string",
+            },
+        ],
+        "outputs": [
+            {"name": "receipt", "factTypeRef": "test:ConsumerReceiptFact"}
+        ],
+        "governance": {
+            "sideEffect": "none",
+            "requiresApproval": False,
+            "approvalPolicy": "not_required",
+            "dataClassification": "internal",
+        },
+        "executor": {"type": "ODATA"},
+        "executorBinding": {"type": "ODATA", "bindingId": "test-binding"},
+    })
+    facts["factTypes"].append({
+        "factTypeId": "test:KeyedFact",
+        "keyedBy": ["sapnexus:MaterialNumber"],
+        "fields": [],
+    })
+    facts["factTypes"].append(
+        {"factTypeId": "test:ConsumerReceiptFact", "fields": []}
+    )
+    sources = SemanticSourceDocuments(
+        capabilities=caps,
+        executor_bindings=base.executor_bindings,
+        fact_types=facts,
+        relations=base.relations,
+    )
+    return sources, build_registry_snapshot(sources)
+
+
+def _keyed_consumer_handoff(snapshot) -> EscalationHandoff:
+    return EscalationHandoff(
+        reason="keyed",
+        matched_intents=[
+            MatchedIntent(
+                capability_id="Test.Consumer.WantsKeyedValue",
+                parameters={"material": "M1", "plant": "5300"},
+                missing=[],
+            )
+        ],
+        utterance="keyed producer propagation",
+        registry_snapshot_id=snapshot.snapshot_id,
+    )
+
+
+def test_only_keyed_semantic_types_propagate_into_a_pulled_producer():
+    """5.4b — the `keyedBy` gate, proven (mutation M34).
+
+    `test:KeyedFact` is keyed by `sapnexus:MaterialNumber` only, so the pulled
+    producer's `material` is filled and its `plant` is **not**, even though the
+    consumer supplied a `sapnexus:Plant` literal sitting right there.
+
+    Without the gate, any same-typed consumer value would be copied into an
+    auto-pulled read's unrelated input — inventing an argument for a SAP call the
+    user never asked for. The unbound `plant` then fails closed, which is the
+    correct outcome for a producer whose non-key input nobody supplied.
+    """
+    sources, snapshot = _sources_with_a_non_key_producer_input()
+    result = compile_plan_v2(_keyed_consumer_handoff(snapshot), snapshot, sources)
+
+    producer = _node_by_capability(
+        result.plan_graph, "Test.Producer.KeyedByMaterialOnly"
+    )
+    assert {b["parameterName"] for b in producer["parameterBindings"]} == {"material"}
+    assert any(
+        flag.kind == "invalid_plan_graph" and "plant" in (flag.detail or "")
+        for flag in result.governance_flags
+    )
+
+
+def _sources_where_the_key_type_is_also_the_derived_type() -> tuple[
+    SemanticSourceDocuments, RegistrySnapshot
+]:
+    """The degenerate shape that makes the factField filter reachable.
+
+    `test:SelfKeyedFact` is keyed by `sapnexus:Quantity`, its producer *requires*
+    a `sapnexus:Quantity`, and the consumer's `sapnexus:Quantity` input is
+    derived from that same Fact. So the consumer's only Quantity source is a
+    `factField`, and it passes the `keyedBy` gate — the kind filter is the one
+    thing left standing between the plan and a producer taking as input a value
+    that only exists after the producer has run.
+
+    Contrived on purpose. A registry can express it, so the guard is written for
+    it, and mutation M35 is only observable through it. Recorded rather than left
+    as an unprovable check (see task 5.2a for the guard that was deleted instead).
+    """
+    base = _real_sources()
+    caps = _unfreeze(base.capabilities)
+    facts = _unfreeze(base.fact_types)
+    caps["capabilities"].append({
+        "capabilityId": "Test.Producer.SelfKeyed",
+        "name": "Test Self Keyed Producer",
+        "description": "Requires a quantity and produces a quantity-keyed Fact",
+        "domain": "MM",
+        "businessObject": "Test",
+        "ontologyIri": "sapnexus:Test_Self_Keyed_Producer",
+        "semanticType": "sapnexus:TestSelfKeyedProducerReadFunction",
+        "aliases": [],
+        "status": "active",
+        "kind": "Function",
+        "inputs": [
+            {
+                "name": "seed",
+                "semanticType": "sapnexus:Quantity",
+                "required": True,
+                "bindingKind": "identifier",
+                "type": "string",
+            }
+        ],
+        "outputs": [
+            {
+                "name": "amount",
+                "semanticType": "sapnexus:Quantity",
+                "factTypeRef": "test:SelfKeyedFact",
+            }
+        ],
+        "governance": {
+            "sideEffect": "none",
+            "requiresApproval": False,
+            "approvalPolicy": "not_required",
+            "dataClassification": "internal",
+        },
+        "executor": {"type": "ODATA"},
+        "executorBinding": {"type": "ODATA", "bindingId": "test-binding"},
+    })
+    caps["capabilities"].append({
+        "capabilityId": "Test.Consumer.SelfKeyed",
+        "name": "Test Self Keyed Consumer",
+        "description": "Derives a quantity from a quantity-keyed Fact",
+        "domain": "MM",
+        "businessObject": "Test",
+        "ontologyIri": "sapnexus:Test_Self_Keyed_Consumer",
+        "semanticType": "sapnexus:TestSelfKeyedConsumerReadFunction",
+        "aliases": [],
+        "status": "active",
+        "kind": "Function",
+        "inputs": [
+            {
+                "name": "amount",
+                "semanticType": "sapnexus:Quantity",
+                "required": True,
+                "bindingKind": "identifier",
+                "satisfiableByFactType": "test:SelfKeyedFact",
+                "type": "string",
+            }
+        ],
+        "outputs": [
+            {"name": "receipt", "factTypeRef": "test:SelfKeyedReceiptFact"}
+        ],
+        "governance": {
+            "sideEffect": "none",
+            "requiresApproval": False,
+            "approvalPolicy": "not_required",
+            "dataClassification": "internal",
+        },
+        "executor": {"type": "ODATA"},
+        "executorBinding": {"type": "ODATA", "bindingId": "test-binding"},
+    })
+    facts["factTypes"].append({
+        "factTypeId": "test:SelfKeyedFact",
+        "keyedBy": ["sapnexus:Quantity"],
+        "fields": [],
+    })
+    facts["factTypes"].append(
+        {"factTypeId": "test:SelfKeyedReceiptFact", "fields": []}
+    )
+    sources = SemanticSourceDocuments(
+        capabilities=caps,
+        executor_bindings=base.executor_bindings,
+        fact_types=facts,
+        relations=base.relations,
+    )
+    return sources, build_registry_snapshot(sources)
+
+
+def test_a_derived_value_is_never_chained_into_a_pulled_producer():
+    """5.4b — only user-supplied sources propagate, proven (mutation M35).
+
+    The consumer's `amount` is a `factField` drawn from the producer, and its
+    semantic type *is* the Fact's key, so it clears the `keyedBy` gate. If
+    `factField` sources were copied, the producer's `seed` would be bound to a
+    value that only exists after the producer ran. The data edges express no such
+    order, so the plan would be quietly unexecutable instead of visibly invalid —
+    and `PARAMETER_SOURCE_MISSING` is the visible form this test demands.
+    """
+    sources, snapshot = _sources_where_the_key_type_is_also_the_derived_type()
+    handoff = EscalationHandoff(
+        reason="self-keyed",
+        matched_intents=[
+            MatchedIntent(
+                capability_id="Test.Consumer.SelfKeyed", parameters={}, missing=[]
+            )
+        ],
+        utterance="degenerate self-keyed shape",
+        registry_snapshot_id=snapshot.snapshot_id,
+    )
+    result = compile_plan_v2(handoff, snapshot, sources)
+
+    consumer = _node_by_capability(result.plan_graph, "Test.Consumer.SelfKeyed")
+    assert [
+        b["parameterName"]
+        for b in consumer["parameterBindings"]
+        if b["source"]["kind"] == "factField"
+    ] == ["amount"]  # non-vacuity: there IS a factField that could be chained
+    producer = _node_by_capability(result.plan_graph, "Test.Producer.SelfKeyed")
+    assert producer["parameterBindings"] == []
+    assert any(
+        flag.kind == "invalid_plan_graph" and "seed" in (flag.detail or "")
+        for flag in result.governance_flags
+    )
