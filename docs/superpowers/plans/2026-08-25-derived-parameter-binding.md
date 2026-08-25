@@ -1312,17 +1312,68 @@ one node per desired Fact Type. Adding to `desired_fact_types` is sufficient.
 
 **Steps**
 
-- [ ] 5.4.1 Four failing tests: (a) the closure adds `sapnexus:MaterialInfoFact` when `unit` is
+- [x] 5.4.1 Four failing tests: (a) the closure adds `sapnexus:MaterialInfoFact` when `unit` is
   unbound; (b) it **refuses to pull an `Action` producer**; (c) neither value is elicited when the
   upstream value is available; (d) the resolved value carries `provenance=capability_derived`.
-- [ ] 5.4.2 Implement the closure in `build_goal_spec`. Restrict to `kind: Function` producers.
-- [ ] 5.4.3 Assert `plan_compiler_v2.py:213-233` is **unchanged** by this task.
+- [x] 5.4.2 Implement the closure in `build_goal_spec`. Restrict to `kind: Function` producers.
+- [x] 5.4.3 Assert `plan_compiler_v2.py:213-233` is **unchanged** by this task.
 - [ ] 5.4.4 Confirm the two PR inputs stay `bindingKind: identifier` declaring
   `satisfiableByFactType` only — **no `capabilityOutput` source is added** (ruling ④). Derivation
   is computed at runtime by semantic-type equality, so **nothing restates the derived field** and
   field-level drift is structurally impossible.
-- [ ] 5.4.5 Attribute to **figure (b), "producer auto-pull (Decision 16)"** — this is feature work
+- [x] 5.4.5 Attribute to **figure (b), "producer auto-pull (Decision 16)"** — this is feature work
   enabled by the registry, but the lines are Python and must be counted honestly, not hidden in (a).
+
+### Result (2026-08-25) — executed out of order; 5.4.1(d) and 5.4.4 split out
+
+`_auto_pulled_fact_types(cards, matched_cards, bound_parameters, desired)` +
+`_is_auto_pullable(card)` in `goal_spec.py`; `build_goal_spec` extends `desired` with the closure.
+**95 Python lines, all in `goal_spec.py`.** `git diff --stat` on `plan_compiler_v2.py` is **empty**
+for this task (5.4.3 ✓) — adding to `desired_fact_types` was indeed sufficient.
+
+**The closure is inert until the registry declares the coupling.** `grep satisfiableByFactType
+registry/capabilities.yaml` returns **nothing** today, so no existing plan changes and the full
+suite needed no adjustment. The behaviour switches on when 5.2.2a adds `satisfiableByFactType` to
+`MM.PR.CreateDraft`'s two inputs — i.e. by declaration, which is invariant 6's shape.
+
+**Deviation from the written interface, stated rather than hidden.** The plan's signature restricts
+to `kind: Function`. `CapabilityCard` does not project `kind` (it projects the two governance
+fields), and the registry schema binds `kind: Function` ⇒ `sideEffect: none` +
+`requiresApproval: false`. `_is_auto_pullable` therefore checks **both governance fields** — the
+fields that actually gate execution — instead of the label that implies them. This is strictly
+stronger: a capability mis-declared as `Function` while carrying a side effect is still refused.
+Projecting `kind` onto the card would have been extra Python for a weaker check.
+
+**It is a real closure, not a single hop.** A pulled producer's own unbound required derivable
+inputs are closed too, via a worklist. Termination is by construction (each Fact Type is added at
+most once), proven by a registry-cycle fixture rather than argued.
+
+**5.4.1(d) is split out and NOT claimed here.** `provenance=capability_derived` is not a value the
+slot vocabulary admits: `read_context._SLOT_PROVENANCES` is
+`{EXPLICIT, CONFIRMED, INHERITED, MODEL_CANDIDATE, INHERITED_LEGACY}`. Adding a sixth token touches
+`read_context.py`, `context_reducer.py`, `context_decision_gate.py`, `eval.py` and the frontend
+allow-lists — none of which are in 5.4's declared file list. Implementing it inside 5.4 would have
+silently widened 5.4's blast radius from 1 file to 6. It belongs with **task 5.9**, which owns the
+provenance token and both surfaces, and is listed in 8.4 as an open item with that attribution.
+5.4.1(c) is covered here at the level 5.4 can observe — *the producer is never pulled*, so the extra
+SAP read does not happen — which is the stronger half of "not elicited".
+
+**5.4.4 stays open** because it asserts a property of `registry/capabilities.yaml` after 5.2.2a,
+which has not been written yet. Not a defect, a dependency.
+
+| Check | Result |
+| --- | --- |
+| `pytest agent/tests/test_planner_capability_card.py -q` | 44 passed (was 37) |
+| `pytest agent/tests -q` | 1511 passed, 1 skipped, 2 xfailed |
+| Failing-test-first | (a) and the transitive case failed with `('sapnexus:PrCreateFact',)`; the four negative tests passed vacuously before the feature and are proven non-vacuous by M24–M26 below |
+| `git diff --stat -- plan_compiler_v2.py` | empty (5.4.3 ✓) |
+| Mutation M24 (drop `_is_auto_pullable`) | 2 FAILED — both invariant-5 refusal tests; restored, green |
+| Mutation M25 (drop the `bound_parameters` skip) | 1 FAILED — 用户明说优先; restored, green |
+| Mutation M26 (drop the `required` check) | 1 FAILED — optional input; restored, green |
+| Mutation M27 (drop the already-added guard) | **non-termination** — killed at 25 s. The cycle fixture is the catch: the guard is what makes the closure terminate, not a redundancy. Restored, green |
+
+Attribution: **figure (b) — "producer auto-pull (Decision 16)", 95 lines in `goal_spec.py`.**
+
 
 ## Task 5.4a — The mandatory disclosure that pays for the auto-pull
 

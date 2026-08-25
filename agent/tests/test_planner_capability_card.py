@@ -734,3 +734,217 @@ def test_capability_card_only_exposes_semantic_fields():
     assert actual_fields == expected_fields, (
         f"Unexpected CapabilityCard fields: {actual_fields - expected_fields}"
     )
+
+
+# ---- Task 5.4: producer auto-pull as a closure over desired_fact_types ----
+#
+# Design Decision 16, ruling 3 (规划器自动拉入). The planner adds the producer of
+# an unbound required input's ``satisfiableByFactType`` to ``desired_fact_types``,
+# so ``plan_compiler_v2``'s node-creation loop materialises the upstream node
+# without any change of its own.
+#
+# Invariant 5 is the load-bearing constraint here: auto-pull must never drag in a
+# WRITE or shorten Human Approval, so the pull is restricted to READ producers.
+# ``CapabilityCard`` does not project ``kind``, and the registry schema binds
+# ``kind: Function`` => ``sideEffect: none`` + ``requiresApproval: false``, so the
+# restriction is enforced on the governance fields that actually gate execution
+# rather than on a label that only implies them.
+
+
+def _consumer_needing_an_upstream_unit() -> tuple[EscalationHandoff, list[CapabilityCard]]:
+    """A matched consumer whose required ``unit`` is unbound and declares
+    ``satisfiableByFactType``, plus an unmatched READ producer of that Fact."""
+    handoff = EscalationHandoff(
+        reason="derived-parameter",
+        matched_intents=[
+            MatchedIntent(
+                capability_id="MM.PR.CreateDraft",
+                parameters={"material": "M-1001", "plant": "1010"},
+                missing=[],
+            ),
+        ],
+        utterance="给物料 M-1001 在工厂 1010 建一张采购申请",
+        registry_snapshot_id="sha256:abc",
+    )
+    consumer = _make_card(
+        capability_id="MM.PR.CreateDraft",
+        inputs=(
+            _make_input(name="material"),
+            _make_input(name="plant", semantic_type="sapnexus:Plant"),
+            _make_input(
+                name="unit",
+                semantic_type="sapnexus:BaseUnitOfMeasure",
+                satisfiable_by_fact_type="sapnexus:MaterialInfoFact",
+            ),
+        ),
+        governance=_make_governance(side_effect="create", requires_approval=True),
+        produces_fact_types=("sapnexus:PrCreateFact",),
+    )
+    producer = _make_card(
+        capability_id="MM.Material.GetInfo",
+        produces_fact_types=("sapnexus:MaterialInfoFact",),
+    )
+    return handoff, [consumer, producer]
+
+
+def test_the_closure_pulls_the_producer_of_an_unbound_derivable_input():
+    """Task 5.4.1(a) — the feature's core.
+
+    ``MM.Material.GetInfo`` is not in ``matched_intents``: the user never asked
+    for it. It enters ``desired_fact_types`` only because ``unit`` is required,
+    unbound, and declares ``satisfiableByFactType``.
+    """
+    handoff, cards = _consumer_needing_an_upstream_unit()
+    goal = build_goal_spec(handoff, cards)
+    assert goal.desired_fact_types == (
+        "sapnexus:PrCreateFact",
+        "sapnexus:MaterialInfoFact",
+    )
+
+
+def test_the_closure_refuses_to_pull_a_producer_that_is_not_read_only():
+    """Task 5.4.1(b) — invariant 5. Auto-pull must not execute a WRITE.
+
+    The only producer of the Fact requires approval, so pulling it would put an
+    unapproved WRITE into the plan on the user's behalf. The Fact is therefore
+    left out and ``unit`` stays unresolved (the user is asked), which is the
+    correct failure direction: elicit rather than execute.
+    """
+    handoff, cards = _consumer_needing_an_upstream_unit()
+    cards[1] = _make_card(
+        capability_id="MM.Material.Rewrite",
+        governance=_make_governance(side_effect="update", requires_approval=True),
+        produces_fact_types=("sapnexus:MaterialInfoFact",),
+    )
+    goal = build_goal_spec(handoff, cards)
+    assert goal.desired_fact_types == ("sapnexus:PrCreateFact",)
+
+
+def test_the_closure_refuses_a_side_effecting_producer_even_without_approval():
+    """Task 5.4.1(b) — both governance fields are checked, not just one.
+
+    A capability with ``sideEffect`` other than ``none`` is not a READ even if
+    it happens to declare ``requiresApproval: false``; ``kind: Function`` binds
+    *both*, so the closure must too. Without this, a mis-declared capability
+    would become auto-pullable.
+    """
+    handoff, cards = _consumer_needing_an_upstream_unit()
+    cards[1] = _make_card(
+        capability_id="MM.Material.Touch",
+        governance=_make_governance(side_effect="create", requires_approval=False),
+        produces_fact_types=("sapnexus:MaterialInfoFact",),
+    )
+    goal = build_goal_spec(handoff, cards)
+    assert goal.desired_fact_types == ("sapnexus:PrCreateFact",)
+
+
+def test_the_closure_does_not_pull_when_the_user_supplied_the_value():
+    """Task 5.4.1(c) — ruling 4: 用户明说优先.
+
+    The user stated the unit, so no upstream read is needed and the producer is
+    never pulled at all. This is not merely a precedence rule about which source
+    wins: the extra SAP call must not happen.
+    """
+    handoff, cards = _consumer_needing_an_upstream_unit()
+    handoff = dataclasses.replace(
+        handoff,
+        matched_intents=[
+            MatchedIntent(
+                capability_id="MM.PR.CreateDraft",
+                parameters={"material": "M-1001", "plant": "1010", "unit": "ST"},
+                missing=[],
+            ),
+        ],
+    )
+    goal = build_goal_spec(handoff, cards)
+    assert goal.desired_fact_types == ("sapnexus:PrCreateFact",)
+
+
+def test_the_closure_ignores_an_optional_derivable_input():
+    """Task 5.4 — only *required* inputs justify an extra SAP read.
+
+    An optional input the user omitted is an omission the plan may honour, not a
+    gap the planner should spend a round trip closing.
+    """
+    handoff, cards = _consumer_needing_an_upstream_unit()
+    cards[0] = dataclasses.replace(
+        cards[0],
+        inputs=(
+            _make_input(name="material"),
+            _make_input(name="plant", semantic_type="sapnexus:Plant"),
+            _make_input(
+                name="unit",
+                semantic_type="sapnexus:BaseUnitOfMeasure",
+                required=False,
+                satisfiable_by_fact_type="sapnexus:MaterialInfoFact",
+            ),
+        ),
+    )
+    goal = build_goal_spec(handoff, cards)
+    assert goal.desired_fact_types == ("sapnexus:PrCreateFact",)
+
+
+def test_the_closure_does_not_duplicate_a_fact_type_already_desired():
+    """Task 5.4 — a producer already matched is not pulled a second time.
+
+    ``desiredFactTypes`` has ``uniqueItems: true`` in the S1 schema, so a
+    duplicate would make the GoalSpec invalid rather than merely redundant.
+    """
+    handoff, cards = _consumer_needing_an_upstream_unit()
+    handoff = dataclasses.replace(
+        handoff,
+        matched_intents=list(handoff.matched_intents)
+        + [
+            MatchedIntent(
+                capability_id="MM.Material.GetInfo",
+                parameters={"material": "M-1001"},
+                missing=[],
+            ),
+        ],
+    )
+    goal = build_goal_spec(handoff, cards)
+    assert goal.desired_fact_types == (
+        "sapnexus:PrCreateFact",
+        "sapnexus:MaterialInfoFact",
+    )
+
+
+def test_the_closure_is_transitive_and_terminates():
+    """Task 5.4 — it is a *closure*, not a single hop.
+
+    A pulled producer may itself have an unbound required derivable input. The
+    worklist adds each Fact Type at most once, so a producer cycle terminates
+    instead of looping — asserted here by a producer pair that references each
+    other's Fact Type.
+    """
+    handoff, cards = _consumer_needing_an_upstream_unit()
+    cards[1] = _make_card(
+        capability_id="MM.Material.GetInfo",
+        inputs=(
+            _make_input(
+                name="group",
+                semantic_type="sapnexus:PurchasingGroup",
+                satisfiable_by_fact_type="sapnexus:MaterialGroupFact",
+            ),
+        ),
+        produces_fact_types=("sapnexus:MaterialInfoFact",),
+    )
+    cards.append(
+        _make_card(
+            capability_id="MM.Material.GetGroup",
+            inputs=(
+                _make_input(
+                    name="unit",
+                    semantic_type="sapnexus:BaseUnitOfMeasure",
+                    satisfiable_by_fact_type="sapnexus:MaterialInfoFact",
+                ),
+            ),
+            produces_fact_types=("sapnexus:MaterialGroupFact",),
+        )
+    )
+    goal = build_goal_spec(handoff, cards)
+    assert goal.desired_fact_types == (
+        "sapnexus:PrCreateFact",
+        "sapnexus:MaterialInfoFact",
+        "sapnexus:MaterialGroupFact",
+    )
