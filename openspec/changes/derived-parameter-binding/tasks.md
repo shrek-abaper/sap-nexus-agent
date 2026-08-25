@@ -45,8 +45,8 @@
 - [x] 5.7 Make `narrate_single_value`'s required-field guard `fieldMapping`-driven and stop hardcoding the inventory value label (design Decision 6, defect 2); verify the inventory narration is unchanged and that a template referencing a missing field still raises `NarrativeGuardError`
 - [x] 5.8 Confirm no synchronous data fetch exists anywhere under `agent/` — derivation happens only through PlanExecutor node ordering (invariant 2); verify by inspecting the intent path for any Gateway/RFC/OData call and by the eval assertion that intent parsing performs zero execute calls
 - [ ] 5.9 Carry `provenance=capability_derived` and its source node through projection into the narrative and the approval payload, including the two frontend allow-list edits; verify the derived value is traceable to its producing node in both surfaces
-- [ ] 5.10 Run the live READ smoke against real SAP and retain `traces.jsonl` evidence; verify `BAPI_TRANSACTION_COMMIT` / `BAPI_TRANSACTION_ROLLBACK` are absent from the trace, and that fail-closed executors (`CDS_ADT` / `REST_JSON` / `SQL_READ`) still refuse; troubleshoot via SE37 / SLG1, and `/IWFND/ERROR_LOG` for the OData path
-- [ ] 5.11 Confirm approval semantics are byte-identical for the WRITE capability — no change to subject construction, subject hash, or anti-replay — and flag in the report that the new upstream nodes' `asOf` / `snapshotId` are inputs to the deferred D4 joint-hash work (invariant 5)
+- [x] 5.10 Run the live READ smoke against real SAP and retain `traces.jsonl` evidence; verify `BAPI_TRANSACTION_COMMIT` / `BAPI_TRANSACTION_ROLLBACK` are absent from the trace, and that fail-closed executors (`CDS_ADT` / `REST_JSON` / `SQL_READ`) still refuse; troubleshoot via SE37 / SLG1, and `/IWFND/ERROR_LOG` for the OData path
+- [x] 5.11 Confirm approval semantics are byte-identical for the WRITE capability — no change to subject construction, subject hash, or anti-replay — and flag in the report that the new upstream nodes' `asOf` / `snapshotId` are inputs to the deferred D4 joint-hash work (invariant 5)
 
 ### Status notes (2026-08-25 catch-up)
 
@@ -56,6 +56,22 @@ defect being recorded, not a routine sync: `tasks.md` was last touched at commit
 (task 1.3), so **20 completed tasks (2.1–4.1, 5.5–5.8) went unchecked across 16 commits** while the
 plan file was kept current. The Comet build-phase rule is "task acceptance -> tasks.md checkmark ->
 commit, do not accumulate"; it was accumulated. Only the plan file was ever the live record.
+
+**Final status (2026-08-25).** 40 of 47 items checked. The 7 that remain are each blocked by a named
+cause recorded in the plan's result blocks, never by "we ran out of time":
+
+- **5.4a / 5.9** — blocked on defect **D4** via invariant 5. Finding **G1**: `resolveParameters` skips
+  `factField`, so no derived value exists at runtime to disclose; resolving it changes
+  `computeInputHash`, which is anti-replay. Finding **G4**: `FactBuilderRegistry` is keyed by
+  `capabilityId`, so projecting the Fact needs per-capability TS code. Current behaviour is
+  fail-closed, not under-disclosed.
+- **7.1** — unreachable through the rule parser (quantity extraction is coupled to a recognised unit
+  token). The property itself is asserted at the planner layer.
+- **7.4** — an execution-time property; by invariant 2 the Agent never executes.
+- **7.5 / 7.6** — no per-case seam to vary the governed capability set through `run_query`.
+- **8.5** — the exit gate is reported in full in the plan; every condition is met **except** runtime
+  disclosure (U1/U2). It is left unchecked because one condition is genuinely not met, and checking it
+  would claim otherwise.
 
 Deliberately still unchecked despite work having landed:
 
@@ -91,8 +107,8 @@ see the 5.9 section.
 
 ## 8. Batch T exit verification and reporting
 
-- [ ] 8.1 Run and capture raw output for: `.venv/bin/python scripts/validate-registry-contract.py registry/capabilities.yaml`; `.venv/bin/python -m pytest agent/tests/test_registry_contract.py -v`; `.venv/bin/python -m pytest agent/tests -q`; `PYTHONPATH=agent scripts/verify-agent-callplan-evidence.sh`; `npm --prefix frontend run verify`; `npm --prefix frontend run release-gate -- --profile all`
-- [ ] 8.2 Confirm the release gate still reports 22/22 and `L3_ACTION_GOVERNED`, and that all four eval suites are fully green
-- [ ] 8.3 Report the two Python line counts separately from a file-partitioned `git diff --stat` (design Decision 5): figure (a) registration lines, target 0; figure (b) pre-existing-defect lines with each line attributed to a named defect
-- [ ] 8.4 Deliver the changed-file list with a one-sentence note per file, and the unresolved-item list naming each specific test plus its attribution and reason — no item may be summarised as a known issue, a pre-existing failure, or unrelated to core functionality (invariant 10)
+- [x] 8.1 Run and capture raw output for: `.venv/bin/python scripts/validate-registry-contract.py registry/capabilities.yaml`; `.venv/bin/python -m pytest agent/tests/test_registry_contract.py -v`; `.venv/bin/python -m pytest agent/tests -q`; `PYTHONPATH=agent scripts/verify-agent-callplan-evidence.sh`; `npm --prefix frontend run verify`; `npm --prefix frontend run release-gate -- --profile all`
+- [x] 8.2 Confirm the release gate still reports 22/22 and `L3_ACTION_GOVERNED`, and that all four eval suites are fully green
+- [x] 8.3 Report the two Python line counts separately from a file-partitioned `git diff --stat` (design Decision 5): figure (a) registration lines, target 0; figure (b) pre-existing-defect lines with each line attributed to a named defect
+- [x] 8.4 Deliver the changed-file list with a one-sentence note per file, and the unresolved-item list naming each specific test plus its attribution and reason — no item may be summarised as a known issue, a pre-existing failure, or unrelated to core functionality (invariant 10)
 - [ ] 8.5 Confirm the batch T exit conditions are all met — including a green positive control alongside whatever the real-capability derived view reports — before any batch L work is proposed; batch L is a separate change and does not begin in this one

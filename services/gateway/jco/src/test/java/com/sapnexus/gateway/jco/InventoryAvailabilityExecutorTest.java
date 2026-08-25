@@ -245,6 +245,52 @@ class InventoryAvailabilityExecutorTest {
         assertThat(result.data()).doesNotContainKey("purchasingGroup");
     }
 
+    @Test
+    void aBlankStructureFieldIsTreatedAsAbsentRatherThanAsAValue() throws Exception {
+        // Finding G5, discovered by the task 5.10 LIVE smoke, not by review. A real
+        // read of P0008492AE / plant 5269 returned MATERIALPLANTDATA *initialized*
+        // with PUR_GROUP blank, so the executor emitted purchasingGroup: "".
+        //
+        // An empty string is not a purchasing group. Emitting one turns "we could
+        // not derive this, ask the user" into "we derived an empty value", which
+        // then fails late inside a purchase requisition (the registry input has
+        // minLength: 1) instead of failing where the fact is missing. The
+        // structure-level guard cannot catch it: the structure IS present.
+        JCoDestination destination = mock(JCoDestination.class);
+        JCoRepository repository = mock(JCoRepository.class);
+        JCoFunction function = mock(JCoFunction.class);
+        JCoParameterList imports = mock(JCoParameterList.class);
+        JCoParameterList exports = mock(JCoParameterList.class);
+        JCoStructure generalData = mock(JCoStructure.class);
+        JCoStructure plantData = mock(JCoStructure.class);
+
+        when(destination.getRepository()).thenReturn(repository);
+        when(repository.getFunction("BAPI_MATERIAL_GET_DETAIL")).thenReturn(function);
+        when(function.getImportParameterList()).thenReturn(imports);
+        when(function.getExportParameterList()).thenReturn(exports);
+        when(function.getTableParameterList()).thenReturn(null);
+        doNothing().when(function).execute(destination);
+        when(exports.isInitialized("RETURN")).thenReturn(false);
+        when(exports.isInitialized("MATERIAL_GENERAL_DATA")).thenReturn(true);
+        when(exports.isInitialized("MATERIALPLANTDATA")).thenReturn(true);
+        when(exports.getStructure("MATERIAL_GENERAL_DATA")).thenReturn(generalData);
+        when(exports.getStructure("MATERIALPLANTDATA")).thenReturn(plantData);
+        when(generalData.isInitialized("BASE_UOM")).thenReturn(true);
+        when(generalData.getValue("BASE_UOM")).thenReturn("EA");
+        when(plantData.isInitialized("PUR_GROUP")).thenReturn(true);
+        when(plantData.getValue("PUR_GROUP")).thenReturn("   ");
+
+        InventoryAvailabilityExecutor executor = new InventoryAvailabilityExecutor(
+                new FixedDestinationFactory(destination), new SapReturnNormalizer());
+
+        ExecutionResult result = executor.execute(
+                materialGetInfoCapability(), Map.of("material", "P0008492AE", "plant", "5269"), "trace-blank");
+
+        assertThat(result.success()).isTrue();
+        assertThat(result.data()).containsEntry("baseUnitOfMeasure", "EA");
+        assertThat(result.data()).doesNotContainKey("purchasingGroup");
+    }
+
     private CapabilityDefinition materialGetInfoCapability() {
         return new CapabilityDefinition(
                 "MM.Material.GetInfo",

@@ -2139,27 +2139,154 @@ already exists. Corrected in place in the 5.4 result block and entered in the co
 
 **Steps**
 
-- [ ] 5.10.1 Run the live READ smoke; retain `traces.jsonl` evidence.
-- [ ] 5.10.2 Verify `BAPI_TRANSACTION_COMMIT` and `BAPI_TRANSACTION_ROLLBACK` are **absent** from
+- [x] 5.10.1 Run the live READ smoke; retain `traces.jsonl` evidence.
+- [x] 5.10.2 Verify `BAPI_TRANSACTION_COMMIT` and `BAPI_TRANSACTION_ROLLBACK` are **absent** from
   the trace (READ capability, `sideEffect: none`).
-- [ ] 5.10.3 Verify fail-closed executors (`CDS_ADT` / `REST_JSON` / `SQL_READ`) **still refuse**
+- [x] 5.10.3 Verify fail-closed executors (`CDS_ADT` / `REST_JSON` / `SQL_READ`) **still refuse**
   (invariant 4).
-- [ ] 5.10.4 Confirm the trace carries **no credential / token / connection string**, and that
+- [x] 5.10.4 Confirm the trace carries **no credential / token / connection string**, and that
   supplier/person/contact fields follow existing Gateway masking. Material number and plant code
   may stay (business identifiers). "It's only a log" is not a pass.
 - [ ] 5.10.5 Troubleshoot via SE37 / SLG1, and `/IWFND/ERROR_LOG` for the OData path.
+
+### Result (2026-08-25) — live smoke run. It found a defect, which is what a live smoke is for.
+
+The Gateway was built and started against the real system, and `MM.Material.GetInfo` was executed
+through it — not through a probe, so execution authority stayed in the Gateway (invariant 1).
+
+**The 4th capability appeared in the running Gateway's catalogue with zero code written for it.**
+`GET /capabilities` returned all four, and `POST /capabilities/MM.Material.GetInfo/validate` passed,
+purely from the registry declaration. That is figure (a) = 0 demonstrated at runtime rather than
+inferred from a diff.
+
+Three live executions, each a real round trip:
+
+| Parameters | Result |
+|---|---|
+| `DEMOA1` / `1000` | `SAP_BUSINESS_ERROR`, message *"The material DEMOA1 does not exist or is not activated"* — a real SAP message, so the path is genuinely live |
+| `P0008492AE` / `5269` | `success`, `data: {baseUnitOfMeasure: "EA", purchasingGroup: ""}` |
+| `P0008492AE` / `5269` after the fix | `success`, `data: {baseUnitOfMeasure: "EA"}` |
+
+**`baseUnitOfMeasure: "EA"` is the whole point of the round, observed against live SAP**: a value read
+from `MATERIAL_GENERAL_DATA.BASE_UOM` by a capability whose entire definition is a registry
+declaration and a generic path resolver.
+
+**Finding G5 — a blank structure field was emitted as `""`. Found by the smoke, fixed, re-verified
+live.** The second run returned `purchasingGroup: ""`, because SAP returned `MATERIALPLANTDATA`
+*initialized* with `PUR_GROUP` blank. My 5.2a claim — "a missing value must remain missing" — held at
+the **structure** level and failed at the **field** level, which no test covered because the mocks
+never modelled a present-but-blank field. An empty string is not a purchasing group: emitting one
+turns *"this could not be derived, ask the user"* into *"an empty value was derived"*, which then
+fails late inside a purchase requisition (`purchasing_group` has `minLength: 1`) instead of failing
+where the fact is missing. Fixed by treating a blank string as absent; mutation **M37** confirms the
+guard bites; the third live run shows `purchasingGroup` **absent** rather than empty. This is the
+finding I would not have had without running 5.10 — it was invisible to 1525 unit tests.
+
+**A second confirmation of the `.env` shell-mangling bug.** The first Gateway launch failed with
+`Missing SAP environment keys: [SAP_PASSWORD]` because `set -a; . ./.env` mangles that value to empty —
+the same defect recorded at 5.1. Any consumer that sources `.env` with the shell has it. The literal
+loader was used instead. No credential value was printed at any point.
+
+**5.10.2 / 5.10.3 / 5.10.4 evidence:**
+
+| Check | Result |
+|---|---|
+| `BAPI_TRANSACTION_COMMIT` / `ROLLBACK` in `traces.jsonl` | **0 occurrences** across the whole file |
+| credential / token / connection-string tokens in the trace | **0** (`password`, `passwd`, `token`, `api_key`, `secret`, `bearer`, `ashost`, `sysnr`) |
+| fail-closed executors | `CDS_ADT` / `REST_JSON` / `SQL_READ` have **no `@Component` adapter** — only `JCO_RFC` and `ODATA` exist, so dispatch cannot reach them. Their registry-contract rules are still asserted by `test_registry_contract.py` (13 passed). Structurally refusing, unchanged by this batch |
+| masking (5.10.4) | the smoke's own trace lines carry only `material` and `plant`, both explicitly permitted business identifiers, and `resultSummary` is `{}` so no read values leak. The 4 `vendor` hits are **pre-existing** 2026-08-09 lines on `MM.PurchaseOrder.GetList` carrying a vendor *code* (`000000F101`) — the same class as a material number, not a supplier name |
+
+`runtime/` is gitignored, so `traces.jsonl` is retained locally as evidence and is not committed.
+
+**5.10.5 not needed.** No SE37 / SLG1 / `/IWFND/ERROR_LOG` troubleshooting was required: both failures
+were self-explanatory (a blank password, then a genuine "material does not exist" business message).
+Recorded as not-needed rather than checked off.
 
 ## Task 5.11 — Confirm approval semantics are byte-identical
 
 **Steps**
 
-- [ ] 5.11.1 Confirm **no change** to subject construction, subject hash, or anti-replay for the
+- [x] 5.11.1 Confirm **no change** to subject construction, subject hash, or anti-replay for the
   WRITE capability. Evidence: `git diff` on the approval modules and on
   `test_approval.py` / `test_orchestrator.py` subject-hash assertions is empty.
-- [ ] 5.11.2 Flag in the report that the new upstream nodes' `asOf` / `snapshotId` are **inputs to
+- [x] 5.11.2 Flag in the report that the new upstream nodes' `asOf` / `snapshotId` are **inputs to
   the deferred defect D4** (joint hash of WRITE parameters + upstream Fact `asOf` + snapshot id).
   Name it as a **coupling point**, not as a known issue (invariant 10). **D4 is a defect number,
   not a task number.**
+
+### Result (2026-08-25) — byte-identical, and D4's coupling point named
+
+**5.11.1 — the evidence is an empty diff.** `git diff --stat ee46a98..HEAD` scoped to
+`agent/sap_nexus_agent/approval.py`, `gateway_client.py`,
+`frontend/src/runtime/action-governance/`, `agent/tests/test_approval.py` and
+`agent/tests/test_orchestrator.py` produces **no output**. Not one line of subject construction,
+subject hashing or anti-replay changed in this batch.
+
+The two `sha256:` literals in those tests are **parameter hashes**, not snapshot ids, and both are
+still present verbatim (`21f76dfb…` in `test_approval.py`, `a369c970…` in `test_orchestrator.py`).
+They were checked explicitly during the snapshot recompute precisely because a blind
+`sed s/old/new/` over `sha256:` strings would have silently rewritten approval evidence.
+
+Positive-direction evidence, not just an absence: a plan whose WRITE has **two derived parameters**
+still carries `write_side_effect` and `approval_required`, asserted as an exact flag set by
+`test_a_fully_specified_derived_plan_is_valid_and_still_demands_approval`. So "the parameters were
+derived" demonstrably did not shorten approval by one step — which is the half of invariant 5 an empty
+diff cannot prove.
+
+**5.11.2 — coupling point to defect D4, stated as a coupling point.**
+
+The upstream nodes this batch adds are inputs to **D4** (extend the approval subject to a joint hash
+of *WRITE parameters + upstream Fact `asOf` + snapshot id*). Concretely:
+
+- `asOf` is carried **per-Fact** (`fact-builder.ts:123,250,275`, and it is in
+  `ALLOWED_PAYLOAD_KEYS.fact`).
+- `snapshotId` is carried **per-projection** (`projection/assembler.ts:53`,
+  `material-supply-snapshot.ts:248`; present in the `projection` and `recommendation` allow-lists,
+  deliberately **not** in the `fact` one). A snapshot is a property of registry state, not of one fact.
+- Neither is a Fact Type field, and correction **C14** records why `MaterialInfoFact` does not declare
+  them.
+
+So D4's three inputs all exist today, at two different levels, and D4's work is to *join* them into
+the subject — not to create them. **Finding G1 lands inside D4, not beside it**: making
+`PlanExecutor.resolveParameters` resolve a `factField` changes what `computeInputHash` hashes, and
+that is the anti-replay machinery invariant 5 reserves. D4 cannot be done without executor-side
+resolution, and executor-side resolution cannot be done without touching D4's hash.
+
+This is a **coupling point**, not a known issue and not "unrelated to core functionality": it is the
+named reason tasks 5.4a and 5.9 cannot complete inside batch T.
+
+## Tasks 5.4a and 5.9 — blocked on defect D4 by invariant 5, with the chain traced
+
+Both were re-audited after 5.2 landed, since 5.2 was their stated blocker. It no longer is; a deeper
+one is.
+
+**The surfacing chain has two unimplemented links, and the second is D4's.**
+
+1. **Finding G4 (new) — the projection layer is keyed by capability.**
+   `FactBuilderRegistry` (`frontend/src/runtime/projection/fact-builder.ts:5-18`) is a
+   `Map<capabilityId, FactBuilderDeclaration>` and `register` throws on a duplicate id. Projecting
+   `sapnexus:MaterialInfoFact` therefore needs a **new per-capability TS builder** — the same defect
+   class as **C13**, one layer up, and the same shape the project forbids: a capability that cannot be
+   added by declaration alone.
+2. **Finding G1 — the derived value does not exist at runtime.** `PlanExecutor.resolveParameters`
+   handles `literal` only; a `factField` binding is silently skipped. So there is no derived value for
+   a narration or an approval card to disclose, however the surfaces are written.
+
+Link 2 is the binding one, and it is **not** fixable here: resolving `factField` changes
+`computeInputHash`, which is anti-replay. That is D4's subject, and D4 is explicitly another batch.
+
+**Checked, so the conclusion is not guesswork.** `ActionProposal.parameterSources` already has a
+`{kind: "fact"; ref; field}` variant — the approval card *already has the vocabulary* for a derived
+value. But `decision-engine.ts:504-515` hardcodes `purchasing_group` as
+`{kind: "constraint", ref: "purchasingGroup"}`, and `coordinator.ts:171` `actionConstraints` builds
+that constraint from `literalValue` only. So a derived `purchasing_group` never reaches
+`constraints.purchasingGroup`, the rule set's `requiredConstraints` is unsatisfied, and **no proposal
+is created at all**. The current behaviour is therefore *fail-closed* — an unapproved WRITE, not an
+under-disclosed one — which is the correct failure mode to be left in.
+
+**No box is checked for 5.4a or 5.9, and no partial credit is claimed.** What was delivered toward
+them is the audit record (`GoalSpec.auto_pulled`, four fields naming producer / consumer / input),
+which is the data a disclosure will read from when D4 unblocks the surfaces.
 
 ---
 
@@ -2421,12 +2548,12 @@ network round trip. That is outside batch T.
 
 ## Task 8.1 — Run and capture raw output
 
-- [ ] 8.1.1 `.venv/bin/python scripts/validate-registry-contract.py registry/capabilities.yaml`
-- [ ] 8.1.2 `.venv/bin/python -m pytest agent/tests/test_registry_contract.py -v`
-- [ ] 8.1.3 `.venv/bin/python -m pytest agent/tests -q`
-- [ ] 8.1.4 `PYTHONPATH=agent scripts/verify-agent-callplan-evidence.sh`
-- [ ] 8.1.5 `npm --prefix frontend run verify`
-- [ ] 8.1.6 `npm --prefix frontend run release-gate -- --profile all`
+- [x] 8.1.1 `.venv/bin/python scripts/validate-registry-contract.py registry/capabilities.yaml`
+- [x] 8.1.2 `.venv/bin/python -m pytest agent/tests/test_registry_contract.py -v`
+- [x] 8.1.3 `.venv/bin/python -m pytest agent/tests -q`
+- [x] 8.1.4 `PYTHONPATH=agent scripts/verify-agent-callplan-evidence.sh`
+- [x] 8.1.5 `npm --prefix frontend run verify`
+- [x] 8.1.6 `npm --prefix frontend run release-gate -- --profile all`
 
 **Never pipe these through `tail`/`head`.** A truncated log destroys its own evidence — this
 already happened once during baselining and cost a re-run.
@@ -2498,3 +2625,118 @@ be re-run over the final diff to be evidence rather than a forecast.
   (3.2) alongside whatever the real-capability derived view reports**.
 - [ ] 8.5.2 Confirm batch L has **not** begun. It is a separate change; it does not start in this
   one; it commits independently and is never mixed into this commit.
+
+### 8.1 Result (2026-08-25) — all six commands run whole, none piped through `tail`/`head`
+
+| # | Command | Result |
+|---|---|---|
+| 8.1.1 | `validate-registry-contract.py registry/capabilities.yaml` | `Registry contract valid`; **15** `extraction` deprecation warnings, unchanged |
+| 8.1.2 | `pytest agent/tests/test_registry_contract.py -v` | **13 passed** |
+| 8.1.3 | `pytest agent/tests -q` | **1525 passed, 1 skipped, 2 xfailed** (was 1500 at batch start) |
+| 8.1.4 | `PYTHONPATH=agent scripts/verify-agent-callplan-evidence.sh` | exit **0**; 7/7 · 13/13 · 9/9 · 23/23 · 3/3 · **2/2** · openspec 22/22 |
+| 8.1.5 | `npm --prefix frontend run verify` | **52 files, 525 tests passed** |
+| 8.1.6 | `npm --prefix frontend run release-gate -- --profile all` | exit 0 — `L3_ACTION_GOVERNED \| passed=true \| cases=22/22` |
+| extra | `./gradlew test` (whole Gateway) | **BUILD SUCCESSFUL** — added because this batch changed Java, which the plan's six commands do not cover |
+
+The 1 skipped is `test_llm_live.py:9`, env-gated on `SAP_NEXUS_LLM_LIVE=1`. The 2 xfailed are the
+pre-existing `capabilityOutput` placeholders (strict xfail, deliberately unwired).
+
+**Caveat carried from finding G3**: 8.1.4 makes live LLM calls and is intermittently red for that
+reason. This run was green; two earlier runs were not. Named, not smoothed.
+
+### 8.2 Result — gate confirmed
+
+`L3_ACTION_GOVERNED`, 22/22, `passed=true`. All four Python eval suites plus the derived-parameter
+suite are **functionally green**, with three cases pending under named causes (7.1 parser coupling,
+7.4 execution-time property, 7.5/7.6 missing registry seam) — never reported as passing.
+
+### 8.3 Result — the two figures, in every language
+
+**Figure (a) — cost of adding the 4th capability: `0`.**
+
+| Language | `git diff --stat` for the 5.2 step |
+|---|---|
+| Python (`agent/sap_nexus_agent/`, `scripts/`) | **empty** |
+| Java (`services/gateway/**/src/main/`) | **empty** |
+| TypeScript (`frontend/src/`) | **empty** |
+
+Reported in three languages because correction **C13** established that a Python-only measurement
+cannot see the real cost. Demonstrated at runtime as well as in the diff: the running Gateway listed
+`MM.Material.GetInfo` in `GET /capabilities` and executed it against live SAP with no code written
+for it (task 5.10).
+
+**Figure (b) — mechanism and defect lines, every line attributed.** Production only; tests are
+reported separately and never folded in.
+
+| File | Lines | Attribution |
+|---|---|---|
+| `semantic_planning/derivation.py` | +372 | T2 — the deterministic deriver (tasks 3.1–3.4) |
+| `semantic_planning/validation.py` | +281 | T1/T2 — field-list authority, vocabulary rules, `origin` (2.1, 2.4, 3.6) |
+| `planner/goal_spec.py` | +~205 | producer auto-pull, Decision 16 (5.4) + the `auto_pulled` audit record (5.4a foundation) |
+| `planner/plan_compiler_v2.py` | +~200 | duplicate-edge defect 1 (5.5) · producer field by semanticType (5.6) · pulled-producer key propagation (5.4b) |
+| `scripts/derive-data-dependencies.py` | +131 | T2 — the printable derived view (3.5) |
+| `narrator.py` | +76 | defect 2, hardcoded inventory value label (5.7) |
+| `capability_selector.py` | +~60 | T5 — a derivable parameter is not asked; escalate (7.1) |
+| `eval.py` | +~120 | T5 — the three derived-parameter assertion keys (7.1) |
+| `planner/plan_compiler.py` | +13 | v1 twin of defect 1 |
+| `semantic_planning/__init__.py` · `graph.py` | +15 | exports and graph plumbing |
+| `scripts/validate_registry_contract.py` | −5 | dead branch removed by 1.2 |
+| **`InventoryAvailabilityExecutor.java`** | **+52** | **C13 — the generic export-structure path resolver (5.2a) + G5's blank-value guard (5.10)** |
+
+Totals: **Python ~1387 insertions / 58 deletions across 12 files**; **Java 52 insertions / 1 deletion
+across 1 file**; **TypeScript 0**. Tests: **5035 insertions across 20 files** (Python, Java).
+Governed sources + schemas + evals: **505 insertions / 44 deletions across 13 files**.
+
+Still-open items from figure (b)'s original list, unchanged and re-stated: the `bindingKind` coupling
+relaxation (Decision 14) is landed; `producers[0]` silently-picks-one remains, and the closure's
+"first pullable producer wins" is the same shape, documented as such; `plan_compiler.py:168-172` twin
+and `receiptId`'s dead `fieldMapping` in `MM.PR.CreateDraft` remain as untouched cleanup candidates.
+
+### 8.4 Result — changed files and the unresolved list
+
+**Changed files** (one line each) are enumerated per task in the result blocks above; the batch is
+`ee46a98..HEAD`. No file outside the workspace was touched. `.gitignore` (modified before this batch),
+`.comet/current-change.json` and `docs/wiki/archive/` were deliberately excluded from every commit.
+
+**Unresolved items — each names a specific test or artifact, its attribution and its reason. None is
+summarised as a known issue, a pre-existing failure, or unrelated to core functionality.**
+
+| # | Item | Attribution | Reason it is unresolved |
+|---|---|---|---|
+| U1 | Tasks **5.4a** and **5.9** — no box checked | defect **D4** via invariant 5 | Finding **G1**: `PlanExecutor.resolveParameters` skips `factField`, so no derived value exists at runtime to disclose; resolving it changes `computeInputHash`, which is anti-replay and reserved to D4. Current behaviour is fail-closed (no proposal), not under-disclosed |
+| U2 | Finding **G4** — `FactBuilderRegistry` is keyed by `capabilityId` | same defect class as C13, one layer up | Projecting `MaterialInfoFact` would need a new per-capability TS builder, i.e. a capability that cannot be added by declaration. Blocks 5.9.2's two allow-list edits, which would otherwise be dead entries |
+| U3 | Eval case **`derived-not-asked`** (task 7.1) pending | `inputs[quantity].extraction` / `resolver: quantity` | Quantity extraction requires an adjacent recognised unit token, so omitting the unit also drops quantity. Verified against the parser. The property itself **is** asserted by `test_a_fully_specified_derived_plan_is_valid_and_still_demands_approval` |
+| U4 | Eval case **`upstream-empty-degrades-to-elicitation`** (7.4) pending | planning-vs-execution layer boundary | Execution-time property; by invariant 2 the Agent never executes. Needs a TS `PlanExecutor`/projection scenario |
+| U5 | Eval cases **`upstream-unreachable-emits-capability-gap`** (7.5) and **`dry-run-missing-producer`** (7.6.3) pending | `run_query` loads the registry internally | No per-case seam to vary the governed capability set. 7.6.1/7.6.2 are therefore **not** claimed |
+| U6 | Finding **G3** — `verify-agent-callplan-evidence.sh` intermittently red | `narrator.py:288/385/613` call a live LLM | Pre-existing; the failing case's path touches nothing this batch changed. Not reproducible on demand. Remedy: deterministic eval narration |
+| U7 | `MRP_IND_LINES.WB.AVAIL_QTY1` still resolved by hardcoded `addMd04StockRowData` | same defect class as **C13** | A 3-segment table-row path selects a row *by value*; needs a row-selector syntax this change did not scope. The registry declaration remains decorative for that one output |
+| U8 | `JcoRfcTechnicalAdapter.selectExecutor`'s `findFirst()` over non-WRITE executors | pre-existing | A second silently-picks-one site, correct today only because exactly one READ executor exists |
+| U9 | Mutation **M23** — no pre-existing test discriminates the topological sort | pre-existing weakness in Task 9's dependency-edge tests | Replacing the sort with `sorted(node_ids)` failed only my two new tests out of 1504. Not fixed: editing existing tests was out of scope |
+| U10 | Task **5.10.5** not performed | not needed | No SE37 / SLG1 / `/IWFND/ERROR_LOG` troubleshooting was required; both live failures were self-explanatory. Recorded rather than checked off |
+| U11 | 15 `extraction` deprecation warnings remain | pre-existing (Decision 12 reduced T0′) | The alias migration was explicitly out of scope; the count is pinned so it cannot grow |
+
+**Corrections issued this batch:** C11 (no `sapnexus:BaseUnitOfMeasure`), C12 (`capability_derived` is
+harness vocabulary, not a slot token — and my own 5.4 result block was corrected in place), C13
+(figure (a) must be measured in Java too; the registry's dotted path was decorative), C14
+(`asOf`/`snapshotId` are not Fact Type fields). **Findings:** G1–G5.
+
+### 8.5 Result — batch T exit gate
+
+| Exit condition | Status |
+|---|---|
+| The 4th capability added with **zero** code | **met** — 0 in Python, Java and TypeScript, verified by diff *and* by the running Gateway |
+| The derived-edge view is **non-empty** and **derived** | **met** — 2 edges, 1 relation, `origin: derived`, 0 diagnostics; `capability-relations.yaml` still `relations: []` |
+| ≥ 1 real derived edge, not a fixture | **met** — both edges are between two real registry capabilities |
+| Green **positive control** beside it | **met** — `test_the_real_view_and_the_positive_control_are_asserted_together` runs both through one call site |
+| Required parameters needing to be asked reduced | **met** — 4 → **2**, computed not copied |
+| fail-closed executors still refuse | **met** — no adapter exists for `CDS_ADT`/`REST_JSON`/`SQL_READ` |
+| approval / subject hash / anti-replay unchanged | **met** — empty diff, both parameter-hash pins intact, and approval still demanded on a plan with two derived parameters |
+| Live READ smoke, no COMMIT/ROLLBACK, no credentials in the trace | **met** — real `baseUnitOfMeasure: "EA"` from SAP; 0 COMMIT/ROLLBACK; 0 credential tokens |
+| No new pip / npm dependency | **met** — `git diff` on `requirements*.txt` / `package.json` dependency blocks is empty |
+| No second agent runtime, no graph DB, no OWL reasoner | **met** — nothing added |
+| **Runtime disclosure of a derived value reaching the UI** | **NOT met** — U1/U2, blocked on defect D4 by invariant 5 |
+
+**Batch L has not begun.** No file under batch L's scope was touched, and no commit in
+`ee46a98..HEAD` contains batch L work. The hard gate is respected: batch T's exit conditions are met
+except U1/U2, which are blocked by an invariant this batch may not relax, so **batch L must not start
+until D4 lands or the user rules otherwise**.

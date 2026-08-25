@@ -177,8 +177,12 @@ public class InventoryAvailabilityExecutor implements JcoCapabilityExecutor {
      * code reads as protection and asserts nothing.
      * <p>
      * An absent or uninitialized structure yields {@link Optional#empty()} so the key
-     * stays out of the result. A missing value must remain missing: a defaulted or
-     * fabricated value flowing into a purchase requisition is a governance failure.
+     * stays out of the result, and so does a **blank** field inside a present
+     * structure. Finding G5, from the task 5.10 live smoke: a real read returned
+     * {@code MATERIALPLANTDATA} initialized with {@code PUR_GROUP} blank, and an empty
+     * string is not a purchasing group. Emitting one turns "this could not be derived,
+     * ask the user" into "an empty value was derived", which then fails late inside a
+     * purchase requisition instead of failing where the fact is missing.
      */
     private Optional<Object> resolveExportStructureField(JCoParameterList exports, String path) {
         int separator = path.indexOf('.');
@@ -195,7 +199,11 @@ public class InventoryAvailabilityExecutor implements JcoCapabilityExecutor {
             if (structure == null || !safeIsInitialized(structure, fieldName)) {
                 return Optional.empty();
             }
-            return Optional.ofNullable(structure.getValue(fieldName));
+            Object value = structure.getValue(fieldName);
+            if (value instanceof String text && text.isBlank()) {
+                return Optional.empty();
+            }
+            return Optional.ofNullable(value);
         } catch (RuntimeException ignored) {
             return Optional.empty();
         }
