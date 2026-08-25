@@ -1,4 +1,4 @@
-"""The deterministic data dependency deriver (T2: task 3.1).
+"""The deterministic data dependency deriver (T2: tasks 3.1 and 3.3).
 
 Requirement: openspec/changes/derived-parameter-binding/specs/
 registry-ontology-contract/spec.md — producer→consumer data dependency edges
@@ -44,6 +44,7 @@ including proof that it never reaches the execution boundary.
 from __future__ import annotations
 
 import ast
+import json
 from pathlib import Path
 
 from positive_control import (
@@ -350,3 +351,168 @@ def test_derivation_imports_nothing_that_can_reach_the_gateway_or_sap():
         "derivation.py must not import anything outside the allowlist; "
         f"adding {sorted(unexpected)} requires proving it cannot perform I/O"
     )
+
+
+# ---- 3.3: rendering into the catalog's dependsOn shape ----
+
+RELATION_SCHEMA = (
+    Path(__file__).resolve().parents[2]
+    / "schemas"
+    / "capability-relation.schema.json"
+)
+
+
+def _relation_type_vocabulary() -> set[str]:
+    """The relation kinds the catalog schema admits, read from the schema.
+
+    Read rather than restated: a test carrying its own copy of the vocabulary
+    would still pass after someone added a third kind to the schema, which is
+    precisely the change 3.3.2 exists to catch.
+    """
+    schema = json.loads(RELATION_SCHEMA.read_text(encoding="utf-8"))
+    refs = schema["$defs"]["relation"]["oneOf"]
+    names = {ref["$ref"].rsplit("/", 1)[-1] for ref in refs}
+    vocabulary = {
+        schema["$defs"][name]["properties"]["relationType"]["const"]
+        for name in names
+    }
+    assert vocabulary, "failed to read the schema — the 3.3.2 lock would be vacuous"
+    return vocabulary
+
+
+def test_a_derived_edge_renders_in_the_catalog_depends_on_shape():
+    """3.3.1 — the rendered relation is the shape the catalog already defines.
+
+    Key set asserted by equality against the schema's own required set plus
+    `origin`, so a renamed or extra key fails here rather than silently at the
+    compiler, whose third pass reads these names by `.get()` and skips what it
+    does not recognise.
+    """
+    relation = EXPECTED_EDGE.to_relation()
+    required = set(
+        json.loads(RELATION_SCHEMA.read_text(encoding="utf-8"))["$defs"][
+            "dependsOn"
+        ]["required"]
+    )
+    assert set(relation) == required | {"origin"}
+    assert relation["capabilityId"] == CONSUMER_ID
+    assert relation["dependsOnCapabilityId"] == PRODUCER_ID
+    assert relation["origin"] == "derived"
+
+
+def test_derivedness_is_a_field_not_a_new_relation_type():
+    """3.3.2 — ruling ①: the relation catalog stays additive, two kinds only.
+
+    A `derivedDependsOn` kind would have been the easy way to mark provenance,
+    and it would have forced every existing reader — schema, validator,
+    compiler third pass — to learn a name. `origin` costs readers nothing.
+    """
+    vocabulary = _relation_type_vocabulary()
+    assert vocabulary == {"dependsOn", "precondition"}
+    fact = _widget_fact()
+    next(f for f in fact["fields"] if f["name"] == "widgetTags")["cardinality"] = "one"
+    second_consumer = _consumer()
+    second_consumer["capabilityId"] = "T.Widget.Reserve"
+    view = derive_data_dependencies(
+        _documents([_producer(), _consumer(), second_consumer], [fact])
+    )
+    rendered = view.to_relations()
+    assert rendered, "nothing rendered — the assertion below would be vacuous"
+    assert {relation["relationType"] for relation in rendered} == {"dependsOn"}
+    assert {relation["origin"] for relation in rendered} == {"derived"}
+
+
+def test_two_derived_parameters_from_one_producer_are_one_relation():
+    """A dependsOn relation is capability-level, not parameter-level.
+
+    Two derived parameters flowing from the same producer are one dependency.
+    Rendering both would make the compiler author two identical `dependency`
+    edges, and the S1 validator expects exactly one per dependsOn.
+    """
+    fact = _widget_fact()
+    next(f for f in fact["fields"] if f["name"] == "widgetTags")["cardinality"] = "one"
+    view = derive_data_dependencies(_documents([_producer(), _consumer()], [fact]))
+    assert len(view.edges) == 2
+    assert len(view.to_relations()) == 1
+
+
+def test_two_producer_consumer_pairs_render_two_relations():
+    """The companion to the deduplication test: collapsing is per pair, not
+    global. One relation for two pairs would be the same bug in the other
+    direction."""
+    second_consumer = _consumer()
+    second_consumer["capabilityId"] = "T.Widget.Reserve"
+    view = derive_data_dependencies(
+        _documents([_producer(), _consumer(), second_consumer], [_widget_fact()])
+    )
+    rendered = view.to_relations()
+    assert len(rendered) == 2
+    assert len({relation["relationId"] for relation in rendered}) == 2
+    assert {relation["capabilityId"] for relation in rendered} == {
+        CONSUMER_ID,
+        "T.Widget.Reserve",
+    }
+
+
+def test_the_relation_id_names_both_capabilities():
+    """The id must be recomputable by a reader, not a lookup-table key.
+
+    An opaque counter would make two runs over reordered documents produce
+    different ids for the same relation, and a diff of the derived view would
+    then be unreadable.
+    """
+    relation = EXPECTED_EDGE.to_relation()
+    assert CONSUMER_ID in relation["relationId"]
+    assert PRODUCER_ID in relation["relationId"]
+
+
+def test_rendered_relations_are_deterministic_and_ordered():
+    second_consumer = _consumer()
+    second_consumer["capabilityId"] = "T.Widget.Reserve"
+    fact_types = [_widget_fact()]
+    forward = derive_data_dependencies(
+        _documents([_producer(), _consumer(), second_consumer], fact_types)
+    ).to_relations()
+    reversed_order = derive_data_dependencies(
+        _documents([second_consumer, _consumer(), _producer()], fact_types)
+    ).to_relations()
+    assert forward == reversed_order
+    assert [relation["relationId"] for relation in forward] == sorted(
+        relation["relationId"] for relation in forward
+    )
+
+
+def test_the_semantic_graph_reads_a_derived_relation_as_a_depends_on_edge():
+    """3.3.2's cost argument, checked against the second reader rather than
+    asserted.
+
+    `graph.py:77-85` treats the relation vocabulary as closed: anything that is
+    not `dependsOn` falls into the precondition branch and reads
+    `requiredFactType`. A third relation kind would therefore not be additive at
+    all — it would reroute into that branch and raise `KeyError`. An unknown
+    *field* like `origin` passes straight through, which is what this asserts.
+    """
+    from sap_nexus_agent.semantic_planning.graph import SemanticGraphCompiler
+
+    documents = _widget_documents()
+    relations = list(derive_data_dependencies(documents).to_relations())
+    assert relations, "nothing derived — the graph assertion would be vacuous"
+    graph = SemanticGraphCompiler().compile(
+        positive_control_documents(relations=relations)
+    )
+    assert (
+        "dependsOn",
+        CONSUMER_ID,
+        PRODUCER_ID,
+    ) in {
+        (edge.relation_type, edge.source_id, edge.target_id) for edge in graph.edges
+    }
+
+
+def test_the_real_registry_renders_no_relations():
+    """The empty case, reported as empty — task 3.5 requires exit 0 for it."""
+    from sap_nexus_agent.semantic_planning import load_semantic_sources
+
+    repo_root = Path(__file__).resolve().parents[2]
+    view = derive_data_dependencies(load_semantic_sources(repo_root))
+    assert view.to_relations() == ()

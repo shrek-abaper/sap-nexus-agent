@@ -38,11 +38,15 @@ def load_positive_control() -> dict[str, Any]:
 def positive_control_documents(
     capabilities: list[dict[str, Any]] | None = None,
     fact_types: list[dict[str, Any]] | None = None,
+    relations: list[dict[str, Any]] | None = None,
 ) -> SemanticSourceDocuments:
     """The fixture as `SemanticSourceDocuments`, optionally with substitutions.
 
-    `executor_bindings` and `relations` are empty: the deriver reads neither, and
-    supplying plausible-looking values would suggest otherwise.
+    `executor_bindings` is empty, and `relations` is empty unless a caller
+    supplies one: the deriver reads neither, and supplying plausible-looking
+    values would suggest otherwise. The `relations` parameter exists for the
+    task-3.3 tests, which feed the *rendered* derived relations back to a reader
+    to check that it consumes them.
     """
     fixture = load_positive_control()
     capabilities_document = fixture["capabilities"]
@@ -55,7 +59,7 @@ def positive_control_documents(
         capabilities=capabilities_document,
         executor_bindings={"version": 1, "executorBindings": []},
         fact_types=fact_types_document,
-        relations={"version": 1, "relations": []},
+        relations={"version": 1, "relations": relations or []},
     )
 
 

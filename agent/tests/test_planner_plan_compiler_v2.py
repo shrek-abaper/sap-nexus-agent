@@ -485,6 +485,64 @@ def test_compile_plan_v2_authors_dependency_edge_from_depends_on_relation():
     )
 
 
+def test_compile_plan_v2_consumes_derived_relations_without_a_compiler_change():
+    """T2 task 3.3.1 — the derived edge is rendered in the shape the third pass
+    already reads, so honouring a *derived* dependency needs no compiler change.
+
+    Not asserted by comparing key names against the compiler's source, but by
+    running the compiler over derived relations and checking it authored the
+    dependency edge. `plan_compiler_v2.py` is untouched by task 3.3.
+
+    The direction is cross-checked against the `data` edge the compiler
+    computed independently from `satisfiableByFactType`: if the derived
+    dependsOn had consumer and producer the wrong way round, the two edges
+    would disagree and the plan would order the producer after its consumer.
+    """
+    from sap_nexus_agent.semantic_planning.derivation import derive_data_dependencies
+
+    sources, _ = _sources_with_derivable_identifier()
+    view = derive_data_dependencies(sources)
+    assert len(view.edges) == 1, (
+        "the fixture must derive exactly one edge, otherwise this test proves "
+        "nothing about what the compiler consumed"
+    )
+    relations = _unfreeze(sources.relations)
+    assert not [
+        r for r in relations["relations"] if r.get("relationType") == "dependsOn"
+    ], "the real catalog already carries a dependsOn — the count below would be vacuous"
+    relations["relations"].extend(view.to_relations())
+    sources = SemanticSourceDocuments(
+        capabilities=sources.capabilities,
+        executor_bindings=sources.executor_bindings,
+        fact_types=sources.fact_types,
+        relations=relations,
+    )
+    snapshot = build_registry_snapshot(sources)
+    result = compile_plan_v2(_quantity_handoff(snapshot, {}), snapshot, sources)
+
+    dep_edges = [e for e in result.plan_graph["edges"] if e["kind"] == "dependency"]
+    data_edges = [e for e in result.plan_graph["edges"] if e["kind"] == "data"]
+    assert len(dep_edges) == 1
+    assert len(data_edges) == 1
+    assert dep_edges[0]["fromNodeId"] == data_edges[0]["fromNodeId"]
+    assert dep_edges[0]["toNodeId"] == data_edges[0]["toNodeId"]
+    producer = next(
+        n
+        for n in result.plan_graph["nodes"]
+        if n["capabilityId"] == "MM.Inventory.GetAvailability"
+    )
+    consumer = next(
+        n
+        for n in result.plan_graph["nodes"]
+        if n["capabilityId"] == "Test.Consumer.UseQuantity"
+    )
+    assert dep_edges[0]["fromNodeId"] == producer["nodeId"]
+    assert dep_edges[0]["toNodeId"] == consumer["nodeId"]
+    order = result.plan_graph["topologicalOrder"]
+    assert order.index(producer["nodeId"]) < order.index(consumer["nodeId"])
+    assert not any(f.kind == "invalid_plan_graph" for f in result.governance_flags)
+
+
 def test_compile_plan_v2_topological_order_no_edges_falls_back_to_node_id_order():
     """No edges -> topologicalOrder falls back to nodeId sorted order (deterministic)."""
     snapshot = _real_snapshot()

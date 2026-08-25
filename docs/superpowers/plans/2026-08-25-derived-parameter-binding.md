@@ -758,11 +758,46 @@ Design Decision 13, ruling ③ (the user made this **mandatory**).
 
 **Steps**
 
-- [ ] 3.3.1 Emit derived edges in `dependsOn` shape carrying `origin: derived`, so
+- [x] 3.3.1 Emit derived edges in `dependsOn` shape carrying `origin: derived`, so
   `plan_compiler_v2.py:299-312` consumes them **unchanged**.
-- [ ] 3.3.2 Verify **no new relation-type name** is introduced for derivedness — `origin` is a
+- [x] 3.3.2 Verify **no new relation-type name** is introduced for derivedness — `origin` is a
   field, not a new relation kind (ruling ①: the relation catalog stays `dependsOn` + `precondition`,
   additive only).
+
+**Result — 3.3.1 is checked by running the readers, not by comparing key names**
+
+`DerivedDataEdge.to_relation()` renders `{relationId, relationType: dependsOn, capabilityId:
+<consumer>, dependsOnCapabilityId: <producer>, origin: derived}`;
+`DerivedDependencyView.to_relations()` collapses per capability pair, because a dependsOn relation
+is capability-level and two derived parameters from one producer are one dependency (the S1
+validator expects exactly one `dependency` edge per dependsOn). `plan_compiler_v2.py` has **zero
+changed lines** in this task.
+
+| Reader | Test | Consumes the rendered relation |
+| --- | --- | --- |
+| `plan_compiler_v2.py:299-312` third pass | `test_compile_plan_v2_consumes_derived_relations_without_a_compiler_change` | authors one `dependency` edge, direction cross-checked against the `data` edge it computed independently |
+| `graph.py:77-85` relation reader | `test_the_semantic_graph_reads_a_derived_relation_as_a_depends_on_edge` | emits a `dependsOn` `SemanticEdge`; the unknown `origin` field passes through |
+
+**Result — 3.3.2, and why `origin` is a field**
+
+The vocabulary is read out of `schemas/capability-relation.schema.json` rather than restated, so a
+third kind added to the schema fails the test. Mutating `DERIVED_RELATION_TYPE` to
+`"derivedDependsOn"` shows a new kind is **not** additive at all: `graph.py:77-85` treats the
+vocabulary as closed — anything that is not `dependsOn` falls into the precondition branch and reads
+`requiredFactType`, so the mutation raises `KeyError` at `graph.py:81`. An unknown *field* costs both
+readers nothing.
+
+`origin` is not schema-legal in the catalog file yet; task 3.6 admits it. That is consistent, not a
+gap: the rendering is an in-memory projection, and writing it back into
+`ontology/capability-relations.yaml` is what invariant 3 forbids.
+
+**Mutations run, each caught by exactly the test that claims it**
+
+| Mutation | Caught by |
+| --- | --- |
+| `setdefault` → per-parameter key (dedup removed) | `test_two_derived_parameters_from_one_producer_are_one_relation` |
+| consumer/producer swapped in the rendered relation | the shape test, the two-pairs test, and the compiler test (direction disagrees with the data edge) |
+| `dependsOn` → `derivedDependsOn` | the 3.3.2 test, the graph test, and the compiler test |
 
 ## Task 3.4 — `needsReduction` and `ambiguous` diagnostics
 

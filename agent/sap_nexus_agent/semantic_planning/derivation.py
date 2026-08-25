@@ -30,6 +30,14 @@ Non-derivable shapes — no match, more than one match, or a ``cardinality: many
 field the deriver would have to reduce — are skipped rather than resolved. The
 deriver never picks by declaration order. Task 3.4 turns each skip into an
 explicit diagnostic.
+
+**Rendering (task 3.3).** ``to_relations()`` projects the view into the shape
+``ontology/capability-relations.yaml`` already defines for ``dependsOn``, so
+``plan_compiler_v2``'s third pass consumes a derived dependency with no change
+at all. Derivedness travels as an ``origin`` *field*, never as a new relation
+kind: ruling ① keeps the relation catalog at ``dependsOn`` + ``precondition``,
+additive only. The projection is in-memory — writing it back into the catalog is
+exactly what invariant 3 forbids.
 """
 
 from __future__ import annotations
@@ -38,6 +46,11 @@ from dataclasses import dataclass
 from typing import Any, Mapping
 
 from .contracts import SemanticSourceDocuments
+
+#: Derived edges reuse the existing relation kind (ruling ①); they never add one.
+DERIVED_RELATION_TYPE = "dependsOn"
+#: Provenance marker. Task 3.6 admits it in the schema alongside ``manual``.
+DERIVED_ORIGIN = "derived"
 
 
 @dataclass(frozen=True, order=True)
@@ -68,6 +81,31 @@ class DerivedDataEdge:
             "semanticType": self.semantic_type,
         }
 
+    @property
+    def relation_id(self) -> str:
+        """Stable id naming both endpoints, so a reader can recompute it.
+
+        Derived from the capability pair rather than a counter: a counter would
+        renumber when documents are reordered, making a diff of the derived view
+        unreadable. The id is opaque — nothing parses it back apart.
+        """
+        return (
+            f"derived.dependsOn."
+            f"{self.consumer_capability_id}~{self.producer_capability_id}"
+        )
+
+    def to_relation(self) -> dict[str, Any]:
+        """Render as a ``dependsOn`` relation: the consumer depends on the
+        producer, so the consumer is ``capabilityId`` and the producer is
+        ``dependsOnCapabilityId``."""
+        return {
+            "relationId": self.relation_id,
+            "relationType": DERIVED_RELATION_TYPE,
+            "capabilityId": self.consumer_capability_id,
+            "dependsOnCapabilityId": self.producer_capability_id,
+            "origin": DERIVED_ORIGIN,
+        }
+
 
 @dataclass(frozen=True)
 class DerivedDependencyView:
@@ -75,6 +113,20 @@ class DerivedDependencyView:
 
     def to_dict(self) -> dict[str, Any]:
         return {"edges": [edge.to_dict() for edge in self.edges]}
+
+    def to_relations(self) -> tuple[dict[str, Any], ...]:
+        """Render the view as ``dependsOn`` relations, one per capability pair.
+
+        A dependsOn relation is capability-level, not parameter-level: two
+        derived parameters flowing from the same producer are one dependency.
+        Rendering both would make the compiler author two identical
+        ``dependency`` edges, and the S1 validator expects exactly one.
+        ``edges`` is already sorted, so insertion order is deterministic.
+        """
+        relations: dict[str, dict[str, Any]] = {}
+        for edge in self.edges:
+            relations.setdefault(edge.relation_id, edge.to_relation())
+        return tuple(relations.values())
 
 
 def derive_data_dependencies(
