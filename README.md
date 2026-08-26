@@ -193,6 +193,7 @@ PYTHONPATH=agent .venv/bin/python -m sap_nexus_agent.cli \
 终端 3 - Workbench：
 
 ```bash
+set -a; . ./.env; set +a
 SAP_NEXUS_AGENT_ROOT=$(pwd) \
 SAP_NEXUS_GATEWAY_URL=http://127.0.0.1:8080 \
 SAP_NEXUS_INTENT_MODE=rule \
