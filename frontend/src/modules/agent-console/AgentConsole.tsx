@@ -88,7 +88,13 @@ export function AgentConsole() {
       setTurns((prev) =>
         prev.map((turn) => (turn.runId === localRunId ? { ...turn, snapshot: nextSnapshot } : turn))
       );
-      const pausedForApproval = nextSnapshot.state === "awaiting_approval";
+      // Approval pause is 2 sequential SSE events sharing state:"awaiting_approval"
+      // (hitlState approval_required, then awaiting_human_approval + the
+      // ApprovalRecord artifact; see emitEventsFromOutcome). Gating close on
+      // `state` races the 2nd event since the server awaits a store append
+      // between the two writes - the client can close after the 1st and
+      // never see the artifact the panel needs. Gate on hitlState instead.
+      const pausedForApproval = nextSnapshot.hitlState === "awaiting_human_approval";
       const terminal = nextSnapshot.state === "completed" || nextSnapshot.state === "failed" || nextSnapshot.state === "rejected";
       if (pausedForApproval || terminal) {
         intentionallyClosed = true;
