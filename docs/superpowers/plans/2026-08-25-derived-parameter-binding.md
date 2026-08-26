@@ -3,6 +3,7 @@ change: derived-parameter-binding
 design-doc: docs/superpowers/specs/2026-08-25-derived-parameter-binding-design.md
 base-ref: ee46a98d3f6335115b0a0672ddef13b7d2727a70
 batch: T
+archived-with: 2026-08-26-derived-parameter-binding
 ---
 
 # Derived Parameter Binding — Batch T Implementation Plan

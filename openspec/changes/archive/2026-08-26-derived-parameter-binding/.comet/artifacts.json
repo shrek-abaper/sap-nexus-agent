@@ -3,6 +3,7 @@
   "openspec_design": "openspec/changes/derived-parameter-binding/design.md",
   "openspec_tasks": "openspec/changes/derived-parameter-binding/tasks.md",
   "openspec_delta_spec": "openspec/changes/derived-parameter-binding/specs/agent-callplan-evidence/spec.md",
-  "handoff_context": "openspec/changes/derived-parameter-binding/.comet/handoff/design-context.json",
-  "handoff_markdown": "openspec/changes/derived-parameter-binding/.comet/handoff/design-context.md"
+  "handoff_context": "openspec/changes/archive/2026-08-26-derived-parameter-binding/.comet/handoff/design-context.json",
+  "handoff_markdown": "openspec/changes/archive/2026-08-26-derived-parameter-binding/.comet/handoff/design-context.md",
+  "archive_directory": "openspec/changes/archive/2026-08-26-derived-parameter-binding"
 }

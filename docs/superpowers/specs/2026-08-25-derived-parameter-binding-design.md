@@ -2,6 +2,8 @@
 comet_change: derived-parameter-binding
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-08-26-derived-parameter-binding
+status: final
 ---
 
 # Derived Parameter Binding — Technical Design
