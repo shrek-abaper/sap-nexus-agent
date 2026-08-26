@@ -626,3 +626,27 @@ Decision 12: both inputs still carry `extraction:` and gained only `satisfiableB
 doc is correct and the proposal is the un-updated artifact. Flagged rather than edited, because
 `proposal.md` records what was proposed and Decision 12 already records why it changed. The
 `extraction` deprecation warning count is pinned at exactly **15** so this debt cannot grow silently.
+
+### 6. Conflict recording: the delta spec requires it, this design removed it
+
+`specs/declarative-intent-extraction/spec.md` carries two scenarios —
+*"Conflict between user value and derived value is recorded"* and *"Matching values record no
+conflict"* — and **neither is implemented**. `grep -rni conflict agent/sap_nexus_agent/planner/`
+returns nothing.
+
+That is not an omission. **Decision 7** in this document resolves precedence *at authoring time*: an
+input already bound by the user produces no closure entry at all, so a second candidate value is never
+computed and there is nothing to compare. Recording a conflict would mean performing the upstream read
+anyway, purely to compare and log — which directly contradicts ruling ④ (用户明说优先) and would send an
+avoidable request to SAP for the sake of a log line.
+
+**User decision, verify phase: record as a design divergence (Option A).** The two scenarios are
+therefore classified as **designed away, not unimplemented**. They remain in the delta spec as the
+record of what was proposed; this section is the record of why the implementation does not satisfy them
+and must not be made to.
+
+What *is* asserted, so the precedence half of the requirement is not lost:
+`test_user_supplied_value_suppresses_the_fact_field_source` (exactly one source, no data edge),
+`test_the_closure_does_not_pull_when_the_user_supplied_the_value` (the producer is not pulled), and the
+live eval case `user-supplied-wins` (`dryRun.present: false` — the absence of the producer node, not
+merely the presence of a literal).
