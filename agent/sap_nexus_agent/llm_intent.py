@@ -11,6 +11,7 @@ from sap_nexus_agent.extraction.clarify import (
     rephrase_clarify,
 )
 from sap_nexus_agent.extraction.engine import _SUSPECT_TOKEN
+from sap_nexus_agent.extraction.resolvers import normalize_date
 from sap_nexus_agent.intent import (
     IntentParseResult,
     _detect_odata_override,
@@ -470,34 +471,44 @@ def _extract_parameters(raw_parameters: object, descriptor: CapabilityDescriptor
     for key, value in raw_parameters.items():
         normalized = _parameter_key(str(key))
         if normalized and normalized in allowed and value is not None and str(value).strip():
-            parameters[normalized] = str(value).strip()
+            stripped = str(value).strip()
+            parameters[normalized] = (
+                normalize_date(stripped) if normalized == "delivery_date" else stripped
+            )
     return parameters
 
 
+# Known SAP-jargon synonyms the LLM may reach for instead of the registry's
+# declared input name (the prompt tells it to use the latter; this is a
+# defensive normalization layer, not the closed-set gate). It intentionally
+# stays a partial, hand-maintained list of *variant spellings* only -
+# capability input names themselves never need an entry here: any raw key
+# that already matches a declared input name for the matched capability
+# passes through via the identity fallback in `_parameter_key`, and the
+# `normalized in allowed` check in `_extract_parameters` above remains the
+# actual per-capability closed-set enforcement.
 _ALIASES = {
     # inventory
-    "material": "material",
     "materialNumber": "material",
     "materialCode": "material",
     "matnr": "material",
-    "plant": "plant",
     "plantCode": "plant",
     "werks": "plant",
-    "unit": "unit",
     "uom": "unit",
     "unitOfMeasure": "unit",
     # purchase order
-    "poNumber": "poNumber",
     "purchaseOrderNumber": "poNumber",
     "ebeln": "poNumber",
-    "vendor": "vendor",
     "supplier": "vendor",
     "lifnr": "vendor",
 }
 
 
 def _parameter_key(key: str) -> str | None:
-    return _ALIASES.get(key.strip())
+    stripped = key.strip()
+    if not stripped:
+        return None
+    return _ALIASES.get(stripped, stripped)
 
 
 # ---------------------------------------------------------------------------

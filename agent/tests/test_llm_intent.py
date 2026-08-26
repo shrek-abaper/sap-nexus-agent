@@ -458,6 +458,58 @@ def test_parse_with_llm_drops_unregistered_parameter_for_po():
     assert result.parameters == {"poNumber": "DEMOPO1"}
 
 
+def test_parse_with_llm_accepts_pr_create_fields_without_alias_table_entry():
+    """回归测试：LLM 正确返回 PR 创建字段时不应被 `_ALIASES` 白名单裁剪掉。"""
+    catalog = load_intent_catalog()
+    client = FakeLlmClient({
+        "capabilityId": "MM.PR.CreateDraft",
+        "parameters": {
+            "material": "P0323891AA",
+            "plant": "5260",
+            "quantity": "10",
+            "unit": "EA",
+            "delivery_date": "2026-09-30",
+            "purchasing_group": "601",
+        },
+        "missingParameters": [],
+        "clarification": None,
+    })
+
+    result = parse_with_llm("为这个物料创建 10 EA 的 PR", client, catalog)
+
+    assert result.parameters == {
+        "material": "P0323891AA",
+        "plant": "5260",
+        "quantity": "10",
+        "unit": "EA",
+        "delivery_date": "2026-09-30",
+        "purchasing_group": "601",
+    }
+    assert result.missing_parameters == []
+
+
+def test_parse_with_llm_normalizes_compact_delivery_date_to_iso():
+    """LLM 返回紧凑 SAP DATS 格式日期时应归一化为 ISO，避免 Java Gateway LocalDate.parse 报错。"""
+    catalog = load_intent_catalog()
+    client = FakeLlmClient({
+        "capabilityId": "MM.PR.CreateDraft",
+        "parameters": {
+            "material": "P0323891AA",
+            "plant": "5260",
+            "quantity": "10",
+            "unit": "EA",
+            "delivery_date": "20260930",
+            "purchasing_group": "601",
+        },
+        "missingParameters": [],
+        "clarification": None,
+    })
+
+    result = parse_with_llm("为这个物料创建 10 EA 的 PR", client, catalog)
+
+    assert result.parameters.get("delivery_date") == "2026-09-30"
+
+
 def test_hybrid_falls_back_to_parse_intent_for_po():
     """hybrid fallback 应使用 parse_intent（支持 PO），非 parse_inventory_intent。"""
     client = FakeLlmClient(unavailable=True)
