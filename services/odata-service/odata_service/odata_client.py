@@ -31,6 +31,7 @@ class ODataClient:
         filter_str: str,
         top: int | None,
         count: bool,
+        select: list[str] | None = None,
     ) -> dict[str, Any]:
         """Issue a GET to ``{base}/sap/opu/odata/sap/{service_ref}/{entity_set}``.
 
@@ -38,7 +39,7 @@ class ODataClient:
         status (after attempting to parse the error body) and propagates network
         errors to the caller.
         """
-        return self.get_path(service_ref, entity_set, filter_str, top, count)
+        return self.get_path(service_ref, entity_set, filter_str, top, count, select)
 
     def get_path(
         self,
@@ -47,6 +48,7 @@ class ODataClient:
         filter_str: str = "",
         top: int | None = None,
         count: bool = False,
+        select: list[str] | None = None,
     ) -> dict[str, Any]:
         """Issue a read-only GET to an entity set or registered navigation path."""
         dest = self._destination
@@ -64,6 +66,8 @@ class ODataClient:
             params["$top"] = str(top)
         if count:
             params["$count"] = "true"
+        if select:
+            params["$select"] = ",".join(select)
 
         full_url = f"{url}?{parse.urlencode(params)}"
         http_request = request.Request(full_url, headers={"Accept": "application/json"})

@@ -29,7 +29,12 @@ logger = logging.getLogger(__name__)
 
 _PORT = 8081
 _REQUIRED_FIELDS = ("serviceRef", "entitySet")
-_ITEM_FILTER_KEYS = {"material", "plant"}
+_ITEM_FILTER_KEYS = {"material", "plant", "openOnly"}
+# A_PurchaseOrderItem fields for "未清" (open/outstanding): not yet fully
+# delivered and not yet finally invoiced. Hardcoded rather than registry-driven
+# (like _ITEM_FILTER_KEYS above) because it expands one boolean param into two
+# ANDed clauses, which filter_mapping's flat param->field shape can't express.
+_OPEN_ITEM_FIELDS = ("IsCompletelyDelivered", "IsFinallyInvoiced")
 
 
 class ODataService:
@@ -55,16 +60,18 @@ class ODataService:
         filter_mapping = dict(payload.get("filterMapping") or {})
         parameters = dict(payload.get("parameters") or {})
         top_limit = payload.get("topLimit")
+        select_fields = [str(f) for f in (payload.get("selectFields") or [])]
 
         header_parameters = {key: value for key, value in parameters.items() if key not in _ITEM_FILTER_KEYS}
         header_filter_mapping = {key: value for key, value in filter_mapping.items() if key not in _ITEM_FILTER_KEYS}
         filter_str = build_filter(header_parameters, header_filter_mapping)
+        header_select, item_select = _split_select_fields(select_fields, filter_mapping)
 
         try:
-            raw = self._client.get(service_ref, entity_set, filter_str, top_limit, False)
+            raw = self._client.get(service_ref, entity_set, filter_str, top_limit, False, header_select)
             result = normalize(raw)
             if result.get("success"):
-                self._attach_items(result, service_ref, entity_set, parameters)
+                self._attach_items(result, service_ref, entity_set, parameters, filter_mapping, item_select)
         except ODataHttpError as exc:
             # SAP responded with an error envelope; normalize it if possible.
             result = normalize(exc.body) if exc.body is not None else self._error("ODATA_HTTP_ERROR", str(exc), trace_id)
@@ -94,10 +101,19 @@ class ODataService:
         service_ref: str,
         entity_set: str,
         parameters: dict[str, Any],
+        filter_mapping: dict[str, Any],
+        item_select: list[str],
     ) -> None:
         purchase_orders = result.get("purchaseOrders")
         if not isinstance(purchase_orders, list):
             return
+
+        item_parameters = {key: value for key, value in parameters.items() if key in _ITEM_FILTER_KEYS}
+        item_filter_mapping = {key: value for key, value in filter_mapping.items() if key in _ITEM_FILTER_KEYS}
+        item_filter_str = build_filter(item_parameters, item_filter_mapping)
+        if str(parameters.get("openOnly") or "").lower() == "true":
+            open_clause = " and ".join(f"{field} eq false" for field in _OPEN_ITEM_FIELDS)
+            item_filter_str = f"{item_filter_str} and {open_clause}" if item_filter_str else open_clause
 
         filtered_orders = []
         for purchase_order in purchase_orders:
@@ -109,7 +125,7 @@ class ODataService:
                 continue
 
             entity_path = f"{entity_set}({_odata_string_literal(str(po_number))})/to_PurchaseOrderItem"
-            raw_items = self._client.get_path(service_ref, entity_path, "", None, False)
+            raw_items = self._client.get_path(service_ref, entity_path, item_filter_str, None, False, item_select)
             items = _filter_items(normalize_items(raw_items), parameters)
             purchase_order["items"] = items
             if _has_item_filter(parameters) and not items:
@@ -118,6 +134,33 @@ class ODataService:
 
         result["purchaseOrders"] = filtered_orders
         result["totalCount"] = len(filtered_orders)
+
+
+def _split_select_fields(
+    select_fields: list[str], filter_mapping: dict[str, Any]
+) -> tuple[list[str], list[str]]:
+    """Split a flat ``selectFields`` list into header vs. item entity fields.
+
+    Classification follows the same header/item split ``_ITEM_FILTER_KEYS``
+    already uses for filtering: a field is header-level only if it is the
+    declared SAP field for a non-item filter param (e.g. ``poNumber`` ->
+    ``PurchaseOrder``, ``vendor`` -> ``Supplier``); everything else (including
+    output-only fields with no filter param, like ``OrderQuantity``) is
+    item-level, since ``A_PurchaseOrder`` (header) does not carry them.
+    ``PurchaseOrder`` is always kept in the header selection regardless of
+    ``selectFields`` content -- ``_attach_items`` needs it to build the
+    ``to_PurchaseOrderItem`` navigation path for each result row.
+    """
+    if not select_fields:
+        return [], []
+    header_sap_fields = {
+        sap_field for key, sap_field in filter_mapping.items() if key not in _ITEM_FILTER_KEYS
+    }
+    header_select = [f for f in select_fields if f in header_sap_fields]
+    if "PurchaseOrder" not in header_select:
+        header_select.insert(0, "PurchaseOrder")
+    item_select = [f for f in select_fields if f not in header_sap_fields]
+    return header_select, item_select
 
 
 def _has_item_filter(parameters: dict[str, Any]) -> bool:

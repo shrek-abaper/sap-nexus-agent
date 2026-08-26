@@ -10,6 +10,15 @@ from __future__ import annotations
 
 from typing import Mapping
 
+# Param keys resolved to an ISO date (agent-side "relative_date" resolver,
+# e.g. "近1年" -> "2025-08-26") that must render as a `ge datetime'...'` range
+# clause instead of the default `eq 'value'` string-equality clause. A plain
+# set keyed by param name (not filter_mapping) mirrors this module's existing
+# convention: filter_mapping only ever carries semantic-param -> OData-field,
+# never a value-formatting hint, so the hint lives beside the code that acts
+# on it instead of widening filter_mapping's shape for one field.
+_DATE_SINCE_PARAMS = {"createdSince"}
+
 
 def build(parameters: Mapping[str, object], filter_mapping: Mapping[str, str]) -> str:
     """Assemble an OData ``$filter`` string.
@@ -28,6 +37,9 @@ def build(parameters: Mapping[str, object], filter_mapping: Mapping[str, str]) -
             continue
         text = str(value)
         if text == "":
+            continue
+        if param_key in _DATE_SINCE_PARAMS:
+            clauses.append(f"{odata_field} ge datetime'{text}T00:00:00'")
             continue
         escaped = text.replace("'", "''")
         clauses.append(f"{odata_field} eq '{escaped}'")

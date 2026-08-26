@@ -5,7 +5,7 @@ import json
 import threading
 from urllib import error, request
 
-from odata_service.server import ODataService, make_handler
+from odata_service.server import ODataService, _split_select_fields, make_handler
 
 
 class _MockClient:
@@ -18,19 +18,20 @@ class _MockClient:
         self.path_calls = []
         self.path_responses = {}
 
-    def get(self, service_ref, entity_set, filter_str, top, count):
+    def get(self, service_ref, entity_set, filter_str, top, count, select=None):
         self.last_call = {
             "serviceRef": service_ref,
             "entitySet": entity_set,
             "filter": filter_str,
             "top": top,
             "count": count,
+            "select": select,
         }
         if self._raises:
             raise self._raises
         return self._response
 
-    def get_path(self, service_ref, entity_path, filter_str="", top=None, count=False):
+    def get_path(self, service_ref, entity_path, filter_str="", top=None, count=False, select=None):
         self.path_calls.append(
             {
                 "serviceRef": service_ref,
@@ -38,6 +39,7 @@ class _MockClient:
                 "filter": filter_str,
                 "top": top,
                 "count": count,
+                "select": select,
             }
         )
         return self.path_responses.get(entity_path, {"d": {"results": []}})
@@ -92,6 +94,25 @@ FULL_REQUEST = {
 }
 
 
+def test_split_select_fields_classifies_header_and_item_fields():
+    header, item = _split_select_fields(
+        ["PurchaseOrder", "Supplier", "Plant", "Material", "OrderQuantity", "PurchaseOrderQuantityUnit"],
+        FULL_REQUEST["filterMapping"],
+    )
+    assert header == ["PurchaseOrder", "Supplier"]
+    assert item == ["Plant", "Material", "OrderQuantity", "PurchaseOrderQuantityUnit"]
+
+
+def test_split_select_fields_always_keeps_purchase_order_in_header():
+    header, item = _split_select_fields(["Plant", "Material"], FULL_REQUEST["filterMapping"])
+    assert header == ["PurchaseOrder"]
+    assert item == ["Plant", "Material"]
+
+
+def test_split_select_fields_empty_input_returns_empty_lists():
+    assert _split_select_fields([], FULL_REQUEST["filterMapping"]) == ([], [])
+
+
 def test_execute_normal_list():
     mock = _MockClient(
         response={
@@ -121,6 +142,10 @@ def test_execute_normal_list():
         # $filter was assembled and forwarded to the OData client.
         assert mock.last_call["filter"] == "Supplier eq 'DEMOV1'"
         assert mock.last_call["top"] == 50
+        # $select is split by entity: header-only fields go to the A_PurchaseOrder
+        # GET, item-only fields (including PurchaseOrder itself, always needed to
+        # build the to_PurchaseOrderItem path) go to the item GET.
+        assert mock.last_call["select"] == ["PurchaseOrder", "Supplier"]
         # Some SAP OData v2 services reject $count=true; the proxy should
         # return the current page count from normalization instead.
         assert mock.last_call["count"] is False
@@ -225,6 +250,63 @@ def test_execute_filters_purchase_order_items_by_material_and_plant():
         assert [po["purchaseOrder"] for po in body["purchaseOrders"]] == ["DEMOPO2"]
         assert body["purchaseOrders"][0]["items"][0]["purchaseOrderItem"] == "00010"
         assert mock.last_call["filter"] == "Supplier eq 'DEMOV3'"
+        # plant/material are now pushed down as a $filter on the item-level GET
+        # (previously only filtered client-side after fetching every item).
+        assert mock.path_calls[0]["filter"] == "Plant eq '1100' and Material eq 'MAT001'"
+        assert mock.path_calls[0]["select"] == ["Plant", "Material", "OrderQuantity", "PurchaseOrderQuantityUnit"]
+    finally:
+        httpd.shutdown()
+
+
+def test_execute_open_only_adds_delivery_and_invoice_clauses_to_item_filter():
+    mock = _MockClient(response={"d": {"results": [{"PurchaseOrder": "DEMOPO4", "Supplier": "DEMOV3"}]}})
+    mock.path_responses["A_PurchaseOrder('DEMOPO4')/to_PurchaseOrderItem"] = {
+        "d": {"results": [{"PurchaseOrder": "DEMOPO4", "PurchaseOrderItem": "00010", "Plant": "1100"}]}
+    }
+    service = ODataService(client=mock)
+    httpd, port = _start_server(service)
+    try:
+        request_body = dict(FULL_REQUEST)
+        request_body["parameters"] = {"vendor": "DEMOV3", "plant": "1100", "openOnly": "true"}
+        status, body = _post(port, request_body)
+        assert status == 200
+        assert body["success"] is True
+        # openOnly has no filterMapping entry of its own (server.py hardcodes
+        # the two SAP fields it expands to); the plant clause still comes from
+        # the normal item filter_mapping path.
+        assert mock.path_calls[0]["filter"] == (
+            "Plant eq '1100' and IsCompletelyDelivered eq false and IsFinallyInvoiced eq false"
+        )
+    finally:
+        httpd.shutdown()
+
+
+def test_execute_open_only_alone_produces_only_the_open_item_clause():
+    mock = _MockClient(response={"d": {"results": [{"PurchaseOrder": "DEMOPO5", "Supplier": "DEMOV3"}]}})
+    mock.path_responses["A_PurchaseOrder('DEMOPO5')/to_PurchaseOrderItem"] = {"d": {"results": []}}
+    service = ODataService(client=mock)
+    httpd, port = _start_server(service)
+    try:
+        request_body = dict(FULL_REQUEST)
+        request_body["parameters"] = {"vendor": "DEMOV3", "openOnly": "true"}
+        status, body = _post(port, request_body)
+        assert status == 200
+        assert mock.path_calls[0]["filter"] == "IsCompletelyDelivered eq false and IsFinallyInvoiced eq false"
+    finally:
+        httpd.shutdown()
+
+
+def test_execute_created_since_adds_datetime_clause_to_header_filter():
+    mock = _MockClient(response={"d": {"results": []}})
+    request_body = dict(FULL_REQUEST)
+    request_body["filterMapping"] = {**FULL_REQUEST["filterMapping"], "createdSince": "CreationDate"}
+    request_body["parameters"] = {"vendor": "DEMOV3", "createdSince": "2025-08-26"}
+    service = ODataService(client=mock)
+    httpd, port = _start_server(service)
+    try:
+        status, body = _post(port, request_body)
+        assert status == 200
+        assert mock.last_call["filter"] == "Supplier eq 'DEMOV3' and CreationDate ge datetime'2025-08-26T00:00:00'"
     finally:
         httpd.shutdown()
 

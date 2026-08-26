@@ -60,3 +60,15 @@ def test_all_four_params():
         "PurchaseOrder eq '4500000001' and Supplier eq 'DEMOV1' "
         "and Plant eq '1000' and Material eq 'MAT001'"
     )
+
+
+def test_created_since_renders_as_datetime_ge_clause_not_string_equality():
+    mapping = {"vendor": "Supplier", "createdSince": "CreationDate"}
+    result = build({"vendor": "DEMOV1", "createdSince": "2025-08-26"}, mapping)
+    assert result == "Supplier eq 'DEMOV1' and CreationDate ge datetime'2025-08-26T00:00:00'"
+
+
+def test_created_since_alone_skips_string_quoting():
+    assert build({"createdSince": "2025-08-26"}, {"createdSince": "CreationDate"}) == (
+        "CreationDate ge datetime'2025-08-26T00:00:00'"
+    )
