@@ -368,7 +368,7 @@
           "type": "array",
           "items": { "type": "string", "minLength": 1 }
         },
-        "resolver": { "enum": ["date", "quantity", "text"] },
+        "resolver": { "enum": ["date", "quantity", "text", "relative_date"] },
         "when": { "$ref": "#/$defs/extractionCondition" },
         "requiredWhen": { "$ref": "#/$defs/extractionCondition" },
         "reaskSuspect": { "type": "boolean" }
@@ -422,7 +422,7 @@
           "type": "array",
           "items": { "type": "string", "minLength": 1 }
         },
-        "resolver": { "enum": ["date", "quantity", "text"] },
+        "resolver": { "enum": ["date", "quantity", "text", "relative_date"] },
         "when": { "$ref": "#/$defs/extractionCondition" },
         "requiredWhen": { "$ref": "#/$defs/extractionCondition" },
         "reaskSuspect": { "type": "boolean" }

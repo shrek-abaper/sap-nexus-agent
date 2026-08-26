@@ -173,17 +173,23 @@ EXPECTED_PATTERN_PARITY = {
     "MaterialNumber": [r"(?<![A-Za-z0-9-])[A-Z0-9][A-Z0-9-]{1,39}(?![A-Za-z0-9-])"],
     "Quantity": [r"(\d+(?:\.\d+)?)\s*(?:EA|PC|KG|G|L|M)"],
     "Unit": [r"\b(EA|PC|KG|G|L|M)\b"],
-    "Date": [r"(\d{4}-\d{2}-\d{2})"],
-    "PurchasingGroup": [r"采购组\s*([A-Za-z0-9]{1,3})"],
+    # Deliberate departure from the verbatim legacy lift: a second compact
+    # SAP DATS-style YYYYMMDD form was added so users can type a date the way
+    # SAP stores it, not just ISO; the date resolver reformats it to ISO.
+    "Date": [
+        r"(\d{4}-\d{2}-\d{2})",
+        r"(?<!\d)(\d{8})(?!\d)",
+    ],
+    "PurchasingGroup": [r"采购组(?:\s|是|为|编号|号|:|：)*([A-Za-z0-9]{1,3})"],
     # Deliberate departure from the verbatim legacy lift: the legacy digit-only
     # pattern never matched sanitized (DEMOV1) or real (V72719) vendor codes.
-    "Vendor": [r"供应商\s*([A-Z0-9]{1,10})"],
+    "Vendor": [r"供应商(?:\s|是|为|编号|号|:|：)*([A-Z0-9]{1,10})"],
     # Deliberate departure from the verbatim legacy lift: the legacy bare
     # 10-digit pattern never matched sanitized PO codes (DEMOPO1); the
     # 采购订单-anchored alphanumeric matcher is added as a second form.
     "PONumber": [
         r"(?<!\d)(\d{10})(?!\d)",
-        r"采购订单\s*([A-Z0-9]{4,10})",
+        r"采购订单(?:\s|是|为|编号|号|:|：)*([A-Z0-9]{4,10})",
     ],
 }
 
@@ -481,18 +487,18 @@ def test_po_declaration_parity_constants():
     # Deliberate departure from the verbatim legacy lift: digit-only vendor
     # extraction never matched sanitized (DEMOV1) or real (V72719) codes.
     assert inputs["vendor"]["extraction"]["matchers"] == [
-        {"kind": "regex", "pattern": r"供应商\s*([A-Z0-9]{1,10})"}]
+        {"kind": "regex", "pattern": r"供应商(?:\s|是|为|编号|号|:|：)*([A-Z0-9]{1,10})"}]
     assert inputs["plant"]["extraction"]["matchers"] == [
         {"kind": "regex",
-         "pattern": r"(?:工厂\s*(\d{4}|[A-Z]\d{3}))|(?:(\d{4}|[A-Z]\d{3})\s*工厂)"}]
+         "pattern": r"(?:工厂(?:\s|是|为|编号|号|:|：)*(\d{4}|[A-Z]\d{3}))|(?:(\d{4}|[A-Z]\d{3})\s*工厂)"}]
     assert inputs["material"]["extraction"]["matchers"] == [
-        {"kind": "regex", "pattern": r"物料\s*([A-Za-z0-9][A-Za-z0-9\-/]+)"}]
+        {"kind": "regex", "pattern": r"物料(?:\s|是|为|编号|号|:|：)*([A-Za-z0-9][A-Za-z0-9\-/]+)"}]
     # Deliberate departure from the verbatim legacy lift: bare 10-digit poNumber
     # extraction never matched sanitized PO codes (DEMOPO1); the anchored
     # alphanumeric matcher is the second form.
     assert inputs["poNumber"]["extraction"]["matchers"] == [
         {"kind": "regex", "pattern": r"(?<!\d)(\d{10})(?!\d)", "scan": "all"},
-        {"kind": "regex", "pattern": r"采购订单\s*([A-Z0-9]{4,10})"}]
+        {"kind": "regex", "pattern": r"采购订单(?:\s|是|为|编号|号|:|：)*([A-Z0-9]{4,10})"}]
     assert inputs["poNumber"]["extraction"]["excludes"] == ["vendor", "plant"]
     zh = intent["clarifyPrompt"]["zh-CN"]
     assert zh["cases"] == [
@@ -520,9 +526,9 @@ def test_pr_declaration_parity_constants():
     }
     inputs = {i["name"]: i for i in cap["inputs"]}
     assert inputs["material"]["extraction"]["matchers"] == [
-        {"kind": "regex", "pattern": r"物料\s*([A-Za-z0-9][A-Za-z0-9\-/]+)"}]
+        {"kind": "regex", "pattern": r"物料(?:\s|是|为|编号|号|:|：)*([A-Za-z0-9][A-Za-z0-9\-/]+)"}]
     assert inputs["plant"]["extraction"]["matchers"] == [
-        {"kind": "regex", "pattern": r"工厂\s*(\d{4}|[A-Z]\d{3})"}]
+        {"kind": "regex", "pattern": r"工厂(?:\s|是|为|编号|号|:|：)*(\d{4}|[A-Z]\d{3})"}]
     assert inputs["plant"]["pattern"] == "^[A-Z0-9]{4}$"
     assert inputs["quantity"]["extraction"]["matchers"] == [
         {"kind": "semanticType", "ref": "Quantity"}]
@@ -719,10 +725,10 @@ def test_regex_matcher_count_is_observable_metric():
     contract = load_registry_contract(REPO_ROOT / "registry" / "capabilities.yaml")
     entries, _ = load_semantic_type_catalog(REPO_ROOT)
     catalog_count, capability_count = count_regex_matchers(contract, entries)
-    # Catalog: Plant 1 + MaterialNumber/Quantity/Unit/Date/PurchasingGroup/
-    # Vendor 1 each + PONumber 2 = 9. Capability-level regexes: all current
+    # Catalog: Plant 1 + MaterialNumber/Quantity/Unit/PurchasingGroup/Vendor 1
+    # each + Date 2 + PONumber 2 = 10. Capability-level regexes: all current
     # declarations still use extraction with inline regexes (e.g. PR material).
-    assert catalog_count == 9
+    assert catalog_count == 10
     assert capability_count >= 1
 
 

@@ -560,6 +560,8 @@ def test_reduction_is_immutable_and_deterministic_for_each_read_descriptor(descr
         "poNumber": "4500000001",
         "vendor": "1000",
         "unit": "EA",
+        "createdSince": "2025-08-26",
+        "openOnly": "true",
     }
     candidate_set = candidates(
         descriptor,

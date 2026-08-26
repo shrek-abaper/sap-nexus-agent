@@ -16,6 +16,14 @@ def test_full_direct_pr_create():
     assert result.missing_parameters == []
 
 
+def test_pr_create_accepts_compact_sap_date_and_normalizes_to_iso():
+    """用户按 SAP DATS 存储格式输入紧凑日期时，应归一化为 ISO 供下游消费。"""
+    text = "给物料 M001 工厂 1000 建 100 EA 采购申请 交货 20260801 采购组 601"
+    result = parse_intent(text)
+    assert result.parameters.get("delivery_date") == "2026-08-01"
+    assert result.missing_parameters == []
+
+
 def test_missing_required_params_triggers_clarification():
     text = "建个采购申请"
     result = parse_intent(text)

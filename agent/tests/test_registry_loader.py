@@ -73,7 +73,7 @@ def test_purchase_order_descriptor_inputs_parsed():
     assert po is not None
     assert po.business_object == "PurchaseOrder"
     input_names = {inp.name for inp in po.inputs}
-    assert input_names == {"poNumber", "vendor", "plant", "material"}
+    assert input_names == {"poNumber", "vendor", "plant", "material", "createdSince", "openOnly"}
     # PO 所有 input 均 optional
     assert all(not inp.required for inp in po.inputs)
 

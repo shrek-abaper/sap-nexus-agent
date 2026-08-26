@@ -67,6 +67,34 @@ def test_parse_intent_po_by_vendor():
     assert result.clarification is None
 
 
+def test_parse_intent_po_by_vendor_with_natural_language_connector():
+    """回归测试：这是用户报告的原始失败查询，锁住全部四个过滤参数的联合提取。
+    "供应商为X"这类自然语言连接词曾经完全提取不到 vendor（正则只认空白），
+    导致查询在无供应商过滤的情况下对全量采购订单做 topLimit 截断，SAP 前台
+    能查到但 Agent 查不到；"近1年"/"未清"当时也完全没有对应的过滤能力。"""
+    from datetime import date, timedelta
+
+    result = parse_intent("列出5260工厂近1年的供应商为V25524的未清采购订单")
+    assert result.intent == "purchase_order_list"
+    assert result.parameters == {
+        "plant": "5260",
+        "vendor": "V25524",
+        "createdSince": (date.today() - timedelta(days=365)).isoformat(),
+        "openOnly": "true",
+    }
+    assert result.missing_parameters == []
+
+
+def test_parse_intent_po_created_since_supports_half_year_and_months():
+    from datetime import date, timedelta
+
+    half_year = parse_intent("查供应商 DEMOV1 近半年的采购订单")
+    assert half_year.parameters["createdSince"] == (date.today() - timedelta(days=182)).isoformat()
+
+    months = parse_intent("查供应商 DEMOV1 近12个月的采购订单")
+    assert months.parameters["createdSince"] == (date.today() - timedelta(days=360)).isoformat()
+
+
 def test_parse_intent_po_by_plant_and_material():
     result = parse_intent("查工厂 1000 物料 MAT001 的采购订单")
     assert result.intent == "purchase_order_list"

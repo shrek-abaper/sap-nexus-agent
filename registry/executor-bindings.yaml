@@ -25,6 +25,7 @@ bindings:
       vendor: Supplier
       plant: Plant
       material: Material
+      createdSince: CreationDate
     topLimit: 50
     selectFields:
       - PurchaseOrder
