@@ -86,7 +86,7 @@ Thumbs.db
 .superpowers/sdd/final-review-fix-report.md
 
 # Tangential wiki archive (not core project docs)
-docs/wiki/archive/
+# docs/wiki/archive/
 
 # OhMyOpenCode local session/run-continuation tracking (agent tooling artifact,
 # not a project file - accidentally committed by a fix subagent in
