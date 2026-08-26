@@ -425,7 +425,7 @@ def narrate_action_receipt(
 def narrate_failure(error_type: str, messages: list[str]) -> str:
     safe_messages = [redact_sensitive(message) for message in messages]
     joined = "；".join(safe_messages) if safe_messages else "未提供错误明细"
-    return f"库存查询失败（{error_type}）：{joined}"
+    return f"操作失败（{error_type}）：{joined}"
 
 
 def redact_sensitive(text: str) -> str:

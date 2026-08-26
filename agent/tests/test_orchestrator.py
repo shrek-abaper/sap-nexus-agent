@@ -984,6 +984,13 @@ def test_non_read_selection_is_parsed_once_and_preserves_write_approval():
     assert outcome.approval_record is not None
     assert len(gateway.validate_calls) == 1
     assert gateway.execute_calls == []
+    # Regression: Gateway's ApprovalGuard fail-closed rejects a record that sets
+    # registry_snapshot_id without also setting capability_version and
+    # approval_subject_hash (Java: hasCompletePlanBinding). The Agent does not
+    # yet compute the latter two, so all three must stay blank here.
+    assert outcome.approval_record.registry_snapshot_id == ""
+    assert outcome.approval_record.capability_version == ""
+    assert outcome.approval_record.approval_subject_hash == ""
 
 
 def test_run_query_continues_authoritative_non_read_selection_without_read_binding():

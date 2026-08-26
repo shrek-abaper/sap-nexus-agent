@@ -20,8 +20,9 @@ class StubWriteGateway:
     Agent<->Gateway approval registration channel (Task 18).
     """
 
-    def __init__(self, execute_payload: dict):
+    def __init__(self, execute_payload: dict, *, approve_returns_empty: bool = False):
         self._execute_payload = execute_payload
+        self._approve_returns_empty = approve_returns_empty
         self.validate_calls: list = []
         self.execute_calls: list = []
         self.approve_calls: list = []
@@ -38,7 +39,7 @@ class StubWriteGateway:
 
     def approve(self, capability_id: str, approval_record):
         self.approve_calls.append((capability_id, approval_record))
-        return approval_record.approval_id
+        return "" if self._approve_returns_empty else approval_record.approval_id
 
     def execute(
         self,
@@ -84,6 +85,27 @@ def test_pr_create_complete_request_waits_for_human_approval():
     assert outcome.approval_record.status is ApprovalState.pending
     assert gateway.approve_calls == []
     assert gateway.execute_calls == []
+
+
+def test_pr_create_approval_record_is_not_partially_plan_aware():
+    """Regression: the Gateway's ApprovalGuard/approve endpoint fail-closed rejects
+    a record that sets registry_snapshot_id without also setting
+    capability_version and approval_subject_hash (Java: hasCompletePlanBinding).
+    The Agent does not yet compute the latter two, so it must leave all three
+    blank (the fully-supported "not plan-aware" shape) rather than half-populate
+    them and get rejected by the real Gateway.
+    """
+    gateway = StubWriteGateway({})
+
+    outcome = run_query(
+        "给物料 M001 工厂 1000 建 100 EA 采购申请 交货 2026-08-01 采购组 601",
+        gateway,
+    )
+
+    assert outcome.approval_record is not None
+    assert outcome.approval_record.registry_snapshot_id == ""
+    assert outcome.approval_record.capability_version == ""
+    assert outcome.approval_record.approval_subject_hash == ""
 
 
 def test_pr_create_continuation_executes_only_after_external_approval(tmp_path, monkeypatch):
@@ -360,6 +382,25 @@ def test_pr_create_registers_approved_approval_with_gateway_before_execute(tmp_p
     assert exec_approval_id == registered_record.approval_id, (
         "execute must carry the same approvalId that was registered"
     )
+
+
+def test_pr_create_stops_before_execute_when_gateway_rejects_approval_registration():
+    """Regression: gateway.approve()'s return value was previously discarded, so a
+    rejected registration (e.g. Gateway 403 on a missing/mismatched
+    SAP_NEXUS_APPROVAL_TOKEN) silently fell through to execute() and surfaced a
+    confusing APPROVAL_REQUIRED failure from the execute step instead of failing
+    closed at registration.
+    """
+    gateway = StubWriteGateway({}, approve_returns_empty=True)
+    pending = run_query(
+        "给物料 M001 工厂 1000 建 100 EA 采购申请 交货 2026-08-01 采购组 601",
+        gateway,
+    )
+    outcome = _approve_pending(pending, gateway)
+
+    assert outcome.status == "failure"
+    assert outcome.error_type == "APPROVAL_REGISTRATION_FAILED"
+    assert gateway.execute_calls == [], "execute must not run when registration was not confirmed"
 
 
 def test_pr_create_execute_carries_parameter_snapshot_hash_matching_registered_record():

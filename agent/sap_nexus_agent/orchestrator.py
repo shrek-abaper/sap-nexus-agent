@@ -394,7 +394,6 @@ def continue_resolved_selection(
         capability_id=call_plan.capability_id,
         parameters=call_plan.parameters,
         approver="user",
-        registry_snapshot_id=snapshot.snapshot_id,
     )
     return AgentOutcome(
         status="awaiting_approval",
@@ -1556,7 +1555,6 @@ def run_query(
             capability_id=call_plan.capability_id,
             parameters=call_plan.parameters,
             approver="user",
-            registry_snapshot_id=lease.snapshot_id,
         )
         return AgentOutcome(
             status="awaiting_approval",
@@ -1746,7 +1744,15 @@ def continue_action(
         )
 
     approved = approve(approval_record)
-    gateway.approve(call_plan.capability_id, approved)
+    registered_approval_id = gateway.approve(call_plan.capability_id, approved)
+    if registered_approval_id != approved.approval_id:
+        return _approval_failure(
+            call_plan,
+            validation,
+            approved,
+            "APPROVAL_REGISTRATION_FAILED",
+            "Gateway 未能确认审批注册，已停止执行；请检查 Gateway 侧 SAP_NEXUS_APPROVAL_TOKEN 是否已配置且与 Agent 一致。",
+        )
     execution = gateway.execute(
         call_plan.capability_id,
         call_plan.parameters,
