@@ -204,6 +204,8 @@ def compile_plan_v2(
             )
         )
 
+    gaps.extend(_derivation_diagnostic_gaps(sources, plan_graph))
+
     graph = SemanticGraphCompiler().compile(sources)
     report = validate_plan_graph_v2(graph, snapshot, goal.to_dict(), plan_graph)
 
@@ -302,6 +304,14 @@ def _build_plan_graph_v2(
     data_edge_keys: set[tuple[str, str, str]] = set()
     edge_counter = 0
     cards_by_id = {c.capability_id: c for c in cards}
+    # Verify-phase finding R10. The deriver is the field-selection authority
+    # (proposal finding F1), and it refuses an input whose only candidate field is
+    # ``cardinality: many`` -- choosing a reduction operator is not the planner's
+    # decision. This pass matched on ``factTypeRef`` + ``semanticType`` only and
+    # never consulted cardinality, so it bound a list field to a scalar input that
+    # the deriver had already diagnosed as ``needsReduction``. Two components
+    # deciding one thing by different rules, the same shape as finding R1.
+    diagnosed_inputs = _diagnosed_consumer_inputs(sources)
     for node in nodes:
         card = cards_by_id.get(node["capabilityId"])
         if card is None:
@@ -319,6 +329,11 @@ def _build_plan_graph_v2(
             if not inp.satisfiable_by_fact_type or not inp.required:
                 continue
             if inp.name in already_bound:
+                continue
+            if (node["capabilityId"], inp.name) in diagnosed_inputs:
+                # The deriver reported needsReduction / ambiguous for this input.
+                # Leaving it unbound is the point: the gap explains why, and a
+                # bound-but-wrong value would be worse than an absent one.
                 continue
             fact_type = inp.satisfiable_by_fact_type
             producer_node_id = fact_type_to_node.get(fact_type)
@@ -490,6 +505,75 @@ def _build_node_v2(
         "producesFactTypes": sorted(card.produces_fact_types),
         "governance": _project_node_governance(raw_capability),
     }
+
+
+def _diagnosed_consumer_inputs(
+    sources: SemanticSourceDocuments,
+) -> frozenset[tuple[str, str]]:
+    """``(capabilityId, inputName)`` pairs the deriver refused to resolve.
+
+    Verify-phase finding R10. Shared by the binding pass and the gap pass so the
+    plan cannot both bind an input and report it as unresolved.
+    """
+    try:
+        from sap_nexus_agent.semantic_planning.derivation import (
+            derive_data_dependencies,
+        )
+
+        diagnostics = derive_data_dependencies(sources).diagnostics
+    except Exception:  # noqa: BLE001 - fail open on binding, the gap pass reports
+        return frozenset()
+    return frozenset(
+        (diagnostic.consumer_capability_id, diagnostic.consumer_input_name)
+        for diagnostic in diagnostics
+    )
+
+
+def _derivation_diagnostic_gaps(
+    sources: SemanticSourceDocuments,
+    plan_graph: Mapping[str, Any],
+) -> list[Gap]:
+    """Surface the deriver's per-input diagnostics as dry-run gaps.
+
+    T5 verify-phase finding R9. ``needsReduction`` and ``ambiguous`` existed only
+    inside ``derive_data_dependencies(...).diagnostics``, so an input the deriver
+    deliberately refused to bind was simply *absent* from the plan with nothing
+    explaining why. A reader could not tell "no producer publishes this" from "a
+    producer does, but its field is a list and choosing a reduction operator is
+    not the planner's decision".
+
+    Distinct from ``ambiguous_producer``, which is per desired Fact Type with
+    several producer *capabilities*. These are per consuming *input*.
+
+    Scoped to capabilities actually in this plan: the deriver reports over the
+    whole registry, and a gap about a capability the user never invoked would be
+    noise attached to the wrong run. The diagnostic names its candidates, because
+    "this input is unresolved" without them sends the reader back to the registry.
+    """
+    capability_ids = {
+        node.get("capabilityId") for node in plan_graph.get("nodes", ())
+    }
+    if not capability_ids:
+        return []
+    try:
+        from sap_nexus_agent.semantic_planning.derivation import (
+            derive_data_dependencies,
+        )
+
+        diagnostics = derive_data_dependencies(sources).diagnostics
+    except Exception:  # noqa: BLE001 - a dry run must not fail on a report
+        return []
+    return [
+        Gap(
+            diagnostic.kind,
+            f"{diagnostic.consumer_capability_id}.{diagnostic.consumer_input_name}: "
+            f"{diagnostic.candidate_kind} candidates "
+            f"({', '.join(diagnostic.candidates)}) for "
+            f"{diagnostic.fact_type_id} / {diagnostic.semantic_type}",
+        )
+        for diagnostic in diagnostics
+        if diagnostic.consumer_capability_id in capability_ids
+    ]
 
 
 def _keyed_by_semantic_types(

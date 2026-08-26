@@ -534,7 +534,7 @@ def test_two_derivable_inputs_share_one_data_edge():
 
 
 def _sources_with_two_typed_inputs(
-    second_semantic_type: str = "sapnexus:MrpElementLine",
+    second_semantic_type: str = "sapnexus:PurchasingGroup",
 ) -> tuple[SemanticSourceDocuments, RegistrySnapshot]:
     """A consumer whose two derivable inputs want **different** fields of one
     upstream Fact, told apart only by ``semanticType`` (task 5.6).
@@ -542,6 +542,15 @@ def _sources_with_two_typed_inputs(
     ``second_semantic_type`` is a parameter so the same fixture covers the
     no-match case: a value type the producer does not publish must fail
     visibly rather than silently binding the other field.
+
+    Both fields are ``cardinality: one``. The fixture originally used
+    ``sapnexus:MrpElementLine`` on ``InventoryAvailabilityFact``, which is
+    ``cardinality: many`` -- and verify-phase finding **R10** showed that made this
+    test assert a binding the planner-dry-run spec forbids ("the input is not
+    bound to any parameter source"). `sapnexus:MaterialInfoFact` is used instead
+    because it publishes **four** scalar fields with distinct semantic types, so
+    per-input field selection is demonstrated on values the deriver actually
+    admits, against a real registered producer rather than a fabricated one.
     """
     base = _real_sources()
     caps = _unfreeze(base.capabilities)
@@ -559,19 +568,19 @@ def _sources_with_two_typed_inputs(
         "kind": "Function",
         "inputs": [
             {
-                "name": "quantity",
-                "semanticType": "sapnexus:AvailableQuantity",
+                "name": "unit",
+                "semanticType": "sapnexus:UnitOfMeasure",
                 "required": True,
                 "bindingKind": "identifier",
-                "satisfiableByFactType": "sapnexus:InventoryAvailabilityFact",
+                "satisfiableByFactType": "sapnexus:MaterialInfoFact",
                 "type": "string",
             },
             {
-                "name": "lines",
+                "name": "group",
                 "semanticType": second_semantic_type,
                 "required": True,
                 "bindingKind": "identifier",
-                "satisfiableByFactType": "sapnexus:InventoryAvailabilityFact",
+                "satisfiableByFactType": "sapnexus:MaterialInfoFact",
                 "type": "string",
             },
         ],
@@ -604,7 +613,7 @@ def _typed_field_handoff(snapshot) -> EscalationHandoff:
         reason="typed-fields",
         matched_intents=[
             MatchedIntent(
-                capability_id="MM.Inventory.GetAvailability",
+                capability_id="MM.Material.GetInfo",
                 parameters={"material": "M1", "plant": "5300"},
                 missing=[],
             ),
@@ -640,8 +649,8 @@ def test_two_typed_inputs_bind_different_producer_fields():
     result = compile_plan_v2(_typed_field_handoff(snapshot), snapshot, sources)
 
     assert _derived_fields(result, "MM.Consumer.UseTypedFields") == {
-        "quantity": "availableQuantity",
-        "lines": "mrpElementLines",
+        "unit": "baseUnitOfMeasure",
+        "group": "purchasingGroup",
     }
     assert not [
         f for f in result.governance_flags if f.kind == "invalid_plan_graph"
@@ -653,7 +662,7 @@ def test_an_unpublished_value_type_fails_visibly_instead_of_binding_the_wrong_fi
 
     ``sapnexus:PurchaseOrderItemNumber`` is a real declared value type
     (``ontology/fact-types.yaml`` ``valueTypes``) that
-    ``MM.Inventory.GetAvailability`` does not publish as an output, so no field
+    ``MM.Material.GetInfo`` does not publish as an output, so no field
     can satisfy ``lines``. The compiler emits an empty ``field``, which the S1
     validator rejects (schema ``minLength: 1``) -> ``invalid_plan_graph``.
     """
@@ -663,8 +672,8 @@ def test_an_unpublished_value_type_fails_visibly_instead_of_binding_the_wrong_fi
     result = compile_plan_v2(_typed_field_handoff(snapshot), snapshot, sources)
 
     derived = _derived_fields(result, "MM.Consumer.UseTypedFields")
-    assert derived["quantity"] == "availableQuantity"
-    assert derived["lines"] == ""
+    assert derived["unit"] == "baseUnitOfMeasure"
+    assert derived["group"] == ""
     assert [f for f in result.governance_flags if f.kind == "invalid_plan_graph"]
 
 
@@ -691,7 +700,7 @@ def test_the_data_edge_orders_the_producer_first_regardless_of_input_order():
                 missing=[],
             ),
             MatchedIntent(
-                capability_id="MM.Inventory.GetAvailability",
+                capability_id="MM.Material.GetInfo",
                 parameters={"material": "M1", "plant": "5300"},
                 missing=[],
             ),
@@ -705,9 +714,9 @@ def test_the_data_edge_orders_the_producer_first_regardless_of_input_order():
     # handoff order nor the deterministic id tie-break can produce this result:
     # only following the data edge can. (Verified by mutation M22 — dropping
     # data edges from the sort makes this assertion fail.)
-    assert "node.MM.Consumer.UseTypedFields" < "node.MM.Inventory.GetAvailability"
+    assert "node.MM.Consumer.UseTypedFields" < "node.MM.Material.GetInfo"
     assert result.plan_graph["topologicalOrder"] == [
-        "node.MM.Inventory.GetAvailability",
+        "node.MM.Material.GetInfo",
         "node.MM.Consumer.UseTypedFields",
     ]
     assert not [
@@ -1732,3 +1741,126 @@ def test_a_derived_value_is_never_chained_into_a_pulled_producer():
         flag.kind == "invalid_plan_graph" and "seed" in (flag.detail or "")
         for flag in result.governance_flags
     )
+
+
+# ---- Verify-phase finding R9: deriver diagnostics never reached dry-run gaps ----
+#
+# The planner-dry-run spec says the dry-run output reports the input as "a gap
+# carrying the `needsReduction` diagnostic kind" (and likewise `ambiguous`). Those
+# diagnostics existed only inside `derive_data_dependencies(...).diagnostics`;
+# `PlanCompileResult.gaps` carried only `ambiguous_producer`, which is a different
+# thing: it is per desired Fact Type with several producer *capabilities*, not per
+# consuming *input* whose candidate field cannot be resolved. So an input blocked
+# by cardinality was simply absent from the plan with no gap explaining why.
+
+
+def _sources_with_a_list_only_candidate() -> tuple[
+    SemanticSourceDocuments, RegistrySnapshot
+]:
+    """A consumer whose only candidate field is `cardinality: many`.
+
+    `sapnexus:MrpElementLine` is declared `cardinality: many` on
+    `sapnexus:InventoryAvailabilityFact` in the real ontology, so the deriver
+    reports `needsReduction` rather than binding it.
+    """
+    base = _real_sources()
+    caps = _unfreeze(base.capabilities)
+    facts = _unfreeze(base.fact_types)
+    caps["capabilities"].append({
+        "capabilityId": "Test.Consumer.NeedsOneLine",
+        "name": "Test Reduction Consumer",
+        "description": "Wants a scalar from a cardinality-many field",
+        "domain": "MM",
+        "businessObject": "Test",
+        "ontologyIri": "sapnexus:Test_Reduction_Consumer",
+        "semanticType": "sapnexus:TestReductionConsumerReadFunction",
+        "aliases": [],
+        "status": "active",
+        "kind": "Function",
+        "inputs": [
+            {
+                "name": "line",
+                "semanticType": "sapnexus:MrpElementLine",
+                "required": True,
+                "bindingKind": "identifier",
+                "satisfiableByFactType": "sapnexus:InventoryAvailabilityFact",
+                "type": "string",
+            }
+        ],
+        # The consumer must publish something, or it is not a producer of any
+        # desired Fact Type and therefore never becomes a plan node -- and the
+        # gap is deliberately scoped to capabilities in the plan, so it would
+        # correctly not be reported. Found by writing the fixture without an
+        # output and watching the gap stay absent for the right reason.
+        "outputs": [
+            {"name": "summary", "factTypeRef": "sapnexus:TestReductionSummaryFact"}
+        ],
+        "governance": {
+            "sideEffect": "none",
+            "requiresApproval": False,
+            "approvalPolicy": "not_required",
+            "dataClassification": "internal",
+        },
+        "executor": {"type": "ODATA"},
+        "executorBinding": {"type": "ODATA", "bindingId": "test-binding"},
+    })
+    facts["factTypes"].append(
+        {"factTypeId": "sapnexus:TestReductionSummaryFact", "fields": []}
+    )
+    sources = SemanticSourceDocuments(
+        capabilities=caps,
+        executor_bindings=base.executor_bindings,
+        fact_types=facts,
+        relations=base.relations,
+    )
+    return sources, build_registry_snapshot(sources)
+
+
+def test_a_reduction_blocked_input_is_reported_as_a_dry_run_gap():
+    """R9 — the spec's `needsReduction` gap, in the dry-run output.
+
+    The input must be unbound AND explained. Being merely unbound is what the
+    system already did, and it leaves a reader unable to tell "no producer" from
+    "a producer exists but its field is a list".
+    """
+    sources, snapshot = _sources_with_a_list_only_candidate()
+    handoff = EscalationHandoff(
+        reason="reduction",
+        matched_intents=[
+            MatchedIntent(
+                capability_id="Test.Consumer.NeedsOneLine", parameters={}, missing=[]
+            )
+        ],
+        utterance="reduction probe",
+        registry_snapshot_id=snapshot.snapshot_id,
+    )
+
+    result = compile_plan_v2(handoff, snapshot, sources)
+
+    reduction_gaps = [gap for gap in result.gaps if gap.kind == "needsReduction"]
+    assert len(reduction_gaps) == 1, [(g.kind, g.detail) for g in result.gaps]
+    detail = reduction_gaps[0].detail
+    assert "Test.Consumer.NeedsOneLine" in detail
+    assert "line" in detail
+    assert "mrpElementLines" in detail  # the candidate is named, not just counted
+
+    # And the input is genuinely not bound (the spec's second clause).
+    consumer = _node_by_capability(result.plan_graph, "Test.Consumer.NeedsOneLine")
+    assert [b["parameterName"] for b in consumer["parameterBindings"]] == []
+
+
+def test_the_real_plan_reports_no_derivation_diagnostics_as_gaps():
+    """Non-vacuity: the shipped registry must not acquire phantom gaps.
+
+    The real PR plan derives both its parameters cleanly, so adding the new gap
+    source must leave it with no `needsReduction` / `ambiguous` gap at all.
+    """
+    sources = _real_sources()
+    snapshot = build_registry_snapshot(sources)
+    result = compile_plan_v2(_real_pr_handoff(snapshot, _FULL_PR_PARAMS), snapshot, sources)
+
+    assert [
+        gap.kind
+        for gap in result.gaps
+        if gap.kind in ("needsReduction", "ambiguous")
+    ] == []
