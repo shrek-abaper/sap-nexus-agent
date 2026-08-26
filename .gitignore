@@ -24,6 +24,8 @@ runtime/*
 runtime/traces/
 # Workbench durable state dev data (JSONL runs/sessions/leases/idempotency)
 .workbench-data/
+# Gateway durable approval store dev data (SAP_NEXUS_GATEWAY_DATA_DIR, default .gateway-data)
+.gateway-data/
 tmp/
 temp/
 
