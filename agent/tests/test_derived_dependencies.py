@@ -49,6 +49,8 @@ import dataclasses
 import json
 from pathlib import Path
 
+import pytest
+
 from positive_control import (
     positive_control_capability,
     positive_control_documents,
@@ -812,3 +814,53 @@ def test_the_real_view_and_the_positive_control_are_asserted_together():
         (diagnostic.kind, diagnostic.consumer_input_name)
         for diagnostic in positive_control.diagnostics
     ) == ((DIAGNOSTIC_NEEDS_REDUCTION, "tags"),)
+
+
+# ---- Verify-phase finding R8: strict equality needs a lookalike, not a stranger ----
+
+
+@pytest.mark.parametrize(
+    "lookalike",
+    [
+        "test:WidgetUnits",          # trailing plural
+        "test:widgetUnit",           # case differs
+        "test:WidgetUnit ",          # trailing whitespace
+        "test:BaseWidgetUnit",       # the declared type is a suffix
+        "test:WidgetUnitOfMeasure",  # the declared type is a prefix
+        "Test:WidgetUnit",           # namespace case differs
+        "WidgetUnit",                # bare, no namespace
+    ],
+)
+def test_a_lookalike_semantic_type_derives_nothing(lookalike):
+    """R8 — "however similar the names", asserted with actually similar names.
+
+    The spec scenario says different semantic types produce no edge *however
+    similar the names*. The existing test used an unrelated type, which any
+    equality check passes; it could not tell strict equality from a prefix match,
+    a case-insensitive match, or a trimmed match. Each case here is one character
+    class away from `test:WidgetUnit` and every one must derive nothing.
+    """
+    capabilities = [
+        dict(capability) for capability in _widget_documents().capabilities["capabilities"]
+    ]
+    consumer = next(c for c in capabilities if c["capabilityId"] == CONSUMER_ID)
+    consumer["inputs"] = [dict(item) for item in consumer["inputs"]]
+    consumer["inputs"][0] = {**consumer["inputs"][0], "semanticType": lookalike}
+
+    view = derive_data_dependencies(positive_control_documents(capabilities=capabilities))
+
+    assert [edge.consumer_input_name for edge in view.edges] == []
+    assert [d.consumer_input_name for d in view.diagnostics] == ["tags"]
+
+
+def test_the_lookalike_suite_is_not_vacuous():
+    """The unmodified fixture must still derive its one edge.
+
+    Without this, a fixture-construction mistake that produced an empty document
+    set would make every lookalike case pass for the wrong reason.
+    """
+    capabilities = [
+        dict(capability) for capability in _widget_documents().capabilities["capabilities"]
+    ]
+    view = derive_data_dependencies(positive_control_documents(capabilities=capabilities))
+    assert [edge.consumer_input_name for edge in view.edges] == ["unit"]

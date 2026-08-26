@@ -120,3 +120,105 @@ def test_declaration_only_capability_full_rule_mode_flow(tmp_path, monkeypatch):
     assert missing.capability_id == CAPABILITY_ID
     assert missing.missing_parameters == ["noteCode"]
     assert missing.clarification == CLARIFY_TEXT
+
+
+# ---- Verify-phase finding R7: the real 4th capability had no such lock ----
+#
+# `_assert_capability_referenced_nowhere_in_agent_source` above locks a *fixture*
+# capability out of the agent source, which proves the mechanism. It said nothing
+# about `MM.Material.GetInfo`, the capability this change actually registered, so
+# invariant 6's "adding the 4th capability requires no code" rested on a
+# `git diff` taken at one moment rather than on a standing check.
+
+
+REAL_FOURTH_CAPABILITY_ID = "MM.Material.GetInfo"
+REAL_FOURTH_FACT_TYPE_ID = "sapnexus:MaterialInfoFact"
+
+
+def test_the_fourth_capability_is_named_nowhere_in_production_source():
+    """R7 — invariant 6 as a standing check rather than a one-off diff.
+
+    The capability id and its Fact Type id must not appear in any production
+    source file, in any language. Tests, evals, docs and the registry itself are
+    excluded: naming it there is the point. Java and TypeScript are included
+    because correction C13 established that a Python-only measurement cannot see
+    the real cost of adding a capability.
+    """
+    roots = [
+        REPO_ROOT / "agent" / "sap_nexus_agent",
+        REPO_ROOT / "scripts",
+        REPO_ROOT / "services" / "gateway",
+        REPO_ROOT / "frontend" / "src",
+    ]
+    patterns = ("*.py", "*.java", "*.ts", "*.tsx")
+    offenders: dict[str, list[str]] = {
+        REAL_FOURTH_CAPABILITY_ID: [],
+        REAL_FOURTH_FACT_TYPE_ID: [],
+    }
+    scanned = 0
+    for root in roots:
+        if not root.exists():
+            continue
+        for pattern in patterns:
+            for path in root.rglob(pattern):
+                parts = set(path.parts)
+                if "build" in parts or "node_modules" in parts or "test" in parts:
+                    continue
+                if path.name.endswith((".test.ts", ".test.tsx")):
+                    continue
+                scanned += 1
+                content = path.read_text(encoding="utf-8", errors="ignore")
+                for needle, hits in offenders.items():
+                    if needle in content:
+                        hits.append(str(path.relative_to(REPO_ROOT)))
+
+    assert scanned > 100, f"scan found only {scanned} files - the globs are wrong"
+    assert offenders == {
+        REAL_FOURTH_CAPABILITY_ID: [],
+        REAL_FOURTH_FACT_TYPE_ID: [],
+    }
+
+
+def test_the_fourth_capability_is_named_in_the_registry_and_ontology():
+    """Positive control for R7: the absence above must mean "declared, not absent".
+
+    Without this, deleting the capability entirely would satisfy the lock.
+    """
+    import yaml
+
+    # Parsed, not substring-matched. Mutation M45 renamed the capability to
+    # `MM.Material.GetInfoXX` and a substring check passed, because the original
+    # id is a prefix of the renamed one - the positive control was vacuous
+    # against exactly the mutation it existed to catch.
+    registry = yaml.safe_load(
+        (REPO_ROOT / "registry" / "capabilities.yaml").read_text(encoding="utf-8")
+    )
+    fact_types = yaml.safe_load(
+        (REPO_ROOT / "ontology" / "fact-types.yaml").read_text(encoding="utf-8")
+    )
+    bindings = yaml.safe_load(
+        (REPO_ROOT / "registry" / "executor-bindings.yaml").read_text(encoding="utf-8")
+    )
+
+    capability = next(
+        (
+            c
+            for c in registry["capabilities"]
+            if c["capabilityId"] == REAL_FOURTH_CAPABILITY_ID
+        ),
+        None,
+    )
+    assert capability is not None, "the fourth capability is not registered at all"
+    assert capability["status"] == "active"
+    assert capability["kind"] == "Function"
+    assert {
+        output["factTypeRef"]
+        for output in capability["outputs"]
+        if "factTypeRef" in output
+    } == {REAL_FOURTH_FACT_TYPE_ID}
+    assert REAL_FOURTH_FACT_TYPE_ID in {
+        fact_type["factTypeId"] for fact_type in fact_types["factTypes"]
+    }
+    assert capability["executorBinding"]["bindingId"] in {
+        binding["bindingId"] for binding in bindings["bindings"]
+    }

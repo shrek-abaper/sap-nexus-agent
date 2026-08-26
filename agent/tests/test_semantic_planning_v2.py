@@ -340,3 +340,76 @@ def test_bad_case_missing_source_validator():
     report = validate_plan_graph_v2(graph, snapshot, _goal_spec_for_inventory(), plan)
     assert report.valid is False
     assert any(i.code == "PARAMETER_SOURCE_MISSING" for i in report.issues)
+
+
+# ---- Verify-phase finding R6: the reserved-source branch had zero coverage ----
+
+
+def test_authoring_a_registered_default_source_is_rejected_as_reserved():
+    """R6 — `registeredDefault` is reserved this phase, and now that is asserted.
+
+    The 4-kind closed set was already pinned from the schema, and `validation_v2`
+    already had a `RESERVED_SOURCE_NOT_AUTHORED` rule, but nothing exercised the
+    rule: grepping the whole test tree for that code returned nothing. So "the
+    compiler authors no `registeredDefault`" rested on the rule existing rather
+    than on it firing. Driven through the public validator rather than the private
+    helper, so the rule is proven reachable from the real entry point.
+    """
+    snapshot = _real_snapshot()
+    sources = _real_sources()
+    graph = SemanticGraphCompiler().compile(sources)
+    plan = _valid_v2_plan(snapshot)
+    # Shape read from schemas/plan-graph-v2.schema.json rather than guessed: a
+    # wrong shape fails as SCHEMA_INVALID and would never reach the rule under
+    # test, which is exactly what happened on the first attempt.
+    binding = plan["nodes"][0]["parameterBindings"][0]
+    binding["source"] = {
+        "kind": "registeredDefault",
+        "parameterName": binding["parameterName"],
+        "semanticType": "sapnexus:MaterialNumber",
+        "value": "M1",
+    }
+
+    report = validate_plan_graph_v2(graph, snapshot, _goal_spec_for_inventory(), plan)
+
+    assert report.valid is False
+    assert "RESERVED_SOURCE_NOT_AUTHORED" in {issue.code for issue in report.issues}
+
+
+def test_the_real_compiler_never_authors_a_registered_default():
+    """The other half of R6: the rule fires, and the compiler never trips it.
+
+    Asserted over the real registry's PR plan, the plan most likely to want a
+    default (six required inputs, two of them derived).
+    """
+    from pathlib import Path
+
+    from sap_nexus_agent.match_decision import EscalationHandoff, MatchedIntent
+    from sap_nexus_agent.planner.plan_compiler_v2 import compile_plan_v2
+    from sap_nexus_agent.semantic_planning import (
+        build_registry_snapshot,
+        load_semantic_sources,
+    )
+
+    sources = load_semantic_sources(Path(__file__).resolve().parents[2])
+    snapshot = build_registry_snapshot(sources)
+    handoff = EscalationHandoff(
+        reason="r6",
+        matched_intents=[
+            MatchedIntent(
+                capability_id="MM.PR.CreateDraft",
+                parameters={"material": "M1", "plant": "1000"},
+                missing=[],
+            )
+        ],
+        utterance="r6 probe",
+        registry_snapshot_id=snapshot.snapshot_id,
+    )
+    graph_out = compile_plan_v2(handoff, snapshot, sources).plan_graph
+    kinds = {
+        binding["source"]["kind"]
+        for node in graph_out["nodes"]
+        for binding in node["parameterBindings"]
+    }
+    assert kinds  # non-vacuity: the plan authored some bindings
+    assert "registeredDefault" not in kinds
