@@ -12,6 +12,27 @@ MM.Inventory.GetAvailability
 MM.PurchaseOrder.GetList
 -> executorBinding.bindingId = sap.mm.purchaseorder.list-odata
 -> current runtime executor = ODATA / API_PURCHASEORDER_PROCESS_SRV
+
+MM.Material.GetInfo
+-> executorBinding.bindingId = sap.mm.material.get-detail
+-> current runtime executor = JCO_RFC / BAPI_MATERIAL_GET_DETAIL
+
+MM.PR.CreateDraft
+-> executorBinding.bindingId = sap.mm.pr.create-draft
+-> current runtime executor = JCO_RFC / BAPI_PR_CREATE
+-> WRITE: requires a recorded human confirmation before execution
+
+SD.SalesOrder.GetList
+-> executorBinding.bindingId = sap.sd.salesorder.getlist
+-> current runtime executor = JCO_RFC / BAPI_SALESORDER_GETLIST
+
+FI.AR.GetOpenItems
+-> executorBinding.bindingId = sap.fi.ar.get-open-items
+-> current runtime executor = JCO_RFC / BAPI_AR_ACC_GETOPENITEMS
+
+FI.AP.GetOpenItems
+-> executorBinding.bindingId = sap.fi.ap.get-open-items
+-> current runtime executor = JCO_RFC / BAPI_AP_ACC_GETOPENITEMS
 ```
 
 ## Contract Boundary

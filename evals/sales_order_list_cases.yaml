@@ -1,0 +1,89 @@
+{
+  "cases": [
+    {
+      "id": "so-by-customer",
+      "userQuery": "查客户 1000 的销售订单",
+      "gateway": {
+        "execute": {
+          "traceId": "gw-so-customer",
+          "capabilityId": "SD.SalesOrder.GetList",
+          "success": true,
+          "executor": {"type": "JCO_RFC", "rfcName": "BAPI_SALESORDER_GETLIST"},
+          "returnMessages": [],
+          "data": {
+            "salesOrders": [
+              {
+                "sdDoc": "0000000001",
+                "docType": "OR",
+                "docDate": "20260101",
+                "soldTo": "1000",
+                "material": "DEMOA1",
+                "netValue": "1000.00",
+                "currency": "CNY",
+                "salesOrg": "1000",
+                "purchNoC": "PO-100"
+              }
+            ]
+          },
+          "durationMs": 10,
+          "errorType": "NONE"
+        }
+      },
+      "expected": {
+        "status": "success",
+        "capabilityId": "SD.SalesOrder.GetList",
+        "validateCalls": 1,
+        "executeCalls": 1,
+        "responseContains": ["0000000001", "1000", "1000.00"]
+      }
+    },
+    {
+      "id": "so-by-material-and-sales-org",
+      "userQuery": "销售组织 1000 物料 DEMOA1 的销售订单",
+      "gateway": {
+        "execute": {
+          "traceId": "gw-so-material-salesorg",
+          "capabilityId": "SD.SalesOrder.GetList",
+          "success": true,
+          "executor": {"type": "JCO_RFC", "rfcName": "BAPI_SALESORDER_GETLIST"},
+          "returnMessages": [],
+          "data": {
+            "salesOrders": [
+              {
+                "sdDoc": "0000000002",
+                "docType": "OR",
+                "docDate": "20260115",
+                "soldTo": "2000",
+                "material": "DEMOA1",
+                "netValue": "500.00",
+                "currency": "CNY",
+                "salesOrg": "1000",
+                "purchNoC": "PO-200"
+              }
+            ]
+          },
+          "durationMs": 10,
+          "errorType": "NONE"
+        }
+      },
+      "expected": {
+        "status": "success",
+        "capabilityId": "SD.SalesOrder.GetList",
+        "validateCalls": 1,
+        "executeCalls": 1,
+        "responseContains": ["0000000002", "2000", "500.00"]
+      }
+    },
+    {
+      "id": "so-missing-filter",
+      "userQuery": "查一下销售订单",
+      "expected": {
+        "status": "clarification",
+        "missingParameters": ["filter"],
+        "validateCalls": 0,
+        "executeCalls": 0,
+        "responseContains": ["过滤条件"]
+      }
+    }
+  ]
+}

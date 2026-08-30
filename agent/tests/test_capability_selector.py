@@ -990,7 +990,7 @@ def test_the_selector_and_the_closure_share_one_pullability_rule():
     Not a style assertion: the selector decides *whether to ask the user* and the
     closure decides *whether to pull the producer*. If those two answers can
     differ for the same capability, a parameter falls through the gap between
-    them. Asserted over the real registry's four capabilities plus both failure
+    them. Asserted over every capability in the real registry plus both failure
     shapes, so a future edit that reintroduces a second rule fails here.
     """
     from sap_nexus_agent.planner.capability_card import discover_cards
@@ -1005,7 +1005,7 @@ def test_the_selector_and_the_closure_share_one_pullability_rule():
 
     sources = load_semantic_sources(REPO_ROOT)
     cards = discover_cards(build_registry_snapshot(sources), sources)
-    assert len(cards) == 4  # non-vacuity: the loop below has something to check
+    assert len(cards) == 7  # non-vacuity: the loop below has something to check
     for card in cards:
         raw = next(
             c

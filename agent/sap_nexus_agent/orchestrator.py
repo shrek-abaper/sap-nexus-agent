@@ -44,9 +44,12 @@ from sap_nexus_agent.planner.handoff import compile_plan_v2_from_handoff
 from sap_nexus_agent.planner.plan_compiler_v2 import PlanCompileResult
 from sap_nexus_agent.reasoning_fact import (
     ReasoningFact,
+    build_ap_open_items_facts,
+    build_ar_open_items_facts,
     build_availability_fact,
     build_pr_create_fact,
     build_purchase_order_facts,
+    build_sales_order_facts,
 )
 from sap_nexus_agent.semantic_planning import (
     RegistrySnapshot,
@@ -1801,6 +1804,32 @@ def _approval_failure(
     )
 
 
+#: capabilityId -> the builder that turns its rows into ReasoningFacts. The
+#: ``list`` factShape says "many rows"; it does not say which business object the
+#: rows are, so the shape alone cannot pick a builder. Registering the builder
+#: here keeps _finalize_narrative free of capability branching and makes an
+#: unregistered list capability fail loudly instead of narrating PO fields.
+_LIST_FACT_BUILDERS = {
+    "MM.PurchaseOrder.GetList": build_purchase_order_facts,
+    "SD.SalesOrder.GetList": build_sales_order_facts,
+    "FI.AR.GetOpenItems": build_ar_open_items_facts,
+    "FI.AP.GetOpenItems": build_ap_open_items_facts,
+}
+
+
+def _build_list_facts(
+    capability_id: str,
+    call_plan: CallPlan,
+    execution: ExecutionResult,
+) -> list[ReasoningFact]:
+    builder = _LIST_FACT_BUILDERS.get(capability_id)
+    if builder is None:
+        raise NarrativeGuardError(
+            f"no list fact builder registered for capability: {capability_id}"
+        )
+    return builder(call_plan.agent_trace_id, execution, call_plan.parameters)
+
+
 def _finalize_narrative(
     call_plan: CallPlan,
     validation: ValidationResult,
@@ -1825,14 +1854,13 @@ def _finalize_narrative(
     fact_shape = descriptor.narrative.fact_shape if descriptor and descriptor.narrative else "single-value"
     config = descriptor.narrative if descriptor else None
 
-    # Build fact(s) by factShape.
+    # Build fact(s) by factShape. The list shape builds inside the narration
+    # guard below, because picking its builder can itself fail closed.
     fact: ReasoningFact | None = None
     facts: list[ReasoningFact] = []
-    if fact_shape == "list":
-        facts = build_purchase_order_facts(call_plan.agent_trace_id, execution, call_plan.parameters)
-    elif fact_shape == "action-receipt":
+    if fact_shape == "action-receipt":
         fact = build_pr_create_fact(call_plan.agent_trace_id, execution, call_plan.parameters)
-    else:
+    elif fact_shape != "list":
         fact = build_availability_fact(call_plan.agent_trace_id, execution, call_plan.parameters)
         if fact is None:
             return AgentOutcome(
@@ -1853,6 +1881,7 @@ def _finalize_narrative(
     # Narrate by factShape.
     try:
         if fact_shape == "list":
+            facts = _build_list_facts(capability_id, call_plan, execution)
             total_count = execution.data.get("totalCount")
             response_text = narrate_list_by_capability(facts, capability_id, total_count=total_count)
         elif fact_shape == "action-receipt":

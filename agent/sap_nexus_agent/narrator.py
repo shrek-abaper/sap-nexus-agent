@@ -36,6 +36,18 @@ _PROMPT_GUIDANCE: dict[str, str] = {
         "用给定的采购订单条目事实生成中文归纳，列出关键订单（采购订单号、供应商、物料、工厂、数量、单位），"
         "多条时归纳总结。"
     ),
+    "sales-order-list": (
+        "用给定的销售订单条目事实生成中文归纳，列出关键订单（销售订单号、客户、净值与币种、单据日期），"
+        "多条时归纳总结。只能使用提供的事实字段，不得编造。"
+    ),
+    "ar-open-items": (
+        "用给定的客户应收未清项事实生成中文归纳，列出关键未清项（凭证号、金额与币种、到期基准日），"
+        "多条时归纳总结未清总体情况。只能使用提供的事实字段，不得编造。"
+    ),
+    "ap-open-items": (
+        "用给定的供应商应付未清项事实生成中文归纳，列出关键未清项（凭证号、金额与币种、到期基准日），"
+        "多条时归纳总结未清总体情况。只能使用提供的事实字段，不得编造。"
+    ),
     "pr-create-receipt": (
         "用给定的采购申请创建结果事实生成中文回执，说明 PR 号。"
         "只能使用提供的事实字段，不得编造。"
@@ -369,6 +381,75 @@ def _list_fallback(facts: list[ReasoningFact], total_count: int | None) -> str:
     return "\n".join(lines)
 
 
+def _list_row_template(config: NarrativeConfig | None) -> str | None:
+    """The declared ``row`` template of a list capability, or None.
+
+    A capability that declares one is narrated from its declaration; one that
+    does not (MM.PurchaseOrder.GetList) keeps the PO-shaped path below, so
+    adding a list capability never changes an existing capability's narration.
+    """
+    if config is None:
+        return None
+    for var_name, source_expr in config.field_mapping:
+        if var_name == "row":
+            return source_expr
+    return None
+
+
+def _assert_declared_rows_complete(facts: list[ReasoningFact], row_template: str) -> None:
+    """Every ``{name}`` the row template asks for must be resolvable on the Fact.
+
+    Resolvable, not non-empty: a declared field that is legitimately blank (a
+    cleared date on an open item) is still evidence. A placeholder nothing on the
+    Fact can answer means the declaration and the fact builder disagree, which is
+    exactly the drift that would otherwise render as a hallucinated row.
+    """
+    required = tuple(_PLACEHOLDER_RE.findall(row_template))
+    for fact in facts[:_PO_LIMIT]:
+        values = _fact_field_values(fact)
+        missing = [name for name in required if name not in values]
+        if missing:
+            raise NarrativeGuardError(
+                f"ReasoningFact missing evidence fields for list narration: {', '.join(missing)}"
+            )
+
+
+def _render_declared_rows(facts: list[ReasoningFact], row_template: str) -> list[str]:
+    return [
+        row_template.format_map(_fact_field_values(fact))
+        for fact in facts[:_PO_LIMIT]
+    ]
+
+
+def _build_declared_list_messages(
+    rows: list[str],
+    total_count: int | None,
+    config: NarrativeConfig | None,
+) -> list[dict[str, str]]:
+    user_content = "\n".join(rows)
+    if total_count is not None:
+        user_content += f"\n总记录数: {total_count}"
+    return [
+        {"role": "system", "content": _SYSTEM_CONSTRAINT},
+        {"role": "system", "content": _guidance_for(config)},
+        {"role": "user", "content": user_content},
+    ]
+
+
+def _declared_list_fallback(
+    rows: list[str],
+    facts: list[ReasoningFact],
+    total_count: int | None,
+) -> str:
+    lines = list(rows)
+    truncated = len(facts) > _PO_LIMIT or (
+        total_count is not None and total_count > _PO_LIMIT
+    )
+    if truncated:
+        lines.append("（仅返回前 50 条。）")
+    return "\n".join(lines)
+
+
 def narrate_list(
     facts: list[ReasoningFact],
     config: NarrativeConfig | None = None,
@@ -379,6 +460,31 @@ def narrate_list(
     """Generic list narration (factShape: list)."""
     if not facts:
         return "无匹配记录。"
+    row_template = _list_row_template(config)
+    if row_template is None:
+        return _narrate_po_list(facts, config, total_count=total_count, client=client)
+    _assert_declared_rows_complete(facts, row_template)
+    rows = _render_declared_rows(facts, row_template)
+    try:
+        llm_client = client or OpenAiCompatibleLlmClient()
+        text = llm_client.chat_text(
+            _build_declared_list_messages(rows, total_count, config),
+            temperature=0.0,
+            max_tokens=400,
+        )
+        return redact_sensitive(text.strip())
+    except LlmUnavailable:
+        return _declared_list_fallback(rows, facts, total_count)
+
+
+def _narrate_po_list(
+    facts: list[ReasoningFact],
+    config: NarrativeConfig | None,
+    *,
+    total_count: int | None,
+    client,
+) -> str:
+    """Undeclared list narration: the PO shape, unchanged."""
     _assert_po_evidence_complete(facts)
     try:
         llm_client = client or OpenAiCompatibleLlmClient()

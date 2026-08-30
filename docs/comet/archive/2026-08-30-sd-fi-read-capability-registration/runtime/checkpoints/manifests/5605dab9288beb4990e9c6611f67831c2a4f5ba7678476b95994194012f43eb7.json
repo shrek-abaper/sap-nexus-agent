@@ -1,0 +1,22 @@
+{
+  "schema": "comet.native.checkpoint-manifest.v1",
+  "change": "sd-fi-read-capability-registration",
+  "artifacts": [
+    {
+      "path": "ontology/fact-types.yaml",
+      "hash": "ee63d312c7804fde3a27c8f39489f11d873c3031327fdc2cbecdc8d75bf67679",
+      "size": 12988
+    },
+    {
+      "path": "registry/capabilities.yaml",
+      "hash": "b34a21253a23bddffd70831ee688e9c0fc2272281945979cb615ef2d0fd61ffb",
+      "size": 33612
+    },
+    {
+      "path": "registry/executor-bindings.yaml",
+      "hash": "87b4d7c1486e3411f44df0c2fb378f9756464bc670c8a3311bb68089daa76a07",
+      "size": 3454
+    }
+  ],
+  "totalBytes": 50054
+}

@@ -184,6 +184,171 @@ def _build_po_fact(
     )
 
 
+#: Fact Type field name -> the row key the Gateway's generic TABLES extraction
+#: emits for it (camelCased SAP column of BAPIORDERS). Declared here rather than
+#: inline in the builder so the mapping between a Fact Type field and the SAP
+#: column backing it is readable in one place.
+_SALES_ORDER_ROW_FIELDS = {
+    "salesOrderNumber": "sdDoc",
+    "documentType": "docType",
+    "documentDate": "docDate",
+    "soldTo": "soldTo",
+    "material": "material",
+    "netValue": "netValue",
+    "currency": "currency",
+    "salesOrg": "salesOrg",
+    "customerPoNumber": "purchNoC",
+}
+
+#: Same, for the AR/AP open item row (BAPI3007_2 / BAPI3008_2 share their column
+#: names, so one map serves both open-item Fact Types).
+_OPEN_ITEM_ROW_FIELDS = {
+    "documentNumber": "docNo",
+    "documentDate": "docDate",
+    "postingDate": "pstngDate",
+    "amount": "amtDoccur",
+    "currency": "currency",
+    "netDueDate": "blineDate",
+    "clearingDate": "clearDate",
+}
+
+
+def _optional_number(value: Any) -> float | int | None:
+    """Coerce a row value to the Fact's numeric ``value`` slot, or None.
+
+    The generic TABLES extraction reads SAP columns as text, so a monetary
+    column arrives as a string. A value that is not a number is not forced into
+    the slot; it stays in evidence only.
+    """
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        return value
+    if isinstance(value, str) and value.strip():
+        try:
+            return float(value.strip().replace(",", ""))
+        except ValueError:
+            return None
+    return None
+
+
+def _build_row_facts(
+    agent_trace_id: str,
+    result: ExecutionResult,
+    parameters: dict[str, str] | None,
+    *,
+    data_key: str,
+    domain: str,
+    business_object: str,
+    predicate: str,
+    row_fields: dict[str, str],
+    value_field: str,
+    unit_field: str,
+) -> list[ReasoningFact]:
+    """One ReasoningFact per row of a JCo TABLES output.
+
+    Shared by the sales order and AR/AP open item builders: they differ only in
+    which output the rows come from, which Fact Type fields the row carries, and
+    which of those fields is the salient numeric value. An empty table (or a
+    failed execution) yields zero facts -- empty is not an error.
+    """
+    if not result.success:
+        return []
+    rows = result.data.get(data_key)
+    if not rows:
+        return []
+    context = parameters or {}
+    facts: list[ReasoningFact] = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        evidence = {name: row.get(source) for name, source in row_fields.items()}
+        facts.append(
+            ReasoningFact(
+                fact_id=f"fact-{uuid.uuid4()}",
+                agent_trace_id=agent_trace_id,
+                trace_id=agent_trace_id,
+                gateway_trace_id=result.trace_id,
+                domain=domain,
+                business_object=business_object,
+                predicate=predicate,
+                value=_optional_number(evidence.get(value_field)),
+                unit=_optional_text(evidence.get(unit_field)),
+                deterministic=True,
+                confidence=1.0,
+                source={
+                    "capabilityId": result.capability_id,
+                    "executorType": result.executor.get("type"),
+                    "rfcName": result.executor.get("rfcName"),
+                },
+                evidence=[evidence],
+                material=_optional_text(evidence.get("material") or context.get("material")),
+                plant=_optional_text(context.get("plant")),
+            )
+        )
+    return facts
+
+
+def build_sales_order_facts(
+    agent_trace_id: str,
+    result: ExecutionResult,
+    parameters: dict[str, str] | None = None,
+) -> list[ReasoningFact]:
+    """Normalise SD.SalesOrder.GetList rows into one Fact per sales order."""
+    return _build_row_facts(
+        agent_trace_id,
+        result,
+        parameters,
+        data_key="salesOrders",
+        domain="SD",
+        business_object="SalesOrder",
+        predicate="salesOrderItem",
+        row_fields=_SALES_ORDER_ROW_FIELDS,
+        value_field="netValue",
+        unit_field="currency",
+    )
+
+
+def build_ar_open_items_facts(
+    agent_trace_id: str,
+    result: ExecutionResult,
+    parameters: dict[str, str] | None = None,
+) -> list[ReasoningFact]:
+    """Normalise FI.AR.GetOpenItems rows into one Fact per customer open item."""
+    return _build_row_facts(
+        agent_trace_id,
+        result,
+        parameters,
+        data_key="openItems",
+        domain="FI",
+        business_object="CustomerOpenItem",
+        predicate="customerOpenItem",
+        row_fields=_OPEN_ITEM_ROW_FIELDS,
+        value_field="amount",
+        unit_field="currency",
+    )
+
+
+def build_ap_open_items_facts(
+    agent_trace_id: str,
+    result: ExecutionResult,
+    parameters: dict[str, str] | None = None,
+) -> list[ReasoningFact]:
+    """Normalise FI.AP.GetOpenItems rows into one Fact per vendor open item."""
+    return _build_row_facts(
+        agent_trace_id,
+        result,
+        parameters,
+        data_key="openItems",
+        domain="FI",
+        business_object="VendorOpenItem",
+        predicate="vendorOpenItem",
+        row_fields=_OPEN_ITEM_ROW_FIELDS,
+        value_field="amount",
+        unit_field="currency",
+    )
+
+
 def build_pr_create_fact(
     agent_trace_id: str,
     result: ExecutionResult,

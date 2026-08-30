@@ -101,7 +101,13 @@ SAP Nexus Agent 的长期目标是建立面向 SAP On-Prem 的能力智能枢纽
 |---------|------|--------|----------|------|
 | `MM.Inventory.GetAvailability` | 库存/需求清单查询（MD04） | `JCO_RFC` | `BAPI_MATERIAL_STOCK_REQ_LIST` | ✅ active |
 | `MM.PurchaseOrder.GetList` | 采购订单列表查询 | `ODATA` | `API_PURCHASEORDER_PROCESS_SRV` | ✅ active |
+| `MM.Material.GetInfo` | 物料主数据查询（基本单位/采购组） | `JCO_RFC` | `BAPI_MATERIAL_GET_DETAIL` | ✅ active |
 | `MM.PR.CreateDraft` | 采购申请创建 | `JCO_RFC` | `BAPI_PR_CREATE` | ✅ active（需人工审批） |
+| `SD.SalesOrder.GetList` | 销售订单列表查询（VA05 风格） | `JCO_RFC` | `BAPI_SALESORDER_GETLIST` | ✅ active |
+| `FI.AR.GetOpenItems` | 客户应收未清项查询 | `JCO_RFC` | `BAPI_AR_ACC_GETOPENITEMS` | ✅ active |
+| `FI.AP.GetOpenItems` | 供应商应付未清项查询 | `JCO_RFC` | `BAPI_AP_ACC_GETOPENITEMS` | ✅ active |
+
+共 7 个能力：6 个只读（`kind: Function`，`sideEffect: none`）+ 1 个写入（`MM.PR.CreateDraft`，执行前必须存在已记录的人工确认）。
 
 ---
 

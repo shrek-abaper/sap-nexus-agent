@@ -5,6 +5,7 @@ import com.sap.conn.jco.JCoException;
 import com.sap.conn.jco.JCoFunction;
 import com.sap.conn.jco.JCoParameterList;
 import com.sap.conn.jco.JCoRecord;
+import com.sap.conn.jco.JCoRecordMetaData;
 import com.sap.conn.jco.JCoStructure;
 import com.sap.conn.jco.JCoTable;
 import com.sapnexus.gateway.registry.CapabilityDefinition;
@@ -153,8 +154,90 @@ public class InventoryAvailabilityExecutor implements JcoCapabilityExecutor {
                 resolveExportStructureField(exports, sapName).ifPresent(value -> data.put(name, value));
             });
         }
+        addDeclaredTableRows(function.getTableParameterList(), capability, data);
         addMd04StockRowData(function.getTableParameterList(), data);
         return data;
+    }
+
+    /**
+     * Reads every TABLES parameter named by {@code outputMapping} into a list of row
+     * maps, driven entirely by the registry and the table's own JCo metadata.
+     * <p>
+     * Registry-driven for the same reason as {@link #resolveExportStructureField}: a
+     * capability whose primary fact is a table (a sales order list, an AR/AP open item
+     * list) must be addable by declaring it, not by adding another bespoke
+     * {@code addXxxRowData} method per capability. Rows carry every field the table
+     * metadata reports, keyed by the camelCase form of the SAP column, so the field set
+     * comes from SAP rather than from a hardcoded list that silently drops a column.
+     * <p>
+     * Values are read as text, like {@link #addMd04StockRowData} does: the executor does
+     * not decide which column is a number. Interpretation belongs to the Fact builder
+     * that knows what the column means.
+     * <p>
+     * A name already produced from the export parameters is left alone, and
+     * {@code MRP_IND_LINES} is not reachable here because no capability declares it in
+     * {@code outputMapping} -- MD04 keeps its own extraction unchanged.
+     */
+    private void addDeclaredTableRows(JCoParameterList tables, CapabilityDefinition capability, Map<String, Object> data) {
+        if (tables == null) {
+            return;
+        }
+        capability.executor().outputMapping().forEach((name, sapName) -> {
+            if ("RETURN".equals(sapName) || data.containsKey(name)) {
+                return;
+            }
+            if (!safeIsInitialized(tables, sapName)) {
+                return;
+            }
+            try {
+                JCoTable table = tables.getTable(sapName);
+                if (table == null) {
+                    return;
+                }
+                List<Map<String, Object>> rows = new ArrayList<>();
+                for (int rowIndex = 0; rowIndex < table.getNumRows(); rowIndex++) {
+                    table.setRow(rowIndex);
+                    rows.add(readRow(table));
+                }
+                data.put(name, rows);
+            } catch (RuntimeException ignored) {
+                // A release or authorization may not expose the declared table; keep
+                // the other normalized outputs rather than failing the whole read.
+            }
+        });
+    }
+
+    private Map<String, Object> readRow(JCoTable table) {
+        Map<String, Object> row = new LinkedHashMap<>();
+        JCoRecordMetaData metaData = table.getRecordMetaData();
+        for (int field = 0; field < metaData.getFieldCount(); field++) {
+            String sapField = metaData.getName(field);
+            if (sapField == null || sapField.isBlank()) {
+                continue;
+            }
+            row.put(toCamelCase(sapField), getString(table, sapField));
+        }
+        return row;
+    }
+
+    /**
+     * {@code DOC_NO -> docNo}, {@code AMT_DOCCUR -> amtDoccur}, {@code PURCH_NO_C ->
+     * purchNoC}. Mechanical, so it carries no per-capability knowledge; the mapping from
+     * a camelCase row key to a Fact Type field stays in the Fact builder.
+     */
+    private String toCamelCase(String sapField) {
+        StringBuilder camel = new StringBuilder(sapField.length());
+        boolean upperNext = false;
+        for (char character : sapField.toCharArray()) {
+            if (character == '_') {
+                upperNext = true;
+                continue;
+            }
+            char lower = Character.toLowerCase(character);
+            camel.append(upperNext ? Character.toUpperCase(lower) : lower);
+            upperNext = false;
+        }
+        return camel.toString();
     }
 
     /**

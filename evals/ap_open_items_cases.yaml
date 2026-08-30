@@ -1,0 +1,61 @@
+{
+  "cases": [
+    {
+      "id": "ap-happy-path",
+      "userQuery": "查供应商 1000 在公司代码 1000 的应付",
+      "gateway": {
+        "execute": {
+          "traceId": "gw-ap-happy",
+          "capabilityId": "FI.AP.GetOpenItems",
+          "success": true,
+          "executor": {"type": "JCO_RFC", "rfcName": "BAPI_AP_ACC_GETOPENITEMS"},
+          "returnMessages": [],
+          "data": {
+            "openItems": [
+              {
+                "docNo": "1500000001",
+                "docDate": "20260101",
+                "pstngDate": "20260102",
+                "amtDoccur": "3000.00",
+                "currency": "CNY",
+                "blineDate": "20260215",
+                "clearDate": ""
+              }
+            ]
+          },
+          "durationMs": 10,
+          "errorType": "NONE"
+        }
+      },
+      "expected": {
+        "status": "success",
+        "capabilityId": "FI.AP.GetOpenItems",
+        "validateCalls": 1,
+        "executeCalls": 1,
+        "responseContains": ["1500000001", "3000.00"]
+      }
+    },
+    {
+      "id": "ap-missing-company-code",
+      "userQuery": "查供应商 1000 的应付",
+      "expected": {
+        "status": "clarification",
+        "missingParameters": ["companyCode"],
+        "validateCalls": 0,
+        "executeCalls": 0,
+        "responseContains": ["公司代码"]
+      }
+    },
+    {
+      "id": "ap-missing-vendor",
+      "userQuery": "公司代码 1000 的应付有哪些",
+      "expected": {
+        "status": "clarification",
+        "missingParameters": ["vendor"],
+        "validateCalls": 0,
+        "executeCalls": 0,
+        "responseContains": ["供应商"]
+      }
+    }
+  ]
+}

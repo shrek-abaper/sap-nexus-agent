@@ -205,6 +205,9 @@ def test_discover_cards_projects_all_active_capabilities():
         "MM.PurchaseOrder.GetList",
         "MM.Material.GetInfo",
         "MM.PR.CreateDraft",
+        "SD.SalesOrder.GetList",
+        "FI.AR.GetOpenItems",
+        "FI.AP.GetOpenItems",
     }
 
 
@@ -276,7 +279,7 @@ def test_discover_cards_does_not_mutate_sources():
     _ = discover_cards(snapshot, sources)
     # sources remain frozen mappings; just ensure call is repeatable
     cards_again = discover_cards(snapshot, sources)
-    assert len(cards_again) == 4
+    assert len(cards_again) == 7
 
 
 def test_discover_cards_empty_sources_returns_empty():

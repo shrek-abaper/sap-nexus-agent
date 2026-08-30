@@ -79,7 +79,9 @@ MM.Inventory.GetAvailability
 
 当前 SAP Nexus 事实：
 
-- Active capability 共 3 个：`MM.Inventory.GetAvailability`、`MM.PurchaseOrder.GetList`、`MM.PR.CreateDraft`。
+- Active capability 共 7 个：`MM.Inventory.GetAvailability`、`MM.PurchaseOrder.GetList`、
+  `MM.Material.GetInfo`、`MM.PR.CreateDraft`、`SD.SalesOrder.GetList`、
+  `FI.AR.GetOpenItems`、`FI.AP.GetOpenItems`（6 个只读 + 1 个需人工审批的写入）。
 - Capability selector 仍是固定 `intent -> capabilityId` 闭集映射。
 - `CallPlan` 当前只承载单个 `capabilityId`，不是 DAG。
 - S1 已发布 `FactType`、`CapabilityRelation`、`GoalSpec`、`PlanGraph` 和四源 `RegistrySnapshot` schema/catalog，并实现 immutable graph、reachability 和 caller-authored PlanGraph deterministic validation。

@@ -220,6 +220,9 @@ def test_matcher_eval_routes_existing_files_through_legacy_path():
         "eval_harness_seed_cases.json",
         "pr_create_cases.json",
         "purchase_order_cases.json",
+        "sales_order_list_cases.yaml",
+        "ar_open_items_cases.yaml",
+        "ap_open_items_cases.yaml",
     ):
         summary = run_eval_file(REPO_ROOT / "evals" / filename)
         assert summary.failed == 0

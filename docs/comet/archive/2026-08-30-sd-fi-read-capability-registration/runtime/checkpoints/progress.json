@@ -1,0 +1,15 @@
+{
+  "schema": "comet.native.progress-checkpoint.v1",
+  "id": "d0bdadba-ae75-46c7-bec1-cbf04d936747",
+  "change": "sd-fi-read-capability-registration",
+  "phase": "build",
+  "previousRevision": 3,
+  "stateRevision": 4,
+  "summary": "Agent 侧完成：意图关键词消歧（PO 裸'订单'加 (?<!销售) 负向前视、SD/FI 去掉裸'订单'/'未清'）、7 处能力清单锁定测试更新、eval snapshot hash 轮转、reasoning_fact 新增 3 个 build_*_facts（共享 _build_row_facts）、orchestrator list 分支按 capabilityId 路由（_LIST_FACT_BUILDERS，未注册即 fail closed）、narrator 按 narrative.fieldMapping.row 泛化（未声明 fieldMapping 仍走 PO 原路径）。新增 agent/tests/test_sd_fi_read_facts.py 20 项。全量 agent 测试 1574 passed / 0 failed。",
+  "nextAction": "Task 5: Gateway InventoryAvailabilityExecutor 新增通用 TABLES 提取（按 outputMapping 表名、camelCase SAP 列名、不动 addMd04StockRowData）+ 单测；然后 Task 6 跑通 3 个新 eval 文件；Task 7 更新 docs/wiki 与 README 能力清单。",
+  "inputHash": "53780142f0fc8340573ac6b47dd0fa8a614985a2b9e970ad7fab3ef9af054b6c",
+  "manifestHash": "1ac4cae6c60ec091ebf923eb23aa69b968913e3722808f6c65fbc19153dc64db",
+  "manifestRef": "runtime/checkpoints/manifests/1ac4cae6c60ec091ebf923eb23aa69b968913e3722808f6c65fbc19153dc64db.json",
+  "artifactCount": 7,
+  "createdAt": "2026-08-30T11:44:18.575Z"
+}

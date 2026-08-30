@@ -2348,6 +2348,15 @@ def test_compiles_expected_immutable_producer_edges():
     assert result.graph.producers_by_fact_type["sapnexus:MaterialInfoFact"] == (
         "MM.Material.GetInfo",
     )
+    assert result.graph.producers_by_fact_type["sapnexus:SalesOrderListFact"] == (
+        "SD.SalesOrder.GetList",
+    )
+    assert result.graph.producers_by_fact_type["sapnexus:CustomerOpenItemsFact"] == (
+        "FI.AR.GetOpenItems",
+    )
+    assert result.graph.producers_by_fact_type["sapnexus:VendorOpenItemsFact"] == (
+        "FI.AP.GetOpenItems",
+    )
     # Asserted as full triples, not just relation types: T3 task 5.2 added the
     # system's FIRST `consumesFactType` edge, and a type-only tuple could not tell
     # a consumer edge pointing at the right Fact Type from one pointing anywhere.
@@ -2359,6 +2368,16 @@ def test_compiles_expected_immutable_producer_edges():
         for edge in result.graph.edges
     ) == (
         ("consumesFactType", "MM.PR.CreateDraft", "sapnexus:MaterialInfoFact"),
+        (
+            "producesFactType",
+            "FI.AP.GetOpenItems",
+            "sapnexus:VendorOpenItemsFact",
+        ),
+        (
+            "producesFactType",
+            "FI.AR.GetOpenItems",
+            "sapnexus:CustomerOpenItemsFact",
+        ),
         (
             "producesFactType",
             "MM.Inventory.GetAvailability",
@@ -2374,6 +2393,11 @@ def test_compiles_expected_immutable_producer_edges():
             "producesFactType",
             "MM.PurchaseOrder.GetList",
             "sapnexus:PurchaseOrderSupplyFact",
+        ),
+        (
+            "producesFactType",
+            "SD.SalesOrder.GetList",
+            "sapnexus:SalesOrderListFact",
         ),
     )
     with pytest.raises(TypeError):
@@ -2566,7 +2590,7 @@ def test_exact_duplicate_fact_type_reports_indexed_duplicate_id():
 
     result = build_semantic_contracts(sources)
 
-    _assert_fail_closed(result, (("/factTypes/4/factTypeId", "DUPLICATE_ID"),))
+    _assert_fail_closed(result, (("/factTypes/7/factTypeId", "DUPLICATE_ID"),))
 
 
 def test_exact_duplicate_relation_reports_id_and_semantic_edge_duplicates():
@@ -2627,7 +2651,7 @@ def test_mixed_exact_and_same_id_fact_type_duplicates_report_every_later_index()
         result,
         (
             ValidationIssue(
-                path="/factTypes/4/factTypeId",
+                path="/factTypes/7/factTypeId",
                 code="DUPLICATE_ID",
                 message=(
                     "duplicate factTypeId: "
@@ -2635,7 +2659,7 @@ def test_mixed_exact_and_same_id_fact_type_duplicates_report_every_later_index()
                 ),
             ),
             ValidationIssue(
-                path="/factTypes/5/factTypeId",
+                path="/factTypes/8/factTypeId",
                 code="DUPLICATE_ID",
                 message=(
                     "duplicate factTypeId: "
@@ -3557,10 +3581,10 @@ def _semantic_rule_sources(mutation):
 @pytest.mark.parametrize(
     ("mutation", "expected_path_codes"),
     [
-        ("duplicate-capability-id", (("/capabilities/4/capabilityId", "DUPLICATE_ID"),)),
-        ("duplicate-fact-type-id", (("/factTypes/4/factTypeId", "DUPLICATE_ID"),)),
+        ("duplicate-capability-id", (("/capabilities/7/capabilityId", "DUPLICATE_ID"),)),
+        ("duplicate-fact-type-id", (("/factTypes/7/factTypeId", "DUPLICATE_ID"),)),
         ("duplicate-relation-id", (("/relations/1/relationId", "DUPLICATE_ID"),)),
-        ("duplicate-binding-id", (("/bindings/4/bindingId", "DUPLICATE_ID"),)),
+        ("duplicate-binding-id", (("/bindings/7/bindingId", "DUPLICATE_ID"),)),
         (
             "binding-id-missing",
             (("/capabilities/0/executorBinding/bindingId", "SCHEMA_INVALID"),),

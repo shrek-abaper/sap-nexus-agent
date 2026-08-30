@@ -1,0 +1,587 @@
+{
+  "schema": "comet.native.implementation-scope.v2",
+  "contractHash": "9f0db727b6a0cf4fc76220ecfd62d4d02eeee9f7db789b936adcc18ea6144227",
+  "baselineProjectionRef": "runtime/evidence/snapshots/9f9ed7dcd54c69ed314554a3d6a6b99da288ca4d1895267960f25bf2b6c151c6.json",
+  "baselineProjectionHash": "9f9ed7dcd54c69ed314554a3d6a6b99da288ca4d1895267960f25bf2b6c151c6",
+  "currentProjectionRef": "runtime/evidence/snapshots/6b05f79efcb3082b4bb4f2803520954d22f3d2956ff480649d62e44f34fa0a3d.json",
+  "currentProjectionHash": "6b05f79efcb3082b4bb4f2803520954d22f3d2956ff480649d62e44f34fa0a3d",
+  "complete": true,
+  "declaredArtifacts": [
+    {
+      "path": "README.en.md",
+      "kind": "file"
+    },
+    {
+      "path": "README.md",
+      "kind": "file"
+    },
+    {
+      "path": "agent/sap_nexus_agent/narrator.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/sap_nexus_agent/orchestrator.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/sap_nexus_agent/reasoning_fact.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_capability_selector.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_contract_files.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_eval_runner.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_extraction_declarations.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_planner_capability_card.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_registry_loader.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_sd_fi_read_facts.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_semantic_planning_contract.py",
+      "kind": "file"
+    },
+    {
+      "path": "docs/wiki/sap-nexus-agent-openharness-semantic-orchestration.md",
+      "kind": "file"
+    },
+    {
+      "path": "evals/ap_open_items_cases.yaml",
+      "kind": "file"
+    },
+    {
+      "path": "evals/ar_open_items_cases.yaml",
+      "kind": "file"
+    },
+    {
+      "path": "evals/matcher_cases.yaml",
+      "kind": "file"
+    },
+    {
+      "path": "evals/sales_order_list_cases.yaml",
+      "kind": "file"
+    },
+    {
+      "path": "ontology/fact-types.yaml",
+      "kind": "file"
+    },
+    {
+      "path": "ontology/fi-ap-openitems.owl",
+      "kind": "file"
+    },
+    {
+      "path": "ontology/fi-ar-openitems.owl",
+      "kind": "file"
+    },
+    {
+      "path": "ontology/sd-salesorder.owl",
+      "kind": "file"
+    },
+    {
+      "path": "registry/README.md",
+      "kind": "file"
+    },
+    {
+      "path": "registry/capabilities.yaml",
+      "kind": "file"
+    },
+    {
+      "path": "registry/executor-bindings.yaml",
+      "kind": "file"
+    },
+    {
+      "path": "services/gateway/jco/src/main/java/com/sapnexus/gateway/jco/InventoryAvailabilityExecutor.java",
+      "kind": "file"
+    },
+    {
+      "path": "services/gateway/jco/src/test/java/com/sapnexus/gateway/jco/GenericTableExtractionTest.java",
+      "kind": "file"
+    }
+  ],
+  "changes": [
+    {
+      "path": "README.en.md",
+      "kind": "modified",
+      "before": {
+        "hash": "5fa124ee3664691f586960c86941b2b27820d025d278f0c9d4141897295c8f7f",
+        "size": 13816
+      },
+      "after": {
+        "hash": "5c988a95335be331ac58131c96d364777a715ed040ecac81b5367dac938b1892",
+        "size": 14569
+      },
+      "attributedTo": [
+        {
+          "path": "README.en.md",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "README.md",
+      "kind": "modified",
+      "before": {
+        "hash": "4b370af45af674d18c438989de9afc62778fd728fe5674bbb186b1275e5aa621",
+        "size": 11112
+      },
+      "after": {
+        "hash": "328f93ce63d4a5de130f46f42053dce290bd685f0f7dfa4f97a9203f2c54b92b",
+        "size": 11753
+      },
+      "attributedTo": [
+        {
+          "path": "README.md",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/sap_nexus_agent/narrator.py",
+      "kind": "modified",
+      "before": {
+        "hash": "bb680ad4bd6c5eaebb57e412041dee24c940aa8e061e37e09086237842cc1a98",
+        "size": 23923
+      },
+      "after": {
+        "hash": "a220b3a032c62887c442c927c839dfe6be4a58aab6fe68e5fabe319c5c12ad26",
+        "size": 28076
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/narrator.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/sap_nexus_agent/orchestrator.py",
+      "kind": "modified",
+      "before": {
+        "hash": "c6882af5e251507b6b3840bbf7bd6c7ea60ceb6a220eb9be08f0bedf4b2a0ffb",
+        "size": 83436
+      },
+      "after": {
+        "hash": "ea8d346e8c7c689b672199859b50f2e225fd310831202f2309dc2525b38c8aa0",
+        "size": 84652
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/orchestrator.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/sap_nexus_agent/reasoning_fact.py",
+      "kind": "modified",
+      "before": {
+        "hash": "0922721d427e8ec00bf70602204d13476751b366ab05758a7e7d7aed6a905dfc",
+        "size": 7893
+      },
+      "after": {
+        "hash": "8cfcc2786ba39fbd0d65a456dd4976d27e317eae606a173ede723ff3fc00a153",
+        "size": 13228
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/reasoning_fact.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_capability_selector.py",
+      "kind": "modified",
+      "before": {
+        "hash": "f7e3483050171850ffe421a12dddd5e163310f306e4600b2ad92755872f4044c",
+        "size": 39573
+      },
+      "after": {
+        "hash": "499751a104dbbc36b1a129fb9ec65aa7790eada589b7a8a2056d6b9a9f039cbf",
+        "size": 39573
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_capability_selector.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_contract_files.py",
+      "kind": "modified",
+      "before": {
+        "hash": "dfe1d91a24a771e43b2e0e01ea126b02f9ed62e70834ab7b654482351028f70c",
+        "size": 24144
+      },
+      "after": {
+        "hash": "f58a8359e945a30814c422877392cb85336865f63a28a22bb6ffe7feff7f22ff",
+        "size": 24741
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_contract_files.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_eval_runner.py",
+      "kind": "modified",
+      "before": {
+        "hash": "4725e2b25bf124c054c389a872100492e133cc38ae4601454d15d374316aa63d",
+        "size": 23698
+      },
+      "after": {
+        "hash": "53cb7160de25385edc5e70617300eb025ac60fabb29b7253a9193ce3699a1304",
+        "size": 23809
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_eval_runner.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_extraction_declarations.py",
+      "kind": "modified",
+      "before": {
+        "hash": "39a7373f615ff0d5a9f9c65b5121068b522b1b3fe46df523c85643d2bdff0d8d",
+        "size": 37093
+      },
+      "after": {
+        "hash": "ee1bbe51700d40cfab2d86076a9c43e0640015d22ca433d395f29b019cb03132",
+        "size": 37388
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_extraction_declarations.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_planner_capability_card.py",
+      "kind": "modified",
+      "before": {
+        "hash": "63efff17269c1b1aee120ac64de93c7bfd76e96b539f9f24aef87098fde68d01",
+        "size": 39354
+      },
+      "after": {
+        "hash": "7a808f4ae23d6673dec5b2215364cfc0a5692567f3c331911480e1a217d65162",
+        "size": 39447
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_planner_capability_card.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_registry_loader.py",
+      "kind": "modified",
+      "before": {
+        "hash": "2c76ef55797049efbf4ec6cd129582cd4b7138d93e3a0557a35ee88d3698a562",
+        "size": 9771
+      },
+      "after": {
+        "hash": "8d19f2cdb5f4e8ae5626aef5ec08a6e88c31392e0517dcfa4ffdd53c4b0d6337",
+        "size": 9864
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_registry_loader.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_sd_fi_read_facts.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "1018840af0056e7aaef2d790323a2748c2cdf43b9df35f97d178771b1e3c5ed9",
+        "size": 12292
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_sd_fi_read_facts.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_semantic_planning_contract.py",
+      "kind": "modified",
+      "before": {
+        "hash": "1e4e75f426dd9bc9a113ca7b96704d5e3c6e828348cd4fe0164da3e485c99f78",
+        "size": 132158
+      },
+      "after": {
+        "hash": "3b32b46425ba4d1eab4166a1d59e630aa2a230eef040e6767e2cbdfd47bac1a0",
+        "size": 132919
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_semantic_planning_contract.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "docs/wiki/sap-nexus-agent-openharness-semantic-orchestration.md",
+      "kind": "modified",
+      "before": {
+        "hash": "d1ebc09d90e17961548e57b61b088b75342f7e2375911aa13d11bb4ceb827c3c",
+        "size": 21336
+      },
+      "after": {
+        "hash": "84f0899493396bb30a80ce3e925ab8c7595eb2261e3e20d4df0441397113e1d8",
+        "size": 21487
+      },
+      "attributedTo": [
+        {
+          "path": "docs/wiki/sap-nexus-agent-openharness-semantic-orchestration.md",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "evals/ap_open_items_cases.yaml",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "c1659e89c80d048bfdc36fe78f3bd8c1a9b63414110ab30cd11117184dc634dc",
+        "size": 1677
+      },
+      "attributedTo": [
+        {
+          "path": "evals/ap_open_items_cases.yaml",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "evals/ar_open_items_cases.yaml",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "bf1e48517bdf32fb8df13337187ce8404bcdffe04f76257b7d1781945b39a756",
+        "size": 1672
+      },
+      "attributedTo": [
+        {
+          "path": "evals/ar_open_items_cases.yaml",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "evals/matcher_cases.yaml",
+      "kind": "modified",
+      "before": {
+        "hash": "577c559d38665104a7ab8c6522609a8519d03302c9f88423e3e82582235b8a9c",
+        "size": 27349
+      },
+      "after": {
+        "hash": "6ed3f6007b852d12edcf113bf6a5dde0374ff94badd1c7ff372ecb97d50cbd3b",
+        "size": 27349
+      },
+      "attributedTo": [
+        {
+          "path": "evals/matcher_cases.yaml",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "evals/sales_order_list_cases.yaml",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "a5613341719f23b01eef4e51dd30ac53fa57080b5009555bde2a236cad56cc7b",
+        "size": 2560
+      },
+      "attributedTo": [
+        {
+          "path": "evals/sales_order_list_cases.yaml",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "ontology/fact-types.yaml",
+      "kind": "modified",
+      "before": {
+        "hash": "88b2be3ce0cca44d1d4ff8b8fc2fe3da54d79800fa3e12ac0c70cac4b7bd9507",
+        "size": 5472
+      },
+      "after": {
+        "hash": "ee63d312c7804fde3a27c8f39489f11d873c3031327fdc2cbecdc8d75bf67679",
+        "size": 12988
+      },
+      "attributedTo": [
+        {
+          "path": "ontology/fact-types.yaml",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "ontology/fi-ap-openitems.owl",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "10e8c2b8a62b5bebf338de866e86e8aa6a393241f518cac196f1ede0c65d1f4e",
+        "size": 762
+      },
+      "attributedTo": [
+        {
+          "path": "ontology/fi-ap-openitems.owl",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "ontology/fi-ar-openitems.owl",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "694ed3073ef52b5c97548d96898961bc7fcdb8d4c59730a2804e5f720317303d",
+        "size": 1104
+      },
+      "attributedTo": [
+        {
+          "path": "ontology/fi-ar-openitems.owl",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "ontology/sd-salesorder.owl",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "8d8cb4192c3cc3c5b20ab8f9a3c688b48fe96bbe34cd7a5764da80fc08fcf22f",
+        "size": 1163
+      },
+      "attributedTo": [
+        {
+          "path": "ontology/sd-salesorder.owl",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "registry/README.md",
+      "kind": "modified",
+      "before": {
+        "hash": "1ee846a84b0693dd941a836f68786b201f495aaf9e7585e554e0ba1f2dba09c6",
+        "size": 1521
+      },
+      "after": {
+        "hash": "92b22437436661bab5668f94f010199e7e97cd5369c7ed415b871bbdb1286edf",
+        "size": 2285
+      },
+      "attributedTo": [
+        {
+          "path": "registry/README.md",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "registry/capabilities.yaml",
+      "kind": "modified",
+      "before": {
+        "hash": "1eebab0e9ddf4753afe54c5d7f3b976a63636bc11115838368366fe8bf22550f",
+        "size": 20319
+      },
+      "after": {
+        "hash": "38db1f2f9beeb5e4c9c3fdbc984be1f68d8d7c4ff8ee067338dce5c088c1a906",
+        "size": 34013
+      },
+      "attributedTo": [
+        {
+          "path": "registry/capabilities.yaml",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "registry/executor-bindings.yaml",
+      "kind": "modified",
+      "before": {
+        "hash": "e024738011c1fdd84b1099a7a33dd1d0225b621105d8b5b3c7878159f14e0793",
+        "size": 1851
+      },
+      "after": {
+        "hash": "87b4d7c1486e3411f44df0c2fb378f9756464bc670c8a3311bb68089daa76a07",
+        "size": 3454
+      },
+      "attributedTo": [
+        {
+          "path": "registry/executor-bindings.yaml",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "services/gateway/jco/src/main/java/com/sapnexus/gateway/jco/InventoryAvailabilityExecutor.java",
+      "kind": "modified",
+      "before": {
+        "hash": "b7fa97501516d29af225d20b9dd13b395d5209380536dcb8dbe789f4d7637f3d",
+        "size": 13873
+      },
+      "after": {
+        "hash": "f830399e0f1e09b5c011a77472f85d3116f0f0cd3937dd585545c32153cfddea",
+        "size": 17664
+      },
+      "attributedTo": [
+        {
+          "path": "services/gateway/jco/src/main/java/com/sapnexus/gateway/jco/InventoryAvailabilityExecutor.java",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "services/gateway/jco/src/test/java/com/sapnexus/gateway/jco/GenericTableExtractionTest.java",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "7f3539eed2cbf631960a8a03d8d93537d4470d2b4859af8f5971764935d863b7",
+        "size": 19933
+      },
+      "attributedTo": [
+        {
+          "path": "services/gateway/jco/src/test/java/com/sapnexus/gateway/jco/GenericTableExtractionTest.java",
+          "kind": "file"
+        }
+      ]
+    }
+  ],
+  "unattributed": [],
+  "unresolvedScopes": [],
+  "noCodeReason": null,
+  "scopeHash": "95becaa022687d3eb837f1767c42ed3b77e12affc2af86f5c914156615377994"
+}

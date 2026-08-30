@@ -10,6 +10,53 @@ valueTypes:
       the container output `purchaseOrders`); this is that item's number. No
       capability takes or returns it as a top-level parameter, so it is declared
       here rather than in a capability signature.
+  - id: sapnexus:SalesOrderNumber
+    description: >-
+      Number of a sales order document (SD_DOC). Distinct from
+      sapnexus:SalesOrderItem, which is the item itself (the semantic type of the
+      container output `salesOrders`); this is the document's number. No
+      capability takes or returns it as a top-level parameter.
+  - id: sapnexus:SalesOrderDocumentType
+    description: >-
+      Sales document type of a sales order (DOC_TYPE, e.g. OR for a standard
+      order). Appears only as a field of the sales order list Fact.
+  - id: sapnexus:NetValue
+    description: >-
+      Net value of a sales order document in its document currency (NET_VALUE).
+      Distinct from sapnexus:Amount, which is an accounting line-item amount.
+  - id: sapnexus:CustomerPoNumber
+    description: >-
+      The customer's own purchase order number as recorded on a sales order
+      (PURCH_NO_C). It identifies the document on the customer's side, so it is
+      not a sapnexus:PurchaseOrderNumber in this system.
+  - id: sapnexus:Currency
+    description: >-
+      ISO currency key qualifying a monetary value (CURRENCY). Shared by the
+      sales order net value and the AR/AP open item amounts.
+  - id: sapnexus:AccountingDocumentNumber
+    description: >-
+      Number of an FI accounting document carrying an open item (DOC_NO).
+      Distinct from sapnexus:SalesOrderNumber and
+      sapnexus:PurchaseOrderNumber: those are logistics documents, this is the
+      accounting document the open item is posted on.
+  - id: sapnexus:PostingDate
+    description: >-
+      Date an accounting document was posted (PSTNG_DATE). Distinct from
+      sapnexus:DocumentDate, which is the date on the document itself.
+  - id: sapnexus:Amount
+    description: >-
+      Amount of an accounting line item in document currency (AMT_DOCCUR).
+      Always read together with sapnexus:Currency; an amount without its
+      currency is not a business fact.
+  - id: sapnexus:NetDueDate
+    description: >-
+      Baseline date for the payment terms of an open item (BLINE_DATE), from
+      which its due date is derived.
+  - id: sapnexus:ClearingDate
+    description: >-
+      Date an item was cleared (CLEAR_DATE). Blank on an open item, so it is
+      declared optional on both open-item Fact Types and carries the evidence
+      that the item is still open.
 factTypes:
   - factTypeId: sapnexus:InventoryAvailabilityFact
     name: Inventory Availability Fact
@@ -133,3 +180,147 @@ factTypes:
         cardinality: one
         optional: false
         description: Number of the created purchase requisition.
+  - factTypeId: sapnexus:SalesOrderListFact
+    name: Sales Order List Fact
+    description: Sales order list items (VA05-style) for a customer, sales organization, material, or document date filter.
+    businessObject: SalesOrder
+    predicate: sapnexus:hasSalesOrderList
+    semanticType: sapnexus:SalesOrderList
+    keyedBy:
+      - sapnexus:SalesOrderNumber
+    fields:
+      - name: salesOrderNumber
+        semanticType: sapnexus:SalesOrderNumber
+        cardinality: many
+        optional: false
+        description: Sales order document number (SD_DOC).
+      - name: documentType
+        semanticType: sapnexus:SalesOrderDocumentType
+        cardinality: many
+        optional: true
+        description: Sales document type (DOC_TYPE).
+      - name: documentDate
+        semanticType: sapnexus:DocumentDate
+        cardinality: many
+        optional: true
+        description: Sales document date (DOC_DATE).
+      - name: soldTo
+        semanticType: sapnexus:CustomerNumber
+        cardinality: many
+        optional: true
+        description: Sold-to customer number (SOLD_TO).
+      - name: material
+        semanticType: sapnexus:MaterialNumber
+        cardinality: many
+        optional: true
+        description: Material of the order item (MATERIAL).
+      - name: netValue
+        semanticType: sapnexus:NetValue
+        cardinality: many
+        optional: true
+        description: Net order value (NET_VALUE).
+      - name: currency
+        semanticType: sapnexus:Currency
+        cardinality: many
+        optional: true
+        description: Currency of the net value (CURRENCY).
+      - name: salesOrg
+        semanticType: sapnexus:SalesOrganization
+        cardinality: many
+        optional: true
+        description: Sales organization (SALES_ORG).
+      - name: customerPoNumber
+        semanticType: sapnexus:CustomerPoNumber
+        cardinality: many
+        optional: true
+        description: Customer purchase order number (PURCH_NO_C).
+  - factTypeId: sapnexus:CustomerOpenItemsFact
+    name: Customer Open Items Fact
+    description: Customer (accounts receivable) open items for a company code as of a key date.
+    businessObject: CustomerOpenItem
+    predicate: sapnexus:hasCustomerOpenItems
+    semanticType: sapnexus:CustomerOpenItems
+    keyedBy:
+      - sapnexus:CustomerNumber
+      - sapnexus:CompanyCode
+    fields:
+      - name: documentNumber
+        semanticType: sapnexus:AccountingDocumentNumber
+        cardinality: many
+        optional: false
+        description: Accounting document number (DOC_NO).
+      - name: documentDate
+        semanticType: sapnexus:DocumentDate
+        cardinality: many
+        optional: true
+        description: Document date (DOC_DATE).
+      - name: postingDate
+        semanticType: sapnexus:PostingDate
+        cardinality: many
+        optional: true
+        description: Posting date (PSTNG_DATE).
+      - name: amount
+        semanticType: sapnexus:Amount
+        cardinality: many
+        optional: true
+        description: Amount in document currency (AMT_DOCCUR).
+      - name: currency
+        semanticType: sapnexus:Currency
+        cardinality: many
+        optional: true
+        description: Document currency (CURRENCY).
+      - name: netDueDate
+        semanticType: sapnexus:NetDueDate
+        cardinality: many
+        optional: true
+        description: Net due date basis (BLINE_DATE).
+      - name: clearingDate
+        semanticType: sapnexus:ClearingDate
+        cardinality: many
+        optional: true
+        description: Clearing date, blank while still open (CLEAR_DATE).
+  - factTypeId: sapnexus:VendorOpenItemsFact
+    name: Vendor Open Items Fact
+    description: Vendor (accounts payable) open items for a company code as of a key date.
+    businessObject: VendorOpenItem
+    predicate: sapnexus:hasVendorOpenItems
+    semanticType: sapnexus:VendorOpenItems
+    keyedBy:
+      - sapnexus:Supplier
+      - sapnexus:CompanyCode
+    fields:
+      - name: documentNumber
+        semanticType: sapnexus:AccountingDocumentNumber
+        cardinality: many
+        optional: false
+        description: Accounting document number (DOC_NO).
+      - name: documentDate
+        semanticType: sapnexus:DocumentDate
+        cardinality: many
+        optional: true
+        description: Document date (DOC_DATE).
+      - name: postingDate
+        semanticType: sapnexus:PostingDate
+        cardinality: many
+        optional: true
+        description: Posting date (PSTNG_DATE).
+      - name: amount
+        semanticType: sapnexus:Amount
+        cardinality: many
+        optional: true
+        description: Amount in document currency (AMT_DOCCUR).
+      - name: currency
+        semanticType: sapnexus:Currency
+        cardinality: many
+        optional: true
+        description: Document currency (CURRENCY).
+      - name: netDueDate
+        semanticType: sapnexus:NetDueDate
+        cardinality: many
+        optional: true
+        description: Net due date basis (BLINE_DATE).
+      - name: clearingDate
+        semanticType: sapnexus:ClearingDate
+        cardinality: many
+        optional: true
+        description: Clearing date, blank while still open (CLEAR_DATE).

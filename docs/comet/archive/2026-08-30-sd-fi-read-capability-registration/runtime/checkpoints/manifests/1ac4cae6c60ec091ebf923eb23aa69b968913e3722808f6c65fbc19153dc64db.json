@@ -1,0 +1,42 @@
+{
+  "schema": "comet.native.checkpoint-manifest.v1",
+  "change": "sd-fi-read-capability-registration",
+  "artifacts": [
+    {
+      "path": "agent/sap_nexus_agent/narrator.py",
+      "hash": "a220b3a032c62887c442c927c839dfe6be4a58aab6fe68e5fabe319c5c12ad26",
+      "size": 28076
+    },
+    {
+      "path": "agent/sap_nexus_agent/orchestrator.py",
+      "hash": "ea8d346e8c7c689b672199859b50f2e225fd310831202f2309dc2525b38c8aa0",
+      "size": 84652
+    },
+    {
+      "path": "agent/sap_nexus_agent/reasoning_fact.py",
+      "hash": "8cfcc2786ba39fbd0d65a456dd4976d27e317eae606a173ede723ff3fc00a153",
+      "size": 13228
+    },
+    {
+      "path": "agent/tests/test_sd_fi_read_facts.py",
+      "hash": "797428d6172475e9af1990f796676eaa179719551df0362b7d72ed480dfa802a",
+      "size": 12129
+    },
+    {
+      "path": "evals/matcher_cases.yaml",
+      "hash": "6ed3f6007b852d12edcf113bf6a5dde0374ff94badd1c7ff372ecb97d50cbd3b",
+      "size": 27349
+    },
+    {
+      "path": "ontology/fact-types.yaml",
+      "hash": "ee63d312c7804fde3a27c8f39489f11d873c3031327fdc2cbecdc8d75bf67679",
+      "size": 12988
+    },
+    {
+      "path": "registry/capabilities.yaml",
+      "hash": "38db1f2f9beeb5e4c9c3fdbc984be1f68d8d7c4ff8ee067338dce5c088c1a906",
+      "size": 34013
+    }
+  ],
+  "totalBytes": 212435
+}

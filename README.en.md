@@ -101,7 +101,14 @@ User Query (natural language)
 | ------------------------------ | ------------------------------ | --------- | ------------------------------- | ---------------------------- |
 | `MM.Inventory.GetAvailability` | Stock/Requirements List (MD04) | `JCO_RFC` | `BAPI_MATERIAL_STOCK_REQ_LIST`  | ✅ active                     |
 | `MM.PurchaseOrder.GetList`     | Purchase Order List            | `ODATA`   | `API_PURCHASEORDER_PROCESS_SRV` | ✅ active                     |
+| `MM.Material.GetInfo`          | Material Info (base UoM / purchasing group) | `JCO_RFC` | `BAPI_MATERIAL_GET_DETAIL` | ✅ active            |
 | `MM.PR.CreateDraft`            | PR Create Draft                | `JCO_RFC` | `BAPI_PR_CREATE`                | ✅ active (requires approval) |
+| `SD.SalesOrder.GetList`        | Sales Order List (VA05-style)  | `JCO_RFC` | `BAPI_SALESORDER_GETLIST`       | ✅ active                     |
+| `FI.AR.GetOpenItems`           | Customer Open Items            | `JCO_RFC` | `BAPI_AR_ACC_GETOPENITEMS`      | ✅ active                     |
+| `FI.AP.GetOpenItems`           | Vendor Open Items              | `JCO_RFC` | `BAPI_AP_ACC_GETOPENITEMS`      | ✅ active                     |
+
+7 capabilities: 6 read-only (`kind: Function`, `sideEffect: none`) plus one write
+(`MM.PR.CreateDraft`), which cannot execute without a recorded human confirmation.
 
 ---
 

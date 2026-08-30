@@ -1,0 +1,61 @@
+{
+  "cases": [
+    {
+      "id": "ar-happy-path",
+      "userQuery": "查客户 1000 在公司代码 1000 的应收",
+      "gateway": {
+        "execute": {
+          "traceId": "gw-ar-happy",
+          "capabilityId": "FI.AR.GetOpenItems",
+          "success": true,
+          "executor": {"type": "JCO_RFC", "rfcName": "BAPI_AR_ACC_GETOPENITEMS"},
+          "returnMessages": [],
+          "data": {
+            "openItems": [
+              {
+                "docNo": "1400000001",
+                "docDate": "20260101",
+                "pstngDate": "20260102",
+                "amtDoccur": "5000.00",
+                "currency": "CNY",
+                "blineDate": "20260201",
+                "clearDate": ""
+              }
+            ]
+          },
+          "durationMs": 10,
+          "errorType": "NONE"
+        }
+      },
+      "expected": {
+        "status": "success",
+        "capabilityId": "FI.AR.GetOpenItems",
+        "validateCalls": 1,
+        "executeCalls": 1,
+        "responseContains": ["1400000001", "5000.00"]
+      }
+    },
+    {
+      "id": "ar-missing-company-code",
+      "userQuery": "查客户 1000 的应收",
+      "expected": {
+        "status": "clarification",
+        "missingParameters": ["companyCode"],
+        "validateCalls": 0,
+        "executeCalls": 0,
+        "responseContains": ["公司代码"]
+      }
+    },
+    {
+      "id": "ar-missing-customer",
+      "userQuery": "公司代码 1000 的应收有哪些",
+      "expected": {
+        "status": "clarification",
+        "missingParameters": ["customer"],
+        "validateCalls": 0,
+        "executeCalls": 0,
+        "responseContains": ["客户"]
+      }
+    }
+  ]
+}

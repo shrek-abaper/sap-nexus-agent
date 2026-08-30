@@ -72,3 +72,52 @@ bindings:
     constraints:
       sideEffect: sap_write
       timeoutMs: 30000
+  - bindingId: sap.sd.salesorder.getlist
+    type: JCO_RFC
+    rfcName: BAPI_SALESORDER_GETLIST
+    # Field-level signature confirmed 2026-08-30 via public SAP object catalogs
+    # (sapdatasheet.org mirror of the SE37 signature): FM BAPI_SALESORDER_GETLIST,
+    # row structure BAPIORDERS for the SALES_ORDERS table.
+    allowedImports:
+      - CUSTOMER_NUMBER
+      - SALES_ORGANIZATION
+      - MATERIAL
+      - DOCUMENT_DATE
+    allowedOutputs:
+      - SALES_ORDERS
+      - RETURN
+    constraints:
+      sideEffect: none
+      timeoutMs: 30000
+  - bindingId: sap.fi.ar.get-open-items
+    type: JCO_RFC
+    rfcName: BAPI_AR_ACC_GETOPENITEMS
+    # Field-level signature confirmed 2026-08-30 via public SAP object catalogs
+    # (sapdatasheet.org mirror of the SE37 signature): FM BAPI_AR_ACC_GETOPENITEMS,
+    # row structure BAPI3007_2. The returned table is LINEITEMS, not OPENITEMS.
+    allowedImports:
+      - CUSTOMER
+      - COMPANYCODE
+      - KEYDATE
+    allowedOutputs:
+      - LINEITEMS
+      - RETURN
+    constraints:
+      sideEffect: none
+      timeoutMs: 30000
+  - bindingId: sap.fi.ap.get-open-items
+    type: JCO_RFC
+    rfcName: BAPI_AP_ACC_GETOPENITEMS
+    # Field-level signature confirmed 2026-08-30 via public SAP object catalogs
+    # (sapdatasheet.org mirror of the SE37 signature): FM BAPI_AP_ACC_GETOPENITEMS,
+    # row structure BAPI3008_2. The returned table is LINEITEMS, not OPENITEMS.
+    allowedImports:
+      - VENDOR
+      - COMPANYCODE
+      - KEYDATE
+    allowedOutputs:
+      - LINEITEMS
+      - RETURN
+    constraints:
+      sideEffect: none
+      timeoutMs: 30000

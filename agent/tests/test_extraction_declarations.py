@@ -478,8 +478,15 @@ def test_po_declaration_parity_constants():
     intent = cap["intent"]
     assert intent["intentName"] == "purchase_order_list"
     assert intent["primaryKeywords"] == ["采购订单"]
-    assert intent["weakKeywords"] == ["订单", r"(?<![A-Za-z])PO(?![A-Za-z])", "采购"]
-    assert intent["triggerKeywords"] == ["采购订单", "订单", r"(?<![A-Za-z])PO(?![A-Za-z])"]
+    # The bare 订单 keyword carries a negative lookbehind since SD.SalesOrder.GetList
+    # was registered: 销售订单 is a sales document, so an unqualified 订单 stays with
+    # PO but a qualified 销售订单 no longer triggers it.
+    assert intent["weakKeywords"] == [
+        r"(?<!销售)订单", r"(?<![A-Za-z])PO(?![A-Za-z])", "采购",
+    ]
+    assert intent["triggerKeywords"] == [
+        "采购订单", r"(?<!销售)订单", r"(?<![A-Za-z])PO(?![A-Za-z])",
+    ]
     assert intent["requireAny"] == {
         "inputs": ["poNumber", "vendor", "plant", "material"], "missingName": "filter",
     }

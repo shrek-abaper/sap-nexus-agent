@@ -1,0 +1,45 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "sd-fi-read-capability-registration",
+    "sourceRevision": 5,
+    "contractHash": "9f0db727b6a0cf4fc76220ecfd62d4d02eeee9f7db789b936adcc18ea6144227",
+    "scopeHash": "95becaa022687d3eb837f1767c42ed3b77e12affc2af86f5c914156615377994",
+    "snapshotHash": "6b05f79efcb3082b4bb4f2803520954d22f3d2956ff480649d62e44f34fa0a3d",
+    "artifactHash": "708a393fcad719ca46551ff49c1fa2ee0e7960f17bf79c0426e274bc68226226"
+  },
+  "acceptanceIds": [
+    "acceptance-ce6be8d406ab15f72b3de30f59916789b2fef1f17cf46e744ea71597c554e918"
+  ],
+  "actor": "native-runtime:command:scripts/comet-verify-gateway.sh",
+  "issuedAt": "2026-08-30T12:11:12.342Z",
+  "evidence": {
+    "executable": "scripts/comet-verify-gateway.sh",
+    "args": [],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 1200000,
+    "startedAt": "2026-08-30T12:11:00.469Z",
+    "endedAt": "2026-08-30T12:11:12.342Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "fba4afc5071c01712803a632c5b0cf49af763fd7",
+      "afterCommit": "fba4afc5071c01712803a632c5b0cf49af763fd7"
+    },
+    "afterFence": {
+      "snapshotHash": "6b05f79efcb3082b4bb4f2803520954d22f3d2956ff480649d62e44f34fa0a3d",
+      "scopeHash": "95becaa022687d3eb837f1767c42ed3b77e12affc2af86f5c914156615377994",
+      "matched": true
+    },
+    "outputHash": "28303e0679199b9e30cd3b5bc01da0619f290284966b0e519ae9a1259372b874",
+    "outputSummary": "To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.8/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.\nDaemon will be stopped at the end of the build \n> Task :core:compileJava UP-TO-DATE\n> Task :core:processResources NO-SOURCE\n> Task :core:classes UP-TO-DATE\n> Task :core:jar UP-TO-DATE\n> Task :jco:compileJava UP-TO-DATE\n> Task :jco:processResources NO-SOURCE\n> Task :jco:classes UP-TO-DATE\n> Task :jco:jar UP-TO-DATE\n> Task :odata:compileJava UP-TO-DATE\n> Task :odata:processResources NO-SOURCE\n> Task :odata:classes UP-TO-DATE\n> Task :odata:jar UP-TO-DATE\n> Task :app:compileJava UP-TO-DATE\n> Task :app:processResources UP-TO-DATE\n> Task :app:classes UP-TO-DATE\n> Task :app:compileTestJava UP-TO-DATE\n> Task :app:processTestResources NO-SOURCE\n> Task :app:testClasses UP-TO-DATE\n> Task :app:test UP-TO-DATE\n> Task :core:compileTestJava UP-TO-DATE\n> Task :core:processTestResources NO-SOURCE\n> Task :core:testClasses UP-TO-DATE\n> Task :core:test UP-TO-DATE\n> Task :jco:compileTestJava UP-TO-DATE\n> Task :jco:processTestResources NO-SOURCE\n> Task :jco:testClasses UP-TO-DATE\n> Task :jco:test UP-TO-DATE\n> Task :odata:compileTestJava UP-TO-DATE\n> Task :odata:processTestResources NO-SOURCE\n> Task :odata:testClasses UP-TO-DATE\n> Task :odata:test UP-TO-DATE\n\nBUILD SUCCESSFUL in 11s\n16 actionable tasks: 16 up-to-date",
+    "outputTruncated": false
+  },
+  "receiptHash": "d894db78a07d0a22adf9fa6c3dfda9132d33003c75b15602e81e86b7c3090512"
+}

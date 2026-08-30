@@ -1,0 +1,19 @@
+{
+  "schema": "comet.native.transaction.v2",
+  "id": "e562b086-db8f-41c8-869e-330c2b9ab8ee",
+  "kind": "archive",
+  "status": "committed",
+  "change": "sd-fi-read-capability-registration",
+  "createdAt": "2026-08-30T12:13:33.177Z",
+  "preflightHash": "32ca5ceabc95aa8e06a4cd71f8dd3ed7d534d55260caa2fea59e59da8c3cc4cd",
+  "operations": [
+    {
+      "id": "archive-change",
+      "type": "move",
+      "source": "changes/sd-fi-read-capability-registration",
+      "target": "archive/2026-08-30-sd-fi-read-capability-registration",
+      "expectedSourceHash": "d26effe9827ff85a18305e64d2ed6e8accf6dbc618131cf8e5e999e2ca00e757",
+      "expectedTargetHash": null
+    }
+  ]
+}

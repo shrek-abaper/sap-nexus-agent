@@ -1,0 +1,53 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "static-inspection",
+  "role": "required-check",
+  "status": "passed",
+  "bindings": {
+    "change": "sd-fi-read-capability-registration",
+    "sourceRevision": 5,
+    "contractHash": "9f0db727b6a0cf4fc76220ecfd62d4d02eeee9f7db789b936adcc18ea6144227",
+    "scopeHash": "95becaa022687d3eb837f1767c42ed3b77e12affc2af86f5c914156615377994",
+    "snapshotHash": "6b05f79efcb3082b4bb4f2803520954d22f3d2956ff480649d62e44f34fa0a3d",
+    "artifactHash": "708a393fcad719ca46551ff49c1fa2ee0e7960f17bf79c0426e274bc68226226"
+  },
+  "acceptanceIds": [],
+  "actor": "native-runtime:scoped-text-safety",
+  "issuedAt": "2026-08-30T12:13:01.450Z",
+  "evidence": {
+    "subjects": [
+      "README.en.md",
+      "README.md",
+      "agent/sap_nexus_agent/narrator.py",
+      "agent/sap_nexus_agent/orchestrator.py",
+      "agent/sap_nexus_agent/reasoning_fact.py",
+      "agent/tests/test_capability_selector.py",
+      "agent/tests/test_contract_files.py",
+      "agent/tests/test_eval_runner.py",
+      "agent/tests/test_extraction_declarations.py",
+      "agent/tests/test_planner_capability_card.py",
+      "agent/tests/test_registry_loader.py",
+      "agent/tests/test_sd_fi_read_facts.py",
+      "agent/tests/test_semantic_planning_contract.py",
+      "docs/wiki/sap-nexus-agent-openharness-semantic-orchestration.md",
+      "evals/ap_open_items_cases.yaml",
+      "evals/ar_open_items_cases.yaml",
+      "evals/matcher_cases.yaml",
+      "evals/sales_order_list_cases.yaml",
+      "ontology/fact-types.yaml",
+      "ontology/fi-ap-openitems.owl",
+      "ontology/fi-ar-openitems.owl",
+      "ontology/sd-salesorder.owl",
+      "registry/README.md",
+      "registry/capabilities.yaml",
+      "registry/executor-bindings.yaml",
+      "services/gateway/jco/src/main/java/com/sapnexus/gateway/jco/InventoryAvailabilityExecutor.java",
+      "services/gateway/jco/src/test/java/com/sapnexus/gateway/jco/GenericTableExtractionTest.java"
+    ],
+    "rule": "scoped-text-safety",
+    "resultSummary": "The built-in scoped inspection passed without skipped or blocking input.",
+    "checkReceiptRef": "runtime/evidence/check-receipts/1d8e1914d9aa4a95b1747162d864ce12900c2870a28d601b47a4f0b8273854ec.json",
+    "checkReceiptHash": "1d8e1914d9aa4a95b1747162d864ce12900c2870a28d601b47a4f0b8273854ec"
+  },
+  "receiptHash": "765f077395407f40666b66752632b59c9299af22f322908c5bcc25cfbdcbe39c"
+}

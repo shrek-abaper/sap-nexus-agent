@@ -120,10 +120,13 @@ def test_registry_v2_metadata_does_not_change_runtime_descriptors():
     catalog = load_intent_catalog(str(REPO_ROOT))
 
     assert tuple(sorted(catalog.capability_ids)) == (
+        "FI.AP.GetOpenItems",
+        "FI.AR.GetOpenItems",
         "MM.Inventory.GetAvailability",
         "MM.Material.GetInfo",
         "MM.PR.CreateDraft",
         "MM.PurchaseOrder.GetList",
+        "SD.SalesOrder.GetList",
     )
     inventory = catalog.find("MM.Inventory.GetAvailability")
     assert inventory is not None

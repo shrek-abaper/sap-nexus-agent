@@ -348,13 +348,23 @@ def test_capability_schema_accepts_current_registry_input_patterns():
     # Input patterns in registry order: GetAvailability.plant, GetList.vendor
     # (added with the sanitized/real vendor-code shape fix), GetList.plant,
     # Material.GetInfo.plant (T3 task 5.2, same plantCode shape),
-    # PR.CreateDraft.plant (B1.5, aligned with plantCode).
+    # PR.CreateDraft.plant (B1.5, aligned with plantCode), then the SD/FI read
+    # capabilities: SalesOrder.GetList.customerNumber/salesOrganization,
+    # AR.GetOpenItems.customer/companyCode, AP.GetOpenItems.vendor/companyCode.
+    # Customer and vendor numbers share the 1-10 shape; sales organization and
+    # company code share the 1-4 organizational-key shape.
     assert patterns == [
         "^[A-Z0-9]{4}$",
         "^[A-Z0-9]{1,10}$",
         "^[A-Z0-9]{4}$",
         "^[A-Z0-9]{4}$",
         "^[A-Z0-9]{4}$",
+        "^[A-Z0-9]{1,10}$",
+        "^[A-Z0-9]{1,4}$",
+        "^[A-Z0-9]{1,10}$",
+        "^[A-Z0-9]{1,4}$",
+        "^[A-Z0-9]{1,10}$",
+        "^[A-Z0-9]{1,4}$",
     ]
 
 
@@ -390,6 +400,9 @@ def test_initial_fact_type_and_relation_catalogs_validate():
         "sapnexus:PurchaseOrderSupplyFact",
         "sapnexus:MaterialInfoFact",
         "sapnexus:PurchaseRequisitionCreatedFact",
+        "sapnexus:SalesOrderListFact",
+        "sapnexus:CustomerOpenItemsFact",
+        "sapnexus:VendorOpenItemsFact",
     }
     assert relations == {"version": 2, "relations": []}
 

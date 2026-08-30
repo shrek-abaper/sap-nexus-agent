@@ -190,12 +190,12 @@ capabilities:
       primaryKeywords:
         - '采购订单'
       weakKeywords:
-        - '订单'
+        - '(?<!销售)订单'
         - '(?<![A-Za-z])PO(?![A-Za-z])'
         - '采购'
       triggerKeywords:
         - '采购订单'
-        - '订单'
+        - '(?<!销售)订单'
         - '(?<![A-Za-z])PO(?![A-Za-z])'
       fieldNames:
         zh-CN:
@@ -681,4 +681,444 @@ capabilities:
       fallbackTemplate: pr-create-receipt
       fieldMapping:
         receiptId: prNumber
+      detailFormatter: none
+  - capabilityId: SD.SalesOrder.GetList
+    name: Sales Order List
+    description: Read a VA05-style list of sales orders filtered by customer, sales organization, material, or document date through BAPI_SALESORDER_GETLIST.
+    status: active
+    kind: Function
+    domain: SD
+    businessObject: SalesOrder
+    ontologyIri: sapnexus:SD_SalesOrder_GetList
+    semanticType: sapnexus:SalesOrderListReadFunction
+    aliases:
+      - 销售订单查询
+      - VA05查询
+      - 订单列表
+    examples:
+      - 查客户 1000 的销售订单
+      - VA05 查询销售组织 1000 最近的订单
+    intent:
+      intentName: sales_order_list
+      primaryKeywords:
+        - '销售订单'
+        - 'VA05'
+      # No bare '订单' keyword: MM.PurchaseOrder.GetList already owns it, and an
+      # unqualified 订单 does not say sales or purchasing. Triggering defaults to
+      # primaryKeywords, so SD only fires on the qualified term.
+      fieldNames:
+        zh-CN:
+          customerNumber: 客户号
+          salesOrganization: 销售组织
+          material: 物料
+          documentDate: 单据日期
+      requireAny:
+        inputs:
+          - customerNumber
+          - salesOrganization
+          - material
+          - documentDate
+        missingName: filter
+      clarifyPrompt:
+        zh-CN:
+          cases:
+            - missing:
+                - filter
+              text: '请至少提供一个过滤条件（客户号、销售组织、物料或单据日期）。'
+    inputs:
+      - name: customerNumber
+        semanticName: customerNumber
+        semanticType: sapnexus:CustomerNumber
+        bindingKind: identifier
+        required: false
+        type: string
+        minLength: 1
+        maxLength: 10
+        pattern: '^[A-Z0-9]{1,10}$'
+        sapParameter: CUSTOMER_NUMBER
+        binding:
+          priority: 40
+          resolver: text
+          sources:
+            - kind: userUtterance
+              matchers:
+                - kind: regex
+                  pattern: '客户(?:\s|是|为|编号|号|:|：)*([A-Z0-9]{1,10})'
+      - name: salesOrganization
+        semanticName: salesOrganization
+        semanticType: sapnexus:SalesOrganization
+        bindingKind: identifier
+        required: false
+        type: string
+        minLength: 1
+        maxLength: 4
+        pattern: '^[A-Z0-9]{1,4}$'
+        sapParameter: SALES_ORGANIZATION
+        binding:
+          priority: 30
+          resolver: text
+          sources:
+            - kind: userUtterance
+              matchers:
+                - kind: regex
+                  pattern: '销售组织(?:\s|是|为|编号|号|:|：)*([A-Z0-9]{1,4})'
+      - name: material
+        semanticName: materialNumber
+        semanticType: sapnexus:MaterialNumber
+        bindingKind: identifier
+        required: false
+        type: string
+        minLength: 1
+        maxLength: 40
+        sapParameter: MATERIAL
+        binding:
+          priority: 20
+          resolver: text
+          sources:
+            - kind: userUtterance
+              matchers:
+                - kind: semanticType
+                  ref: MaterialNumber
+      - name: documentDate
+        semanticName: documentDateFrom
+        semanticType: sapnexus:DocumentDate
+        bindingKind: identifier
+        required: false
+        type: string
+        sapParameter: DOCUMENT_DATE
+        binding:
+          priority: 15
+          resolver: date
+          sources:
+            - kind: userUtterance
+              matchers:
+                - kind: regex
+                  pattern: '(\d{4}-\d{2}-\d{2})'
+                - kind: regex
+                  pattern: '(?<!\d)(\d{8})(?!\d)'
+    outputs:
+      - name: salesOrders
+        semanticType: sapnexus:SalesOrderItem
+        type: array
+        evidenceRole: primaryFact
+        factTypeRef: sapnexus:SalesOrderListFact
+      - name: returnMessages
+        semanticType: sapnexus:SapReturnMessage
+        type: array
+        evidenceRole: executionEvidence
+    executor:
+      type: JCO_RFC
+      rfcName: BAPI_SALESORDER_GETLIST
+      inputMapping:
+        customerNumber: CUSTOMER_NUMBER
+        salesOrganization: SALES_ORGANIZATION
+        material: MATERIAL
+        documentDate: DOCUMENT_DATE
+      outputMapping:
+        salesOrders: SALES_ORDERS
+        returnMessages: RETURN
+    executorBinding:
+      type: JCO_RFC
+      bindingId: sap.sd.salesorder.getlist
+    evalLinkage:
+      evalFile: evals/sales_order_list_cases.yaml
+      caseIds:
+        - so-by-customer
+        - so-by-material-and-sales-org
+        - so-missing-filter
+    governance:
+      sideEffect: none
+      requiresApproval: false
+      approvalPolicy: not_required
+      dataClassification: internal
+      auditRequired: true
+    narrative:
+      factShape: list
+      promptTemplate: sales-order-list
+      fallbackTemplate: sales-order-list
+      fieldMapping:
+        row: "订单 {salesOrderNumber}：客户 {soldTo}，净值 {netValue} {currency}，单据日期 {documentDate}"
+      detailFormatter: none
+  - capabilityId: FI.AR.GetOpenItems
+    name: Customer Open Items
+    description: Read customer (accounts receivable) open items for a company code as of a key date through BAPI_AR_ACC_GETOPENITEMS.
+    status: active
+    kind: Function
+    domain: FI
+    businessObject: CustomerOpenItem
+    ontologyIri: sapnexus:FI_AR_GetOpenItems
+    semanticType: sapnexus:CustomerOpenItemsReadFunction
+    aliases:
+      - 客户应收
+      - 应收未清项
+      - 客户未清项查询
+    examples:
+      - 查客户 1000 在公司代码 1000 的应收
+      - 客户 1000 还有多少应收未清项
+    intent:
+      intentName: ar_open_items
+      primaryKeywords:
+        - '应收'
+        - '客户未清项'
+      # No bare '未清': MM.PurchaseOrder.GetList already reads it as its openOnly
+      # filter (未清标志), so an unqualified 未清 does not say AR. Triggering
+      # defaults to primaryKeywords.
+      weakKeywords:
+        - '欠款'
+      triggerKeywords:
+        - '应收'
+        - '客户未清项'
+      fieldNames:
+        zh-CN:
+          customer: 客户号
+          companyCode: 公司代码
+          keydate: 查询日期
+      clarifyPrompt:
+        zh-CN:
+          cases:
+            - missing:
+                - customer
+              text: '请提供要查询的客户号。'
+            - missing:
+                - companyCode
+              text: '请提供公司代码。'
+          fallback:
+            template: '请提供客户号和公司代码。'
+    inputs:
+      - name: customer
+        semanticName: customerNumber
+        semanticType: sapnexus:CustomerNumber
+        bindingKind: identifier
+        required: true
+        type: string
+        minLength: 1
+        maxLength: 10
+        pattern: '^[A-Z0-9]{1,10}$'
+        sapParameter: CUSTOMER
+        binding:
+          priority: 40
+          resolver: text
+          reaskSuspect: true
+          sources:
+            - kind: userUtterance
+              matchers:
+                - kind: regex
+                  pattern: '客户(?:\s|是|为|编号|号|:|：)*([A-Z0-9]{1,10})'
+      - name: companyCode
+        semanticName: companyCode
+        semanticType: sapnexus:CompanyCode
+        bindingKind: identifier
+        required: true
+        type: string
+        minLength: 1
+        maxLength: 4
+        pattern: '^[A-Z0-9]{1,4}$'
+        sapParameter: COMPANYCODE
+        binding:
+          priority: 30
+          resolver: text
+          sources:
+            - kind: userUtterance
+              matchers:
+                - kind: regex
+                  pattern: '公司代码(?:\s|是|为|编号|号|:|：)*([A-Z0-9]{1,4})'
+      - name: keydate
+        semanticName: keyDate
+        semanticType: sapnexus:KeyDate
+        bindingKind: identifier
+        required: false
+        type: string
+        sapParameter: KEYDATE
+        binding:
+          priority: 15
+          resolver: date
+          sources:
+            - kind: userUtterance
+              matchers:
+                - kind: regex
+                  pattern: '(\d{4}-\d{2}-\d{2})'
+                - kind: regex
+                  pattern: '(?<!\d)(\d{8})(?!\d)'
+    outputs:
+      - name: openItems
+        semanticType: sapnexus:CustomerOpenItem
+        type: array
+        evidenceRole: primaryFact
+        factTypeRef: sapnexus:CustomerOpenItemsFact
+      - name: returnMessages
+        semanticType: sapnexus:SapReturnMessage
+        type: array
+        evidenceRole: executionEvidence
+    executor:
+      type: JCO_RFC
+      rfcName: BAPI_AR_ACC_GETOPENITEMS
+      inputMapping:
+        customer: CUSTOMER
+        companyCode: COMPANYCODE
+        keydate: KEYDATE
+      outputMapping:
+        openItems: LINEITEMS
+        returnMessages: RETURN
+    executorBinding:
+      type: JCO_RFC
+      bindingId: sap.fi.ar.get-open-items
+    evalLinkage:
+      evalFile: evals/ar_open_items_cases.yaml
+      caseIds:
+        - ar-happy-path
+        - ar-missing-company-code
+        - ar-missing-customer
+    governance:
+      sideEffect: none
+      requiresApproval: false
+      approvalPolicy: not_required
+      dataClassification: internal
+      auditRequired: true
+    narrative:
+      factShape: list
+      promptTemplate: ar-open-items
+      fallbackTemplate: ar-open-items
+      fieldMapping:
+        row: "凭证 {documentNumber}：金额 {amount} {currency}，到期基准日 {netDueDate}"
+      detailFormatter: none
+  - capabilityId: FI.AP.GetOpenItems
+    name: Vendor Open Items
+    description: Read vendor (accounts payable) open items for a company code as of a key date through BAPI_AP_ACC_GETOPENITEMS.
+    status: active
+    kind: Function
+    domain: FI
+    businessObject: VendorOpenItem
+    ontologyIri: sapnexus:FI_AP_GetOpenItems
+    semanticType: sapnexus:VendorOpenItemsReadFunction
+    aliases:
+      - 供应商应付
+      - 应付未清项
+      - 供应商未清项查询
+    examples:
+      - 查供应商 1000 在公司代码 1000 的应付
+      - 供应商 1000 还有多少应付未清项
+    intent:
+      intentName: ap_open_items
+      primaryKeywords:
+        - '应付'
+        - '供应商未清项'
+      # No bare '未清': see FI.AR.GetOpenItems -- 未清 is already the PO openOnly
+      # filter word, so it does not say AP on its own.
+      weakKeywords:
+        - '欠款'
+      triggerKeywords:
+        - '应付'
+        - '供应商未清项'
+      fieldNames:
+        zh-CN:
+          vendor: 供应商号
+          companyCode: 公司代码
+          keydate: 查询日期
+      clarifyPrompt:
+        zh-CN:
+          cases:
+            - missing:
+                - vendor
+              text: '请提供要查询的供应商号。'
+            - missing:
+                - companyCode
+              text: '请提供公司代码。'
+          fallback:
+            template: '请提供供应商号和公司代码。'
+    inputs:
+      - name: vendor
+        semanticName: supplier
+        semanticType: sapnexus:Supplier
+        bindingKind: identifier
+        required: true
+        type: string
+        minLength: 1
+        maxLength: 10
+        pattern: '^[A-Z0-9]{1,10}$'
+        sapParameter: VENDOR
+        binding:
+          priority: 40
+          resolver: text
+          reaskSuspect: true
+          sources:
+            - kind: userUtterance
+              matchers:
+                - kind: semanticType
+                  ref: Vendor
+      - name: companyCode
+        semanticName: companyCode
+        semanticType: sapnexus:CompanyCode
+        bindingKind: identifier
+        required: true
+        type: string
+        minLength: 1
+        maxLength: 4
+        pattern: '^[A-Z0-9]{1,4}$'
+        sapParameter: COMPANYCODE
+        binding:
+          priority: 30
+          resolver: text
+          sources:
+            - kind: userUtterance
+              matchers:
+                - kind: regex
+                  pattern: '公司代码(?:\s|是|为|编号|号|:|：)*([A-Z0-9]{1,4})'
+      - name: keydate
+        semanticName: keyDate
+        semanticType: sapnexus:KeyDate
+        bindingKind: identifier
+        required: false
+        type: string
+        sapParameter: KEYDATE
+        binding:
+          priority: 15
+          resolver: date
+          sources:
+            - kind: userUtterance
+              matchers:
+                - kind: regex
+                  pattern: '(\d{4}-\d{2}-\d{2})'
+                - kind: regex
+                  pattern: '(?<!\d)(\d{8})(?!\d)'
+    outputs:
+      - name: openItems
+        semanticType: sapnexus:VendorOpenItem
+        type: array
+        evidenceRole: primaryFact
+        factTypeRef: sapnexus:VendorOpenItemsFact
+      - name: returnMessages
+        semanticType: sapnexus:SapReturnMessage
+        type: array
+        evidenceRole: executionEvidence
+    executor:
+      type: JCO_RFC
+      rfcName: BAPI_AP_ACC_GETOPENITEMS
+      inputMapping:
+        vendor: VENDOR
+        companyCode: COMPANYCODE
+        keydate: KEYDATE
+      outputMapping:
+        openItems: LINEITEMS
+        returnMessages: RETURN
+    executorBinding:
+      type: JCO_RFC
+      bindingId: sap.fi.ap.get-open-items
+    evalLinkage:
+      evalFile: evals/ap_open_items_cases.yaml
+      caseIds:
+        - ap-happy-path
+        - ap-missing-company-code
+        - ap-missing-vendor
+    governance:
+      sideEffect: none
+      requiresApproval: false
+      approvalPolicy: not_required
+      dataClassification: internal
+      auditRequired: true
+    narrative:
+      factShape: list
+      promptTemplate: ap-open-items
+      fallbackTemplate: ap-open-items
+      fieldMapping:
+        row: "凭证 {documentNumber}：金额 {amount} {currency}，到期基准日 {netDueDate}"
       detailFormatter: none
