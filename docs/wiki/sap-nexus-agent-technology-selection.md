@@ -5,10 +5,10 @@
 | 字段 | 内容 |
 |---|---|
 | 文档名称 | `SAP Nexus Agent 技术选型与工程路线决策` |
-| 当前版本 | `v0.2.19` |
+| 当前版本 | `v0.2.20` |
 | 状态 | `Decision Baseline Draft` |
 | 创建日期 | `2026-06-19` |
-| 最近更新 | `2026-08-24` |
+| 最近更新 | `2026-08-30` |
 | 维护目录 | `docs/wiki/` |
 | 文档定位 | 指导 SAP Nexus Agent 工程骨架、技术栈和 AI Native 工程产物组织的技术选型基线 |
 | 关联技术架构 | `docs/wiki/sap-nexus-agent-technical-architecture.md` |
@@ -20,6 +20,7 @@
 
 | 版本 | 日期 | 变更摘要 | 决策状态 |
 |---|---|---|---|
+| `v0.2.20` | `2026-08-30` | 增加 §5.10 Coding/Personal Agent Harness 横向复核（DeepSeek Harness / Pi / Hermes Agent）：三者均经 GitHub API 核实为真实项目，但属模型驱动 tool-loop 类 harness（与 §3.6/OpenHarness 同类），非 §5.9 的图/工作流控制流类；均不引入为 runtime，也不将能力注册为其插件/tool；同时评估"结合能力关系本体做运行时交互式规划"候选方向，结论为可用原生 guarded ReAct loop（Dynamic Planner/S6 既定预留）满足，无需引入外部 harness；并澄清模型能力提升不能替代 Human Approval 的可追责性要求 | 当前技术基线 |
 | `v0.2.19` | `2026-08-24` | 增加 §5.9 主流 Agent 编排框架（LangGraph / CrewAI / AutoGen(AG2) / Semantic Kernel / OpenAI Agents SDK / Google ADK / Vercel AI SDK / Mastra）横向复核：均不引入为 runtime 依赖，原因与 OpenHarness/DeerFlow 一致——通用框架默认模型驱动 tool loop 或工作流自治，不天然支持"Capability Registry + 确定性 PlanCompiler + Java Gateway 拥有最终执行权"的治理内核；LangGraph/Semantic Kernel/Mastra/ADK 的确定性图控制流机制列为后续 durable runtime 阶段的设计参考 | 当前技术基线 |
 | `v0.2.18` | `2026-08-05` | Runbook 22 Native change 已归档：选择现有 Next.js/TypeScript server runtime 承载薄 composition coordinator，复用 Python Agent 的 LLM-first/PlanGraph authoring 与 Runbooks 16-21 的确定性组件；offline L1/L2/L3 gate `9/9`、Native acceptance 42/42，live SAP READ/WRITE `not_run` | 当前技术基线 |
 | `v0.2.17` | `2026-08-05` | 同步 Runbook 21 已归档事实：plan-aware single-user HITL、完整 subject revalidation、durable exactly-once continuation 与 Gateway atomic claim 已完成 fake/sandbox 验证；未执行 live SAP WRITE，production orchestration 与 L1/L2/L3 release gate 仍由 Runbook 22 证明；当前入口转为 Runbook 22 | 当前技术基线 |
@@ -78,6 +79,7 @@ docs/runbooks/22-end-to-end-agent-eval-release-gate.md
 | OpenHarness | 设计参考，不增加依赖 | 借鉴 Agent loop、Tool Schema、Permission/Hook、Dry-run、Memory/Resume；拒绝第二运行时和模型自由 SAP Tool Calling |
 | DeerFlow Runtime | 设计参考，不增加依赖 | 不引入 `deerflow-harness`、DeerFlow Gateway、默认 lead agent 或 frontend；避免第二 Agent runtime 和执行权威 |
 | Mainstream Agent Framework | 设计参考，不增加依赖 | LangGraph / CrewAI / AutoGen(AG2) / Semantic Kernel / OpenAI Agents SDK / Google ADK / Vercel AI SDK / Mastra 均不引入为 runtime；详见 §5.9 |
+| Coding/Personal Agent Harness | 设计参考，不增加依赖，不注册为插件 | DeepSeek Harness / Pi / Hermes Agent 均不引入为 runtime，能力也不注册为其 tool/plugin；详见 §5.10 |
 | Baseline Semantic Matcher | S2-A 已完成并归档 | 规则 + alias + domain/businessObject + deterministic parameter fit；五态 `MatchDecision`、多意图检测、`SHOW_OPTIONS` 和 `ESCALATE_TO_PLANNER` 已实现，不依赖 embedding |
 | Progressive Capability Disclosure | S2-B 内适配 | metadata-first `CapabilityCard` -> 小候选集合 -> optional LLM candidate；deterministic MatchDecision / PlanCompiler 最终裁决 |
 | Scale-stage Retrieval | Phase 3+ Triggered | 只在规模与 Eval bad case 触发后评估 semantic index、embedding/hybrid retrieval、跨域 router 和 LLM rerank |
@@ -465,6 +467,39 @@ Phase 3+ 才评估：
 - LangGraph 的 `interrupt()` + checkpoint 语义、Mastra 的 `suspend()/resume()` 语义列为 D3（Trusted Durable Agent Runtime Foundation，见 `sap-nexus-agent-deerflow-adoption-analysis.md` §11 D3）阶段的设计参考，不作为代码依赖引入。
 - 触发再评估的条件与 OpenHarness/DeerFlow 一致：仅当出现需要跨进程/跨重启恢复、multi-worker/HA 部署、或现有自研 checkpoint/HITL 机制被 Eval/生产事故证明不足以支撑共享环境时，才启动独立 spike，且 spike 范围仅限于借鉴具体机制，不整体替换执行权威。
 
+### 5.10 Coding/Personal Agent Harness 横向复核（DeepSeek Harness / Pi / Hermes Agent）
+
+背景：用户在 §5.9 的图/工作流类框架之外，追问三个更新近（2025-2026 出现）、号称"主流"的 harness 项目是否应引入，并进一步追问"能力注册为插件供其调用"与"结合能力关系本体做运行时交互式规划"两个变体方案。三者均经 GitHub API（`gh api repos/<owner>/<repo>`）和官方 README/架构文档核实为真实项目，非虚构：
+
+| 项目 | Repo | 核实时 Star 数 | 创建日期 | 定位 |
+|---|---|---|---|---|
+| DeepSeek Harness | `deepseek-ai/deepseek-harness` | 203,830 | `2026-08-13` | 基于自研 Cordis 插件框架的通用 coding/agent harness，"Everything is a Plugin" |
+| Pi Agent Harness | `earendil-works/pi` | 99,179 | `2025-08-09` | Coding agent 工具包：`pi-ai`（多 provider LLM API）+ `pi-agent-core`（agent runtime）+ `pi-coding-agent`（CLI） |
+| Hermes Agent | `NousResearch/hermes-agent` | 238,232 | `2025-07-22` | 自我进化个人助理：技能自创建、跨会话记忆、多渠道消息网关、cron、subagent |
+
+#### 分类结论：三者与 §5.9 的框架不属同一谱系
+
+§5.9 评估的 LangGraph/Semantic Kernel/Mastra/Google ADK 是**图/工作流优先**，外部确定性控制流拥有执行权。本节三个项目的真实架构（DeepSeek Harness 的 turn/step agent loop + `ctx.tools` 注册；Pi 的 `pi-agent-core` tool-calling runtime；Hermes 的 skill 自创建 + 自主调用）都是**模型驱动 tool-loop**：每一步由 LLM 决定下一次调用什么、调几次、什么顺序。这与已经评估过的 OpenHarness 同属一类（`sap-nexus-agent-openharness-semantic-orchestration.md` §3），比 LangGraph 类离本项目治理模型更远：
+
+- 三者均无 Capability Registry 闭集白名单、无确定性 PlanCompiler、无类型匹配/拓扑排序。
+- Pi 的 README 明确声明"不含内置权限系统"，默认以启动进程权限运行。
+- DeepSeek Harness 的 approval policy 是工具执行前的沙箱/审批拦截点，不是"WRITE 必须绑定 exact-subject Human Approval 记录"这类领域治理规则。
+- Hermes 的 command approval / DM pairing 面向个人使用场景安全护栏，非企业审批留痕。
+- 三者均无 Java 原生绑定（DeepSeek Harness 为 TS 核心 + Python SDK spawn 子进程，Pi 为 TypeScript，Hermes 为 Python），与现有 Java Gateway 集成仍需额外 adapter 层。
+
+#### 变体方案一：把现有能力注册为 DeepSeek Harness 的 tool/plugin
+
+评估结论：拒绝。把 `capabilityId` 的执行逻辑挂到 `ctx.tools` 上，意味着调用顺序/次数的决定权从 `PlanCompiler` 转移到 dsh 的 `agent/request` 循环，直接违反"LLM 只能从闭集里选、不能自由决定调用顺序"的边界（`sap-nexus-agent-technical-architecture.md` §3.2）。即使在 `tools/pre-execute` 挂回完整的 Approval Guard + PlanCompiler 校验以避免违规，等价于把现有执行权威原样搬进 dsh 的插件生命周期，形成与 Python Agent + Java Gateway 并存的第二套执行编排权威——这是 `sap-nexus-agent-deerflow-adoption-analysis.md` 已经论证过"代价大于收益"的同一类风险，只是候选换成了 dsh，结论不变。此外 dsh 的 session log 是"model-visible 状态的唯一事实源"这一不变式，与本项目 `ConversationState`/`PlanExecutionState`/`EvidenceState` 三层状态不可被 generic checkpoint 重建的边界（`sap-nexus-agent-technical-architecture.md` §4.2.1）存在结构性冲突。
+
+#### 变体方案二：假设 LLM 自主编排风险不再是顾虑，结合能力关系本体做运行时交互式规划
+
+评估结论：拒绝引入 dsh 作为该方案的执行引擎，但确认其指向的能力缺口真实存在，且应通过项目既有的、尚未实现的路径满足：
+
+- 真实增益点是**数据依赖型多跳推理**——当前 `PlanCompiler` 在执行前一次性编译整个 DAG，无法处理"下一跳是否该走取决于上一跳返回的具体数据"这类分支；这正是 Eval Harness 已定义但标注"S3 后评估"的 `replanRecoveryRate` 缺口，不是新发现。
+- 该增益不需要引入 dsh 才能获得：其校验逻辑（关系图合法边判断、FactType 输入满足性校验）已经是 S1 归档的能力（immutable graph、reachability、deterministic validator）；缺的只是"每步调用一次校验并放行"的循环外壳，而非校验能力本身。原生实现该外壳属于 `sap-nexus-agent-technical-architecture.md` §3.0 已经明确允许的模式："ReAct-style 的 observe/reason/propose loop 可以作为局部推理模式被引入，但只能运行在 Harness 边界内"，也即已命名的 **Dynamic Planner / S6**（`sap-nexus-agent-technical-architecture.md` §5.4，Phase 3+ / Reserved，触发条件见 §4.4）。
+- 引入 dsh 换取的只是 turn/step 调度、session log、hook 点这类脚手架，本项目已有等价管线（`ExecutionResult -> ReasoningFact` + trace），不构成新增推理能力，却要承担第二 runtime、跨语言（TS/Python 子进程 ↔ Python Agent）集成和 session 权威冲突的代价。
+- 澄清前提本身的一个混淆：模型自主编排能力提升可以改善"下一步该查什么"的判断准确率，但不能替代"WRITE 操作需要绑定可追责的人工审批记录"这一要求——后者回答的是"出问题时能否证明这次写入被授权"，是合规/审计边界（`AGENTS.md` §2 Safety 范畴），与模型判断正确率无关，不应随模型能力提升而重新评估。Dynamic Planner 即使实现运行时交互式规划，READ 节点可放开自主串联，触达 WRITE 节点时仍须停下走现有 Approval Guard。
+
 ---
 
 ## 6. Python Agent 选型
@@ -716,6 +751,7 @@ sap-nexus-capability-registry-gateway
 | OpenHarness 是否作为 runtime 依赖 | 否；只作为 Agent loop、Tool Schema、Permission/Hook、Dry-run 和 Memory/Resume 的设计参考 |
 | DeerFlow 是否作为 runtime 依赖 | 否；只借鉴 progressive discovery、task lifecycle、durable context 和受限 memory 机制 |
 | 主流 Agent 编排框架（LangGraph/CrewAI/AutoGen/Semantic Kernel/OpenAI Agents SDK/ADK/Vercel AI SDK/Mastra）是否引入 | 否；仅 LangGraph/Semantic Kernel/Mastra/ADK 的确定性图控制流与可持久化 HITL 机制列为 D3 durable runtime 阶段设计参考，见 §5.9 |
+| Coding/Personal Agent Harness（DeepSeek Harness/Pi/Hermes Agent）是否引入或将能力注册为其插件 | 否；三者属模型驱动 tool-loop 类 harness，与 OpenHarness 同类而非 LangGraph 类；注册为插件会把调用顺序决定权交给其 agent loop，与 PlanCompiler/Approval 边界冲突；数据依赖型多跳推理缺口改由原生 Dynamic Planner/S6 满足，见 §5.10 |
 | Durable Runtime Store 何时选型 | P0B 本地 durable 实现已归档；multi-worker / HA 或量产部署前再选择共享 store，且保持现有接口与一致性契约 |
 | UserPreferenceMemory 何时试点 | 身份、tenant、retention、查看/更正/删除和审计契约成熟后；不进入 S2/S3 |
 | 首个多能力组合场景 | “物料库存 + 采购订单供给概览”已由 Runbook 22 production coordinator 完成 offline fake/sandbox 接线，并通过 L1/L2/L3 release gate；live SAP multi-READ/WRITE 均 `not_run` |
