@@ -5,10 +5,10 @@
 | 字段 | 内容 |
 |---|---|
 | 文档名称 | `SAP Nexus Agent OpenHarness 对比与语义智能编排路线` |
-| 当前版本 | `v0.1.8` |
+| 当前版本 | `v0.1.9` |
 | 状态 | `Decision Baseline` |
 | 创建日期 | `2026-07-18` |
-| 最近更新 | `2026-08-05` |
+| 最近更新 | `2026-08-30` |
 | 维护目录 | `docs/wiki/` |
 | 文档定位 | 记录 OpenHarness 对比结论，并定义 SAP Nexus 后续语义规划、只读多能力组合和受治理能力演进路线 |
 | 关联技术架构 | `docs/wiki/sap-nexus-agent-technical-architecture.md` |
@@ -20,6 +20,7 @@
 
 | 版本 | 日期 | 变更摘要 | 决策状态 |
 |---|---|---|---|
+| `v0.1.9` | `2026-08-30` | 同步 `sd-fi-read-capability-registration` Native change 已归档：新增 3 个 READ-only 能力（`SD.SalesOrder.GetList` / `FI.AR.GetOpenItems` / `FI.AP.GetOpenItems`），SD 与 FI 首次进入能力本体，Active capability 由 3 个更正为 7 个（原计数亦已落后于 `MM.Material.GetInfo`）。本次只更正「当前 SAP Nexus 事实」中的能力清单一项，未重新逐条核验该节其余陈述；live SAP READ 仍 `not_run`，三个 BAPI 的字段签名来自公开对象目录 | 当前决策基线 |
 | `v0.1.8` | `2026-08-05` | 同步 Runbook 22 已实现、验证并归档：production coordinator 与 L1/L2/L3 release gate 已接通并通过 fake/sandbox 验证；OpenHarness 仍仅作机制参考，不成为第二 runtime，live SAP READ/WRITE 均 `not_run` | 当前决策基线 |
 | `v0.1.7` | `2026-08-05` | 同步 Runbooks 13-21 已归档及当前 Runbook 22 入口；OpenHarness 仍仅作机制参考，Runbook 21 fake/sandbox Action evidence 不等于 production orchestrator 或 live release gate | 当前决策基线 |
 | `v0.1.6` | `2026-08-05` | 同步 Runbooks 13-20 已归档及当前 Runbook 21 入口；OpenHarness 仍仅作机制参考，生产 orchestrator 未因 Workbench event/replay component/UI integration 自动成为 live | 当前决策基线 |
