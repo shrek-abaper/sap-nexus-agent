@@ -1,56 +1,56 @@
-# Comet 使用的配置格式版本，请勿修改此值。
+# Configuration schema used by Comet. Do not edit this value.
 schema: comet.project.v1
-# `/comet` 默认进入的工作流；该值也必须出现在 workflows 中。
+# Default workflow entered by /comet. Must also appear in workflows.
 default_workflow: native
-# 此项目启用的工作流，可填写 native、classic 或同时启用两者。
+# Workflows enabled in this project: native, classic, or both.
 workflows:
   - native
   - classic
-# 是否启用只读的环境感知恢复探针，同时作用于 Native 和 Classic；设为 false 可关闭自动工作流恢复。
+# Enables automatic recovery through the read-only Ambient Resume probe for both Native and Classic. Set false to disable it.
 # ambient_resume: true | false
 ambient_resume: true
-# Classic 工作流配置，不会改变 Native 的状态或行为。
+# Classic workflow settings. They do not change Native state or behavior.
 classic:
-  # Classic 产物布局；默认使用 docs，update 检测到根目录 legacy 产物时予以保留。
-  # 可选值：legacy | docs
+  # Selects the Classic artifact layout. The default is docs; update preserves detected root-level legacy artifacts.
+  # artifact_layout: legacy | docs
   artifact_layout: legacy
-  # Classic 工作流文档使用的产物语言。
-  # 可选值：en | zh-CN
+  # Artifact language used by Classic workflow documents.
+  # language: en | zh-CN
   language: en
-  # 新建 Classic change 是否启用 beta 上下文压缩。
-  # 可选值：off | beta
+  # Controls beta context compression for new Classic changes.
+  # context_compression: off | beta
   context_compression: off
-  # 新建 Classic change 默认使用的审查深度。
-  # 可选值：off | standard | thorough
+  # Sets the default review depth for new Classic changes.
+  # review_mode: off | standard | thorough
   review_mode: standard
-  # Classic 阶段通过后是否自动进入下一阶段。
-  # 可选值：true | false
+  # Automatically enters the next Classic phase after a phase passes.
+  # auto_transition: true | false
   auto_transition: true
-# Native 工作流配置，不会改变 Classic 的状态或行为。
+# Native workflow settings. They do not change Classic state or behavior.
 native:
-  # Native 产物的存放根目录，包括规格、change 和运行时数据。
+  # Root directory where Native stores Comet specs, changes, and runtime data.
   artifact_root: docs
-  # Native 工作流文档使用的产物语言。
-  # 可选值：en | zh-CN
+  # Artifact language used by Native workflow documents.
+  # language: en | zh-CN
   language: zh-CN
-  # Native 每轮询问一个问题，或一次提出当前所有可回答的问题。
-  # 可选值：sequential | batch
+  # Controls whether Native asks one clarification at a time or every currently answerable question in a round.
+  # clarification_mode: sequential | batch
   clarification_mode: sequential
-  # Native 内容快照使用的可审计项目范围与有界工作预算。
+  # Controls the auditable project scope and bounded work used by Native content snapshots.
   snapshot:
-    # Native 快照纳入的项目相对路径；模式使用 /，支持 *、** 和 ?。
+    # Selects the project-relative paths included in Native snapshots. Patterns use / and support *, **, and ?.
     include:
       - "**/*"
-    # 从纳入范围中排除路径；新 change 会把排除策略绑定到 baseline。
+    # Removes paths from the included scope. Exclusions are bound into each new change baseline.
     exclude: []
-    # 单次快照最多捕获的文件数；大型 monorepo 可按需提高。
+    # Bounds the number of files captured by one snapshot. Increase it for large monorepos.
     max_files: 10000
-    # 单次快照最多哈希的文件内容总字节数；内容采用流式读取，不依赖 Git hash。
+    # Bounds the total file content hashed by one snapshot. Content is streamed and does not depend on Git hashes.
     max_total_bytes: 268435456
-    # 单次快照的最长执行时间（毫秒）；较慢或更大的仓库应与字节预算一并提高。
+    # Bounds snapshot capture time in milliseconds. Increase it together with the byte budget on slower or larger repositories.
     max_duration_ms: 60000
-  # Native 归档预演成功后自动归档，或等待用户明确确认。
-  # 可选值：automatic | required
+  # Controls whether Native archives automatically after a successful preview or waits for explicit user confirmation.
+  # archive_confirmation: automatic | required
   archive_confirmation: automatic
-  # 同一份已确认 contract 最多允许的 Verify 失败次数；达到上限后停止完成循环。
+  # Maximum failed Verify outcomes allowed for one confirmed contract before Native stops the completion loop.
   max_verify_failures: 5
