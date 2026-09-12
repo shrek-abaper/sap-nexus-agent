@@ -1,0 +1,48 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "workbench-dsh-runtime",
+    "sourceRevision": 3,
+    "contractHash": "6a27f7f4b363ed9180235f9943bafc43b4898ce6f51b29f7228310a74c5a76ac",
+    "scopeHash": "c9a36b03b92c9af30e65b78189af5a85e744b4bbb21051e3f5004d13749c0dd2",
+    "snapshotHash": "5e772919ae4bd6126b736492eba580130480282c8bb03f463bfb823ede975dd7",
+    "artifactHash": "35611be297746c374245af971be01beef260fa4dcfdd1b5b40f4d163b9d4e795"
+  },
+  "acceptanceIds": [
+    "acceptance-02fc301a14d5db5f3cef6639799681886d97394f0b90af903088d4f55e318aad"
+  ],
+  "actor": "native-runtime:command:bash",
+  "issuedAt": "2026-09-12T03:40:41.328Z",
+  "evidence": {
+    "executable": "bash",
+    "args": [
+      "-c",
+      "cd frontend && npx vitest run src/runtime/semantic-tools/cross-harness.test.ts 2>/dev/null | tail -3"
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 240000,
+    "startedAt": "2026-09-12T03:38:57.372Z",
+    "endedAt": "2026-09-12T03:40:41.328Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "984f70333816451f5cd4c5b9c1f941dcb44ca32a",
+      "afterCommit": "984f70333816451f5cd4c5b9c1f941dcb44ca32a"
+    },
+    "afterFence": {
+      "snapshotHash": "5e772919ae4bd6126b736492eba580130480282c8bb03f463bfb823ede975dd7",
+      "scopeHash": "c9a36b03b92c9af30e65b78189af5a85e744b4bbb21051e3f5004d13749c0dd2",
+      "matched": true
+    },
+    "outputHash": "ccb7d364e91860775e02dfcaf28ae7160b492e23cc3eed4019073f8f2c22986b",
+    "outputSummary": "Start at  11:38:57\n   Duration  103.48s (transform 287ms, setup 0ms, collect 385ms, tests 102.81s, environment 0ms, prepare 64ms)",
+    "outputTruncated": false
+  },
+  "receiptHash": "688d19db2772a15bc1b5a96361185f99a1d0a700499592e999c7666e290f21d8"
+}

@@ -1,0 +1,85 @@
+# App bundle layer (shipped, version-pinned, reviewed): the minimal spine for
+# the SAP Nexus harness. Deliberately contains NO coding-agent surfaces
+# (bash/fs/subagent/workflow/sandbox) — the only business tool is the
+# server-owned semantic tool facade client.
+#
+# !!js expressions are evaluated by the Loader in plugin context; they only
+# read process.env here. `--dump-config` prints them unevaluated.
+
+- insert:
+    - id: timer
+      name: '@deepseek-ai/cordis-plugin-timer'
+
+    - id: llm
+      name: '@deepseek-ai/dsh-llm'
+
+    - id: session
+      name: '@deepseek-ai/dsh-session'
+
+    - id: session-projection
+      name: '@deepseek-ai/dsh-session-projection'
+
+    - id: invariants
+      name: '@deepseek-ai/dsh-invariants'
+
+    - id: session-invariant
+      name: '@deepseek-ai/dsh-session/invariant'
+
+    - id: system-prompt
+      name: '@deepseek-ai/dsh-system-prompt'
+      config:
+        personaPrefix: >-
+          你是 SAP Nexus 的 DeepSeek Harness 运行时（可替换 harness 层）。
+          你只允许通过语义工具 diagnose_material_supply 获取 SAP 事实；
+          不要猜测库存、在途或工厂数据，所有业务数值必须来自工具返回；
+          用简体中文、简洁地回答。
+
+    - id: tools
+      name: '@deepseek-ai/dsh-tools'
+
+    - id: agent
+      name: '@deepseek-ai/dsh-agent'
+
+    - id: agent-invariant
+      name: '@deepseek-ai/dsh-agent/invariant'
+
+    - id: scope-invariant
+      name: '@deepseek-ai/dsh-scope/invariant'
+
+    - id: agent-loop-invariant
+      name: '@deepseek-ai/dsh-agent-loop/invariant'
+
+    - id: llm-retry
+      name: '@deepseek-ai/dsh-llm-retry'
+
+    # OpenAI-compatible provider route "sapnexus". Credentials resolve per
+    # request from the environment; nothing is inlined in this file.
+    - id: llm-pi-ai
+      name: '@deepseek-ai/dsh-llm-pi-ai'
+      config:
+        providers:
+          sapnexus:
+            api: openai-completions
+            apiKeyEnv: SAP_NEXUS_LLM_API_KEY
+            baseURL: !!js process.env.SAP_NEXUS_LLM_BASE_URL
+            models:
+              - id: !!js process.env.SAP_NEXUS_LLM_MODEL || 'deepseek-chat'
+
+    - id: agent-default-model
+      name: '@deepseek-ai/dsh-agent-default-model'
+      config:
+        provider: !!js process.env.SAP_NEXUS_LLM_PROVIDER || 'sapnexus'
+        model: !!js process.env.SAP_NEXUS_LLM_MODEL || 'deepseek-chat'
+
+    - id: agent-loop
+      name: '@deepseek-ai/dsh-agent-loop'
+
+    # The only business tool in this harness: a local plugin whose execute is
+    # one POST to the server-owned semantic tool facade. Resolved by the Loader
+    # relative to this config directory (../lib after npm run build).
+    - id: sap-nexus-tools
+      # Relative to this config directory; built by `npm run build`.
+      name: '../lib/sap-nexus-tool.js'
+      config:
+        facadeUrl: !!js process.env.SAP_NEXUS_FACADE_URL || 'http://127.0.0.1:3000'
+        timeoutMs: !!js Number(process.env.SAP_NEXUS_FACADE_TIMEOUT_MS || '60000')

@@ -1,0 +1,48 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "workbench-dsh-runtime",
+    "sourceRevision": 3,
+    "contractHash": "6a27f7f4b363ed9180235f9943bafc43b4898ce6f51b29f7228310a74c5a76ac",
+    "scopeHash": "c9a36b03b92c9af30e65b78189af5a85e744b4bbb21051e3f5004d13749c0dd2",
+    "snapshotHash": "5e772919ae4bd6126b736492eba580130480282c8bb03f463bfb823ede975dd7",
+    "artifactHash": "35611be297746c374245af971be01beef260fa4dcfdd1b5b40f4d163b9d4e795"
+  },
+  "acceptanceIds": [
+    "acceptance-7574bfc715b83e0618a57c99e932f9c1748f0d6ec7ff44a4545201b8cf3aa630"
+  ],
+  "actor": "native-runtime:command:bash",
+  "issuedAt": "2026-09-12T03:38:12.299Z",
+  "evidence": {
+    "executable": "bash",
+    "args": [
+      "-c",
+      "python3 -c \"import json;[json.load(open(f)) for f in ['schemas/semantic-tool-request.schema.json','schemas/semantic-tool-response.schema.json']];print('contract schemas valid')\""
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 240000,
+    "startedAt": "2026-09-12T03:38:12.269Z",
+    "endedAt": "2026-09-12T03:38:12.299Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "984f70333816451f5cd4c5b9c1f941dcb44ca32a",
+      "afterCommit": "984f70333816451f5cd4c5b9c1f941dcb44ca32a"
+    },
+    "afterFence": {
+      "snapshotHash": "5e772919ae4bd6126b736492eba580130480282c8bb03f463bfb823ede975dd7",
+      "scopeHash": "c9a36b03b92c9af30e65b78189af5a85e744b4bbb21051e3f5004d13749c0dd2",
+      "matched": true
+    },
+    "outputHash": "7861ade67b1b05509061f04e60b877a30191d61f90f60042a38d0eaaeae6aec9",
+    "outputSummary": "contract schemas valid",
+    "outputTruncated": false
+  },
+  "receiptHash": "32c1228719eb9e3b55025f9c46ad88a8226053c2fbb01d2f1209c5ad3b1b8e60"
+}

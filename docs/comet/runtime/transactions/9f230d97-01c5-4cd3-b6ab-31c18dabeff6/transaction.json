@@ -1,0 +1,51 @@
+{
+  "schema": "comet.native.transaction.v2",
+  "id": "9f230d97-01c5-4cd3-b6ab-31c18dabeff6",
+  "kind": "archive",
+  "status": "committed",
+  "change": "workbench-dsh-runtime",
+  "createdAt": "2026-09-12T05:44:11.349Z",
+  "preflightHash": "3ad91e3534487d492ecf39dc0596dcc12a8c030ce532e78e274594b70e3378c8",
+  "operations": [
+    {
+      "id": "spec-1-dsh-conversation-ui",
+      "type": "write",
+      "target": "specs/dsh-conversation-ui/spec.md",
+      "staged": "runtime/transactions/9f230d97-01c5-4cd3-b6ab-31c18dabeff6/staged/specs/dsh-conversation-ui/spec.md",
+      "expectedTargetHash": null,
+      "stagedHash": "ba909b483b0bfcfb1e1b116effa9663162419df605fae1943103c6181e870e17"
+    },
+    {
+      "id": "spec-2-dsh-cross-harness-and-write-gate",
+      "type": "write",
+      "target": "specs/dsh-cross-harness-and-write-gate/spec.md",
+      "staged": "runtime/transactions/9f230d97-01c5-4cd3-b6ab-31c18dabeff6/staged/specs/dsh-cross-harness-and-write-gate/spec.md",
+      "expectedTargetHash": null,
+      "stagedHash": "c4ed9ec279efc8578bf55ba672d66204014a3b8a0236dde382b4dfdcaff6a038"
+    },
+    {
+      "id": "spec-3-dsh-workbench-runtime",
+      "type": "write",
+      "target": "specs/dsh-workbench-runtime/spec.md",
+      "staged": "runtime/transactions/9f230d97-01c5-4cd3-b6ab-31c18dabeff6/staged/specs/dsh-workbench-runtime/spec.md",
+      "expectedTargetHash": null,
+      "stagedHash": "12f2aa09b0aa3753ec0f1a2526e803846eccc794d323fd42434e462465fcddbd"
+    },
+    {
+      "id": "spec-4-semantic-tool-surface-v2",
+      "type": "write",
+      "target": "specs/semantic-tool-surface-v2/spec.md",
+      "staged": "runtime/transactions/9f230d97-01c5-4cd3-b6ab-31c18dabeff6/staged/specs/semantic-tool-surface-v2/spec.md",
+      "expectedTargetHash": null,
+      "stagedHash": "78c5b56ad9ef5a1306d55ddcedbdddd6885f9ad19d41c5c74f3eb52b47360940"
+    },
+    {
+      "id": "archive-change",
+      "type": "move",
+      "source": "changes/workbench-dsh-runtime",
+      "target": "archive/2026-09-12-workbench-dsh-runtime",
+      "expectedSourceHash": "481f9f079fb9978f6f18a58ae9451767cd3e459c8da88729b983acf22ab2d7f2",
+      "expectedTargetHash": null
+    }
+  ]
+}

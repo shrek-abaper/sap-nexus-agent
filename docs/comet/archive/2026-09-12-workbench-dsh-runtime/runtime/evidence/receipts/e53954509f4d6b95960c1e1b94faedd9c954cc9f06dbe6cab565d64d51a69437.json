@@ -1,0 +1,54 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "workbench-dsh-runtime",
+    "sourceRevision": 3,
+    "contractHash": "6a27f7f4b363ed9180235f9943bafc43b4898ce6f51b29f7228310a74c5a76ac",
+    "scopeHash": "c9a36b03b92c9af30e65b78189af5a85e744b4bbb21051e3f5004d13749c0dd2",
+    "snapshotHash": "5e772919ae4bd6126b736492eba580130480282c8bb03f463bfb823ede975dd7",
+    "artifactHash": "35611be297746c374245af971be01beef260fa4dcfdd1b5b40f4d163b9d4e795"
+  },
+  "acceptanceIds": [
+    "acceptance-4463580e376c5c4f8088b7deabb51caf5796a4f7417a972e43172b7804559f91",
+    "acceptance-4e2a905e59c313daf9d46cbeaa4bcc09b279ab92188df825d8e9f4797a19ecc6",
+    "acceptance-7ea09e24e5f9d207b5aa95325b7955a2cc84d5069f8880a61f674aed4098b6ca",
+    "acceptance-9eda0a994289d1eca936483336f31dfbca5720175a33a6a06a0d71d2f49cfb26",
+    "acceptance-c08c5d495b8c95f83534ea4b0211fc265be5fb1000a4c33ece78245f28ac46d2",
+    "acceptance-cc14e82ca3931b22af4ab34f00ec57cd67a72ce501c725ee95b69778fae49d53",
+    "acceptance-feaadee110939bed9af33ee9d2d2417a3bb0bf97aa8ae8bd1f4f6ef5f1aceedf"
+  ],
+  "actor": "native-runtime:command:bash",
+  "issuedAt": "2026-09-12T03:37:24.522Z",
+  "evidence": {
+    "executable": "bash",
+    "args": [
+      "-c",
+      "cd frontend && npx vitest run src/runtime/semantic-tools/execute-tool.test.ts src/modules/dsh-chat/boundary.test.ts 2>/dev/null | tail -3"
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 240000,
+    "startedAt": "2026-09-12T03:37:23.364Z",
+    "endedAt": "2026-09-12T03:37:24.522Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "984f70333816451f5cd4c5b9c1f941dcb44ca32a",
+      "afterCommit": "984f70333816451f5cd4c5b9c1f941dcb44ca32a"
+    },
+    "afterFence": {
+      "snapshotHash": "5e772919ae4bd6126b736492eba580130480282c8bb03f463bfb823ede975dd7",
+      "scopeHash": "c9a36b03b92c9af30e65b78189af5a85e744b4bbb21051e3f5004d13749c0dd2",
+      "matched": true
+    },
+    "outputHash": "125eb5a4f5c0c3c4c28afe9c7019e4799d02ada2f526f3e51f0bbfc95b5a7f15",
+    "outputSummary": "Start at  11:37:23\n   Duration  655ms (transform 279ms, setup 0ms, collect 368ms, tests 6ms, environment 0ms, prepare 158ms)",
+    "outputTruncated": false
+  },
+  "receiptHash": "e53954509f4d6b95960c1e1b94faedd9c954cc9f06dbe6cab565d64d51a69437"
+}

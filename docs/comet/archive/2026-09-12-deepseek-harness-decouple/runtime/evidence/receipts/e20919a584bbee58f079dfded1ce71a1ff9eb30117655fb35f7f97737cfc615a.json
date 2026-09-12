@@ -1,0 +1,48 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "deepseek-harness-decouple",
+    "sourceRevision": 3,
+    "contractHash": "ff224c4fc706fdc1cb29cbc177cdaa11612b2497d9e9866db1caa8e3438c4227",
+    "scopeHash": "dd81681f291f76037c7d270b4c1519fa592f55875a4cacd50dedf7a0531acf12",
+    "snapshotHash": "ad534263ae8c5ce20641ffa0e1a4347aa883c9bf81c92ac44426416562698798",
+    "artifactHash": "71f57768e1e7355126fd2e95c07295e2817ce6e17b32b0d1f8b1be8e21f396a1"
+  },
+  "acceptanceIds": [
+    "acceptance-45cd740df99cd0f61670aa44b583c5c24cb6495fd8d2165924c7436e983a8686"
+  ],
+  "actor": "native-runtime:command:bash",
+  "issuedAt": "2026-09-12T00:25:26.668Z",
+  "evidence": {
+    "executable": "bash",
+    "args": [
+      "-c",
+      "if grep -RInE \"approve|/execute|BAPI\" harness-dsh/src; then exit 1; else echo \"no write/approve/execute refs in harness src\"; fi; cd frontend && npx vitest run src/runtime/semantic-tools/map-events.test.ts 2>/dev/null | tail -3"
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 240000,
+    "startedAt": "2026-09-12T00:25:25.632Z",
+    "endedAt": "2026-09-12T00:25:26.668Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "984f70333816451f5cd4c5b9c1f941dcb44ca32a",
+      "afterCommit": "984f70333816451f5cd4c5b9c1f941dcb44ca32a"
+    },
+    "afterFence": {
+      "snapshotHash": "ad534263ae8c5ce20641ffa0e1a4347aa883c9bf81c92ac44426416562698798",
+      "scopeHash": "dd81681f291f76037c7d270b4c1519fa592f55875a4cacd50dedf7a0531acf12",
+      "matched": true
+    },
+    "outputHash": "fad515476a386a3ffb7d74e6cd6f3c2bfc0c997e796c9d273a6f7b74b7f87c35",
+    "outputSummary": "no write/approve/execute refs in harness src\n   Start at  08:25:26\n   Duration  452ms (transform 82ms, setup 0ms, collect 66ms, tests 7ms, environment 0ms, prepare 123ms)",
+    "outputTruncated": false
+  },
+  "receiptHash": "e20919a584bbee58f079dfded1ce71a1ff9eb30117655fb35f7f97737cfc615a"
+}

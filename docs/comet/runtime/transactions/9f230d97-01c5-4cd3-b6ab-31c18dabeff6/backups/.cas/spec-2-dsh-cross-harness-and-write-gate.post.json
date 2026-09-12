@@ -1,0 +1,11 @@
+{
+  "schema": "comet.native.archive-cas.v1",
+  "operationId": "spec-2-dsh-cross-harness-and-write-gate",
+  "role": "post",
+  "hash": "c4ed9ec279efc8578bf55ba672d66204014a3b8a0236dde382b4dfdcaff6a038",
+  "identity": {
+    "dev": 2096,
+    "ino": 658665,
+    "birthtimeMs": 1789191858674.085
+  }
+}

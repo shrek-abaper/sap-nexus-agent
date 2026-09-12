@@ -1,0 +1,48 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "workbench-dsh-runtime",
+    "sourceRevision": 3,
+    "contractHash": "6a27f7f4b363ed9180235f9943bafc43b4898ce6f51b29f7228310a74c5a76ac",
+    "scopeHash": "c9a36b03b92c9af30e65b78189af5a85e744b4bbb21051e3f5004d13749c0dd2",
+    "snapshotHash": "5e772919ae4bd6126b736492eba580130480282c8bb03f463bfb823ede975dd7",
+    "artifactHash": "35611be297746c374245af971be01beef260fa4dcfdd1b5b40f4d163b9d4e795"
+  },
+  "acceptanceIds": [
+    "acceptance-f4f396df935fdfb3e755936b29e9693fba99377769857bc7af0c0aab7a3f1189"
+  ],
+  "actor": "native-runtime:command:bash",
+  "issuedAt": "2026-09-12T03:38:38.704Z",
+  "evidence": {
+    "executable": "bash",
+    "args": [
+      "-c",
+      "npm run --prefix frontend build 2>&1 | grep -E 'Compiled successfully' | head -1"
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 240000,
+    "startedAt": "2026-09-12T03:38:18.460Z",
+    "endedAt": "2026-09-12T03:38:38.704Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "984f70333816451f5cd4c5b9c1f941dcb44ca32a",
+      "afterCommit": "984f70333816451f5cd4c5b9c1f941dcb44ca32a"
+    },
+    "afterFence": {
+      "snapshotHash": "5e772919ae4bd6126b736492eba580130480282c8bb03f463bfb823ede975dd7",
+      "scopeHash": "c9a36b03b92c9af30e65b78189af5a85e744b4bbb21051e3f5004d13749c0dd2",
+      "matched": true
+    },
+    "outputHash": "bc73693e25b979d82ae407179a43070f1d2f3dd94714f374e39f5bbce1cbd3a7",
+    "outputSummary": "✓ Compiled successfully in 1000ms",
+    "outputTruncated": false
+  },
+  "receiptHash": "757869b4bde3bacb9867d87ef8ed2a6838f201678682fd7a408076cfe66106bf"
+}

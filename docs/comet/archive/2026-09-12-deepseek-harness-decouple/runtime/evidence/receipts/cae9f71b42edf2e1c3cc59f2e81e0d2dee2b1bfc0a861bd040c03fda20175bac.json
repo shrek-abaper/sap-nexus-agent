@@ -1,0 +1,28 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "manual-evidence",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "deepseek-harness-decouple",
+    "sourceRevision": 3,
+    "contractHash": "ff224c4fc706fdc1cb29cbc177cdaa11612b2497d9e9866db1caa8e3438c4227",
+    "scopeHash": "dd81681f291f76037c7d270b4c1519fa592f55875a4cacd50dedf7a0531acf12",
+    "snapshotHash": "ad534263ae8c5ce20641ffa0e1a4347aa883c9bf81c92ac44426416562698798",
+    "artifactHash": "71f57768e1e7355126fd2e95c07295e2817ce6e17b32b0d1f8b1be8e21f396a1"
+  },
+  "acceptanceIds": [
+    "acceptance-56bef7da0de17629c30c7db1357569a7046f18afbafe937da60c42dba1f52954"
+  ],
+  "actor": "native-runtime:manual-evidence",
+  "issuedAt": "2026-09-12T00:29:30.246Z",
+  "evidence": {
+    "steps": [
+      "检查 frontend/app/api/semantic-tools/route.ts 身份处理与 frontend/src/runtime/principal/principal-injector.ts；并验证请求体携带 principal 声明被契约拒绝"
+    ],
+    "observations": [
+      "路由身份来自服务端 injectPrincipal(request)，请求契约(schemas/semantic-tool-request.schema.json, additionalProperties:false)不含 principal 字段，客户端声明 principal 会以 INVALID_REQUEST 400 拒绝（semantic-tool-route.test.ts 覆盖未知字段拒绝）。LocalPlaceholderPrincipalInjector 在本 dev 切片恒返回占位主体、不返回 null，因此'无法解析身份则拒绝'的具体场景在本切片无法触发：真实身份源（SSO/头注入）是 gap-matrix 登记的后续阻塞项，injector 的契约是 fail-closed 抛出而非信任请求方。该场景的触发依赖未实现的真实身份注入器，属切片已知偏差。"
+    ]
+  },
+  "receiptHash": "cae9f71b42edf2e1c3cc59f2e81e0d2dee2b1bfc0a861bd040c03fda20175bac"
+}

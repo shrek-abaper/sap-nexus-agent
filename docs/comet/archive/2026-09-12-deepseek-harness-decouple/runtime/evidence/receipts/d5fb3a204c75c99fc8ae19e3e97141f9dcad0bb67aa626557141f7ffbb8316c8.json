@@ -1,0 +1,48 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "deepseek-harness-decouple",
+    "sourceRevision": 3,
+    "contractHash": "ff224c4fc706fdc1cb29cbc177cdaa11612b2497d9e9866db1caa8e3438c4227",
+    "scopeHash": "dd81681f291f76037c7d270b4c1519fa592f55875a4cacd50dedf7a0531acf12",
+    "snapshotHash": "ad534263ae8c5ce20641ffa0e1a4347aa883c9bf81c92ac44426416562698798",
+    "artifactHash": "71f57768e1e7355126fd2e95c07295e2817ce6e17b32b0d1f8b1be8e21f396a1"
+  },
+  "acceptanceIds": [
+    "acceptance-ad2ed5e0122a4ba77b63e66a6fc6ee7d1e4e601d89b237a394161db6507c4481"
+  ],
+  "actor": "native-runtime:command:bash",
+  "issuedAt": "2026-09-12T00:28:55.951Z",
+  "evidence": {
+    "executable": "bash",
+    "args": [
+      "-c",
+      "cd harness-dsh && npm run build >/dev/null 2>&1 && node lib/bin.js --dump-config | grep -qE \"cordis.bundle.patch|cordis.patch|system-prompt|sap-nexus-tools\" && node lib/bin.js --dump-config | wc -l"
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 240000,
+    "startedAt": "2026-09-12T00:28:54.606Z",
+    "endedAt": "2026-09-12T00:28:55.951Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "984f70333816451f5cd4c5b9c1f941dcb44ca32a",
+      "afterCommit": "984f70333816451f5cd4c5b9c1f941dcb44ca32a"
+    },
+    "afterFence": {
+      "snapshotHash": "ad534263ae8c5ce20641ffa0e1a4347aa883c9bf81c92ac44426416562698798",
+      "scopeHash": "dd81681f291f76037c7d270b4c1519fa592f55875a4cacd50dedf7a0531acf12",
+      "matched": true
+    },
+    "outputHash": "4c82a221b575ce7fe118b2e8cdf0764bf4ef570a3017e80b6d3438af9095f376",
+    "outputSummary": "55",
+    "outputTruncated": false
+  },
+  "receiptHash": "d5fb3a204c75c99fc8ae19e3e97141f9dcad0bb67aa626557141f7ffbb8316c8"
+}

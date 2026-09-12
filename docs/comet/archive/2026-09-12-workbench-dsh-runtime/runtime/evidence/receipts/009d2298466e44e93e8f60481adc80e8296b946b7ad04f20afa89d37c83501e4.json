@@ -1,0 +1,52 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "workbench-dsh-runtime",
+    "sourceRevision": 3,
+    "contractHash": "6a27f7f4b363ed9180235f9943bafc43b4898ce6f51b29f7228310a74c5a76ac",
+    "scopeHash": "c9a36b03b92c9af30e65b78189af5a85e744b4bbb21051e3f5004d13749c0dd2",
+    "snapshotHash": "5e772919ae4bd6126b736492eba580130480282c8bb03f463bfb823ede975dd7",
+    "artifactHash": "35611be297746c374245af971be01beef260fa4dcfdd1b5b40f4d163b9d4e795"
+  },
+  "acceptanceIds": [
+    "acceptance-96c77612974f05434d8c7eb31ec5fd948f3a3e005284588ca87845dd64bbf889",
+    "acceptance-9d5b7ca35d4f2b7e266366025ab3aae1c6705af644878f086a488c708d857d3a",
+    "acceptance-a2e40402831bc3fcec745b0a97240cc33e13717dda7552c8ac409a59d5504dc1",
+    "acceptance-a7b247c258ac0160565b19a2d2e1a406b0032791c96ec2764c4dce3c819ae40e",
+    "acceptance-b066c6c197b25c60f78b88b2db5d3b29b24cd2f938165f9ac5b8f0ffe52fd786"
+  ],
+  "actor": "native-runtime:command:bash",
+  "issuedAt": "2026-09-12T03:38:16.837Z",
+  "evidence": {
+    "executable": "bash",
+    "args": [
+      "-c",
+      "grep -RInE 'authorization|SAP_NEXUS_LLM_API_KEY|LLM_API_KEY' frontend/src/server/dsh/openai-compatible-adapter.ts frontend/src/server/dsh/registry.ts | head -5"
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 240000,
+    "startedAt": "2026-09-12T03:38:16.832Z",
+    "endedAt": "2026-09-12T03:38:16.837Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "984f70333816451f5cd4c5b9c1f941dcb44ca32a",
+      "afterCommit": "984f70333816451f5cd4c5b9c1f941dcb44ca32a"
+    },
+    "afterFence": {
+      "snapshotHash": "5e772919ae4bd6126b736492eba580130480282c8bb03f463bfb823ede975dd7",
+      "scopeHash": "c9a36b03b92c9af30e65b78189af5a85e744b4bbb21051e3f5004d13749c0dd2",
+      "matched": true
+    },
+    "outputHash": "45e18808698e3250d8fedb6faf675ede7f73d919e935256aa72926e9961caa2c",
+    "outputSummary": "frontend/src/server/dsh/openai-compatible-adapter.ts:81:        \"authorization\": `Bearer [REDACTED]\nfrontend/src/server/dsh/registry.ts:30:    apiKey: [REDACTED] ?? process.env.LLM_API_KEY ?? \"\",",
+    "outputTruncated": false
+  },
+  "receiptHash": "009d2298466e44e93e8f60481adc80e8296b946b7ad04f20afa89d37c83501e4"
+}

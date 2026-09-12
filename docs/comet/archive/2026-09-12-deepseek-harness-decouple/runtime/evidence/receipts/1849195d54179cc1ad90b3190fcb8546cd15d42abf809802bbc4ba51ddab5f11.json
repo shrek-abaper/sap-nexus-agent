@@ -1,0 +1,48 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "deepseek-harness-decouple",
+    "sourceRevision": 3,
+    "contractHash": "ff224c4fc706fdc1cb29cbc177cdaa11612b2497d9e9866db1caa8e3438c4227",
+    "scopeHash": "dd81681f291f76037c7d270b4c1519fa592f55875a4cacd50dedf7a0531acf12",
+    "snapshotHash": "ad534263ae8c5ce20641ffa0e1a4347aa883c9bf81c92ac44426416562698798",
+    "artifactHash": "71f57768e1e7355126fd2e95c07295e2817ce6e17b32b0d1f8b1be8e21f396a1"
+  },
+  "acceptanceIds": [
+    "acceptance-5395c56693d202fa1cf338b03a7ccadd64aca92d79f7dd58ecd110b004073e08"
+  ],
+  "actor": "native-runtime:command:bash",
+  "issuedAt": "2026-09-12T00:26:42.089Z",
+  "evidence": {
+    "executable": "bash",
+    "args": [
+      "-c",
+      "cd harness-dsh && npx vitest run tests/tool.test.ts 2>/dev/null | tail -3"
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 240000,
+    "startedAt": "2026-09-12T00:26:40.926Z",
+    "endedAt": "2026-09-12T00:26:42.089Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "984f70333816451f5cd4c5b9c1f941dcb44ca32a",
+      "afterCommit": "984f70333816451f5cd4c5b9c1f941dcb44ca32a"
+    },
+    "afterFence": {
+      "snapshotHash": "ad534263ae8c5ce20641ffa0e1a4347aa883c9bf81c92ac44426416562698798",
+      "scopeHash": "dd81681f291f76037c7d270b4c1519fa592f55875a4cacd50dedf7a0531acf12",
+      "matched": true
+    },
+    "outputHash": "6fa811ab8b00eb65cbbdf793542b18f70e30693fb51469d29cf9aa1ca3df7f0f",
+    "outputSummary": "Start at  08:26:41\n   Duration  600ms (transform 78ms, setup 0ms, collect 165ms, tests 106ms, environment 0ms, prepare 90ms)",
+    "outputTruncated": false
+  },
+  "receiptHash": "1849195d54179cc1ad90b3190fcb8546cd15d42abf809802bbc4ba51ddab5f11"
+}

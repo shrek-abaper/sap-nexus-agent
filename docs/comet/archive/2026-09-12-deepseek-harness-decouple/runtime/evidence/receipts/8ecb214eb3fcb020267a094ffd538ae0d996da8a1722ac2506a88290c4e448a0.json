@@ -1,0 +1,48 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "deepseek-harness-decouple",
+    "sourceRevision": 3,
+    "contractHash": "ff224c4fc706fdc1cb29cbc177cdaa11612b2497d9e9866db1caa8e3438c4227",
+    "scopeHash": "dd81681f291f76037c7d270b4c1519fa592f55875a4cacd50dedf7a0531acf12",
+    "snapshotHash": "ad534263ae8c5ce20641ffa0e1a4347aa883c9bf81c92ac44426416562698798",
+    "artifactHash": "71f57768e1e7355126fd2e95c07295e2817ce6e17b32b0d1f8b1be8e21f396a1"
+  },
+  "acceptanceIds": [
+    "acceptance-82bd9eadad749356d4894803b5c1e34fa4903fe48d533c5314c28f5c9c10290e"
+  ],
+  "actor": "native-runtime:command:bash",
+  "issuedAt": "2026-09-12T00:27:53.747Z",
+  "evidence": {
+    "executable": "bash",
+    "args": [
+      "-c",
+      "cd harness-dsh && npx vitest run tests/architecture.test.ts 2>/dev/null | tail -3; grep -nE \"shape|telemetry|render\" src/sap-nexus-tool.ts | head -5"
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 240000,
+    "startedAt": "2026-09-12T00:27:52.927Z",
+    "endedAt": "2026-09-12T00:27:53.747Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "984f70333816451f5cd4c5b9c1f941dcb44ca32a",
+      "afterCommit": "984f70333816451f5cd4c5b9c1f941dcb44ca32a"
+    },
+    "afterFence": {
+      "snapshotHash": "ad534263ae8c5ce20641ffa0e1a4347aa883c9bf81c92ac44426416562698798",
+      "scopeHash": "dd81681f291f76037c7d270b4c1519fa592f55875a4cacd50dedf7a0531acf12",
+      "matched": true
+    },
+    "outputHash": "6b1e58c3be2510f797b35125b1fe1ac6dd5c8c965314594095b51be72e6b28ee",
+    "outputSummary": "Start at  08:27:53\n   Duration  303ms (transform 30ms, setup 0ms, collect 19ms, tests 4ms, environment 0ms, prepare 75ms)\n\n22:export function renderDiagnosis(value: SemanticToolResponse): string {\n44:  // tools waterfall, pre-execute stage: LOCAL shape validation only.\n82:      render: (_args, value) => [{ type: \"text\", text: renderDiagnosis(value as SemanticToolResponse) }],\n97:        // Local telemetry only (no governed payload values).",
+    "outputTruncated": false
+  },
+  "receiptHash": "8ecb214eb3fcb020267a094ffd538ae0d996da8a1722ac2506a88290c4e448a0"
+}

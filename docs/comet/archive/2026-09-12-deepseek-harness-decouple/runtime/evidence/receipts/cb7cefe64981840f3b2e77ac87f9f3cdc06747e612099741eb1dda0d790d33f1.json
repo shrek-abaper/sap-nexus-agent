@@ -1,0 +1,48 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "deepseek-harness-decouple",
+    "sourceRevision": 3,
+    "contractHash": "ff224c4fc706fdc1cb29cbc177cdaa11612b2497d9e9866db1caa8e3438c4227",
+    "scopeHash": "dd81681f291f76037c7d270b4c1519fa592f55875a4cacd50dedf7a0531acf12",
+    "snapshotHash": "ad534263ae8c5ce20641ffa0e1a4347aa883c9bf81c92ac44426416562698798",
+    "artifactHash": "71f57768e1e7355126fd2e95c07295e2817ce6e17b32b0d1f8b1be8e21f396a1"
+  },
+  "acceptanceIds": [
+    "acceptance-1ecc8233544b736057f232b13ac4b04311eb4af7ce9d45c4860083bf42051667"
+  ],
+  "actor": "native-runtime:command:bash",
+  "issuedAt": "2026-09-12T00:25:16.352Z",
+  "evidence": {
+    "executable": "bash",
+    "args": [
+      "-c",
+      "if grep -RInE \"BAPI_|/capabilities/|CallPlan|rfcName|bindingId\" harness-dsh/src; then exit 1; else echo \"harness src has no gateway/callplan/rfc surface\"; fi"
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 240000,
+    "startedAt": "2026-09-12T00:25:16.348Z",
+    "endedAt": "2026-09-12T00:25:16.352Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "984f70333816451f5cd4c5b9c1f941dcb44ca32a",
+      "afterCommit": "984f70333816451f5cd4c5b9c1f941dcb44ca32a"
+    },
+    "afterFence": {
+      "snapshotHash": "ad534263ae8c5ce20641ffa0e1a4347aa883c9bf81c92ac44426416562698798",
+      "scopeHash": "dd81681f291f76037c7d270b4c1519fa592f55875a4cacd50dedf7a0531acf12",
+      "matched": true
+    },
+    "outputHash": "7547ab417d16528053770003770d6eae9767afd24efb2c5eacf057b11f4b2762",
+    "outputSummary": "harness src has no gateway/callplan/rfc surface",
+    "outputTruncated": false
+  },
+  "receiptHash": "cb7cefe64981840f3b2e77ac87f9f3cdc06747e612099741eb1dda0d790d33f1"
+}

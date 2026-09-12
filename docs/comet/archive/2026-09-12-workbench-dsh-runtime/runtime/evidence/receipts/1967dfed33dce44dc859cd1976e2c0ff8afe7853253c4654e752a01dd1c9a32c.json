@@ -1,0 +1,52 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "workbench-dsh-runtime",
+    "sourceRevision": 3,
+    "contractHash": "6a27f7f4b363ed9180235f9943bafc43b4898ce6f51b29f7228310a74c5a76ac",
+    "scopeHash": "c9a36b03b92c9af30e65b78189af5a85e744b4bbb21051e3f5004d13749c0dd2",
+    "snapshotHash": "5e772919ae4bd6126b736492eba580130480282c8bb03f463bfb823ede975dd7",
+    "artifactHash": "35611be297746c374245af971be01beef260fa4dcfdd1b5b40f4d163b9d4e795"
+  },
+  "acceptanceIds": [
+    "acceptance-1d64d78b0357a3a329a0b39af0445dfb2555d6a1bb0e83f7cbbd4e0a58a4e6d7",
+    "acceptance-37d41f584971e4ae6325e8eac8dae17904c17b2e458e2b3f4b59396eabcdaf4f",
+    "acceptance-95ac06c9869c92ed3d57e5c05d81222d67dfaf0d4319f5c3f3ecbe8148e0beae",
+    "acceptance-c0522a8390e061633e048bdecd393eca19c1bcd37823e3c101e55e73d0e1464f",
+    "acceptance-daef6ea91fd8752924dfe5004fb011af6f329093a903d2097cdf8681cc76e1af"
+  ],
+  "actor": "native-runtime:command:bash",
+  "issuedAt": "2026-09-12T03:35:10.577Z",
+  "evidence": {
+    "executable": "bash",
+    "args": [
+      "-c",
+      "cd frontend && npx vitest run src/modules/dsh-chat/boundary.test.ts 2>/dev/null | tail -3"
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 240000,
+    "startedAt": "2026-09-12T03:35:09.652Z",
+    "endedAt": "2026-09-12T03:35:10.577Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "984f70333816451f5cd4c5b9c1f941dcb44ca32a",
+      "afterCommit": "984f70333816451f5cd4c5b9c1f941dcb44ca32a"
+    },
+    "afterFence": {
+      "snapshotHash": "5e772919ae4bd6126b736492eba580130480282c8bb03f463bfb823ede975dd7",
+      "scopeHash": "c9a36b03b92c9af30e65b78189af5a85e744b4bbb21051e3f5004d13749c0dd2",
+      "matched": true
+    },
+    "outputHash": "d961471a2fd45d4a7b28815a33ea42d06a36407e61c7e7015211ed83462c3828",
+    "outputSummary": "Start at  11:35:10\n   Duration  358ms (transform 32ms, setup 0ms, collect 24ms, tests 3ms, environment 0ms, prepare 56ms)",
+    "outputTruncated": false
+  },
+  "receiptHash": "1967dfed33dce44dc859cd1976e2c0ff8afe7853253c4654e752a01dd1c9a32c"
+}

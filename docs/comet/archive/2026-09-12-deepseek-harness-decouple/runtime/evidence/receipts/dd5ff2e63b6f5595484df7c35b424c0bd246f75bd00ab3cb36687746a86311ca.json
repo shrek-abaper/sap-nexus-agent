@@ -1,0 +1,48 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "deepseek-harness-decouple",
+    "sourceRevision": 3,
+    "contractHash": "ff224c4fc706fdc1cb29cbc177cdaa11612b2497d9e9866db1caa8e3438c4227",
+    "scopeHash": "dd81681f291f76037c7d270b4c1519fa592f55875a4cacd50dedf7a0531acf12",
+    "snapshotHash": "ad534263ae8c5ce20641ffa0e1a4347aa883c9bf81c92ac44426416562698798",
+    "artifactHash": "71f57768e1e7355126fd2e95c07295e2817ce6e17b32b0d1f8b1be8e21f396a1"
+  },
+  "acceptanceIds": [
+    "acceptance-1f854cffbafdf9dcd13cd33ed3fcc6c66a5fbd814e34ee90d471e238e9c6365c"
+  ],
+  "actor": "native-runtime:command:bash",
+  "issuedAt": "2026-09-12T00:25:18.184Z",
+  "evidence": {
+    "executable": "bash",
+    "args": [
+      "-c",
+      "if grep -lEi \"cordis|ctx\\.|plugin|session seam\" schemas/semantic-tool-*.json; then exit 1; else echo \"schemas harness-neutral\"; fi; python3 -c \"import json;[json.load(open(f)) for f in [\\\"schemas/semantic-tool-request.schema.json\\\",\\\"schemas/semantic-tool-response.schema.json\\\"]];print(\\\"both parse\\\")\""
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 240000,
+    "startedAt": "2026-09-12T00:25:18.150Z",
+    "endedAt": "2026-09-12T00:25:18.184Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "984f70333816451f5cd4c5b9c1f941dcb44ca32a",
+      "afterCommit": "984f70333816451f5cd4c5b9c1f941dcb44ca32a"
+    },
+    "afterFence": {
+      "snapshotHash": "ad534263ae8c5ce20641ffa0e1a4347aa883c9bf81c92ac44426416562698798",
+      "scopeHash": "dd81681f291f76037c7d270b4c1519fa592f55875a4cacd50dedf7a0531acf12",
+      "matched": true
+    },
+    "outputHash": "593a7da2fd18c53af01cf8e9139cc21a719ad248fae28353c502f1ee3aba155c",
+    "outputSummary": "schemas harness-neutral\nboth parse",
+    "outputTruncated": false
+  },
+  "receiptHash": "dd5ff2e63b6f5595484df7c35b424c0bd246f75bd00ab3cb36687746a86311ca"
+}

@@ -1,0 +1,11 @@
+{
+  "schema": "comet.native.archive-cas.v1",
+  "operationId": "spec-2-semantic-tool-http-facade",
+  "role": "post",
+  "hash": "7f54c74735151e8d6478c7b125bd3a4ffe19e36ef5a77e507574c9e875dfde7e",
+  "identity": {
+    "dev": 2096,
+    "ino": 530139,
+    "birthtimeMs": 1789173247131.894
+  }
+}

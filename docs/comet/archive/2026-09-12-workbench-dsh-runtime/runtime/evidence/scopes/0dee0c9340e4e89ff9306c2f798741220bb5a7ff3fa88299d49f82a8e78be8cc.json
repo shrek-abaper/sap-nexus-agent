@@ -1,0 +1,566 @@
+{
+  "schema": "comet.native.implementation-scope.v2",
+  "contractHash": "6a27f7f4b363ed9180235f9943bafc43b4898ce6f51b29f7228310a74c5a76ac",
+  "baselineProjectionRef": "runtime/evidence/snapshots/efc308330d7d932a2e07841cdc5a5d1e810193ab4d3d184b0f2ed03ff1fea40f.json",
+  "baselineProjectionHash": "efc308330d7d932a2e07841cdc5a5d1e810193ab4d3d184b0f2ed03ff1fea40f",
+  "currentProjectionRef": "runtime/evidence/snapshots/5e772919ae4bd6126b736492eba580130480282c8bb03f463bfb823ede975dd7.json",
+  "currentProjectionHash": "5e772919ae4bd6126b736492eba580130480282c8bb03f463bfb823ede975dd7",
+  "complete": false,
+  "declaredArtifacts": [
+    {
+      "path": "frontend/app/api/dsh",
+      "kind": "directory"
+    },
+    {
+      "path": "frontend/app/api/semantic-tools/route.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/app/chat",
+      "kind": "directory"
+    },
+    {
+      "path": "frontend/app/globals.css",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/app/page.tsx",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/next.config.mjs",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/package.json",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/modules/dsh-chat",
+      "kind": "directory"
+    },
+    {
+      "path": "frontend/src/runtime/agent-runtime-adapter.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/runtime/semantic-tools",
+      "kind": "directory"
+    },
+    {
+      "path": "frontend/src/server/dsh",
+      "kind": "directory"
+    },
+    {
+      "path": "schemas/semantic-tool-request.schema.json",
+      "kind": "file"
+    },
+    {
+      "path": "schemas/semantic-tool-response.schema.json",
+      "kind": "file"
+    }
+  ],
+  "changes": [
+    {
+      "path": "frontend/app/api/dsh/conversations/[id]/messages/route.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "db95c15c7b50419e6511bc2238ddc0675f0dbaf5a2095cd62e037fdbaca0527b",
+        "size": 1873
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/app/api/dsh",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/app/api/semantic-tools/route.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "0fb33a3fe721a677d26d8fc216f45a5a85fae5a9b6ff2e79af1159fd9befe335",
+        "size": 1830
+      },
+      "after": {
+        "hash": "1d630e331d905d4b1c491e5085102afe45ac025403eeb548d818182aee2cd105",
+        "size": 1628
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/app/api/semantic-tools/route.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/app/chat/page.tsx",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "4529c6306554366848fe6d57ccd80ab14160a6faa3de4d4639c051c60de476b5",
+        "size": 172
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/app/chat",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/app/globals.css",
+      "kind": "modified",
+      "before": {
+        "hash": "304192b2ccfa00b658a58daa6e2aa71e85af17b345ee2d5ede9916df9f8eff45",
+        "size": 31233
+      },
+      "after": {
+        "hash": "28cffca1688dbc2f9d8ec9b42fbbebc0adf675d9d521a34e79c8e6700f15c858",
+        "size": 36831
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/app/globals.css",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/app/page.tsx",
+      "kind": "modified",
+      "before": {
+        "hash": "d5f8dd9a9ae24669be36107a6135538304d0b160f7ff638400c6825ee3c33f59",
+        "size": 110
+      },
+      "after": {
+        "hash": "4a9209f8ee94d79b70374821c07d51a211d6881e64df41db366aa6d2bcafb2fe",
+        "size": 214
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/app/page.tsx",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/next.config.mjs",
+      "kind": "modified",
+      "before": {
+        "hash": "77ea626eb2d81c22753973fb9574c1470758d3cb7b76a195072c359be968295d",
+        "size": 118
+      },
+      "after": {
+        "hash": "5d8d0fc0013dd3cd0e067649e0e8fd522c0fc0c72439246bf92a3828108d09cb",
+        "size": 821
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/next.config.mjs",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/package-lock.json",
+      "kind": "modified",
+      "before": {
+        "hash": "da2a360d242f17be11a8b84328fce026ac7c4a10812acf50fb0eb196e21d1714",
+        "size": 69979
+      },
+      "after": {
+        "hash": "efd9d8e118863873d07c03ca76bdb14bb9a7eb7411408ed832c0b90e45b633ea",
+        "size": 136279
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "frontend/package.json",
+      "kind": "modified",
+      "before": {
+        "hash": "2fc777eba8c69cdaa0dab653b8c58ffbeadc4ea4522e0b0223d9da495d8dae40",
+        "size": 637
+      },
+      "after": {
+        "hash": "ec1b64ec795e2fe3bf76068f4b29b766c1f1ba007bdfc113c3fa5b02e21a2ca4",
+        "size": 3028
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/package.json",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/modules/dsh-chat/DshChat.tsx",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "cf6b368aeb965e4a48dbf344c601bddb941a2c2e1367d9a3d877474e68637c24",
+        "size": 4522
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/modules/dsh-chat",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/modules/dsh-chat/ToolCallCard.tsx",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "82dfb13d04b6099176e23b5ca6a3f1fd5ab7301300e1652f57e1a6c0a29cfa0c",
+        "size": 6001
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/modules/dsh-chat",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/modules/dsh-chat/boundary.test.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "469a903536ba46197e94e190fd3a3a84e7c9dd24a659fdd4319c1884f4c1ac00",
+        "size": 1257
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/modules/dsh-chat",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/modules/dsh-chat/types.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "bacdc1882282d8e9691124fa6d6c1d6ae7a0267c1408b9f80199c0e7af22e5c5",
+        "size": 1464
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/modules/dsh-chat",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/agent-runtime-adapter.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "db17384f9fcc4d3270b5951ce760c70ea67d290508a8e509c0d45d4f58437aac",
+        "size": 67625
+      },
+      "after": {
+        "hash": "10e7190a35ff71798326a9284c3d61dfef909b4dab9cbd7ada94a70919323db1",
+        "size": 67879
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/agent-runtime-adapter.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/semantic-tools/__fixtures__/cross-harness-cases.json",
+      "kind": "modified",
+      "before": {
+        "hash": "5d4ff463fcff691021e4c0b12992f65e2410f695babdce10b3db32119de11c42",
+        "size": 2143
+      },
+      "after": {
+        "hash": "d8b952aac183247c7feaaa5d7fa0e951d247e2d5f22a4ea50bccd316589b5f33",
+        "size": 4057
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/semantic-tools",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/semantic-tools/cross-harness.test.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "d3eeb380ec2093ed945d8e6d38f117a43af0b45e62e55ab664e571943e0632f8",
+        "size": 8100
+      },
+      "after": {
+        "hash": "9f4af0eccb0473f44444b7c1a02e456f05a09f5d5b9b3ed51e13a96eec8866ac",
+        "size": 8173
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/semantic-tools",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/semantic-tools/diagnose-material-supply.ts",
+      "kind": "removed",
+      "before": {
+        "hash": "d792e52af30092a6cf811b8daecc7229dceb0537c055546296aa82cfd99711d3",
+        "size": 2349
+      },
+      "after": null,
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/semantic-tools",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/semantic-tools/execute-tool.test.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "552e911f6d269b8e655119eb30abebd742589def8baba0c618d7ba909edf5aa8",
+        "size": 2916
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/semantic-tools",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/semantic-tools/execute-tool.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "4cef882262da9ee1d6e57173276f11a386ba94c3ef035df1f20de5fce2ed9cb2",
+        "size": 3969
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/semantic-tools",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/semantic-tools/map-events.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "2e6eb36b35b35b838958260dd9a58e34bdd29510c09e3782c62dfad3b2279571",
+        "size": 8718
+      },
+      "after": {
+        "hash": "19a9fea5391d42175defb9b6713bd45f0d0f8dae21545719a13c094f8856d863",
+        "size": 9599
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/semantic-tools",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/semantic-tools/types.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "4052352acc4eb0ce65bb141163ce29afc6f4e7733f8c80c5a4608572b141df9b",
+        "size": 2404
+      },
+      "after": {
+        "hash": "01c02cecad784182a40dc4f033dbf16bb6d539a4096ca2329226626a81e30f66",
+        "size": 3645
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/semantic-tools",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/semantic-tools/validate.test.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "69114316f441a6a4d0f5b1aa58beb688c5ae81f387d9805609c1131210f24a3c",
+        "size": 3940
+      },
+      "after": {
+        "hash": "1eabadd4722c12e4daca1fa4b30c6f30c79b0d594307cc295241029b7851a41a",
+        "size": 3940
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/semantic-tools",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/semantic-tools/validate.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "3eb9139d814bb950b89d304f6c54a26b172cd2eb02a0c2e060ccb957aa974155",
+        "size": 6769
+      },
+      "after": {
+        "hash": "edbc6e4191ec09a3d228f36976db7fb1643c50a8db2b042eb69d835d01d9a521",
+        "size": 7182
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/semantic-tools",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/server/dsh/messages-route.test.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "f87dae13522d0b1eb354d959c220ad0bb9f44766d5b754e602b2cb045b6c7718",
+        "size": 2260
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/server/dsh",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/server/dsh/openai-compatible-adapter.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "82ff2c02064085efff10d59af0c4626cb86df232d3d27aebc3864b073ed43f5f",
+        "size": 6077
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/server/dsh",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/server/dsh/registry.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "337184634c9cfdfcdb1ea22f641fbeedf0e6ec3ba2a4472c6e9238748e4cc93c",
+        "size": 3101
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/server/dsh",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/server/dsh/runtime.test.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "ffa7254ea95a43ca76b1ff315f090132a15d87731a3d81e907b14b648ffd4a65",
+        "size": 5319
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/server/dsh",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/server/dsh/runtime.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "ee2786b91ad7ce014b6bbe0b48d57e71ac665897a957f3128916e398df205398",
+        "size": 10228
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/server/dsh",
+          "kind": "directory"
+        }
+      ]
+    },
+    {
+      "path": "schemas/semantic-tool-request.schema.json",
+      "kind": "modified",
+      "before": {
+        "hash": "da310ff9b3787c92b387c6e98078135068978af764b145b428251a3b21348dfd",
+        "size": 1663
+      },
+      "after": {
+        "hash": "f5ea234ccfe369678c8cfba849e8b86df0a6088500fdb1a5ecdb53712f03eb8c",
+        "size": 2250
+      },
+      "attributedTo": [
+        {
+          "path": "schemas/semantic-tool-request.schema.json",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "schemas/semantic-tool-response.schema.json",
+      "kind": "modified",
+      "before": {
+        "hash": "53a8f568f7cc0303b2ccce8ff59420fa8013bcb714d2df19ad41cb0cf67497e3",
+        "size": 3745
+      },
+      "after": {
+        "hash": "321ac134623a756ebd9cddc0225abbdcd94999f9fa3d3c1e0f76f753bf1ad784",
+        "size": 5068
+      },
+      "attributedTo": [
+        {
+          "path": "schemas/semantic-tool-response.schema.json",
+          "kind": "file"
+        }
+      ]
+    }
+  ],
+  "unattributed": [
+    {
+      "path": "frontend/package-lock.json",
+      "kind": "modified",
+      "before": {
+        "hash": "da2a360d242f17be11a8b84328fce026ac7c4a10812acf50fb0eb196e21d1714",
+        "size": 69979
+      },
+      "after": {
+        "hash": "efd9d8e118863873d07c03ca76bdb14bb9a7eb7411408ed832c0b90e45b633ea",
+        "size": 136279
+      },
+      "attributedTo": []
+    }
+  ],
+  "unresolvedScopes": [
+    {
+      "id": "scope:5efab898da609dd1bb7af65914a1a62be3a01280e05ee4f1c7ee9d61d8ef23d3",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": "frontend/package-lock.json",
+      "reason": "Changed path is not covered by a declared artifact: frontend/package-lock.json"
+    }
+  ],
+  "noCodeReason": null,
+  "scopeHash": "0dee0c9340e4e89ff9306c2f798741220bb5a7ff3fa88299d49f82a8e78be8cc"
+}

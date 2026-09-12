@@ -1,0 +1,54 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "workbench-dsh-runtime",
+    "sourceRevision": 3,
+    "contractHash": "6a27f7f4b363ed9180235f9943bafc43b4898ce6f51b29f7228310a74c5a76ac",
+    "scopeHash": "c9a36b03b92c9af30e65b78189af5a85e744b4bbb21051e3f5004d13749c0dd2",
+    "snapshotHash": "5e772919ae4bd6126b736492eba580130480282c8bb03f463bfb823ede975dd7",
+    "artifactHash": "35611be297746c374245af971be01beef260fa4dcfdd1b5b40f4d163b9d4e795"
+  },
+  "acceptanceIds": [
+    "acceptance-0a2dc4e3c76c53e2f211a7a81c67ef74435791bfa2c65adb8b1015068b304b88",
+    "acceptance-15c28c5e92cd718b869513606620c52914b54ec3b7fddec211c91da4e9be52d0",
+    "acceptance-33864c868436636e34872eaa0035b5e00e9c09d8d70c74d33631ba93594d68d0",
+    "acceptance-3472e1118d05dc0927808f5d28612dbdc47e408b9531555030fa7f314ae45781",
+    "acceptance-a69a684786bed3f0c161d1a334e854543c4504a331159407bd9b4f59020b514b",
+    "acceptance-da5f77db9a975feb0eeec586a0066d27a311fa81ea7b9e12e7545f398274ace1",
+    "acceptance-fc00ae75c1fbb388304d45a394e1646b7fa451240faa87b02bd04a4d82735862"
+  ],
+  "actor": "native-runtime:command:bash",
+  "issuedAt": "2026-09-12T03:35:08.025Z",
+  "evidence": {
+    "executable": "bash",
+    "args": [
+      "-c",
+      "npm run --prefix frontend build 2>&1 | grep -E '/chat|Compiled' | head -4"
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 240000,
+    "startedAt": "2026-09-12T03:34:48.564Z",
+    "endedAt": "2026-09-12T03:35:08.025Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "984f70333816451f5cd4c5b9c1f941dcb44ca32a",
+      "afterCommit": "984f70333816451f5cd4c5b9c1f941dcb44ca32a"
+    },
+    "afterFence": {
+      "snapshotHash": "5e772919ae4bd6126b736492eba580130480282c8bb03f463bfb823ede975dd7",
+      "scopeHash": "c9a36b03b92c9af30e65b78189af5a85e744b4bbb21051e3f5004d13749c0dd2",
+      "matched": true
+    },
+    "outputHash": "5a4b3749f8e016f7b5c6f2d2c0e788a5004706a3668c57f2288e3ca4894efeeb",
+    "outputSummary": "✓ Compiled successfully in 1000ms\n├ ○ /chat                                  2.9 kB         104 kB",
+    "outputTruncated": false
+  },
+  "receiptHash": "fa476fe2ef896a378580d3599b726ebae91715b4603923148c0ce7a41c963a34"
+}

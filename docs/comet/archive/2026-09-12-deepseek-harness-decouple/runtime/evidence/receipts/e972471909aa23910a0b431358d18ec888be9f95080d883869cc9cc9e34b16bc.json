@@ -1,0 +1,48 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "deepseek-harness-decouple",
+    "sourceRevision": 3,
+    "contractHash": "ff224c4fc706fdc1cb29cbc177cdaa11612b2497d9e9866db1caa8e3438c4227",
+    "scopeHash": "dd81681f291f76037c7d270b4c1519fa592f55875a4cacd50dedf7a0531acf12",
+    "snapshotHash": "ad534263ae8c5ce20641ffa0e1a4347aa883c9bf81c92ac44426416562698798",
+    "artifactHash": "71f57768e1e7355126fd2e95c07295e2817ce6e17b32b0d1f8b1be8e21f396a1"
+  },
+  "acceptanceIds": [
+    "acceptance-4c3c9395fbaa473e72bfc124026df45648c9de1b436b7d151d71b2365a883a83"
+  ],
+  "actor": "native-runtime:command:bash",
+  "issuedAt": "2026-09-12T00:26:38.527Z",
+  "evidence": {
+    "executable": "bash",
+    "args": [
+      "-c",
+      "test -f harness-dsh/package.json && test -f harness-dsh/package-lock.json && test -f harness-dsh/tsconfig.json && test -d harness-dsh/config && test -d harness-dsh/src && node -e \"JSON.parse(require(\\\"fs\\\").readFileSync(\\\"harness-dsh/package.json\\\"))\" && echo skeleton-present && cd harness-dsh && npx vitest run 2>/dev/null | tail -3"
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 240000,
+    "startedAt": "2026-09-12T00:26:36.988Z",
+    "endedAt": "2026-09-12T00:26:38.527Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "984f70333816451f5cd4c5b9c1f941dcb44ca32a",
+      "afterCommit": "984f70333816451f5cd4c5b9c1f941dcb44ca32a"
+    },
+    "afterFence": {
+      "snapshotHash": "ad534263ae8c5ce20641ffa0e1a4347aa883c9bf81c92ac44426416562698798",
+      "scopeHash": "dd81681f291f76037c7d270b4c1519fa592f55875a4cacd50dedf7a0531acf12",
+      "matched": true
+    },
+    "outputHash": "eadbd7ceb39f21052ec115a6a6b064d255ef3a4da8bc449b493cc18b5a21a8ab",
+    "outputSummary": "skeleton-present\n   Start at  08:26:37\n   Duration  940ms (transform 168ms, setup 0ms, collect 485ms, tests 155ms, environment 1ms, prepare 332ms)",
+    "outputTruncated": false
+  },
+  "receiptHash": "e972471909aa23910a0b431358d18ec888be9f95080d883869cc9cc9e34b16bc"
+}

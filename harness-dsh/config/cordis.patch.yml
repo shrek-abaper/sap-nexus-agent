@@ -1,0 +1,14 @@
+# Dev profile overlay (machine/user plane). Edit rows here to override bundle
+# defaults for local development without touching the reviewed bundle layer.
+# Example row overrides (whole `config` value replaces the bundle row's config):
+#
+# - id: agent-default-model
+#   config:
+#     provider: sapnexus
+#     model: deepseek-chat
+# - id: sap-nexus-tools
+#   config:
+#     facadeUrl: http://127.0.0.1:3000
+#     timeoutMs: 60000
+
+[]

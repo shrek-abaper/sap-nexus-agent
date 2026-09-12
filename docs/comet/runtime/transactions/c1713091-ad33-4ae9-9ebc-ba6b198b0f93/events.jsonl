@@ -1,0 +1,10 @@
+{"sequence":1,"timestamp":"2026-09-12T00:34:04.050Z","type":"prepared"}
+{"sequence":2,"timestamp":"2026-09-12T00:34:06.989Z","type":"operation-started","operationId":"spec-1-harness-dsh-integration"}
+{"sequence":3,"timestamp":"2026-09-12T00:34:07.095Z","type":"operation-completed","operationId":"spec-1-harness-dsh-integration"}
+{"sequence":4,"timestamp":"2026-09-12T00:34:07.110Z","type":"operation-started","operationId":"spec-2-semantic-tool-http-facade"}
+{"sequence":5,"timestamp":"2026-09-12T00:34:07.206Z","type":"operation-completed","operationId":"spec-2-semantic-tool-http-facade"}
+{"sequence":6,"timestamp":"2026-09-12T00:34:08.681Z","type":"operation-started","operationId":"archive-change"}
+{"sequence":7,"timestamp":"2026-09-12T00:34:09.504Z","type":"operation-completed","operationId":"archive-change"}
+{"sequence":8,"timestamp":"2026-09-12T00:34:09.958Z","type":"archive-finalization-started"}
+{"sequence":9,"timestamp":"2026-09-12T00:34:10.062Z","type":"archive-finalized"}
+{"sequence":10,"timestamp":"2026-09-12T00:34:10.201Z","type":"commit"}

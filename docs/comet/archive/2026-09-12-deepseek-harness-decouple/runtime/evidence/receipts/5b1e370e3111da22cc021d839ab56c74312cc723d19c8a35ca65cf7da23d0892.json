@@ -1,0 +1,48 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "deepseek-harness-decouple",
+    "sourceRevision": 3,
+    "contractHash": "ff224c4fc706fdc1cb29cbc177cdaa11612b2497d9e9866db1caa8e3438c4227",
+    "scopeHash": "dd81681f291f76037c7d270b4c1519fa592f55875a4cacd50dedf7a0531acf12",
+    "snapshotHash": "ad534263ae8c5ce20641ffa0e1a4347aa883c9bf81c92ac44426416562698798",
+    "artifactHash": "71f57768e1e7355126fd2e95c07295e2817ce6e17b32b0d1f8b1be8e21f396a1"
+  },
+  "acceptanceIds": [
+    "acceptance-4253cafd93a4ad69709798d8662e0e45f188cecb6648720cf66a787f66893ff7"
+  ],
+  "actor": "native-runtime:command:bash",
+  "issuedAt": "2026-09-12T00:25:23.684Z",
+  "evidence": {
+    "executable": "bash",
+    "args": [
+      "-c",
+      "cd harness-dsh && node -e \"const p=require(\\\"./package.json\\\");const bad=Object.entries(p.dependencies).filter(([k,v])=>/dsh/.test(k)&&/[\\\\^~]/.test(v));if(bad.length){console.error(bad);process.exit(1)}console.log(\\\"all dsh deps exact:\\\",Object.keys(p.dependencies).filter(k=>k.includes(\\\"dsh\\\")).length,\\\"overrides:\\\",Object.keys(p.overrides).length)\""
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 240000,
+    "startedAt": "2026-09-12T00:25:23.654Z",
+    "endedAt": "2026-09-12T00:25:23.684Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "984f70333816451f5cd4c5b9c1f941dcb44ca32a",
+      "afterCommit": "984f70333816451f5cd4c5b9c1f941dcb44ca32a"
+    },
+    "afterFence": {
+      "snapshotHash": "ad534263ae8c5ce20641ffa0e1a4347aa883c9bf81c92ac44426416562698798",
+      "scopeHash": "dd81681f291f76037c7d270b4c1519fa592f55875a4cacd50dedf7a0531acf12",
+      "matched": true
+    },
+    "outputHash": "9df44c42191ec05011db2c962ac1ce52f95c2a1ab4acd91cc46047d9ce163e01",
+    "outputSummary": "all dsh deps exact: 14 overrides: 33",
+    "outputTruncated": false
+  },
+  "receiptHash": "5b1e370e3111da22cc021d839ab56c74312cc723d19c8a35ca65cf7da23d0892"
+}

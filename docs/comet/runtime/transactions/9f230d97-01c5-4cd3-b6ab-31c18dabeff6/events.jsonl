@@ -1,0 +1,14 @@
+{"sequence":1,"timestamp":"2026-09-12T05:44:15.848Z","type":"prepared"}
+{"sequence":2,"timestamp":"2026-09-12T05:44:18.528Z","type":"operation-started","operationId":"spec-1-dsh-conversation-ui"}
+{"sequence":3,"timestamp":"2026-09-12T05:44:18.625Z","type":"operation-completed","operationId":"spec-1-dsh-conversation-ui"}
+{"sequence":4,"timestamp":"2026-09-12T05:44:18.641Z","type":"operation-started","operationId":"spec-2-dsh-cross-harness-and-write-gate"}
+{"sequence":5,"timestamp":"2026-09-12T05:44:18.773Z","type":"operation-completed","operationId":"spec-2-dsh-cross-harness-and-write-gate"}
+{"sequence":6,"timestamp":"2026-09-12T05:44:18.801Z","type":"operation-started","operationId":"spec-3-dsh-workbench-runtime"}
+{"sequence":7,"timestamp":"2026-09-12T05:44:18.941Z","type":"operation-completed","operationId":"spec-3-dsh-workbench-runtime"}
+{"sequence":8,"timestamp":"2026-09-12T05:44:18.969Z","type":"operation-started","operationId":"spec-4-semantic-tool-surface-v2"}
+{"sequence":9,"timestamp":"2026-09-12T05:44:19.167Z","type":"operation-completed","operationId":"spec-4-semantic-tool-surface-v2"}
+{"sequence":10,"timestamp":"2026-09-12T05:44:21.440Z","type":"operation-started","operationId":"archive-change"}
+{"sequence":11,"timestamp":"2026-09-12T05:44:22.315Z","type":"operation-completed","operationId":"archive-change"}
+{"sequence":12,"timestamp":"2026-09-12T05:44:22.723Z","type":"archive-finalization-started"}
+{"sequence":13,"timestamp":"2026-09-12T05:44:22.853Z","type":"archive-finalized"}
+{"sequence":14,"timestamp":"2026-09-12T05:44:23.031Z","type":"commit"}

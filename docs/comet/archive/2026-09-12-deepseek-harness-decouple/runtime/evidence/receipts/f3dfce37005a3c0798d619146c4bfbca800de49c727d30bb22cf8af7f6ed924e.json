@@ -1,0 +1,48 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "deepseek-harness-decouple",
+    "sourceRevision": 3,
+    "contractHash": "ff224c4fc706fdc1cb29cbc177cdaa11612b2497d9e9866db1caa8e3438c4227",
+    "scopeHash": "dd81681f291f76037c7d270b4c1519fa592f55875a4cacd50dedf7a0531acf12",
+    "snapshotHash": "ad534263ae8c5ce20641ffa0e1a4347aa883c9bf81c92ac44426416562698798",
+    "artifactHash": "71f57768e1e7355126fd2e95c07295e2817ce6e17b32b0d1f8b1be8e21f396a1"
+  },
+  "acceptanceIds": [
+    "acceptance-a12153f7c6a2a560f501d7003e9f2b3223da3bd651b46808870daba70413887b"
+  ],
+  "actor": "native-runtime:command:bash",
+  "issuedAt": "2026-09-12T00:28:08.359Z",
+  "evidence": {
+    "executable": "bash",
+    "args": [
+      "-c",
+      "grep -n \"injectPrincipal\" frontend/app/api/semantic-tools/route.ts && cd frontend && npx vitest run src/runtime/semantic-tools/semantic-tool-route.test.ts 2>/dev/null | tail -3"
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 240000,
+    "startedAt": "2026-09-12T00:28:06.846Z",
+    "endedAt": "2026-09-12T00:28:08.359Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "984f70333816451f5cd4c5b9c1f941dcb44ca32a",
+      "afterCommit": "984f70333816451f5cd4c5b9c1f941dcb44ca32a"
+    },
+    "afterFence": {
+      "snapshotHash": "ad534263ae8c5ce20641ffa0e1a4347aa883c9bf81c92ac44426416562698798",
+      "scopeHash": "dd81681f291f76037c7d270b4c1519fa592f55875a4cacd50dedf7a0531acf12",
+      "matched": true
+    },
+    "outputHash": "7364d454286acac7c054943b0b6632e63fa21cc0df15dd7f852f23b643bb0bb7",
+    "outputSummary": "7:import { injectPrincipal } from \"../../../src/runtime/principal/principal-injector\";\n22:  // injectPrincipal fails closed by design: the server-owned injector either\n25:  const principal = injectPrincipal(request);\n   Start at  08:28:07\n   Duration  912ms (transform 314ms, setup 0ms, collect 421ms, tests 126ms, environment 0ms, prepare 77ms)",
+    "outputTruncated": false
+  },
+  "receiptHash": "f3dfce37005a3c0798d619146c4bfbca800de49c727d30bb22cf8af7f6ed924e"
+}

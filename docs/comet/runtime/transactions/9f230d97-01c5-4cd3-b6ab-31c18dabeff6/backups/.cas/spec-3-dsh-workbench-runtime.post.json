@@ -1,0 +1,11 @@
+{
+  "schema": "comet.native.archive-cas.v1",
+  "operationId": "spec-3-dsh-workbench-runtime",
+  "role": "post",
+  "hash": "12f2aa09b0aa3753ec0f1a2526e803846eccc794d323fd42434e462465fcddbd",
+  "identity": {
+    "dev": 2096,
+    "ino": 658796,
+    "birthtimeMs": 1789191858842.0867
+  }
+}

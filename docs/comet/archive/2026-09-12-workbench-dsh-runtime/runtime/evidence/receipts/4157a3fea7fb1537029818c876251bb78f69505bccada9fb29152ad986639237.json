@@ -1,0 +1,54 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "workbench-dsh-runtime",
+    "sourceRevision": 3,
+    "contractHash": "6a27f7f4b363ed9180235f9943bafc43b4898ce6f51b29f7228310a74c5a76ac",
+    "scopeHash": "c9a36b03b92c9af30e65b78189af5a85e744b4bbb21051e3f5004d13749c0dd2",
+    "snapshotHash": "5e772919ae4bd6126b736492eba580130480282c8bb03f463bfb823ede975dd7",
+    "artifactHash": "35611be297746c374245af971be01beef260fa4dcfdd1b5b40f4d163b9d4e795"
+  },
+  "acceptanceIds": [
+    "acceptance-08ab62ab6f9174282b18d64d3ffa8c39f8f94eda35c3a6681419950a0345d8e5",
+    "acceptance-2c5c4293fcf90b7c3a19f49f3141b7790f9eecb66c6df38d5e2c9f848138e775",
+    "acceptance-617ab3481f50601ff6e528c6c7d2c80199b5212025a4992db5246683bd32ed9e",
+    "acceptance-8009b1a6ebeb6afdd6893b0a9030d7c42d07f44289b87ff0505354088bb4de11",
+    "acceptance-885651a3c331fa7e98c01ae5028536aed451171fbfe2286e0740fb9b5a910c32",
+    "acceptance-a3792869b08c45df65018a7d489ac535b60b32d2229fd65f5dfefeb8b6213e25",
+    "acceptance-a45fc203c9dfb784ec480fe9fc583bbc72a0671a948adfe5efd194b46cd76e2f"
+  ],
+  "actor": "native-runtime:command:bash",
+  "issuedAt": "2026-09-12T03:40:49.259Z",
+  "evidence": {
+    "executable": "bash",
+    "args": [
+      "-c",
+      "cd frontend && npx vitest run src/server/dsh 2>/dev/null | tail -3"
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 240000,
+    "startedAt": "2026-09-12T03:40:48.009Z",
+    "endedAt": "2026-09-12T03:40:49.259Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "984f70333816451f5cd4c5b9c1f941dcb44ca32a",
+      "afterCommit": "984f70333816451f5cd4c5b9c1f941dcb44ca32a"
+    },
+    "afterFence": {
+      "snapshotHash": "5e772919ae4bd6126b736492eba580130480282c8bb03f463bfb823ede975dd7",
+      "scopeHash": "c9a36b03b92c9af30e65b78189af5a85e744b4bbb21051e3f5004d13749c0dd2",
+      "matched": true
+    },
+    "outputHash": "cd1cb700e929fdb4857d96037ef15f2f7e640e621d377748bae4c397d746050e",
+    "outputSummary": "Start at  11:40:48\n   Duration  638ms (transform 130ms, setup 0ms, collect 293ms, tests 78ms, environment 0ms, prepare 228ms)",
+    "outputTruncated": false
+  },
+  "receiptHash": "4157a3fea7fb1537029818c876251bb78f69505bccada9fb29152ad986639237"
+}

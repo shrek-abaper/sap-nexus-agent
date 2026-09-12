@@ -1,0 +1,48 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "deepseek-harness-decouple",
+    "sourceRevision": 3,
+    "contractHash": "ff224c4fc706fdc1cb29cbc177cdaa11612b2497d9e9866db1caa8e3438c4227",
+    "scopeHash": "dd81681f291f76037c7d270b4c1519fa592f55875a4cacd50dedf7a0531acf12",
+    "snapshotHash": "ad534263ae8c5ce20641ffa0e1a4347aa883c9bf81c92ac44426416562698798",
+    "artifactHash": "71f57768e1e7355126fd2e95c07295e2817ce6e17b32b0d1f8b1be8e21f396a1"
+  },
+  "acceptanceIds": [
+    "acceptance-cbc4237ef49f32165764b063577a4031e071a12dd0afc31f8ed197cbc808d2e6"
+  ],
+  "actor": "native-runtime:command:bash",
+  "issuedAt": "2026-09-12T00:29:02.516Z",
+  "evidence": {
+    "executable": "bash",
+    "args": [
+      "-c",
+      "cd harness-dsh && npm run build >/dev/null 2>&1 && node lib/bin.js --dump-config > /tmp/dump-check.yml && if grep -ciE \"sk-[a-z0-9]{8}|api[_-]?key[ :]+[^!].*[a-z0-9]{12}|BEGIN .*PRIVATE KEY\" /tmp/dump-check.yml | grep -qv \"^0\"; then exit 1; fi; echo \"dump secret-scan 0; lines=$(wc -l </tmp/dump-check.yml)\""
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 240000,
+    "startedAt": "2026-09-12T00:29:01.479Z",
+    "endedAt": "2026-09-12T00:29:02.516Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "984f70333816451f5cd4c5b9c1f941dcb44ca32a",
+      "afterCommit": "984f70333816451f5cd4c5b9c1f941dcb44ca32a"
+    },
+    "afterFence": {
+      "snapshotHash": "ad534263ae8c5ce20641ffa0e1a4347aa883c9bf81c92ac44426416562698798",
+      "scopeHash": "dd81681f291f76037c7d270b4c1519fa592f55875a4cacd50dedf7a0531acf12",
+      "matched": true
+    },
+    "outputHash": "a3c8dcc637b73d312a1bd503a56349a81473c590437abfe4402368778784d2e4",
+    "outputSummary": "dump secret-scan 0; lines=55",
+    "outputTruncated": false
+  },
+  "receiptHash": "9946401719c87a360a2070a9d9dce432af8d90d4ff8fdb09064afb39a2fdf3b8"
+}

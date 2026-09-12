@@ -1,0 +1,35 @@
+{
+  "schema": "comet.native.transaction.v2",
+  "id": "c1713091-ad33-4ae9-9ebc-ba6b198b0f93",
+  "kind": "archive",
+  "status": "committed",
+  "change": "deepseek-harness-decouple",
+  "createdAt": "2026-09-12T00:34:01.695Z",
+  "preflightHash": "a15dce3ad905c2b0e10d5ceaa826f56ce336a0c2afdfe107175b4980e79d5136",
+  "operations": [
+    {
+      "id": "spec-1-harness-dsh-integration",
+      "type": "write",
+      "target": "specs/harness-dsh-integration/spec.md",
+      "staged": "runtime/transactions/c1713091-ad33-4ae9-9ebc-ba6b198b0f93/staged/specs/harness-dsh-integration/spec.md",
+      "expectedTargetHash": null,
+      "stagedHash": "ca92c81c76839a53f745687154e83d6139b85785079c2df703b8ec766a5fa02f"
+    },
+    {
+      "id": "spec-2-semantic-tool-http-facade",
+      "type": "write",
+      "target": "specs/semantic-tool-http-facade/spec.md",
+      "staged": "runtime/transactions/c1713091-ad33-4ae9-9ebc-ba6b198b0f93/staged/specs/semantic-tool-http-facade/spec.md",
+      "expectedTargetHash": null,
+      "stagedHash": "7f54c74735151e8d6478c7b125bd3a4ffe19e36ef5a77e507574c9e875dfde7e"
+    },
+    {
+      "id": "archive-change",
+      "type": "move",
+      "source": "changes/deepseek-harness-decouple",
+      "target": "archive/2026-09-12-deepseek-harness-decouple",
+      "expectedSourceHash": "30bf2ea97a1499164aae43c92d7367f7958e4972d10c9eb3d62566e8d7617ec9",
+      "expectedTargetHash": null
+    }
+  ]
+}

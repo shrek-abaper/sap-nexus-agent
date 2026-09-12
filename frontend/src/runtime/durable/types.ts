@@ -148,6 +148,7 @@ export type WorkbenchOutcome = {
   executionResult?: Record<string, unknown> | null;
   actionResult?: Record<string, unknown> | null;
   fact?: Record<string, unknown> | null;
+  facts?: Array<Record<string, unknown>> | null;
   gatewayTraceId?: string | null;
   errorType?: string | null;
   missingParameters?: string[] | null;

@@ -1,0 +1,11 @@
+{
+  "schema": "comet.native.archive-cas.v1",
+  "operationId": "spec-1-harness-dsh-integration",
+  "role": "post",
+  "hash": "ca92c81c76839a53f745687154e83d6139b85785079c2df703b8ec766a5fa02f",
+  "identity": {
+    "dev": 2096,
+    "ino": 530135,
+    "birthtimeMs": 1789173247015.8928
+  }
+}

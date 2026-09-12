@@ -1,0 +1,52 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "workbench-dsh-runtime",
+    "sourceRevision": 3,
+    "contractHash": "6a27f7f4b363ed9180235f9943bafc43b4898ce6f51b29f7228310a74c5a76ac",
+    "scopeHash": "c9a36b03b92c9af30e65b78189af5a85e744b4bbb21051e3f5004d13749c0dd2",
+    "snapshotHash": "5e772919ae4bd6126b736492eba580130480282c8bb03f463bfb823ede975dd7",
+    "artifactHash": "35611be297746c374245af971be01beef260fa4dcfdd1b5b40f4d163b9d4e795"
+  },
+  "acceptanceIds": [
+    "acceptance-53c68836a182426064c5c3add4f744621e8cf9b45f0f19b0ee1c263171dd78b5",
+    "acceptance-638909827b41b414cbbb7860d9d9880bb4d514bc90edefb24f1225a1662e127d",
+    "acceptance-6e52266f2becc5873e886ca9f22ac303e5a48d3468d4a96209dc5c0e38ff5da5",
+    "acceptance-b4c77d9b671f0902a78dfb634407769ae15eb1a20176b9ca810a73409e939540",
+    "acceptance-cc241231aab01b509aef7bf626fe701f784b491a682fa9f892fd986361eb1fa1"
+  ],
+  "actor": "native-runtime:command:bash",
+  "issuedAt": "2026-09-12T03:38:10.639Z",
+  "evidence": {
+    "executable": "bash",
+    "args": [
+      "-c",
+      "npm run --prefix frontend build 2>&1 | grep -E 'Compiled|/chat|/workbench' | head -4"
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 240000,
+    "startedAt": "2026-09-12T03:37:51.739Z",
+    "endedAt": "2026-09-12T03:38:10.639Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "984f70333816451f5cd4c5b9c1f941dcb44ca32a",
+      "afterCommit": "984f70333816451f5cd4c5b9c1f941dcb44ca32a"
+    },
+    "afterFence": {
+      "snapshotHash": "5e772919ae4bd6126b736492eba580130480282c8bb03f463bfb823ede975dd7",
+      "scopeHash": "c9a36b03b92c9af30e65b78189af5a85e744b4bbb21051e3f5004d13749c0dd2",
+      "matched": true
+    },
+    "outputHash": "a0c0fcf4c9557cbf8ee819c12d09747885278b24f0873393093e6bd815ac8258",
+    "outputSummary": "✓ Compiled successfully in 1000ms\n├ ○ /chat                                  2.9 kB         104 kB\n└ ○ /workbench                            17.6 kB         119 kB",
+    "outputTruncated": false
+  },
+  "receiptHash": "d73d34a791eb90a646cffd53fd3a4527f7c54cea9cc32a87fe61a2294943b8af"
+}

@@ -1,0 +1,122 @@
+{
+  "schema": "sap-nexus.cross-harness-cases.v2",
+  "source": "Recorded Gateway ExecutionResult payloads derived from evals/ golden cases (inventory / purchase-order / sales-order / AR open items); offline only.",
+  "cases": [
+    {
+      "id": "inventory-happy-path",
+      "tool": "diagnose_material_supply",
+      "slots": {},
+      "query": "DEMOA1 在 1000 还有多少可用库存？",
+      "capabilityId": "MM.Inventory.GetAvailability",
+      "execute": {
+        "traceId": "cross-inv-execute",
+        "capabilityId": "MM.Inventory.GetAvailability",
+        "success": true,
+        "executor": { "type": "JCO_RFC", "rfcName": "BAPI_MATERIAL_STOCK_REQ_LIST" },
+        "returnMessages": [],
+        "data": {
+          "availableQuantity": 12,
+          "unit": "EA",
+          "mrpElementLines": [
+            { "mrpElementInd": "WB", "mrpElement": "Stock", "elementQty": 12, "availQty1": 12, "date": "2026-06-21" }
+          ]
+        },
+        "durationMs": 10,
+        "errorType": "NONE"
+      },
+      "expectedFacts": [{ "material": "DEMOA1", "plant": "1000", "value": "12", "unit": "EA" }]
+    },
+    {
+      "id": "purchase-orders-by-vendor",
+      "tool": "diagnose_material_supply",
+      "slots": {},
+      "query": "查供应商 DEMOV1 的采购订单",
+      "capabilityId": "MM.PurchaseOrder.GetList",
+      "execute": {
+        "traceId": "cross-po-execute",
+        "capabilityId": "MM.PurchaseOrder.GetList",
+        "success": true,
+        "executor": { "type": "ODATA" },
+        "returnMessages": [],
+        "data": {
+          "purchaseOrders": [
+            {
+              "purchaseOrder": "4500000001",
+              "supplier": "DEMOV1",
+              "material": "DEMOA1",
+              "plant": "1000",
+              "orderQuantity": "100.000",
+              "purchaseOrderUnit": "EA"
+            }
+          ],
+          "totalCount": 1
+        },
+        "durationMs": 10,
+        "errorType": "NONE"
+      },
+      "expectedFacts": [{ "material": "DEMOA1", "plant": "1000", "value": "100.000", "unit": "EA" }]
+    },
+    {
+      "id": "sales-orders-by-customer",
+      "tool": "review_customer_exposure",
+      "slots": { "customerNumber": "1000" },
+      "query": "查客户 1000 的销售订单",
+      "capabilityId": "SD.SalesOrder.GetList",
+      "execute": {
+        "traceId": "cross-so-execute",
+        "capabilityId": "SD.SalesOrder.GetList",
+        "success": true,
+        "executor": { "type": "JCO_RFC", "rfcName": "BAPI_SALESORDER_GETLIST" },
+        "returnMessages": [],
+        "data": {
+          "salesOrders": [
+            {
+              "sdDoc": "0000000001",
+              "docType": "OR",
+              "docDate": "20260101",
+              "soldTo": "1000",
+              "material": "DEMOA1",
+              "netValue": "1000.00",
+              "currency": "CNY",
+              "salesOrg": "1000",
+              "purchNoC": "PO-100"
+            }
+          ]
+        },
+        "durationMs": 10,
+        "errorType": "NONE"
+      },
+      "expectedFacts": [{ "value": "1000", "unit": "CNY" }]
+    },
+    {
+      "id": "ar-open-items",
+      "tool": "review_customer_exposure",
+      "slots": { "customerNumber": "1000", "companyCode": "1000" },
+      "query": "查客户 1000 在公司代码 1000 的应收未清项",
+      "capabilityId": "FI.AR.GetOpenItems",
+      "execute": {
+        "traceId": "cross-ar-execute",
+        "capabilityId": "FI.AR.GetOpenItems",
+        "success": true,
+        "executor": { "type": "JCO_RFC", "rfcName": "BAPI_AR_ACC_GETOPENITEMS" },
+        "returnMessages": [],
+        "data": {
+          "openItems": [
+            {
+              "docNo": "1400000001",
+              "docDate": "20260101",
+              "pstngDate": "20260102",
+              "amtDoccur": "5000.00",
+              "currency": "CNY",
+              "blineDate": "20260201",
+              "clearDate": ""
+            }
+          ]
+        },
+        "durationMs": 10,
+        "errorType": "NONE"
+      },
+      "expectedFacts": [{ "value": "5000", "unit": "CNY" }]
+    }
+  ]
+}

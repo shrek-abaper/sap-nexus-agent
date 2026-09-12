@@ -1,0 +1,35 @@
+schema: comet.native.v3
+minimum_runtime_version: 3
+revision: 5
+verification_protocol: legacy-v1
+name: workbench-dsh-runtime
+language: zh-CN
+phase: archive
+brief: brief.md
+approval: confirmed
+approved_contract_hash: 6a27f7f4b363ed9180235f9943bafc43b4898ce6f51b29f7228310a74c5a76ac
+spec_changes:
+  - capability: dsh-conversation-ui
+    operation: create
+    source: specs/dsh-conversation-ui/spec.md
+    base_hash: null
+  - capability: dsh-cross-harness-and-write-gate
+    operation: create
+    source: specs/dsh-cross-harness-and-write-gate/spec.md
+    base_hash: null
+  - capability: dsh-workbench-runtime
+    operation: create
+    source: specs/dsh-workbench-runtime/spec.md
+    base_hash: null
+  - capability: semantic-tool-surface-v2
+    operation: create
+    source: specs/semantic-tool-surface-v2/spec.md
+    base_hash: null
+verification_result: pass
+verification_report: verification.md
+implementation_scope: runtime/evidence/scopes/c9a36b03b92c9af30e65b78189af5a85e744b4bbb21051e3f5004d13749c0dd2.json
+verification_evidence: runtime/evidence/verifications/7b5794056714b45c9df815658229570794408697c4271b89b01479812555991e.json
+partial_allowance: null
+archived: true
+created_at: 2026-09-12
+run_id: 0c793cae-d8f7-4b0f-87b9-796acc717b18

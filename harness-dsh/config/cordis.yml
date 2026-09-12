@@ -1,0 +1,5 @@
+# Profile root anchor for sap-nexus-dsh (dev profile).
+# Mirrors the dsh profile convention: the root is empty and composition is
+# inserted by the app bundle patch (cordis.bundle.patch.yml), then adjusted by
+# the profile overlay (cordis.patch.yml). Last write wins per entry id.
+[]

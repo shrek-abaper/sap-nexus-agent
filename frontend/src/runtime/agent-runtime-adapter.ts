@@ -1013,6 +1013,15 @@ export async function getAgentRunEvents(
   return run.events;
 }
 
+export async function getAgentRunRecord(
+  runId: string,
+  principal: TrustedPrincipal,
+): Promise<AgentRunRecord | null> {
+  const run = await runStore.load(runId);
+  if (!run || run.principalId !== principal.principalId) return null;
+  return run;
+}
+
 export async function prepareAgentRunPlanAction(
   input: ActionGovernanceInput,
 ): Promise<PlanApprovalRecord> {
@@ -1514,7 +1523,13 @@ async function emitEventsFromOutcome(
     }
   }
 
+  // LIST capabilities (purchase orders / sales orders / open items) return
+  // plural facts; the single-fact event stays for scalar READ capabilities.
+  // Emit each fact once by factId so a capability populating both shapes
+  // cannot produce duplicate events.
+  const emittedFactIds = new Set<string>();
   if (fact) {
+    emittedFactIds.add(textValue(fact.factId) ?? "");
     await push({
       type: "reasoning_fact_created",
       state: "fact_created",
@@ -1522,6 +1537,22 @@ async function emitEventsFromOutcome(
       agentTraceId,
       gatewayTraceId,
       artifact: redactArtifact({ label: "ReasoningFact", kind: "reasoning-fact", payload: toJsonValue(fact) })
+    });
+  }
+  const facts = Array.isArray(outcome.facts) ? outcome.facts : [];
+  for (const item of facts) {
+    const listFact = objectOrNull(item);
+    if (!listFact) continue;
+    const factId = textValue(listFact.factId) ?? "";
+    if (factId && emittedFactIds.has(factId)) continue;
+    emittedFactIds.add(factId);
+    await push({
+      type: "reasoning_fact_created",
+      state: "fact_created",
+      capabilityId,
+      agentTraceId: textValue(listFact.agentTraceId) ?? agentTraceId,
+      gatewayTraceId,
+      artifact: redactArtifact({ label: "ReasoningFact", kind: "reasoning-fact", payload: toJsonValue(listFact) })
     });
   }
 

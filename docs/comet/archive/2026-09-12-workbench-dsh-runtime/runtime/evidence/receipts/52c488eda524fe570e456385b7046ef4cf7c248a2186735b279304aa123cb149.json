@@ -1,0 +1,54 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "workbench-dsh-runtime",
+    "sourceRevision": 3,
+    "contractHash": "6a27f7f4b363ed9180235f9943bafc43b4898ce6f51b29f7228310a74c5a76ac",
+    "scopeHash": "c9a36b03b92c9af30e65b78189af5a85e744b4bbb21051e3f5004d13749c0dd2",
+    "snapshotHash": "5e772919ae4bd6126b736492eba580130480282c8bb03f463bfb823ede975dd7",
+    "artifactHash": "35611be297746c374245af971be01beef260fa4dcfdd1b5b40f4d163b9d4e795"
+  },
+  "acceptanceIds": [
+    "acceptance-07b9040883cd8a7ea5067119bba1ea2c1d00695e5d9074f19fd25d415f81f2cd",
+    "acceptance-1a9e580019f1e961504cc8b1aaaed47a08a217b639b93d799ea89b8eeb85b438",
+    "acceptance-2020ab3d6b2f1a506d59be871fee1f5fda2f795c7bf0d3ab410ef6110ec74a58",
+    "acceptance-908e4e159c653bd5c1f17812eeaf50f4ef0c7268214278f34f7204b6a81c6910",
+    "acceptance-a01be1e9030858ddfe47c4536e54cfbb8f415c4238afd0b329ad3c7490367693",
+    "acceptance-d27c7ff0161af3bea28dc0f4a29150bbb4a883d3387022f690341bb4a1ce9350",
+    "acceptance-da794f6e0f88b8778d1d8bd48052d22c3313c9ae671f14bb0e1cfe650bb6993d"
+  ],
+  "actor": "native-runtime:command:bash",
+  "issuedAt": "2026-09-12T03:40:43.687Z",
+  "evidence": {
+    "executable": "bash",
+    "args": [
+      "-c",
+      "cd frontend && npx vitest run src/server/dsh/runtime.test.ts src/modules/dsh-chat/boundary.test.ts 2>/dev/null | tail -3"
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 240000,
+    "startedAt": "2026-09-12T03:40:42.714Z",
+    "endedAt": "2026-09-12T03:40:43.687Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "984f70333816451f5cd4c5b9c1f941dcb44ca32a",
+      "afterCommit": "984f70333816451f5cd4c5b9c1f941dcb44ca32a"
+    },
+    "afterFence": {
+      "snapshotHash": "5e772919ae4bd6126b736492eba580130480282c8bb03f463bfb823ede975dd7",
+      "scopeHash": "c9a36b03b92c9af30e65b78189af5a85e744b4bbb21051e3f5004d13749c0dd2",
+      "matched": true
+    },
+    "outputHash": "ad062f42dcacd140451dc19ffe9869ac35ebb8125f9e3c039a213b0d42951b46",
+    "outputSummary": "Start at  11:40:43\n   Duration  497ms (transform 88ms, setup 0ms, collect 204ms, tests 57ms, environment 0ms, prepare 186ms)",
+    "outputTruncated": false
+  },
+  "receiptHash": "52c488eda524fe570e456385b7046ef4cf7c248a2186735b279304aa123cb149"
+}

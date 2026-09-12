@@ -1,0 +1,321 @@
+# Verification — deepseek-harness-decouple
+
+日期：2026-09-12。基线：main `984f703` + 本变更。
+
+# Acceptance evidence
+
+<!-- comet-native:acceptance-evidence:start -->
+[
+  {
+    "acceptance_id": "acceptance-0e96ac3302b0bd1c7cbb693876dac14a1d8ff182c913225f3d9c2386fb68fc22",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/d0e7f09ebb67280d66879cff6ae90ec1ad631d4ee9136cfba457c515d30c7acd.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-10529550a437c8d54bb78187c7ab8f4490e77a9f92dc5036a5e83980aed599ab",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/6a8b3e1d688457d7fe526489fb03955bd7593cda3367be4bfd6669444e3ad1d5.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-1ecc8233544b736057f232b13ac4b04311eb4af7ce9d45c4860083bf42051667",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/cb7cefe64981840f3b2e77ac87f9f3cdc06747e612099741eb1dda0d790d33f1.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-1f854cffbafdf9dcd13cd33ed3fcc6c66a5fbd814e34ee90d471e238e9c6365c",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/dd5ff2e63b6f5595484df7c35b424c0bd246f75bd00ab3cb36687746a86311ca.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-242f67a141a3cf2bfc73c7deffe3d2bcc953695b7528d8d6d089ab6b69f8418a",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/6281ca81d040680250df3701be3f540ffde45649f1523500d841ea82d95f0786.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-4253cafd93a4ad69709798d8662e0e45f188cecb6648720cf66a787f66893ff7",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/5b1e370e3111da22cc021d839ab56c74312cc723d19c8a35ca65cf7da23d0892.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-45cd740df99cd0f61670aa44b583c5c24cb6495fd8d2165924c7436e983a8686",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/e20919a584bbee58f079dfded1ce71a1ff9eb30117655fb35f7f97737cfc615a.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-479649abc0a232aad16c00dc6bffafd644406af4928c3c7fce002ae183f110c6",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/80360eee4fda1af637c1f3d6265123b4ff783a669ac88c4841ba73858a84689b.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-4bca9b44fb9f508a2ba3ac38072ce377392ad3d8e8cbcb092d25fea0735d0995",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/67aa28937e8ca5fc9e13c09870ad2dfd454d297a6173da2584910745a70e9129.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-4c3c9395fbaa473e72bfc124026df45648c9de1b436b7d151d71b2365a883a83",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/e972471909aa23910a0b431358d18ec888be9f95080d883869cc9cc9e34b16bc.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-5395c56693d202fa1cf338b03a7ccadd64aca92d79f7dd58ecd110b004073e08",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/1849195d54179cc1ad90b3190fcb8546cd15d42abf809802bbc4ba51ddab5f11.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-56bef7da0de17629c30c7db1357569a7046f18afbafe937da60c42dba1f52954",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/cae9f71b42edf2e1c3cc59f2e81e0d2dee2b1bfc0a861bd040c03fda20175bac.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-5ab8c255cff50fa84012198e47b3b676126141525b217bdd7c9aeb7517536760",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/4d67f4bc44a59db98e86c8435acf33a84d2d6c967753b5dc224d8682531f7c8b.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-5b3860fec5567e3d2c0f16858a839b2ff14ea2025dd2ec3a478f6a8a75440596",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/4321b41c084595bb910b2f3f5326998803093ead3bb62fee634dbfde45f2f047.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-641bd1d6d91503706d0dd03759a842b5def37ea169e0e8fbc51621e792a668a9",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/efdb8e60f3e93cc8ff9aa33342e9a2411e81affaf7d553baa663a1413a3d4a55.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-75a8a39b786b1321ed9822bf485a5592b30182777a14b6e964aa25580073f586",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/4ad4248acf2485c39b22d610bed87c94d50722fa7c6de259a6ec6409007cb3d6.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-82bd9eadad749356d4894803b5c1e34fa4903fe48d533c5314c28f5c9c10290e",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/8ecb214eb3fcb020267a094ffd538ae0d996da8a1722ac2506a88290c4e448a0.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-8546ee365c1feb4374ff1119cf5e4ce3dfbc1c7f37794b43b53248edf56e7a86",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/d6fab02114a15d5c7403d24cb127b860c0cc3db66af489ef9ec66c7722dc1389.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-868f3d6c7c2a54884b399c6b151421f37ec65cb787d0cffa1c7345bb8dd73343",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/4a8eed4972df03ad68fb9a9a0acd2f196bb549b7690ddb221c6fbb49c4ebad80.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-87c5356f25810b00958cf00fc0c3da3cf32e8804f20b6ea01a30e1d6ff9439d9",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/fb10781e8df5ff86f253f6ff15c2e9205f447c8d049b663e390294bc509867aa.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-8ae4ef0438170452db87113f560f7d49937b448f2070a7ee5798b01356a7d30b",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/6b0a56121baff9e3baada91c9893037f36443aa21695f30e5e10d5be1115b8b5.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-96114ca07461172353bf9aaaeab007b7da645b58384bcf2d35e8a39f00a23c3f",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/043470186252d967bfb40667c32cdef2314959fbf6a8684789c27fdbbc5a42d6.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-a12153f7c6a2a560f501d7003e9f2b3223da3bd651b46808870daba70413887b",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/f3dfce37005a3c0798d619146c4bfbca800de49c727d30bb22cf8af7f6ed924e.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-a6956ae68ff33bae1c3c6843672d5809fc99f23cf8c67c824b2de66f3bbc805b",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/047e73cf5e6579cd417376134353d2575eb51fb7acdb8636a34ea3ff805d43c1.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-ad2ed5e0122a4ba77b63e66a6fc6ee7d1e4e601d89b237a394161db6507c4481",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/d5fb3a204c75c99fc8ae19e3e97141f9dcad0bb67aa626557141f7ffbb8316c8.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-bc5c80e28d355a5aee14c709856bab5a4a50b167512c60ab7392d0d0b58da274",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/6913ef6db8f6d5252f44ae90ba8ad459693fd08da465bb771ece6e25de97faec.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-cbc4237ef49f32165764b063577a4031e071a12dd0afc31f8ed197cbc808d2e6",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/9946401719c87a360a2070a9d9dce432af8d90d4ff8fdb09064afb39a2fdf3b8.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-d312473c6a560065d0cc8062aa3555b43dde3d134dcba5810b3a8972641cd821",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/7fa661cd633123244c929cf5166fc7367341e7742f910967a11bae3378248c44.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-fa93aa2b8beb738d2c0213bcf279c091fb3986c0b273f78ceb2eaf11b252ec5f",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/e309a475687b35b78a6f100b080cf14c56eb4d9d392c325900872b2b5ae773a0.json"
+    ]
+  }
+]
+<!-- comet-native:acceptance-evidence:end -->
+
+# Commands and results
+
+### 1. Python agent 全量测试
+
+命令：`.venv/bin/python -m pytest agent/tests -q`
+
+结果：`1574 passed, 1 skipped, 2 xfailed in 138.25s`（0 failed；Shape 当日
+早段基线同为 1574 全过）。
+
+### 2. 契约脚本
+
+命令：`.venv/bin/python scripts/validate-semantic-planning-contract.py`
+
+结果：`Legacy registry contract valid` +
+`Semantic planning contract valid: snapshotId=sha256:04ab3bab...`。
+
+### 3. 既有离线 eval 集
+
+命令：`.venv/bin/python -m sap_nexus_agent.eval evals/<file>`（6 个文件）
+
+结果：inventory_availability、eval_harness_seed、pr_create、matcher、dry_run、
+derived_parameter 全部 OK（exit 0）。
+
+### 4. Frontend verify（tsc + vitest + next build）
+
+命令：`cd frontend && npm run verify`
+
+结果：成功（exit 0）。
+
+- 类型检查 `tsc --noEmit` 通过。
+- vitest：56 个测试文件全过（基线 52 文件 525 测试；新增 semantic-tools 4 文件）。
+- next build 成功，路由清单含 `ƒ /api/semantic-tools`。
+
+新增/相关测试：
+
+- `src/runtime/semantic-tools/validate.test.ts`（请求契约/技术覆盖拒绝/query 渲染）
+- `src/runtime/semantic-tools/map-events.test.ts`（complete/partial/unavailable/
+  out_of_scope/failed/clarification/legacy 单 SELECT 映射）
+- `src/runtime/semantic-tools/semantic-tool-route.test.ts`（400/404/治理链往返/坏 JSON）
+- `src/runtime/semantic-tools/cross-harness.test.ts`（跨 harness 离线一致性 gate，
+  inventory + PO vendor 两例，真实 POST handler + 真实 Python 子进程 + 录制网关）
+
+### 5. harness-dsh 独立应用
+
+命令：`cd harness-dsh && npm run typecheck && npm test && npm run build`
+
+结果：tsc 0 错误；vitest `3 files / 16 tests passed`（工具 mock-LLM 往返 4、
+facade client 8、架构红线 4）；build 成功。
+
+- `node lib/bin.js --dump-config`：成功打印三层合成配置（bundle/profile root/
+  overlay 来源注释），密钥模式扫描 0 命中。
+- 无 key 真实 boot 冒烟：Loader 装配成功，LLM 不可达时 turn/end=error/TRANSPORT，
+  bin 以 exit 1 + stderr 报错结束（fail-closed）。
+- lockfile 审计：`@deepseek-ai/dsh-*` 全部锁 0.1.5-rc.1，rc.2 计数为 0。
+
+### 6. Schema 与 OpenSpec
+
+- 新增 `schemas/semantic-tool-request.schema.json`、
+  `schemas/semantic-tool-response.schema.json`：JSON parse 有效，
+  `additionalProperties:false`，契约版本 const 1。
+- `openspec validate --all --strict`：**5 passed, 16 failed（21 items）**。
+  该 16 项全部为既有 WARNING（多个既有 spec 的 Purpose 占位、长 Requirement
+  文本）；`git status openspec/` 为空，本变更未修改 openspec/，基线 main 上同命令
+  同为 5 passed/16 failed（`scripts/verify-agent-callplan-evidence.sh` 在 main
+  当前即以 exit 1 结束于最后一步 openspec）。属存量基线问题。
+
+# Skipped checks
+
+- 无真实 SAP / 真实 LLM 调用（A4：仅离线 fixture）；C-0 live composition smoke
+  为明确 Non-goal。
+- 未跑 Java Gateway gradle 测试（本变更零 Java 改动）。
+- 未跑 odata-service pytest（本变更零改动）。
+
+# Spec consistency
+
+- 两个新能力 spec（`semantic-tool-http-facade`、`harness-dsh-integration`）
+  的 29 个验收项全部有 typed receipt 绑定（见上节机器块）。
+- 偏差 1：principal 场景（调用无法解析 server 身份时拒绝）在本切片无法触发——
+  `LocalPlaceholderPrincipalInjector` 恒返回占位主体；真实身份源是 gap-matrix
+  登记的后续阻塞项。已用 manual receipt 记录：客户端声明 principal 被请求契约
+  拒绝（additionalProperties:false → INVALID_REQUEST 400），injector 契约为
+  fail-closed。
+- 偏差 2：PO 按单号在 governed READ 协议下首轮流为 clarification（多轮
+  selection），跨 harness gate 选取首轮流 READY 的按供应商查询代表 LIST；
+  facade 单轮支持多轮 selection 列为后续工作。
+
+# Known limitations and risks
+
+1. facade 的 LIST fact 依赖 adapter 新增的复数 `outcome.facts` 事件发射（本变更
+   修复；此前仅单数 fact 事件）。
+2. 切片暴露的服务化缺口见 `gap-matrix.md`：R-1/R-2 在线服务化、C-0.5 subject
+   freshness、C-2 约束 registry、C-4 PlanDraft 编辑、C-5 归约算子、C-6 OTel、
+   C-7 多方案、principal 真实身份源。
+3. TS 执行器不解析 factField 派生绑定（G1）；gate 选例不触发该路径。
+4. openspec strict 在 main 上存量失败（16 个 WARNING），需独立清理变更；
+   本变更不扩大、不修。
+5. dsh 0.1.5-rc.1 为 preview：npm 解析需 overrides 防 rc.2 漂移；任何升级必须
+   走独立评审。
+
+# Conclusion
+
+Pass。垂直切片目标全部达成：窄的 harness 无关语义 facade（1 个 READ 复合工具、
+技术覆盖 fail-closed、契约版本化）、精确 pin 的独立 dsh 应用（三层配置、
+--dump-config、工具往返、无 Gateway 调用面）、离线跨 harness 一致性 gate 2/2
+业务值相等。Python 1574 测试、frontend verify、harness-dsh 16 测试、6 个离线
+eval 全绿。唯一存量红灯（openspec strict 16 WARNING）在 main 基线同样存在，
+与本变更无关。

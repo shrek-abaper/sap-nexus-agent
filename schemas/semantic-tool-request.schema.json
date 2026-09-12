@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sap-nexus.local/schemas/semantic-tool-request.schema.v2.json",
+  "title": "SAP Nexus Semantic Tool Request (harness-facing contract v2)",
+  "description": "Harness-facing request for one business-semantic tool. The harness provides only natural language intent and semantic slots; any technical binding material is rejected at any depth.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contractVersion", "tool", "utterance"],
+  "properties": {
+    "contractVersion": { "type": "integer", "enum": [1, 2], "description": "v1 exposes only diagnose_material_supply; v2 adds customer/vendor exposure READ and replenishment WRITE proposal." },
+    "tool": {
+      "type": "string",
+      "enum": [
+        "diagnose_material_supply",
+        "review_customer_exposure",
+        "review_vendor_exposure",
+        "propose_replenishment"
+      ],
+      "description": "Business-semantic tool name, never an atomic capability."
+    },
+    "utterance": { "type": "string", "minLength": 1, "maxLength": 2000 },
+    "slots": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "material": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "plant": { "type": "string", "minLength": 1, "maxLength": 16 },
+        "customerNumber": { "type": "string", "minLength": 1, "maxLength": 32 },
+        "vendor": { "type": "string", "minLength": 1, "maxLength": 32 },
+        "companyCode": { "type": "string", "minLength": 1, "maxLength": 16 },
+        "requiredQuantity": { "type": "number", "exclusiveMinimum": 0 },
+        "targetDate": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+        "purchasingGroup": { "type": "string", "pattern": "^[A-Za-z0-9]{1,3}$" }
+      }
+    },
+    "context": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "plantScope": { "type": "string", "minLength": 1, "maxLength": 16 },
+        "module": { "type": "string", "enum": ["MM", "SD", "FI"] },
+        "periodHint": { "type": "string", "minLength": 1, "maxLength": 64 }
+      }
+    },
+    "conversationId": { "type": "string", "minLength": 1, "maxLength": 128 }
+  }
+}

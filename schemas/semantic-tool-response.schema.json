@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sap-nexus-agent.local/schemas/semantic-tool-response.schema.v2.json",
+  "title": "SAP Nexus Semantic Tool Response (harness-facing contract v2)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contractVersion",
+    "tool",
+    "status",
+    "runId",
+    "resolved",
+    "capabilityChain",
+    "facts",
+    "narrative",
+    "limitations"
+  ],
+  "properties": {
+    "contractVersion": { "type": "integer", "enum": [1, 2] },
+    "tool": {
+      "type": "string",
+      "enum": [
+        "diagnose_material_supply",
+        "review_customer_exposure",
+        "review_vendor_exposure",
+        "propose_replenishment"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "complete",
+        "partial",
+        "clarification",
+        "out_of_scope",
+        "unavailable",
+        "rejected",
+        "awaiting_approval",
+        "failed"
+      ]
+    },
+    "approval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["approvalId", "runId", "expiresAt", "capabilityId", "parameters", "factRefs", "hashes"],
+      "description": "WRITE proposal handle. The dsh layer renders it; the decision is made server-side via POST /api/agent-runs/{runId}/approval.",
+      "properties": {
+        "approvalId": { "type": "string", "minLength": 1 },
+        "runId": { "type": "string", "minLength": 1 },
+        "expiresAt": { "type": "string", "minLength": 1 },
+        "capabilityId": { "type": "string", "minLength": 1 },
+        "parameters": { "type": "object" },
+        "parameterSources": { "type": "object" },
+        "factRefs": { "type": "array", "items": { "type": "string" } },
+        "hashes": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["subjectHash", "proposalHash", "parameterSnapshotHash"],
+          "properties": {
+            "subjectHash": { "type": "string" },
+            "proposalHash": { "type": "string" },
+            "parameterSnapshotHash": { "type": "string" }
+          }
+        }
+      }
+    },
+    "runId": { "type": "string", "minLength": 1 },
+    "traceId": { "type": "string" },
+    "resolved": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["semanticValues"],
+      "properties": {
+        "semanticValues": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["type", "value", "provenance"],
+            "properties": {
+              "type": { "type": "string", "minLength": 1 },
+              "value": { "type": "string", "minLength": 1 },
+              "provenance": { "type": "string", "minLength": 1 }
+            }
+          }
+        }
+      }
+    },
+    "capabilityChain": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["capabilityId", "state"],
+        "properties": {
+          "capabilityId": { "type": "string", "minLength": 1 },
+          "state": { "type": "string", "minLength": 1 },
+          "factRefs": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "facts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["ref", "material", "plant", "value", "unit", "asOf"],
+        "properties": {
+          "ref": { "type": "string", "minLength": 1 },
+          "factId": { "type": "string" },
+          "material": { "type": ["string", "null"] },
+          "plant": { "type": ["string", "null"] },
+          "value": { "type": ["number", "null"] },
+          "unit": { "type": ["string", "null"] },
+          "asOf": { "type": "string" },
+          "evidence": { "type": "array", "items": { "type": "object" } }
+        }
+      }
+    },
+    "projection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ref", "completeness", "asOf", "limitations"],
+      "properties": {
+        "ref": { "type": "string" },
+        "completeness": { "type": "string", "enum": ["complete", "partial", "incomplete"] },
+        "asOf": { "type": "string" },
+        "outputHash": { "type": "string" },
+        "limitations": { "type": "array", "items": { "type": "object" } }
+      }
+    },
+    "narrative": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["summary", "limitations"],
+      "properties": {
+        "summary": { "type": "string" },
+        "limitations": { "type": "array", "items": { "type": "string" } },
+        "evidenceRefs": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "limitations": { "type": "array", "items": { "type": "string" } },
+    "error": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["errorType", "message"],
+      "properties": {
+        "errorType": { "type": "string", "minLength": 1 },
+        "message": { "type": "string" }
+      }
+    }
+  }
+}
