@@ -5,22 +5,23 @@
 | 字段 | 内容 |
 |---|---|
 | 文档名称 | `SAP Nexus Agent 技术架构文档` |
-| 当前版本 | `v0.2.29` |
+| 当前版本 | `v0.2.30` |
 | 状态 | `Product Architecture Baseline Draft` |
 | 创建日期 | `2026-06-18` |
-| 最近更新 | `2026-08-05` |
+| 最近更新 | `2026-09-13` |
 | 维护目录 | `docs/wiki/` |
 | 文档定位 | SAP Nexus Agent 从 MVP 到量产交付的长期技术架构指导文件 |
 | 关联路线 | `docs/wiki/sap-nexus-agent-implementation-roadmap.md` |
 | 关联知识导入 | `docs/wiki/archive/sap-nexus-agent-mm-mvp-notion.md` |
 | 关联智能编排路线 | `docs/wiki/sap-nexus-agent-openharness-semantic-orchestration.md` |
-| 关联 DeerFlow 决策 | `docs/wiki/sap-nexus-agent-deerflow-adoption-analysis.md` |
+| 关联 DeerFlow 决策 | `docs/wiki/archive/sap-nexus-agent-deerflow-adoption-analysis.md` |
 | 关联完整 Agent 设计 | `docs/superpowers/specs/2026-08-03-sap-nexus-complete-agent-roadmap-design.md` |
 
 ## 版本记录
 
 | 版本 | 日期 | 变更摘要 | 决策状态 |
 |---|---|---|---|
+| `v0.2.30` | `2026-09-13` | 对齐内部架构方案 Notion v1.2（2026-09-12，架构基线「图 v2.0」）：新增 §1.2 目标架构——四方各管一件事（能力本体 / 编译期派生管线 / SAP 域能力层 / Harness）、目标分层图（只画目标形态、不含进度与日期，变更判据随图 v2.0）、三条不可让渡的结构性要求；§3.7 的在线 Plan/Resolve 语义规划控制面标记为 **superseded**（v1.2 删除自建 Plan Service 与 Resolve Service，推理前移到编译期，能力粒度上移为业务语义级，编排下放给可替换 harness）；当前实现状态不在本节维护，统一见路线图 §1.1 | 当前架构基线 |
 | `v0.2.29` | `2026-08-05` | 同步 Runbook 22 Native change 已归档：薄 TypeScript composition coordinator 已接通 PlanExecutor、projection、recommendation、grounded narrative、durable replay 与 plan-aware Action continuation；L1/L2/L3 offline gate `9/9`、Native acceptance 42/42，最高连续等级 `L3_ACTION_GOVERNED`；证据仅来自 fake/sandbox，live SAP READ/WRITE 均 `not_run` | 当前架构基线 |
 | `v0.2.28` | `2026-08-05` | 同步 Runbook 21 Native change 已归档代码事实：单 run owner HITL confirmation、完整 approval subject revalidation、durable exactly-once continuation、Gateway atomic claim 与 Workbench evidence 已完成 fake/sandbox 验证；未执行 live SAP WRITE，production orchestration 与 L1/L2/L3 release gate 仍由 Runbook 22 证明；当前入口移到 Runbook 22 | 当前架构基线 |
 | `v0.2.27` | `2026-08-05` | 同步 Runbook 20 Native change 已归档代码事实：governed event projection、strict durable replay integrity 与 responsive 八分区 Workbench 已完成 component/UI integration 验证；`ActionProposal.pending_approval` 仍非 Human Approval，生产 orchestrator 与 SAP WRITE 未接入；当前入口移到 Runbook 21 | 当前架构基线 |
@@ -83,6 +84,77 @@
 架构预留不是零成本。每个 reserved executor family 都是未来实现、评审、评测和运维的隐含契约。已有 reserved executor 只保留 fail-closed 边界，不能被解读为当前实现承诺。
 
 成熟度等级（`Live` / `Completed Pilot` / `Completed Foundation` / `Next Design` / `Planned Pilot` / `Reserved` / `Not In Scope`）定义架构占位的性质与门禁要求，属于长期基线。各项能力的当前成熟度归属、已实现/未实现标注和近期 next step 不在本文档维护，统一见 `docs/runbooks/README.md` "Architecture Maturity & Current Status"；完整 Agent 目标契约见 `docs/superpowers/specs/2026-08-03-sap-nexus-complete-agent-roadmap-design.md`。Runbooks 13-22 已归档；当前没有自动开启的新实施入口。阶段生命周期标签由 `docs/wiki/sap-nexus-agent-implementation-roadmap.md` 承载。`docs/runbooks/10-capability-composition-contract.md` 仅保留为已归档 S1/S2 历史契约，不得作为活动入口。架构基线只保留 fail-closed 边界、分层职责与长期能力形态，不随进度变化频繁改版。
+
+### 1.2 目标架构 v1.2（架构基线：图 v2.0）
+
+> 来源：内部架构方案 v1.2（2026-09-12，内部参考，不随开源仓库发布）。本节描述**目标形态**，不是当前仓库现状；当前达成情况的唯一状态源在路线图 §1.1，本节不记录进度、数量、测试结果与日期。
+
+**立场：四方各管一件事。** 项目定位是「SAP 能力的供应方」：本体定义语义、编译期完成推理、能力层固化业务问题、harness 只做编排与展示。
+
+| 层 | 归属 | 管什么 | 明确不管什么 |
+|---|---|---|---|
+| **能力本体** | 我方 · YAML 单一来源 | 业务对象与主键、业务口径、语义类型与 Fact 字段级 schema、关系（`links` 与四条能力语义关系）、约束的唯一定义处 | 不在请求期被任何组件查询 |
+| **编译期派生管线** | 我方 · 离线 | 把本体展开为 `Capability Manifest`：工具描述、候选索引与别名表、依赖边、组合约束、Guardrail 规则、版本快照 | 不做任何运行时推理 |
+| **SAP 域能力层** | 我方 · 核心资产 | 业务语义级能力：内部链固化、`asOf` 一致性、基数归约、审批 subject 计算与校验、`CapabilityGap` 显式拒答 | 不做意图理解，不做展示 |
+| **Harness** | 按需选型 · 可独立替换 | 选哪个能力、生成式展示与叙事、会话记忆与槽位澄清 | 不构造调用图、不覆盖端点绑定、不裁决审批 |
+
+v1.2 删除自建 Plan Service 与 Resolve Service：本体是数据而不是运行时；推理落在编译期成本最低且不破坏解耦——请求期只查表，换宿主语言不会换出第二套语义实现。
+
+**目标分层图（架构基线图 v2.0，纯文本镜像；原图为内部 HTML 附件）：**
+
+```text
+控制面（人手维护的只有这里）
+  能力本体 Capability Ontology · YAML 单一来源
+    Object                    业务实体 + 主键（Material@Plant · Customer · ARItem）
+    Definition                业务口径唯一定义处（可用库存 / 逾期 / 信用暴露）
+    SemanticType / FactType   值域 · 别名与上下位 · 字段级 schema · 敏感级
+    Capability                = 一个业务问题；SAP 端点为内部绑定
+    关系   links · can_solve · consumes · applies_to · requires
+        │ 编译期派生（离线 · 可重放 · 产物可签名可 diff）
+        ▼
+  Capability Manifest ─ 工具描述 · 候选索引与别名表 · 依赖边
+                        组合约束（基数 / 时点）· Guardrail 规则 · 契约版本
+═════ 以上为设计态（离线）│ 以下为运行态（请求期）═════
+体验层  Harness（可替换：dsh / MCP Client / 自有 CLI / 前端）  ← 用户请求入口
+        编排 = 选哪个能力 · 展示与叙事 · 会话记忆与澄清 · 只读 Manifest
+────────── 契约边界（四条红线 · 服务端强制）──────────────
+能力层  SAP 域能力（业务语义级 · 自建核心资产 · 建议以 MCP 暴露）
+        链固化 · asOf 一致性 · 基数归约 · 审批 subject · CapabilityGap
+══════════════════════════════════════════════════════════
+执行层  Java Gateway（唯一安全边界）→ JCO_RFC · ODATA → SAP On-Prem
+
+支撑面（不在请求主干上，被能力层与 Gateway 共同依赖）
+  运行时状态 Runtime State
+    Run / Session 持久化 · 审批 subject 凭据（propose → confirm）
+    lease / 幂等键 · 节点账本与 replay
+    现为本地 JSONL / file store + 占位主体 → 多宿主前必须换共享存储与服务端身份
+
+离线回路（不在请求路径）
+  IntentDecisionRecord → 长尾未命中的人工确认 → 别名/关系回流 → 本体
+```
+
+读图主线：**定义在顶、推理在编译期、治理在能力内、体验可替换**。
+
+**图的变更判据（图 v2.0 起生效）**：图只画目标形态。仅在四类情况下变更并递增版本号：① 新增/删除一层；② 层间责任划分变化；③ 契约边界或红线变化；④ 派生关系变化。实现进度只更新路线图 §1.1 的状态表，不改图。
+
+**三条不可让渡的结构性要求：**
+
+| # | 要求 | 不满足的后果 |
+|---|---|---|
+| **① 能力粒度** | 能力 = 一个能被独立回答的业务问题；SAP 端点只作内部绑定，不对外暴露 | 编排交给 harness 后，多端点组合的正确性由概率模型决定；基数归约与时点一致性错误不触发任何硬规则，只给出错的数 |
+| **② 语义资产** | 字段级 schema 上提并按 semanticType 标注；业务口径与关系入本体；工具描述为派生产物 | 能力内部链无法机械校验；派生管线没有输入，Manifest 退化为手写散文 |
+| **③ 身份与审批** | server-owned principal + subject 绑上游 lineage 联合哈希；开源侧只交付可插拔接口 + 显式标注「非生产」的参考实现 | 出现第二个宿主后「谁在调用」仍是占位值，多宿主并存等于无审计 |
+
+**目标形态的能力清单（4 条业务语义级主链，harness 可见面由 7 个端点级工具降为 4）：**
+
+| 业务语义级能力 | 内部端点链 | 副作用 |
+|---|---|---|
+| `diagnose_material_supply` | Inventory.GetAvailability + PurchaseOrder.GetList + Material.GetInfo | READ |
+| `review_customer_exposure` | SD.SalesOrder.GetList + FI.AR.GetOpenItems | READ |
+| `review_vendor_exposure` | FI.AP.GetOpenItems（+ 采购订单） | READ |
+| `propose_replenishment` | 供应诊断 + PR.CreateDraft | WRITE · 需审批 |
+
+能力池治理：新增业务语义级能力必须同时合并或下线对应端点级暴露项，可见面封顶 15（`can_solve` 必须覆盖被合并端点并集，否则语义丢失、合并不通过）；若 harness 必须连续调用两个能力且第二个依赖第一个输出，即为粒度不足信号，应再上移合并为一个能力。
 
 ---
 
@@ -255,6 +327,8 @@ Knowledge/RAG 可在未来作为带来源、版本和 freshness 的补充 `Evide
 
 ### 3.7 OpenHarness 对比后的语义规划控制面
 
+> **Superseded by v1.2（2026-09-13）**：下述「请求期在线语义规划控制面」（Goal Interpreter → Discovery → PlanCompiler → PlanGraph）是 v1.1 设计；v1.2 已删除自建 Plan Service 与 Resolve Service，推理全部前移到编译期派生管线（见 §1.2），能力粒度上移为业务语义级、编排下放给可替换 harness，单能力规模（< 30）下不再需要在线求解器。本节以下内容与 `sap-nexus-agent-openharness-semantic-orchestration.md` §5/§6 仅作为历史设计与已归档 Runbook 13-22 的契约背景保留，不代表目标形态。fail-closed 边界（LLM 只能引用 `capabilityId`、Gateway 不吸收业务语义、不可达输出 `CAPABILITY_GAP`）在 v1.2 中继续有效。
+
 OpenHarness 若干通用 Harness 机制（Agent loop、Tool Schema、按需 Skill、Permission/Hook、Dry-run、Memory/Resume 等）具有复用价值，完整机制对照矩阵见 `docs/wiki/sap-nexus-agent-openharness-semantic-orchestration.md` §3。SAP Nexus 只吸收这些机制，不引入 OpenHarness runtime 或依赖，也不把每个 SAP executor 暴露为模型可自由调用的 Tool。
 
 新增的语义规划控制面位于 Intent Harness 与现有 CallPlan / Gateway 之间：
@@ -283,7 +357,7 @@ Natural Language
 
 ### 3.8 DeerFlow 对比后的运行时借鉴边界
 
-DeerFlow 2.1.0 提供了更完整的通用 Agent runtime 工程实现（Tool / Skill 渐进发现、并行 task / sub-agent 生命周期、thread / run / checkpoint、上下文压缩、跨会话记忆）。SAP Nexus 只吸收这些机制，不引入 DeerFlow runtime、Gateway、frontend 或 `deerflow-harness` 生产依赖。分阶段借鉴边界（S2 progressive disclosure、S3 PlanGraph-governed lifecycle、Workbench durable context、受治理 UserPreferenceMemory）的完整采纳决策矩阵见 `docs/wiki/sap-nexus-agent-deerflow-adoption-analysis.md` §9；本节只保留不可妥协的执行权威边界。
+DeerFlow 2.1.0 提供了更完整的通用 Agent runtime 工程实现（Tool / Skill 渐进发现、并行 task / sub-agent 生命周期、thread / run / checkpoint、上下文压缩、跨会话记忆）。SAP Nexus 只吸收这些机制，不引入 DeerFlow runtime、Gateway、frontend 或 `deerflow-harness` 生产依赖。分阶段借鉴边界（S2 progressive disclosure、S3 PlanGraph-governed lifecycle、Workbench durable context、受治理 UserPreferenceMemory）的完整采纳决策矩阵见 `docs/wiki/archive/sap-nexus-agent-deerflow-adoption-analysis.md` §9；本节只保留不可妥协的执行权威边界。
 
 以下 DeerFlow 对象均不得成为 SAP Nexus 执行权威：
 
@@ -295,7 +369,7 @@ long-term memory
 generic LangGraph checkpoint
 ```
 
-它们不能替代 `MatchDecision`、`RegistrySnapshot`、`PlanGraph`、`ApprovalRecord`、`ExecutionResult` 或 `ReasoningFact`。完整证据、采纳矩阵和触发式路线见 `docs/wiki/sap-nexus-agent-deerflow-adoption-analysis.md`。
+它们不能替代 `MatchDecision`、`RegistrySnapshot`、`PlanGraph`、`ApprovalRecord`、`ExecutionResult` 或 `ReasoningFact`。完整证据、采纳矩阵和触发式路线见 `docs/wiki/archive/sap-nexus-agent-deerflow-adoption-analysis.md`。
 
 ### 3.9 可信身份与执行主体边界
 

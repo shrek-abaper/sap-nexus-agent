@@ -5,10 +5,10 @@
 | 字段 | 内容 |
 |---|---|
 | 文档名称 | `SAP Nexus Agent OpenHarness 对比与语义智能编排路线` |
-| 当前版本 | `v0.1.9` |
+| 当前版本 | `v0.1.10` |
 | 状态 | `Decision Baseline` |
 | 创建日期 | `2026-07-18` |
-| 最近更新 | `2026-08-30` |
+| 最近更新 | `2026-09-13` |
 | 维护目录 | `docs/wiki/` |
 | 文档定位 | 记录 OpenHarness 对比结论，并定义 SAP Nexus 后续语义规划、只读多能力组合和受治理能力演进路线 |
 | 关联技术架构 | `docs/wiki/sap-nexus-agent-technical-architecture.md` |
@@ -20,6 +20,7 @@
 
 | 版本 | 日期 | 变更摘要 | 决策状态 |
 |---|---|---|---|
+| `v0.1.10` | `2026-09-13` | 对齐 Notion v1.2：本文档的目标形态（§5 在线 Planner 管线与 §6 S0–S6 序列）标记为 **superseded**——v1.2 删除自建 Plan Service / Resolve Service，推理前移编译期，能力上移为业务语义级、编排下放给可替换 harness（权威目标以技术架构 §1.2 与路线图 §1.1 为准）；§1–§4 的机制借鉴结论（OpenHarness 只作机制参考、fail-closed、capabilityId 闭集、`CAPABILITY_GAP`）在 v1.2 下继续有效；dsh 0.1.5-rc.1 in-process + standalone 已建成，旧 S0/S1..S6 与新序列是两套编号、勿混用 | 历史决策基线（目标节被 v1.2 取代） |
 | `v0.1.9` | `2026-08-30` | 同步 `sd-fi-read-capability-registration` Native change 已归档：新增 3 个 READ-only 能力（`SD.SalesOrder.GetList` / `FI.AR.GetOpenItems` / `FI.AP.GetOpenItems`），SD 与 FI 首次进入能力本体，Active capability 由 3 个更正为 7 个（原计数亦已落后于 `MM.Material.GetInfo`）。本次只更正「当前 SAP Nexus 事实」中的能力清单一项，未重新逐条核验该节其余陈述；live SAP READ 仍 `not_run`，三个 BAPI 的字段签名来自公开对象目录 | 当前决策基线 |
 | `v0.1.8` | `2026-08-05` | 同步 Runbook 22 已实现、验证并归档：production coordinator 与 L1/L2/L3 release gate 已接通并通过 fake/sandbox 验证；OpenHarness 仍仅作机制参考，不成为第二 runtime，live SAP READ/WRITE 均 `not_run` | 当前决策基线 |
 | `v0.1.7` | `2026-08-05` | 同步 Runbooks 13-21 已归档及当前 Runbook 22 入口；OpenHarness 仍仅作机制参考，Runbook 21 fake/sandbox Action evidence 不等于 production orchestrator 或 live release gate | 当前决策基线 |
@@ -30,6 +31,8 @@
 | `v0.1.2` | `2026-07-24` | 校准 S2-A 五态匹配与 S2-B dry-run 的顺序、visibility 和 deterministic authority 边界 | 历史决策基线 |
 
 ---
+
+> **v1.2 取代声明（2026-09-13）**：本文档 §5 的在线 Planner 目标管线（Goal Interpreter → Discovery → Planner → PlanCompiler → Policy）与 §6 的 S0–S6 序列已被内部架构方案 v1.2 **superseded**——自建 Plan Service 与 Resolve Service 取消，推理前移到编译期派生管线，能力粒度上移为业务语义级（4 个业务工具），编排与展示下放给可替换 harness（dsh 0.1.5-rc.1 已建成）。权威目标形态见技术架构文档 §1.2，序列与当前状态见路线图 §1.1。§1–§4 关于 OpenHarness「只借鉴机制、不引入 runtime」的结论与全部 fail-closed 边界继续有效；下文作为历史决策与已归档 Runbook 13-22 的契约背景保留。
 
 ## 1. 结论先行
 
@@ -187,6 +190,8 @@ outputs:
 ---
 
 ## 5. 目标架构
+
+> **Superseded by v1.2（2026-09-13）**：下图为 v1.1 在线规划管线，v1.2 已取消 Plan/Resolve 运行时服务；权威目标图见技术架构文档 §1.2（编译期 Manifest + 业务语义级能力 + 可替换 harness）。下图保留作历史设计。
 
 ```text
 Natural Language

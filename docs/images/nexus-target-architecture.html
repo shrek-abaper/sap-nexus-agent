@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>SAP Nexus Agent · 能力本体驱动的 SAP 能力供应方（架构基线 v2.0）</title>
+<style>
+  html,body{margin:0;padding:0;background:#FFFFFF}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;}
+  .wrap{max-width:1280px;margin:0 auto;padding:16px 16px 24px}
+  svg{width:100%;height:auto;display:block}
+</style>
+</head>
+<body>
+<div class="wrap">
+<svg viewBox="0 0 1280 1870" xmlns="http://www.w3.org/2000/svg">
+<style>
+  .panel{fill:#F9F8F7;stroke:#E6E5E3}
+  .panelBlue{fill:#F5FAFE;stroke:#CFE4F8}
+  .panelBlueHi{fill:#F5FAFE;stroke:#2783DE;stroke-width:1.6}
+  .panelGray{fill:#F9F8F7;stroke:#D8D6D3;stroke-dasharray:5 4}
+  .panelPurple{fill:#F8F5FD;stroke:#DED2F2}
+  .panelPurpleHi{fill:#F8F5FD;stroke:#8A63C9;stroke-width:1.6}
+  .panelWarn{fill:#FBEBDE;stroke:#E8C49B}
+  .card{fill:#FFFFFF;stroke:#E6E5E3}
+  .cardBlue{fill:#FFFFFF;stroke:#CFE4F8}
+  .cardPurple{fill:#FFFFFF;stroke:#DED2F2}
+  .cardHi{fill:#E5F2FC;stroke:#2783DE;stroke-width:1.5}
+  .cardWarn{fill:#FFFFFF;stroke:#E8C49B}
+  .cardRed{fill:#FCE9E7;stroke:#E56458}
+  .lblGray{fill:#F0EFED;stroke:#E6E5E3}
+  .lblBlue{fill:#E5F2FC;stroke:#CFE4F8}
+  .lblPurple{fill:#F1EAFB;stroke:#DED2F2}
+  .lblWarn{fill:#FBEBDE;stroke:#E8C49B}
+  .title{font-size:27px;font-weight:700;fill:#2C2C2B}
+  .subtitle{font-size:13.5px;fill:#7D7A75}
+  .h{font-size:15.5px;font-weight:700;fill:#2C2C2B}
+  .hb{font-size:15.5px;font-weight:700;fill:#1F6FC0}
+  .hp{font-size:15.5px;font-weight:700;fill:#6940B3}
+  .sub{font-size:12px;fill:#7D7A75}
+  .t{font-size:12.5px;font-weight:600;fill:#2C2C2B}
+  .tb{font-size:12.5px;font-weight:600;fill:#1F6FC0}
+  .tp{font-size:12.5px;font-weight:600;fill:#6940B3}
+  .b{font-size:11px;fill:#7D7A75}
+  .lt{font-size:13.5px;font-weight:700;fill:#2C2C2B}
+  .ltb{font-size:13.5px;font-weight:700;fill:#1F6FC0}
+  .ltp{font-size:13.5px;font-weight:700;fill:#6940B3}
+  .len{font-size:10.5px;fill:#9A9791}
+  .warnT{font-size:11.5px;font-weight:600;fill:#A85E1E}
+  .redT{font-size:11.5px;font-weight:600;fill:#B4453A}
+  .flow{fill:none;stroke:#B9B6B1;stroke-width:1.6}
+  .dashP{fill:none;stroke:#8A63C9;stroke-width:1.4;stroke-dasharray:5 4}
+  .dashB{fill:none;stroke:#2783DE;stroke-width:1.4;stroke-dasharray:5 4}
+  .dashG{fill:none;stroke:#B9B6B1;stroke-width:1.3;stroke-dasharray:4 4}
+  .band{font-size:10.5px;font-weight:700;fill:#7D7A75}
+  .bandP{font-size:10.5px;font-weight:700;fill:#7A57B8}
+</style>
+<defs>
+  <marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <path d="M 0 1 L 9 5 L 0 9 z" fill="#B9B6B1"/>
+  </marker>
+  <marker id="arp" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <path d="M 0 1 L 9 5 L 0 9 z" fill="#8A63C9"/>
+  </marker>
+</defs>
+
+<text class="title" x="32" y="52">SAP Nexus Agent · 能力本体驱动的 SAP 能力供应方</text>
+<text class="subtitle" x="32" y="80">架构基线 v2.0 · 目标形态（不含进度） —— 上两层为设计态（离线），harness 以下为运行态；实现进度见图下「实现状态」备注</text>
+
+<g>
+  <rect x="884" y="22" width="14" height="10" rx="2" fill="#F1EAFB" stroke="#8A63C9"/>
+  <text class="b" x="906" y="31">紫 · 能力本体与派生管线：定义与推理只在此</text>
+  <rect x="884" y="40" width="14" height="10" rx="2" fill="#E5F2FC" stroke="#2783DE"/>
+  <text class="b" x="906" y="49">蓝 · 自建核心资产：业务语义级能力</text>
+  <rect x="884" y="58" width="14" height="10" rx="2" fill="#F9F8F7" stroke="#D8D6D3" stroke-dasharray="4 3"/>
+  <text class="b" x="906" y="67">灰虚线 · 可替换宿主，不承担治理职责</text>
+  <rect x="884" y="76" width="14" height="10" rx="2" fill="#FBEBDE" stroke="#E8C49B"/>
+  <text class="b" x="906" y="85">橙 · 契约红线，服务端强制</text>
+</g>
+
+<!-- band: design-time vs run-time -->
+<rect x="8" y="150" width="6" height="408" rx="3" fill="#DED2F2"/>
+<text class="bandP" transform="rotate(-90 24 354)" x="24" y="354" text-anchor="middle">设计态 · 离线</text>
+<rect x="8" y="578" width="6" height="860" rx="3" fill="#E6E5E3"/>
+<text class="band" transform="rotate(-90 24 1008)" x="24" y="1008" text-anchor="middle">运行态 · 请求期</text>
+
+<!-- L1 Ontology control plane -->
+<rect class="lblPurple" x="32" y="150" width="150" height="96" rx="8"/>
+<text class="ltp" x="48" y="178">控制面</text>
+<text class="b" x="48" y="200">定义的唯一来源</text>
+<text class="b" x="48" y="218">人手维护的只有这里</text>
+
+<rect class="panelPurpleHi" x="200" y="150" width="1048" height="248" rx="10"/>
+<text class="hp" x="216" y="176">能力本体 Capability Ontology · 业务对象 + 口径 + 关系 · YAML 单一来源</text>
+<text class="b" x="860" y="176">定义业务对象与口径，而非描述端点与参数</text>
+
+<rect class="cardPurple" x="216" y="192" width="242" height="92" rx="8"/>
+<text class="tp" x="230" y="214">对象层 Object</text>
+<text class="b" x="230" y="234">业务实体 + 主键 + 对象间 link</text>
+<text class="b" x="230" y="252">Material@Plant · Customer · ARItem</text>
+
+<rect class="cardPurple" x="474" y="192" width="242" height="92" rx="8"/>
+<text class="tp" x="488" y="214">口径层 Definition</text>
+<text class="b" x="488" y="234">可用库存 / 逾期 / 信用暴露</text>
+<text class="b" x="488" y="252">输出字段必须引用口径 id</text>
+
+<rect class="cardPurple" x="732" y="192" width="242" height="92" rx="8"/>
+<text class="tp" x="746" y="214">语义层 SemanticType</text>
+<text class="b" x="746" y="234">值域 · 别名 · 敏感级</text>
+<text class="b" x="746" y="252">FactType 字段级 schema</text>
+
+<rect class="cardPurple" x="990" y="192" width="242" height="92" rx="8"/>
+<text class="tp" x="1004" y="214">能力层 Capability</text>
+<text class="b" x="1004" y="234">= 一个业务问题 · sideEffect</text>
+<text class="b" x="1004" y="252">SAP 端点仅作内部绑定</text>
+
+<rect class="cardPurple" x="216" y="296" width="190" height="62" rx="8"/>
+<text class="t" x="230" y="318">links</text>
+<text class="b" x="230" y="340">Customer → ARItem · SO</text>
+
+<rect class="cardPurple" x="422" y="296" width="190" height="62" rx="8"/>
+<text class="t" x="436" y="318">can_solve</text>
+<text class="b" x="436" y="340">可回答的业务问题</text>
+
+<rect class="cardPurple" x="628" y="296" width="190" height="62" rx="8"/>
+<text class="t" x="642" y="318">consumes</text>
+<text class="b" x="642" y="340">FactType 字段 + 口径 id</text>
+
+<rect class="cardPurple" x="834" y="296" width="190" height="62" rx="8"/>
+<text class="t" x="848" y="318">applies_to</text>
+<text class="b" x="848" y="340">合法维度与取值</text>
+
+<rect class="cardPurple" x="1040" y="296" width="190" height="62" rx="8"/>
+<text class="t" x="1054" y="318">requires</text>
+<text class="b" x="1054" y="340">敏感级 · 审批要求</text>
+
+<text class="b" x="216" y="382">验收条件：改一行本体（口径 / 关系 / 值域）即改变 Agent 行为，零代码改动；覆盖域由关系图派生，CapabilityGap 从「查不到 id」变为可达性判定</text>
+
+<path class="dashP" d="M 724 398 V 416" marker-end="url(#arp)"/>
+
+<path class="dashP" d="M 1248 240 H 1262 V 1058 H 1248" marker-end="url(#arp)"/>
+
+<!-- L2 compile-time pipeline -->
+<rect class="lblPurple" x="32" y="418" width="150" height="140" rx="8"/>
+<text class="ltp" x="48" y="446">编译期</text>
+<text class="b" x="48" y="468">推理只发生在这里</text>
+<text class="b" x="48" y="486">离线 · 可重放</text>
+<text class="b" x="48" y="504">产物可签名可 diff</text>
+
+<rect class="panelPurple" x="200" y="418" width="1048" height="140" rx="10"/>
+<text class="hp" x="216" y="444">编译期派生管线 Compile-time Derivation</text>
+<text class="warnT" x="660" y="444">请求期不查本体、不查 registry</text>
+
+<rect class="cardPurple" x="216" y="456" width="196" height="66" rx="8"/>
+<text class="t" x="230" y="478">能力卡与工具描述</text>
+<text class="b" x="230" y="500">供 harness 选能力</text>
+
+<rect class="cardPurple" x="421" y="456" width="196" height="66" rx="8"/>
+<text class="t" x="435" y="478">候选索引与别名表</text>
+<text class="b" x="435" y="500">语义归一查表用</text>
+
+<rect class="cardPurple" x="626" y="456" width="196" height="66" rx="8"/>
+<text class="t" x="640" y="478">依赖边与组合约束</text>
+<text class="b" x="640" y="500">基数归约 · 时点容差</text>
+
+<rect class="cardPurple" x="831" y="456" width="196" height="66" rx="8"/>
+<text class="t" x="845" y="478">Guardrail 规则</text>
+<text class="b" x="845" y="500">校验 · 脱敏 · 审批档位</text>
+
+<rect class="cardPurple" x="1036" y="456" width="196" height="66" rx="8"/>
+<text class="t" x="1050" y="478">契约版本快照</text>
+<text class="b" x="1050" y="500">pin 与升级评审</text>
+
+<text class="b" x="216" y="542">验收条件：工具描述与契约必须是本体的派生产物，手写契约不计达成；管线可重放，产物可签名可 diff</text>
+
+<path class="dashP" d="M 724 558 V 576" marker-end="url(#arp)"/>
+<text class="len" x="742" y="573">发布 Capability Manifest · 静态产物，不是请求流</text>
+
+<!-- L3 harness -->
+<rect class="lblGray" x="32" y="578" width="150" height="140" rx="8"/>
+<text class="lt" x="48" y="606">体验层</text>
+<text class="b" x="48" y="628">按需选型</text>
+<text class="b" x="48" y="646">可独立替换</text>
+<text class="b" x="48" y="664">不承担治理</text>
+
+<rect class="panelGray" x="200" y="578" width="1048" height="140" rx="10"/>
+<text class="h" x="216" y="604">Harness 运行时层</text>
+<text class="b" x="360" y="604">DeepSeek Harness / MCP Client / 自有 CLI / 前端，任选并可并存</text>
+<text class="t" x="1060" y="604">用户请求入口</text>
+
+<rect class="card" x="216" y="616" width="246" height="66" rx="8"/>
+<text class="t" x="230" y="638">编排：选哪个能力</text>
+<text class="b" x="230" y="660">LLM 负责，允许出错并可重试</text>
+
+<rect class="card" x="472" y="616" width="246" height="66" rx="8"/>
+<text class="t" x="486" y="638">展示：生成式界面与叙事</text>
+<text class="b" x="486" y="660">表格 · 图 · 审批交互 UI</text>
+
+<rect class="card" x="728" y="616" width="246" height="66" rx="8"/>
+<text class="t" x="742" y="638">会话记忆与澄清</text>
+<text class="b" x="742" y="660">槽位不全时向用户追问</text>
+
+<rect class="card" x="984" y="616" width="246" height="66" rx="8"/>
+<text class="t" x="998" y="638">只读 Manifest</text>
+<text class="b" x="998" y="660">工具描述与候选集已编译好</text>
+
+<text class="b" x="216" y="702">harness 可决定「调哪个能力」；不可决定能力内部怎么走，也不可决定不满足条件时怎么办</text>
+
+<path class="flow" d="M 724 718 V 736" marker-end="url(#ar)"/>
+<text class="len" x="742" y="733">请求期主干从此开始 —— 向上不存在通往本体与 registry 的调用路径</text>
+
+<!-- L4 contract boundary -->
+<rect class="lblWarn" x="32" y="738" width="150" height="108" rx="8"/>
+<text class="lt" x="48" y="766">契约边界</text>
+<text class="b" x="48" y="788">四条红线</text>
+<text class="b" x="48" y="806">服务端强制</text>
+
+<rect class="panelWarn" x="200" y="738" width="1048" height="108" rx="10"/>
+<rect class="cardWarn" x="216" y="752" width="246" height="62" rx="8"/>
+<text class="warnT" x="230" y="774">禁宿主专属对象入能力层</text>
+<text class="b" x="230" y="796">ctx 与插件上下文不入签名</text>
+
+<rect class="cardWarn" x="472" y="752" width="246" height="62" rx="8"/>
+<text class="warnT" x="486" y="774">禁自由 tool calling 到网关</text>
+<text class="b" x="486" y="796">bindingId 与 rfcName 不可覆盖</text>
+
+<rect class="cardWarn" x="728" y="752" width="246" height="62" rx="8"/>
+<text class="warnT" x="742" y="774">契约版本 pin</text>
+<text class="b" x="742" y="796">Manifest 带版本，升级须评审</text>
+
+<rect class="cardWarn" x="984" y="752" width="246" height="62" rx="8"/>
+<text class="warnT" x="998" y="774">最低模型能力线</text>
+<text class="b" x="998" y="796">工具选择与参数合规达标才接 live</text>
+
+<text class="redT" x="216" y="832">威胁模型须显式声明：这四条防的是 prompt injection，不防恶意部署方 —— 开源模式下后者不存在有效边界</text>
+
+<path class="flow" d="M 724 846 V 864" marker-end="url(#ar)"/>
+
+<!-- L5 capability layer -->
+<rect class="lblBlue" x="32" y="866" width="150" height="270" rx="8"/>
+<text class="ltb" x="48" y="894">能力层</text>
+<text class="b" x="48" y="916">自建核心资产</text>
+<text class="b" x="48" y="934">一次建设</text>
+<text class="b" x="48" y="952">多消费者复用</text>
+<text class="b" x="48" y="978">护城河在这里：</text>
+<text class="b" x="48" y="996">业务问题的沉淀</text>
+<text class="b" x="48" y="1014">而非端点的接入</text>
+
+<rect class="panelBlueHi" x="200" y="866" width="1048" height="270" rx="10"/>
+<text class="hb" x="216" y="892">SAP 域能力层 · 业务语义级能力（不感知 harness 类型）</text>
+<text class="b" x="660" y="892">对外只暴露业务语义级能力；SAP 端点不出现在对外契约中，仅作能力内部绑定</text>
+
+<rect class="cardHi" x="216" y="904" width="246" height="80" rx="8"/>
+<text class="tb" x="230" y="926">diagnose_material_supply</text>
+<text class="b" x="230" y="948">够不够用 · 在途 · 何时到</text>
+<text class="b" x="230" y="966">库存 + 采购订单 + 物料主数据</text>
+
+<rect class="cardHi" x="472" y="904" width="246" height="80" rx="8"/>
+<text class="tb" x="486" y="926">review_customer_exposure</text>
+<text class="b" x="486" y="948">还能不能发货 · 敞口多少</text>
+<text class="b" x="486" y="966">应收未清 + 销售订单</text>
+
+<rect class="cardHi" x="728" y="904" width="246" height="80" rx="8"/>
+<text class="tb" x="742" y="926">review_vendor_exposure</text>
+<text class="b" x="742" y="948">供应商应付敞口</text>
+<text class="b" x="742" y="966">应付未清 + 采购订单</text>
+
+<rect class="cardHi" x="984" y="904" width="246" height="80" rx="8"/>
+<text class="tb" x="998" y="926">propose_replenishment</text>
+<text class="b" x="998" y="948">缺口 → 提议 → 审批 → 写入</text>
+<text class="b" x="998" y="966">唯一 WRITE · 两调用模式</text>
+
+<text class="t" x="216" y="1014">不可下放给 harness 的五件事（能力内部固化）</text>
+<text class="b" x="640" y="1014">其中时点容差与归约规则的取值，由本体口径 Definition 派生，编译期注入 →</text>
+
+<rect class="cardBlue" x="216" y="1026" width="196" height="66" rx="8"/>
+<text class="tb" x="230" y="1048">链固化</text>
+<text class="b" x="230" y="1070">多端点顺序与传参</text>
+
+<rect class="cardBlue" x="421" y="1026" width="196" height="66" rx="8"/>
+<text class="tb" x="435" y="1048">时点一致性</text>
+<text class="b" x="435" y="1070">asOf 检查与容差</text>
+
+<rect class="cardBlue" x="626" y="1026" width="196" height="66" rx="8"/>
+<text class="tb" x="640" y="1048">基数归约</text>
+<text class="b" x="640" y="1070">求和 · 取一 · 要求唯一</text>
+
+<rect class="cardBlue" x="831" y="1026" width="196" height="66" rx="8"/>
+<text class="tb" x="845" y="1048">审批 subject</text>
+<text class="b" x="845" y="1070">服务端计算与校验</text>
+
+<rect class="cardBlue" x="1036" y="1026" width="196" height="66" rx="8"/>
+<text class="tb" x="1050" y="1048">显式拒答</text>
+<text class="b" x="1050" y="1070">CapabilityGap 不降级</text>
+
+<text class="b" x="216" y="1116">五件事的取值（归约方式 · 时点容差 · 审批档位 · 拒答边界）一律由本体口径派生、编译期注入；写在实现代码里即视为未达成</text>
+
+<path class="flow" d="M 724 1136 V 1154" marker-end="url(#ar)"/>
+
+<!-- L6 gateway -->
+<rect class="lblGray" x="32" y="1156" width="150" height="96" rx="8"/>
+<text class="lt" x="48" y="1184">执行层</text>
+<text class="b" x="48" y="1206">唯一安全边界</text>
+
+<rect class="panelBlue" x="200" y="1156" width="1048" height="96" rx="10"/>
+<text class="hb" x="216" y="1182">Java Gateway · 参数校验 / 执行器白名单路由 / 归一化 / 脱敏 / 审计</text>
+<text class="b" x="216" y="1208">只接受已注册的 capabilityId 与绑定；凭证与连接信息不出网关；模型可见即已留痕</text>
+<text class="b" x="216" y="1232">硬门禁：凭证泄漏 0 · 审批绕过 0 · 无根据声明 0 · 血缘覆盖 100%</text>
+
+<path class="flow" d="M 724 1252 V 1270" marker-end="url(#ar)"/>
+
+<!-- L7 executors -->
+<rect class="lblGray" x="32" y="1272" width="150" height="86" rx="8"/>
+<text class="lt" x="48" y="1300">执行器家族</text>
+<text class="b" x="48" y="1322">未就绪一律</text>
+<text class="b" x="48" y="1340">fail-closed</text>
+
+<rect class="panel" x="200" y="1272" width="1048" height="86" rx="10"/>
+<rect class="card" x="216" y="1286" width="196" height="56" rx="8"/>
+<text class="t" x="230" y="1308">JCO_RFC</text>
+<text class="b" x="230" y="1328">RFC / BAPI 调用</text>
+
+<rect class="card" x="421" y="1286" width="196" height="56" rx="8"/>
+<text class="t" x="435" y="1308">ODATA</text>
+<text class="b" x="435" y="1328">OData 服务调用</text>
+
+<rect class="card" x="626" y="1286" width="606" height="56" rx="8"/>
+<text class="t" x="640" y="1308">CDS_ADT · REST_JSON · SQL_READ</text>
+<text class="b" x="640" y="1328">未就继的执行器：架构预留，运行时一律拒绝（fail-closed）</text>
+
+<path class="flow" d="M 724 1358 V 1376" marker-end="url(#ar)"/>
+
+<!-- L8 SAP -->
+<rect class="lblGray" x="32" y="1378" width="150" height="60" rx="8"/>
+<text class="lt" x="48" y="1412">数据源</text>
+
+<rect class="panel" x="200" y="1378" width="1048" height="60" rx="10"/>
+<text class="h" x="216" y="1414">SAP On-Prem · ECC / S4 —— BAPI · RFC · OData 服务，权限与字段级授权仍由 SAP 自身裁决</text>
+
+<!-- L9 offline loop -->
+<rect class="lblPurple" x="32" y="1458" width="150" height="80" rx="8"/>
+<text class="ltp" x="48" y="1486">离线回路</text>
+<text class="b" x="48" y="1508">不在请求路径</text>
+
+<rect class="panelPurple" x="200" y="1458" width="1048" height="80" rx="10"/>
+<rect class="cardPurple" x="216" y="1472" width="330" height="52" rx="8"/>
+<text class="tp" x="230" y="1492">决策日志 IntentDecisionRecord</text>
+<text class="b" x="230" y="1512">选错能力 / 澄清失败的现场留痕</text>
+
+<rect class="cardPurple" x="559" y="1472" width="330" height="52" rx="8"/>
+<text class="tp" x="573" y="1492">长尾未命中 → 人工确认</text>
+<text class="b" x="573" y="1512">确认结果回流为别名，而非现场猜测</text>
+
+<rect class="cardPurple" x="902" y="1472" width="330" height="52" rx="8"/>
+<text class="tp" x="916" y="1492">分叉点 → 金标样本</text>
+<text class="b" x="916" y="1512">回流只改本体与派生产物，不改代码</text>
+
+<path class="dashP" d="M 200 1498 H 190 V 382 H 200" marker-end="url(#arp)"/>
+
+<!-- L10 sequence -->
+<rect class="lblGray" x="32" y="1558" width="150" height="150" rx="8"/>
+<text class="lt" x="48" y="1586">工程化序列</text>
+<text class="b" x="48" y="1608">架构先行</text>
+<text class="b" x="48" y="1626">逐步落地</text>
+<text class="b" x="48" y="1652">先语义资产</text>
+<text class="b" x="48" y="1670">再多宿主验证</text>
+
+<rect class="panel" x="200" y="1558" width="1048" height="150" rx="10"/>
+<text class="h" x="216" y="1584">五步走 —— 不自建编排求解器与在线语义服务</text>
+
+<rect class="card" x="216" y="1596" width="196" height="82" rx="8"/>
+<text class="t" x="230" y="1618">S1 补证据</text>
+<text class="b" x="230" y="1638">测试失败清零</text>
+<text class="b" x="230" y="1656">重跑离线门禁</text>
+
+<rect class="card" x="421" y="1596" width="196" height="82" rx="8"/>
+<text class="t" x="435" y="1618">S2 字段级 schema</text>
+<text class="b" x="435" y="1638">对象主键 + 2 个 FactType</text>
+<text class="b" x="435" y="1656">按语义类型标注</text>
+
+<rect class="card" x="626" y="1596" width="196" height="82" rx="8"/>
+<text class="t" x="640" y="1618">S3 关系与派生</text>
+<text class="b" x="640" y="1638">口径 + 关系入本体</text>
+<text class="b" x="640" y="1656">产出 Manifest</text>
+
+<rect class="card" x="831" y="1596" width="196" height="82" rx="8"/>
+<text class="t" x="845" y="1618">S4 粒度上移</text>
+<text class="b" x="845" y="1638">一个业务语义能力</text>
+<text class="b" x="845" y="1656">端到端打通</text>
+
+<rect class="card" x="1036" y="1596" width="196" height="82" rx="8"/>
+<text class="t" x="1050" y="1618">S5 多宿主验证</text>
+<text class="b" x="1050" y="1638">以 MCP 暴露能力</text>
+<text class="b" x="1050" y="1656">跨宿主一致性矩阵</text>
+
+<text class="b" x="216" y="1698">顺序约束：S2 / S3 是 S4 的语义前置（跳过则业务粒度住在代码里，必须回填）；身份与审批主体产品化是 S5 的阻塞前置</text>
+
+<g transform="translate(0,-170)">
+<!-- L12 runtime state (supporting plane) -->
+<rect class="lblGray" x="32" y="1898" width="150" height="116" rx="8"/>
+<text class="lt" x="48" y="1926">支撑面</text>
+<text class="b" x="48" y="1948">运行时状态</text>
+<text class="b" x="48" y="1966">不在请求主干上</text>
+
+<rect class="panel" x="200" y="1898" width="1048" height="116" rx="10"/>
+<text class="h" x="216" y="1924">运行时状态层 Runtime State</text>
+<text class="b" x="460" y="1924">被能力层与 Gateway 共同依赖；双阶段审批与拒答留痕离了它无法成立</text>
+
+<rect class="card" x="216" y="1936" width="246" height="58" rx="8"/>
+<text class="t" x="230" y="1958">Run / Session 持久化</text>
+<text class="b" x="230" y="1978">状态机 · cursor · 可重放</text>
+
+<rect class="card" x="472" y="1936" width="246" height="58" rx="8"/>
+<text class="t" x="486" y="1958">审批 subject 凭据</text>
+<text class="b" x="486" y="1978">propose → confirm 两调用模式</text>
+
+<rect class="card" x="728" y="1936" width="246" height="58" rx="8"/>
+<text class="t" x="742" y="1958">lease · 幂等键</text>
+<text class="b" x="742" y="1978">重复提交与并发写保护</text>
+
+<rect class="card" x="984" y="1936" width="246" height="58" rx="8"/>
+<text class="t" x="998" y="1958">节点账本与回放</text>
+<text class="b" x="998" y="1978">现场可复现·证据可溯源</text>
+
+<text class="redT" x="216" y="2008">多宿主前置：运行时状态必须是共享存储 + 服务端签发的调用主体；本地文件存储与占位主体不满足该条件</text>
+
+
+</g>
+
+<path class="dashG" d="M 190 1100 H 176 V 1786 H 190" marker-end="url(#ar)"/>
+
+</svg>
+</div>
+</body>
+</html>

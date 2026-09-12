@@ -5,21 +5,22 @@
 | 字段 | 内容 |
 |---|---|
 | 文档名称 | `SAP Nexus Agent 技术选型与工程路线决策` |
-| 当前版本 | `v0.2.20` |
+| 当前版本 | `v0.2.21` |
 | 状态 | `Decision Baseline Draft` |
 | 创建日期 | `2026-06-19` |
-| 最近更新 | `2026-08-30` |
+| 最近更新 | `2026-09-13` |
 | 维护目录 | `docs/wiki/` |
 | 文档定位 | 指导 SAP Nexus Agent 工程骨架、技术栈和 AI Native 工程产物组织的技术选型基线 |
 | 关联技术架构 | `docs/wiki/sap-nexus-agent-technical-architecture.md` |
 | 关联实施路线 | `docs/wiki/sap-nexus-agent-implementation-roadmap.md` |
 | 关联智能编排路线 | `docs/wiki/sap-nexus-agent-openharness-semantic-orchestration.md` |
-| 关联 DeerFlow 决策 | `docs/wiki/sap-nexus-agent-deerflow-adoption-analysis.md` |
+| 关联 DeerFlow 决策 | `docs/wiki/archive/sap-nexus-agent-deerflow-adoption-analysis.md` |
 
 ## 版本记录
 
 | 版本 | 日期 | 变更摘要 | 决策状态 |
 |---|---|---|---|
+| `v0.2.21` | `2026-09-13` | 对齐 Notion v1.2 与 2026-09-12 代码事实：① **修订 §5.10 对 DeepSeek Harness 的拒绝结论**——v1.2 解耦模型下 dsh 已作为**可替换 harness 打样被实际采用**（in-process DSH Chat `/chat` + standalone CLI，dsh-* 钉版 `0.1.5-rc.1`、cordis `4.0.2`），采用方式恰好满足原拒绝理由的全部豁免条件（harness 不见 capabilityId/binding、业务逻辑与审批裁决全留服务端 semantic-tool facade、插件只放形状校验/遥测/展示、架构红线测试锁定）；Pi / Hermes 维持「不引入」；② §1 结论表 dsh 行改判并新增 Semantic Tool Facade v2、Compile-time Manifest（目标态）两行；③ 在线 Plan/Resolve 与「能力注册为 dsh tool」仍维持拒绝——v1.2 取消 Plan/Resolve Service，编排求解器在能力数 < 30 前不引入，MCP 暴露为目标态推荐、本期未做；④ 事实订正：Java 已为 17（gradlew 已提交），§2 观察标记为 2026-06 历史快照 | 当前技术基线 |
 | `v0.2.20` | `2026-08-30` | 增加 §5.10 Coding/Personal Agent Harness 横向复核（DeepSeek Harness / Pi / Hermes Agent）：三者均经 GitHub API 核实为真实项目，但属模型驱动 tool-loop 类 harness（与 §3.6/OpenHarness 同类），非 §5.9 的图/工作流控制流类；均不引入为 runtime，也不将能力注册为其插件/tool；同时评估"结合能力关系本体做运行时交互式规划"候选方向，结论为可用原生 guarded ReAct loop（Dynamic Planner/S6 既定预留）满足，无需引入外部 harness；并澄清模型能力提升不能替代 Human Approval 的可追责性要求 | 当前技术基线 |
 | `v0.2.19` | `2026-08-24` | 增加 §5.9 主流 Agent 编排框架（LangGraph / CrewAI / AutoGen(AG2) / Semantic Kernel / OpenAI Agents SDK / Google ADK / Vercel AI SDK / Mastra）横向复核：均不引入为 runtime 依赖，原因与 OpenHarness/DeerFlow 一致——通用框架默认模型驱动 tool loop 或工作流自治，不天然支持"Capability Registry + 确定性 PlanCompiler + Java Gateway 拥有最终执行权"的治理内核；LangGraph/Semantic Kernel/Mastra/ADK 的确定性图控制流机制列为后续 durable runtime 阶段的设计参考 | 当前技术基线 |
 | `v0.2.18` | `2026-08-05` | Runbook 22 Native change 已归档：选择现有 Next.js/TypeScript server runtime 承载薄 composition coordinator，复用 Python Agent 的 LLM-first/PlanGraph authoring 与 Runbooks 16-21 的确定性组件；offline L1/L2/L3 gate `9/9`、Native acceptance 42/42，live SAP READ/WRITE `not_run` | 当前技术基线 |
@@ -47,6 +48,8 @@
 ---
 
 ## 1. 结论先行
+
+> **v1.2 对齐说明（2026-09-13）**：目标形态以 Notion 架构方案 v1.2 为准（四方各管一件事：能力本体 / 编译期派生管线 / SAP 域能力层 / 可替换 Harness；见技术架构 §1.2、路线图 §1.1）。本表新增/修订行：Coding/Personal Agent Harness（dsh 改判采用）、Semantic Tool Facade、Compile-time Capability Manifest、MCP Exposure。下文带 v1.1 时代「在线 PlanCompiler / 第二 runtime」语境的选型理由，其结论（不引入外部编排 runtime、执行权威留服务端）在 v1.2 下继续有效，但在线 Plan/Resolve 服务本身已被取消。
 
 Registry / OWL Contract、Gateway execution、第二条 Read capability、sandbox write vertical slice、S1、S2-A/S2-B、P0B 和 Runbooks 13-21 均已完成并归档。Runbook 22 已选择现有 Next.js/TypeScript server runtime 作为薄 composition coordinator，复用 Python Agent 的 LLM-first/PlanGraph authoring 与既有 executor、projection、recommendation、narrative、durable replay 和 Action governance，形成 offline implementation candidate：
 
@@ -79,7 +82,10 @@ docs/runbooks/22-end-to-end-agent-eval-release-gate.md
 | OpenHarness | 设计参考，不增加依赖 | 借鉴 Agent loop、Tool Schema、Permission/Hook、Dry-run、Memory/Resume；拒绝第二运行时和模型自由 SAP Tool Calling |
 | DeerFlow Runtime | 设计参考，不增加依赖 | 不引入 `deerflow-harness`、DeerFlow Gateway、默认 lead agent 或 frontend；避免第二 Agent runtime 和执行权威 |
 | Mainstream Agent Framework | 设计参考，不增加依赖 | LangGraph / CrewAI / AutoGen(AG2) / Semantic Kernel / OpenAI Agents SDK / Google ADK / Vercel AI SDK / Mastra 均不引入为 runtime；详见 §5.9 |
-| Coding/Personal Agent Harness | 设计参考，不增加依赖，不注册为插件 | DeepSeek Harness / Pi / Hermes Agent 均不引入为 runtime，能力也不注册为其 tool/plugin；详见 §5.10 |
+| Coding/Personal Agent Harness | **dsh 已作为可替换 harness 打样采用（2026-09-12 修订，详见 §5.10）**；Pi / Hermes 不引入 | dsh-* 精确钉版 `0.1.5-rc.1`、cordis `4.0.2`；dsh 只做 T-A-O 与展示，业务能力只经服务端 Semantic Tool Facade（契约 v2）暴露，capabilityId/binding/凭证不进 harness；Pi / Hermes Agent 维持设计参考、不增加依赖 |
+| Semantic Tool Facade | 已落地，服务端唯一治理入口 | `executeSemanticTool` 被 HTTP facade（`/api/semantic-tools`）与 in-process dsh runtime 共用；契约 v2 暴露 4 个业务语义工具（3 READ + 1 WRITE 草案）；技术键任意深度扫描 fail-closed；详见 §5.10 |
+| Compile-time Capability Manifest | 目标态（Notion v1.2），本期未建 | 推理前移到编译期：本体离线派生工具描述/候选索引/别名表/依赖边/组合约束，请求期只查表；替代自建 Plan/Resolve Service；见技术架构 §1.2、路线图 §1.1（S2/S3） |
+| MCP Exposure | 目标态推荐，未决 | 业务语义级能力建议以 MCP 暴露用于多宿主验证（S5）；MCP vs 私有契约仍在未决项，本期不实施 |
 | Baseline Semantic Matcher | S2-A 已完成并归档 | 规则 + alias + domain/businessObject + deterministic parameter fit；五态 `MatchDecision`、多意图检测、`SHOW_OPTIONS` 和 `ESCALATE_TO_PLANNER` 已实现，不依赖 embedding |
 | Progressive Capability Disclosure | S2-B 内适配 | metadata-first `CapabilityCard` -> 小候选集合 -> optional LLM candidate；deterministic MatchDecision / PlanCompiler 最终裁决 |
 | Scale-stage Retrieval | Phase 3+ Triggered | 只在规模与 Eval bad case 触发后评估 semantic index、embedding/hybrid retrieval、跨域 router 和 LLM rerank |
@@ -113,6 +119,8 @@ Reasoning pattern = governed ReAct-style only when needed
 ---
 
 ## 2. 当前本地环境观察
+
+> 历史快照（2026-06-19）。2026-09-13 复核：本机默认 JDK 已为 **17.0.19**，`services/gateway/gradlew` 已提交，Gateway 长期以 Java 17 / Spring Boot 3 构建运行；Python 3.12 与 Node 20+ 为现行基线。下表保留决策语境，不作为当前环境事实。
 
 当前本机快速检查结果：
 
@@ -353,6 +361,8 @@ REST JSON 禁止：
 
 ### 5.6 OpenHarness 对比后的语义编排选型
 
+> **v1.2 对齐（2026-09-13）**：下文「近期技术栈」中的请求期在线 Planner 管线（GoalSpec → PlanCompiler → PlanGraph）属 v1.1 设计；v1.2 已取消自建 Plan/Resolve Service，推理前移到编译期派生管线（技术架构 §1.2），harness 直接调用业务语义级能力，编排求解器在能力数过 30 前不引入。下列 deterministic 边界（引用解析、类型匹配、治理/审批校验、Snapshot 绑定）在 v1.2 下全部继续有效，权威位置从在线编译器转为「编译期派生 + 能力内固化」。
+
 对比结论：OpenHarness 是通用 Agent Harness，不是本体规划引擎。SAP Nexus 不引入 OpenHarness runtime、Plugin loader 或 Permission runtime 依赖，只借鉴可迁移机制。
 
 OpenHarness 机制采纳选型（Agent loop、Tool Schema、On-demand Skill、Permission/Hook、Dry-run、Memory/Resume、Multi-Agent）的完整对照矩阵见 `docs/wiki/sap-nexus-agent-openharness-semantic-orchestration.md` §3。技术选型层面只保留不可妥协的边界：SAP 执行继续通过 `capabilityId -> Gateway`，deterministic policy 为权威，LLM Hook 仅 advisory，Tool/Skill/记忆不赋予新执行权。
@@ -394,7 +404,7 @@ DeerFlow 2.1.0 是成熟度较高的通用 Super Agent Harness，但其默认执
 
 选择吸收的窄机制：
 
-DeerFlow 机制采纳选型（意图/候选发现、能力组合、长对话、记忆四个领域）的完整决策矩阵见 `docs/wiki/sap-nexus-agent-deerflow-adoption-analysis.md` §9。技术选型层面只保留：候选结果只进入 `CapabilityCard` / `GoalSpec` / `PlanDraft`，最终裁决仍由 deterministic `MatchDecision` / `PlanCompiler`；`Summary` 只属于 `ConversationState`；`UserPreferenceMemory` 作为不可信 advisory context，不得改变执行和治理。
+DeerFlow 机制采纳选型（意图/候选发现、能力组合、长对话、记忆四个领域）的完整决策矩阵见 `docs/wiki/archive/sap-nexus-agent-deerflow-adoption-analysis.md` §9。技术选型层面只保留：候选结果只进入 `CapabilityCard` / `GoalSpec` / `PlanDraft`，最终裁决仍由 deterministic `MatchDecision` / `PlanCompiler`；`Summary` 只属于 `ConversationState`；`UserPreferenceMemory` 作为不可信 advisory context，不得改变执行和治理。
 
 当前技术策略：
 
@@ -406,7 +416,7 @@ productization trigger -> evaluate durable thread/run/checkpoint store
 identity + governance trigger -> evaluate UserPreferenceMemory pilot
 ```
 
-完整源码证据、决策矩阵、触发条件和 PoC 边界见 `docs/wiki/sap-nexus-agent-deerflow-adoption-analysis.md`。
+完整源码证据、决策矩阵、触发条件和 PoC 边界见 `docs/wiki/archive/sap-nexus-agent-deerflow-adoption-analysis.md`。
 
 ### 5.8 基础语义 matcher 与规模化检索选型
 
@@ -468,6 +478,15 @@ Phase 3+ 才评估：
 - 触发再评估的条件与 OpenHarness/DeerFlow 一致：仅当出现需要跨进程/跨重启恢复、multi-worker/HA 部署、或现有自研 checkpoint/HITL 机制被 Eval/生产事故证明不足以支撑共享环境时，才启动独立 spike，且 spike 范围仅限于借鉴具体机制，不整体替换执行权威。
 
 ### 5.10 Coding/Personal Agent Harness 横向复核（DeepSeek Harness / Pi / Hermes Agent）
+
+> **决策修订（2026-09-13，对齐 Notion v1.2 与 2026-09-12 归档的 `deepseek-harness-decouple` / `workbench-dsh-runtime`）**：下文 2026-08-30 的原始结论是「三者均不引入」。其中 **DeepSeek Harness 一项改判：已作为「可替换 harness」打样实际采用**，但采用形态恰好落在本拒绝理由的豁免条件内，不构成第二套执行权威：
+>
+> 1. **dsh 只做 harness，不承载能力**。模型可见的工具面是 4 个业务语义工具（Semantic Tool 契约 v2），不是 `capabilityId` / `bindingId` / `rfcName`；这些技术键在服务端 facade 任意深度扫描即 `400`，零网关调用（原「变体方案一」担心的调用顺序决定权转移没有发生——顺序决定权被业务语义级粒度消解，见技术架构 §1.2 结构性要求①）。
+> 2. **治理链唯一且在服务端**。HTTP facade（`/api/semantic-tools`，供 standalone CLI）与 Next 服务端 in-process dsh runtime（DSH Chat `/chat`）共用同一入口 `executeSemanticTool` → 既有 agent-runtime → composition → Java Gateway；dsh 插件内只允许形状校验、遥测、展示等确定性代码，不访问受治理数据、不裁决审批（`harness-dsh/tests/architecture.test.ts` 锁定进程内无 Gateway/RFC/绑定/凭证调用面）。
+> 3. **版本 pin**：`@deepseek-ai/dsh-*` 精确钉 `0.1.5-rc.1`、`@deepseek-ai/cordis` 钉 `4.0.2`，禁 `^`/`~`/`latest`；preview 期升级按独立变更评审。
+> 4. **身份与审批边界不变**：dsh 只做审批展示与交互，subject 由服务端计算与校验；当前 principal 仍为占位实现（v1.2 结构性要求③，S4 前必须解决）。
+>
+> **Pi / Hermes Agent 维持原结论**（设计参考、不引入）。原「变体方案二」（数据依赖型多跳运行时规划）仍走 Dynamic Planner 预留路径；v1.2 进一步明确能力数过 30 前不引入编排求解器。下文保留为历史决策分析。
 
 背景：用户在 §5.9 的图/工作流类框架之外，追问三个更新近（2025-2026 出现）、号称"主流"的 harness 项目是否应引入，并进一步追问"能力注册为插件供其调用"与"结合能力关系本体做运行时交互式规划"两个变体方案。三者均经 GitHub API（`gh api repos/<owner>/<repo>`）和官方 README/架构文档核实为真实项目，非虚构：
 
@@ -550,6 +569,8 @@ Python 技术选择：
 ## 6.1 Agent Workbench Frontend 选型
 
 前端定位为未来可生产化的内部 Agent 控制台，第一版交付形态可以是纯本地开发体验工具。它不是单一库存查询页面，而是用于观察、解释、审计和后续人审的 `Agent Workbench Console`。
+
+> 2026-09-13 补充：同一 Next.js 应用现同时承载可替换 harness 形态——**DSH Chat**（路由 `/chat`，根路径 307 跳转至此；服务端 in-process dsh runtime + SSE 流式），经典 Workbench 保留在 `/workbench`；`app/api/dsh/conversations/` 与 `src/server/dsh/` 为新增目录，技术栈与模块化单体选型不变。另存在独立 Node 包 `harness-dsh/`（standalone CLI，经 HTTP 调 semantic-tool facade）。
 
 推荐技术栈：
 
@@ -762,7 +783,7 @@ sap-nexus-capability-registry-gateway
 
 本节保留 `sap-nexus-planner-dry-run` 启动前的历史验收条件。S2-A/S2-B 已于 `2026-07-25` 归档，不得从本节重新创建 change；当前入口统一见 `docs/runbooks/README.md`。
 
-- 本文档、`docs/wiki/sap-nexus-agent-openharness-semantic-orchestration.md` 和 `docs/wiki/sap-nexus-agent-deerflow-adoption-analysis.md` 作为技术基线已被接受。
+- 本文档、`docs/wiki/sap-nexus-agent-openharness-semantic-orchestration.md` 和 `docs/wiki/archive/sap-nexus-agent-deerflow-adoption-analysis.md` 作为技术基线已被接受。
 - 当前 OpenSpec state 已检查；S1 已实现、验证并归档到 `openspec/changes/archive/2026-07-19-sap-nexus-semantic-planning-foundation/`。
 - Registry、Gateway、Eval、第二条 Read capability 和 sandbox write vertical slice 已完成并保持现有验证基线。
 - 首个场景固定为“物料库存 + 采购订单供给概览”。

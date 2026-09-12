@@ -5,22 +5,23 @@
 | 字段 | 内容 |
 |---|---|
 | 文档名称 | `SAP Nexus Agent 实施路线文档` |
-| 当前版本 | `v0.2.51` |
+| 当前版本 | `v0.2.52` |
 | 状态 | `Lifecycle Roadmap Active` |
 | 创建日期 | `2026-06-18` |
-| 最近更新 | `2026-08-05` |
+| 最近更新 | `2026-09-13` |
 | 维护目录 | `docs/wiki/` |
 | 文档定位 | SAP Nexus Agent 从 MVP 到量产交付的全生命周期实施路线 |
 | 关联技术架构 | `docs/wiki/sap-nexus-agent-technical-architecture.md` |
 | 关联知识导入 | `docs/wiki/archive/sap-nexus-agent-mm-mvp-notion.md` |
 | 关联智能编排路线 | `docs/wiki/sap-nexus-agent-openharness-semantic-orchestration.md` |
-| 关联 DeerFlow 决策 | `docs/wiki/sap-nexus-agent-deerflow-adoption-analysis.md` |
+| 关联 DeerFlow 决策 | `docs/wiki/archive/sap-nexus-agent-deerflow-adoption-analysis.md` |
 | 关联完整 Agent 设计 | `docs/superpowers/specs/2026-08-03-sap-nexus-complete-agent-roadmap-design.md` |
 
 ## 版本记录
 
 | 版本 | 日期 | 变更摘要 | 决策状态 |
 |---|---|---|---|
+| `v0.2.52` | `2026-09-13` | 对齐内部架构方案 Notion v1.2（2026-09-12）：新增 §1.1「v1.2 迭代序列 S1–S5 与实现状态」——v1.2 取代旧 Phase 0/Phase 1 与 openharness 文档的 S0–S6 在线规划序列（自建 Plan/Resolve Service 取消，推理前移编译期）；补登 2026-08-08 至 2026-09-12 的 5 个已归档 Native change（MD04 详情叙述、叙述泛化、SD/FI 登记、`deepseek-harness-decouple`、`workbench-dsh-runtime`）；状态判定转引 Notion v1.2 第八节（层级达成表、三条结构性要求、序列进度、回填式下一步）；2026-09-13 仓库实测：pytest 1574 passed + 1 skipped + 2 xfailed、frontend 64 文件/579 tests、call-plan eval 全过 | 当前实施基线 |
 | `v0.2.51` | `2026-08-05` | `sap-nexus-end-to-end-agent-eval-release-gate` (Runbook 22) Native change 实施并归档：production TypeScript composition coordinator 接通 executor/projection/recommendation/narrative/durable replay/plan-aware Action；L1/L2/L3 offline gate `9/9`，最高连续等级 `L3_ACTION_GOVERNED`，四项 hard gates 全通过；frontend 428/428 + build、Agent 959+1 skipped、OpenSpec 20/20、Native acceptance 42/42；live SAP READ/WRITE 均 `not_run`；归档 `docs/comet/archive/2026-08-05-sap-nexus-end-to-end-agent-eval-release-gate/` | 当前实施基线 |
 | `v0.2.50` | `2026-08-05` | `sap-nexus-read-to-write-action-governance` (Runbook 21) Native change 实施并归档：单 run owner HITL confirmation、完整 plan/fact/projection/rule/proposal/parameter subject revalidation、durable exactly-once continuation、Gateway atomic claim 与 Workbench approval/action evidence；405 frontend tests / 959+1 skipped Agent tests / PR Eval 9/9 / Gateway BUILD SUCCESSFUL / 20 OpenSpec / Native acceptance 35/35；仅 fake/sandbox boundary、未执行 live SAP WRITE；下一入口 Runbook 22 | 当前实施基线 |
 | `v0.2.49` | `2026-08-05` | `sap-nexus-workbench-plan-evidence-experience` (Runbook 20) Native change 实施并归档：governed event allowlist/redaction projection、strict durable sequence/replay integrity、八分区 Workbench、claim/evidence 导航、partial limitation 与 proposal-only 边界；380 frontend tests / production build / desktop+mobile browser verification；component/UI integration only，生产 orchestrator、Human Approval 与 SAP WRITE 未接入；下一入口 Runbook 21 | 当前实施基线 |
@@ -90,6 +91,73 @@
 - **OWL 当前不进入 MVP / Pilot 门禁**：`ontologyIri` / `semanticType` 作为迁移预留元数据；当前一致性门禁由 JSON Schema、Registry validator、OpenSpec validation 和 Eval Harness 承担。
 - **Read、Recommendation、Action 分阶段落地**：先查询事实，再形成建议，最后在人工确认后写入 SAP。
 - **每一步必须可审计、可评测、可回放**：从 intent 到 SAP action 都必须由 `traceId` 串联，并由 Eval Harness / bad case 回归证明质量不回退。
+
+### 1.1 v1.2 迭代序列 S1–S5 与实现状态（当前状态源）
+
+> 来源：内部架构方案 Notion v1.2 第八节（事实基线 commit `f5ee737` / `d6b27c1`，截至 2026-09-12；仓库实测复核 2026-09-13）。v1.2 取代本文档下文的 Phase 0/1 与旧 S1/S2/S3 混编序列，也取代 `sap-nexus-agent-openharness-semantic-orchestration.md` 的 S0–S6（自建 Plan Service / Resolve Service 整体取消，推理前移到编译期）。目标形态与分层图见技术架构文档 §1.2；本节只记录序列与状态。
+
+#### 1.1.1 序列 S1–S5（每步单独可交付、不依赖未产品化身份体系）
+
+| 阶段 | 动作 | 依赖 | 退出条件 |
+|---|---|---|---|
+| **S1 补证据** | 测试失败清零并拆因、重跑 offline gate、定性 `fixture-snapshot-mismatch` | — | 离线门禁 `22/22` 与四项 hard gate 可被第三方独立复核 |
+| **S2 对象主键 + 字段级 schema** | 定义 3–5 个 `Object` 稳定主键（`Material@Plant` / `Customer` / `ARItem` …）；先做 2 个 `FactType`：`itemFields` 上提为字段级 schema，逐字段标注 semanticType 并声明所属对象 | S1 | 每个 Fact 字段可定位到一个对象主键；能力内部链可机械校验；派生管线有合法输入 |
+| **S3 口径 + 关系入本体 + 派生管线** | ① 首批 `Definition` 业务口径（可用库存 / 逾期 / 信用暴露）从实现代码上提为本体对象，输出字段强制引用口径 id；② `links`（先落 `Customer → ARItem / SalesOrderItem`）+ `can_solve` / `consumes` / `applies_to` / `requires` 入本体；③ 编译期产出 `Capability Manifest` | S2 | 工具描述与候选集均为派生产物；改一行口径即改变输出与叙事、零代码改动；`CapabilityGap` 由关系图可达性判定；请求期零本体查询，管线可重放、产物可 diff |
+| **S4 能力粒度上移** | 用 `diagnose_material_supply` 打样业务语义级能力：内部固化三端点链、`asOf` 一致性、基数归约、审批 subject 服务端计算 | S3 · 身份阻塞项 | 端点级能力降为内部绑定不再对外暴露；用户批准的与实际执行的是同一份 subject |
+| **S5 多宿主验证** | 以 **MCP** 暴露能力，接入至少一个第三方 harness + 自有 CLI，跑一致性矩阵 | S4 | 同一能力 + 同一入参在两个宿主下输出完全一致；解耦从主张变成事实 |
+| 后续（不排期） | live smoke 与 `freshnessTolerance` 实测、PlanDraft 可编辑（D3）、`TraceSpan` → OTel、能力数过 30 后再评估编排求解器 | S5 | — |
+
+阻塞项前移：server-owned principal / tenant / role / data scope / ApprovalActor 必须在 **S4 真实审批语义之前**解决；开源侧不自建 IAM，只交付可插拔接口 + 本地 JSONL 参考实现并显式标注「非生产」。
+
+#### 1.1.2 分层达成情况（2026-09-12 判定）
+
+| 层 | 状态 | 事实 | 断点 |
+|---|---|---|---|
+| 能力本体（对象 / 口径 / 关系） | **未动** | 关系文件无内容；`FactType` 无字段级 schema；无 `Definition` 对象 | 唯一未上岗的一层 |
+| 编译期派生管线 | **部分** | `schemas/` 已有版本化 JSON Schema 契约（`contractVersion=2`）且 harness 只读它 | 契约是手写的，未由本体派生 |
+| Harness 体验层 | **已建成** | dsh 0.1.5-rc.1 同进程 runtime（DSH Chat `/chat`）+ standalone CLI（`harness-dsh/`）+ Python CLI | — |
+| 契约边界（四条红线） | **已建成** | 技术覆盖字段任意深度扫描 → `400` 且零网关调用；WRITE 硬门守卫 | — |
+| SAP 域能力层 | **已建成** | 4 个业务语义级工具（3 读 + 1 写，Semantic Tool 契约 v2）；`awaiting_approval` 与 `approval` 句柄 | 口径固定在服务端代码，未由本体派生 |
+| Java Gateway 与执行器 | **已建成** | 离线门禁 22/22；leakage 0 / approval bypass 0 / lineage 100%；JCO_RFC 与 ODATA Live（OData 链 2026-09-13 冒烟复测通过） | 其余执行器仍 fail-closed（符合设计）；SD/FI 三个 READ live 冒烟待补 |
+| 离线回路（决策日志回流） | **未动** | — | 依赖本体层先建立 |
+| 运行时状态层 | **部分** | Run/Session 已持久化；身份由服务端注入 | 仍为本地 JSONL/file 存储 + 占位调用主体 |
+
+#### 1.1.3 三条结构性要求的达成情况
+
+| 要求 | 达成 | 说明 |
+|---|---|---|
+| ① 能力粒度上移 | **已达成，但错位** | 4 个业务语义级工具已存在、端点级不再对 harness 暴露；但它们声明在服务端代码而非本体 |
+| ② 语义资产 | **未达成** | 字段级 schema、业务口径、关系三项均为空；工具描述仍是手写契约（第三节自检判据不通过） |
+| ③ 身份与审批 | **部分** | 审批句柄与服务端身份注入已有；调用主体仍为 placeholder principal，状态存储仍在本地 |
+
+#### 1.1.4 序列进度与验证规模
+
+S1 已完成 · S2 未开始 · S3 未开始 · **S4 已完成（越过 S2/S3，故标记「错位」）** · S5 部分（跨宿主一致性门禁 4/4；MCP 暴露与第三方 harness 未做）。
+
+- Notion 状态源（2026-09-12）：`pytest 1574 passed`、前端 60 个测试文件、Native 验收 97/97。
+- 2026-09-13 仓库实测复核（commit `d6b27c1`）：Agent `1574 passed, 1 skipped, 2 xfailed`；Frontend 64 个测试文件 / `579 passed`（`verify` = typecheck + vitest + next build 全绿）；call-plan eval：inventory 7/7、seed 13/13、PR 9/9、matcher 23/23、dry-run 3/3（1 条 structural pending）、derived 3/3（2 条 parser-blocked pending，附书面归因）。
+
+#### 1.1.5 当前唯一实质断点与下一步（回填，非新建）
+
+**断点**：业务粒度已上移，但能力与口径（可用库存 / 逾期 / 信用敞口）都固化在服务端代码里，未声明于本体——「改一行本体即改变 Agent 行为、零代码改动」的自检判据当前不通过。
+
+下一步（按顺序）：
+
+1. 立即上 CI 门禁：新增能力的输出字段必须引用 `Definition` id（可先用占位 id 停息）。
+2. 切分 `ontology-core`（可开源）/ `ontology-tenant`（组织结构、别名表、政策口径、评测集，不进公开仓）——此时本体近空，切分成本最低，且必须在 S3 派生管线首次跑真实数据之前完成。
+3. 把 4 个已有能力的口径逐条上提并确认，同步产出字段级 schema 与首条跨域 link（`Customer → ARItem / SalesOrderItem`）。
+
+下一个瓶颈不在 dsh 接入，而在**业务问题的沉淀速度**；判断是否走在正确轨道上的唯一指标不是能力数量，而是「一个能力能独立回答的业务问题」的清单长度。
+
+#### 1.1.6 自 v0.2.51 以来已归档但未逐版本登记的 Native change
+
+| 归档 | Change | 要点 |
+|---|---|---|
+| 2026-08-08 | `md04-stock-req-list-detail-narration` | MD04 库存/需求清单明细叙述 |
+| 2026-08-09 | `narrative-generalization` | factShape 分发通用化（list 形态 2026-08-30 才真正泛化） |
+| 2026-08-30 | `sd-fi-read-capability-registration` | 登记 `SD.SalesOrder.GetList` / `FI.AR.GetOpenItems` / `FI.AP.GetOpenItems`，能力数 3 → 7 |
+| 2026-09-12 | `deepseek-harness-decouple` | DSH DeepSeek Harness 运行时 + 语义工具 facade（契约 v2，4 个业务工具） |
+| 2026-09-12 | `workbench-dsh-runtime` | DSH Chat（`/chat`）服务端 in-process dsh runtime 与流式会话 |
 
 ---
 
