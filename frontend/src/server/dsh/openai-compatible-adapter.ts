@@ -27,39 +27,95 @@ type Delta = {
   }>;
 };
 
-function toWireMessages(messages: Message[], system?: string) {
+type ContentBlock = { type: string; text?: string; toolCallId?: string } & Record<string, unknown>;
+
+function textOfBlocks(blocks: ContentBlock[]): string {
+  return blocks
+    .filter((block) => block.type === "text" && typeof block.text === "string")
+    .map((block) => block.text)
+    .join("");
+}
+
+export function toWireMessages(messages: Message[], system?: string) {
   const wire: Array<Record<string, unknown>> = [];
   if (system) wire.push({ role: "system", content: system });
   for (const message of messages) {
     const role = (message as { role?: string }).role;
-    const content = (message as { content?: unknown }).content;
-    if (role === "tool") {
+    const sourceKind = (message as { source?: { kind?: string } }).source?.kind;
+    const rawContent = (message as { content?: unknown }).content;
+
+    // dsh models a tool result as role:"user" + source.kind:"tool", whose
+    // content is one ToolResultBlock (toolCallId + inner text blocks). It is
+    // NOT role:"tool". Map it to the OpenAI tool message so the model sees
+    // the deterministic result text paired with its tool_call_id.
+    if (sourceKind === "tool") {
+      const block = Array.isArray(rawContent)
+        ? (rawContent as ContentBlock[]).find((item) => item.type === "tool-result")
+        : undefined;
+      const toolCallId = block?.toolCallId ?? (message as { toolCallId?: string }).toolCallId;
       wire.push({
         role: "tool",
-        tool_call_id: (message as { toolCallId?: string }).toolCallId,
-        content: typeof content === "string" ? content : JSON.stringify(content ?? ""),
+        tool_call_id: toolCallId,
+        content: block ? blocksToText(block.content) : toolResultToText(rawContent),
       });
       continue;
     }
-    const toolCalls = (message as { toolCalls?: unknown[] }).toolCalls;
-    if (Array.isArray(toolCalls) && toolCalls.length > 0) {
-      wire.push({
-        role: role ?? "assistant",
-        content: typeof content === "string" ? content : "",
-        tool_calls: toolCalls.map((call) => {
-          const c = call as { id?: string; name?: string; arguments?: unknown };
-          return {
-            id: c.id,
-            type: "function",
-            function: { name: c.name, arguments: typeof c.arguments === "string" ? c.arguments : JSON.stringify(c.arguments ?? {}) },
-          };
-        }),
+
+    // dsh assistant/user messages carry ContentBlock[]: text blocks plus
+    // tool-call blocks. Normalize to OpenAI wire form (content + tool_calls);
+    // emitting the raw block JSON as content makes the model misread its own
+    // history as an anomaly and retry tools that already succeeded.
+    const blocks: ContentBlock[] = [];
+    let textContent = "";
+    if (typeof rawContent === "string") {
+      textContent = rawContent;
+    } else if (Array.isArray(rawContent)) {
+      for (const block of rawContent as ContentBlock[]) {
+        if (block && typeof block === "object") blocks.push(block);
+      }
+      textContent = textOfBlocks(blocks);
+    }
+
+    const toolCalls = blocks
+      .filter((block) => block.type === "tool-call")
+      .map((block) => {
+        const args = block.arguments;
+        return {
+          id: String(block.id ?? ""),
+          type: "function" as const,
+          function: {
+            name: String(block.name ?? ""),
+            arguments: typeof args === "string" ? args : JSON.stringify(args ?? {}),
+          },
+        };
       });
+
+    if (role === "assistant" && toolCalls.length > 0) {
+      wire.push({ role: "assistant", content: textContent, tool_calls: toolCalls });
       continue;
     }
-    wire.push({ role: role ?? "user", content: typeof content === "string" ? content : JSON.stringify(content ?? "") });
+    wire.push({ role: role ?? "user", content: textContent });
   }
   return wire;
+}
+
+function blocksToText(content: unknown): string {
+  if (Array.isArray(content)) {
+    return textOfBlocks(content as ContentBlock[]);
+  }
+  return content == null ? "" : String(content);
+}
+
+// ToolResultMessage.content is a single ToolResultBlock whose own `content`
+// holds the text blocks; unwrap both forms.
+function toolResultToText(content: unknown): string {
+  if (Array.isArray(content)) {
+    const blocks = content as ContentBlock[];
+    const inner = blocks.find((block) => block.type === "tool-result");
+    if (inner) return blocksToText(inner.content);
+    return blocksToText(blocks);
+  }
+  return blocksToText(content);
 }
 
 export class OpenAiCompatibleAdapter extends LlmAdapter {

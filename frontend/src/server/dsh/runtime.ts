@@ -1,6 +1,6 @@
 import { Context } from "@deepseek-ai/cordis";
 import Timer from "@deepseek-ai/cordis-plugin-timer";
-import LlmRuntime, { type LlmAdapter } from "@deepseek-ai/dsh-llm";
+import LlmRuntime, { LlmAdapter, type LlmProviderInfo } from "@deepseek-ai/dsh-llm";
 import SessionStore from "@deepseek-ai/dsh-session";
 import SessionProjectionRegistry from "@deepseek-ai/dsh-session-projection";
 import * as sessionInvariant from "@deepseek-ai/dsh-session/invariant";
@@ -25,6 +25,7 @@ export const DEFAULT_DSH_PERSONA = [
   "当工具要求澄清（缺少物料/工厂/客户/供应商/公司代码等）时，用简体中文向用户追问缺失项。",
   "涉及补货写入时，先依据工具返回的审批卡片向用户复述参数并请求批准，不要声称已经创建。",
   "回答简洁、分点清晰，币种与单位随数值给出。",
+  "严格遵守 Markdown 排版规范：每个标题（#）、列表项（- 或数字.）、引用（>）、分隔线（---）都必须独占一行，其前后各留一个空行；列表项的 - 后必须有一个空格；不要把多个标题或列表项写在同一行；不要输出裸露的 #、*、- 符号。",
 ].join("");
 
 export type ToolCallRecord = {
@@ -52,8 +53,18 @@ export type CreateDshRuntimeOptions = {
   persona?: string;
 };
 
+export type DshStreamEvent =
+  // phase: "reasoning" = before/while tools run (collapsed trace);
+  // "answer" = after all tool results returned (the visible final answer).
+  | { type: "delta"; text: string; phase: "reasoning" | "answer" }
+  | { type: "tool-start"; callId: string; name: string; args: unknown }
+  | { type: "tool-result"; callId: string; name: string; status: ToolCallRecord["status"]; result?: SemanticToolResponse; error?: string }
+  | { type: "final"; output: string; toolCalls: ToolCallRecord[]; reasonKind?: string }
+  | { type: "error"; message: string };
+
 export type DshRuntime = {
   sendMessage(conversationId: string, text: string): Promise<DshTurnResult>;
+  streamMessage(conversationId: string, text: string): AsyncIterable<DshStreamEvent>;
   dispose(): Promise<void>;
 };
 
@@ -61,7 +72,53 @@ type AgentSession = {
   agent: Agent;
   dispose: () => void;
   pending: ToolCallRecord[];
+  /** Active token sink for the current streamed turn, if any. */
+  sink: ((event: DshStreamEvent) => void) | null;
+  /** True once at least one tool call started; later text deltas are the answer. */
+  toolStarted: boolean;
+  /**
+   * Whether the CURRENT model step is the final answer step. A turn with no
+   * tools is answer from the first step; after a tool runs, the loop starts
+   * another step which becomes the answer step (set via session/event).
+   */
+  answerStep: boolean;
 };
+
+// Per-session adapter: a unique LLM provider route per conversation taps the
+// model stream without ambiguity across concurrent conversations.
+class SessionTappingAdapter extends LlmAdapter {
+  constructor(
+    private readonly inner: LlmAdapter,
+    private readonly session: AgentSession,
+    private readonly providerRoute: string,
+  ) {
+    super();
+  }
+  override resolveModel(provider: string, model: string) {
+    return this.inner.resolveModel(provider, model);
+  }
+  override providerInfo(provider: string): LlmProviderInfo {
+    return this.inner.providerInfo(provider);
+  }
+  async *stream(generateOptions: Parameters<LlmAdapter["stream"]>[0]) {
+    for await (const chunk of this.inner.stream(generateOptions)) {
+      if (
+        chunk.type === "text-delta"
+        && typeof chunk.text === "string"
+        && chunk.text
+        && this.session.sink
+      ) {
+        this.session.sink({
+          type: "delta",
+          text: chunk.text,
+          phase: this.session.answerStep ? "answer" : "reasoning",
+        });
+      }
+      yield chunk;
+    }
+  }
+  get route() { return this.providerRoute; }
+}
 
 const TOOL_SPECS: Record<string, ParameterSchemaSpec> = {
   diagnose_material_supply: {
@@ -88,21 +145,6 @@ const TOOL_SPECS: Record<string, ParameterSchemaSpec> = {
     purchasingGroup: { type: "string", required: true, description: "采购组（1-3 字符，如 601）" },
   },
 };
-
-function toolText(value: SemanticToolResponse): string {
-  const lines: string[] = [];
-  if (value.narrative.summary) lines.push(value.narrative.summary);
-  lines.push(`[status=${value.status}]`);
-  if (value.approval) {
-    const p = value.approval.parameters;
-    lines.push(`审批句柄 approvalId=${value.approval.approvalId} expiresAt=${value.approval.expiresAt}`);
-    lines.push(`PR 参数: 物料=${p.material} 工厂=${p.plant} 数量=${p.quantity} 单位=${p.unit} 交货=${p.delivery_date} 采购组=${p.purchasing_group}`);
-    lines.push("这是待审批提案，尚未写入 SAP；请提示用户在审批卡片上批准或拒绝。");
-  }
-  for (const limitation of value.limitations) lines.push(`- ${limitation}`);
-  if (value.error) lines.push(`error: ${value.error.errorType}: ${value.error.message}`);
-  return lines.join("\n");
-}
 
 export async function createDshRuntime(options: CreateDshRuntimeOptions): Promise<DshRuntime> {
   const ctx = new Context();
@@ -131,7 +173,15 @@ export async function createDshRuntime(options: CreateDshRuntimeOptions): Promis
       name,
       description: toolDescription(name),
       parameters: spec,
-      output: { schema: { type: "json" }, render: (_args, value) => [{ type: "text", text: toolText(value as SemanticToolResponse) }] },
+      // The model receives a DETERMINISTIC textual result (authoritative
+      // narrative + explicit fact lines), not raw JSON: models otherwise
+      // misread nested evidence/mrpElementLines fields (e.g. a null
+      // elementQty vs the authoritative fact value). The structured value is
+      // retained in session.pending and drives the UI fact cards.
+      output: { schema: { type: "json" }, render: (_args, value) => {
+        const result = value as SemanticToolResponse;
+        return [{ type: "text", text: resultToModelText(result) }];
+      } },
       async execute(args, exec): Promise<JsonValue> {
         const session = exec.agent ? sessions.get(exec.agent.session.id) : undefined;
         const record: ToolCallRecord = {
@@ -145,7 +195,11 @@ export async function createDshRuntime(options: CreateDshRuntimeOptions): Promis
           record.result = result;
           record.status = result.status === "awaiting_approval" ? "awaiting_approval" : "completed";
           session?.pending.push(record);
-          return result as unknown as JsonValue;
+          // dsh-tools requires a lossless-JSON value: undefined optional
+          // fields (traceId/factId/…) would otherwise fail the snapshot and
+          // replace the whole tool result with an error the model then reads
+          // as "no data". Strip them to plain JSON.
+          return JSON.parse(JSON.stringify(result)) as JsonValue;
         } catch (error) {
           record.status = "failed";
           record.error = error instanceof Error ? error.message : String(error);
@@ -162,14 +216,158 @@ export async function createDshRuntime(options: CreateDshRuntimeOptions): Promis
     const existing = sessions.get(key);
     if (existing) return existing;
     const sessionId = SessionId(key);
+    const session: AgentSession = {
+      agent: null as unknown as Agent,
+      dispose: () => undefined,
+      pending: [],
+      sink: null,
+      toolStarted: false,
+      answerStep: false,
+    };
+    const route = `sapnexus-${key}`.replace(/[^a-zA-Z0-9_-]/g, "");
+    const tapping = new SessionTappingAdapter(options.adapter, session, route);
+    ctx.llm.registerAdapter([route], tapping);
     const created = await ctx.agents.create({
       sessionId,
       meta: { cwd: process.cwd() },
-      agentOptions: { provider: options.provider, model: options.model },
+      agentOptions: { provider: route, model: options.model },
     });
-    const session: AgentSession = { agent: created.agent, dispose: created.dispose, pending: [] };
+    session.agent = created.agent;
+    session.dispose = created.dispose;
     sessions.set(key, session);
     return session;
+  }
+
+  function finalizeTurn(session: AgentSession): DshTurnResult {
+    const agent = session.agent;
+    let output = "";
+    for (const event of agent.session.snapshotEvents()) {
+      if (event.type === "assistant/message") {
+        const chunks: string[] = [];
+        const content = (event as { data?: { message?: { content?: unknown } } }).data?.message?.content;
+        if (Array.isArray(content)) {
+          for (const block of content) {
+            if (block && typeof block === "object" && (block as { type?: string }).type === "text") {
+              const t = (block as { text?: unknown }).text;
+              if (typeof t === "string") chunks.push(t);
+            }
+          }
+        }
+        if (chunks.join("").trim().length > 0) output = chunks.join("");
+      }
+    }
+    let reasonKind: string | undefined;
+    for (const event of agent.session.snapshotEvents()) {
+      if (event.type === "turn/end") {
+        reasonKind = (event as { data?: { reason?: { kind?: string } } }).data?.reason?.kind;
+      }
+    }
+    return { output, toolCalls: [...session.pending], reasonKind };
+  }
+
+  // Live stream for one turn: token deltas (agent/assistant-stream frames),
+  // tool call/result (session events), then the final extracted answer.
+  async function* streamTurn(conversationId: string, text: string): AsyncGenerator<DshStreamEvent> {
+    const session = await ensureSession(conversationId);
+    session.pending = [];
+    const agent = session.agent;
+    const sessionId = agent.session.id;
+    const queue: DshStreamEvent[] = [];
+    let wake: (() => void) | null = null;
+
+    const push = (event: DshStreamEvent) => {
+      queue.push(event);
+      wake?.();
+    };
+    const wait = () => new Promise<void>((resolve) => { wake = resolve; });
+
+    // Tool lifecycle from the durable session log (root bus; filter by subject).
+    const pendingRecordNames: string[] = [];
+    const onSessionEvent = (subject: unknown, event: { type?: string; data?: unknown }) => {
+      const subjectSession = subject as { id?: string };
+      if (subjectSession?.id !== sessionId) return;
+      if (event.type === "step/start") {
+        // A fresh step is the candidate final-answer step until/unless it
+        // calls a tool. A tool-less turn (plain answer) therefore streams
+        // directly as the answer, while pre-tool narration stays reasoning.
+        session.answerStep = true;
+      }
+      if (event.type === "tool/call") {
+        const data = event.data as { callId?: string; name?: string; arguments?: string };
+        let args: unknown;
+        try { args = data.arguments ? JSON.parse(data.arguments) : undefined; } catch { args = data.arguments; }
+        session.toolStarted = true;
+        session.answerStep = false;
+        push({ type: "tool-start", callId: data.callId ?? "", name: data.name ?? "", args });
+      } else if (event.type === "tool/result") {
+        // The structured SemanticToolResponse is recorded by the execute
+        // wrapper (session.pending); the durable session event only carries
+        // model-facing text, so pair by arrival order on the tool name.
+        const name = pendingRecordNames.length < session.pending.length
+          ? session.pending[pendingRecordNames.length]?.name
+          : undefined;
+        const record = [...session.pending].reverse().find((item) => item.name === name)
+          ?? session.pending[session.pending.length - 1];
+        pendingRecordNames.push(name ?? "");
+        push({
+          type: "tool-result",
+          callId: "",
+          name: record?.name ?? name ?? "",
+          status: record?.status ?? "completed",
+          result: record?.result,
+          error: record?.error,
+        });
+      }
+    };
+
+    const sessionListener = ctx.on("session/event", onSessionEvent, { global: true });
+
+    let done = false;
+    let failure: unknown;
+    session.sink = push;
+    session.toolStarted = false;
+    session.answerStep = false;
+    const turn = (async () => {
+      await agent.whenIdle();
+      agent.followup(createUserMessage({
+        content: [{ type: "text", text }],
+        source: { kind: "user" },
+      }));
+      await agent.whenIdle();
+    })();
+    turn.then(() => { done = true; wake?.(); }, (error) => { done = true; failure = error; wake?.(); });
+
+    try {
+      // Pair tool-result events with their tool-start by arrival order.
+      const pendingStarts: { callId: string; name: string }[] = [];
+      const drain = function* (): Generator<DshStreamEvent> {
+        while (queue.length > 0) {
+          const event = queue.shift()!;
+          if (event.type === "tool-start") pendingStarts.push({ callId: event.callId, name: event.name });
+          if (event.type === "tool-result") {
+            const start = pendingStarts.shift();
+            yield start ? { ...event, callId: start.callId, name: start.name } : event;
+          } else {
+            yield event;
+          }
+        }
+      };
+      while (!done || queue.length > 0) {
+        yield* drain();
+        if (done) break;
+        await wait();
+      }
+      yield* drain();
+      if (failure) throw failure;
+      const result = finalizeTurn(session);
+      yield { type: "final", output: result.output, toolCalls: result.toolCalls, reasonKind: result.reasonKind };
+    } catch (error) {
+      yield { type: "error", message: error instanceof Error ? error.message : String(error) };
+    } finally {
+      session.sink = null;
+      try { sessionListener(); } catch { /* already disposed */ }
+      await turn.catch(() => undefined);
+    }
   }
 
   return {
@@ -183,30 +381,10 @@ export async function createDshRuntime(options: CreateDshRuntimeOptions): Promis
         source: { kind: "user" },
       }));
       await agent.whenIdle();
-
-      let output = "";
-      for (const event of agent.session.snapshotEvents()) {
-        if (event.type === "assistant/message") {
-          const chunks: string[] = [];
-          const content = (event as { data?: { message?: { content?: unknown } } }).data?.message?.content;
-          if (Array.isArray(content)) {
-            for (const block of content) {
-              if (block && typeof block === "object" && (block as { type?: string }).type === "text") {
-                const t = (block as { text?: unknown }).text;
-                if (typeof t === "string") chunks.push(t);
-              }
-            }
-          }
-          if (chunks.join("").trim().length > 0) output = chunks.join("");
-        }
-      }
-      let reasonKind: string | undefined;
-      for (const event of agent.session.snapshotEvents()) {
-        if (event.type === "turn/end") {
-          reasonKind = (event as { data?: { reason?: { kind?: string } } }).data?.reason?.kind;
-        }
-      }
-      return { output, toolCalls: [...session.pending], reasonKind };
+      return finalizeTurn(session);
+    },
+    streamMessage(conversationId: string, text: string): AsyncIterable<DshStreamEvent> {
+      return { [Symbol.asyncIterator]: () => streamTurn(conversationId, text) };
     },
     async dispose() {
       for (const session of sessions.values()) session.dispose();
@@ -214,6 +392,40 @@ export async function createDshRuntime(options: CreateDshRuntimeOptions): Promis
       await ctx.fiber.dispose();
     },
   };
+}
+
+// Deterministic, unambiguous tool-result text for the model. The numbers are
+// taken from the authoritative mapped facts (value/unit/asOf), then the
+// server-generated narrative. JSON internals are intentionally omitted so the
+// model cannot confuse a null MRP elementQty with the fact value.
+function resultToModelText(result: SemanticToolResponse): string {
+  const lines: string[] = [];
+  lines.push(`状态: ${result.status}`);
+  for (const fact of result.facts) {
+    const value = fact.value !== null
+      ? `${fact.value}${fact.unit ? " " + fact.unit : ""}`
+      : fact.evidence?.map((row) => evidenceAmount(row)).filter(Boolean).join("; ") || "(无数值)";
+    const subject = [fact.material, fact.plant].filter(Boolean).join("/");
+    lines.push(`事实${subject ? `（${subject}）` : ""}: ${value}${fact.asOf ? `，数据日期 ${fact.asOf.slice(0, 10)}` : ""}`);
+  }
+  if (result.narrative.summary) lines.push("", result.narrative.summary);
+  if (result.approval) {
+    const p = result.approval.parameters;
+    lines.push("", `待审批提案 approvalId=${result.approval.approvalId}，有效期至 ${result.approval.expiresAt}`,
+      `PR 参数: 物料=${p.material} 工厂=${p.plant} 数量=${p.quantity} 单位=${p.unit} 交货=${p.delivery_date} 采购组=${p.purchasing_group}`,
+      "尚未写入 SAP，必须等待用户在审批卡片上批准或拒绝。");
+  }
+  for (const limitation of result.limitations) lines.push(`限制: ${limitation}`);
+  if (result.error) lines.push(`错误: ${result.error.errorType}: ${result.error.message}`);
+  return lines.join("\n");
+}
+
+function evidenceAmount(row: unknown): string {
+  if (!row || typeof row !== "object") return "";
+  const r = row as Record<string, unknown>;
+  const amount = r.amtDoccur ?? r.netValue ?? r.orderQuantity;
+  const currency = r.currency ?? r.purchaseOrderUnit ?? r.unit;
+  return amount !== undefined && amount !== null ? `${amount}${currency ? " " + String(currency) : ""}` : "";
 }
 
 function toolDescription(name: string): string {

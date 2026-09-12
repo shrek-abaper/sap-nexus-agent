@@ -42,8 +42,14 @@ export function ToolCallCard({ call }: { call: DshToolCall }) {
   return (
     <div className={`dsh-tool dsh-tool--${call.status}`}>
       <div className="dsh-tool__head">
-        <span className="dsh-tool__name">{TOOL_LABELS[call.name] ?? call.name}</span>
-        <span className={`dsh-tool__status dsh-tool__status--${call.status}`}>{call.status}</span>
+        <span className="dsh-tool__name">
+          {call.status === "running" ? <span className="dsh-spinner" aria-hidden /> : null}
+          {TOOL_LABELS[call.name] ?? call.name}
+        </span>
+        <span className={`dsh-tool__status dsh-tool__status--${call.status}`}>
+          {call.status === "running" ? "执行中" : call.status === "completed" ? "完成"
+            : call.status === "awaiting_approval" ? "待审批" : "失败"}
+        </span>
       </div>
 
       {call.error ? <div className="dsh-tool__error">{call.error}</div> : null}

@@ -32,7 +32,7 @@ export type DshToolCall = {
   callId: string;
   name: string;
   args: Record<string, unknown>;
-  status: "completed" | "failed" | "awaiting_approval";
+  status: "running" | "completed" | "failed" | "awaiting_approval";
   result?: {
     status: string;
     runId: string;
@@ -60,4 +60,31 @@ export type ChatMessage = {
   toolCalls?: DshToolCall[];
   error?: string;
   pending?: boolean;
+  /** Live model deltas before tools run (collapsed reasoning trace). */
+  trace?: string;
+  /** Live answer deltas after tools return (rendered in the bubble). */
+  answerTrace?: string;
+  /** Live tool cards while streaming. */
+  liveTools?: DshToolCall[];
+  /** True once the final answer arrived and the trace must collapse. */
+  settled?: boolean;
 };
+
+export type ConversationSummary = {
+  id: string;
+  title: string;
+  createdAt: number;
+  updatedAt: number;
+  messageCount: number;
+};
+
+export type StoredConversation = ConversationSummary & {
+  messages: Array<ChatMessage & { ts?: number }>;
+};
+
+export type DshStreamEvent =
+  | { type: "delta"; text: string; phase: "reasoning" | "answer" }
+  | { type: "tool-start"; callId: string; name: string; args: unknown }
+  | { type: "tool-result"; callId: string; name: string; status: DshToolCall["status"]; result?: unknown; error?: string }
+  | { type: "final"; output: string; toolCalls: DshToolCall[]; reasonKind?: string }
+  | { type: "error"; message: string };

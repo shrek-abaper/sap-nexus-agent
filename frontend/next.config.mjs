@@ -1,6 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   poweredByHeader: false,
+  // Hide the floating Next.js dev-tools ("N") button in development.
+  devIndicators: false,
   // The in-process dsh runtime (Cordis/dsh-* ESM packages) must stay external
   // to the server bundle; it is imported dynamically only in server code.
   serverExternalPackages: [

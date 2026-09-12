@@ -11,7 +11,7 @@ import type { DshRuntime } from "./runtime";
 let runtime: DshRuntime;
 
 function setRuntime(turn: Awaited<ReturnType<DshRuntime["sendMessage"]>>): void {
-  runtime = { sendMessage: vi.fn(async () => turn), dispose: vi.fn() };
+  runtime = { sendMessage: vi.fn(async () => turn), streamMessage: vi.fn(async function* () {}), dispose: vi.fn() };
 }
 
 afterEach(() => {
