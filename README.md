@@ -88,6 +88,15 @@ npm --prefix frontend run release-gate -- --profile all
 
 ### 启动服务
 
+一键启动（脚本在前台运行，日志在 `runtime/dev-services/logs/`，Ctrl+C 停止全部；另有 `./start.sh stop` / `restart`）：
+
+```bash
+npm --prefix frontend install   # 首次需要：start.sh 要求 frontend/node_modules 存在
+./start.sh
+```
+
+启动后打开 `http://127.0.0.1:3000/`，根路径自动跳转 `/chat`（DSH Chat）；旧版证据 Workbench 仍在 `/workbench`。脚本不设置发行版专属的 `JAVA_HOME` 默认值，未设置时使用系统 Java（须为 17）。也可以按下面分步手动启动：
+
 终端 1 — Gateway：
 
 ```bash

@@ -9,8 +9,8 @@ GATEWAY_PORT=${GATEWAY_PORT:-8080}
 ODATA_SERVICE_PORT=${ODATA_SERVICE_PORT:-8081}
 FRONTEND_PORT=${FRONTEND_PORT:-3000}
 FRONTEND_HOST=${FRONTEND_HOST:-0.0.0.0}
-JAVA_HOME_DEFAULT=/usr/lib/jvm/java-17-openjdk-amd64
-JAVA_HOME=${JAVA_HOME:-$JAVA_HOME_DEFAULT}
+# JAVA_HOME is intentionally not defaulted to a distro-specific path; when it is
+# unset, the JVM on PATH is used (must be Java 17).
 GRADLE_USER_HOME=${GRADLE_USER_HOME:-/tmp/gradle-home}
 DRY_RUN=0
 
@@ -21,7 +21,8 @@ SAP Nexus Agent local service launcher.
 Starts the local development services needed for manual Agent testing:
   - Gateway: Java Spring Boot Gateway (JCo + OData thin reverse proxy) from services/gateway/
   - OData service: Python OData read-only microservice (:8081) from services/odata-service/
-  - Workbench: Next.js Agent Workbench from frontend/
+  - Frontend: Next.js dev server from frontend/ — DSH Chat at /chat (the root
+    path redirects there); the legacy evidence Workbench remains at /workbench
 
 Usage:
   ./start.sh [start] [--dry-run]   Start all dev services (default)
@@ -38,7 +39,7 @@ Environment overrides:
   SAP_NEXUS_INTENT_MODE=hybrid
   SAP_NEXUS_AGENT_PYTHON=/absolute/path/to/python
   SAP_GATEWAY_ODATA_PROXY_URL=http://127.0.0.1:8081
-  JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+  JAVA_HOME=/path/to/jdk-17        # optional; system Java is used when unset
   GRADLE_USER_HOME=/tmp/gradle-home
   START_RUNTIME_DIR=runtime/dev-services
 
@@ -87,12 +88,11 @@ require_file() {
 }
 
 choose_gradle() {
-  if [[ -x "$ROOT_DIR/services/gateway/gradlew" ]]; then
-    printf '%s\n' "$ROOT_DIR/services/gateway/gradlew"
-  elif [[ -x /tmp/gradle-8.8/bin/gradle ]]; then
-    printf '%s\n' /tmp/gradle-8.8/bin/gradle
+  local gradlew=$ROOT_DIR/services/gateway/gradlew
+  if [[ -x "$gradlew" ]]; then
+    printf '%s\n' "$gradlew"
   else
-    fail "No Gradle runner found. Expected services/gateway/gradlew or /tmp/gradle-8.8/bin/gradle."
+    fail "services/gateway/gradlew is missing or not executable (run 'chmod +x services/gateway/gradlew')."
   fi
 }
 
@@ -136,8 +136,8 @@ print_plan() {
   cat <<PLAN
 Dry run: SAP Nexus Agent services would start with:
   OData svc  : cd services/odata-service && PYTHONPATH=. ODATA_SERVICE_PORT=$ODATA_SERVICE_PORT $python_cmd -c 'from odata_service.server import run; run(...)'
-  Gateway    : cd services/gateway && JAVA_HOME=$JAVA_HOME GRADLE_USER_HOME=$GRADLE_USER_HOME SERVER_PORT=$GATEWAY_PORT SAP_GATEWAY_ODATA_PROXY_URL=http://127.0.0.1:$ODATA_SERVICE_PORT $gradle_cmd --no-daemon bootRun
-  Workbench  : npm --prefix frontend run dev -- --hostname $FRONTEND_HOST --port $FRONTEND_PORT
+  Gateway    : cd services/gateway && JAVA_HOME=${JAVA_HOME:-} GRADLE_USER_HOME=$GRADLE_USER_HOME SERVER_PORT=$GATEWAY_PORT SAP_GATEWAY_ODATA_PROXY_URL=http://127.0.0.1:$ODATA_SERVICE_PORT $gradle_cmd --no-daemon bootRun
+  Frontend  : npm --prefix frontend run dev -- --hostname $FRONTEND_HOST --port $FRONTEND_PORT (DSH Chat at /chat)
   Agent      : SAP_NEXUS_GATEWAY_URL=${SAP_NEXUS_GATEWAY_URL:-http://127.0.0.1:$GATEWAY_PORT} SAP_NEXUS_INTENT_MODE=${SAP_NEXUS_INTENT_MODE:-hybrid}
   Logs       : $LOG_DIR
 PLAN
@@ -267,11 +267,13 @@ else
   log "Root .env not found. Gateway may start with degraded SAP connectivity."
 fi
 
-if [[ -d "$JAVA_HOME" ]]; then
+if [[ -d "${JAVA_HOME:-}" ]]; then
   export JAVA_HOME
-else
+elif [[ -n "${JAVA_HOME:-}" ]]; then
   log "JAVA_HOME path not found: $JAVA_HOME. Continuing with system Java."
   unset JAVA_HOME
+else
+  log "JAVA_HOME not set; using system Java (must be Java 17)."
 fi
 
 export GRADLE_USER_HOME
@@ -313,8 +315,8 @@ cat <<READY
 [start] Services are starting.
 [start] Gateway health:   http://127.0.0.1:$GATEWAY_PORT/health
 [start] OData service:     http://127.0.0.1:$ODATA_SERVICE_PORT/execute
-[start] Workbench UI:     http://127.0.0.1:$FRONTEND_PORT/workbench
-[start] Root redirect:    http://127.0.0.1:$FRONTEND_PORT/
+[start] DSH Chat:         http://127.0.0.1:$FRONTEND_PORT/chat (root / redirects here)
+[start] Legacy Workbench: http://127.0.0.1:$FRONTEND_PORT/workbench
 [start] Logs:             $LOG_DIR
 [start] Press Ctrl+C to stop all services.
 READY

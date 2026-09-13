@@ -88,6 +88,15 @@ Current baselines:
 
 ### Launch Services
 
+One-shot launch (the script runs in the foreground with logs under `runtime/dev-services/logs/`; Ctrl+C stops everything; `./start.sh stop` / `restart` are also available):
+
+```bash
+npm --prefix frontend install   # first time only: start.sh requires frontend/node_modules
+./start.sh
+```
+
+Then open `http://127.0.0.1:3000/` — the root path redirects to `/chat` (DSH Chat); the legacy evidence Workbench remains at `/workbench`. The script sets no distro-specific `JAVA_HOME` default; when unset it uses the system Java (must be 17). Or start the services manually, step by step:
+
 Terminal 1 — Gateway:
 
 ```bash
