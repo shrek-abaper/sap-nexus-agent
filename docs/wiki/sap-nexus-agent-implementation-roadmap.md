@@ -5,7 +5,7 @@
 | 字段 | 内容 |
 |---|---|
 | 文档名称 | `SAP Nexus Agent 实施路线文档` |
-| 当前版本 | `v0.2.52` |
+| 当前版本 | `v0.2.53` |
 | 状态 | `Lifecycle Roadmap Active` |
 | 创建日期 | `2026-06-18` |
 | 最近更新 | `2026-09-13` |
@@ -21,6 +21,7 @@
 
 | 版本 | 日期 | 变更摘要 | 决策状态 |
 |---|---|---|---|
+| `v0.2.53` | `2026-09-13` | §1.1.4 补记门禁报告取证说明：2026-08-10 的 22/22 报告 `codeVersion` 不在 git 提交历史、不可复现，不作为现状依据；可复现结论锚定 2026-08-19 报告（22/22、`L3_ACTION_GOVERNED`、hard gates 0/0/0/100%、`liveSmoke=not_run`）。配合 README 状态源收敛：取证细节从 README 移入本节，README 只保留结论 | 当前实施基线 |
 | `v0.2.52` | `2026-09-13` | 对齐内部架构方案 Notion v1.2（2026-09-12）：新增 §1.1「v1.2 迭代序列 S1–S5 与实现状态」——v1.2 取代旧 Phase 0/Phase 1 与 openharness 文档的 S0–S6 在线规划序列（自建 Plan/Resolve Service 取消，推理前移编译期）；补登 2026-08-08 至 2026-09-12 的 5 个已归档 Native change（MD04 详情叙述、叙述泛化、SD/FI 登记、`deepseek-harness-decouple`、`workbench-dsh-runtime`）；状态判定转引 Notion v1.2 第八节（层级达成表、三条结构性要求、序列进度、回填式下一步）；2026-09-13 仓库实测：pytest 1574 passed + 1 skipped + 2 xfailed、frontend 64 文件/579 tests、call-plan eval 全过 | 当前实施基线 |
 | `v0.2.51` | `2026-08-05` | `sap-nexus-end-to-end-agent-eval-release-gate` (Runbook 22) Native change 实施并归档：production TypeScript composition coordinator 接通 executor/projection/recommendation/narrative/durable replay/plan-aware Action；L1/L2/L3 offline gate `9/9`，最高连续等级 `L3_ACTION_GOVERNED`，四项 hard gates 全通过；frontend 428/428 + build、Agent 959+1 skipped、OpenSpec 20/20、Native acceptance 42/42；live SAP READ/WRITE 均 `not_run`；归档 `docs/comet/archive/2026-08-05-sap-nexus-end-to-end-agent-eval-release-gate/` | 当前实施基线 |
 | `v0.2.50` | `2026-08-05` | `sap-nexus-read-to-write-action-governance` (Runbook 21) Native change 实施并归档：单 run owner HITL confirmation、完整 plan/fact/projection/rule/proposal/parameter subject revalidation、durable exactly-once continuation、Gateway atomic claim 与 Workbench approval/action evidence；405 frontend tests / 959+1 skipped Agent tests / PR Eval 9/9 / Gateway BUILD SUCCESSFUL / 20 OpenSpec / Native acceptance 35/35；仅 fake/sandbox boundary、未执行 live SAP WRITE；下一入口 Runbook 22 | 当前实施基线 |
@@ -136,6 +137,8 @@ S1 已完成 · S2 未开始 · S3 未开始 · **S4 已完成（越过 S2/S3，
 
 - Notion 状态源（2026-09-12）：`pytest 1574 passed`、前端 60 个测试文件、Native 验收 97/97。
 - 2026-09-13 仓库实测复核（commit `d6b27c1`）：Agent `1574 passed, 1 skipped, 2 xfailed`；Frontend 64 个测试文件 / `579 passed`（`verify` = typecheck + vitest + next build 全绿）；call-plan eval：inventory 7/7、seed 13/13、PR 9/9、matcher 23/23、dry-run 3/3（1 条 structural pending）、derived 3/3（2 条 parser-blocked pending，附书面归因）。
+
+**门禁报告取证说明（2026-09-13 补）**：`runtime/evals/results/agent-release-l3-2026-08-10T01-17-26-548Z.json` 虽记录 22/22，但其 `codeVersion`（`23dc17ec373a55bbbe503fd4d71b0d02994700ab`）不在 git 提交历史中（`git cat-file -t <sha>` 无法解析），无法从提交状态复现，**不作为现状依据**。可复现的门禁结论以 2026-08-19 的三份报告为准（例如 `runtime/evals/results/agent-release-l3-2026-08-19T13-09-48-499Z.json`：`caseTotals` 22/22、`decision=L3_ACTION_GOVERNED`、L1–L3 四项 hard gates 均为 leakage 0 / approval bypass 0 / unsupported claim 0 / lineage 100%、`liveSmoke=not_run`）。该取证细节从 README 移入本节，README 只保留「2026-08-19 达成 22/22 / L3_ACTION_GOVERNED」结论与复现指引。
 
 #### 1.1.5 当前唯一实质断点与下一步（回填，非新建）
 

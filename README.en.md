@@ -1,16 +1,143 @@
-> **English** | [中文](README.md)
+<div align="center">
 
-# SAP Nexus Agent
+<h3>A supplier of SAP capabilities, not yet another SAP Agent</h3>
 
-SAP Nexus Agent's long-term goal is to build a **capability intelligence hub for SAP On-Prem systems — a supplier of SAP capabilities** — rather than a single-purpose stock-lookup bot. This Harness Engineering-based governed access gateway ensures the Agent never directly touches bare RFC/OData/SQL endpoints: it may only propose intents or plan candidates through registered `capabilityId`s. All data access must pass through the Capability Registry, deterministic validation, and allowlisted executor bindings. The harness (orchestration and presentation) is replaceable; semantic governance and SAP execution stay server-side.
+<h4><i>Capability-ontology-driven · One call answers one business question · The harness is replaceable wholesale</i></h4>
 
-**Core principle: Facts before narrative; capability is the boundary — this is a governed capability gateway, not a generic SAP proxy.**
+> SAP business questions are sedimented into business-level capabilities: endpoint chains, `asOf` time consistency, cardinality reduction, and approval adjudication are all server-enforced; questions outside coverage are explicitly refused rather than answered with degraded guesses. The harness only selects and presents capabilities — switching hosts never produces a second set of business semantics.
+
+**Capability Ontology Modeling · Compile-Time Derivation · Business-Level Capabilities · Server-Enforced Governance · Full-Chain Lineage · Replaceable Harness**
+
+**Apache-2.0 · Self-Hosted · No Vendor Lock-In · SAP On-Prem**
+
+<h4>A governed capability layer for SAP delivery scenarios</h4>
+
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=flat-square)](LICENSE)
+[![Java](https://img.shields.io/badge/Java-17-007396?style=flat-square&logo=openjdk&logoColor=white)](services/gateway)
+[![Python](https://img.shields.io/badge/Python-3.12+-3776AB?style=flat-square&logo=python&logoColor=white)](agent)
+[![Node](https://img.shields.io/badge/Node-20+-339933?style=flat-square&logo=nodedotjs&logoColor=white)](frontend)
+[![SAP](https://img.shields.io/badge/SAP-JCo%20RFC%20%2B%20OData-0FAAFF?style=flat-square&logo=sap&logoColor=white)](#registered-capabilities-server-side-internals)
+[![Offline Gate](https://img.shields.io/badge/offline%20gate-22%2F22%20L3__ACTION__GOVERNED-2EA043?style=flat-square)](#target-achievement-status-s1s5)
+
+<!-- TODO: DSH Chat screenshot or GIF -->
+
+**English** · **[中文](README.md)**
+
+</div>
+
+**[Quick Start](#quick-start)** · **[Target Architecture](#target-architecture-agent-build-target)** · **[Current Architecture](#current-architecture-as-is)** · **[Key Features](#key-features)** · **[Target Achievement Status](#target-achievement-status-s1s5)** · **[Harness-Visible Surface](#harness-visible-surface-business-semantic-tools-contract-v2)** · **[Registered Capabilities](#registered-capabilities-server-side-internals)** · **[Tech Stack](#tech-stack)**
+
+---
+
+SAP Nexus Agent aims to be a **supplier of SAP capabilities**, not yet another SAP Agent. Four parties, one job each: the capability ontology (a single YAML source) defines business objects and business definitions; the compile-time derivation pipeline produces the Capability Manifest offline, with zero ontology queries at request time; the SAP domain capability layer exposes business-level capabilities — **one call answers one business question** — with endpoint chains, `asOf` consistency, and cardinality reduction fixed inside; the harness (dsh / MCP client / our own CLI) only does capability selection, presentation, and clarification, and is replaceable wholesale. The only security boundary is the remote Java Gateway: `bindingId`, RFC names, service URLs, HTTP methods, and credential references can never be supplied or overridden by the harness.
+
+**Core principle: facts before narrative; capability is the boundary.**
+
+> Of the four parties above, the capability ontology and the compile-time derivation pipeline are target state; for the current implementation see [“Target Achievement Status”](#target-achievement-status-s1s5).
+
+---
+
+## Quick Start
+
+### Prerequisites
+
+- Java 17 (no standalone Gradle install needed — the repo ships `services/gateway/gradlew`)
+- Python 3.12+
+- Node.js 20+
+- SAP JCo 3 library files (for live SAP execution)
+- SAP On-Prem connectivity and credentials (for live smoke tests)
+- An OpenAI-compatible LLM endpoint and API key (for DSH Chat / harness-dsh; Rule mode and offline tests need neither)
+
+**Without SAP connectivity or credentials** you can run the full offline test suite, call-plan evals, and registry validation in the [“Verification Baseline”](#verification-baseline-as-of-2026-09-13) below, but you **cannot run interactive queries** — even with `--intent-mode rule` (no LLM key needed) the Python Agent CLI still connects to the Gateway to execute; DSH Chat / harness-dsh additionally need an LLM key.
+
+### Prepare the Python Environment
+
+There is no `requirements.txt`; per `agent/pyproject.toml` the agent package is installed editable (the `test` extra provides `jsonschema`; `pytest` is also needed for the test commands below and is not declared in pyproject):
+
+```bash
+python3 -m venv .venv                          # Python 3.12+ required
+.venv/bin/python -m pip install -e "agent[test]" pytest
+```
+
+### Environment Setup
+
+```bash
+cp .env.example .env
+# Fill in SAP connection parameters; for DSH also set SAP_NEXUS_LLM_BASE_URL / SAP_NEXUS_LLM_API_KEY / SAP_NEXUS_LLM_MODEL
+```
+
+### Verification Baseline (as of 2026-09-13)
+
+```bash
+.venv/bin/python scripts/validate-registry-contract.py registry/capabilities.yaml
+.venv/bin/python -m pytest agent/tests
+PYTHONPATH=agent scripts/verify-agent-callplan-evidence.sh
+npm --prefix frontend run verify
+npm --prefix frontend run release-gate -- --profile all
+```
+
+Current baselines:
+
+- Registry contract validation: `Registry contract valid` (17 deprecation warnings, all `extraction.matchers` → `binding.sources` migration notices; contract validity unaffected)
+- Agent test suite: `1574 passed, 1 skipped, 2 xfailed`
+- Frontend suite: `579 passed` (64 test files); `verify` (typecheck + vitest + next build) all green
+- Call-plan Evals: inventory `7/7`, eval_harness_seed_cases `13/13`, PR `9/9`, matcher `23/23`, dry-run `3/3` (plus 1 documented structural pending), derived-parameter `3/3` (plus 2 parser-blocked pending cases with written cause analysis)
+- Offline release gate: `22/22` / `L3_ACTION_GOVERNED` reached 2026-08-19 (historical milestone); all four L1–L3 hard gates are leakage `0`, approval bypass `0`, unsupported claim `0`, lineage `100%`; `liveSmoke: not_run` (the offline gate makes no real SAP calls; report: `runtime/evals/results/agent-release-l3-2026-08-19T13-09-48-499Z.json`; forensics on the older 2026-08-10 report see [roadmap §1.1.4](docs/wiki/sap-nexus-agent-implementation-roadmap.md))
+
+`PYTHONPATH=agent` verifies the current source tree directly.
+
+### Launch Services
+
+Terminal 1 — Gateway:
+
+```bash
+set -a; . ./.env; set +a
+cd services/gateway
+./gradlew --no-daemon bootRun
+```
+
+If your system default JDK is not 17, `export JAVA_HOME=<path to JDK 17>` first (do not hardcode a distro-specific path).
+
+Terminal 2 — OData microservice (required for the purchase-order capability):
+
+```bash
+cd services/odata-service
+PYTHONPATH=. python -m odata_service.server   # :8081
+```
+
+Terminal 3 — DSH Chat (recommended entry; requires an LLM key):
+
+```bash
+set -a; . ./.env; set +a
+SAP_NEXUS_AGENT_ROOT=$(pwd) \
+SAP_NEXUS_GATEWAY_URL=http://127.0.0.1:8080 \
+npm --prefix frontend run dev
+```
+
+Open `http://127.0.0.1:3000/chat` (the root path redirects there; the classic Workbench remains at `/workbench`).
+
+Optional — harness-dsh standalone CLI (separate terminal; the Next facade above must be running):
+
+```bash
+cd harness-dsh
+npm ci && npm run build
+cp .env.example .env      # OpenAI-compatible endpoint/key; SAP_NEXUS_FACADE_URL defaults to http://127.0.0.1:3000
+npm start -- "Does A100 have enough stock at plant 1000, and how much is in transit?"
+```
+
+Optional — Python Agent CLI (no harness; Rule mode needs no LLM key, but a reachable Gateway and SAP connectivity are still required):
+
+```bash
+PYTHONPATH=agent .venv/bin/python -m sap_nexus_agent.cli \
+  "How much available stock does A100 have at 1000?" \
+  --gateway-url http://127.0.0.1:8080 --intent-mode rule
+```
 
 ---
 
 ## Target Architecture (Agent Build Target)
 
-> The diagram below is this project's **target architecture (the Agent build target)**, **not the current state of this repository**; the as-is implementation follows in the next section. The diagram shows target form only — no progress, counts, or dates — and is updated only when layers, layer responsibilities, contract red lines, or derivation relations change. Implementation progress is tracked solely in [“Target Achievement Status”](#target-achievement-status-s1s5) below and in [roadmap §1.1](docs/wiki/sap-nexus-agent-implementation-roadmap.md). The reading guide: **definitions at the top, reasoning at compile time, governance inside capabilities, replaceable experience**. The stance is “four parties, one job each”: the capability ontology (single YAML source), the compile-time derivation pipeline (offline Capability Manifest), the SAP domain capability layer (business-semantic level, core asset), and the harness (replaceable orchestration and presentation).
+> The diagram below is this project's **target architecture (the Agent build target)**, **not the current state of this repository**; the as-is implementation follows in the next section. The diagram shows target form only — no progress, counts, or dates — and is updated only when layers, layer responsibilities, contract red lines, or derivation relations change. Implementation progress is tracked solely in [“Target Achievement Status”](#target-achievement-status-s1s5) below and in [roadmap §1.1](docs/wiki/sap-nexus-agent-implementation-roadmap.md). The reading guide: **definitions at the top, reasoning at compile time, governance inside capabilities, replaceable experience**. The stance is “four parties, one job each”: the capability ontology (single YAML source), the compile-time derivation pipeline (offline Capability Manifest), the SAP domain capability layer (business level, core asset), and the harness (replaceable orchestration and presentation).
 
 ![SAP Nexus Agent target architecture: an ontology-driven supplier of SAP capabilities](docs/images/nexus-target-architecture.png)
 
@@ -61,18 +188,30 @@ harness (rule / llm intent); the classic Workbench at /workbench shares the same
 + composition governed chain as DSH Chat.
 ```
 
+### Current Architectural Limits (Design Choices, Not Defects)
+
+- Run/Session, principal ownership, approval, lease/idempotency, and cursor SSE are durable; but the current local JSONL/file store and placeholder principal are still not a shared multi-worker/HA store or a production identity system (mandatory before a second host — see the target architecture's supporting plane)
+- The compile-time derivation pipeline (Capability Manifest), business-semantic `Definition` objects, field-level FactType schema, and relation graph remain target-state work; today's registry is still an endpoint-level capability registry
+- Knowledge/RAG, free-form Tool Calling, a general Dynamic Planner, multi-WRITE/Saga, and automatic compensation remain Reserved / Not In Scope
+- Graph databases and OWL reasoning runtime are reserved directions; JSON Schema + Registry Validator currently carry consistency duties
+
 ---
 
 ## Key Features
 
+### Business-Level Tool Surface and Server-Enforced Governance (Core Differentiator)
+
+- **Business-semantic tool surface (Semantic Tool contract v2)**: the harness sees only 4 business tools (see [“Harness-Visible Surface”](#harness-visible-surface-business-semantic-tools-contract-v2) below) — never a `capabilityId`, `rfcName`, `bindingId`, URL, or credential; technical-key injection is rejected fail-closed at the facade
+- **One server-enforced governance chain**: the HTTP facade and the in-process dsh handlers share `executeSemanticTool`; intent selection, CallPlan, validation, and approval all stay server-side. The harness process has no surface that reaches the Gateway / RFC / bindings / credentials directly (locked by `harness-dsh/tests/architecture.test.ts`)
+
 ### Replaceable Harness (DSH Pilot)
 
 - **Two harness forms**: the standalone `harness-dsh/` Node CLI (a dsh T-A-O loop calling the semantic-tool facade over HTTP) and the in-app **DSH Chat** (`/chat`, a server-side in-process dsh runtime with streamed reasoning traces, tool cards, and approval interaction); the root path `/` now 307-redirects to `/chat`
-- **Business-semantic tool surface (Semantic Tool contract v2)**: the harness sees only 4 business tools (see table below) — never a `capabilityId`, `rfcName`, `bindingId`, URL, or credential; technical-key injection is rejected fail-closed at the facade
-- **One governed server chain**: the HTTP facade and the in-process dsh handlers share `executeSemanticTool`; intent selection, CallPlan, validation, and approval all stay server-side. The harness process has no surface that reaches the Gateway / RFC / bindings / credentials directly (locked by `harness-dsh/tests/architecture.test.ts`)
 - **Version pin**: `@deepseek-ai/dsh-*` packages are pinned exactly to `0.1.5-rc.1` and `@deepseek-ai/cordis` to `4.0.2`; while dsh is in preview, every upgrade is a separate reviewed change
 
-### Capability Ontology Modeling (Core Differentiator)
+### Current Semantic Layer: The Endpoint-Level Capability Registry
+
+The fields and mechanisms below are all parts of the **implemented endpoint-level capability registry**; the capability ontology (business objects / business `Definition`s / the relation graph) has not landed yet — see [“Target Achievement Status”](#target-achievement-status-s1s5).
 
 - **Capability Ontology** — Every SAP operation (read/write) is modeled as a formal capability with `ontologyIri`, `semanticType`, typed inputs/outputs, and fact type references
 - **Semantic Parameter Mapping** — Input parameters link to ontology concepts (`MaterialNumber`, `Plant`) via `semanticName`/`semanticType`, decoupled from SAP technical parameters (`MATERIAL`, `PLANT`)
@@ -98,29 +237,21 @@ harness (rule / llm intent); the classic Workbench at /workbench shares the same
 | `REST_JSON` | 🔒 Fail-closed | Architecture reserve                                                             |
 | `SQL_READ`  | 🔒 Fail-closed | Architecture reserve                                                             |
 
-### Current Runtime Maturity
+---
 
-- **Offline end-to-end governed composition is implemented and working**: intent → CallPlan → validation/execution → ExecutionResult → ReasoningFact → narrative → durable Workbench replay → plan-aware single Action continuation. The single-capability `CallPlan` main chain remains available.
-- **Python Agent responsibilities**: LLM-first intent, closed-set recall, five-state decisioning, and PlanGraph v2 authoring; runs either as a subprocess spawned on demand by the Next server or standalone via the CLI.
-- **The DSH harness is wired up**: both DSH Chat (`/chat`) and the harness-dsh CLI enter through the Semantic Tool contract v2 into the same governed entry; model streaming (two-phase reasoning/answer), tool cards, SSE streaming, approval handles, and multi-conversation storage are live.
-- **TypeScript composition coordinator**: Wires up PlanExecutor, OutputProjection, Recommendation, grounded Narrative, durable Workbench replay, and plan-aware single-Action continuation.
-- **Release gate milestone**: The offline L1/L2/L3 gate reached `22/22` on 2026-08-19, with the highest consecutive level `L3_ACTION_GOVERNED`; headline hard gates are leakage `0`, approval bypass `0`, unsupported claim `0`, lineage `100%`. The earlier 2026-08-10 `22/22` report came from a code state that never entered commit history (its codeVersion is absent from git); it cannot be reproduced and is not a current-status reference.
-- **Current architectural limits (design choices, not defects)**:
-  - Run/Session, principal ownership, approval, lease/idempotency, and cursor SSE are durable; but the current local JSONL/file store and placeholder principal are still not a shared multi-worker/HA store or a production identity system (mandatory before a second host — see the target architecture's supporting plane)
-  - The compile-time derivation pipeline (Capability Manifest), business-semantic `Definition` objects, field-level FactType schema, and relation graph remain target-state work; today's registry is still an endpoint-level capability registry
-  - Knowledge/RAG, free-form Tool Calling, a general Dynamic Planner, multi-WRITE/Saga, and automatic compensation remain Reserved / Not In Scope
-  - Graph databases and OWL reasoning runtime are reserved directions; JSON Schema + Registry Validator currently carry consistency duties
-- **SAP connectivity** (per `runtime/gateway-jco/traces.jsonl`): all four MM capabilities (`MM.Inventory.GetAvailability`, `MM.PurchaseOrder.GetList`, `MM.Material.GetInfo`, `MM.PR.CreateDraft`) have successful real-SAP execution records; the OData chain passed another end-to-end live smoke on 2026-09-13 (real purchase-order rows returned). `SD.SalesOrder.GetList` has live attempts but none succeeded against the current system; `FI.AR.GetOpenItems` / `FI.AP.GetOpenItems` are registered and covered by offline tests but have no live execution record yet — SD/FI live smoke tests remain to be done. The offline release gate's `liveSmoke` field stays `not_run` by design; any live WRITE still requires exact-subject Human Approval.
+## Target Achievement Status (S1–S5)
 
-### Target Achievement Status (S1–S5)
+The current implementation assessed against the target architecture's S1–S5 build sequence (re-verified 2026-09-13); full status tables are in [roadmap §1.1](docs/wiki/sap-nexus-agent-implementation-roadmap.md), and concrete test/gate figures are recorded only in the [“Verification Baseline”](#verification-baseline-as-of-2026-09-13) above.
 
-Current implementation assessed against the target architecture's S1–S5 build sequence (re-verified 2026-09-13); full status tables are in [roadmap §1.1](docs/wiki/sap-nexus-agent-implementation-roadmap.md).
-
-- **Sequence progress**: S1 evidence complete · S2 (object keys + field-level schema) not started · S3 (definitions + relations into the ontology + compile-time pipeline) not started · **S4 capability-granularity lift complete, but it jumped over S2/S3** · S5 multi-host validation partially done (cross-host consistency gate 4/4; MCP exposure and a third-party harness not done).
+- **Sequence progress**: S1 evidence complete · S2 (object keys + field-level schema) not started · S3 (definitions + relations into the ontology + compile-time pipeline) not started · **S4 capability-granularity lift complete, but it jumped over S2/S3** · S5 multi-host validation partially done (the cross-host consistency gate passes; MCP exposure and a third-party harness are not done).
 - **Layer status**: the harness experience layer, the contract boundary (four red lines), the SAP domain capability layer (4 business-semantic tools, 3 READ + 1 WRITE), and the Java Gateway with executors (JCO_RFC/ODATA live) are **built**; the compile-time derivation pipeline and runtime-state layer are **partial** (a hand-written versioned JSON Schema contract `contractVersion=2` exists; local JSONL store + placeholder principal); **the capability ontology (objects/definitions/relations) and the offline decision-feedback loop are untouched — the ontology is the one layer not yet on duty**.
 - **Three structural requirements**: ① granularity "**achieved, but misplaced**" (the 4 business tools exist but are declared in server code, not in the ontology; endpoint-level tools are no longer external); ② semantic assets **not achieved** (field-level schema, business definitions, and relations are all empty; tool descriptions remain hand-written); ③ identity & approval **partial** (approval handles and server-side identity injection exist; caller principal is still a placeholder and storage is local).
 - **Next steps are backfill, not new construction**: ① put a CI gate requiring every new capability output field to reference a `Definition` id (placeholder ids acceptable initially); ② split `ontology-core` (open-source) from `ontology-tenant` (kept private) as early as possible — cheapest while the ontology is nearly empty; ③ lift the definitions of the 4 existing capabilities (available stock / overdue / exposure) out of code one by one, producing field-level schema and the first cross-domain link.
 - **The one real break point**: business semantics are fixed in server-side code; the self-check "change one ontology line and Agent behavior changes with zero code changes" does not yet pass.
+- **The offline end-to-end governed composition main chain works**: intent → CallPlan → validation/execution → ExecutionResult → ReasoningFact → narrative → durable Workbench replay → plan-aware single Action continuation; the TypeScript composition coordinator wires up PlanExecutor, OutputProjection, Recommendation, and grounded Narrative (the single-capability `CallPlan` main chain remains available).
+- **Python Agent responsibilities**: LLM-first intent, closed-set recall, five-state decisioning, and PlanGraph v2 authoring; runs either as a subprocess spawned on demand by the Next server or standalone via the CLI.
+- **Release gate milestone**: the offline L1/L2/L3 gate reached its highest consecutive level `L3_ACTION_GOVERNED` on 2026-08-19; scale, the four hard-gate figures, and reproduction commands are in the [“Verification Baseline”](#verification-baseline-as-of-2026-09-13), and forensics on the older 2026-08-10 report are in [roadmap §1.1.4](docs/wiki/sap-nexus-agent-implementation-roadmap.md).
+- **SAP connectivity** (per `runtime/gateway-jco/traces.jsonl`): all four MM capabilities (`MM.Inventory.GetAvailability`, `MM.PurchaseOrder.GetList`, `MM.Material.GetInfo`, `MM.PR.CreateDraft`) have successful real-SAP execution records; the OData chain passed another end-to-end live smoke on 2026-09-13 (real purchase-order rows returned). `SD.SalesOrder.GetList` has live attempts but none succeeded against the current system; `FI.AR.GetOpenItems` / `FI.AP.GetOpenItems` are registered and covered by offline tests but have no live execution record yet — SD/FI live smoke tests remain to be done. The offline release gate's `liveSmoke` field stays `not_run` by design; any live WRITE still requires exact-subject Human Approval.
 
 ---
 
@@ -145,8 +276,8 @@ The harness may name only business tools and slots; internally the server select
 | ------------------------------ | --------------------------------------------------- | --------- | ------------------------------- | --------------------------------------------- |
 | `MM.Inventory.GetAvailability` | Stock/Requirements List (MD04)                      | `JCO_RFC` | `BAPI_MATERIAL_STOCK_REQ_LIST`  | ✅ active                                      |
 | `MM.PurchaseOrder.GetList`     | Purchase Order List                                 | `ODATA`   | `API_PURCHASEORDER_PROCESS_SRV` | ✅ active                                      |
-| `MM.Material.GetInfo`          | Material Info (base UoM / purchasing group)         | `JCO_RFC` | `BAPI_MATERIAL_GET_DETAIL`      | ✅ active                                      |
-| `MM.PR.CreateDraft`            | PR Create Draft                                     | `JCO_RFC` | `BAPI_PR_CREATE`                | ✅ active (requires approval)                 |
+| `MM.Material.GetInfo`           | Material Info (base UoM / purchasing group)        | `JCO_RFC` | `BAPI_MATERIAL_GET_DETAIL`      | ✅ active                                      |
+| `MM.PR.CreateDraft`             | PR Create Draft                                     | `JCO_RFC` | `BAPI_PR_CREATE`                | ✅ active (requires approval)                 |
 | `SD.SalesOrder.GetList`        | Sales Order List (VA05-style)                       | `JCO_RFC` | `BAPI_SALESORDER_GETLIST`       | ✅ active (live smoke pending)                 |
 | `FI.AR.GetOpenItems`           | Customer Open Receivables                           | `JCO_RFC` | `BAPI_AR_ACC_GETOPENITEMS`      | ✅ active (live smoke pending)                 |
 | `FI.AP.GetOpenItems`           | Vendor Open Payables                                | `JCO_RFC` | `BAPI_AP_ACC_GETOPENITEMS`      | ✅ active (live smoke pending)                 |
@@ -177,95 +308,6 @@ docs/
   wiki/                  Architecture, roadmap, technology selection (source of truth)
   comet/                 Native-workflow change archive
   runbooks/              22 historical runbooks (archived; supplementary lookup only, not a fact source)
-```
-
----
-
-## Quick Start
-
-### Prerequisites
-
-- Java 17
-- Gradle 8.8+ (or use `services/gateway/gradlew`)
-- Python 3.12+
-- Node.js 20+
-- SAP JCo 3 library files (for live SAP execution)
-- SAP On-Prem connectivity and credentials (for live smoke tests)
-- An OpenAI-compatible LLM endpoint and API key (for DSH Chat / harness-dsh; Rule mode and offline tests need neither)
-
-Fast tests do not require SAP connectivity or credentials.
-
-### Environment Setup
-
-```bash
-cp .env.example .env
-# Fill in SAP connection parameters; for DSH also set SAP_NEXUS_LLM_BASE_URL / SAP_NEXUS_LLM_API_KEY / SAP_NEXUS_LLM_MODEL
-```
-
-### Verification Baseline (as of 2026-09-13)
-
-```bash
-.venv/bin/python scripts/validate-registry-contract.py registry/capabilities.yaml
-.venv/bin/python -m pytest agent/tests
-PYTHONPATH=agent scripts/verify-agent-callplan-evidence.sh
-npm --prefix frontend run verify
-npm --prefix frontend run release-gate -- --profile all
-```
-
-Current baselines:
-
-- Registry contract validation: `Registry contract valid` (only 2 deprecation warnings)
-- Agent test suite: `1574 passed, 1 skipped, 2 xfailed`
-- Frontend suite: `579 passed` (64 test files); `verify` (typecheck + vitest + next build) all green
-- Call-plan Evals: inventory `7/7`, eval_harness_seed_cases `13/13`, PR `9/9`, matcher `23/23`, dry-run `3/3` (plus 1 documented structural pending), derived-parameter `3/3` (plus 2 parser-blocked pending cases with written cause analysis)
-- Offline release gate: `22/22` / `L3_ACTION_GOVERNED` reached 2026-08-19 (historical milestone)
-
-`PYTHONPATH=agent` verifies the current source tree directly.
-
-### Launch Services
-
-Terminal 1 — Gateway:
-
-```bash
-set -a; . ./.env; set +a
-cd services/gateway
-JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 \
-  /tmp/gradle-8.8/bin/gradle --no-daemon bootRun
-```
-
-Terminal 2 — OData microservice (required for the purchase-order capability):
-
-```bash
-cd services/odata-service
-PYTHONPATH=. python -m odata_service.server   # :8081
-```
-
-Terminal 3 — DSH Chat (recommended entry; requires an LLM key):
-
-```bash
-set -a; . ./.env; set +a
-SAP_NEXUS_AGENT_ROOT=$(pwd) \
-SAP_NEXUS_GATEWAY_URL=http://127.0.0.1:8080 \
-npm --prefix frontend run dev
-```
-
-Open `http://127.0.0.1:3000/chat` (the root path redirects there; the classic Workbench remains at `/workbench`).
-
-Optional — harness-dsh standalone CLI (separate terminal; the Next facade above must be running):
-
-```bash
-cd harness-dsh
-npm ci && npm run build
-cp .env.example .env      # OpenAI-compatible endpoint/key; SAP_NEXUS_FACADE_URL defaults to http://127.0.0.1:3000
-npm start -- "Does A100 have enough stock at plant 1000, and how much is in transit?"
-```
-
-Optional — Python Agent CLI (no harness; Rule mode needs no LLM key):
-
-```bash
-PYTHONPATH=agent .venv/bin/python -m sap_nexus_agent.cli \
-  "How much available stock does A100 have at 1000?" \
-  --gateway-url http://127.0.0.1:8080 --intent-mode rule
 ```
 
 ---
