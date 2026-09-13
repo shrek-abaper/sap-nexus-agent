@@ -1876,7 +1876,11 @@ pre {
 
 /* Main */
 .dsh-main { flex: 1; overflow-y: auto; }
+/* Geometric vertical centering of the welcome block. The empty
+   .dsh-messages is a grid item even with zero turns and used to skew the
+   content upward; hide it so place-items centers .dsh-empty alone. */
 .dsh-main--welcome { display: grid; place-items: center; overflow: hidden; }
+.dsh-main--welcome .dsh-messages { display: none; }
 .dsh-empty {
   width: 100%;
   max-width: 760px; margin: 0;
@@ -1991,6 +1995,28 @@ pre {
 .dsh-fact__evidence dt { color: var(--dsh-muted); font-family: var(--font-mono, ui-monospace, monospace); }
 .dsh-fact__evidence dd { margin: 0; font-family: var(--font-mono, ui-monospace, monospace); word-break: break-all; color: var(--dsh-ink-2); }
 .dsh-tool__limitations { margin: 0; padding: 4px 14px 12px; color: var(--dsh-muted); font-size: 12px; }
+.dsh-tool__args {
+  margin: 0; padding: 10px 14px 0; display: flex; flex-direction: column; gap: 4px;
+}
+.dsh-tool__arg { display: flex; gap: 8px; font-size: 12px; margin: 0; }
+.dsh-tool__arg dt { color: var(--dsh-muted); flex-shrink: 0; min-width: 56px; }
+.dsh-tool__arg dd { margin: 0; color: var(--dsh-ink-2); word-break: break-word; }
+.dsh-tool__narrative {
+  margin: 10px 14px 0; padding: 8px 10px; font-size: 12.5px; line-height: 1.6;
+  background: var(--dsh-bg); border: 1px solid var(--dsh-line); border-radius: var(--dsh-radius-sm);
+  white-space: pre-wrap;
+}
+.dsh-tool__raw { padding: 6px 14px 12px; }
+.dsh-tool__raw summary {
+  cursor: pointer; font-size: 11.5px; color: var(--dsh-muted); user-select: none;
+}
+.dsh-tool__raw summary:hover { color: var(--dsh-ink-2); }
+.dsh-tool__raw pre {
+  margin: 6px 0 0; padding: 10px; max-height: 320px; overflow: auto;
+  background: var(--dsh-bg); border: 1px solid var(--dsh-line); border-radius: var(--dsh-radius-sm);
+  font-family: var(--font-mono, ui-monospace, "SF Mono", Menlo, Consolas, monospace);
+  font-size: 11px; line-height: 1.5; white-space: pre; word-break: normal;
+}
 .dsh-tool__error {
   margin: 10px 14px; padding: 8px 12px; font-size: 12.5px;
   color: var(--dsh-danger); background: rgb(253, 235, 235); border-radius: var(--dsh-radius-sm);
@@ -2017,9 +2043,36 @@ pre {
 .dsh-btn--reject { background: var(--dsh-surface); color: var(--dsh-ink-2); border-color: var(--dsh-line-strong); }
 .dsh-btn--reject:hover { background: var(--dsh-surface-2); }
 .dsh-btn:disabled { opacity: .55; cursor: default; box-shadow: none; }
-.dsh-approval__state { font-size: 13px; font-weight: 600; color: var(--dsh-muted); }
+.dsh-approval__state { font-size: 13px; font-weight: 600; color: var(--dsh-muted); display: inline-flex; align-items: center; gap: 7px; }
+.dsh-approval__state .dsh-spinner { width: 12px; height: 12px; }
+.dsh-approval__state--executing { color: var(--dsh-muted); font-weight: 500; }
 .dsh-approval__state--approve { color: var(--dsh-success); }
 .dsh-approval__state--reject, .dsh-approval__state--expired { color: var(--dsh-danger); }
+
+/* SAP WRITE execution result streamed back after approval */
+.dsh-exec { margin-top: 12px; padding: 12px 14px; border-radius: var(--dsh-radius-sm); font-size: 13px; }
+.dsh-exec--success { background: rgb(237, 248, 239); border: 1px solid color-mix(in srgb, var(--dsh-success) 35%, transparent); }
+.dsh-exec--failed { background: rgb(253, 235, 235); border: 1px solid color-mix(in srgb, var(--dsh-danger) 35%, transparent); }
+.dsh-exec__title { font-weight: 600; margin-bottom: 6px; }
+.dsh-exec--success .dsh-exec__title { color: var(--dsh-success); }
+.dsh-exec--failed .dsh-exec__title { color: var(--dsh-danger); }
+.dsh-exec__pr { font-size: 14px; color: var(--dsh-ink); }
+.dsh-exec__pr-number {
+  font-family: var(--font-mono, ui-monospace, "SF Mono", Menlo, Consolas, monospace);
+  font-weight: 700; font-size: 16px; letter-spacing: .5px; color: var(--dsh-brand-hover);
+}
+.dsh-exec__commit { color: var(--dsh-muted); font-size: 12px; }
+.dsh-exec__error { color: var(--dsh-danger); margin: 4px 0; }
+.dsh-exec__messages { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.dsh-exec__msg { display: flex; gap: 8px; font-size: 12px; line-height: 1.5; color: var(--dsh-ink-2); }
+.dsh-exec__msg-type {
+  flex-shrink: 0; width: 18px; height: 18px; border-radius: 4px; display: grid; place-items: center;
+  font-size: 10px; font-weight: 700; background: var(--dsh-surface-2); color: var(--dsh-muted);
+}
+.dsh-exec__msg--s .dsh-exec__msg-type { background: color-mix(in srgb, var(--dsh-success) 18%, transparent); color: var(--dsh-success); }
+.dsh-exec__msg--w .dsh-exec__msg-type { background: rgb(252, 244, 224); color: var(--dsh-pending); }
+.dsh-exec__msg--e .dsh-exec__msg-type,
+.dsh-exec__msg--a .dsh-exec__msg-type { background: rgb(253, 235, 235); color: var(--dsh-danger); }
 
 /* Bottom composer (conversation) and centered composer (welcome) */
 .dsh-composer { padding: 8px 24px 22px; flex-shrink: 0; }
@@ -2073,7 +2126,7 @@ pre {
   border-top-color: var(--dsh-brand); border-radius: 50%;
   animation: dsh-spin .7s linear infinite; flex-shrink: 0;
 }
-.dsh-spinner--inline { margin-left: auto; width: 11px; height: 11px; }
+.dsh-spinner--inline { width: 11px; height: 11px; }
 @keyframes dsh-spin { to { transform: rotate(360deg); } }
 
 /* Collapsible thinking trace (legacy class kept) */

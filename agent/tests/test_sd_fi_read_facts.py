@@ -340,6 +340,128 @@ def test_list_routing_maps_each_capability_to_its_own_builder():
     assert _LIST_FACT_BUILDERS["FI.AP.GetOpenItems"] is build_ap_open_items_facts
 
 
+# ---------------------------------------------------------------------------
+# KEYDATE default: BAPI_AR/AP_ACC_GETOPENITEMS treats an initial KEYDATE as
+# key date 0000-00-00 (zero open items); FBL5N/FBL1N default to today. An
+# absent date must therefore be filled with today on every READ path.
+# ---------------------------------------------------------------------------
+
+
+class _FakeGateway:
+    def __init__(self, capability_id, rfc_name):
+        from sap_nexus_agent.execution_result import ValidationResult
+
+        self.validation = ValidationResult(
+            trace_id="gw-validate",
+            capability_id=capability_id,
+            success=True,
+            error_type="NONE",
+            messages=[],
+        )
+        self.execution = _execution(
+            capability_id,
+            rfc_name,
+            {"openItems": [_open_item_row()]},
+        )
+        self.validate_calls = []
+        self.execute_calls = []
+
+    def validate(self, capability_id, parameters):
+        self.validate_calls.append((capability_id, parameters))
+        return self.validation
+
+    def execute(self, capability_id, parameters, approval_id=None):
+        self.execute_calls.append((capability_id, parameters))
+        return self.execution
+
+
+def _resolve_read(utterance, capability_id):
+    from sap_nexus_agent.conversation_context import ConversationContext
+    from sap_nexus_agent.governed_context import PLACEHOLDER_PRINCIPAL
+    from sap_nexus_agent.intent import parse_intent
+    from sap_nexus_agent.orchestrator import (
+        _default_planner_sources,
+        resolve_read_turn,
+    )
+    from sap_nexus_agent.read_context import ConversationReadState
+
+    snapshot, sources = _default_planner_sources()
+    return resolve_read_turn(
+        utterance,
+        context=ConversationContext(
+            None, None, read_state=ConversationReadState(None, None, 0)
+        ),
+        intent_adapter=parse_intent,
+        principal=PLACEHOLDER_PRINCIPAL,
+        snapshot=snapshot,
+        sources=sources,
+        turn_id="turn-keydate",
+    )
+
+
+@pytest.mark.parametrize(
+    ("capability_id", "rfc_name", "utterance"),
+    [
+        (
+            "FI.AR.GetOpenItems",
+            "BAPI_AR_ACC_GETOPENITEMS",
+            "查客户 B21526 在公司代码 5200 的应收未清项",
+        ),
+        (
+            "FI.AP.GetOpenItems",
+            "BAPI_AP_ACC_GETOPENITEMS",
+            "查供应商 1000 在公司代码 1000 的应付",
+        ),
+    ],
+)
+def test_open_items_default_keydate_to_today_through_resolve_and_continue(
+    capability_id, rfc_name, utterance
+):
+    from datetime import date
+
+    from sap_nexus_agent.governed_context import PLACEHOLDER_PRINCIPAL
+    from sap_nexus_agent.orchestrator import (
+        _default_planner_sources,
+        continue_resolved_read,
+    )
+
+    resolved = _resolve_read(utterance, capability_id)
+
+    assert resolved.status == "resolved_read"
+    assert resolved.call_plan.parameters["keydate"] == date.today().isoformat()
+
+    snapshot, sources = _default_planner_sources()
+    gateway = _FakeGateway(capability_id, rfc_name)
+    outcome = continue_resolved_read(
+        resolved.call_plan,
+        resolved.read_execution_binding,
+        gateway,
+        persisted_state=resolved.read_state,
+        principal=PLACEHOLDER_PRINCIPAL,
+        snapshot=snapshot,
+        sources=sources,
+    )
+
+    assert outcome.status == "success"
+    for calls in (gateway.validate_calls, gateway.execute_calls):
+        assert calls == [(capability_id, resolved.call_plan.parameters)]
+        assert calls[0][1]["keydate"] == date.today().isoformat()
+
+
+def test_explicit_keydate_is_not_replaced_by_today_default():
+    from sap_nexus_agent.orchestrator import run_query
+
+    gateway = _FakeGateway("FI.AR.GetOpenItems", "BAPI_AR_ACC_GETOPENITEMS")
+    outcome = run_query(
+        "查客户 B21526 在公司代码 5200 的应收未清项 2026-08-01",
+        gateway,
+    )
+
+    assert outcome.status == "success"
+    assert outcome.call_plan.parameters["keydate"] == "2026-08-01"
+    assert gateway.execute_calls[0][1]["keydate"] == "2026-08-01"
+
+
 def test_unregistered_list_capability_fails_closed():
     from sap_nexus_agent.call_plan import CallPlan
     from sap_nexus_agent.orchestrator import _build_list_facts

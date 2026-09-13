@@ -190,3 +190,42 @@ function evidenceTaskFact(
 ): AgentRunEvent {
   return evidenceEvent("fact_emitted", "fact_created", ref, { factId: ref.slice(5), ...data }, sequence);
 }
+
+describe("replenishment proposal with deterministic gap", () => {
+  it("keeps the supply fact and gap-basis narrative while awaiting approval", () => {
+    const events: AgentRunEvent[] = [
+      { ...baseEvent, type: "run_started", state: "running", sequence: 1 },
+      evidenceTaskFact("fact:stock-1", 2, {
+        factId: "fact-stock-1", value: 5, unit: "EA", material: "P1", plant: "5260",
+      }),
+      evidenceEvent("narrative_created", "narrated", "narrative:gap", {
+        text: "目标需求量：10 EA\n当前可用库存：2 EA\n在途采购订单：3 EA\n缺口：5 EA",
+      }, 3),
+      { ...baseEvent, type: "run_completed", state: "awaiting_approval", sequence: 4 },
+    ];
+
+    const response = mapDiagnoseEvents(events, "run-1", "propose_replenishment");
+    expect(response.status).toBe("awaiting_approval");
+    expect(response.facts).toHaveLength(1);
+    expect(response.facts[0]).toMatchObject({ value: 5, material: "P1" });
+    expect(response.narrative.summary).toContain("缺口：5 EA");
+  });
+
+  it("reports a zero-gap run as complete with supply facts and no approval", () => {
+    const events: AgentRunEvent[] = [
+      { ...baseEvent, type: "run_started", state: "running", sequence: 1 },
+      evidenceTaskFact("fact:stock-2", 2, {
+        factId: "fact-stock-2", value: 17, unit: "EA", material: "P2", plant: "5260",
+      }),
+      evidenceEvent("narrative_created", "narrated", "narrative:sufficient", {
+        text: "供应合计：17 EA，供应已覆盖目标需求，缺口为 0，无需补货。",
+      }, 3),
+      { ...baseEvent, type: "run_completed", state: "completed", sequence: 4 },
+    ];
+
+    const response = mapDiagnoseEvents(events, "run-1");
+    expect(response.status).toBe("complete");
+    expect(response.approval).toBeUndefined();
+    expect(response.narrative.summary).toContain("无需补货");
+  });
+});

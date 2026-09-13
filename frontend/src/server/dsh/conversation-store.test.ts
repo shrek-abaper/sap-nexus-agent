@@ -26,6 +26,7 @@ describe("dshConversationStore", () => {
       conversationId: "conv-b",
       userText: "第二个会话",
       assistantText: "好的",
+      assistantReasoning: "先判断意图为应收未清，再调用客户敞口工具",
     });
 
     const list = dshConversationStore.list();
@@ -41,6 +42,13 @@ describe("dshConversationStore", () => {
     expect(conversation?.messages.map((message) => message.role)).toEqual(["user", "assistant"]);
     expect(conversation?.messages[1].text).toBe("可用 10 EA");
     expect(conversation?.messages[1].toolCalls).toHaveLength(1);
+  });
+
+  it("replays the persisted reasoning trace alongside the answer", () => {
+    // conv-b stored an assistantReasoning; conv-a stored none.
+    expect(dshConversationStore.get("conv-b")?.messages[1].reasoning)
+      .toBe("先判断意图为应收未清，再调用客户敞口工具");
+    expect(dshConversationStore.get("conv-a")?.messages[1].reasoning).toBeUndefined();
   });
 
   it("returns null for an unknown conversation", () => {

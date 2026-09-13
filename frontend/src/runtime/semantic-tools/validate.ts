@@ -207,6 +207,25 @@ export function buildToolQuery(request: SemanticToolRequest): string {
   add("采购组", slots.purchasingGroup);
   add("模块", request.context?.module);
   add("时间", request.context?.periodHint);
+  // WRITE: render a fully deterministic query from the validated slots
+  // instead of forwarding the raw utterance. The user's own wording ("已有
+  // 库存1件和采购申请3件，缺口6件，请生成补货建议") otherwise double-triggers
+  // READ capabilities (inventory/PO) and tempt the LLM to take the gap/on-hand
+  // number instead of requiredQuantity. Slots are the authoritative values.
+  if (request.tool === PROPOSE_REPLENISHMENT) {
+    const slots = request.slots ?? {};
+    const writeHints: string[] = [];
+    const add = (label: string, value: unknown) => {
+      if (value !== undefined && value !== null && String(value) !== "") writeHints.push(`${label}: ${String(value)}`);
+    };
+    add("物料", slots.material);
+    add("工厂", slots.plant);
+    if (slots.requiredQuantity !== undefined) add("需求量", `${slots.requiredQuantity} EA`);
+    add("目标交货日期", slots.targetDate);
+    add("采购组", slots.purchasingGroup);
+    return `请创建采购申请（PR）草稿，提交人工审批：\n[已知条件] ${writeHints.join("；")}`;
+  }
+
   return hints.length === 0
     ? request.utterance
     : `${request.utterance}\n[已知条件] ${hints.join("；")}`;

@@ -1,0 +1,8 @@
+{"sequence":1,"timestamp":"2026-09-13T10:31:14.752Z","type":"prepared"}
+{"sequence":2,"timestamp":"2026-09-13T10:31:16.402Z","type":"operation-started","operationId":"spec-1-dsh-replenishment-gap"}
+{"sequence":3,"timestamp":"2026-09-13T10:31:16.528Z","type":"operation-completed","operationId":"spec-1-dsh-replenishment-gap"}
+{"sequence":4,"timestamp":"2026-09-13T10:31:17.829Z","type":"operation-started","operationId":"archive-change"}
+{"sequence":5,"timestamp":"2026-09-13T10:31:18.117Z","type":"operation-completed","operationId":"archive-change"}
+{"sequence":6,"timestamp":"2026-09-13T10:31:18.267Z","type":"archive-finalization-started"}
+{"sequence":7,"timestamp":"2026-09-13T10:31:18.329Z","type":"archive-finalized"}
+{"sequence":8,"timestamp":"2026-09-13T10:31:18.363Z","type":"commit"}

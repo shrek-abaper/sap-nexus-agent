@@ -6,7 +6,7 @@ import json
 import os
 import re
 from dataclasses import dataclass, replace
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Callable, Mapping
 
@@ -69,12 +69,31 @@ from sap_nexus_agent.governed_context import (
 
 
 INVENTORY_CAPABILITY_ID = "MM.Inventory.GetAvailability"
+# BAPI_AR/AP_ACC_GETOPENITEMS treat an initial KEYDATE as key date 0000-00-00
+# (nothing has been posted yet -> empty), unlike FBL5N/FBL1N which default the
+# key date to today. Both read paths and the preflight slot-equality check must
+# fill "today" when the caller did not name a date.
+OPEN_ITEMS_CAPABILITY_IDS = frozenset({"FI.AR.GetOpenItems", "FI.AP.GetOpenItems"})
 PR_CREATE_CAPABILITY_ID = "MM.PR.CreateDraft"
 # Action capabilities require human approval before Gateway execute.
 ACTION_CAPABILITY_IDS = frozenset({PR_CREATE_CAPABILITY_ID})
 # Soft cap for multi-value combination expansion (Design Doc §4.4). Exceeding
 # this emits CLARIFY instead of awaiting_batch_confirm.
 BATCH_COMBINATION_CAP = 20
+
+
+def _apply_capability_defaults(capability_id: str, parameters: dict[str, str]) -> None:
+    """Fill business defaults the caller did not state.
+
+    Inventory availability defaults its unit to EA; the AR/AP open-item BAPIs
+    interpret an initial KEYDATE as key date 0000-00-00 and return zero rows,
+    while FBL5N/FBL1N default the key date to today. An explicitly resolved
+    value always wins (setdefault).
+    """
+    if capability_id == INVENTORY_CAPABILITY_ID:
+        parameters.setdefault("unit", "EA")
+    if capability_id in OPEN_ITEMS_CAPABILITY_IDS:
+        parameters.setdefault("keydate", date.today().isoformat())
 
 
 @dataclass(frozen=True)
@@ -393,6 +412,21 @@ def continue_resolved_selection(
             gateway_trace_id=validation.trace_id,
             error_type=validation.error_type,
         )
+    # Replenishment proposals carry the deterministic supply gap, not the
+    # target requirement; read live supply and rebuild the plan/approval with
+    # the gap quantity. The binding above still vouches for the immutable
+    # SELECT decision; the quantity is recomputed server-side deterministically.
+    replenishment_facts: list[ReasoningFact] = []
+    replenishment_basis = ""
+    if call_plan.capability_id == PR_CREATE_CAPABILITY_ID:
+        preparation = _prepare_replenishment_gap(call_plan, validation, gateway)
+        if preparation.terminal_outcome is not None:
+            return preparation.terminal_outcome
+        call_plan = preparation.call_plan
+        validation = preparation.validation
+        replenishment_facts = preparation.evidence_facts
+        replenishment_basis = preparation.basis_text
+
     approval = create_approval_record(
         capability_id=call_plan.capability_id,
         parameters=call_plan.parameters,
@@ -401,11 +435,16 @@ def continue_resolved_selection(
     return AgentOutcome(
         status="awaiting_approval",
         message="采购申请参数已就绪，等待人工审批。",
-        response_text="请确认采购申请参数后批准或拒绝。",
+        response_text=(
+            f"{replenishment_basis}\n请确认以上缺口补货参数后，在审批卡片上批准或拒绝。"
+            if replenishment_basis
+            else "请确认采购申请参数后批准或拒绝。"
+        ),
         call_plan=call_plan,
         validation_result=validation,
         gateway_trace_id=validation.trace_id,
         approval_record=approval,
+        facts=replenishment_facts or None,
     )
 
 
@@ -502,8 +541,7 @@ def _valid_current_read_authority(
         for name, slot in frame.slots.items()
         if name in input_names and slot.state == "RESOLVED" and slot.value is not None
     }
-    if call_plan.capability_id == INVENTORY_CAPABILITY_ID:
-        expected_parameters.setdefault("unit", "EA")
+    _apply_capability_defaults(call_plan.capability_id, expected_parameters)
     return (
         required_names.issubset(expected_parameters)
         and set(call_plan.parameters).issubset(input_names)
@@ -758,8 +796,7 @@ def _resolve_authoritative_read(
     multi_parameters = getattr(parsed, "multi_parameters", {}) or {}
     if decision.decision_type == "SELECT" and decision_result.call_plan_parameters is not None:
         parameters = dict(decision_result.call_plan_parameters)
-        if capability_id == INVENTORY_CAPABILITY_ID:
-            parameters.setdefault("unit", "EA")
+        _apply_capability_defaults(capability_id, parameters)
         call_plan = create_call_plan(capability_id, parameters, kind="Function")
         if multi_parameters:
             combinations = expand_combinations(parameters, multi_parameters)
@@ -1173,6 +1210,131 @@ def _parse_expiry(value: str) -> datetime:
         return datetime.min.replace(tzinfo=UTC)
 
 
+@dataclass(frozen=True)
+class _ReplenishmentPreparation:
+    call_plan: CallPlan
+    evidence_facts: list[ReasoningFact]
+    basis_text: str
+    terminal_outcome: AgentOutcome | None
+    validation: ValidationResult
+
+
+def _prepare_replenishment_gap(
+    call_plan: CallPlan,
+    validation: ValidationResult,
+    gateway: GatewayClientProtocol,
+) -> _ReplenishmentPreparation:
+    """READ live supply, compute the deterministic gap, rebuild the PR plan.
+
+    Returns a terminal outcome (no approval) when supply is sufficient, the
+    READ fails, or the fact is unusable (fail-closed). Otherwise returns the
+    plan rebuilt with the gap quantity plus the stock evidence fact.
+    """
+    from sap_nexus_agent.replenishment import compute_replenishment_gap, render_gap_basis
+
+    parameters = call_plan.parameters
+    material = parameters.get("material", "")
+    plant = parameters.get("plant", "")
+    target_date = parameters.get("delivery_date", "")
+    unit = parameters.get("unit") or "EA"
+
+    read_params = {"material": material, "plant": plant, "unit": unit}
+    read_execution = gateway.execute(INVENTORY_CAPABILITY_ID, read_params)
+    if not read_execution.success:
+        messages = [_message_text(m) for m in read_execution.return_messages]
+        return _ReplenishmentPreparation(
+            call_plan,
+            [],
+            "",
+            AgentOutcome(
+                status="failure",
+                message="补货缺口计算所需的库存/在途事实读取失败",
+                response_text=narrate_failure(read_execution.error_type, messages),
+                call_plan=call_plan,
+                validation_result=validation,
+                execution_result=read_execution,
+                gateway_trace_id=read_execution.trace_id,
+                error_type=read_execution.error_type,
+            ),
+            validation,
+        )
+
+    fact = build_availability_fact(call_plan.agent_trace_id, read_execution, read_params)
+    fact_unit = str(read_execution.data.get("unit") or "") if isinstance(read_execution.data, Mapping) else ""
+    calc = compute_replenishment_gap(
+        required_quantity=parameters.get("quantity", ""),
+        target_date=target_date,
+        availability_data=read_execution.data if isinstance(read_execution.data, Mapping) else {},
+        unit=unit,
+    )
+    if calc is None or fact is None:
+        return _ReplenishmentPreparation(
+            call_plan,
+            [],
+            "",
+            AgentOutcome(
+                status="failure",
+                message="库存事实缺少可用量，无法计算补货缺口",
+                response_text="未能获取可用于计算缺口的库存/在途事实，已停止生成提案，请检查物料与工厂。",
+                call_plan=call_plan,
+                validation_result=validation,
+                execution_result=read_execution,
+                gateway_trace_id=read_execution.trace_id,
+                error_type="REPLENISHMENT_FACT_INVALID",
+            ),
+            validation,
+        )
+
+    # Unit conflict is fail-closed (no unit conversion in this version).
+    if fact_unit and fact_unit != unit:
+        return _ReplenishmentPreparation(
+            call_plan,
+            [],
+            "",
+            AgentOutcome(
+                status="failure",
+                message="库存事实单位与补货单位不一致",
+                response_text=f"库存单位为 {fact_unit}，提案单位为 {unit}，无法自动计算缺口，已停止生成提案。",
+                call_plan=call_plan,
+                validation_result=validation,
+                execution_result=read_execution,
+                gateway_trace_id=read_execution.trace_id,
+                error_type="REPLENISHMENT_UNIT_MISMATCH",
+            ),
+            validation,
+        )
+
+    sufficient = calc.gap <= 0
+    basis = render_gap_basis(calc, sufficient=sufficient)
+    if sufficient:
+        return _ReplenishmentPreparation(
+            call_plan,
+            [fact],
+            basis,
+            AgentOutcome(
+                status="success",
+                message="目标日期前供应充足，无需补货",
+                response_text=f"目标日期 {target_date} 前供应已覆盖目标需求，未生成采购申请提案。\n{basis}",
+                call_plan=call_plan,
+                validation_result=validation,
+                gateway_trace_id=read_execution.trace_id,
+                # The stock fact already carries the READ evidence; no WRITE
+                # execute event must be projected for a no-proposal outcome.
+                facts=[fact],
+            ),
+            validation,
+        )
+
+    gap_parameters = dict(parameters)
+    gap_parameters["quantity"] = calc.gap_quantity
+    gap_parameters["unit"] = unit
+    gap_plan = create_call_plan(call_plan.capability_id, gap_parameters, kind="Action")
+    # No second validate() here: the original validation passed for the same
+    # parameter shape, gap <= required quantity, and continue_action validates
+    # the gap plan again immediately before any SAP execution.
+    return _ReplenishmentPreparation(gap_plan, [fact], basis, None, validation)
+
+
 def run_query(
     text: str,
     gateway: GatewayClientProtocol,
@@ -1485,8 +1647,7 @@ def run_query(
         parameters = dict(decision.parameters or {})
     else:
         parameters = dict(decision.parameters or parsed.parameters)
-    if capability_id == INVENTORY_CAPABILITY_ID:
-        parameters.setdefault("unit", "EA")
+    _apply_capability_defaults(capability_id, parameters)
 
     # Kind from snapshot projection (Design Doc D6): use
     # governance.requires_approval from the visible CapabilityCard,
@@ -1552,6 +1713,21 @@ def run_query(
             context_shadow=context_shadow,
         )
 
+    # Replenishment WRITE: the proposal quantity must be the deterministic
+    # supply gap (target requirement - stock - in-transit PR/PO due by target),
+    # not the user's target requirement. Read live supply facts first; on a
+    # zero gap return supply-sufficient without an approval; failures close.
+    replenishment_facts: list[ReasoningFact] = []
+    replenishment_basis = ""
+    if call_plan.capability_id == PR_CREATE_CAPABILITY_ID:
+        preparation = _prepare_replenishment_gap(call_plan, validation, gateway)
+        if preparation.terminal_outcome is not None:
+            return preparation.terminal_outcome
+        call_plan = preparation.call_plan
+        validation = preparation.validation
+        replenishment_facts = preparation.evidence_facts
+        replenishment_basis = preparation.basis_text
+
     is_action = call_plan.kind == "Action"
     if is_action:
         pending = create_approval_record(
@@ -1559,14 +1735,20 @@ def run_query(
             parameters=call_plan.parameters,
             approver="user",
         )
+        approval_text = (
+            f"{replenishment_basis}\n请确认以上缺口补货参数后，在审批卡片上批准或拒绝。"
+            if replenishment_basis
+            else "请确认采购申请参数后批准或拒绝。"
+        )
         return AgentOutcome(
             status="awaiting_approval",
             message="采购申请参数已就绪，等待人工审批。",
-            response_text="请确认采购申请参数后批准或拒绝。",
+            response_text=approval_text,
             call_plan=call_plan,
             validation_result=validation,
             gateway_trace_id=validation.trace_id,
             approval_record=pending,
+            facts=replenishment_facts or None,
             match_decision=decision,
             updated_context=_clear_pending_if_present(context),
             context_shadow=context_shadow,

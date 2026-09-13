@@ -65,9 +65,13 @@ export function DshChat() {
     try {
       const response = await fetch(`/api/dsh/conversations/${encodeURIComponent(id)}`);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const body = await response.json() as { messages?: Array<ChatMessage & { ts?: number }> };
-      const history = (body.messages ?? []).map(({ ts: _ts, ...message }) => ({
+      const body = await response.json() as {
+        messages?: Array<ChatMessage & { ts?: number; reasoning?: string }>;
+      };
+      const history = (body.messages ?? []).map(({ ts: _ts, reasoning, ...message }) => ({
         ...message,
+        // Replay the persisted chain of thought in the collapsed trace panel.
+        trace: reasoning ?? "",
         pending: false,
         settled: true,
       }));
@@ -334,20 +338,29 @@ export function DshChat() {
             const tools = message.toolCalls ?? message.liveTools ?? [];
             const streaming = !message.settled;
             const anyRunning = message.liveTools?.some((tool) => tool.status === "running") ?? false;
+            // An undecided WRITE proposal must keep its approve/reject buttons
+            // reachable: the trace panel otherwise collapses on settle and the
+            // only action channel gets hidden.
+            const hasPendingApproval = tools.some((tool) => tool.status === "awaiting_approval");
 
             // Assistant reasoning trace: expanded while the turn runs
             // (thinking text streams in + tool calls), collapsed after settle.
             const showTracePanel = message.role === "assistant"
               && ((message.trace && message.trace.length > 0) || tools.length > 0);
-            const traceLabel = tools.some((tool) => tool.status === "running" || tool.status === "awaiting_approval")
-              ? "正在调用工具…"
-              : streaming ? "DeepSeek 思考中…" : "思考过程与工具调用";
+            const traceLabel = hasPendingApproval
+              ? "补货提案 · 待审批"
+              : anyRunning
+                ? "正在调用工具…"
+                : streaming ? "DeepSeek 思考中…" : "思考过程与工具调用";
             const waitingForAnswer = message.role === "assistant" && message.pending && !message.answerTrace;
 
             return (
               <div key={message.id} data-msg-id={message.id} className={`dsh-message dsh-message--${message.role}`}>
                 {showTracePanel ? (
-                  <details className={`dsh-trace${streaming ? " dsh-trace--open" : ""}`} open={streaming}>
+                  <details
+                    className={`dsh-trace${streaming || hasPendingApproval ? " dsh-trace--open" : ""}`}
+                    open={streaming || hasPendingApproval}
+                  >
                     <summary>
                       {streaming || anyRunning ? <span className="dsh-spinner dsh-spinner--inline" /> : null}
                       {traceLabel}

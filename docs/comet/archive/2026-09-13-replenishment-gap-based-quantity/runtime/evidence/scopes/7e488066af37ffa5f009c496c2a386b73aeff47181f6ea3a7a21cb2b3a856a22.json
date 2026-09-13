@@ -1,0 +1,284 @@
+{
+  "schema": "comet.native.implementation-scope.v2",
+  "contractHash": "363042b468b4a32c349dcd2f032ac43b8271825e6d84c6f9b8fac9e5f5a297a6",
+  "baselineProjectionRef": "runtime/evidence/snapshots/5b5c54f07d1263362a33024606594eab48aefa48d6910fb2bbc5e5c9d3a60930.json",
+  "baselineProjectionHash": "5b5c54f07d1263362a33024606594eab48aefa48d6910fb2bbc5e5c9d3a60930",
+  "currentProjectionRef": "runtime/evidence/snapshots/29c56af8696cc72b4905086bdd64f7be2a52ad0212b3947280a7fe68efefba43.json",
+  "currentProjectionHash": "29c56af8696cc72b4905086bdd64f7be2a52ad0212b3947280a7fe68efefba43",
+  "complete": true,
+  "declaredArtifacts": [
+    {
+      "path": "agent/sap_nexus_agent/eval.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/sap_nexus_agent/orchestrator.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/sap_nexus_agent/replenishment.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_cli_approval.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_orchestrator.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_orchestrator_write.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_replenishment_gap.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_replenishment_orchestration.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_sd_fi_read_facts.py",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/app/api/dsh/conversations/[id]/messages/stream/route.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/app/globals.css",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/modules/dsh-chat/DshChat.tsx",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/modules/dsh-chat/ToolCallCard.tsx",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/modules/dsh-chat/approval-execution.test.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/modules/dsh-chat/approval-execution.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/runtime/agent-runtime-adapter.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/runtime/semantic-tools/execute-tool.test.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/runtime/semantic-tools/execute-tool.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/runtime/semantic-tools/map-events.test.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/runtime/semantic-tools/validate.test.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/runtime/semantic-tools/validate.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/server/dsh/conversation-store.test.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/server/dsh/conversation-store.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/server/dsh/runtime.ts",
+      "kind": "file"
+    }
+  ],
+  "changes": [
+    {
+      "path": "agent/sap_nexus_agent/eval.py",
+      "kind": "modified",
+      "before": {
+        "hash": "f4c44c492475919606461abafe0d12ed1d0230772c1ad534c138cc2a59f20d06",
+        "size": 45583
+      },
+      "after": {
+        "hash": "c7e2ac04c7e802932065811497ed1a3f018059c1ee076d0721f62668a4eae3cb",
+        "size": 48377
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/eval.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/sap_nexus_agent/orchestrator.py",
+      "kind": "modified",
+      "before": {
+        "hash": "a2d905bcd84dc7a288419bdf62d5f82282da4d4a2ab2399b503ad5d5f44325b6",
+        "size": 85556
+      },
+      "after": {
+        "hash": "1b7398475d69497707a3fce9c80bcd6fc11c2dfb9893afc45ee4b38ee77e0fd1",
+        "size": 92878
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/orchestrator.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/sap_nexus_agent/replenishment.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "b1361879823b9a0a722f9bbd755ddc24e2ab923f09b2896d8881769de5211411",
+        "size": 5884
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/replenishment.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_cli_approval.py",
+      "kind": "modified",
+      "before": {
+        "hash": "06e94445e352c54652ceee0de4596951d8748e6cac0aee6771e9b56013a7242e",
+        "size": 4029
+      },
+      "after": {
+        "hash": "f95ba2bf47e969f989e24366fad17bc9cdaddc24c87ab27636c9341adfd46b59",
+        "size": 4924
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_cli_approval.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_orchestrator.py",
+      "kind": "modified",
+      "before": {
+        "hash": "023fbc5ff783250c8d3f49bf939e07b6f4d61b1cba6805b72412864b69af6c9e",
+        "size": 154433
+      },
+      "after": {
+        "hash": "d33300e4055f46ce4733d0cff74b8f62849927fce2e1cffdb1b7ba2cd470de79",
+        "size": 157154
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_orchestrator.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_orchestrator_write.py",
+      "kind": "modified",
+      "before": {
+        "hash": "0e59db526f812a9692d877f97dc8b724327968fb5eb0b611aab5273ddefef6f9",
+        "size": 15962
+      },
+      "after": {
+        "hash": "545d39b694ae8b20ed4609c6ccf4371cd48374fcfced7c198752130a52a3acbd",
+        "size": 18121
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_orchestrator_write.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_replenishment_gap.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "39714716555cda299d90e2dfd689303cb9e443b963405bfa02c6db3247ac762f",
+        "size": 3831
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_replenishment_gap.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_replenishment_orchestration.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "d249980325d17c79793116a991d4e057d867bc5079f180a0bd00f9551033dacd",
+        "size": 5303
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_replenishment_orchestration.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/agent-runtime-adapter.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "10e7190a35ff71798326a9284c3d61dfef909b4dab9cbd7ada94a70919323db1",
+        "size": 67879
+      },
+      "after": {
+        "hash": "c8b4ec67c1e191aa8aa5245018a46a0d4ffd5350749c59734cb254dda085f173",
+        "size": 68886
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/agent-runtime-adapter.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/semantic-tools/map-events.test.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "93a46c2b95b5696ff84c06811a9596fb95beb03bbbe6988759644cc8a42af111",
+        "size": 7672
+      },
+      "after": {
+        "hash": "5dc0769e695c80436ca47e336b2ca1df5ad76fec345b08dde199c7c38de74cac",
+        "size": 9544
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/semantic-tools/map-events.test.ts",
+          "kind": "file"
+        }
+      ]
+    }
+  ],
+  "unattributed": [],
+  "unresolvedScopes": [],
+  "noCodeReason": null,
+  "scopeHash": "7e488066af37ffa5f009c496c2a386b73aeff47181f6ea3a7a21cb2b3a856a22"
+}

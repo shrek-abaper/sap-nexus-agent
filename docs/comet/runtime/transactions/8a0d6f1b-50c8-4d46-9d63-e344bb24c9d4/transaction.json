@@ -1,0 +1,27 @@
+{
+  "schema": "comet.native.transaction.v2",
+  "id": "8a0d6f1b-50c8-4d46-9d63-e344bb24c9d4",
+  "kind": "archive",
+  "status": "committed",
+  "change": "replenishment-gap-based-quantity",
+  "createdAt": "2026-09-13T10:31:13.006Z",
+  "preflightHash": "f4f15bd2f7e31ced252bdf3e6100a590135c661e095208532db4829047204609",
+  "operations": [
+    {
+      "id": "spec-1-dsh-replenishment-gap",
+      "type": "write",
+      "target": "specs/dsh-replenishment-gap/spec.md",
+      "staged": "runtime/transactions/8a0d6f1b-50c8-4d46-9d63-e344bb24c9d4/staged/specs/dsh-replenishment-gap/spec.md",
+      "expectedTargetHash": null,
+      "stagedHash": "7489ffd8d0effbd2544002a6a616c3e7e0f17ae9e9948b29f9c15f31dae63855"
+    },
+    {
+      "id": "archive-change",
+      "type": "move",
+      "source": "changes/replenishment-gap-based-quantity",
+      "target": "archive/2026-09-13-replenishment-gap-based-quantity",
+      "expectedSourceHash": "9177b466e2a9c106ef3961e75a7dc21f36e540bff215b6a0891f62852a4082a8",
+      "expectedTargetHash": null
+    }
+  ]
+}

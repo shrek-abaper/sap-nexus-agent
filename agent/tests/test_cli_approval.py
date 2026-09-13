@@ -38,6 +38,23 @@ class StubGateway:
         self.execute_calls.append(
             (capability_id, dict(parameters), approval_id, parameter_snapshot_hash)
         )
+        if capability_id == "MM.Inventory.GetAvailability":
+            return ExecutionResult(
+                trace_id="trace-inventory",
+                capability_id=capability_id,
+                success=True,
+                executor={"type": "JCO_RFC", "rfcName": "BAPI_MATERIAL_STOCK_REQ_LIST"},
+                return_messages=[],
+                data={
+                    "availableQuantity": 0,
+                    "unit": "EA",
+                    "mrpElementLines": [
+                        {"mrpElementInd": "WB", "availQty1": 0, "date": "2026-01-01"}
+                    ],
+                },
+                duration_ms=1,
+                error_type="NONE",
+            )
         return ExecutionResult.from_dict({
             "traceId": "trace-execute",
             "capabilityId": capability_id,
@@ -135,4 +152,6 @@ def test_cli_treats_pending_action_as_successful_handoff(monkeypatch, capsys):
     payload = json.loads(capsys.readouterr().out)
     assert result == 0
     assert payload["status"] == "awaiting_approval"
-    assert gateway.execute_calls == []
+    # Pre-approval only the deterministic gap READ is allowed; no WRITE.
+    assert [c[0] for c in gateway.execute_calls if c[0] == "MM.PR.CreateDraft"] == []
+    assert [c[0] for c in gateway.execute_calls] == ["MM.Inventory.GetAvailability"]

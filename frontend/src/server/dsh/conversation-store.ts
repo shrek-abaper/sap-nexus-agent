@@ -18,6 +18,8 @@ export type StoredMessage = {
   id: string;
   role: "user" | "assistant";
   text: string;
+  /** Full pre-tool reasoning trace, retained so history replays the chain. */
+  reasoning?: string;
   toolCalls?: StoredToolCall[];
   error?: string;
   ts: number;
@@ -98,6 +100,7 @@ export const dshConversationStore = {
     conversationId: string;
     userText: string;
     assistantText: string;
+    assistantReasoning?: string;
     assistantToolCalls?: StoredToolCall[];
     assistantError?: string;
   }): Promise<void> {
@@ -129,6 +132,7 @@ export const dshConversationStore = {
       id: `a-${now}`,
       role: "assistant",
       text: input.assistantText,
+      ...(input.assistantReasoning ? { reasoning: input.assistantReasoning } : {}),
       ...(input.assistantToolCalls ? { toolCalls: input.assistantToolCalls } : {}),
       ...(input.assistantError ? { error: input.assistantError } : {}),
       ts: now + 1,

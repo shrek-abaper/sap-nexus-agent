@@ -1463,6 +1463,31 @@ async function emitEventsFromOutcome(
 
   if (isAction && outcome.status === "awaiting_approval") {
     const approvalRecord = objectOrNull(outcome.approvalRecord);
+    // Replenishment proposals carry the supply READ facts and the
+    // deterministic gap-basis narrative; emit them before the terminal
+    // awaiting_approval state so the semantic tool can render the calculation.
+    const proposalFacts = Array.isArray(outcome.facts) ? outcome.facts.filter((item): item is Record<string, unknown> => objectOrNull(item) !== null) : [];
+    for (const item of proposalFacts) {
+      await push({
+        type: "reasoning_fact_created",
+        state: "fact_created",
+        capabilityId,
+        agentTraceId,
+        gatewayTraceId,
+        artifact: redactArtifact({ label: "ReasoningFact", kind: "reasoning-fact", payload: toJsonValue(item) })
+      });
+    }
+    if (outcome.responseText) {
+      await push({
+        type: "narrative_created",
+        state: "narrated",
+        artifact: redactArtifact({
+          label: "Chinese Narrative",
+          kind: "narrative",
+          payload: toJsonValue({ text: outcome.responseText })
+        })
+      });
+    }
     await push({
       type: "approval_state_changed",
       state: "awaiting_approval",

@@ -13,8 +13,20 @@ from sap_nexus_agent.governed_context import PLACEHOLDER_PRINCIPAL, TrustedPrinc
 from sap_nexus_agent.read_context import ConversationReadState
 
 
+def _gap_inventory_data(*, stock=2, in_transit=3, transit_date="2026-07-01"):
+    """Availability MRP lines that leave a positive gap vs a 10 EA requirement."""
+    return {
+        "availableQuantity": stock + in_transit,
+        "unit": "EA",
+        "mrpElementLines": [
+            {"mrpElementInd": "WB", "availQty1": stock, "date": "2026-01-01"},
+            {"mrpElementInd": "BE", "availQty1": in_transit, "date": transit_date},
+        ],
+    }
+
+
 class FakeGatewayClient:
-    def __init__(self, validation=None, execution=None):
+    def __init__(self, validation=None, execution=None, inventory_data=None, inventory_fails=False):
         self.validation = validation or ValidationResult(
             trace_id="gw-validate-1",
             capability_id="MM.Inventory.GetAvailability",
@@ -32,17 +44,52 @@ class FakeGatewayClient:
             duration_ms=10,
             error_type="NONE",
         )
+        # WRITE proposals READ inventory first; tests opt in to supply facts.
+        self.inventory_data = inventory_data
+        self.inventory_fails = inventory_fails
         self.validate_calls = []
         self.execute_calls = []
 
     def validate(self, capability_id, parameters):
         self.validate_calls.append((capability_id, parameters))
         assert "rfcName" not in parameters
+        if capability_id == "MM.PR.CreateDraft":
+            return ValidationResult(
+                trace_id=f"gw-validate-pr-{len(self.validate_calls)}",
+                capability_id=capability_id,
+                success=True,
+                error_type="NONE",
+                messages=[],
+            )
         return self.validation
 
     def execute(self, capability_id, parameters, approval_id=None):
         self.execute_calls.append((capability_id, parameters))
         assert "rfcName" not in parameters
+        if capability_id == "MM.Inventory.GetAvailability" and (
+            self.inventory_data is not None or self.inventory_fails
+        ):
+            if self.inventory_fails:
+                return ExecutionResult(
+                    trace_id="gw-inventory-fail",
+                    capability_id=capability_id,
+                    success=False,
+                    executor={"type": "JCO_RFC", "rfcName": "BAPI_MATERIAL_STOCK_REQ_LIST"},
+                    return_messages=[],
+                    data={},
+                    duration_ms=1,
+                    error_type="SAP_BUSINESS_ERROR",
+                )
+            return ExecutionResult(
+                trace_id="gw-inventory-gap",
+                capability_id=capability_id,
+                success=True,
+                executor={"type": "JCO_RFC", "rfcName": "BAPI_MATERIAL_STOCK_REQ_LIST"},
+                return_messages=[],
+                data=self.inventory_data,
+                duration_ms=1,
+                error_type="NONE",
+            )
         return self.execution
 
 
@@ -960,7 +1007,8 @@ def test_non_read_selection_is_parsed_once_and_preserves_write_approval():
             success=True,
             error_type="NONE",
             messages=[],
-        )
+        ),
+        inventory_data=_gap_inventory_data(),
     )
 
     assert resolved.status == "resolved_selection"
@@ -982,8 +1030,10 @@ def test_non_read_selection_is_parsed_once_and_preserves_write_approval():
     assert calls == 1
     assert outcome.status == "awaiting_approval"
     assert outcome.approval_record is not None
-    assert len(gateway.validate_calls) == 1
-    assert gateway.execute_calls == []
+    # Proposal reads live supply and orders the gap (10 - stock2 - PO3 = 5).
+    assert outcome.approval_record.parameters["quantity"] == "5"
+    assert [c[0] for c in gateway.execute_calls] == ["MM.Inventory.GetAvailability"]
+    assert [c[0] for c in gateway.validate_calls] == ["MM.PR.CreateDraft"]
     # Regression: Gateway's ApprovalGuard fail-closed rejects a record that sets
     # registry_snapshot_id without also setting capability_version and
     # approval_subject_hash (Java: hasCompletePlanBinding). The Agent does not
@@ -1018,7 +1068,8 @@ def test_run_query_continues_authoritative_non_read_selection_without_read_bindi
             success=True,
             error_type="NONE",
             messages=[],
-        )
+        ),
+        inventory_data=_gap_inventory_data(),
     )
 
     outcome = run_query(
@@ -1037,8 +1088,10 @@ def test_run_query_continues_authoritative_non_read_selection_without_read_bindi
     assert calls == 1
     assert outcome.status == "awaiting_approval"
     assert outcome.approval_record is not None
-    assert len(gateway.validate_calls) == 1
-    assert gateway.execute_calls == []
+    # Proposal quantity is the computed gap (10 - stock2 - PO3 = 5).
+    assert outcome.approval_record.parameters["quantity"] == "5"
+    assert [c[0] for c in gateway.execute_calls] == ["MM.Inventory.GetAvailability"]
+    assert [c[0] for c in gateway.validate_calls] == ["MM.PR.CreateDraft"]
 
 
 def test_non_read_clarification_is_parsed_once_and_preserved_without_gateway():
@@ -3268,7 +3321,7 @@ def test_run_query_action_multi_parameters_routes_to_awaiting_approval():
         success=True,
         error_type="NONE",
         messages=[],
-    ))
+    ), inventory_data=_gap_inventory_data())
     adapter = _action_multi_value_adapter({"plant": ["5200", "1000"]})
 
     outcome = run_query(
@@ -3280,9 +3333,10 @@ def test_run_query_action_multi_parameters_routes_to_awaiting_approval():
     assert outcome.status == "awaiting_approval"
     assert outcome.approval_record is not None
     assert outcome.combinations is None
-    assert len(gateway.validate_calls) == 1
-    assert gateway.validate_calls[0][0] == "MM.PR.CreateDraft"
-    assert gateway.execute_calls == []
+    # One inventory READ for the gap, then original + gap PR validations.
+    assert [c[0] for c in gateway.execute_calls] == ["MM.Inventory.GetAvailability"]
+    assert [c[0] for c in gateway.validate_calls] == ["MM.PR.CreateDraft"]
+    assert outcome.approval_record.parameters["quantity"] == "5"
 
 
 def test_continue_batch_raises_for_action_capability():

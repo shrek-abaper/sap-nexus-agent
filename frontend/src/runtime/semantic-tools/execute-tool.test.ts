@@ -70,6 +70,33 @@ describe("executeSemanticTool WRITE branch", () => {
     });
   });
 
+  it("falls back to the governed run id when the approval record omits it", async () => {
+    // Production python-built approval records carry no TS run id; the card
+    // posts to /api/agent-runs/{runId}/approval, so the handle must not be empty.
+    const recordWithoutRunId = { ...approvalRecord };
+    delete (recordWithoutRunId as { runId?: string }).runId;
+
+    const response = await executeSemanticTool({
+      contractVersion: 2,
+      tool: "propose_replenishment",
+      utterance: "补 3 个",
+      slots: {
+        material: "DEMOA1", plant: "1000",
+        requiredQuantity: 10, targetDate: "2026-09-25", purchasingGroup: "601",
+      },
+    }, PLACEHOLDER_PRINCIPAL, {
+      timeoutMs: 1000,
+      createRun: async () => ({ runId: "run-pr", turnId: "turn-1" }),
+      getEvents: async () => awaitingEvents,
+      getRecord: async () => ({
+        runId: "run-pr", query: "", events: awaitingEvents, principalId: PLACEHOLDER_PRINCIPAL.principalId,
+        pendingOutcome: { status: "awaiting_approval", responseText: "", approvalRecord: recordWithoutRunId },
+      }),
+    });
+
+    expect(response.approval?.runId).toBe("run-pr");
+  });
+
   it("rejects replenishment without required constraint slots", async () => {
     await expect(executeSemanticTool({
       contractVersion: 2,

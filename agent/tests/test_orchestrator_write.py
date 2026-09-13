@@ -20,9 +20,18 @@ class StubWriteGateway:
     Agent<->Gateway approval registration channel (Task 18).
     """
 
-    def __init__(self, execute_payload: dict, *, approve_returns_empty: bool = False):
+    def __init__(
+        self,
+        execute_payload: dict,
+        *,
+        approve_returns_empty: bool = False,
+        inventory_stock: int = 0,
+    ):
         self._execute_payload = execute_payload
         self._approve_returns_empty = approve_returns_empty
+        # Proposals READ availability first; zero stock keeps gap == requested
+        # quantity so legacy quantity assertions stay unchanged.
+        self._inventory_stock = inventory_stock
         self.validate_calls: list = []
         self.execute_calls: list = []
         self.approve_calls: list = []
@@ -51,7 +60,29 @@ class StubWriteGateway:
         self.execute_calls.append(
             (capability_id, dict(parameters), approval_id, parameter_snapshot_hash)
         )
+        if capability_id == "MM.Inventory.GetAvailability":
+            return ExecutionResult(
+                trace_id="trace-inventory",
+                capability_id=capability_id,
+                success=True,
+                executor={"type": "JCO_RFC", "rfcName": "BAPI_MATERIAL_STOCK_REQ_LIST"},
+                return_messages=[],
+                data={
+                    "availableQuantity": self._inventory_stock,
+                    "unit": "EA",
+                    "mrpElementLines": [
+                        {"mrpElementInd": "WB", "availQty1": self._inventory_stock, "date": "2026-01-01"},
+                    ],
+                },
+                duration_ms=1,
+                error_type="NONE",
+            )
         return ExecutionResult.from_dict(self._execute_payload)
+
+
+def _write_calls(gateway: StubWriteGateway):
+    """MM.PR.CreateDraft executions (the replenishment READ never counts)."""
+    return [call for call in gateway.execute_calls if call[0] == "MM.PR.CreateDraft"]
 
 
 def _approve_pending(pending, gateway):
@@ -84,7 +115,9 @@ def test_pr_create_complete_request_waits_for_human_approval():
     assert outcome.approval_record is not None
     assert outcome.approval_record.status is ApprovalState.pending
     assert gateway.approve_calls == []
-    assert gateway.execute_calls == []
+    assert _write_calls(gateway) == []
+    # The deterministic gap READ is allowed before the approval decision.
+    assert [c[0] for c in gateway.execute_calls] == ["MM.Inventory.GetAvailability"]
 
 
 def test_pr_create_approval_record_is_not_partially_plan_aware():
@@ -137,8 +170,8 @@ def test_pr_create_continuation_executes_only_after_external_approval(tmp_path, 
     assert outcome.approval_record is not None
     assert outcome.approval_record.status is ApprovalState.executed
     assert len(gateway.approve_calls) == 1
-    assert len(gateway.execute_calls) == 1
-    assert gateway.execute_calls[0][1] == pending.approval_record.parameters
+    assert len(_write_calls(gateway)) == 1
+    assert _write_calls(gateway)[0][1] == pending.approval_record.parameters
 
 
 def test_pr_create_continuation_rejects_without_gateway_calls(tmp_path, monkeypatch):
@@ -161,7 +194,9 @@ def test_pr_create_continuation_rejects_without_gateway_calls(tmp_path, monkeypa
     assert outcome.approval_record is not None
     assert outcome.approval_record.status is ApprovalState.rejected
     assert gateway.approve_calls == []
-    assert gateway.execute_calls == []
+    assert _write_calls(gateway) == []
+    # The deterministic gap READ is allowed before the approval decision.
+    assert [c[0] for c in gateway.execute_calls] == ["MM.Inventory.GetAvailability"]
 
 
 def test_pr_create_continuation_rejects_parameter_snapshot_mismatch():
@@ -189,7 +224,9 @@ def test_pr_create_continuation_rejects_parameter_snapshot_mismatch():
     assert outcome.status == "failure"
     assert outcome.error_type == "APPROVAL_VERSION_MISMATCH"
     assert gateway.approve_calls == []
-    assert gateway.execute_calls == []
+    assert _write_calls(gateway) == []
+    # The deterministic gap READ is allowed before the approval decision.
+    assert [c[0] for c in gateway.execute_calls] == ["MM.Inventory.GetAvailability"]
 
 
 def test_pr_create_continuation_rejects_tampered_approval_parameters():
@@ -216,7 +253,9 @@ def test_pr_create_continuation_rejects_tampered_approval_parameters():
     assert outcome.status == "failure"
     assert outcome.error_type == "APPROVAL_VERSION_MISMATCH"
     assert gateway.approve_calls == []
-    assert gateway.execute_calls == []
+    assert _write_calls(gateway) == []
+    # The deterministic gap READ is allowed before the approval decision.
+    assert [c[0] for c in gateway.execute_calls] == ["MM.Inventory.GetAvailability"]
 
 
 def test_pr_create_continuation_rejects_unsuccessful_validation():
@@ -242,7 +281,9 @@ def test_pr_create_continuation_rejects_unsuccessful_validation():
     assert outcome.status == "failure"
     assert outcome.error_type == "APPROVAL_REQUIRED"
     assert gateway.approve_calls == []
-    assert gateway.execute_calls == []
+    assert _write_calls(gateway) == []
+    # The deterministic gap READ is allowed before the approval decision.
+    assert [c[0] for c in gateway.execute_calls] == ["MM.Inventory.GetAvailability"]
 
 
 def test_pr_create_continuation_rejects_validation_capability_mismatch():
@@ -267,7 +308,9 @@ def test_pr_create_continuation_rejects_validation_capability_mismatch():
     assert outcome.status == "failure"
     assert outcome.error_type == "APPROVAL_VERSION_MISMATCH"
     assert gateway.approve_calls == []
-    assert gateway.execute_calls == []
+    assert _write_calls(gateway) == []
+    # The deterministic gap READ is allowed before the approval decision.
+    assert [c[0] for c in gateway.execute_calls] == ["MM.Inventory.GetAvailability"]
 
 
 def test_pr_create_success_returns_pr_number():
@@ -288,8 +331,8 @@ def test_pr_create_success_returns_pr_number():
     )
     outcome = _approve_pending(pending, gateway)
     assert outcome.status == "success"
-    assert len(gateway.execute_calls) == 1
-    capability_id, params, approval_id, _hash = gateway.execute_calls[0]
+    assert len(_write_calls(gateway)) == 1
+    capability_id, params, approval_id, _hash = _write_calls(gateway)[0]
     assert capability_id == "MM.PR.CreateDraft"
     assert params["purchasing_group"] == "601"
     assert approval_id is not None
@@ -377,8 +420,8 @@ def test_pr_create_registers_approved_approval_with_gateway_before_execute(tmp_p
     events = [json.loads(line) for line in (tmp_path / "approval.jsonl").read_text().splitlines()]
     assert [event["toState"] for event in events] == ["pending", "approved", "executed"]
 
-    assert len(gateway.execute_calls) == 1
-    _, _, exec_approval_id, _ = gateway.execute_calls[0]
+    assert len(_write_calls(gateway)) == 1
+    _, _, exec_approval_id, _ = _write_calls(gateway)[0]
     assert exec_approval_id == registered_record.approval_id, (
         "execute must carry the same approvalId that was registered"
     )
@@ -400,7 +443,7 @@ def test_pr_create_stops_before_execute_when_gateway_rejects_approval_registrati
 
     assert outcome.status == "failure"
     assert outcome.error_type == "APPROVAL_REGISTRATION_FAILED"
-    assert gateway.execute_calls == [], "execute must not run when registration was not confirmed"
+    assert _write_calls(gateway) == [], "WRITE must not run when registration was not confirmed"
 
 
 def test_pr_create_execute_carries_parameter_snapshot_hash_matching_registered_record():
@@ -432,8 +475,8 @@ def test_pr_create_execute_carries_parameter_snapshot_hash_matching_registered_r
     registered_hash = registered_record.parameter_snapshot_hash
     assert registered_hash.startswith("sha256:")
 
-    assert len(gateway.execute_calls) == 1
-    _, _, _, exec_hash = gateway.execute_calls[0]
+    assert len(_write_calls(gateway)) == 1
+    _, _, _, exec_hash = _write_calls(gateway)[0]
     assert exec_hash == registered_hash, (
         "execute must carry the parameterSnapshotHash of the registered approval "
         "so the Gateway guard can verify version match (otherwise APPROVAL_VERSION_MISMATCH)"

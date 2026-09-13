@@ -35,8 +35,14 @@ export async function POST(
         const runtime = await getDshRuntime();
         let finalEvent: Extract<DshStreamEvent, { type: "final" }> | undefined;
         let errorEvent: Extract<DshStreamEvent, { type: "error" }> | undefined;
+        // Accumulate the pre-tool reasoning deltas so the full chain of thought
+        // is replayed from history, not just the final answer.
+        let reasoning = "";
         for await (const event of runtime.streamMessage(id, userText)) {
           controller.enqueue(send(event));
+          if (event.type === "delta" && event.phase === "reasoning") {
+            reasoning += event.text;
+          }
           if (event.type === "final") finalEvent = event;
           if (event.type === "error") errorEvent = event;
           if (event.type === "final" || event.type === "error") break;
@@ -47,6 +53,7 @@ export async function POST(
             conversationId: id,
             userText,
             assistantText: finalEvent?.output ?? "",
+            ...(reasoning.trim() ? { assistantReasoning: reasoning } : {}),
             assistantToolCalls: finalEvent?.toolCalls,
             ...(errorEvent ? { assistantError: errorEvent.message } : {}),
           });

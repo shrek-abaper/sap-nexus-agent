@@ -1,0 +1,23 @@
+schema: comet.native.v3
+minimum_runtime_version: 3
+revision: 5
+verification_protocol: legacy-v1
+name: replenishment-gap-based-quantity
+language: zh-CN
+phase: archive
+brief: brief.md
+approval: confirmed
+approved_contract_hash: 363042b468b4a32c349dcd2f032ac43b8271825e6d84c6f9b8fac9e5f5a297a6
+spec_changes:
+  - capability: dsh-replenishment-gap
+    operation: create
+    source: specs/dsh-replenishment-gap/spec.md
+    base_hash: null
+verification_result: pass
+verification_report: verification.md
+implementation_scope: runtime/evidence/scopes/7e488066af37ffa5f009c496c2a386b73aeff47181f6ea3a7a21cb2b3a856a22.json
+verification_evidence: runtime/evidence/verifications/cc29a08bbe3ff0c426f331aa836825c1190303881380af86f1f6b598e7872f7c.json
+partial_allowance: null
+archived: true
+created_at: 2026-09-13
+run_id: c481a8be-bbd7-46b9-b5d0-f815663df4b7

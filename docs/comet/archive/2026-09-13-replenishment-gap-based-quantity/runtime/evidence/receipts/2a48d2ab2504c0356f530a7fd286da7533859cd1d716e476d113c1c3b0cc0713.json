@@ -1,0 +1,50 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "replenishment-gap-based-quantity",
+    "sourceRevision": 3,
+    "contractHash": "363042b468b4a32c349dcd2f032ac43b8271825e6d84c6f9b8fac9e5f5a297a6",
+    "scopeHash": "7e488066af37ffa5f009c496c2a386b73aeff47181f6ea3a7a21cb2b3a856a22",
+    "snapshotHash": "29c56af8696cc72b4905086bdd64f7be2a52ad0212b3947280a7fe68efefba43",
+    "artifactHash": "92d43932c2990d5ab0b3fa76c5c93566c38553ec394b2146942ddf862d726ede"
+  },
+  "acceptanceIds": [
+    "acceptance-51698dea1de9148c9dc273718bd2fd673863d2f725926fdaeaca3efaab3d52a5"
+  ],
+  "actor": "native-runtime:command:.venv/bin/python",
+  "issuedAt": "2026-09-13T06:05:07.681Z",
+  "evidence": {
+    "executable": ".venv/bin/python",
+    "args": [
+      "-m",
+      "pytest",
+      "agent/tests/test_replenishment_orchestration.py",
+      "-q"
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 120000,
+    "startedAt": "2026-09-13T06:05:06.814Z",
+    "endedAt": "2026-09-13T06:05:07.681Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "e6ef0b4fea92c46ebfa5954e31f5aac56e741fb1",
+      "afterCommit": "e6ef0b4fea92c46ebfa5954e31f5aac56e741fb1"
+    },
+    "afterFence": {
+      "snapshotHash": "29c56af8696cc72b4905086bdd64f7be2a52ad0212b3947280a7fe68efefba43",
+      "scopeHash": "7e488066af37ffa5f009c496c2a386b73aeff47181f6ea3a7a21cb2b3a856a22",
+      "matched": true
+    },
+    "outputHash": "7fe3c174c11445d5cbb0f497919e059adffbfcf98cbb7d3c4a4ace4e8917e831",
+    "outputSummary": ".....                                                                    [100%]\n5 passed in 0.63s",
+    "outputTruncated": false
+  },
+  "receiptHash": "2a48d2ab2504c0356f530a7fd286da7533859cd1d716e476d113c1c3b0cc0713"
+}

@@ -46,14 +46,19 @@ function isTerminal(event: AgentRunEventLike): boolean {
     event.state === "rejected" || event.state === "failed";
 }
 
-function buildApprovalHandle(record: { pendingOutcome?: { approvalRecord?: unknown } | null }): ApprovalHandle | undefined {
+function buildApprovalHandle(
+  record: { pendingOutcome?: { approvalRecord?: unknown } | null },
+  fallbackRunId: string,
+): ApprovalHandle | undefined {
   const approval = record.pendingOutcome?.approvalRecord;
   if (!approval || typeof approval !== "object") return undefined;
   const r = approval as Record<string, unknown>;
   if (!r.approvalId || !r.expiresAt || !r.parameters) return undefined;
   return {
     approvalId: String(r.approvalId),
-    runId: String(r.runId ?? ""),
+    // The python-built ApprovalRecord does not know the TS run id; the card
+    // posts to /api/agent-runs/{runId}/approval, so an empty value would 404.
+    runId: String(r.runId || fallbackRunId),
     expiresAt: String(r.expiresAt),
     capabilityId: String(r.capabilityId ?? ""),
     parameters: (r.parameters ?? {}) as Record<string, string>,
@@ -99,7 +104,7 @@ export async function executeSemanticTool(
 
   if (request.tool === PROPOSE_REPLENISHMENT && response.status === "awaiting_approval") {
     const record = await getRecord(runId, principal);
-    const approval = record ? buildApprovalHandle(record) : undefined;
+    const approval = record ? buildApprovalHandle(record, runId) : undefined;
     if (approval) response.approval = approval;
   }
 

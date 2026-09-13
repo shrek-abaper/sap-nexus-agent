@@ -1,0 +1,72 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "replenishment-gap-based-quantity",
+    "sourceRevision": 3,
+    "contractHash": "363042b468b4a32c349dcd2f032ac43b8271825e6d84c6f9b8fac9e5f5a297a6",
+    "scopeHash": "7e488066af37ffa5f009c496c2a386b73aeff47181f6ea3a7a21cb2b3a856a22",
+    "snapshotHash": "29c56af8696cc72b4905086bdd64f7be2a52ad0212b3947280a7fe68efefba43",
+    "artifactHash": "92d43932c2990d5ab0b3fa76c5c93566c38553ec394b2146942ddf862d726ede"
+  },
+  "acceptanceIds": [
+    "acceptance-008d1c9fe4640dbdc0eec3955da1c28f181f7dab65d6120fb5eacc63869531c7",
+    "acceptance-13d04f65c3240cba34200c278b1c061670163ed2bad8a775c0843ecce429072d",
+    "acceptance-25ee2d2a4c71fef42b4345e77893a2b4b61880dbd773a7d9313dffa5d09bee3a",
+    "acceptance-2e42b2f618081e70b1b15d883b47086585749a1f894e43993c813b6a372e46e1",
+    "acceptance-36f2f7908549c1324b87627bb11c8ee2fad009ff3a1f69f7328b1260e6874c35",
+    "acceptance-39a6a914b1dc7e26282df83dcc6fad9b9f875a8302e63223c071980d5f154cab",
+    "acceptance-3b77e881d3797e375e99e5b1dddbe4052a7cbd7206ec843035ebd6456bb28b20",
+    "acceptance-3d4667426c998d88f420d24be3a2f545375142c566caa376b50ea10924f47f22",
+    "acceptance-49b6402b1d97a2d8a5ab4a95d268393601359b42476e0f07f91e612f2cd38a62",
+    "acceptance-525784c179841430b3a64d1d8f52af7b49f77be1d493e7a0acd3492692f4bc0b",
+    "acceptance-5808e9550fe067f0913e4b252e3ce15726116fc8ae4e724dedd6dd75b0cdc2df",
+    "acceptance-62f892da44a3ab1d961a31a4a97e8b44e9ba336384a4beb49457a8fdb717b13d",
+    "acceptance-71d8f14fc5ad09fdf52e7e20c45536ff0f2c017f8a9a036ddf4b8d3c50ac4720",
+    "acceptance-71fd7c2898dc1333ec91825376cb81bc6d598f8b92145040cc721f57cebbf1b2",
+    "acceptance-7917f700109bcb431e56f46615428740d14e7d5c34fbcc92de62c02aa4ecb28e",
+    "acceptance-9816be9539f1593c1d02cdae5bd4d2c060ac976a90e6d1de7b2748188edf9c33",
+    "acceptance-bbf411b9fac1a32c062c9967cc1b866b20420cc92b2da334272211b992041abb",
+    "acceptance-df70ef16815a8cfaed2677470a6f434e5f99b2c96278154b5090ce0945120d8d",
+    "acceptance-f0bfb933df808f420e77b9e34e1e8e49afe42997c736740bfe6f915b29fa8973"
+  ],
+  "actor": "native-runtime:command:.venv/bin/python",
+  "issuedAt": "2026-09-13T10:26:32.111Z",
+  "evidence": {
+    "executable": ".venv/bin/python",
+    "args": [
+      "-m",
+      "pytest",
+      "agent/tests/test_replenishment_orchestration.py",
+      "agent/tests/test_orchestrator_write.py",
+      "agent/tests/test_orchestrator.py",
+      "agent/tests/test_cli_approval.py",
+      "agent/tests/test_replenishment_gap.py",
+      "-q"
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 120000,
+    "startedAt": "2026-09-13T10:26:07.175Z",
+    "endedAt": "2026-09-13T10:26:32.111Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "e6ef0b4fea92c46ebfa5954e31f5aac56e741fb1",
+      "afterCommit": "e6ef0b4fea92c46ebfa5954e31f5aac56e741fb1"
+    },
+    "afterFence": {
+      "snapshotHash": "29c56af8696cc72b4905086bdd64f7be2a52ad0212b3947280a7fe68efefba43",
+      "scopeHash": "7e488066af37ffa5f009c496c2a386b73aeff47181f6ea3a7a21cb2b3a856a22",
+      "matched": true
+    },
+    "outputHash": "49a7035571ed7f0888ac29d6c6485a1ced950caf6d41317f272a065dc4df38d8",
+    "outputSummary": "........................................................................ [ 50%]\n........................................................................ [100%]\n144 passed in 24.52s",
+    "outputTruncated": false
+  },
+  "receiptHash": "5ebf6a5a4d5a55cd3663ccbf4398ad184c9bbf7aecc2dca388d2a5461d9569f4"
+}

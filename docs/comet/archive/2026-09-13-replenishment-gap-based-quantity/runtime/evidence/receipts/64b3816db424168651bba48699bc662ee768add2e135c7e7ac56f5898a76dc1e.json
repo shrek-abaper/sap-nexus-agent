@@ -1,0 +1,69 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "replenishment-gap-based-quantity",
+    "sourceRevision": 3,
+    "contractHash": "363042b468b4a32c349dcd2f032ac43b8271825e6d84c6f9b8fac9e5f5a297a6",
+    "scopeHash": "7e488066af37ffa5f009c496c2a386b73aeff47181f6ea3a7a21cb2b3a856a22",
+    "snapshotHash": "29c56af8696cc72b4905086bdd64f7be2a52ad0212b3947280a7fe68efefba43",
+    "artifactHash": "92d43932c2990d5ab0b3fa76c5c93566c38553ec394b2146942ddf862d726ede"
+  },
+  "acceptanceIds": [
+    "acceptance-086e29fac3af39c0c3b5aad66f0bf0518371867c25af5d88636b365dba0f09e2",
+    "acceptance-17c18b11f9f4b21dc8e98c65fd15f51113dd00236806506691bfd7eb12e51ca5",
+    "acceptance-1e0ff5299cce81413b55149aa83bbfb042bce243a45596bbad9a2c05613c673a",
+    "acceptance-2659717d018acfc0e885d7b7df387b380fdcfb59e7d13a9c536bf06695bddb7e",
+    "acceptance-3516a9fb7d8984300e38b00a86a30e570e876968b8286134ad2b8c1d410ff14d",
+    "acceptance-35eb1f3c9b73dacf154ceed4df7551ff79a6583f860b1448e7caa23b9cecec5d",
+    "acceptance-428af7e58046344c4046fad5ab9b858052e5cd540a23e9ce66420c34aef748e9",
+    "acceptance-42c7f808f51199705e8c198f2e2d1d3d8095cf44838808b30fd14d69afd704d9",
+    "acceptance-4b70005da32a7d84791099ba4b69b29b05823bab52fe72a735b7f68b7f3f9a59",
+    "acceptance-589e982b5b2895ac5d41d003d932f1e7e9ca9fefefb5930dc1b1d7c6f8611452",
+    "acceptance-601cd307938ab155e9b0d3c2f3d0d44fd199c2b9b06c1bc5dd9411d0b8edfd29",
+    "acceptance-7895dbdcd620040afa786316a23fc3d611b182bd892db9a14291248aa608d828",
+    "acceptance-9036fbd50d166e87519ad19efd0d5e0684e1996c8422415be4cd6f0d686c8ff2",
+    "acceptance-9242f9e49a55fde194186552e41ecfb8727ce00b3c613ee7f00417e3b0e115b4",
+    "acceptance-b5c1c309da23d9ee400aa15ec03384b6a5b59be13907772b8bd873773843e0ed",
+    "acceptance-c3ada4be553fd362f9d1d7f0223c1cda3736d4b2de68a8cba96936b4fec77432",
+    "acceptance-c40bc609e3db0d906b811304d6ea61799182761ed47b820fd3d8ee1a74cbdc81",
+    "acceptance-ccabf32f01435ab2e580acd94d872efe1a889b49b9108528ab26eec77f40aba1",
+    "acceptance-ee3d8b045b59f849d6f4a2ca8b8f4545a9f5e4a62e05760b2e8401f435e9b193",
+    "acceptance-f14a3719ca373f9900297dde0175f77f96497be57a99d13d991e425aece68cb9"
+  ],
+  "actor": "native-runtime:command:.venv/bin/python",
+  "issuedAt": "2026-09-13T06:02:38.237Z",
+  "evidence": {
+    "executable": ".venv/bin/python",
+    "args": [
+      "-m",
+      "pytest",
+      "agent/tests/test_replenishment_gap.py",
+      "-q"
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 120000,
+    "startedAt": "2026-09-13T06:02:38.014Z",
+    "endedAt": "2026-09-13T06:02:38.237Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "e6ef0b4fea92c46ebfa5954e31f5aac56e741fb1",
+      "afterCommit": "e6ef0b4fea92c46ebfa5954e31f5aac56e741fb1"
+    },
+    "afterFence": {
+      "snapshotHash": "29c56af8696cc72b4905086bdd64f7be2a52ad0212b3947280a7fe68efefba43",
+      "scopeHash": "7e488066af37ffa5f009c496c2a386b73aeff47181f6ea3a7a21cb2b3a856a22",
+      "matched": true
+    },
+    "outputHash": "ee09f6debd9f81709cd5af75a47e8b1c6ed9a94b8e82a9b34c00f597199e9c17",
+    "outputSummary": ".......                                                                  [100%]\n7 passed in 0.02s",
+    "outputTruncated": false
+  },
+  "receiptHash": "64b3816db424168651bba48699bc662ee768add2e135c7e7ac56f5898a76dc1e"
+}

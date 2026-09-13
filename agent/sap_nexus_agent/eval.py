@@ -35,9 +35,24 @@ class EvalSummary:
 class FakeGatewayClient:
     def __init__(self, case: dict[str, Any]):
         gateway = case.get("gateway", {})
+        self._gateway = gateway
         case_id = _case_id(case)
+        self._case_id = case_id
         capability_id = case.get("expectedCapabilityId") or case.get("expected", {}).get("capabilityId")
+        self._case_expected_capability = capability_id
         is_po = capability_id == "MM.PurchaseOrder.GetList"
+        # Whether an inventory READ inside this case must use the synthetic
+        # gap-READ payload rather than the case's own execute fixture (which
+        # for PR cases is the WRITE result). Explicit inventory fixtures
+        # (incl. gateway failure cases) keep their own payload.
+        explicit_execute_capability = gateway.get("execute", {}).get("capabilityId")
+        self._use_synthetic_gap_read = (
+            capability_id == "MM.PR.CreateDraft"
+            or explicit_execute_capability not in (
+                None,
+                "MM.Inventory.GetAvailability",
+            )
+        )
 
         self.validation_payload = gateway.get(
             "validate",
@@ -137,7 +152,40 @@ class FakeGatewayClient:
         approval_subject_hash: str | None = None,
     ) -> ExecutionResult:
         self.execute_calls.append((capability_id, dict(parameters)))
+        # Replenishment (PR CreateDraft) proposals READ supply before building
+        # the gap proposal; inventory/PO-asserting cases never issue this READ.
+        # Zero stock keeps gap == requested quantity so legacy PR
+        # quantity/call-count assertions stay valid; override via
+        # gateway.inventoryExecute.
+        if capability_id == "MM.Inventory.GetAvailability" and self._use_synthetic_gap_read:
+            inventory_payload = self._gateway.get("inventoryExecute", {
+                "traceId": f"{self._case_id}-inventory",
+                "capabilityId": "MM.Inventory.GetAvailability",
+                "success": True,
+                "executor": {"type": "JCO_RFC", "rfcName": "BAPI_MATERIAL_STOCK_REQ_LIST"},
+                "returnMessages": [],
+                "data": {
+                    "availableQuantity": 0,
+                    "unit": "EA",
+                    "mrpElementLines": [
+                        {"mrpElementInd": "WB", "availQty1": 0, "date": "2026-01-01"},
+                    ],
+                },
+                "durationMs": 1,
+                "errorType": "NONE",
+            })
+            return ExecutionResult.from_dict(inventory_payload)
         return ExecutionResult.from_dict(self.execution_payload)
+
+    def business_calls(self, capability_id: str | None):
+        """Validate/execute calls on the asserted capability. When no
+        capability is asserted, all calls are counted (READ cases)."""
+        if not capability_id:
+            return self.validate_calls, self.execute_calls
+        return (
+            [call for call in self.validate_calls if call[0] == capability_id],
+            [call for call in self.execute_calls if call[0] == capability_id],
+        )
 
 
 def run_eval_file(path: Path) -> EvalSummary:
@@ -731,15 +779,21 @@ def _assert_matcher_gateway_calls(
 ) -> None:
     expected_validate = expected.get("validateCalls", 0)
     expected_execute = expected.get("executeCalls", 0)
-    if len(gateway.validate_calls) != expected_validate:
+    expected_capability = (
+        gateway._case_expected_capability
+        or expected.get("capabilityId")
+        or None
+    )
+    validate_all, execute_all = gateway.business_calls(expected_capability)
+    if len(validate_all) != expected_validate:
         raise AssertionError(
             f"{case_id}: validateCalls mismatch - expected {expected_validate}, "
             f"got {len(gateway.validate_calls)}"
         )
-    if len(gateway.execute_calls) != expected_execute:
+    if len(execute_all) != expected_execute:
         raise AssertionError(
             f"{case_id}: executeCalls mismatch - expected {expected_execute}, "
-            f"got {len(gateway.execute_calls)}"
+            f"got {len(execute_all)}"
         )
 
 
@@ -946,8 +1000,12 @@ def _assert_case(case: dict[str, Any], outcome: Any, gateway: FakeGatewayClient)
             assert text in response
     for text in expected.get("sensitiveAbsent", []):
         assert text not in (outcome.response_text or "")
-    assert len(gateway.validate_calls) == expected["validateCalls"]
-    assert len(gateway.execute_calls) == expected["executeCalls"]
+    expected_capability = expected.get("capabilityId") or (
+        outcome.call_plan.capability_id if outcome.call_plan is not None else None
+    )
+    validate_calls, execute_calls = gateway.business_calls(expected_capability)
+    assert len(validate_calls) == expected["validateCalls"]
+    assert len(execute_calls) == expected["executeCalls"]
 
 
 def _assert_seed_case(case: dict[str, Any], outcome: Any, gateway: FakeGatewayClient) -> None:

@@ -1,0 +1,57 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "replenishment-gap-based-quantity",
+    "sourceRevision": 3,
+    "contractHash": "363042b468b4a32c349dcd2f032ac43b8271825e6d84c6f9b8fac9e5f5a297a6",
+    "scopeHash": "7e488066af37ffa5f009c496c2a386b73aeff47181f6ea3a7a21cb2b3a856a22",
+    "snapshotHash": "29c56af8696cc72b4905086bdd64f7be2a52ad0212b3947280a7fe68efefba43",
+    "artifactHash": "92d43932c2990d5ab0b3fa76c5c93566c38553ec394b2146942ddf862d726ede"
+  },
+  "acceptanceIds": [
+    "acceptance-05406c4ee9a4a1ddc6930159a9cfb32a9dfbacc8c67268848b79b4350c91f82d",
+    "acceptance-580806bc41f3d918ee459a4f8675a2616fd14719f8f41ce78a9e7ba3e46b0c18",
+    "acceptance-5867d15ff7bf2939b1897a9b97c5e8bbfdb35d66a5b3ee80589378d5dabb33ee",
+    "acceptance-5c1129b95da7596e9ce4b0665b91cfecfcd67ac771d2370b9431d05bc1f542a3",
+    "acceptance-66c644c46e8e9a326e5e9b652057f6357251c54d8973bd9e248078d36b8927f6",
+    "acceptance-6c81a9cdf4f6b87626d7726307293b398d834ecba5f6169db46959e5cae6dbe8",
+    "acceptance-7b6dbd5bf9431b06f93fa7571919720d2fb34e7bed665d59bd4c8ae6b2f4f973",
+    "acceptance-be2b44366d4ecd01de1ead24da5b88f01f0fda1601195cdb7fd3b993a80484cf",
+    "acceptance-e77e85bb5b8e7206d6d6dfe60c7bfe73854c52744fe7f0aa83ad77e6a8f72e28",
+    "acceptance-f7114ec6de5e1d371d1c72287e90e7457cf97a8b439af0be72c67f410aed8a7c"
+  ],
+  "actor": "native-runtime:command:bash",
+  "issuedAt": "2026-09-13T10:28:06.423Z",
+  "evidence": {
+    "executable": "bash",
+    "args": [
+      "-c",
+      "npm --prefix frontend run verify 2>&1 | tail -5"
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 120000,
+    "startedAt": "2026-09-13T10:26:46.786Z",
+    "endedAt": "2026-09-13T10:28:06.423Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "e6ef0b4fea92c46ebfa5954e31f5aac56e741fb1",
+      "afterCommit": "e6ef0b4fea92c46ebfa5954e31f5aac56e741fb1"
+    },
+    "afterFence": {
+      "snapshotHash": "29c56af8696cc72b4905086bdd64f7be2a52ad0212b3947280a7fe68efefba43",
+      "scopeHash": "7e488066af37ffa5f009c496c2a386b73aeff47181f6ea3a7a21cb2b3a856a22",
+      "matched": true
+    },
+    "outputHash": "e19c9d1d89082ba4c74db9a19d4e83243035e458dd6d7c600db0045aed3d4564",
+    "outputSummary": "○  (Static)   prerendered as static content\nƒ  (Dynamic)  server-rendered on demand",
+    "outputTruncated": false
+  },
+  "receiptHash": "6ab37281ba4328faca95adf3b165ac49c356371073b85734d2121f0bc8cd3721"
+}

@@ -96,6 +96,25 @@ describe("buildToolQuery", () => {
     expect(query).toBe("A100 在 1000 工厂够不够用\n[已知条件] 物料: A100；工厂: 1000；模块: MM；时间: 本月");
   });
 
+  it("renders a deterministic PR draft query from slots, ignoring raw prose", () => {
+    const query = buildToolQuery(validateSemanticToolRequest({
+      contractVersion: 2,
+      tool: "propose_replenishment",
+      utterance: "月底总共需要10件，已有库存1件和采购申请3件，缺口6件，请生成补货建议",
+      slots: {
+        material: "P0254684AF", plant: "5260", requiredQuantity: 10,
+        targetDate: "2026-09-30", purchasingGroup: "601",
+      },
+    }));
+
+    // Leading imperative pins MM.PR.CreateDraft; the raw utterance is dropped
+    // so its READ trigger words (库存/采购申请) cannot double-fire.
+    expect(query).toBe(
+      "请创建采购申请（PR）草稿，提交人工审批：\n"
+      + "[已知条件] 物料: P0254684AF；工厂: 5260；需求量: 10 EA；目标交货日期: 2026-09-30；采购组: 601",
+    );
+  });
+
   it("falls back to context.plantScope when the plant slot is absent", () => {
     const query = buildToolQuery(validateSemanticToolRequest({
       ...base,

@@ -1,0 +1,36 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "static-inspection",
+  "role": "required-check",
+  "status": "passed",
+  "bindings": {
+    "change": "replenishment-gap-based-quantity",
+    "sourceRevision": 3,
+    "contractHash": "363042b468b4a32c349dcd2f032ac43b8271825e6d84c6f9b8fac9e5f5a297a6",
+    "scopeHash": "7e488066af37ffa5f009c496c2a386b73aeff47181f6ea3a7a21cb2b3a856a22",
+    "snapshotHash": "29c56af8696cc72b4905086bdd64f7be2a52ad0212b3947280a7fe68efefba43",
+    "artifactHash": "92d43932c2990d5ab0b3fa76c5c93566c38553ec394b2146942ddf862d726ede"
+  },
+  "acceptanceIds": [],
+  "actor": "native-runtime:scoped-text-safety",
+  "issuedAt": "2026-09-13T10:30:23.421Z",
+  "evidence": {
+    "subjects": [
+      "agent/sap_nexus_agent/eval.py",
+      "agent/sap_nexus_agent/orchestrator.py",
+      "agent/sap_nexus_agent/replenishment.py",
+      "agent/tests/test_cli_approval.py",
+      "agent/tests/test_orchestrator.py",
+      "agent/tests/test_orchestrator_write.py",
+      "agent/tests/test_replenishment_gap.py",
+      "agent/tests/test_replenishment_orchestration.py",
+      "frontend/src/runtime/agent-runtime-adapter.ts",
+      "frontend/src/runtime/semantic-tools/map-events.test.ts"
+    ],
+    "rule": "scoped-text-safety",
+    "resultSummary": "The built-in scoped inspection passed without skipped or blocking input.",
+    "checkReceiptRef": "runtime/evidence/check-receipts/d4260d239c27c33b12e4eb92557f848e031a9bd522592ee1dbf784065412158f.json",
+    "checkReceiptHash": "d4260d239c27c33b12e4eb92557f848e031a9bd522592ee1dbf784065412158f"
+  },
+  "receiptHash": "761f18139fbce3536acb2f869d14ab6e10f5fdcddc6660ee658600ad25916906"
+}
