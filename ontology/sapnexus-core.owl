@@ -13,6 +13,10 @@
   </owl:Class>
   <owl:Class rdf:about="sapnexus:Function">
     <rdfs:subClassOf rdf:resource="sapnexus:Capability"/>
+    <!-- Governance invariant mirror: Function = read-only, no approval;
+         Action = human approval required. A capability is one or the other.
+         The registry contract validator remains the enforcement gate. -->
+    <owl:disjointWith rdf:resource="sapnexus:Action"/>
   </owl:Class>
   <owl:Class rdf:about="sapnexus:Action">
     <rdfs:subClassOf rdf:resource="sapnexus:Capability"/>

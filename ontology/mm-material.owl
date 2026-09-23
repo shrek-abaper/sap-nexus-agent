@@ -13,6 +13,18 @@
     <rdfs:subClassOf rdf:resource="sapnexus:BusinessObject"/>
   </owl:Class>
 
+  <owl:Class rdf:about="sapnexus:MaterialInfoFact">
+    <rdfs:subClassOf rdf:resource="sapnexus:ReasoningFact"/>
+  </owl:Class>
+
+  <!-- Mirrors predicate declared in ontology/fact-types.yaml; functional:
+       one material-info fact per material + plant (fact keyedBy). -->
+  <owl:FunctionalProperty rdf:about="sapnexus:hasMaterialInfo">
+    <rdfs:domain rdf:resource="sapnexus:MaterialInfo"/>
+    <rdfs:range rdf:resource="sapnexus:MaterialInfoFact"/>
+    <rdf:type rdf:resource="owl:ObjectProperty"/>
+  </owl:FunctionalProperty>
+
   <owl:NamedIndividual rdf:about="sapnexus:MM_Material_GetInfo">
     <rdf:type rdf:resource="sapnexus:Function"/>
     <rdfs:label>MM.Material.GetInfo</rdfs:label>

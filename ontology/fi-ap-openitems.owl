@@ -13,6 +13,17 @@
     <rdfs:subClassOf rdf:resource="sapnexus:BusinessObject"/>
   </owl:Class>
 
+  <owl:Class rdf:about="sapnexus:VendorOpenItemsFact">
+    <rdfs:subClassOf rdf:resource="sapnexus:ReasoningFact"/>
+  </owl:Class>
+
+  <!-- Mirrors predicate declared in ontology/fact-types.yaml. List fact
+       (cardinality many): not functional. -->
+  <owl:ObjectProperty rdf:about="sapnexus:hasVendorOpenItems">
+    <rdfs:domain rdf:resource="sapnexus:VendorOpenItem"/>
+    <rdfs:range rdf:resource="sapnexus:VendorOpenItemsFact"/>
+  </owl:ObjectProperty>
+
   <owl:NamedIndividual rdf:about="sapnexus:FI_AP_GetOpenItems">
     <rdf:type rdf:resource="sapnexus:Function"/>
     <rdfs:label>FI.AP.GetOpenItems</rdfs:label>

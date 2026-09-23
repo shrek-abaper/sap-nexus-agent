@@ -3,6 +3,7 @@
     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
     xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
     xmlns:sapnexus="https://sap-nexus-agent.local/ontology#">
 
   <owl:Ontology rdf:about="https://sap-nexus-agent.local/ontology/mm-purchaserequisition">
@@ -15,11 +16,51 @@
   <owl:Class rdf:about="sapnexus:PurchaseRequisitionCreateAction">
     <rdfs:subClassOf rdf:resource="sapnexus:Action"/>
   </owl:Class>
-  <owl:Class rdf:about="sapnexus:PrNumber"/>
-  <owl:Class rdf:about="sapnexus:AcctAssignmentCat"/>
-  <owl:Class rdf:about="sapnexus:CostCenter"/>
-  <owl:Class rdf:about="sapnexus:DeliveryDate"/>
-  <owl:Class rdf:about="sapnexus:PurchasingGroup"/>
+  <!-- Scalar value types carried directly by BAPI parameters (PRITEM.*).
+       Length/pattern mirrors the capability input constraints. -->
+  <rdfs:Datatype rdf:about="sapnexus:PrNumber">
+    <owl:equivalentClass rdf:resource="xsd:string"/>
+  </rdfs:Datatype>
+  <rdfs:Datatype rdf:about="sapnexus:AcctAssignmentCat">
+    <owl:onDatatype rdf:resource="xsd:string"/>
+    <owl:withRestrictions rdf:parseType="Constraint">
+      <rdf:Description>
+        <xsd:pattern rdf:datatype="xsd:string">[A-Z0-9]</xsd:pattern>
+        <xsd:maxLength rdf:datatype="xsd:nonNegativeInteger">1</xsd:maxLength>
+      </rdf:Description>
+    </owl:withRestrictions>
+  </rdfs:Datatype>
+  <rdfs:Datatype rdf:about="sapnexus:CostCenter">
+    <owl:onDatatype rdf:resource="xsd:string"/>
+    <owl:withRestrictions rdf:parseType="Constraint">
+      <rdf:Description>
+        <xsd:maxLength rdf:datatype="xsd:nonNegativeInteger">10</xsd:maxLength>
+      </rdf:Description>
+    </owl:withRestrictions>
+  </rdfs:Datatype>
+  <rdfs:Datatype rdf:about="sapnexus:DeliveryDate">
+    <owl:equivalentClass rdf:resource="xsd:date"/>
+  </rdfs:Datatype>
+  <rdfs:Datatype rdf:about="sapnexus:PurchasingGroup">
+    <owl:onDatatype rdf:resource="xsd:string"/>
+    <owl:withRestrictions rdf:parseType="Constraint">
+      <rdf:Description>
+        <xsd:pattern rdf:datatype="xsd:string">[A-Za-z0-9]{1,3}</xsd:pattern>
+        <xsd:maxLength rdf:datatype="xsd:nonNegativeInteger">3</xsd:maxLength>
+      </rdf:Description>
+    </owl:withRestrictions>
+  </rdfs:Datatype>
+
+  <owl:Class rdf:about="sapnexus:PurchaseRequisitionCreatedFact">
+    <rdfs:subClassOf rdf:resource="sapnexus:ReasoningFact"/>
+  </owl:Class>
+
+  <!-- Mirrors predicate declared in ontology/fact-types.yaml. Action receipt:
+       one creation fact per produced PR number; not functional across subjects. -->
+  <owl:ObjectProperty rdf:about="sapnexus:hasCreatedPurchaseRequisition">
+    <rdfs:domain rdf:resource="sapnexus:PurchaseRequisition"/>
+    <rdfs:range rdf:resource="sapnexus:PurchaseRequisitionCreatedFact"/>
+  </owl:ObjectProperty>
 
   <owl:NamedIndividual rdf:about="sapnexus:MM_PR_CreateDraft">
     <rdf:type rdf:resource="sapnexus:PurchaseRequisitionCreateAction"/>

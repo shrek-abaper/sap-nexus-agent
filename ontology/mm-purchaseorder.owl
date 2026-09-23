@@ -3,6 +3,7 @@
     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
     xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
     xmlns:sapnexus="https://sap-nexus-agent.local/ontology#">
 
   <owl:Ontology rdf:about="https://sap-nexus-agent.local/ontology/mm-purchaseorder">
@@ -12,11 +13,40 @@
   <owl:Class rdf:about="sapnexus:PurchaseOrder">
     <rdfs:subClassOf rdf:resource="sapnexus:BusinessObject"/>
   </owl:Class>
+  <!-- Composite fact row (output semantic type of purchaseOrders):
+       a structural class, not an independent business object. -->
   <owl:Class rdf:about="sapnexus:PurchaseOrderItem"/>
-  <owl:Class rdf:about="sapnexus:PurchaseOrderNumber"/>
-  <owl:Class rdf:about="sapnexus:Supplier">
-    <rdfs:subClassOf rdf:resource="sapnexus:BusinessObject"/>
+  <!-- Scalar value types carried directly by BAPI/OData parameters. -->
+  <rdfs:Datatype rdf:about="sapnexus:PurchaseOrderNumber">
+    <owl:onDatatype rdf:resource="xsd:string"/>
+    <owl:withRestrictions rdf:parseType="Constraint">
+      <rdf:Description>
+        <xsd:maxLength rdf:datatype="xsd:nonNegativeInteger">40</xsd:maxLength>
+      </rdf:Description>
+    </owl:withRestrictions>
+  </rdfs:Datatype>
+  <!-- As governed here, Supplier denotes the supplier identifier value
+       (LIFNR-shaped) carried by parameters, not the supplier master object. -->
+  <rdfs:Datatype rdf:about="sapnexus:Supplier">
+    <owl:onDatatype rdf:resource="xsd:string"/>
+    <owl:withRestrictions rdf:parseType="Constraint">
+      <rdf:Description>
+        <xsd:pattern rdf:datatype="xsd:string">[A-Z0-9]{1,10}</xsd:pattern>
+        <xsd:maxLength rdf:datatype="xsd:nonNegativeInteger">10</xsd:maxLength>
+      </rdf:Description>
+    </owl:withRestrictions>
+  </rdfs:Datatype>
+
+  <owl:Class rdf:about="sapnexus:PurchaseOrderSupplyFact">
+    <rdfs:subClassOf rdf:resource="sapnexus:ReasoningFact"/>
   </owl:Class>
+
+  <!-- Mirrors predicate declared in ontology/fact-types.yaml. List fact
+       (cardinality many): not functional. -->
+  <owl:ObjectProperty rdf:about="sapnexus:hasPurchaseOrderSupply">
+    <rdfs:domain rdf:resource="sapnexus:PurchaseOrder"/>
+    <rdfs:range rdf:resource="sapnexus:PurchaseOrderSupplyFact"/>
+  </owl:ObjectProperty>
 
   <owl:NamedIndividual rdf:about="sapnexus:MM_PurchaseOrder_GetList">
     <rdf:type rdf:resource="sapnexus:Function"/>

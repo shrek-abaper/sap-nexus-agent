@@ -3,6 +3,7 @@
     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
     xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
     xmlns:sapnexus="https://sap-nexus-agent.local/ontology#">
 
   <owl:Ontology rdf:about="https://sap-nexus-agent.local/ontology/mm-inventory">
@@ -12,13 +13,35 @@
   <owl:Class rdf:about="sapnexus:Material">
     <rdfs:subClassOf rdf:resource="sapnexus:BusinessObject"/>
   </owl:Class>
-  <owl:Class rdf:about="sapnexus:Plant">
-    <rdfs:subClassOf rdf:resource="sapnexus:BusinessObject"/>
-  </owl:Class>
+  <!-- Scalar value types carried directly by BAPI parameters: modeled as
+       derived datatypes, not business-object classes. -->
+  <rdfs:Datatype rdf:about="sapnexus:Plant">
+    <owl:onDatatype rdf:resource="xsd:string"/>
+    <owl:withRestrictions rdf:parseType="Constraint">
+      <rdf:Description>
+        <xsd:pattern rdf:datatype="xsd:string">[A-Z0-9]{4}</xsd:pattern>
+        <xsd:maxLength rdf:datatype="xsd:nonNegativeInteger">4</xsd:maxLength>
+      </rdf:Description>
+    </owl:withRestrictions>
+  </rdfs:Datatype>
   <owl:Class rdf:about="sapnexus:InventoryStock">
     <rdfs:subClassOf rdf:resource="sapnexus:BusinessObject"/>
   </owl:Class>
-  <owl:Class rdf:about="sapnexus:AvailableQuantity"/>
+  <rdfs:Datatype rdf:about="sapnexus:AvailableQuantity">
+    <owl:equivalentClass rdf:resource="xsd:decimal"/>
+  </rdfs:Datatype>
+
+  <owl:Class rdf:about="sapnexus:InventoryAvailabilityFact">
+    <rdfs:subClassOf rdf:resource="sapnexus:ReasoningFact"/>
+  </owl:Class>
+
+  <!-- Mirrors predicate declared in ontology/fact-types.yaml; functional:
+       one availability fact per material + plant (fact keyedBy). -->
+  <owl:FunctionalProperty rdf:about="sapnexus:hasInventoryAvailability">
+    <rdfs:domain rdf:resource="sapnexus:InventoryStock"/>
+    <rdfs:range rdf:resource="sapnexus:InventoryAvailabilityFact"/>
+    <rdf:type rdf:resource="owl:ObjectProperty"/>
+  </owl:FunctionalProperty>
 
   <owl:NamedIndividual rdf:about="sapnexus:MM_Inventory_GetAvailability">
     <rdf:type rdf:resource="sapnexus:Function"/>

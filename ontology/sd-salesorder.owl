@@ -3,6 +3,7 @@
     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
     xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
     xmlns:sapnexus="https://sap-nexus-agent.local/ontology#">
 
   <owl:Ontology rdf:about="https://sap-nexus-agent.local/ontology/sd-salesorder">
@@ -13,13 +14,62 @@
     <rdfs:subClassOf rdf:resource="sapnexus:BusinessObject"/>
   </owl:Class>
   <owl:Class rdf:about="sapnexus:SalesOrderItem"/>
-  <owl:Class rdf:about="sapnexus:SalesOrderNumber"/>
-  <owl:Class rdf:about="sapnexus:CustomerNumber"/>
-  <owl:Class rdf:about="sapnexus:SalesOrganization"/>
-  <owl:Class rdf:about="sapnexus:DocumentDate"/>
-  <owl:Class rdf:about="sapnexus:NetValue"/>
-  <owl:Class rdf:about="sapnexus:Currency"/>
-  <owl:Class rdf:about="sapnexus:CustomerPoNumber"/>
+  <!-- Scalar value types carried directly by BAPI parameters. -->
+  <rdfs:Datatype rdf:about="sapnexus:SalesOrderNumber">
+    <owl:onDatatype rdf:resource="xsd:string"/>
+    <owl:withRestrictions rdf:parseType="Constraint">
+      <rdf:Description>
+        <xsd:maxLength rdf:datatype="xsd:nonNegativeInteger">10</xsd:maxLength>
+      </rdf:Description>
+    </owl:withRestrictions>
+  </rdfs:Datatype>
+  <rdfs:Datatype rdf:about="sapnexus:CustomerNumber">
+    <owl:onDatatype rdf:resource="xsd:string"/>
+    <owl:withRestrictions rdf:parseType="Constraint">
+      <rdf:Description>
+        <xsd:pattern rdf:datatype="xsd:string">[A-Z0-9]{1,10}</xsd:pattern>
+        <xsd:maxLength rdf:datatype="xsd:nonNegativeInteger">10</xsd:maxLength>
+      </rdf:Description>
+    </owl:withRestrictions>
+  </rdfs:Datatype>
+  <rdfs:Datatype rdf:about="sapnexus:SalesOrganization">
+    <owl:onDatatype rdf:resource="xsd:string"/>
+    <owl:withRestrictions rdf:parseType="Constraint">
+      <rdf:Description>
+        <xsd:pattern rdf:datatype="xsd:string">[A-Z0-9]{1,4}</xsd:pattern>
+        <xsd:maxLength rdf:datatype="xsd:nonNegativeInteger">4</xsd:maxLength>
+      </rdf:Description>
+    </owl:withRestrictions>
+  </rdfs:Datatype>
+  <rdfs:Datatype rdf:about="sapnexus:DocumentDate">
+    <owl:equivalentClass rdf:resource="xsd:date"/>
+  </rdfs:Datatype>
+  <rdfs:Datatype rdf:about="sapnexus:NetValue">
+    <owl:equivalentClass rdf:resource="xsd:decimal"/>
+  </rdfs:Datatype>
+  <rdfs:Datatype rdf:about="sapnexus:Currency">
+    <owl:onDatatype rdf:resource="xsd:string"/>
+    <owl:withRestrictions rdf:parseType="Constraint">
+      <rdf:Description>
+        <xsd:pattern rdf:datatype="xsd:string">[A-Z]{3}</xsd:pattern>
+        <xsd:maxLength rdf:datatype="xsd:nonNegativeInteger">3</xsd:maxLength>
+      </rdf:Description>
+    </owl:withRestrictions>
+  </rdfs:Datatype>
+  <rdfs:Datatype rdf:about="sapnexus:CustomerPoNumber">
+    <owl:equivalentClass rdf:resource="xsd:string"/>
+  </rdfs:Datatype>
+
+  <owl:Class rdf:about="sapnexus:SalesOrderListFact">
+    <rdfs:subClassOf rdf:resource="sapnexus:ReasoningFact"/>
+  </owl:Class>
+
+  <!-- Mirrors predicate declared in ontology/fact-types.yaml. List fact
+       (cardinality many): not functional. -->
+  <owl:ObjectProperty rdf:about="sapnexus:hasSalesOrderList">
+    <rdfs:domain rdf:resource="sapnexus:SalesOrder"/>
+    <rdfs:range rdf:resource="sapnexus:SalesOrderListFact"/>
+  </owl:ObjectProperty>
 
   <owl:NamedIndividual rdf:about="sapnexus:SD_SalesOrder_GetList">
     <rdf:type rdf:resource="sapnexus:Function"/>

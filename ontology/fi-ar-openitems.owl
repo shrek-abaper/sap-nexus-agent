@@ -3,6 +3,7 @@
     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
     xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
     xmlns:sapnexus="https://sap-nexus-agent.local/ontology#">
 
   <owl:Ontology rdf:about="https://sap-nexus-agent.local/ontology/fi-ar-openitems">
@@ -12,13 +13,46 @@
   <owl:Class rdf:about="sapnexus:CustomerOpenItem">
     <rdfs:subClassOf rdf:resource="sapnexus:BusinessObject"/>
   </owl:Class>
-  <owl:Class rdf:about="sapnexus:CompanyCode"/>
-  <owl:Class rdf:about="sapnexus:KeyDate"/>
-  <owl:Class rdf:about="sapnexus:AccountingDocumentNumber"/>
-  <owl:Class rdf:about="sapnexus:PostingDate"/>
-  <owl:Class rdf:about="sapnexus:Amount"/>
-  <owl:Class rdf:about="sapnexus:NetDueDate"/>
-  <owl:Class rdf:about="sapnexus:ClearingDate"/>
+  <!-- Scalar value types carried directly by BAPI parameters. -->
+  <rdfs:Datatype rdf:about="sapnexus:CompanyCode">
+    <owl:onDatatype rdf:resource="xsd:string"/>
+    <owl:withRestrictions rdf:parseType="Constraint">
+      <rdf:Description>
+        <xsd:pattern rdf:datatype="xsd:string">[A-Z0-9]{1,4}</xsd:pattern>
+        <xsd:maxLength rdf:datatype="xsd:nonNegativeInteger">4</xsd:maxLength>
+      </rdf:Description>
+    </owl:withRestrictions>
+  </rdfs:Datatype>
+  <rdfs:Datatype rdf:about="sapnexus:KeyDate">
+    <owl:equivalentClass rdf:resource="xsd:date"/>
+  </rdfs:Datatype>
+  <!-- Plain string alias: tighten with real document-number length when known. -->
+  <rdfs:Datatype rdf:about="sapnexus:AccountingDocumentNumber">
+    <owl:equivalentClass rdf:resource="xsd:string"/>
+  </rdfs:Datatype>
+  <rdfs:Datatype rdf:about="sapnexus:PostingDate">
+    <owl:equivalentClass rdf:resource="xsd:date"/>
+  </rdfs:Datatype>
+  <rdfs:Datatype rdf:about="sapnexus:Amount">
+    <owl:equivalentClass rdf:resource="xsd:decimal"/>
+  </rdfs:Datatype>
+  <rdfs:Datatype rdf:about="sapnexus:NetDueDate">
+    <owl:equivalentClass rdf:resource="xsd:date"/>
+  </rdfs:Datatype>
+  <rdfs:Datatype rdf:about="sapnexus:ClearingDate">
+    <owl:equivalentClass rdf:resource="xsd:date"/>
+  </rdfs:Datatype>
+
+  <owl:Class rdf:about="sapnexus:CustomerOpenItemsFact">
+    <rdfs:subClassOf rdf:resource="sapnexus:ReasoningFact"/>
+  </owl:Class>
+
+  <!-- Mirrors predicate declared in ontology/fact-types.yaml. List fact
+       (cardinality many): not functional. -->
+  <owl:ObjectProperty rdf:about="sapnexus:hasCustomerOpenItems">
+    <rdfs:domain rdf:resource="sapnexus:CustomerOpenItem"/>
+    <rdfs:range rdf:resource="sapnexus:CustomerOpenItemsFact"/>
+  </owl:ObjectProperty>
 
   <owl:NamedIndividual rdf:about="sapnexus:FI_AR_GetOpenItems">
     <rdf:type rdf:resource="sapnexus:Function"/>
