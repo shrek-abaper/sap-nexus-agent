@@ -1,0 +1,87 @@
+<?xml version="1.0"?>
+<rdf:RDF
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:odrl="http://www.w3.org/ns/odrl/2/"
+    xmlns:sapnexus="https://sap-nexus-agent.local/ontology#">
+
+  <owl:Ontology rdf:about="https://sap-nexus-agent.local/ontology/odrl-policies">
+    <rdfs:comment>
+      ODRL formalization of capability execution policy. Offline semantic
+      mirror: enforcement stays deterministic (approval store plus Gateway
+      checks). The duty here is exactly the hard boundary "a recorded human
+      confirmation exists for this WRITE capability before execution" -
+      no model confidence can satisfy or waive it.
+    </rdfs:comment>
+    <owl:imports rdf:resource="https://sap-nexus-agent.local/ontology/core"/>
+  </owl:Ontology>
+
+  <!-- WRITE policy: execution permitted only with the human-confirmation duty. -->
+  <odrl:Set rdf:about="sapnexus:Policy.PR.CreateDraft">
+    <odrl:permission>
+      <odrl:Permission>
+        <odrl:action rdf:resource="odrl:execute"/>
+        <odrl:target rdf:resource="sapnexus:MM_PR_CreateDraft"/>
+        <odrl:duty>
+          <odrl:Duty>
+            <odrl:action rdf:resource="sapnexus:recordedHumanConfirmation"/>
+          </odrl:Duty>
+        </odrl:duty>
+      </odrl:Permission>
+    </odrl:permission>
+  </odrl:Set>
+
+  <!-- Definition of the duty action: when it counts as fulfilled. -->
+  <owl:NamedIndividual rdf:about="sapnexus:recordedHumanConfirmation">
+    <rdfs:comment>
+      Fulfilled iff an ApprovalRecord with status approved exists for the same
+      capabilityId and the exact parameter snapshot hash being executed, and is
+      not expired. An unfulfilled duty means the execute permission does not
+      hold; the capability stays awaiting approval.
+    </rdfs:comment>
+  </owl:NamedIndividual>
+
+  <!-- READ policy: Functions carry no duty; their read permission is
+       unconditional, matching the Function disjointWith Action axiom and the
+       governance invariant that Functions are read-only and approval-free. -->
+  <odrl:Set rdf:about="sapnexus:Policy.ReadFunctions">
+    <odrl:permission>
+      <odrl:Permission>
+        <odrl:action rdf:resource="odrl:read"/>
+        <odrl:target rdf:resource="sapnexus:MM_Inventory_GetAvailability"/>
+      </odrl:Permission>
+    </odrl:permission>
+    <odrl:permission>
+      <odrl:Permission>
+        <odrl:action rdf:resource="odrl:read"/>
+        <odrl:target rdf:resource="sapnexus:MM_PurchaseOrder_GetList"/>
+      </odrl:Permission>
+    </odrl:permission>
+    <odrl:permission>
+      <odrl:Permission>
+        <odrl:action rdf:resource="odrl:read"/>
+        <odrl:target rdf:resource="sapnexus:MM_Material_GetInfo"/>
+      </odrl:Permission>
+    </odrl:permission>
+    <odrl:permission>
+      <odrl:Permission>
+        <odrl:action rdf:resource="odrl:read"/>
+        <odrl:target rdf:resource="sapnexus:SD_SalesOrder_GetList"/>
+      </odrl:Permission>
+    </odrl:permission>
+    <odrl:permission>
+      <odrl:Permission>
+        <odrl:action rdf:resource="odrl:read"/>
+        <odrl:target rdf:resource="sapnexus:FI_AR_GetOpenItems"/>
+      </odrl:Permission>
+    </odrl:permission>
+    <odrl:permission>
+      <odrl:Permission>
+        <odrl:action rdf:resource="odrl:read"/>
+        <odrl:target rdf:resource="sapnexus:FI_AP_GetOpenItems"/>
+      </odrl:Permission>
+    </odrl:permission>
+  </odrl:Set>
+
+</rdf:RDF>

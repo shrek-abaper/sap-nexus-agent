@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sap-nexus-agent.local/schemas/business-rule-catalog.schema.json",
+  "title": "SAP Nexus Business Rule Catalog",
+  "description": "Declarative catalog of business rules with provenance, version, and constraint strength. Structural invariants stay enforced by validators and are not cataloged here.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "rules"],
+  "properties": {
+    "version": { "type": "integer", "const": 1 },
+    "rules": {
+      "type": "array",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/rule" }
+    }
+  },
+  "$defs": {
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ruleId",
+        "title",
+        "status",
+        "kind",
+        "constraintStrength",
+        "statement",
+        "scope",
+        "source",
+        "version"
+      ],
+      "properties": {
+        "ruleId": {
+          "type": "string",
+          "pattern": "^sapnexus:rule\\.[a-z0-9-]+$"
+        },
+        "title": { "type": "string", "minLength": 1 },
+        "status": { "type": "string", "enum": ["active"] },
+        "kind": {
+          "type": "string",
+          "enum": ["business"],
+          "description": "Structural invariants are validator-owned, not catalog entries."
+        },
+        "constraintStrength": {
+          "type": "string",
+          "enum": ["strong", "weak"],
+          "description": "Strong = mandatory business correctness; weak = autonomy allowed."
+        },
+        "statement": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Declarative business rule statement, not an implementation description."
+        },
+        "scope": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["domain", "capabilityId"],
+          "properties": {
+            "domain": { "type": "string", "enum": ["MM", "SD", "FI"] },
+            "capabilityId": { "type": "string", "minLength": 1 }
+          }
+        },
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["implementedBy"],
+          "properties": {
+            "implementedBy": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_./-]+\\.[A-Za-z]+:[A-Za-z_][A-Za-z0-9_]*$",
+              "description": "Repository path : implementing symbol. The fact source of truth is the code; the catalog points to it."
+            }
+          }
+        },
+        "version": { "type": "integer", "minimum": 1 }
+      }
+    }
+  }
+}

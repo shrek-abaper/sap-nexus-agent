@@ -1,0 +1,94 @@
+version: 1
+# Business rule catalog. Declarative registry of business rules with
+# provenance and version; code remains the implementation source of truth,
+# so each rule names its implementing symbol.
+#
+# Structural invariants (Function read-only, Action human approval, closed
+# sets, validate-before-execute, approval/hash binding) are NOT cataloged
+# here: they are enforced by the registry/planning contract validators.
+rules:
+  - ruleId: sapnexus:rule.pr-quantity-is-supply-gap
+    title: PR proposal quantity equals the supply gap
+    status: active
+    kind: business
+    constraintStrength: strong
+    statement: >-
+      The proposed PR quantity MUST be the supply gap, never the user's target
+      requirement directly.
+    scope:
+      domain: MM
+      capabilityId: MM.PR.CreateDraft
+    source:
+      implementedBy: agent/sap_nexus_agent/replenishment.py:compute_replenishment_gap
+    version: 1
+  - ruleId: sapnexus:rule.supply-composition
+    title: Supply equals current stock plus in-transit due by the target date
+    status: active
+    kind: business
+    constraintStrength: strong
+    statement: >-
+      Supply = current stock (WB) plus purchase requisition (BA) and purchase
+      order item (BE) in-transit quantities due by the target date.
+    scope:
+      domain: MM
+      capabilityId: MM.PR.CreateDraft
+    source:
+      implementedBy: agent/sap_nexus_agent/replenishment.py:compute_replenishment_gap
+    version: 1
+  - ruleId: sapnexus:rule.stock-always-counted
+    title: Stock MRP element is always counted
+    status: active
+    kind: business
+    constraintStrength: strong
+    statement: >-
+      The WB (stock) MRP element is always counted as supply regardless of
+      date.
+    scope:
+      domain: MM
+      capabilityId: MM.PR.CreateDraft
+    source:
+      implementedBy: agent/sap_nexus_agent/replenishment.py:compute_replenishment_gap
+    version: 1
+  - ruleId: sapnexus:rule.in-transit-due-by-target
+    title: In-transit lines count only when due by the target date
+    status: active
+    kind: business
+    constraintStrength: strong
+    statement: >-
+      BA and BE lines count toward supply only when their available date is on
+      or before the target date; later lines are excluded.
+    scope:
+      domain: MM
+      capabilityId: MM.PR.CreateDraft
+    source:
+      implementedBy: agent/sap_nexus_agent/replenishment.py:compute_replenishment_gap
+    version: 1
+  - ruleId: sapnexus:rule.other-indicators-never-supply
+    title: Other MRP indicators never count as supply
+    status: active
+    kind: business
+    constraintStrength: strong
+    statement: >-
+      Any MRP indicator other than WB, BA, and BE is a demand or planning
+      element and never counts as supply.
+    scope:
+      domain: MM
+      capabilityId: MM.PR.CreateDraft
+    source:
+      implementedBy: agent/sap_nexus_agent/replenishment.py:compute_replenishment_gap
+    version: 1
+  - ruleId: sapnexus:rule.no-gap-or-unusable-data
+    title: No replenishment on non-positive gap; fail closed on unusable data
+    status: active
+    kind: business
+    constraintStrength: strong
+    statement: >-
+      When the gap is zero or negative the supply already covers the target and
+      no replenishment is proposed; when availability data is unusable no
+      proposal is produced (fail closed).
+    scope:
+      domain: MM
+      capabilityId: MM.PR.CreateDraft
+    source:
+      implementedBy: agent/sap_nexus_agent/replenishment.py:compute_replenishment_gap
+    version: 1
