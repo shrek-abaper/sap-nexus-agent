@@ -16,6 +16,10 @@ The skeleton is organized as:
   domain/range; single-valued facts are functional;
 - Derived datatypes for scalar value types carried by BAPI/OData parameters
   (plant, company code, amounts, dates...), not business-object classes;
+- OWL-S IOPE preconditions/effects (`capability-iope.owl`) and ODRL execution
+  policy with the human-confirmation duty (`odrl-policies.owl`);
+- Declarative business rule catalog (`business-rules.yaml`) pointing to the
+  implementing code; structural invariants stay validator-owned;
 - `Function` disjoint with `Action` as the OWL mirror of the governance invariant.
 
 The registry contract validator remains the enforcement gate; these OWL

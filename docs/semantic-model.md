@@ -59,8 +59,8 @@
 
 - **结构不变量**：Function 必须只读、Action 必须人审、闭集校验、参数约束——由 validator 确定性强制执行，是唯一真相源；
 - **审批与数据治理**：`governance.approvalPolicy / sideEffect / dataClassification / auditRequired`；
-- **业务规则**（补货逻辑、风险阈值等）：当前部分在确定性代码中；未来需要沉淀时建立声明式规则目录，带来源、版本、适用范围，不散落进 prompt；
-- 载体：`scripts/validate-registry-contract.py`、`scripts/validate-semantic-planning-contract.py`、capability `governance`。
+- **业务规则**（补货缺口、供应认定等）：在确定性代码中实现，并在**声明式业务规则目录**登记（带来源、版本、约束强度、落地符号），不散落进 prompt；目录指向实现代码，不产生第二真相源；
+- 载体：`scripts/validate-registry-contract.py`、`scripts/validate-semantic-planning-contract.py`、capability `governance`、`ontology/business-rules.yaml`。
 
 ## 3. 层间链接
 
@@ -89,6 +89,7 @@
 | Fact predicate 落为带 domain/range 的 OWL 属性，单值事实函数式 | 已完成（2026-09） |
 | 标量值类型建模为派生数据类型；`Function disjointWith Action` | 已完成（2026-09） |
 | 依赖边确定性派生（`Material.GetInfo → PR.CreateDraft`） | 已存在并接线 |
-| IOPE 前置条件 / 审批策略 ODRL 化 | 待办 |
-| 业务规则声明目录 | 待办（按需） |
+| IOPE 前置条件 / Effect（`ontology/capability-iope.owl`） | 已完成（2026-09） |
+| 审批策略 ODRL 化（`ontology/odrl-policies.owl`：execute 权限 + 人审 duty） | 已完成（2026-09） |
+| 业务规则声明目录（`ontology/business-rules.yaml`） | 已完成（2026-09） |
 | fact JSON → Turtle 序列化器（`scripts/serialize-facts-turtle.py`，单向） | 已完成（2026-09） |
