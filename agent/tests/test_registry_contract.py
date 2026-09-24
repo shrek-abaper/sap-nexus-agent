@@ -365,7 +365,10 @@ def test_inventory_ontology_identity_exists():
     errors = validate_registry_contract(contract, repo_root=Path("."))
     assert errors == []
     owl_text = Path("ontology/mm-inventory.owl").read_text(encoding="utf-8")
-    assert "sapnexus:MM_Inventory_GetAvailability" in owl_text
+    assert (
+        "https://sap-nexus-agent.local/ontology#MM_Inventory_GetAvailability"
+        in owl_text
+    )
 
 
 def test_missing_ontology_identity_fails(tmp_path):

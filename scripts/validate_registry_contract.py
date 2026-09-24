@@ -641,8 +641,15 @@ def _find_forbidden_secret_keys(value: Any, context: str) -> list[str]:
 def _ontology_contains(ontology_dir: Path, ontology_iri: str) -> bool:
     if not ontology_iri or not ontology_dir.exists():
         return False
+    # Accept both the CURIE form authored in legacy fixtures and the
+    # expanded IRI (https://...#LocalName) used by authored files.
+    local_name = (
+        ontology_iri.split(":", 1)[1] if ontology_iri.startswith("sapnexus:") else ontology_iri
+    )
+    needles = (ontology_iri, f"#{local_name}")
     for path in ontology_dir.glob("*.owl"):
-        if ontology_iri in path.read_text(encoding="utf-8"):
+        text = path.read_text(encoding="utf-8")
+        if any(needle in text for needle in needles):
             return True
     return False
 

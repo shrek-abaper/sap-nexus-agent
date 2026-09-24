@@ -196,5 +196,64 @@ OntologyBinding 也可由开源平台（Semantica 首选 / EvoOntology 备选）
 - [ ] 评审本提案，决定是否立项
 - [ ] 立项后按 §5 Phase 0 启动：codegen + shadow
 - [ ] 按 §10.4 对 Semantica（首选）/ EvoOntology（备选）执行旁路 spike
+- [ ] 按 §12 执行 Semantica shadow spike 任务 1（环境 + 现有 OWL 加载验证）
 - [ ] 依据 shadow 与 spike 数据决定：自建 / 采用平台 / 继续挂起
+
+## 12. 落地方案：Semantica 旁路 shadow spike（附录）
+
+第一步落地为**隔离目录内的旁路 shadow spike**：生产代码、执行链路零改动；不接 SAP、不给凭据。产物全部限制在新建 `spikes/` 目录，因此本阶段不触发 Comet HEAVY；**spike 通过后进入 Phase 1（改造消费方）时再 Comet 立项。**
+
+### 12.1 目录与环境
+
+```text
+spikes/semantica-shadow/
+├── README.md                    # spike 记录与复现步骤
+├── .gitignore                   # 忽略 .venv/、graph 文件、中间产物
+├── bundle/                      # codegen 产出的 Turtle/SHACL（提交审查）
+├── scripts/
+│   ├── build_bundle.py          # YAML + 现有 OWL → canonical bundle
+│   ├── load_graph.py            # bundle → Semantica 图（SEMANTICA_KG_PATH 持久化）
+│   ├── query_shadow.py          # 四类查询，输出结论 JSON
+│   └── replay_compare.py        # eval 回放 + 双路径对比报告
+└── reports/                     # 对比报告（提交最终版）
+```
+
+- 独立 venv：`spikes/semantica-shadow/.venv` 安装 semantica，重依赖与项目 `.venv` 隔离；agent `pyproject.toml` 不动；
+- 批量 shadow 以子进程调用该 venv（库/REST 均可）；MCP stdio 留待 Phase 3 验证。
+
+### 12.2 数据 bundle：已有与缺口
+
+| 内容 | 现状 | spike 处理 |
+|---|---|---|
+| 类/属性/IOPE/ODRL | `ontology/*.owl` 已齐备 | 直接加载，验证可被其图原样解析 |
+| 能力标签/别名 | 仅 YAML 的 aliases/examples | codegen：能力 → SKOS Concept（prefLabel/altLabel） |
+| 入参约束（minLength/pattern） | YAML 内，无 SHACL | codegen：→ SHACL NodeShape（参数校验依据） |
+| 事实样例 | eval 中 | 经 `serialize-facts-turtle.py` 投影，仅作查询语料 |
+
+bundle 按 `registrySnapshotId` 组织，同输入哈希必须稳定（测试锁定）；方向严格 `YAML/OWL → bundle` 单向。
+
+### 12.3 任务分解
+
+1. 环境与骨架 → verify：`semantica doctor` 通过；现有 OWL 全部载入并记录 triple 数；
+2. bundle codegen（SKOS + SHACL）→ verify：哈希稳定；SHACL 与 YAML 约束逐条核对；
+3. 查询适配（参数校验 / 前置 / 权限 duty / SKOS 召回）→ verify：每个查询有正反控制样例；
+4. eval 回放对比（意图 + PR 审批，含过期/版本不符/重复提交）→ verify：差异全部列出；
+5. 资源与稳定性（加载时间、内存、查询延迟、可重复性）→ verify：两次报告一致；
+6. 评审材料定稿，给出 Go / No-Go 建议。
+
+### 12.4 出口判据
+
+| 指标 | 阈值 |
+|---|---|
+| 参数校验 / 前置 / 权限 双路径一致率 | = 100%（差异即 codegen 错误） |
+| bundle 可复现 | 连续两次构建哈希一致 |
+| SKOS 召回 | 报告 Top-1/Top-2 覆盖率与分布；本阶段不设切换阈值（Phase 3 用） |
+| 资源占用 | 加载/查询延迟与内存有实测，无硬门槛 |
+| 边界 | 全程无 SAP 连接、无凭据使用、无对 registry/ontology 的写操作 |
+
+### 12.5 后续走向
+
+- **Go**：按 §5 进入 Phase 1 并 Comet 立项，先切参数校验/前置解析（enforce 仍在我方）；
+- **No-Go（平台过重/不稳定/导入受限）**：回落自建轻量 rdflib binding；codegen 与对比口径直接复用；
+- **暂缓**：数据保留，结论回填本节。
 
