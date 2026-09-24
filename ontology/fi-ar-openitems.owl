@@ -10,52 +10,52 @@
     <owl:imports rdf:resource="https://sap-nexus-agent.local/ontology/core"/>
   </owl:Ontology>
 
-  <owl:Class rdf:about="sapnexus:CustomerOpenItem">
-    <rdfs:subClassOf rdf:resource="sapnexus:BusinessObject"/>
+  <owl:Class rdf:about="https://sap-nexus-agent.local/ontology#CustomerOpenItem">
+    <rdfs:subClassOf rdf:resource="https://sap-nexus-agent.local/ontology#BusinessObject"/>
   </owl:Class>
   <!-- Scalar value types carried directly by BAPI parameters. -->
-  <rdfs:Datatype rdf:about="sapnexus:CompanyCode">
+  <rdfs:Datatype rdf:about="https://sap-nexus-agent.local/ontology#CompanyCode">
     <owl:onDatatype rdf:resource="xsd:string"/>
-    <owl:withRestrictions rdf:parseType="Constraint">
+    <owl:withRestrictions rdf:parseType="Collection">
       <rdf:Description>
         <xsd:pattern rdf:datatype="xsd:string">[A-Z0-9]{1,4}</xsd:pattern>
         <xsd:maxLength rdf:datatype="xsd:nonNegativeInteger">4</xsd:maxLength>
       </rdf:Description>
     </owl:withRestrictions>
   </rdfs:Datatype>
-  <rdfs:Datatype rdf:about="sapnexus:KeyDate">
+  <rdfs:Datatype rdf:about="https://sap-nexus-agent.local/ontology#KeyDate">
     <owl:equivalentClass rdf:resource="xsd:date"/>
   </rdfs:Datatype>
   <!-- Plain string alias: tighten with real document-number length when known. -->
-  <rdfs:Datatype rdf:about="sapnexus:AccountingDocumentNumber">
+  <rdfs:Datatype rdf:about="https://sap-nexus-agent.local/ontology#AccountingDocumentNumber">
     <owl:equivalentClass rdf:resource="xsd:string"/>
   </rdfs:Datatype>
-  <rdfs:Datatype rdf:about="sapnexus:PostingDate">
+  <rdfs:Datatype rdf:about="https://sap-nexus-agent.local/ontology#PostingDate">
     <owl:equivalentClass rdf:resource="xsd:date"/>
   </rdfs:Datatype>
-  <rdfs:Datatype rdf:about="sapnexus:Amount">
+  <rdfs:Datatype rdf:about="https://sap-nexus-agent.local/ontology#Amount">
     <owl:equivalentClass rdf:resource="xsd:decimal"/>
   </rdfs:Datatype>
-  <rdfs:Datatype rdf:about="sapnexus:NetDueDate">
+  <rdfs:Datatype rdf:about="https://sap-nexus-agent.local/ontology#NetDueDate">
     <owl:equivalentClass rdf:resource="xsd:date"/>
   </rdfs:Datatype>
-  <rdfs:Datatype rdf:about="sapnexus:ClearingDate">
+  <rdfs:Datatype rdf:about="https://sap-nexus-agent.local/ontology#ClearingDate">
     <owl:equivalentClass rdf:resource="xsd:date"/>
   </rdfs:Datatype>
 
-  <owl:Class rdf:about="sapnexus:CustomerOpenItemsFact">
-    <rdfs:subClassOf rdf:resource="sapnexus:ReasoningFact"/>
+  <owl:Class rdf:about="https://sap-nexus-agent.local/ontology#CustomerOpenItemsFact">
+    <rdfs:subClassOf rdf:resource="https://sap-nexus-agent.local/ontology#ReasoningFact"/>
   </owl:Class>
 
   <!-- Mirrors predicate declared in ontology/fact-types.yaml. List fact
        (cardinality many): not functional. -->
-  <owl:ObjectProperty rdf:about="sapnexus:hasCustomerOpenItems">
-    <rdfs:domain rdf:resource="sapnexus:CustomerOpenItem"/>
-    <rdfs:range rdf:resource="sapnexus:CustomerOpenItemsFact"/>
+  <owl:ObjectProperty rdf:about="https://sap-nexus-agent.local/ontology#hasCustomerOpenItems">
+    <rdfs:domain rdf:resource="https://sap-nexus-agent.local/ontology#CustomerOpenItem"/>
+    <rdfs:range rdf:resource="https://sap-nexus-agent.local/ontology#CustomerOpenItemsFact"/>
   </owl:ObjectProperty>
 
-  <owl:NamedIndividual rdf:about="sapnexus:FI_AR_GetOpenItems">
-    <rdf:type rdf:resource="sapnexus:Function"/>
+  <owl:NamedIndividual rdf:about="https://sap-nexus-agent.local/ontology#FI_AR_GetOpenItems">
+    <rdf:type rdf:resource="https://sap-nexus-agent.local/ontology#Function"/>
     <rdfs:label>FI.AR.GetOpenItems</rdfs:label>
   </owl:NamedIndividual>
 </rdf:RDF>

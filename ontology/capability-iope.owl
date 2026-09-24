@@ -16,143 +16,143 @@
     <owl:imports rdf:resource="https://sap-nexus-agent.local/ontology/core"/>
   </owl:Ontology>
 
-  <owl:ObjectProperty rdf:about="sapnexus:hasPrecondition">
-    <rdfs:domain rdf:resource="sapnexus:Capability"/>
-    <rdfs:range rdf:resource="sapnexus:Precondition"/>
+  <owl:ObjectProperty rdf:about="https://sap-nexus-agent.local/ontology#hasPrecondition">
+    <rdfs:domain rdf:resource="https://sap-nexus-agent.local/ontology#Capability"/>
+    <rdfs:range rdf:resource="https://sap-nexus-agent.local/ontology#Precondition"/>
     <rdfs:comment>Mirrors OWL-S Process hasPrecondition.</rdfs:comment>
   </owl:ObjectProperty>
-  <owl:ObjectProperty rdf:about="sapnexus:hasEffect">
-    <rdfs:domain rdf:resource="sapnexus:Capability"/>
-    <rdfs:range rdf:resource="sapnexus:Effect"/>
+  <owl:ObjectProperty rdf:about="https://sap-nexus-agent.local/ontology#hasEffect">
+    <rdfs:domain rdf:resource="https://sap-nexus-agent.local/ontology#Capability"/>
+    <rdfs:range rdf:resource="https://sap-nexus-agent.local/ontology#Effect"/>
     <rdfs:comment>Mirrors OWL-S Process Effect.</rdfs:comment>
   </owl:ObjectProperty>
 
-  <owl:Class rdf:about="sapnexus:Precondition"/>
-  <owl:Class rdf:about="sapnexus:Effect"/>
+  <owl:Class rdf:about="https://sap-nexus-agent.local/ontology#Precondition"/>
+  <owl:Class rdf:about="https://sap-nexus-agent.local/ontology#Effect"/>
 
   <!-- ============================ Preconditions ============================ -->
 
-  <owl:NamedIndividual rdf:about="sapnexus:Precondition.Inventory.RequiredKeys">
-    <rdf:type rdf:resource="sapnexus:Precondition"/>
+  <owl:NamedIndividual rdf:about="https://sap-nexus-agent.local/ontology#Precondition.Inventory.RequiredKeys">
+    <rdf:type rdf:resource="https://sap-nexus-agent.local/ontology#Precondition"/>
     <rdfs:label xml:lang="en">material and plant are present</rdfs:label>
   </owl:NamedIndividual>
 
-  <owl:NamedIndividual rdf:about="sapnexus:Precondition.PurchaseOrder.AnyFilter">
-    <rdf:type rdf:resource="sapnexus:Precondition"/>
+  <owl:NamedIndividual rdf:about="https://sap-nexus-agent.local/ontology#Precondition.PurchaseOrder.AnyFilter">
+    <rdf:type rdf:resource="https://sap-nexus-agent.local/ontology#Precondition"/>
     <rdfs:label xml:lang="en">at least one filter (PO number, supplier, plant, or material) is present</rdfs:label>
   </owl:NamedIndividual>
 
-  <owl:NamedIndividual rdf:about="sapnexus:Precondition.Material.RequiredKeys">
-    <rdf:type rdf:resource="sapnexus:Precondition"/>
+  <owl:NamedIndividual rdf:about="https://sap-nexus-agent.local/ontology#Precondition.Material.RequiredKeys">
+    <rdf:type rdf:resource="https://sap-nexus-agent.local/ontology#Precondition"/>
     <rdfs:label xml:lang="en">material and plant are present</rdfs:label>
   </owl:NamedIndividual>
 
-  <owl:NamedIndividual rdf:about="sapnexus:Precondition.SalesOrder.AnyFilter">
-    <rdf:type rdf:resource="sapnexus:Precondition"/>
+  <owl:NamedIndividual rdf:about="https://sap-nexus-agent.local/ontology#Precondition.SalesOrder.AnyFilter">
+    <rdf:type rdf:resource="https://sap-nexus-agent.local/ontology#Precondition"/>
     <rdfs:label xml:lang="en">at least one filter (customer, sales organization, material, or document date) is present</rdfs:label>
   </owl:NamedIndividual>
 
-  <owl:NamedIndividual rdf:about="sapnexus:Precondition.AR.RequiredKeys">
-    <rdf:type rdf:resource="sapnexus:Precondition"/>
+  <owl:NamedIndividual rdf:about="https://sap-nexus-agent.local/ontology#Precondition.AR.RequiredKeys">
+    <rdf:type rdf:resource="https://sap-nexus-agent.local/ontology#Precondition"/>
     <rdfs:label xml:lang="en">customer and company code are present</rdfs:label>
   </owl:NamedIndividual>
 
-  <owl:NamedIndividual rdf:about="sapnexus:Precondition.AP.RequiredKeys">
-    <rdf:type rdf:resource="sapnexus:Precondition"/>
+  <owl:NamedIndividual rdf:about="https://sap-nexus-agent.local/ontology#Precondition.AP.RequiredKeys">
+    <rdf:type rdf:resource="https://sap-nexus-agent.local/ontology#Precondition"/>
     <rdfs:label xml:lang="en">supplier and company code are present</rdfs:label>
   </owl:NamedIndividual>
 
-  <owl:NamedIndividual rdf:about="sapnexus:Precondition.PR.RequiredInputs">
-    <rdf:type rdf:resource="sapnexus:Precondition"/>
+  <owl:NamedIndividual rdf:about="https://sap-nexus-agent.local/ontology#Precondition.PR.RequiredInputs">
+    <rdf:type rdf:resource="https://sap-nexus-agent.local/ontology#Precondition"/>
     <rdfs:label xml:lang="en">all required inputs are present (material, plant, quantity, unit, delivery date, purchasing group)</rdfs:label>
   </owl:NamedIndividual>
 
   <!-- Conditional precondition, mirrors inputs.cost_center.requiredWhen. -->
-  <owl:NamedIndividual rdf:about="sapnexus:Precondition.PR.KRequiresCostCenter">
-    <rdf:type rdf:resource="sapnexus:Precondition"/>
+  <owl:NamedIndividual rdf:about="https://sap-nexus-agent.local/ontology#Precondition.PR.KRequiresCostCenter">
+    <rdf:type rdf:resource="https://sap-nexus-agent.local/ontology#Precondition"/>
     <rdfs:label xml:lang="en">when account assignment category is K, a cost center is present</rdfs:label>
   </owl:NamedIndividual>
 
   <!-- =============================== Effects =============================== -->
 
-  <owl:NamedIndividual rdf:about="sapnexus:Effect.Inventory.ProducesFact">
-    <rdf:type rdf:resource="sapnexus:Effect"/>
+  <owl:NamedIndividual rdf:about="https://sap-nexus-agent.local/ontology#Effect.Inventory.ProducesFact">
+    <rdf:type rdf:resource="https://sap-nexus-agent.local/ontology#Effect"/>
     <rdfs:label xml:lang="en">produces InventoryAvailabilityFact</rdfs:label>
   </owl:NamedIndividual>
 
-  <owl:NamedIndividual rdf:about="sapnexus:Effect.PurchaseOrder.ProducesFact">
-    <rdf:type rdf:resource="sapnexus:Effect"/>
+  <owl:NamedIndividual rdf:about="https://sap-nexus-agent.local/ontology#Effect.PurchaseOrder.ProducesFact">
+    <rdf:type rdf:resource="https://sap-nexus-agent.local/ontology#Effect"/>
     <rdfs:label xml:lang="en">produces PurchaseOrderSupplyFact</rdfs:label>
   </owl:NamedIndividual>
 
-  <owl:NamedIndividual rdf:about="sapnexus:Effect.Material.ProducesFact">
-    <rdf:type rdf:resource="sapnexus:Effect"/>
+  <owl:NamedIndividual rdf:about="https://sap-nexus-agent.local/ontology#Effect.Material.ProducesFact">
+    <rdf:type rdf:resource="https://sap-nexus-agent.local/ontology#Effect"/>
     <rdfs:label xml:lang="en">produces MaterialInfoFact</rdfs:label>
   </owl:NamedIndividual>
 
-  <owl:NamedIndividual rdf:about="sapnexus:Effect.SalesOrder.ProducesFact">
-    <rdf:type rdf:resource="sapnexus:Effect"/>
+  <owl:NamedIndividual rdf:about="https://sap-nexus-agent.local/ontology#Effect.SalesOrder.ProducesFact">
+    <rdf:type rdf:resource="https://sap-nexus-agent.local/ontology#Effect"/>
     <rdfs:label xml:lang="en">produces SalesOrderListFact</rdfs:label>
   </owl:NamedIndividual>
 
-  <owl:NamedIndividual rdf:about="sapnexus:Effect.AR.ProducesFact">
-    <rdf:type rdf:resource="sapnexus:Effect"/>
+  <owl:NamedIndividual rdf:about="https://sap-nexus-agent.local/ontology#Effect.AR.ProducesFact">
+    <rdf:type rdf:resource="https://sap-nexus-agent.local/ontology#Effect"/>
     <rdfs:label xml:lang="en">produces CustomerOpenItemsFact</rdfs:label>
   </owl:NamedIndividual>
 
-  <owl:NamedIndividual rdf:about="sapnexus:Effect.AP.ProducesFact">
-    <rdf:type rdf:resource="sapnexus:Effect"/>
+  <owl:NamedIndividual rdf:about="https://sap-nexus-agent.local/ontology#Effect.AP.ProducesFact">
+    <rdf:type rdf:resource="https://sap-nexus-agent.local/ontology#Effect"/>
     <rdfs:label xml:lang="en">produces VendorOpenItemsFact</rdfs:label>
   </owl:NamedIndividual>
 
   <!-- WRITE effects: state change plus receipt fact. -->
-  <owl:NamedIndividual rdf:about="sapnexus:Effect.PR.PrCreated">
-    <rdf:type rdf:resource="sapnexus:Effect"/>
+  <owl:NamedIndividual rdf:about="https://sap-nexus-agent.local/ontology#Effect.PR.PrCreated">
+    <rdf:type rdf:resource="https://sap-nexus-agent.local/ontology#Effect"/>
     <rdfs:label xml:lang="en">a purchase requisition is created in SAP</rdfs:label>
   </owl:NamedIndividual>
 
-  <owl:NamedIndividual rdf:about="sapnexus:Effect.PR.ReceiptFact">
-    <rdf:type rdf:resource="sapnexus:Effect"/>
+  <owl:NamedIndividual rdf:about="https://sap-nexus-agent.local/ontology#Effect.PR.ReceiptFact">
+    <rdf:type rdf:resource="https://sap-nexus-agent.local/ontology#Effect"/>
     <rdfs:label xml:lang="en">produces PurchaseRequisitionCreatedFact carrying the PR number</rdfs:label>
   </owl:NamedIndividual>
 
   <!-- ========================= Capability bindings ========================= -->
 
-  <owl:NamedIndividual rdf:about="sapnexus:MM_Inventory_GetAvailability">
-    <sapnexus:hasPrecondition rdf:resource="sapnexus:Precondition.Inventory.RequiredKeys"/>
-    <sapnexus:hasEffect rdf:resource="sapnexus:Effect.Inventory.ProducesFact"/>
+  <owl:NamedIndividual rdf:about="https://sap-nexus-agent.local/ontology#MM_Inventory_GetAvailability">
+    <sapnexus:hasPrecondition rdf:resource="https://sap-nexus-agent.local/ontology#Precondition.Inventory.RequiredKeys"/>
+    <sapnexus:hasEffect rdf:resource="https://sap-nexus-agent.local/ontology#Effect.Inventory.ProducesFact"/>
   </owl:NamedIndividual>
 
-  <owl:NamedIndividual rdf:about="sapnexus:MM_PurchaseOrder_GetList">
-    <sapnexus:hasPrecondition rdf:resource="sapnexus:Precondition.PurchaseOrder.AnyFilter"/>
-    <sapnexus:hasEffect rdf:resource="sapnexus:Effect.PurchaseOrder.ProducesFact"/>
+  <owl:NamedIndividual rdf:about="https://sap-nexus-agent.local/ontology#MM_PurchaseOrder_GetList">
+    <sapnexus:hasPrecondition rdf:resource="https://sap-nexus-agent.local/ontology#Precondition.PurchaseOrder.AnyFilter"/>
+    <sapnexus:hasEffect rdf:resource="https://sap-nexus-agent.local/ontology#Effect.PurchaseOrder.ProducesFact"/>
   </owl:NamedIndividual>
 
-  <owl:NamedIndividual rdf:about="sapnexus:MM_Material_GetInfo">
-    <sapnexus:hasPrecondition rdf:resource="sapnexus:Precondition.Material.RequiredKeys"/>
-    <sapnexus:hasEffect rdf:resource="sapnexus:Effect.Material.ProducesFact"/>
+  <owl:NamedIndividual rdf:about="https://sap-nexus-agent.local/ontology#MM_Material_GetInfo">
+    <sapnexus:hasPrecondition rdf:resource="https://sap-nexus-agent.local/ontology#Precondition.Material.RequiredKeys"/>
+    <sapnexus:hasEffect rdf:resource="https://sap-nexus-agent.local/ontology#Effect.Material.ProducesFact"/>
   </owl:NamedIndividual>
 
-  <owl:NamedIndividual rdf:about="sapnexus:SD_SalesOrder_GetList">
-    <sapnexus:hasPrecondition rdf:resource="sapnexus:Precondition.SalesOrder.AnyFilter"/>
-    <sapnexus:hasEffect rdf:resource="sapnexus:Effect.SalesOrder.ProducesFact"/>
+  <owl:NamedIndividual rdf:about="https://sap-nexus-agent.local/ontology#SD_SalesOrder_GetList">
+    <sapnexus:hasPrecondition rdf:resource="https://sap-nexus-agent.local/ontology#Precondition.SalesOrder.AnyFilter"/>
+    <sapnexus:hasEffect rdf:resource="https://sap-nexus-agent.local/ontology#Effect.SalesOrder.ProducesFact"/>
   </owl:NamedIndividual>
 
-  <owl:NamedIndividual rdf:about="sapnexus:FI_AR_GetOpenItems">
-    <sapnexus:hasPrecondition rdf:resource="sapnexus:Precondition.AR.RequiredKeys"/>
-    <sapnexus:hasEffect rdf:resource="sapnexus:Effect.AR.ProducesFact"/>
+  <owl:NamedIndividual rdf:about="https://sap-nexus-agent.local/ontology#FI_AR_GetOpenItems">
+    <sapnexus:hasPrecondition rdf:resource="https://sap-nexus-agent.local/ontology#Precondition.AR.RequiredKeys"/>
+    <sapnexus:hasEffect rdf:resource="https://sap-nexus-agent.local/ontology#Effect.AR.ProducesFact"/>
   </owl:NamedIndividual>
 
-  <owl:NamedIndividual rdf:about="sapnexus:FI_AP_GetOpenItems">
-    <sapnexus:hasPrecondition rdf:resource="sapnexus:Precondition.AP.RequiredKeys"/>
-    <sapnexus:hasEffect rdf:resource="sapnexus:Effect.AP.ProducesFact"/>
+  <owl:NamedIndividual rdf:about="https://sap-nexus-agent.local/ontology#FI_AP_GetOpenItems">
+    <sapnexus:hasPrecondition rdf:resource="https://sap-nexus-agent.local/ontology#Precondition.AP.RequiredKeys"/>
+    <sapnexus:hasEffect rdf:resource="https://sap-nexus-agent.local/ontology#Effect.AP.ProducesFact"/>
   </owl:NamedIndividual>
 
-  <owl:NamedIndividual rdf:about="sapnexus:MM_PR_CreateDraft">
-    <sapnexus:hasPrecondition rdf:resource="sapnexus:Precondition.PR.RequiredInputs"/>
-    <sapnexus:hasPrecondition rdf:resource="sapnexus:Precondition.PR.KRequiresCostCenter"/>
-    <sapnexus:hasEffect rdf:resource="sapnexus:Effect.PR.PrCreated"/>
-    <sapnexus:hasEffect rdf:resource="sapnexus:Effect.PR.ReceiptFact"/>
+  <owl:NamedIndividual rdf:about="https://sap-nexus-agent.local/ontology#MM_PR_CreateDraft">
+    <sapnexus:hasPrecondition rdf:resource="https://sap-nexus-agent.local/ontology#Precondition.PR.RequiredInputs"/>
+    <sapnexus:hasPrecondition rdf:resource="https://sap-nexus-agent.local/ontology#Precondition.PR.KRequiresCostCenter"/>
+    <sapnexus:hasEffect rdf:resource="https://sap-nexus-agent.local/ontology#Effect.PR.PrCreated"/>
+    <sapnexus:hasEffect rdf:resource="https://sap-nexus-agent.local/ontology#Effect.PR.ReceiptFact"/>
   </owl:NamedIndividual>
 
 </rdf:RDF>

@@ -9,24 +9,24 @@
     <owl:imports rdf:resource="https://sap-nexus-agent.local/ontology/core"/>
   </owl:Ontology>
 
-  <owl:Class rdf:about="sapnexus:MaterialInfo">
-    <rdfs:subClassOf rdf:resource="sapnexus:BusinessObject"/>
+  <owl:Class rdf:about="https://sap-nexus-agent.local/ontology#MaterialInfo">
+    <rdfs:subClassOf rdf:resource="https://sap-nexus-agent.local/ontology#BusinessObject"/>
   </owl:Class>
 
-  <owl:Class rdf:about="sapnexus:MaterialInfoFact">
-    <rdfs:subClassOf rdf:resource="sapnexus:ReasoningFact"/>
+  <owl:Class rdf:about="https://sap-nexus-agent.local/ontology#MaterialInfoFact">
+    <rdfs:subClassOf rdf:resource="https://sap-nexus-agent.local/ontology#ReasoningFact"/>
   </owl:Class>
 
   <!-- Mirrors predicate declared in ontology/fact-types.yaml; functional:
        one material-info fact per material + plant (fact keyedBy). -->
-  <owl:FunctionalProperty rdf:about="sapnexus:hasMaterialInfo">
-    <rdfs:domain rdf:resource="sapnexus:MaterialInfo"/>
-    <rdfs:range rdf:resource="sapnexus:MaterialInfoFact"/>
-    <rdf:type rdf:resource="owl:ObjectProperty"/>
+  <owl:FunctionalProperty rdf:about="https://sap-nexus-agent.local/ontology#hasMaterialInfo">
+    <rdfs:domain rdf:resource="https://sap-nexus-agent.local/ontology#MaterialInfo"/>
+    <rdfs:range rdf:resource="https://sap-nexus-agent.local/ontology#MaterialInfoFact"/>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
   </owl:FunctionalProperty>
 
-  <owl:NamedIndividual rdf:about="sapnexus:MM_Material_GetInfo">
-    <rdf:type rdf:resource="sapnexus:Function"/>
+  <owl:NamedIndividual rdf:about="https://sap-nexus-agent.local/ontology#MM_Material_GetInfo">
+    <rdf:type rdf:resource="https://sap-nexus-agent.local/ontology#Function"/>
     <rdfs:label>MM.Material.GetInfo</rdfs:label>
   </owl:NamedIndividual>
 </rdf:RDF>

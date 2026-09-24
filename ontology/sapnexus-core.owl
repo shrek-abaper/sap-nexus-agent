@@ -7,48 +7,48 @@
 
   <owl:Ontology rdf:about="https://sap-nexus-agent.local/ontology/core"/>
 
-  <owl:Class rdf:about="sapnexus:Capability"/>
-  <owl:Class rdf:about="sapnexus:Skill">
-    <rdfs:subClassOf rdf:resource="sapnexus:Capability"/>
+  <owl:Class rdf:about="https://sap-nexus-agent.local/ontology#Capability"/>
+  <owl:Class rdf:about="https://sap-nexus-agent.local/ontology#Skill">
+    <rdfs:subClassOf rdf:resource="https://sap-nexus-agent.local/ontology#Capability"/>
   </owl:Class>
-  <owl:Class rdf:about="sapnexus:Function">
-    <rdfs:subClassOf rdf:resource="sapnexus:Capability"/>
+  <owl:Class rdf:about="https://sap-nexus-agent.local/ontology#Function">
+    <rdfs:subClassOf rdf:resource="https://sap-nexus-agent.local/ontology#Capability"/>
     <!-- Governance invariant mirror: Function = read-only, no approval;
          Action = human approval required. A capability is one or the other.
          The registry contract validator remains the enforcement gate. -->
-    <owl:disjointWith rdf:resource="sapnexus:Action"/>
+    <owl:disjointWith rdf:resource="https://sap-nexus-agent.local/ontology#Action"/>
   </owl:Class>
-  <owl:Class rdf:about="sapnexus:Action">
-    <rdfs:subClassOf rdf:resource="sapnexus:Capability"/>
-  </owl:Class>
-
-  <owl:Class rdf:about="sapnexus:BusinessObject"/>
-  <owl:Class rdf:about="sapnexus:ReasoningFact"/>
-  <owl:Class rdf:about="sapnexus:RecommendationPlan"/>
-  <owl:Class rdf:about="sapnexus:ApprovalRecord"/>
-  <owl:Class rdf:about="sapnexus:ActionResult"/>
-
-  <owl:Class rdf:about="sapnexus:ExecutorBinding"/>
-  <owl:Class rdf:about="sapnexus:TechnicalAdapter"/>
-  <owl:Class rdf:about="sapnexus:JcoRfcBinding">
-    <rdfs:subClassOf rdf:resource="sapnexus:ExecutorBinding"/>
-  </owl:Class>
-  <owl:Class rdf:about="sapnexus:ODataBinding">
-    <rdfs:subClassOf rdf:resource="sapnexus:ExecutorBinding"/>
-  </owl:Class>
-  <owl:Class rdf:about="sapnexus:CdsAdtBinding">
-    <rdfs:subClassOf rdf:resource="sapnexus:ExecutorBinding"/>
-  </owl:Class>
-  <owl:Class rdf:about="sapnexus:CdsODataBinding">
-    <rdfs:subClassOf rdf:resource="sapnexus:ExecutorBinding"/>
-  </owl:Class>
-  <owl:Class rdf:about="sapnexus:RestJsonBinding">
-    <rdfs:subClassOf rdf:resource="sapnexus:ExecutorBinding"/>
+  <owl:Class rdf:about="https://sap-nexus-agent.local/ontology#Action">
+    <rdfs:subClassOf rdf:resource="https://sap-nexus-agent.local/ontology#Capability"/>
   </owl:Class>
 
-  <owl:Class rdf:about="sapnexus:ExternalSystem"/>
-  <owl:Class rdf:about="sapnexus:CredentialReference"/>
-  <owl:Class rdf:about="sapnexus:JsonRequestSchema"/>
-  <owl:Class rdf:about="sapnexus:JsonResponseSchema"/>
-  <owl:Class rdf:about="sapnexus:ResponseMapping"/>
+  <owl:Class rdf:about="https://sap-nexus-agent.local/ontology#BusinessObject"/>
+  <owl:Class rdf:about="https://sap-nexus-agent.local/ontology#ReasoningFact"/>
+  <owl:Class rdf:about="https://sap-nexus-agent.local/ontology#RecommendationPlan"/>
+  <owl:Class rdf:about="https://sap-nexus-agent.local/ontology#ApprovalRecord"/>
+  <owl:Class rdf:about="https://sap-nexus-agent.local/ontology#ActionResult"/>
+
+  <owl:Class rdf:about="https://sap-nexus-agent.local/ontology#ExecutorBinding"/>
+  <owl:Class rdf:about="https://sap-nexus-agent.local/ontology#TechnicalAdapter"/>
+  <owl:Class rdf:about="https://sap-nexus-agent.local/ontology#JcoRfcBinding">
+    <rdfs:subClassOf rdf:resource="https://sap-nexus-agent.local/ontology#ExecutorBinding"/>
+  </owl:Class>
+  <owl:Class rdf:about="https://sap-nexus-agent.local/ontology#ODataBinding">
+    <rdfs:subClassOf rdf:resource="https://sap-nexus-agent.local/ontology#ExecutorBinding"/>
+  </owl:Class>
+  <owl:Class rdf:about="https://sap-nexus-agent.local/ontology#CdsAdtBinding">
+    <rdfs:subClassOf rdf:resource="https://sap-nexus-agent.local/ontology#ExecutorBinding"/>
+  </owl:Class>
+  <owl:Class rdf:about="https://sap-nexus-agent.local/ontology#CdsODataBinding">
+    <rdfs:subClassOf rdf:resource="https://sap-nexus-agent.local/ontology#ExecutorBinding"/>
+  </owl:Class>
+  <owl:Class rdf:about="https://sap-nexus-agent.local/ontology#RestJsonBinding">
+    <rdfs:subClassOf rdf:resource="https://sap-nexus-agent.local/ontology#ExecutorBinding"/>
+  </owl:Class>
+
+  <owl:Class rdf:about="https://sap-nexus-agent.local/ontology#ExternalSystem"/>
+  <owl:Class rdf:about="https://sap-nexus-agent.local/ontology#CredentialReference"/>
+  <owl:Class rdf:about="https://sap-nexus-agent.local/ontology#JsonRequestSchema"/>
+  <owl:Class rdf:about="https://sap-nexus-agent.local/ontology#JsonResponseSchema"/>
+  <owl:Class rdf:about="https://sap-nexus-agent.local/ontology#ResponseMapping"/>
 </rdf:RDF>

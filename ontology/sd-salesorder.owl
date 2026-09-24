@@ -10,69 +10,69 @@
     <owl:imports rdf:resource="https://sap-nexus-agent.local/ontology/core"/>
   </owl:Ontology>
 
-  <owl:Class rdf:about="sapnexus:SalesOrder">
-    <rdfs:subClassOf rdf:resource="sapnexus:BusinessObject"/>
+  <owl:Class rdf:about="https://sap-nexus-agent.local/ontology#SalesOrder">
+    <rdfs:subClassOf rdf:resource="https://sap-nexus-agent.local/ontology#BusinessObject"/>
   </owl:Class>
-  <owl:Class rdf:about="sapnexus:SalesOrderItem"/>
+  <owl:Class rdf:about="https://sap-nexus-agent.local/ontology#SalesOrderItem"/>
   <!-- Scalar value types carried directly by BAPI parameters. -->
-  <rdfs:Datatype rdf:about="sapnexus:SalesOrderNumber">
+  <rdfs:Datatype rdf:about="https://sap-nexus-agent.local/ontology#SalesOrderNumber">
     <owl:onDatatype rdf:resource="xsd:string"/>
-    <owl:withRestrictions rdf:parseType="Constraint">
+    <owl:withRestrictions rdf:parseType="Collection">
       <rdf:Description>
         <xsd:maxLength rdf:datatype="xsd:nonNegativeInteger">10</xsd:maxLength>
       </rdf:Description>
     </owl:withRestrictions>
   </rdfs:Datatype>
-  <rdfs:Datatype rdf:about="sapnexus:CustomerNumber">
+  <rdfs:Datatype rdf:about="https://sap-nexus-agent.local/ontology#CustomerNumber">
     <owl:onDatatype rdf:resource="xsd:string"/>
-    <owl:withRestrictions rdf:parseType="Constraint">
+    <owl:withRestrictions rdf:parseType="Collection">
       <rdf:Description>
         <xsd:pattern rdf:datatype="xsd:string">[A-Z0-9]{1,10}</xsd:pattern>
         <xsd:maxLength rdf:datatype="xsd:nonNegativeInteger">10</xsd:maxLength>
       </rdf:Description>
     </owl:withRestrictions>
   </rdfs:Datatype>
-  <rdfs:Datatype rdf:about="sapnexus:SalesOrganization">
+  <rdfs:Datatype rdf:about="https://sap-nexus-agent.local/ontology#SalesOrganization">
     <owl:onDatatype rdf:resource="xsd:string"/>
-    <owl:withRestrictions rdf:parseType="Constraint">
+    <owl:withRestrictions rdf:parseType="Collection">
       <rdf:Description>
         <xsd:pattern rdf:datatype="xsd:string">[A-Z0-9]{1,4}</xsd:pattern>
         <xsd:maxLength rdf:datatype="xsd:nonNegativeInteger">4</xsd:maxLength>
       </rdf:Description>
     </owl:withRestrictions>
   </rdfs:Datatype>
-  <rdfs:Datatype rdf:about="sapnexus:DocumentDate">
+  <rdfs:Datatype rdf:about="https://sap-nexus-agent.local/ontology#DocumentDate">
     <owl:equivalentClass rdf:resource="xsd:date"/>
   </rdfs:Datatype>
-  <rdfs:Datatype rdf:about="sapnexus:NetValue">
+  <rdfs:Datatype rdf:about="https://sap-nexus-agent.local/ontology#NetValue">
     <owl:equivalentClass rdf:resource="xsd:decimal"/>
   </rdfs:Datatype>
-  <rdfs:Datatype rdf:about="sapnexus:Currency">
+  <rdfs:Datatype rdf:about="https://sap-nexus-agent.local/ontology#Currency">
     <owl:onDatatype rdf:resource="xsd:string"/>
-    <owl:withRestrictions rdf:parseType="Constraint">
+    <owl:withRestrictions rdf:parseType="Collection">
       <rdf:Description>
         <xsd:pattern rdf:datatype="xsd:string">[A-Z]{3}</xsd:pattern>
         <xsd:maxLength rdf:datatype="xsd:nonNegativeInteger">3</xsd:maxLength>
       </rdf:Description>
     </owl:withRestrictions>
   </rdfs:Datatype>
-  <rdfs:Datatype rdf:about="sapnexus:CustomerPoNumber">
+  <rdfs:Datatype rdf:about="https://sap-nexus-agent.local/ontology#CustomerPoNumber">
     <owl:equivalentClass rdf:resource="xsd:string"/>
   </rdfs:Datatype>
 
-  <owl:Class rdf:about="sapnexus:SalesOrderListFact">
-    <rdfs:subClassOf rdf:resource="sapnexus:ReasoningFact"/>
+  <owl:Class rdf:about="https://sap-nexus-agent.local/ontology#SalesOrderListFact">
+    <rdfs:subClassOf rdf:resource="https://sap-nexus-agent.local/ontology#ReasoningFact"/>
   </owl:Class>
 
   <!-- Mirrors predicate declared in ontology/fact-types.yaml. List fact
        (cardinality many): not functional. -->
-  <owl:ObjectProperty rdf:about="sapnexus:hasSalesOrderList">
-    <rdfs:domain rdf:resource="sapnexus:SalesOrder"/>
-    <rdfs:range rdf:resource="sapnexus:SalesOrderListFact"/>
+  <owl:ObjectProperty rdf:about="https://sap-nexus-agent.local/ontology#hasSalesOrderList">
+    <rdfs:domain rdf:resource="https://sap-nexus-agent.local/ontology#SalesOrder"/>
+    <rdfs:range rdf:resource="https://sap-nexus-agent.local/ontology#SalesOrderListFact"/>
   </owl:ObjectProperty>
 
-  <owl:NamedIndividual rdf:about="sapnexus:SD_SalesOrder_GetList">
-    <rdf:type rdf:resource="sapnexus:Function"/>
+  <owl:NamedIndividual rdf:about="https://sap-nexus-agent.local/ontology#SD_SalesOrder_GetList">
+    <rdf:type rdf:resource="https://sap-nexus-agent.local/ontology#Function"/>
     <rdfs:label>SD.SalesOrder.GetList</rdfs:label>
   </owl:NamedIndividual>
 </rdf:RDF>

@@ -10,40 +10,40 @@
     <owl:imports rdf:resource="https://sap-nexus-agent.local/ontology/core"/>
   </owl:Ontology>
 
-  <owl:Class rdf:about="sapnexus:PurchaseRequisition">
-    <rdfs:subClassOf rdf:resource="sapnexus:BusinessObject"/>
+  <owl:Class rdf:about="https://sap-nexus-agent.local/ontology#PurchaseRequisition">
+    <rdfs:subClassOf rdf:resource="https://sap-nexus-agent.local/ontology#BusinessObject"/>
   </owl:Class>
-  <owl:Class rdf:about="sapnexus:PurchaseRequisitionCreateAction">
-    <rdfs:subClassOf rdf:resource="sapnexus:Action"/>
+  <owl:Class rdf:about="https://sap-nexus-agent.local/ontology#PurchaseRequisitionCreateAction">
+    <rdfs:subClassOf rdf:resource="https://sap-nexus-agent.local/ontology#Action"/>
   </owl:Class>
   <!-- Scalar value types carried directly by BAPI parameters (PRITEM.*).
        Length/pattern mirrors the capability input constraints. -->
-  <rdfs:Datatype rdf:about="sapnexus:PrNumber">
+  <rdfs:Datatype rdf:about="https://sap-nexus-agent.local/ontology#PrNumber">
     <owl:equivalentClass rdf:resource="xsd:string"/>
   </rdfs:Datatype>
-  <rdfs:Datatype rdf:about="sapnexus:AcctAssignmentCat">
+  <rdfs:Datatype rdf:about="https://sap-nexus-agent.local/ontology#AcctAssignmentCat">
     <owl:onDatatype rdf:resource="xsd:string"/>
-    <owl:withRestrictions rdf:parseType="Constraint">
+    <owl:withRestrictions rdf:parseType="Collection">
       <rdf:Description>
         <xsd:pattern rdf:datatype="xsd:string">[A-Z0-9]</xsd:pattern>
         <xsd:maxLength rdf:datatype="xsd:nonNegativeInteger">1</xsd:maxLength>
       </rdf:Description>
     </owl:withRestrictions>
   </rdfs:Datatype>
-  <rdfs:Datatype rdf:about="sapnexus:CostCenter">
+  <rdfs:Datatype rdf:about="https://sap-nexus-agent.local/ontology#CostCenter">
     <owl:onDatatype rdf:resource="xsd:string"/>
-    <owl:withRestrictions rdf:parseType="Constraint">
+    <owl:withRestrictions rdf:parseType="Collection">
       <rdf:Description>
         <xsd:maxLength rdf:datatype="xsd:nonNegativeInteger">10</xsd:maxLength>
       </rdf:Description>
     </owl:withRestrictions>
   </rdfs:Datatype>
-  <rdfs:Datatype rdf:about="sapnexus:DeliveryDate">
+  <rdfs:Datatype rdf:about="https://sap-nexus-agent.local/ontology#DeliveryDate">
     <owl:equivalentClass rdf:resource="xsd:date"/>
   </rdfs:Datatype>
-  <rdfs:Datatype rdf:about="sapnexus:PurchasingGroup">
+  <rdfs:Datatype rdf:about="https://sap-nexus-agent.local/ontology#PurchasingGroup">
     <owl:onDatatype rdf:resource="xsd:string"/>
-    <owl:withRestrictions rdf:parseType="Constraint">
+    <owl:withRestrictions rdf:parseType="Collection">
       <rdf:Description>
         <xsd:pattern rdf:datatype="xsd:string">[A-Za-z0-9]{1,3}</xsd:pattern>
         <xsd:maxLength rdf:datatype="xsd:nonNegativeInteger">3</xsd:maxLength>
@@ -51,19 +51,19 @@
     </owl:withRestrictions>
   </rdfs:Datatype>
 
-  <owl:Class rdf:about="sapnexus:PurchaseRequisitionCreatedFact">
-    <rdfs:subClassOf rdf:resource="sapnexus:ReasoningFact"/>
+  <owl:Class rdf:about="https://sap-nexus-agent.local/ontology#PurchaseRequisitionCreatedFact">
+    <rdfs:subClassOf rdf:resource="https://sap-nexus-agent.local/ontology#ReasoningFact"/>
   </owl:Class>
 
   <!-- Mirrors predicate declared in ontology/fact-types.yaml. Action receipt:
        one creation fact per produced PR number; not functional across subjects. -->
-  <owl:ObjectProperty rdf:about="sapnexus:hasCreatedPurchaseRequisition">
-    <rdfs:domain rdf:resource="sapnexus:PurchaseRequisition"/>
-    <rdfs:range rdf:resource="sapnexus:PurchaseRequisitionCreatedFact"/>
+  <owl:ObjectProperty rdf:about="https://sap-nexus-agent.local/ontology#hasCreatedPurchaseRequisition">
+    <rdfs:domain rdf:resource="https://sap-nexus-agent.local/ontology#PurchaseRequisition"/>
+    <rdfs:range rdf:resource="https://sap-nexus-agent.local/ontology#PurchaseRequisitionCreatedFact"/>
   </owl:ObjectProperty>
 
-  <owl:NamedIndividual rdf:about="sapnexus:MM_PR_CreateDraft">
-    <rdf:type rdf:resource="sapnexus:PurchaseRequisitionCreateAction"/>
+  <owl:NamedIndividual rdf:about="https://sap-nexus-agent.local/ontology#MM_PR_CreateDraft">
+    <rdf:type rdf:resource="https://sap-nexus-agent.local/ontology#PurchaseRequisitionCreateAction"/>
     <rdfs:label>MM.PR.CreateDraft</rdfs:label>
   </owl:NamedIndividual>
 </rdf:RDF>

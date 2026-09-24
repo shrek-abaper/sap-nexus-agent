@@ -18,14 +18,14 @@
   </owl:Ontology>
 
   <!-- WRITE policy: execution permitted only with the human-confirmation duty. -->
-  <odrl:Set rdf:about="sapnexus:Policy.PR.CreateDraft">
+  <odrl:Set rdf:about="https://sap-nexus-agent.local/ontology#Policy.PR.CreateDraft">
     <odrl:permission>
       <odrl:Permission>
-        <odrl:action rdf:resource="odrl:execute"/>
-        <odrl:target rdf:resource="sapnexus:MM_PR_CreateDraft"/>
+        <odrl:action rdf:resource="http://www.w3.org/ns/odrl/2/execute"/>
+        <odrl:target rdf:resource="https://sap-nexus-agent.local/ontology#MM_PR_CreateDraft"/>
         <odrl:duty>
           <odrl:Duty>
-            <odrl:action rdf:resource="sapnexus:recordedHumanConfirmation"/>
+            <odrl:action rdf:resource="https://sap-nexus-agent.local/ontology#recordedHumanConfirmation"/>
           </odrl:Duty>
         </odrl:duty>
       </odrl:Permission>
@@ -33,7 +33,7 @@
   </odrl:Set>
 
   <!-- Definition of the duty action: when it counts as fulfilled. -->
-  <owl:NamedIndividual rdf:about="sapnexus:recordedHumanConfirmation">
+  <owl:NamedIndividual rdf:about="https://sap-nexus-agent.local/ontology#recordedHumanConfirmation">
     <rdfs:comment>
       Fulfilled iff an ApprovalRecord with status approved exists for the same
       capabilityId and the exact parameter snapshot hash being executed, and is
@@ -45,41 +45,41 @@
   <!-- READ policy: Functions carry no duty; their read permission is
        unconditional, matching the Function disjointWith Action axiom and the
        governance invariant that Functions are read-only and approval-free. -->
-  <odrl:Set rdf:about="sapnexus:Policy.ReadFunctions">
+  <odrl:Set rdf:about="https://sap-nexus-agent.local/ontology#Policy.ReadFunctions">
     <odrl:permission>
       <odrl:Permission>
-        <odrl:action rdf:resource="odrl:read"/>
-        <odrl:target rdf:resource="sapnexus:MM_Inventory_GetAvailability"/>
+        <odrl:action rdf:resource="http://www.w3.org/ns/odrl/2/read"/>
+        <odrl:target rdf:resource="https://sap-nexus-agent.local/ontology#MM_Inventory_GetAvailability"/>
       </odrl:Permission>
     </odrl:permission>
     <odrl:permission>
       <odrl:Permission>
-        <odrl:action rdf:resource="odrl:read"/>
-        <odrl:target rdf:resource="sapnexus:MM_PurchaseOrder_GetList"/>
+        <odrl:action rdf:resource="http://www.w3.org/ns/odrl/2/read"/>
+        <odrl:target rdf:resource="https://sap-nexus-agent.local/ontology#MM_PurchaseOrder_GetList"/>
       </odrl:Permission>
     </odrl:permission>
     <odrl:permission>
       <odrl:Permission>
-        <odrl:action rdf:resource="odrl:read"/>
-        <odrl:target rdf:resource="sapnexus:MM_Material_GetInfo"/>
+        <odrl:action rdf:resource="http://www.w3.org/ns/odrl/2/read"/>
+        <odrl:target rdf:resource="https://sap-nexus-agent.local/ontology#MM_Material_GetInfo"/>
       </odrl:Permission>
     </odrl:permission>
     <odrl:permission>
       <odrl:Permission>
-        <odrl:action rdf:resource="odrl:read"/>
-        <odrl:target rdf:resource="sapnexus:SD_SalesOrder_GetList"/>
+        <odrl:action rdf:resource="http://www.w3.org/ns/odrl/2/read"/>
+        <odrl:target rdf:resource="https://sap-nexus-agent.local/ontology#SD_SalesOrder_GetList"/>
       </odrl:Permission>
     </odrl:permission>
     <odrl:permission>
       <odrl:Permission>
-        <odrl:action rdf:resource="odrl:read"/>
-        <odrl:target rdf:resource="sapnexus:FI_AR_GetOpenItems"/>
+        <odrl:action rdf:resource="http://www.w3.org/ns/odrl/2/read"/>
+        <odrl:target rdf:resource="https://sap-nexus-agent.local/ontology#FI_AR_GetOpenItems"/>
       </odrl:Permission>
     </odrl:permission>
     <odrl:permission>
       <odrl:Permission>
-        <odrl:action rdf:resource="odrl:read"/>
-        <odrl:target rdf:resource="sapnexus:FI_AP_GetOpenItems"/>
+        <odrl:action rdf:resource="http://www.w3.org/ns/odrl/2/read"/>
+        <odrl:target rdf:resource="https://sap-nexus-agent.local/ontology#FI_AP_GetOpenItems"/>
       </odrl:Permission>
     </odrl:permission>
   </odrl:Set>

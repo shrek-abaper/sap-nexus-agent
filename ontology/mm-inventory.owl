@@ -10,41 +10,41 @@
     <owl:imports rdf:resource="https://sap-nexus-agent.local/ontology/core"/>
   </owl:Ontology>
 
-  <owl:Class rdf:about="sapnexus:Material">
-    <rdfs:subClassOf rdf:resource="sapnexus:BusinessObject"/>
+  <owl:Class rdf:about="https://sap-nexus-agent.local/ontology#Material">
+    <rdfs:subClassOf rdf:resource="https://sap-nexus-agent.local/ontology#BusinessObject"/>
   </owl:Class>
   <!-- Scalar value types carried directly by BAPI parameters: modeled as
        derived datatypes, not business-object classes. -->
-  <rdfs:Datatype rdf:about="sapnexus:Plant">
+  <rdfs:Datatype rdf:about="https://sap-nexus-agent.local/ontology#Plant">
     <owl:onDatatype rdf:resource="xsd:string"/>
-    <owl:withRestrictions rdf:parseType="Constraint">
+    <owl:withRestrictions rdf:parseType="Collection">
       <rdf:Description>
         <xsd:pattern rdf:datatype="xsd:string">[A-Z0-9]{4}</xsd:pattern>
         <xsd:maxLength rdf:datatype="xsd:nonNegativeInteger">4</xsd:maxLength>
       </rdf:Description>
     </owl:withRestrictions>
   </rdfs:Datatype>
-  <owl:Class rdf:about="sapnexus:InventoryStock">
-    <rdfs:subClassOf rdf:resource="sapnexus:BusinessObject"/>
+  <owl:Class rdf:about="https://sap-nexus-agent.local/ontology#InventoryStock">
+    <rdfs:subClassOf rdf:resource="https://sap-nexus-agent.local/ontology#BusinessObject"/>
   </owl:Class>
-  <rdfs:Datatype rdf:about="sapnexus:AvailableQuantity">
+  <rdfs:Datatype rdf:about="https://sap-nexus-agent.local/ontology#AvailableQuantity">
     <owl:equivalentClass rdf:resource="xsd:decimal"/>
   </rdfs:Datatype>
 
-  <owl:Class rdf:about="sapnexus:InventoryAvailabilityFact">
-    <rdfs:subClassOf rdf:resource="sapnexus:ReasoningFact"/>
+  <owl:Class rdf:about="https://sap-nexus-agent.local/ontology#InventoryAvailabilityFact">
+    <rdfs:subClassOf rdf:resource="https://sap-nexus-agent.local/ontology#ReasoningFact"/>
   </owl:Class>
 
   <!-- Mirrors predicate declared in ontology/fact-types.yaml; functional:
        one availability fact per material + plant (fact keyedBy). -->
-  <owl:FunctionalProperty rdf:about="sapnexus:hasInventoryAvailability">
-    <rdfs:domain rdf:resource="sapnexus:InventoryStock"/>
-    <rdfs:range rdf:resource="sapnexus:InventoryAvailabilityFact"/>
-    <rdf:type rdf:resource="owl:ObjectProperty"/>
+  <owl:FunctionalProperty rdf:about="https://sap-nexus-agent.local/ontology#hasInventoryAvailability">
+    <rdfs:domain rdf:resource="https://sap-nexus-agent.local/ontology#InventoryStock"/>
+    <rdfs:range rdf:resource="https://sap-nexus-agent.local/ontology#InventoryAvailabilityFact"/>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
   </owl:FunctionalProperty>
 
-  <owl:NamedIndividual rdf:about="sapnexus:MM_Inventory_GetAvailability">
-    <rdf:type rdf:resource="sapnexus:Function"/>
+  <owl:NamedIndividual rdf:about="https://sap-nexus-agent.local/ontology#MM_Inventory_GetAvailability">
+    <rdf:type rdf:resource="https://sap-nexus-agent.local/ontology#Function"/>
     <rdfs:label>MM.Inventory.GetAvailability</rdfs:label>
   </owl:NamedIndividual>
 </rdf:RDF>
