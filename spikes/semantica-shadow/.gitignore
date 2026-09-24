@@ -1,0 +1,7 @@
+.venv/
+*.kg
+*.graph
+graph/
+reports/interim/
+__pycache__/
+local-values.yaml

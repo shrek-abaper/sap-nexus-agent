@@ -1,0 +1,644 @@
+{
+  "cases": [
+    {
+      "caseId": "happy-path",
+      "file": "evals/inventory_availability_cases.yaml",
+      "utterance": "DEMOA1 在 1000 还有多少可用库存？",
+      "pathA": {
+        "selected": "MM.Inventory.GetAvailability",
+        "rawMissing": []
+      },
+      "recallSize": 1,
+      "selectionAgreement": true,
+      "missingB": [],
+      "missingBasis": "rawAvsB",
+      "missingAgreement": true,
+      "validation": {
+        "plant": true,
+        "material": true
+      },
+      "validationConforms": true,
+      "permissionHolds": null,
+      "expectedStatusAgreement": true
+    },
+    {
+      "caseId": "missing-plant",
+      "file": "evals/inventory_availability_cases.yaml",
+      "utterance": "查一下 DEMOA1 的可用量",
+      "pathA": {
+        "selected": "MM.Inventory.GetAvailability",
+        "rawMissing": [
+          "plant"
+        ]
+      },
+      "recallSize": 1,
+      "selectionAgreement": true,
+      "missingB": [
+        "plant"
+      ],
+      "missingBasis": "governedExpected",
+      "missingAgreement": true,
+      "validation": {
+        "material": true
+      },
+      "validationConforms": true,
+      "permissionHolds": null,
+      "expectedStatusAgreement": true
+    },
+    {
+      "caseId": "missing-material",
+      "file": "evals/inventory_availability_cases.yaml",
+      "utterance": "查一下 1000 工厂还有多少可用库存",
+      "pathA": {
+        "selected": "MM.Inventory.GetAvailability",
+        "rawMissing": [
+          "material"
+        ]
+      },
+      "recallSize": 1,
+      "selectionAgreement": true,
+      "missingB": [
+        "material"
+      ],
+      "missingBasis": "governedExpected",
+      "missingAgreement": true,
+      "validation": {
+        "plant": true
+      },
+      "validationConforms": true,
+      "permissionHolds": null,
+      "expectedStatusAgreement": true
+    },
+    {
+      "caseId": "invalid-plant",
+      "file": "evals/inventory_availability_cases.yaml",
+      "utterance": "DEMOA1 在 1000 还有多少可用库存？",
+      "pathA": {
+        "selected": "MM.Inventory.GetAvailability",
+        "rawMissing": []
+      },
+      "recallSize": 1,
+      "selectionAgreement": true,
+      "missingB": [],
+      "missingBasis": "rawAvsB",
+      "missingAgreement": true,
+      "validation": {
+        "plant": true,
+        "material": true
+      },
+      "validationConforms": true,
+      "permissionHolds": null,
+      "expectedStatusAgreement": true
+    },
+    {
+      "caseId": "unknown-intent",
+      "file": "evals/inventory_availability_cases.yaml",
+      "utterance": "帮我查一下今天的天气",
+      "pathA": {
+        "selected": null
+      },
+      "rejectedByTechnicalGuard": false,
+      "recallSize": 0,
+      "selectionAgreement": true
+    },
+    {
+      "caseId": "gateway-sensitive-failure",
+      "file": "evals/inventory_availability_cases.yaml",
+      "utterance": "DEMOA1 在 1000 还有多少可用库存？",
+      "pathA": {
+        "selected": "MM.Inventory.GetAvailability",
+        "rawMissing": []
+      },
+      "recallSize": 1,
+      "selectionAgreement": true,
+      "missingB": [],
+      "missingBasis": "rawAvsB",
+      "missingAgreement": true,
+      "validation": {
+        "plant": true,
+        "material": true
+      },
+      "validationConforms": true,
+      "permissionHolds": null,
+      "expectedStatusAgreement": true
+    },
+    {
+      "caseId": "user-rfc-name",
+      "file": "evals/inventory_availability_cases.yaml",
+      "utterance": "用 rfcName=BAPI_PO_CREATE1 查 DEMOA1 在 1000 的库存",
+      "pathA": {
+        "selected": null
+      },
+      "rejectedByTechnicalGuard": true,
+      "recallSize": 1,
+      "selectionAgreement": true
+    },
+    {
+      "caseId": "po-by-number",
+      "file": "evals/purchase_order_cases.json",
+      "utterance": "查询采购订单 DEMOPO2 的明细",
+      "pathA": {
+        "selected": "MM.PurchaseOrder.GetList",
+        "rawMissing": []
+      },
+      "recallSize": 1,
+      "selectionAgreement": true,
+      "missingB": [],
+      "missingBasis": "rawAvsB",
+      "missingAgreement": true,
+      "validation": {
+        "poNumber": true
+      },
+      "validationConforms": true,
+      "permissionHolds": null,
+      "expectedStatusAgreement": true
+    },
+    {
+      "caseId": "po-by-vendor",
+      "file": "evals/purchase_order_cases.json",
+      "utterance": "查供应商 DEMOV1 的采购订单",
+      "pathA": {
+        "selected": "MM.PurchaseOrder.GetList",
+        "rawMissing": []
+      },
+      "recallSize": 1,
+      "selectionAgreement": true,
+      "missingB": [],
+      "missingBasis": "rawAvsB",
+      "missingAgreement": true,
+      "validation": {
+        "vendor": true
+      },
+      "validationConforms": true,
+      "permissionHolds": null,
+      "expectedStatusAgreement": true
+    },
+    {
+      "caseId": "po-by-material-and-plant",
+      "file": "evals/purchase_order_cases.json",
+      "utterance": "查工厂 5300 物料 DEMOA4B 的采购订单",
+      "pathA": {
+        "selected": "MM.PurchaseOrder.GetList",
+        "rawMissing": []
+      },
+      "recallSize": 1,
+      "selectionAgreement": true,
+      "missingB": [],
+      "missingBasis": "rawAvsB",
+      "missingAgreement": true,
+      "validation": {
+        "plant": true,
+        "material": true
+      },
+      "validationConforms": true,
+      "permissionHolds": null,
+      "expectedStatusAgreement": true
+    },
+    {
+      "caseId": "so-by-customer",
+      "file": "evals/sales_order_list_cases.yaml",
+      "utterance": "查客户 1000 的销售订单",
+      "pathA": {
+        "selected": "SD.SalesOrder.GetList",
+        "rawMissing": []
+      },
+      "recallSize": 2,
+      "selectionAgreement": true,
+      "missingB": [],
+      "missingBasis": "rawAvsB",
+      "missingAgreement": true,
+      "validation": {
+        "customerNumber": true
+      },
+      "validationConforms": true,
+      "permissionHolds": null,
+      "expectedStatusAgreement": true
+    },
+    {
+      "caseId": "so-by-material-and-sales-org",
+      "file": "evals/sales_order_list_cases.yaml",
+      "utterance": "销售组织 1000 物料 DEMOA1 的销售订单",
+      "pathA": {
+        "selected": "SD.SalesOrder.GetList",
+        "rawMissing": []
+      },
+      "recallSize": 2,
+      "selectionAgreement": true,
+      "missingB": [],
+      "missingBasis": "rawAvsB",
+      "missingAgreement": true,
+      "validation": {
+        "salesOrganization": true,
+        "material": true
+      },
+      "validationConforms": true,
+      "permissionHolds": null,
+      "expectedStatusAgreement": true
+    },
+    {
+      "caseId": "so-missing-filter",
+      "file": "evals/sales_order_list_cases.yaml",
+      "utterance": "查一下销售订单",
+      "pathA": {
+        "selected": "SD.SalesOrder.GetList",
+        "rawMissing": [
+          "filter"
+        ]
+      },
+      "recallSize": 2,
+      "selectionAgreement": true,
+      "missingB": [
+        "filter"
+      ],
+      "missingBasis": "governedExpected",
+      "missingAgreement": true,
+      "validation": {},
+      "validationConforms": true,
+      "permissionHolds": null,
+      "expectedStatusAgreement": true
+    },
+    {
+      "caseId": "ar-happy-path",
+      "file": "evals/ar_open_items_cases.yaml",
+      "utterance": "查客户 1000 在公司代码 1000 的应收",
+      "pathA": {
+        "selected": "FI.AR.GetOpenItems",
+        "rawMissing": []
+      },
+      "recallSize": 1,
+      "selectionAgreement": true,
+      "missingB": [],
+      "missingBasis": "rawAvsB",
+      "missingAgreement": true,
+      "validation": {
+        "customer": true,
+        "companyCode": true
+      },
+      "validationConforms": true,
+      "permissionHolds": null,
+      "expectedStatusAgreement": true
+    },
+    {
+      "caseId": "ar-missing-company-code",
+      "file": "evals/ar_open_items_cases.yaml",
+      "utterance": "查客户 1000 的应收",
+      "pathA": {
+        "selected": "FI.AR.GetOpenItems",
+        "rawMissing": [
+          "companyCode"
+        ]
+      },
+      "recallSize": 1,
+      "selectionAgreement": true,
+      "missingB": [
+        "companyCode"
+      ],
+      "missingBasis": "governedExpected",
+      "missingAgreement": true,
+      "validation": {
+        "customer": true
+      },
+      "validationConforms": true,
+      "permissionHolds": null,
+      "expectedStatusAgreement": true
+    },
+    {
+      "caseId": "ar-missing-customer",
+      "file": "evals/ar_open_items_cases.yaml",
+      "utterance": "公司代码 1000 的应收有哪些",
+      "pathA": {
+        "selected": "FI.AR.GetOpenItems",
+        "rawMissing": [
+          "customer"
+        ]
+      },
+      "recallSize": 1,
+      "selectionAgreement": true,
+      "missingB": [
+        "customer"
+      ],
+      "missingBasis": "governedExpected",
+      "missingAgreement": true,
+      "validation": {
+        "companyCode": true
+      },
+      "validationConforms": true,
+      "permissionHolds": null,
+      "expectedStatusAgreement": true
+    },
+    {
+      "caseId": "ap-happy-path",
+      "file": "evals/ap_open_items_cases.yaml",
+      "utterance": "查供应商 1000 在公司代码 1000 的应付",
+      "pathA": {
+        "selected": "FI.AP.GetOpenItems",
+        "rawMissing": []
+      },
+      "recallSize": 1,
+      "selectionAgreement": true,
+      "missingB": [],
+      "missingBasis": "rawAvsB",
+      "missingAgreement": true,
+      "validation": {
+        "vendor": true,
+        "companyCode": true
+      },
+      "validationConforms": true,
+      "permissionHolds": null,
+      "expectedStatusAgreement": true
+    },
+    {
+      "caseId": "ap-missing-company-code",
+      "file": "evals/ap_open_items_cases.yaml",
+      "utterance": "查供应商 1000 的应付",
+      "pathA": {
+        "selected": "FI.AP.GetOpenItems",
+        "rawMissing": [
+          "companyCode"
+        ]
+      },
+      "recallSize": 1,
+      "selectionAgreement": true,
+      "missingB": [
+        "companyCode"
+      ],
+      "missingBasis": "governedExpected",
+      "missingAgreement": true,
+      "validation": {
+        "vendor": true
+      },
+      "validationConforms": true,
+      "permissionHolds": null,
+      "expectedStatusAgreement": true
+    },
+    {
+      "caseId": "ap-missing-vendor",
+      "file": "evals/ap_open_items_cases.yaml",
+      "utterance": "公司代码 1000 的应付有哪些",
+      "pathA": {
+        "selected": "FI.AP.GetOpenItems",
+        "rawMissing": [
+          "vendor"
+        ]
+      },
+      "recallSize": 1,
+      "selectionAgreement": true,
+      "missingB": [
+        "vendor"
+      ],
+      "missingBasis": "governedExpected",
+      "missingAgreement": true,
+      "validation": {
+        "companyCode": true
+      },
+      "validationConforms": true,
+      "permissionHolds": null,
+      "expectedStatusAgreement": true
+    },
+    {
+      "caseId": "pr-create-success-direct",
+      "file": "evals/pr_create_cases.json",
+      "utterance": "给物料 M001 工厂 1000 建 100 EA 采购申请 交货 2026-08-01 采购组 ***",
+      "pathA": {
+        "selected": "MM.PR.CreateDraft",
+        "rawMissing": []
+      },
+      "recallSize": 1,
+      "selectionAgreement": true,
+      "missingB": [],
+      "missingBasis": "rawAvsB",
+      "missingAgreement": true,
+      "validation": {
+        "material": true,
+        "plant": true,
+        "quantity": true,
+        "unit": true,
+        "purchasing_group": true,
+        "delivery_date": true
+      },
+      "validationConforms": true,
+      "permissionHolds": true,
+      "permissionAgreement": true,
+      "expectedStatusAgreement": true
+    },
+    {
+      "caseId": "pr-create-success-indirect",
+      "file": "evals/pr_create_cases.json",
+      "utterance": "给物料 M001 工厂 1000 建 100 EA 采购申请 交货 2026-08-01 采购组 *** 间采 K 成本中心 1000",
+      "pathA": {
+        "selected": "MM.PR.CreateDraft",
+        "rawMissing": []
+      },
+      "recallSize": 1,
+      "selectionAgreement": true,
+      "missingB": [],
+      "missingBasis": "rawAvsB",
+      "missingAgreement": true,
+      "validation": {
+        "material": true,
+        "plant": true,
+        "quantity": true,
+        "unit": true,
+        "purchasing_group": true,
+        "acct_assgn_cat": true,
+        "cost_center": true,
+        "delivery_date": true
+      },
+      "validationConforms": true,
+      "permissionHolds": true,
+      "permissionAgreement": true,
+      "expectedStatusAgreement": true
+    },
+    {
+      "caseId": "pr-create-missing-param",
+      "file": "evals/pr_create_cases.json",
+      "utterance": "建个采购申请",
+      "pathA": {
+        "selected": "MM.PR.CreateDraft",
+        "rawMissing": [
+          "delivery_date",
+          "material",
+          "plant",
+          "purchasing_group",
+          "quantity",
+          "unit"
+        ]
+      },
+      "recallSize": 1,
+      "selectionAgreement": true,
+      "missingB": [
+        "delivery_date",
+        "material",
+        "plant",
+        "quantity"
+      ],
+      "missingBasis": "governedExpected",
+      "missingAgreement": true,
+      "validation": {},
+      "validationConforms": true,
+      "permissionHolds": null,
+      "expectedStatusAgreement": true
+    },
+    {
+      "caseId": "pr-create-indirect-missing-cost-center",
+      "file": "evals/pr_create_cases.json",
+      "utterance": "给物料 M001 工厂 1000 建 100 EA 采购申请 交货 2026-08-01 采购组 *** 间采 K",
+      "pathA": {
+        "selected": "MM.PR.CreateDraft",
+        "rawMissing": [
+          "cost_center"
+        ]
+      },
+      "recallSize": 1,
+      "selectionAgreement": true,
+      "missingB": [
+        "cost_center"
+      ],
+      "missingBasis": "governedExpected",
+      "missingAgreement": true,
+      "validation": {
+        "material": true,
+        "plant": true,
+        "quantity": true,
+        "unit": true,
+        "purchasing_group": true,
+        "acct_assgn_cat": true,
+        "delivery_date": true
+      },
+      "validationConforms": true,
+      "permissionHolds": null,
+      "expectedStatusAgreement": true
+    },
+    {
+      "caseId": "pr-create-approval-missing",
+      "file": "evals/pr_create_cases.json",
+      "utterance": "给物料 M001 工厂 1000 建 100 EA 采购申请 交货 2026-08-01 采购组 ***",
+      "pathA": {
+        "selected": "MM.PR.CreateDraft",
+        "rawMissing": []
+      },
+      "recallSize": 1,
+      "selectionAgreement": true,
+      "missingB": [],
+      "missingBasis": "rawAvsB",
+      "missingAgreement": true,
+      "validation": {
+        "material": true,
+        "plant": true,
+        "quantity": true,
+        "unit": true,
+        "purchasing_group": true,
+        "delivery_date": true
+      },
+      "validationConforms": true,
+      "permissionHolds": false,
+      "permissionAgreement": true,
+      "expectedStatusAgreement": true
+    },
+    {
+      "caseId": "pr-create-approval-expired",
+      "file": "evals/pr_create_cases.json",
+      "utterance": "给物料 M001 工厂 1000 建 100 EA 采购申请 交货 2026-08-01 采购组 ***",
+      "pathA": {
+        "selected": "MM.PR.CreateDraft",
+        "rawMissing": []
+      },
+      "recallSize": 1,
+      "selectionAgreement": true,
+      "missingB": [],
+      "missingBasis": "rawAvsB",
+      "missingAgreement": true,
+      "validation": {
+        "material": true,
+        "plant": true,
+        "quantity": true,
+        "unit": true,
+        "purchasing_group": true,
+        "delivery_date": true
+      },
+      "validationConforms": true,
+      "permissionHolds": false,
+      "permissionAgreement": true,
+      "expectedStatusAgreement": true
+    },
+    {
+      "caseId": "pr-create-approval-version-mismatch",
+      "file": "evals/pr_create_cases.json",
+      "utterance": "给物料 M001 工厂 1000 建 100 EA 采购申请 交货 2026-08-01 采购组 ***",
+      "pathA": {
+        "selected": "MM.PR.CreateDraft",
+        "rawMissing": []
+      },
+      "recallSize": 1,
+      "selectionAgreement": true,
+      "missingB": [],
+      "missingBasis": "rawAvsB",
+      "missingAgreement": true,
+      "validation": {
+        "material": true,
+        "plant": true,
+        "quantity": true,
+        "unit": true,
+        "purchasing_group": true,
+        "delivery_date": true
+      },
+      "validationConforms": true,
+      "permissionHolds": false,
+      "permissionAgreement": true,
+      "expectedStatusAgreement": true
+    },
+    {
+      "caseId": "pr-create-duplicate-submit",
+      "file": "evals/pr_create_cases.json",
+      "utterance": "给物料 M001 工厂 1000 建 100 EA 采购申请 交货 2026-08-01 采购组 ***",
+      "pathA": {
+        "selected": "MM.PR.CreateDraft",
+        "rawMissing": []
+      },
+      "recallSize": 1,
+      "selectionAgreement": true,
+      "missingB": [],
+      "missingBasis": "rawAvsB",
+      "missingAgreement": true,
+      "validation": {
+        "material": true,
+        "plant": true,
+        "quantity": true,
+        "unit": true,
+        "purchasing_group": true,
+        "delivery_date": true
+      },
+      "validationConforms": true,
+      "permissionHolds": false,
+      "permissionAgreement": true,
+      "expectedStatusAgreement": true
+    },
+    {
+      "caseId": "pr-create-sap-business-error",
+      "file": "evals/pr_create_cases.json",
+      "utterance": "给物料 INVALID 工厂 1000 建 100 EA 采购申请 交货 2026-08-01 采购组 ***",
+      "pathA": {
+        "selected": "MM.PR.CreateDraft",
+        "rawMissing": []
+      },
+      "recallSize": 1,
+      "selectionAgreement": true,
+      "missingB": [],
+      "missingBasis": "rawAvsB",
+      "missingAgreement": true,
+      "validation": {
+        "material": true,
+        "plant": true,
+        "quantity": true,
+        "unit": true,
+        "purchasing_group": true,
+        "delivery_date": true
+      },
+      "validationConforms": true,
+      "permissionHolds": true,
+      "permissionAgreement": true,
+      "expectedStatusAgreement": true
+    }
+  ],
+  "mismatches": []
+}
