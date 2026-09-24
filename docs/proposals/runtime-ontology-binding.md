@@ -257,3 +257,66 @@ bundle 按 `registrySnapshotId` 组织，同输入哈希必须稳定（测试锁
 - **No-Go（平台过重/不稳定/导入受限）**：回落自建轻量 rdflib binding；codegen 与对比口径直接复用；
 - **暂缓**：数据保留，结论回填本节。
 
+## 13. 附录：改造前后运行态对比（立项评审材料）
+
+### 13.1 当前运行态（改造前）
+
+```text
+① run_query：确定 TrustedPrincipal；加载 Registry Snapshot + Sources（SnapshotLease）
+② intent_adapter（rule/llm/hybrid）→ matched_intents（或 IntentEnvelope）
+③ 从 Snapshot 发现能力卡片 → 按 principal 过滤可见性
+④ select_capability → MatchDecision 五态
+   CLARIFY/REJECT/SHOW_OPTIONS/ESCALATE_TO_PLANNER → 直接返回，不碰 Gateway
+   SELECT ↓
+⑤ _apply_capability_defaults（unit=EA / keydate=今天）
+⑥ create_call_plan → gateway.validate
+⑦ WRITE 补货：再读实时库存 → 确定性算缺口 → 缺口重建计划；缺口≤0 → success（不提案）
+⑧ Action → create_approval_record → awaiting_approval；Function → gateway.execute
+⑨ _finalize_narrative：建 Fact(s) → 按 factShape 叙述
+⑩ approve 后 continue_action：gateway.approve → execute → receipt
+```
+
+约束语义由**解释 YAML 的手写 Python**承担：参数合法性 `_valid_semantic_input_value`、
+前置条件 `engine.missing_parameters`、权限 `governance.requiresApproval`。
+即：YAML 是数据，Python 是解释器；约束没有独立、可被外部读取的标准形态。
+
+### 13.2 改造后运行态（Phase 1）
+
+控制流完全不变（五态、Gateway、审批、确定性补货均保留）；仅约束解析层改变：
+
+```text
+构建时（非运行时）：YAML 唯一作者源 → codegen（SKOS + SHACL + manifest，哈希绑定快照）
+运行时：
+  参数校验  不再由定制 Python 解释 YAML，改为 pyshacl 对 SHACL NodeShape 求值
+  前置条件  对版本化图做【预编译/缓存】查询（required + requiredWhen）
+  其余环节  selector / Gateway / approval / narrative 全部原样
+```
+
+**resolve / enforce 分离**：图只产出解析结果；最终拦截、控制流、副作用仍由确定性代码执行。
+
+### 13.3 逐环节对比
+
+| 环节 | 改造前 | 改造后（Phase 1） |
+|---|---|---|
+| 约束运行时形态 | YAML + 手写 Python 解释器 | codegen → 标准 SHACL，pyshacl 求值 |
+| 约束定义 | YAML，Python 再解释语义 | YAML 单一来源，codegen 生成标准产物 |
+| 新增约束类型 | 扩展 `_valid_semantic_input_value` | 直接用 SHACL 词汇，无需改运行时代码 |
+| 参数校验 | 定制 Python（regex/length） | 标准 SHACL 引擎 |
+| 前置条件 | engine 硬编码求值 | 图查询（计划缓存，解决约 40ms） |
+| 能力召回 | 关键词 + LLM | Phase 1 不变（后续 Phase 插 SKOS） |
+| WRITE 权限 | governance 标志 + approval | Phase 1 不变（后续 Phase 绑 ODRL duty） |
+| 五态 / Gateway / 审批 | — | 完全不变 |
+| 外部可审计性 | 约束仅进程内可判定 | SHACL 独立标准产物，审计/外部工具可直接读取 |
+
+### 13.4 收益与代价
+
+**收益**：约束成为标准、可查询、可审计产物；约束语义单一来源（消除 YAML 定义 + Python 再解释）；
+扩展约束词汇无需改运行时代码；外部可独立校验。
+
+**代价**：新增 codegen 构建步骤与 rdflib/pyshacl 依赖；图查询须计划缓存（否则约 40ms 进入请求路径）；
+决策/执行/审批/叙述不变——这是一次"约束层标准化"，不是架构重写。
+
+**结论**：改造前为"Registry 数据 + 定制 Python 解释器"驱动；改造后控制流不动，仅把约束解释器
+替换为"YAML codegen 的标准 SHACL/本体图 + 标准引擎解析、确定性代码强制"。变化集中、可回滚，
+已被 28 用例证明语义等价。
+
