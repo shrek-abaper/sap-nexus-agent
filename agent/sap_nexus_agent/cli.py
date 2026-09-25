@@ -75,6 +75,32 @@ def _build_adapter_and_principal(intent_mode: str):
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Guarded entry: never leak a traceback to the Workbench runner.
+
+    When invoked with ``--json`` the runner parses stdout as a Workbench
+    outcome, so any unexpected failure is serialized as a structured runtime
+    error instead of a raw traceback (which the frontend reports as
+    "did not produce valid Workbench JSON").
+    """
+    try:
+        return _main_impl(argv)
+    except Exception as exc:  # noqa: BLE001 - last-resort guard for the subprocess contract
+        if "--json" in (argv if argv is not None else sys.argv[1:]):
+            print(
+                json.dumps(
+                    {
+                        "status": "failure",
+                        "errorType": "AGENT_RUNTIME_ERROR",
+                        "message": f"{type(exc).__name__}: {exc}",
+                    },
+                    ensure_ascii=True,
+                )
+            )
+            return 1
+        raise
+
+
+def _main_impl(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="SAP Nexus Agent query and approval continuation")
     parser.add_argument("query", nargs="?", help="Chinese SAP query")
     parser.add_argument("--gateway-url", default="http://localhost:8080")
