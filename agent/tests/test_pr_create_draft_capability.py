@@ -105,10 +105,10 @@ def test_pr_create_draft_binding_in_catalog_has_sap_write_constraint():
 def test_pr_create_draft_ontology_individual_exists():
     cap = _load_pr_capability()
     owl_text = Path("ontology/mm-purchaserequisition.owl").read_text(encoding="utf-8")
-    assert cap.ontology_iri in owl_text  # sapnexus:MM_PR_CreateDraft
+    assert "#MM_PR_CreateDraft" in owl_text  # expanded IRI local name
     assert "PurchaseRequisitionCreateAction" in owl_text
-    assert "sapnexus:PurchaseRequisition" in owl_text
-    assert "sapnexus:PurchasingGroup" in owl_text
+    assert "#PurchaseRequisition" in owl_text
+    assert "#PurchasingGroup" in owl_text
 
 
 def test_pr_create_draft_indirect_procurement_only_supports_k():

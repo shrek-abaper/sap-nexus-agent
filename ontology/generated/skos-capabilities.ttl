@@ -1,0 +1,90 @@
+@prefix sapnexus: <https://sap-nexus-agent.local/ontology#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+
+sapnexus:CapabilityConceptScheme a skos:ConceptScheme ;
+    skos:prefLabel "SAP Nexus Capability Concept Scheme" .
+sapnexus:MM_Inventory_GetAvailability a skos:Concept ;
+    skos:prefLabel "Inventory Availability"@en ;
+    skos:altLabel "MD04查询" ;
+    skos:altLabel "可用库存" ;
+    skos:altLabel "可用量" ;
+    skos:altLabel "库存" ;
+    skos:altLabel "库存需求清单查询" ;
+    skos:altLabel "有没有" ;
+    skos:altLabel "物料可用量" ;
+    skos:altLabel "还有多少" ;
+    skos:definition "Read the SAP MD04 stock/requirements list for a material and plant, returning MRP element lines and the running available quantity." ;
+    skos:example "查物料 DEMOA2 在 1000 工厂的库存/需求清单（可用量）" ;
+    skos:example "1000 工厂 DEMOA2 的 MD04 可用量" ;
+    skos:topConceptOf sapnexus:CapabilityConceptScheme ;
+    skos:inScheme sapnexus:CapabilityConceptScheme .
+sapnexus:MM_PurchaseOrder_GetList a skos:Concept ;
+    skos:prefLabel "Purchase Order List"@en ;
+    skos:altLabel "PO查询" ;
+    skos:altLabel "订单" ;
+    skos:altLabel "采购订单" ;
+    skos:altLabel "采购订单查询" ;
+    skos:definition "Read purchase order list through SAP OData service." ;
+    skos:example "查采购订单 4500000001" ;
+    skos:example "供应商 1000 的采购订单" ;
+    skos:topConceptOf sapnexus:CapabilityConceptScheme ;
+    skos:inScheme sapnexus:CapabilityConceptScheme .
+sapnexus:MM_Material_GetInfo a skos:Concept ;
+    skos:prefLabel "Material Info"@en ;
+    skos:definition "Read material master attributes for purchase requisition authoring - base unit of measure and purchasing group." ;
+    skos:topConceptOf sapnexus:CapabilityConceptScheme ;
+    skos:inScheme sapnexus:CapabilityConceptScheme .
+sapnexus:MM_PR_CreateDraft a skos:Concept ;
+    skos:prefLabel "Purchase Requisition Create Draft"@en ;
+    skos:altLabel "PR 草稿" ;
+    skos:altLabel "PR草稿" ;
+    skos:altLabel "创建 PR" ;
+    skos:altLabel "创建PR" ;
+    skos:altLabel "创建采购" ;
+    skos:altLabel "创建采购申请" ;
+    skos:altLabel "建 PR" ;
+    skos:altLabel "建PR" ;
+    skos:altLabel "采购申请" ;
+    skos:definition "创建采购申请 (PR) 草稿, 支持实物直采与间采 (成本中心)" ;
+    skos:example "帮我建一个采购申请 DEMOA2 1000 100 EA" ;
+    skos:example "创建 PR 草稿 物料 DEMOA2 工厂 1000 数量 100" ;
+    skos:topConceptOf sapnexus:CapabilityConceptScheme ;
+    skos:inScheme sapnexus:CapabilityConceptScheme .
+sapnexus:SD_SalesOrder_GetList a skos:Concept ;
+    skos:prefLabel "Sales Order List"@en ;
+    skos:altLabel "VA05" ;
+    skos:altLabel "VA05查询" ;
+    skos:altLabel "订单列表" ;
+    skos:altLabel "销售订单" ;
+    skos:altLabel "销售订单查询" ;
+    skos:definition "Read a VA05-style list of sales orders filtered by customer, sales organization, material, or document date through BAPI_SALESORDER_GETLIST." ;
+    skos:example "查客户 1000 的销售订单" ;
+    skos:example "VA05 查询销售组织 1000 最近的订单" ;
+    skos:topConceptOf sapnexus:CapabilityConceptScheme ;
+    skos:inScheme sapnexus:CapabilityConceptScheme .
+sapnexus:FI_AR_GetOpenItems a skos:Concept ;
+    skos:prefLabel "Customer Open Items"@en ;
+    skos:altLabel "客户应收" ;
+    skos:altLabel "客户未清项" ;
+    skos:altLabel "客户未清项查询" ;
+    skos:altLabel "应收" ;
+    skos:altLabel "应收未清项" ;
+    skos:definition "Read customer (accounts receivable) open items for a company code as of a key date through BAPI_AR_ACC_GETOPENITEMS." ;
+    skos:example "查客户 1000 在公司代码 1000 的应收" ;
+    skos:example "客户 1000 还有多少应收未清项" ;
+    skos:topConceptOf sapnexus:CapabilityConceptScheme ;
+    skos:inScheme sapnexus:CapabilityConceptScheme .
+sapnexus:FI_AP_GetOpenItems a skos:Concept ;
+    skos:prefLabel "Vendor Open Items"@en ;
+    skos:altLabel "供应商应付" ;
+    skos:altLabel "供应商未清项" ;
+    skos:altLabel "供应商未清项查询" ;
+    skos:altLabel "应付" ;
+    skos:altLabel "应付未清项" ;
+    skos:definition "Read vendor (accounts payable) open items for a company code as of a key date through BAPI_AP_ACC_GETOPENITEMS." ;
+    skos:example "查供应商 1000 在公司代码 1000 的应付" ;
+    skos:example "供应商 1000 还有多少应付未清项" ;
+    skos:topConceptOf sapnexus:CapabilityConceptScheme ;
+    skos:inScheme sapnexus:CapabilityConceptScheme .

@@ -6,6 +6,7 @@ import json
 import os
 import re
 from dataclasses import dataclass, replace
+from functools import lru_cache
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Callable, Mapping
@@ -313,10 +314,16 @@ def preflight_resolved_batch(
         if isinstance(raw, Mapping) and isinstance(raw.get("name"), str)
     }
     required = {name for name, raw in descriptors.items() if raw.get("required") is True}
+    runtime = _constraint_runtime()
     return len(descriptors) == len(inputs) and all(
         required.issubset(combo)
         and set(combo).issubset(descriptors)
-        and all(_valid_semantic_input_value(descriptors[name], value) for name, value in combo.items())
+        and all(
+            runtime.validate_value(
+                call_plan.capability_id, name, value
+            )["conforms"]
+            for name, value in combo.items()
+        )
         for combo in combinations
     )
 
@@ -470,6 +477,7 @@ def _valid_current_read_authority(
         return False
     from sap_nexus_agent.semantic_planning.validation import build_semantic_contracts
 
+    runtime = _constraint_runtime()
     try:
         contracts = build_semantic_contracts(sources)
     except Exception:
@@ -532,7 +540,9 @@ def _valid_current_read_authority(
         name not in input_names
         or slot.state != "RESOLVED"
         or slot.value is None
-        or not _valid_semantic_input_value(input_descriptors[name], slot.value)
+        or not runtime.validate_value(
+            call_plan.capability_id, name, slot.value
+        )["conforms"]
         for name, slot in frame.slots.items()
     ):
         return False
@@ -546,53 +556,29 @@ def _valid_current_read_authority(
         required_names.issubset(expected_parameters)
         and set(call_plan.parameters).issubset(input_names)
         and all(
-            _valid_semantic_input_value(input_descriptors[name], value)
+            runtime.validate_value(
+                call_plan.capability_id, name, value
+            )["conforms"]
             for name, value in call_plan.parameters.items()
         )
         and call_plan.parameters == expected_parameters
     )
 
 
-def _valid_semantic_input_value(descriptor: Mapping[str, object], value: str) -> bool:
-    if not isinstance(value, str):
-        return False
-    value_type = descriptor.get("type")
-    if value_type == "string":
-        minimum = descriptor.get("minLength")
-        maximum = descriptor.get("maxLength")
-        if isinstance(minimum, int) and len(value) < minimum:
-            return False
-        if isinstance(maximum, int) and len(value) > maximum:
-            return False
-        pattern = descriptor.get("pattern")
-        if isinstance(pattern, str):
-            try:
-                if re.fullmatch(pattern, value) is None:
-                    return False
-            except re.error:
-                return False
-        return True
-    if value_type == "number":
-        try:
-            number = float(value)
-        except ValueError:
-            return False
-        return number not in {float("inf"), float("-inf")} and number == number
-    if value_type == "integer":
-        try:
-            int(value)
-        except ValueError:
-            return False
-        return str(int(value)) == value or value.startswith("+") and str(int(value)) == value[1:]
-    if value_type == "boolean":
-        return value.lower() in {"true", "false"}
-    if value_type in {"object", "array"}:
-        try:
-            parsed = json.loads(value)
-        except (TypeError, ValueError):
-            return False
-        return isinstance(parsed, dict if value_type == "object" else list)
-    return False
+@lru_cache(maxsize=1)
+def _discover_repo_root() -> Path:
+    here = Path(__file__).resolve().parent
+    for parent in [here, *here.parents]:
+        if (parent / "registry" / "capabilities.yaml").exists():
+            return parent
+    return Path.cwd()
+
+
+@lru_cache(maxsize=1)
+def _constraint_runtime():
+    from sap_nexus_agent.constraint_runtime import get_runtime
+
+    return get_runtime(str(_discover_repo_root()))
 
 
 def _current_capability(
