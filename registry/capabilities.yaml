@@ -860,6 +860,8 @@ capabilities:
       primaryKeywords:
         - '应收'
         - '客户未清项'
+        - '(?<![A-Za-z])AR(?![A-Za-z])'
+        - '(?<![A-Za-z])ar(?![A-Za-z])'
       # No bare '未清': MM.PurchaseOrder.GetList already reads it as its openOnly
       # filter (未清标志), so an unqualified 未清 does not say AR. Triggering
       # defaults to primaryKeywords.
@@ -868,6 +870,8 @@ capabilities:
       triggerKeywords:
         - '应收'
         - '客户未清项'
+        - '(?<![A-Za-z])AR(?![A-Za-z])'
+        - '(?<![A-Za-z])ar(?![A-Za-z])'
       fieldNames:
         zh-CN:
           customer: 客户号
@@ -922,6 +926,8 @@ capabilities:
               matchers:
                 - kind: regex
                   pattern: '公司代码(?:\s|是|为|编号|号|:|：)*([A-Z0-9]{1,4})'
+                - kind: regex
+                  pattern: '(?<![A-Z0-9])([A-Z0-9]{1,4})\s*公司(?!代码)'
       - name: keydate
         semanticName: keyDate
         semanticType: sapnexus:KeyDate
@@ -1002,6 +1008,8 @@ capabilities:
       primaryKeywords:
         - '应付'
         - '供应商未清项'
+        - '(?<![A-Za-z])AP(?![A-Za-z])'
+        - '(?<![A-Za-z])ap(?![A-Za-z])'
       # No bare '未清': see FI.AR.GetOpenItems -- 未清 is already the PO openOnly
       # filter word, so it does not say AP on its own.
       weakKeywords:
@@ -1009,6 +1017,8 @@ capabilities:
       triggerKeywords:
         - '应付'
         - '供应商未清项'
+        - '(?<![A-Za-z])AP(?![A-Za-z])'
+        - '(?<![A-Za-z])ap(?![A-Za-z])'
       fieldNames:
         zh-CN:
           vendor: 供应商号
@@ -1063,6 +1073,8 @@ capabilities:
               matchers:
                 - kind: regex
                   pattern: '公司代码(?:\s|是|为|编号|号|:|：)*([A-Z0-9]{1,4})'
+                - kind: regex
+                  pattern: '(?<![A-Z0-9])([A-Z0-9]{1,4})\s*公司(?!代码)'
       - name: keydate
         semanticName: keyDate
         semanticType: sapnexus:KeyDate
