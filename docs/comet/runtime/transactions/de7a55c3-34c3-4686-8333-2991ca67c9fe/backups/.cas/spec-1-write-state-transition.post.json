@@ -1,0 +1,11 @@
+{
+  "schema": "comet.native.archive-cas.v1",
+  "operationId": "spec-1-write-state-transition",
+  "role": "post",
+  "hash": "186e85ab5650e945a906fda7f1f21498fe4508ce95d1468983e3c11264626e2d",
+  "identity": {
+    "dev": 2096,
+    "ino": 424787,
+    "birthtimeMs": 1790319275967.5244
+  }
+}

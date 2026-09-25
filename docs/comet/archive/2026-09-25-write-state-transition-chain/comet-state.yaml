@@ -1,0 +1,23 @@
+schema: comet.native.v3
+minimum_runtime_version: 3
+revision: 5
+verification_protocol: legacy-v1
+name: write-state-transition-chain
+language: zh-CN
+phase: archive
+brief: brief.md
+approval: confirmed
+approved_contract_hash: 1e7d7e0f69cac06084713977f1e4d74682badfb842e973505b59525eb91ae633
+spec_changes:
+  - capability: write-state-transition
+    operation: create
+    source: specs/write-state-transition/spec.md
+    base_hash: null
+verification_result: pass
+verification_report: verification.md
+implementation_scope: runtime/evidence/scopes/51842fe90017531b0c4d528e322dfa5be7efb2a170f5eddeba5c6da9fc922916.json
+verification_evidence: runtime/evidence/verifications/874d1be0dd378c8a5ff29ed0a2f3ac3b52125514a80f088049a23078a404be3d.json
+partial_allowance: null
+archived: true
+created_at: 2026-09-25
+run_id: 90e2f894-7f94-44e3-9aec-57ebbc785d8a

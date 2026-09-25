@@ -1,0 +1,80 @@
+{
+  "schema": "comet.native.implementation-scope.v2",
+  "contractHash": "1e7d7e0f69cac06084713977f1e4d74682badfb842e973505b59525eb91ae633",
+  "baselineProjectionRef": "runtime/evidence/snapshots/878c2f8a08978ed538d73658db506f2188f800eeed11aafb7f101367f1f94a00.json",
+  "baselineProjectionHash": "878c2f8a08978ed538d73658db506f2188f800eeed11aafb7f101367f1f94a00",
+  "currentProjectionRef": "runtime/evidence/snapshots/68b25ed2d50c7158123bcfdd1d63f5c07577d85cf1f5910eb07b2d0940cb23d5.json",
+  "currentProjectionHash": "68b25ed2d50c7158123bcfdd1d63f5c07577d85cf1f5910eb07b2d0940cb23d5",
+  "complete": true,
+  "declaredArtifacts": [
+    {
+      "path": "agent/sap_nexus_agent/approval.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/sap_nexus_agent/orchestrator.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_write_state_transition.py",
+      "kind": "file"
+    }
+  ],
+  "changes": [
+    {
+      "path": "agent/sap_nexus_agent/approval.py",
+      "kind": "modified",
+      "before": {
+        "hash": "cb7c345366ef532a239b805ac3b02c0d8b3015f50be3f184f3985f3c953ce9de",
+        "size": 6636
+      },
+      "after": {
+        "hash": "2b0008f457db27026a5fa222028eeb6c49bb9071269f2b166dc3fbde96e66220",
+        "size": 9011
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/approval.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/sap_nexus_agent/orchestrator.py",
+      "kind": "modified",
+      "before": {
+        "hash": "2890b870b895e4ab911d0132522e4cad5f9ecd94e4665a59f517a19c92f8a0e4",
+        "size": 92055
+      },
+      "after": {
+        "hash": "84c3b57dd052a7c7ccc14d1c11674a2b94e3bbfcc9973eef91b54c8517cfe2b5",
+        "size": 92193
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/orchestrator.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_write_state_transition.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "1a3fa5ff5a3d0e47744d5a50867d379912a97ecb77e00c56fd272494f1653ff7",
+        "size": 4170
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_write_state_transition.py",
+          "kind": "file"
+        }
+      ]
+    }
+  ],
+  "unattributed": [],
+  "unresolvedScopes": [],
+  "noCodeReason": null,
+  "scopeHash": "51842fe90017531b0c4d528e322dfa5be7efb2a170f5eddeba5c6da9fc922916"
+}
