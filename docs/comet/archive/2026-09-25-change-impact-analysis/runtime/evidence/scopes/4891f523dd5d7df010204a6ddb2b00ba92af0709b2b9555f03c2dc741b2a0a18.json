@@ -1,0 +1,55 @@
+{
+  "schema": "comet.native.implementation-scope.v2",
+  "contractHash": "d1024a329e7bb92246e205f9454180d7f515a26841c08362475a8e2893ca23bd",
+  "baselineProjectionRef": "runtime/evidence/snapshots/56af96ced3e8783ee7c282c4b2e5d94b692cc98daf1e9cb78dc6266beb9bbb01.json",
+  "baselineProjectionHash": "56af96ced3e8783ee7c282c4b2e5d94b692cc98daf1e9cb78dc6266beb9bbb01",
+  "currentProjectionRef": "runtime/evidence/snapshots/66138564a463d9cf19a1d64ef83428e7e210b6d3da4ee7c0b4e65529f7e395d5.json",
+  "currentProjectionHash": "66138564a463d9cf19a1d64ef83428e7e210b6d3da4ee7c0b4e65529f7e395d5",
+  "complete": true,
+  "declaredArtifacts": [
+    {
+      "path": "agent/sap_nexus_agent/impact_analysis.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_impact_analysis.py",
+      "kind": "file"
+    }
+  ],
+  "changes": [
+    {
+      "path": "agent/sap_nexus_agent/impact_analysis.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "0e0d90434f9e3be8130f62fa188625ac61911630705863b1795a80b3db1050d5",
+        "size": 5710
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/impact_analysis.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_impact_analysis.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "ac2c8db2edcbcaa37b7383249754e533b66df7cc7a0440ab59105953b2166929",
+        "size": 3013
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_impact_analysis.py",
+          "kind": "file"
+        }
+      ]
+    }
+  ],
+  "unattributed": [],
+  "unresolvedScopes": [],
+  "noCodeReason": null,
+  "scopeHash": "4891f523dd5d7df010204a6ddb2b00ba92af0709b2b9555f03c2dc741b2a0a18"
+}

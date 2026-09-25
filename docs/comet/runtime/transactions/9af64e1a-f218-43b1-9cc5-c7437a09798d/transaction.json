@@ -1,0 +1,27 @@
+{
+  "schema": "comet.native.transaction.v2",
+  "id": "9af64e1a-f218-43b1-9cc5-c7437a09798d",
+  "kind": "archive",
+  "status": "committed",
+  "change": "change-impact-analysis",
+  "createdAt": "2026-09-25T07:10:48.545Z",
+  "preflightHash": "b20230b9073f2bf8ed55228e1404d6046294e60db6d17ae78f90f3a1c34465c0",
+  "operations": [
+    {
+      "id": "spec-1-change-impact-analysis",
+      "type": "write",
+      "target": "specs/change-impact-analysis/spec.md",
+      "staged": "runtime/transactions/9af64e1a-f218-43b1-9cc5-c7437a09798d/staged/specs/change-impact-analysis/spec.md",
+      "expectedTargetHash": null,
+      "stagedHash": "55a54eaab25f8b929bed90f6bf949d82e7a0d7882462a34810b6870b8baa6c4e"
+    },
+    {
+      "id": "archive-change",
+      "type": "move",
+      "source": "changes/change-impact-analysis",
+      "target": "archive/2026-09-25-change-impact-analysis",
+      "expectedSourceHash": "6eef94d92491849df3b39bbd778807ce515ec8e6bc0f74c0ce3be4816ab06da9",
+      "expectedTargetHash": null
+    }
+  ]
+}

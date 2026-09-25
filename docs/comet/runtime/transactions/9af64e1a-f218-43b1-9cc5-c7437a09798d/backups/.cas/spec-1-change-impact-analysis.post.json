@@ -1,0 +1,11 @@
+{
+  "schema": "comet.native.archive-cas.v1",
+  "operationId": "spec-1-change-impact-analysis",
+  "role": "post",
+  "hash": "55a54eaab25f8b929bed90f6bf949d82e7a0d7882462a34810b6870b8baa6c4e",
+  "identity": {
+    "dev": 2096,
+    "ino": 424888,
+    "birthtimeMs": 1790320252575.5613
+  }
+}

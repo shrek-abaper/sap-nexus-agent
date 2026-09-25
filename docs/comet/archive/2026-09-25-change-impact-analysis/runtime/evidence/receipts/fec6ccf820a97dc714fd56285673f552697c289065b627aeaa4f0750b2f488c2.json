@@ -1,0 +1,28 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "static-inspection",
+  "role": "required-check",
+  "status": "passed",
+  "bindings": {
+    "change": "change-impact-analysis",
+    "sourceRevision": 3,
+    "contractHash": "d1024a329e7bb92246e205f9454180d7f515a26841c08362475a8e2893ca23bd",
+    "scopeHash": "4891f523dd5d7df010204a6ddb2b00ba92af0709b2b9555f03c2dc741b2a0a18",
+    "snapshotHash": "66138564a463d9cf19a1d64ef83428e7e210b6d3da4ee7c0b4e65529f7e395d5",
+    "artifactHash": "88411773cfb0046bd90c53b8a715529cc6cb36479bc62ba4c7a61afd6de33a78"
+  },
+  "acceptanceIds": [],
+  "actor": "native-runtime:scoped-text-safety",
+  "issuedAt": "2026-09-25T07:08:29.988Z",
+  "evidence": {
+    "subjects": [
+      "agent/sap_nexus_agent/impact_analysis.py",
+      "agent/tests/test_impact_analysis.py"
+    ],
+    "rule": "scoped-text-safety",
+    "resultSummary": "The built-in scoped inspection passed without skipped or blocking input.",
+    "checkReceiptRef": "runtime/evidence/check-receipts/862eb7d79c256dc9af2a297493bd74c108366c35b3157eed32adcc6e2b25c0e4.json",
+    "checkReceiptHash": "862eb7d79c256dc9af2a297493bd74c108366c35b3157eed32adcc6e2b25c0e4"
+  },
+  "receiptHash": "fec6ccf820a97dc714fd56285673f552697c289065b627aeaa4f0750b2f488c2"
+}
