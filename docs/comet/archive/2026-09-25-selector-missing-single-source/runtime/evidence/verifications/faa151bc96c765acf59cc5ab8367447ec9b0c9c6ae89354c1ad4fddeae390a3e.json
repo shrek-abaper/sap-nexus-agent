@@ -1,0 +1,224 @@
+{
+  "schema": "comet.native.verification-evidence.v2",
+  "change": "selector-missing-single-source",
+  "sourceRevision": 3,
+  "result": "pass",
+  "freshness": "complete",
+  "contractHash": "39725b1fb6dfdc24b58c937d8df478b1b34b55512a85cf3fa4d82d300b994aa9",
+  "acceptanceCriteriaHash": "ddeadfcffd6951eca19bd38bc245ab2a9e9cf24bd3a35abc2c486eec74fe5593",
+  "implementationScopeRef": "runtime/evidence/scopes/c7689469bc53570404b81245a2b8b8c912003793d29ac051dc5c29b6d816ea35.json",
+  "implementationScopeHash": "c7689469bc53570404b81245a2b8b8c912003793d29ac051dc5c29b6d816ea35",
+  "reportRef": "verification.md",
+  "reportHash": "832427dc04abad70d65f38af5e2b2a5a63c906be4334ed7902c384cc14299583",
+  "acceptanceTrace": {
+    "schema": "comet.native.acceptance-trace.v2",
+    "nativeRootRef": "docs/comet",
+    "criteriaHash": "ddeadfcffd6951eca19bd38bc245ab2a9e9cf24bd3a35abc2c486eec74fe5593",
+    "total": 19,
+    "evidenced": 19,
+    "skipped": 0,
+    "entries": [
+      {
+        "acceptanceId": "acceptance-00ad9663def12e42490fffeec76bbeab5b3edfe9f7986a998b6f5f8c4db15cd7",
+        "status": "passed",
+        "kind": "spec-must",
+        "source": "specs/ontology-constraint-runtime/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/00f793596d1c4158b02d66b5e4e1bd1d5ea0c3357f34fc2836b53756f2c53f1f.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-082b91a0d0fc277bf2e2bdabc28ad8555c0825ff9647dde78209d516cfc4bee0",
+        "status": "passed",
+        "kind": "spec-must",
+        "source": "specs/ontology-constraint-runtime/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/00f793596d1c4158b02d66b5e4e1bd1d5ea0c3357f34fc2836b53756f2c53f1f.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-425fb88a020b1ee4028b4753a4123fcbd5f05115446db59bd7ad7c36030e40c9",
+        "status": "passed",
+        "kind": "spec-must",
+        "source": "specs/ontology-constraint-runtime/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/00f793596d1c4158b02d66b5e4e1bd1d5ea0c3357f34fc2836b53756f2c53f1f.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-59ef64976b92802c785f5ede97d7b44b0aded3177422d7dab2066694647bee9f",
+        "status": "passed",
+        "kind": "brief-example",
+        "source": "brief.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/00f793596d1c4158b02d66b5e4e1bd1d5ea0c3357f34fc2836b53756f2c53f1f.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-5be9bbbc6810e90adc44d462e3eee7a9b04f40f110196a0d554737b25846849e",
+        "status": "passed",
+        "kind": "spec-must",
+        "source": "specs/ontology-constraint-runtime/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/00f793596d1c4158b02d66b5e4e1bd1d5ea0c3357f34fc2836b53756f2c53f1f.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-78ee1f9419ea1703d9b90865e22a1544471ae5d93bdda17aae1871574c2387e4",
+        "status": "passed",
+        "kind": "spec-must",
+        "source": "specs/ontology-constraint-runtime/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/00f793596d1c4158b02d66b5e4e1bd1d5ea0c3357f34fc2836b53756f2c53f1f.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-9794c3b9e6e06ec39fa014167d0456664cbfb81a57f69be352cad1a33bf3707b",
+        "status": "passed",
+        "kind": "spec-must",
+        "source": "specs/ontology-constraint-runtime/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/00f793596d1c4158b02d66b5e4e1bd1d5ea0c3357f34fc2836b53756f2c53f1f.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-9c1523416d9d3b458781b4df6065b4af77c0e978d67870afd5661f97d031a225",
+        "status": "passed",
+        "kind": "brief-example",
+        "source": "brief.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/00f793596d1c4158b02d66b5e4e1bd1d5ea0c3357f34fc2836b53756f2c53f1f.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-9e3b5d0e3850df6adb517facba73c35968dcd6202a86b0bb65958eeb25982fa5",
+        "status": "passed",
+        "kind": "spec-must",
+        "source": "specs/ontology-constraint-runtime/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/00f793596d1c4158b02d66b5e4e1bd1d5ea0c3357f34fc2836b53756f2c53f1f.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-b7970fc2c63690a9ddfcd96a274ec2caf857b8ca592f10998b3681c23bab2d2e",
+        "status": "passed",
+        "kind": "spec-must",
+        "source": "specs/ontology-constraint-runtime/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/00f793596d1c4158b02d66b5e4e1bd1d5ea0c3357f34fc2836b53756f2c53f1f.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-b92322448d79043216e6bad97124c81de0855731f45c13ad036fa5b6028f10d0",
+        "status": "passed",
+        "kind": "spec-must",
+        "source": "specs/ontology-constraint-runtime/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/00f793596d1c4158b02d66b5e4e1bd1d5ea0c3357f34fc2836b53756f2c53f1f.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-c49fc607ade5810728d1037cc0d1b7e7783a9fecbbcb065e2f81bc9652a986bd",
+        "status": "passed",
+        "kind": "spec-must",
+        "source": "specs/ontology-constraint-runtime/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/00f793596d1c4158b02d66b5e4e1bd1d5ea0c3357f34fc2836b53756f2c53f1f.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-d0a1422ecfd540ab9ff929b4c352936b6439c0256f50249e251f6ea40da91ff8",
+        "status": "passed",
+        "kind": "spec-must",
+        "source": "specs/ontology-constraint-runtime/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/00f793596d1c4158b02d66b5e4e1bd1d5ea0c3357f34fc2836b53756f2c53f1f.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-d30f732c7fd7dd7d76a182113d0730f1bdb022ca07881a62087f245a8d981aea",
+        "status": "passed",
+        "kind": "spec-must",
+        "source": "specs/ontology-constraint-runtime/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/00f793596d1c4158b02d66b5e4e1bd1d5ea0c3357f34fc2836b53756f2c53f1f.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-d3c9ef593d5f830c62a8a07d0a4db366b3fe6c378acabdad4ce5d932888eea74",
+        "status": "passed",
+        "kind": "brief-example",
+        "source": "brief.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/00f793596d1c4158b02d66b5e4e1bd1d5ea0c3357f34fc2836b53756f2c53f1f.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-edc8e189e7e076b6ae23040e466ffde709446a18d3dba5be4b03dff38426c59e",
+        "status": "passed",
+        "kind": "spec-must",
+        "source": "specs/ontology-constraint-runtime/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/00f793596d1c4158b02d66b5e4e1bd1d5ea0c3357f34fc2836b53756f2c53f1f.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-ee6a612343276232ac99e21a38bf2d7c5196cee47d3b666ceb1697307ba8c500",
+        "status": "passed",
+        "kind": "spec-must",
+        "source": "specs/ontology-constraint-runtime/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/00f793596d1c4158b02d66b5e4e1bd1d5ea0c3357f34fc2836b53756f2c53f1f.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-f5310b8907a80e1aaaf223f214e11465eeb3305a5ba0afb68ce6391564ac77c1",
+        "status": "passed",
+        "kind": "brief-example",
+        "source": "brief.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/00f793596d1c4158b02d66b5e4e1bd1d5ea0c3357f34fc2836b53756f2c53f1f.json"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-f84ac097c40330c940c30d4bbe91753f36123f9a7c8354ebbf74e189b3a61fc9",
+        "status": "passed",
+        "kind": "spec-must",
+        "source": "specs/ontology-constraint-runtime/spec.md",
+        "evidenceRefs": [
+          "runtime/evidence/receipts/00f793596d1c4158b02d66b5e4e1bd1d5ea0c3357f34fc2836b53756f2c53f1f.json"
+        ],
+        "skippedReason": null
+      }
+    ],
+    "traceHash": "0c895a87dff0ec57b8331d6009f9a64871c3fc4df0c63dee4659bd8752fb875d"
+  },
+  "partialAllowanceRef": null,
+  "partialAllowanceHash": null,
+  "requiredReceiptRefs": [
+    "runtime/evidence/receipts/05a1f7dab244a5181594a1c3f2d0903a729f49c6c42f384c7d0c26e03b6e5ea2.json"
+  ],
+  "receiptRefs": [
+    "runtime/evidence/receipts/00f793596d1c4158b02d66b5e4e1bd1d5ea0c3357f34fc2836b53756f2c53f1f.json"
+  ],
+  "createdAt": "2026-09-25T06:26:56.605Z",
+  "envelopeHash": "faa151bc96c765acf59cc5ab8367447ec9b0c9c6ae89354c1ad4fddeae390a3e"
+}

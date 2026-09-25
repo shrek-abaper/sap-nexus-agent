@@ -1,0 +1,28 @@
+{
+  "schema": "comet.native.transaction.v2",
+  "id": "c4a25a2f-1bde-40b4-8f4d-4ff3e604ce2c",
+  "kind": "archive",
+  "status": "committed",
+  "change": "selector-missing-single-source",
+  "createdAt": "2026-09-25T06:27:42.440Z",
+  "preflightHash": "8222257d764897521836f6b73423d94b3d68b51e6b26519c88e5be9f40617f6d",
+  "operations": [
+    {
+      "id": "spec-1-ontology-constraint-runtime",
+      "type": "write",
+      "target": "specs/ontology-constraint-runtime/spec.md",
+      "staged": "runtime/transactions/c4a25a2f-1bde-40b4-8f4d-4ff3e604ce2c/staged/specs/ontology-constraint-runtime/spec.md",
+      "backup": "runtime/transactions/c4a25a2f-1bde-40b4-8f4d-4ff3e604ce2c/backups/specs/ontology-constraint-runtime/spec.md",
+      "expectedTargetHash": "154cc967eddf244d77997eb76cd14193871e4fc164e4bdd25ce0c60725ae2cbd",
+      "stagedHash": "fd20aff2d96584e95fbc02f3ba7bcefc509a0e5f8fec7a2e4f9ebfe364f6d4d3"
+    },
+    {
+      "id": "archive-change",
+      "type": "move",
+      "source": "changes/selector-missing-single-source",
+      "target": "archive/2026-09-25-selector-missing-single-source",
+      "expectedSourceHash": "0da5bbe9b84846b349b16c112ef9483ff8da18e97cd993c1aebf5e0ec3dec9c6",
+      "expectedTargetHash": null
+    }
+  ]
+}

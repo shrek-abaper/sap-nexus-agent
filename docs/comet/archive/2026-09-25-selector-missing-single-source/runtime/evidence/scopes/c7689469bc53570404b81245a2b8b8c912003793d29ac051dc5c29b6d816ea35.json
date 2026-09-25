@@ -1,0 +1,83 @@
+{
+  "schema": "comet.native.implementation-scope.v2",
+  "contractHash": "39725b1fb6dfdc24b58c937d8df478b1b34b55512a85cf3fa4d82d300b994aa9",
+  "baselineProjectionRef": "runtime/evidence/snapshots/8a3960737694c9e020a6cbe6d4367a115a39028f7cf3d18d6422d0232301f1ca.json",
+  "baselineProjectionHash": "8a3960737694c9e020a6cbe6d4367a115a39028f7cf3d18d6422d0232301f1ca",
+  "currentProjectionRef": "runtime/evidence/snapshots/ba3d57d7b774258e4ad825bfc117c79e840319c096549216e0c097d8de124ec0.json",
+  "currentProjectionHash": "ba3d57d7b774258e4ad825bfc117c79e840319c096549216e0c097d8de124ec0",
+  "complete": true,
+  "declaredArtifacts": [
+    {
+      "path": "agent/sap_nexus_agent/capability_selector.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/sap_nexus_agent/constraint_runtime.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_capability_selector.py",
+      "kind": "file"
+    }
+  ],
+  "changes": [
+    {
+      "path": "agent/sap_nexus_agent/capability_selector.py",
+      "kind": "modified",
+      "before": {
+        "hash": "e33eff1985e794382ab6968a10344c0f018349ef1080249c21891462bacefb33",
+        "size": 24086
+      },
+      "after": {
+        "hash": "8f665b29d476297ef2c279b8f03b3b32305ba6c84fb0a2904ee5efc44478dc41",
+        "size": 20572
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/capability_selector.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/sap_nexus_agent/constraint_runtime.py",
+      "kind": "modified",
+      "before": {
+        "hash": "d21770a2732badbc05e4dff5841ee5805f24105add8900aa1127c1e32e32ab3e",
+        "size": 7081
+      },
+      "after": {
+        "hash": "2fb3e52f2c92668fe811d79472abc8d957d475814af4670d6e45aac015555c0e",
+        "size": 12237
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/constraint_runtime.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_capability_selector.py",
+      "kind": "modified",
+      "before": {
+        "hash": "499751a104dbbc36b1a129fb9ec65aa7790eada589b7a8a2056d6b9a9f039cbf",
+        "size": 39573
+      },
+      "after": {
+        "hash": "31bd19faa4eae6796b46b0c9871768a2e072f31e04bcbfb17446e598ecae175f",
+        "size": 39567
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_capability_selector.py",
+          "kind": "file"
+        }
+      ]
+    }
+  ],
+  "unattributed": [],
+  "unresolvedScopes": [],
+  "noCodeReason": null,
+  "scopeHash": "c7689469bc53570404b81245a2b8b8c912003793d29ac051dc5c29b6d816ea35"
+}

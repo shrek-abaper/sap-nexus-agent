@@ -1,0 +1,23 @@
+schema: comet.native.v3
+minimum_runtime_version: 3
+revision: 5
+verification_protocol: legacy-v1
+name: selector-missing-single-source
+language: zh-CN
+phase: archive
+brief: brief.md
+approval: confirmed
+approved_contract_hash: 39725b1fb6dfdc24b58c937d8df478b1b34b55512a85cf3fa4d82d300b994aa9
+spec_changes:
+  - capability: ontology-constraint-runtime
+    operation: replace
+    source: specs/ontology-constraint-runtime/spec.md
+    base_hash: 154cc967eddf244d77997eb76cd14193871e4fc164e4bdd25ce0c60725ae2cbd
+verification_result: pass
+verification_report: verification.md
+implementation_scope: runtime/evidence/scopes/c7689469bc53570404b81245a2b8b8c912003793d29ac051dc5c29b6d816ea35.json
+verification_evidence: runtime/evidence/verifications/faa151bc96c765acf59cc5ab8367447ec9b0c9c6ae89354c1ad4fddeae390a3e.json
+partial_allowance: null
+archived: true
+created_at: 2026-09-25
+run_id: ca61ce22-e1b5-4810-b696-4eb00dae7806
