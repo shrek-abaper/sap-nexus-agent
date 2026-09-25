@@ -1,0 +1,55 @@
+{
+  "schema": "comet.native.implementation-scope.v2",
+  "contractHash": "c8905b0896a30f060c2d727122bfca556f22cfbcc3ed0ad5c762ac6cdc783c8f",
+  "baselineProjectionRef": "runtime/evidence/snapshots/9e3a72b4f52ea2066bb3d75e574edcea985499d0e127d1583faf5be5b21ba352.json",
+  "baselineProjectionHash": "9e3a72b4f52ea2066bb3d75e574edcea985499d0e127d1583faf5be5b21ba352",
+  "currentProjectionRef": "runtime/evidence/snapshots/be337692ab16d253106163dae4bcd1cfc828f0251604af7c197b9bff0b47aa96.json",
+  "currentProjectionHash": "be337692ab16d253106163dae4bcd1cfc828f0251604af7c197b9bff0b47aa96",
+  "complete": true,
+  "declaredArtifacts": [
+    {
+      "path": "agent/sap_nexus_agent/identity.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_identity.py",
+      "kind": "file"
+    }
+  ],
+  "changes": [
+    {
+      "path": "agent/sap_nexus_agent/identity.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "a55e4e1102b6ac3858dba029dc515d0ba0639a8f31426d1d21768ceee8c7d893",
+        "size": 4538
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/identity.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_identity.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "d6dc1461cd107fde6789603f711f0e06310aed9eb36c8a26d82b50c6a48e2ce9",
+        "size": 3129
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_identity.py",
+          "kind": "file"
+        }
+      ]
+    }
+  ],
+  "unattributed": [],
+  "unresolvedScopes": [],
+  "noCodeReason": null,
+  "scopeHash": "42291076e603915a11d222db57319a78d018d4600b9f10d1aff1aa7ad7ed5477"
+}

@@ -1,0 +1,23 @@
+schema: comet.native.v3
+minimum_runtime_version: 3
+revision: 5
+verification_protocol: legacy-v1
+name: identity-foundation
+language: zh-CN
+phase: archive
+brief: brief.md
+approval: confirmed
+approved_contract_hash: c8905b0896a30f060c2d727122bfca556f22cfbcc3ed0ad5c762ac6cdc783c8f
+spec_changes:
+  - capability: identity-foundation
+    operation: create
+    source: specs/identity-foundation/spec.md
+    base_hash: null
+verification_result: pass
+verification_report: verification.md
+implementation_scope: runtime/evidence/scopes/42291076e603915a11d222db57319a78d018d4600b9f10d1aff1aa7ad7ed5477.json
+verification_evidence: runtime/evidence/verifications/a0b12217f712ed0ff5cbf30da27022f3a7521b8c9f1dfeab1fad7ba0799fad42.json
+partial_allowance: null
+archived: true
+created_at: 2026-09-25
+run_id: d0e0d41c-2a28-4f14-becd-7c538e974470

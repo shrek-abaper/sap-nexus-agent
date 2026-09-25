@@ -1,0 +1,27 @@
+{
+  "schema": "comet.native.transaction.v2",
+  "id": "1ddffcd7-e3a8-4e8d-8e61-fb57ae352fd7",
+  "kind": "archive",
+  "status": "committed",
+  "change": "identity-foundation",
+  "createdAt": "2026-09-25T07:30:56.415Z",
+  "preflightHash": "356c9441e6838b600a0dc644896d8ae64d16d56953ba71e2912037ea5e91b112",
+  "operations": [
+    {
+      "id": "spec-1-identity-foundation",
+      "type": "write",
+      "target": "specs/identity-foundation/spec.md",
+      "staged": "runtime/transactions/1ddffcd7-e3a8-4e8d-8e61-fb57ae352fd7/staged/specs/identity-foundation/spec.md",
+      "expectedTargetHash": null,
+      "stagedHash": "d17007a891197550cdef72ed7bf34941a69ec934cdf0fbcc55a2f0bd285990d0"
+    },
+    {
+      "id": "archive-change",
+      "type": "move",
+      "source": "changes/identity-foundation",
+      "target": "archive/2026-09-25-identity-foundation",
+      "expectedSourceHash": "93849154e5225fd8f4b555ef94294291114ba155ff82b6a7a88199e7758cf3e7",
+      "expectedTargetHash": null
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{"sequence":1,"timestamp":"2026-09-25T07:30:58.614Z","type":"prepared"}
+{"sequence":2,"timestamp":"2026-09-25T07:31:00.554Z","type":"operation-started","operationId":"spec-1-identity-foundation"}
+{"sequence":3,"timestamp":"2026-09-25T07:31:00.707Z","type":"operation-completed","operationId":"spec-1-identity-foundation"}
+{"sequence":4,"timestamp":"2026-09-25T07:31:02.438Z","type":"operation-started","operationId":"archive-change"}
+{"sequence":5,"timestamp":"2026-09-25T07:31:02.809Z","type":"operation-completed","operationId":"archive-change"}
+{"sequence":6,"timestamp":"2026-09-25T07:31:03.031Z","type":"archive-finalization-started"}
+{"sequence":7,"timestamp":"2026-09-25T07:31:03.119Z","type":"archive-finalized"}
+{"sequence":8,"timestamp":"2026-09-25T07:31:03.179Z","type":"commit"}
