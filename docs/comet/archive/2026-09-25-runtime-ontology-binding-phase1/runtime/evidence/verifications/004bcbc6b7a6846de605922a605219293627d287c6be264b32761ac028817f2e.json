@@ -1,0 +1,166 @@
+{
+  "schema": "comet.native.verification-evidence.v2",
+  "change": "runtime-ontology-binding-phase1",
+  "sourceRevision": 3,
+  "result": "fail",
+  "freshness": "complete",
+  "contractHash": "1916d0899056e7f94c2af3c3995c75c859607e70239a85b7ef3a009d085dfb3a",
+  "acceptanceCriteriaHash": "3b9133da25c18d23b6cd11350ada8d0c674d79da909bbad2c737547580f3deb6",
+  "implementationScopeRef": "runtime/evidence/scopes/77276ca3ea127de3540f1d554aaaf0ab7aa200f387e4b52f5583ddc8a2bd9b74.json",
+  "implementationScopeHash": "77276ca3ea127de3540f1d554aaaf0ab7aa200f387e4b52f5583ddc8a2bd9b74",
+  "reportRef": "verification.md",
+  "reportHash": "ad0ab8a29cd68a2f8c146caaaca0272508448a99e48b6a26671d7320ea583368",
+  "acceptanceTrace": {
+    "schema": "comet.native.acceptance-trace.v2",
+    "nativeRootRef": "docs/comet",
+    "criteriaHash": "3b9133da25c18d23b6cd11350ada8d0c674d79da909bbad2c737547580f3deb6",
+    "total": 17,
+    "evidenced": 0,
+    "skipped": 17,
+    "entries": [
+      {
+        "acceptanceId": "acceptance-00ad9663def12e42490fffeec76bbeab5b3edfe9f7986a998b6f5f8c4db15cd7",
+        "status": "failed",
+        "kind": "spec-must",
+        "source": "specs/ontology-constraint-runtime/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "dedicated committed unit tests missing; returning to Build"
+      },
+      {
+        "acceptanceId": "acceptance-082b91a0d0fc277bf2e2bdabc28ad8555c0825ff9647dde78209d516cfc4bee0",
+        "status": "failed",
+        "kind": "spec-must",
+        "source": "specs/ontology-constraint-runtime/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "dedicated committed unit tests missing; returning to Build"
+      },
+      {
+        "acceptanceId": "acceptance-425fb88a020b1ee4028b4753a4123fcbd5f05115446db59bd7ad7c36030e40c9",
+        "status": "failed",
+        "kind": "spec-must",
+        "source": "specs/ontology-constraint-runtime/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "dedicated committed unit tests missing; returning to Build"
+      },
+      {
+        "acceptanceId": "acceptance-591ba7129b57093e95c64d263602c73379bb488e856b92dedd8b35e487bdc0aa",
+        "status": "failed",
+        "kind": "spec-must",
+        "source": "specs/ontology-constraint-runtime/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "dedicated committed unit tests missing; returning to Build"
+      },
+      {
+        "acceptanceId": "acceptance-68ff8c9d6d20729df8c0197e217b1caac831e526129cad5db9861e89a2eeaf75",
+        "status": "failed",
+        "kind": "brief-example",
+        "source": "brief.md",
+        "evidenceRefs": [],
+        "skippedReason": "dedicated committed unit tests missing; returning to Build"
+      },
+      {
+        "acceptanceId": "acceptance-987c3c5d9d08bbf13c722c3a05f2a14ddf448ad12e87b0db1d79bb169387d030",
+        "status": "failed",
+        "kind": "brief-example",
+        "source": "brief.md",
+        "evidenceRefs": [],
+        "skippedReason": "dedicated committed unit tests missing; returning to Build"
+      },
+      {
+        "acceptanceId": "acceptance-9e3b5d0e3850df6adb517facba73c35968dcd6202a86b0bb65958eeb25982fa5",
+        "status": "failed",
+        "kind": "spec-must",
+        "source": "specs/ontology-constraint-runtime/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "dedicated committed unit tests missing; returning to Build"
+      },
+      {
+        "acceptanceId": "acceptance-bb7299befe9c5873d018bd9f8cf9020822baa6893eacc602240698d012a9e91e",
+        "status": "failed",
+        "kind": "spec-must",
+        "source": "specs/ontology-constraint-runtime/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "dedicated committed unit tests missing; returning to Build"
+      },
+      {
+        "acceptanceId": "acceptance-c49fc607ade5810728d1037cc0d1b7e7783a9fecbbcb065e2f81bc9652a986bd",
+        "status": "failed",
+        "kind": "spec-must",
+        "source": "specs/ontology-constraint-runtime/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "dedicated committed unit tests missing; returning to Build"
+      },
+      {
+        "acceptanceId": "acceptance-cea2ade70c3e0e6b7557bacaa58309caa40be9ad09382c7947c99d8415b8c12b",
+        "status": "failed",
+        "kind": "brief-example",
+        "source": "brief.md",
+        "evidenceRefs": [],
+        "skippedReason": "dedicated committed unit tests missing; returning to Build"
+      },
+      {
+        "acceptanceId": "acceptance-d0a1422ecfd540ab9ff929b4c352936b6439c0256f50249e251f6ea40da91ff8",
+        "status": "failed",
+        "kind": "spec-must",
+        "source": "specs/ontology-constraint-runtime/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "dedicated committed unit tests missing; returning to Build"
+      },
+      {
+        "acceptanceId": "acceptance-d1ed63654ff7397f3a0e1ef58a872d0d2aefe22ea766665c7af10cba383b336d",
+        "status": "failed",
+        "kind": "brief-example",
+        "source": "brief.md",
+        "evidenceRefs": [],
+        "skippedReason": "dedicated committed unit tests missing; returning to Build"
+      },
+      {
+        "acceptanceId": "acceptance-e9cd565d6ae6aee6d598dc895fdaa6df625fb9d2b414e831d8682624e699d159",
+        "status": "failed",
+        "kind": "spec-must",
+        "source": "specs/ontology-constraint-runtime/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "dedicated committed unit tests missing; returning to Build"
+      },
+      {
+        "acceptanceId": "acceptance-e9f2ab136e59d7e62c358fce3434279ed1c3da1b5d54cad448d64a24af0ad7ac",
+        "status": "failed",
+        "kind": "brief-example",
+        "source": "brief.md",
+        "evidenceRefs": [],
+        "skippedReason": "dedicated committed unit tests missing; returning to Build"
+      },
+      {
+        "acceptanceId": "acceptance-edc8e189e7e076b6ae23040e466ffde709446a18d3dba5be4b03dff38426c59e",
+        "status": "failed",
+        "kind": "spec-must",
+        "source": "specs/ontology-constraint-runtime/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "dedicated committed unit tests missing; returning to Build"
+      },
+      {
+        "acceptanceId": "acceptance-ee6a612343276232ac99e21a38bf2d7c5196cee47d3b666ceb1697307ba8c500",
+        "status": "failed",
+        "kind": "spec-must",
+        "source": "specs/ontology-constraint-runtime/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "dedicated committed unit tests missing; returning to Build"
+      },
+      {
+        "acceptanceId": "acceptance-ff94438ed31e7a20a5af856a6f1b1ccdbee526b5a5c28088387db000d2977e82",
+        "status": "failed",
+        "kind": "spec-must",
+        "source": "specs/ontology-constraint-runtime/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "dedicated committed unit tests missing; returning to Build"
+      }
+    ],
+    "traceHash": "4714549392c04b1f9f88e59af6ad2de48a17ddc01a63a2e034ec103762246b16"
+  },
+  "partialAllowanceRef": null,
+  "partialAllowanceHash": null,
+  "requiredReceiptRefs": [],
+  "receiptRefs": [],
+  "createdAt": "2026-09-25T05:21:14.164Z",
+  "envelopeHash": "004bcbc6b7a6846de605922a605219293627d287c6be264b32761ac028817f2e"
+}

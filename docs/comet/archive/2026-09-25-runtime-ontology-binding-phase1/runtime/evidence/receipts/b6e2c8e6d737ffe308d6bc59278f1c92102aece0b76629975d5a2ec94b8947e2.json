@@ -1,0 +1,37 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "static-inspection",
+  "role": "required-check",
+  "status": "passed",
+  "bindings": {
+    "change": "runtime-ontology-binding-phase1",
+    "sourceRevision": 5,
+    "contractHash": "1916d0899056e7f94c2af3c3995c75c859607e70239a85b7ef3a009d085dfb3a",
+    "scopeHash": "b16c69a365753bfc3ed688775a4f0105a1c857b0c150d8dc52121799f3e5014c",
+    "snapshotHash": "49ba8825e891eab015f65a7e3a42e6ce1ebf70d38898a80c276cb1c2048d6893",
+    "artifactHash": "a1dcfa8a23b65fe84c3c86c3886a718f13885487add9b3534edfdb7a4f2f2d1e"
+  },
+  "acceptanceIds": [],
+  "actor": "native-runtime:scoped-text-safety",
+  "issuedAt": "2026-09-25T05:41:07.318Z",
+  "evidence": {
+    "subjects": [
+      "agent/pyproject.toml",
+      "agent/sap_nexus_agent/constraint_runtime.py",
+      "agent/sap_nexus_agent/ontology_codegen.py",
+      "agent/sap_nexus_agent/orchestrator.py",
+      "agent/tests/test_constraint_runtime.py",
+      "agent/tests/test_ontology_codegen.py",
+      "agent/tests/test_pr_create_draft_capability.py",
+      "ontology/generated/manifest.json",
+      "ontology/generated/shacl-inputs.ttl",
+      "ontology/generated/skos-capabilities.ttl",
+      "scripts/build-ontology-bundle.py"
+    ],
+    "rule": "scoped-text-safety",
+    "resultSummary": "The built-in scoped inspection passed without skipped or blocking input.",
+    "checkReceiptRef": "runtime/evidence/check-receipts/14d192a91cdb2441b0cad36129223d0e9f01e8d918a44532cc4be886edf1e84b.json",
+    "checkReceiptHash": "14d192a91cdb2441b0cad36129223d0e9f01e8d918a44532cc4be886edf1e84b"
+  },
+  "receiptHash": "b6e2c8e6d737ffe308d6bc59278f1c92102aece0b76629975d5a2ec94b8947e2"
+}

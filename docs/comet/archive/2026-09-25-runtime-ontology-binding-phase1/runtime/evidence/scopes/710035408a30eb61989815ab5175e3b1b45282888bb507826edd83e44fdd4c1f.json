@@ -1,0 +1,272 @@
+{
+  "schema": "comet.native.implementation-scope.v2",
+  "contractHash": "1916d0899056e7f94c2af3c3995c75c859607e70239a85b7ef3a009d085dfb3a",
+  "baselineProjectionRef": "runtime/evidence/snapshots/04d1353ef10a4b55dcb9e376e7efafadb991a0c12afb459b77d972021cb38929.json",
+  "baselineProjectionHash": "04d1353ef10a4b55dcb9e376e7efafadb991a0c12afb459b77d972021cb38929",
+  "currentProjectionRef": "runtime/evidence/snapshots/e8fcc118ffcdb8ed15c91aedf5da45af24b731cfc6fd906febf20c15b434706d.json",
+  "currentProjectionHash": "e8fcc118ffcdb8ed15c91aedf5da45af24b731cfc6fd906febf20c15b434706d",
+  "complete": false,
+  "declaredArtifacts": [
+    {
+      "path": "agent/sap_nexus_agent/constraint_runtime.py",
+      "kind": "file"
+    }
+  ],
+  "changes": [
+    {
+      "path": "agent/pyproject.toml",
+      "kind": "modified",
+      "before": {
+        "hash": "e3e49bc9d40dafdb22c4504459fb28e06d87b820015bf40ca2c73cafa7a0503b",
+        "size": 415
+      },
+      "after": {
+        "hash": "8f85eb2d6ced473904671fa4b5d1acf2dba0673fbc4b4b9a3373c2b8a130ed2f",
+        "size": 459
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "agent/sap_nexus_agent/constraint_runtime.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "d21770a2732badbc05e4dff5841ee5805f24105add8900aa1127c1e32e32ab3e",
+        "size": 7081
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/constraint_runtime.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/sap_nexus_agent/ontology_codegen.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "7abe9d95b468881064594e5ecc782419685516692907107038c293df52e2caa1",
+        "size": 6212
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "agent/sap_nexus_agent/orchestrator.py",
+      "kind": "modified",
+      "before": {
+        "hash": "1b7398475d69497707a3fce9c80bcd6fc11c2dfb9893afc45ee4b38ee77e0fd1",
+        "size": 92878
+      },
+      "after": {
+        "hash": "2890b870b895e4ab911d0132522e4cad5f9ecd94e4665a59f517a19c92f8a0e4",
+        "size": 92055
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "agent/tests/test_pr_create_draft_capability.py",
+      "kind": "modified",
+      "before": {
+        "hash": "e1782e59656c6b550aef3dc09cf6d91089f131005be4424896ee41855545dd78",
+        "size": 5914
+      },
+      "after": {
+        "hash": "1d30675ac82eac328b5c063e8030810a0f608cbba1d860e02d7d613d2d996dc5",
+        "size": 5899
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "ontology/generated/manifest.json",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "aea0acd0705110765d98c25c350aa304c99b66966fbf11f150763689d719186c",
+        "size": 188
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "ontology/generated/shacl-inputs.ttl",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "0c621c013a57e35689651a7c00323932b9e3c27b4c122ac500daa2bab1ed5aea",
+        "size": 8483
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "ontology/generated/skos-capabilities.ttl",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "c40c7567785af1c96e6dd5f6b5d6da2a0f91d121715f00b8741bbe194a9c045e",
+        "size": 4658
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "scripts/build-ontology-bundle.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "d2513e0f0e33fce8adb32a50baf46882d2217196942987060c2f5dfadc28d2a8",
+        "size": 2059
+      },
+      "attributedTo": []
+    }
+  ],
+  "unattributed": [
+    {
+      "path": "agent/pyproject.toml",
+      "kind": "modified",
+      "before": {
+        "hash": "e3e49bc9d40dafdb22c4504459fb28e06d87b820015bf40ca2c73cafa7a0503b",
+        "size": 415
+      },
+      "after": {
+        "hash": "8f85eb2d6ced473904671fa4b5d1acf2dba0673fbc4b4b9a3373c2b8a130ed2f",
+        "size": 459
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "agent/sap_nexus_agent/ontology_codegen.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "7abe9d95b468881064594e5ecc782419685516692907107038c293df52e2caa1",
+        "size": 6212
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "agent/sap_nexus_agent/orchestrator.py",
+      "kind": "modified",
+      "before": {
+        "hash": "1b7398475d69497707a3fce9c80bcd6fc11c2dfb9893afc45ee4b38ee77e0fd1",
+        "size": 92878
+      },
+      "after": {
+        "hash": "2890b870b895e4ab911d0132522e4cad5f9ecd94e4665a59f517a19c92f8a0e4",
+        "size": 92055
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "agent/tests/test_pr_create_draft_capability.py",
+      "kind": "modified",
+      "before": {
+        "hash": "e1782e59656c6b550aef3dc09cf6d91089f131005be4424896ee41855545dd78",
+        "size": 5914
+      },
+      "after": {
+        "hash": "1d30675ac82eac328b5c063e8030810a0f608cbba1d860e02d7d613d2d996dc5",
+        "size": 5899
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "ontology/generated/manifest.json",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "aea0acd0705110765d98c25c350aa304c99b66966fbf11f150763689d719186c",
+        "size": 188
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "ontology/generated/shacl-inputs.ttl",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "0c621c013a57e35689651a7c00323932b9e3c27b4c122ac500daa2bab1ed5aea",
+        "size": 8483
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "ontology/generated/skos-capabilities.ttl",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "c40c7567785af1c96e6dd5f6b5d6da2a0f91d121715f00b8741bbe194a9c045e",
+        "size": 4658
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "scripts/build-ontology-bundle.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "d2513e0f0e33fce8adb32a50baf46882d2217196942987060c2f5dfadc28d2a8",
+        "size": 2059
+      },
+      "attributedTo": []
+    }
+  ],
+  "unresolvedScopes": [
+    {
+      "id": "scope:10be6e9359521d3f5aa4cf78390ea91f1eb4d45249c78734a0f50c38114856d7",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": "agent/pyproject.toml",
+      "reason": "Changed path is not covered by a declared artifact: agent/pyproject.toml"
+    },
+    {
+      "id": "scope:e60ad4c60f2993ea9da1b6c116b4778ee771bf318afe4b01d5a8c8126b480264",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": "agent/sap_nexus_agent/ontology_codegen.py",
+      "reason": "Changed path is not covered by a declared artifact: agent/sap_nexus_agent/ontology_codegen.py"
+    },
+    {
+      "id": "scope:6cf658fda6ce85a78f1a66d81fb8c95b1e88315637bedef4e8e3d6ffb2345bd3",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": "agent/sap_nexus_agent/orchestrator.py",
+      "reason": "Changed path is not covered by a declared artifact: agent/sap_nexus_agent/orchestrator.py"
+    },
+    {
+      "id": "scope:384e85241a2f283d707f3431d1a4376b1ba92e3ae71f782c38a298e9bff534ea",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": "agent/tests/test_pr_create_draft_capability.py",
+      "reason": "Changed path is not covered by a declared artifact: agent/tests/test_pr_create_draft_capability.py"
+    },
+    {
+      "id": "scope:c8e4affb3884ab57f6e3bc159e96d2a8472e6646d59e3697286d30c0de5caa64",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": "ontology/generated/manifest.json",
+      "reason": "Changed path is not covered by a declared artifact: ontology/generated/manifest.json"
+    },
+    {
+      "id": "scope:cad399e00ac1c931ab81526b1aa49e2c3f5f245b5058adcd7be0f4934004d362",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": "ontology/generated/shacl-inputs.ttl",
+      "reason": "Changed path is not covered by a declared artifact: ontology/generated/shacl-inputs.ttl"
+    },
+    {
+      "id": "scope:ab6482637a9fb5e9038bcda7cbf6f9cc20ba0ed8167b0cde1cbd8cd0efe3ec9e",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": "ontology/generated/skos-capabilities.ttl",
+      "reason": "Changed path is not covered by a declared artifact: ontology/generated/skos-capabilities.ttl"
+    },
+    {
+      "id": "scope:c57a3476d0aa896c774e6d4f05e5d3bf7d4ca8fc34d1e01872f40ac768d87817",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": "scripts/build-ontology-bundle.py",
+      "reason": "Changed path is not covered by a declared artifact: scripts/build-ontology-bundle.py"
+    }
+  ],
+  "noCodeReason": null,
+  "scopeHash": "710035408a30eb61989815ab5175e3b1b45282888bb507826edd83e44fdd4c1f"
+}

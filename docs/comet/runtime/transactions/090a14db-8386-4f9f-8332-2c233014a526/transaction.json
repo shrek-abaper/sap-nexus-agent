@@ -1,0 +1,27 @@
+{
+  "schema": "comet.native.transaction.v2",
+  "id": "090a14db-8386-4f9f-8332-2c233014a526",
+  "kind": "archive",
+  "status": "committed",
+  "change": "runtime-ontology-binding-phase1",
+  "createdAt": "2026-09-25T05:42:01.792Z",
+  "preflightHash": "e88fb924c180c0705ab26361084c318f9b60a6ed49f0ef920080367fe89cebbd",
+  "operations": [
+    {
+      "id": "spec-1-ontology-constraint-runtime",
+      "type": "write",
+      "target": "specs/ontology-constraint-runtime/spec.md",
+      "staged": "runtime/transactions/090a14db-8386-4f9f-8332-2c233014a526/staged/specs/ontology-constraint-runtime/spec.md",
+      "expectedTargetHash": null,
+      "stagedHash": "154cc967eddf244d77997eb76cd14193871e4fc164e4bdd25ce0c60725ae2cbd"
+    },
+    {
+      "id": "archive-change",
+      "type": "move",
+      "source": "changes/runtime-ontology-binding-phase1",
+      "target": "archive/2026-09-25-runtime-ontology-binding-phase1",
+      "expectedSourceHash": "18efb54169dfe2f9d36fec7740d4f00edd4641bc115f9d7315fd81903ae91b99",
+      "expectedTargetHash": null
+    }
+  ]
+}

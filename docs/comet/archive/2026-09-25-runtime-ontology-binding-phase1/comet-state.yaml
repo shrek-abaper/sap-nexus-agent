@@ -1,0 +1,23 @@
+schema: comet.native.v3
+minimum_runtime_version: 3
+revision: 7
+verification_protocol: legacy-v1
+name: runtime-ontology-binding-phase1
+language: zh-CN
+phase: archive
+brief: brief.md
+approval: confirmed
+approved_contract_hash: 1916d0899056e7f94c2af3c3995c75c859607e70239a85b7ef3a009d085dfb3a
+spec_changes:
+  - capability: ontology-constraint-runtime
+    operation: create
+    source: specs/ontology-constraint-runtime/spec.md
+    base_hash: null
+verification_result: pass
+verification_report: verification.md
+implementation_scope: runtime/evidence/scopes/b16c69a365753bfc3ed688775a4f0105a1c857b0c150d8dc52121799f3e5014c.json
+verification_evidence: runtime/evidence/verifications/615bb0033fbf9544448e30b4346c3f17acd7e620f073eed324f3635fe4ef9842.json
+partial_allowance: null
+archived: true
+created_at: 2026-09-25
+run_id: 501e5c54-5a61-4d3e-b860-f312258be1b0

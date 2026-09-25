@@ -1,0 +1,54 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "runtime-ontology-binding-phase1",
+    "sourceRevision": 5,
+    "contractHash": "1916d0899056e7f94c2af3c3995c75c859607e70239a85b7ef3a009d085dfb3a",
+    "scopeHash": "b16c69a365753bfc3ed688775a4f0105a1c857b0c150d8dc52121799f3e5014c",
+    "snapshotHash": "49ba8825e891eab015f65a7e3a42e6ce1ebf70d38898a80c276cb1c2048d6893",
+    "artifactHash": "a1dcfa8a23b65fe84c3c86c3886a718f13885487add9b3534edfdb7a4f2f2d1e"
+  },
+  "acceptanceIds": [
+    "acceptance-00ad9663def12e42490fffeec76bbeab5b3edfe9f7986a998b6f5f8c4db15cd7",
+    "acceptance-425fb88a020b1ee4028b4753a4123fcbd5f05115446db59bd7ad7c36030e40c9",
+    "acceptance-c49fc607ade5810728d1037cc0d1b7e7783a9fecbbcb065e2f81bc9652a986bd",
+    "acceptance-d0a1422ecfd540ab9ff929b4c352936b6439c0256f50249e251f6ea40da91ff8",
+    "acceptance-ee6a612343276232ac99e21a38bf2d7c5196cee47d3b666ceb1697307ba8c500"
+  ],
+  "actor": "native-runtime:command:.venv/bin/python",
+  "issuedAt": "2026-09-25T05:30:36.811Z",
+  "evidence": {
+    "executable": ".venv/bin/python",
+    "args": [
+      "-m",
+      "pytest",
+      "agent/tests/test_ontology_codegen.py",
+      "-q"
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 120000,
+    "startedAt": "2026-09-25T05:30:35.970Z",
+    "endedAt": "2026-09-25T05:30:36.811Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "9523927fbbc86dea765bb27e70ccddc67a26cc1e",
+      "afterCommit": "9523927fbbc86dea765bb27e70ccddc67a26cc1e"
+    },
+    "afterFence": {
+      "snapshotHash": "49ba8825e891eab015f65a7e3a42e6ce1ebf70d38898a80c276cb1c2048d6893",
+      "scopeHash": "b16c69a365753bfc3ed688775a4f0105a1c857b0c150d8dc52121799f3e5014c",
+      "matched": true
+    },
+    "outputHash": "ff867a09415b8481b820c5702a45a5c620175bfb5f074c03080591bcb858319b",
+    "outputSummary": ".........                                                                [100%]\n9 passed in 0.59s",
+    "outputTruncated": false
+  },
+  "receiptHash": "aed745d394f3363c586d29178847bcb6b4871bf7c5ac8159edbaf111dc417c73"
+}

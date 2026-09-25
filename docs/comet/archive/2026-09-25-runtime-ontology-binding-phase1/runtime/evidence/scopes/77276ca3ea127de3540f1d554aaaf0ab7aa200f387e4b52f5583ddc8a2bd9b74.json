@@ -1,0 +1,201 @@
+{
+  "schema": "comet.native.implementation-scope.v2",
+  "contractHash": "1916d0899056e7f94c2af3c3995c75c859607e70239a85b7ef3a009d085dfb3a",
+  "baselineProjectionRef": "runtime/evidence/snapshots/04d1353ef10a4b55dcb9e376e7efafadb991a0c12afb459b77d972021cb38929.json",
+  "baselineProjectionHash": "04d1353ef10a4b55dcb9e376e7efafadb991a0c12afb459b77d972021cb38929",
+  "currentProjectionRef": "runtime/evidence/snapshots/e8fcc118ffcdb8ed15c91aedf5da45af24b731cfc6fd906febf20c15b434706d.json",
+  "currentProjectionHash": "e8fcc118ffcdb8ed15c91aedf5da45af24b731cfc6fd906febf20c15b434706d",
+  "complete": true,
+  "declaredArtifacts": [
+    {
+      "path": "agent/pyproject.toml",
+      "kind": "file"
+    },
+    {
+      "path": "agent/sap_nexus_agent/constraint_runtime.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/sap_nexus_agent/ontology_codegen.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/sap_nexus_agent/orchestrator.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_pr_create_draft_capability.py",
+      "kind": "file"
+    },
+    {
+      "path": "docs/proposals/phase1-intake.md",
+      "kind": "file"
+    },
+    {
+      "path": "ontology/generated/manifest.json",
+      "kind": "file"
+    },
+    {
+      "path": "ontology/generated/shacl-inputs.ttl",
+      "kind": "file"
+    },
+    {
+      "path": "ontology/generated/skos-capabilities.ttl",
+      "kind": "file"
+    },
+    {
+      "path": "scripts/build-ontology-bundle.py",
+      "kind": "file"
+    }
+  ],
+  "changes": [
+    {
+      "path": "agent/pyproject.toml",
+      "kind": "modified",
+      "before": {
+        "hash": "e3e49bc9d40dafdb22c4504459fb28e06d87b820015bf40ca2c73cafa7a0503b",
+        "size": 415
+      },
+      "after": {
+        "hash": "8f85eb2d6ced473904671fa4b5d1acf2dba0673fbc4b4b9a3373c2b8a130ed2f",
+        "size": 459
+      },
+      "attributedTo": [
+        {
+          "path": "agent/pyproject.toml",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/sap_nexus_agent/constraint_runtime.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "d21770a2732badbc05e4dff5841ee5805f24105add8900aa1127c1e32e32ab3e",
+        "size": 7081
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/constraint_runtime.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/sap_nexus_agent/ontology_codegen.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "7abe9d95b468881064594e5ecc782419685516692907107038c293df52e2caa1",
+        "size": 6212
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/ontology_codegen.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/sap_nexus_agent/orchestrator.py",
+      "kind": "modified",
+      "before": {
+        "hash": "1b7398475d69497707a3fce9c80bcd6fc11c2dfb9893afc45ee4b38ee77e0fd1",
+        "size": 92878
+      },
+      "after": {
+        "hash": "2890b870b895e4ab911d0132522e4cad5f9ecd94e4665a59f517a19c92f8a0e4",
+        "size": 92055
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/orchestrator.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_pr_create_draft_capability.py",
+      "kind": "modified",
+      "before": {
+        "hash": "e1782e59656c6b550aef3dc09cf6d91089f131005be4424896ee41855545dd78",
+        "size": 5914
+      },
+      "after": {
+        "hash": "1d30675ac82eac328b5c063e8030810a0f608cbba1d860e02d7d613d2d996dc5",
+        "size": 5899
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_pr_create_draft_capability.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "ontology/generated/manifest.json",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "aea0acd0705110765d98c25c350aa304c99b66966fbf11f150763689d719186c",
+        "size": 188
+      },
+      "attributedTo": [
+        {
+          "path": "ontology/generated/manifest.json",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "ontology/generated/shacl-inputs.ttl",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "0c621c013a57e35689651a7c00323932b9e3c27b4c122ac500daa2bab1ed5aea",
+        "size": 8483
+      },
+      "attributedTo": [
+        {
+          "path": "ontology/generated/shacl-inputs.ttl",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "ontology/generated/skos-capabilities.ttl",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "c40c7567785af1c96e6dd5f6b5d6da2a0f91d121715f00b8741bbe194a9c045e",
+        "size": 4658
+      },
+      "attributedTo": [
+        {
+          "path": "ontology/generated/skos-capabilities.ttl",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "scripts/build-ontology-bundle.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "d2513e0f0e33fce8adb32a50baf46882d2217196942987060c2f5dfadc28d2a8",
+        "size": 2059
+      },
+      "attributedTo": [
+        {
+          "path": "scripts/build-ontology-bundle.py",
+          "kind": "file"
+        }
+      ]
+    }
+  ],
+  "unattributed": [],
+  "unresolvedScopes": [],
+  "noCodeReason": null,
+  "scopeHash": "77276ca3ea127de3540f1d554aaaf0ab7aa200f387e4b52f5583ddc8a2bd9b74"
+}

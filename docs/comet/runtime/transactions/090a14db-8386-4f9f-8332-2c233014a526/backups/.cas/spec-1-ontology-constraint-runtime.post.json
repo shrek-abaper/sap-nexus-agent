@@ -1,0 +1,11 @@
+{
+  "schema": "comet.native.archive-cas.v1",
+  "operationId": "spec-1-ontology-constraint-runtime",
+  "role": "post",
+  "hash": "154cc967eddf244d77997eb76cd14193871e4fc164e4bdd25ce0c60725ae2cbd",
+  "identity": {
+    "dev": 2096,
+    "ino": 288280,
+    "birthtimeMs": 1790314928908.4246
+  }
+}

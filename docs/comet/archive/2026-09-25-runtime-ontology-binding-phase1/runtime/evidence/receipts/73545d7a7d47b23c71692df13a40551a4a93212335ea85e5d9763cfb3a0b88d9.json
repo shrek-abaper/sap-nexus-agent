@@ -1,0 +1,50 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "runtime-ontology-binding-phase1",
+    "sourceRevision": 5,
+    "contractHash": "1916d0899056e7f94c2af3c3995c75c859607e70239a85b7ef3a009d085dfb3a",
+    "scopeHash": "b16c69a365753bfc3ed688775a4f0105a1c857b0c150d8dc52121799f3e5014c",
+    "snapshotHash": "49ba8825e891eab015f65a7e3a42e6ce1ebf70d38898a80c276cb1c2048d6893",
+    "artifactHash": "a1dcfa8a23b65fe84c3c86c3886a718f13885487add9b3534edfdb7a4f2f2d1e"
+  },
+  "acceptanceIds": [
+    "acceptance-00ad9663def12e42490fffeec76bbeab5b3edfe9f7986a998b6f5f8c4db15cd7"
+  ],
+  "actor": "native-runtime:command:.venv/bin/python",
+  "issuedAt": "2026-09-25T05:28:40.685Z",
+  "evidence": {
+    "executable": ".venv/bin/python",
+    "args": [
+      "-m",
+      "pytest",
+      "agent/tests/test_ontology_codegen.py",
+      "-q"
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 120000,
+    "startedAt": "2026-09-25T05:28:39.587Z",
+    "endedAt": "2026-09-25T05:28:40.685Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "9523927fbbc86dea765bb27e70ccddc67a26cc1e",
+      "afterCommit": "9523927fbbc86dea765bb27e70ccddc67a26cc1e"
+    },
+    "afterFence": {
+      "snapshotHash": "49ba8825e891eab015f65a7e3a42e6ce1ebf70d38898a80c276cb1c2048d6893",
+      "scopeHash": "b16c69a365753bfc3ed688775a4f0105a1c857b0c150d8dc52121799f3e5014c",
+      "matched": true
+    },
+    "outputHash": "61ec84121d1b1f436e4d7dfe6c8b9453d1009e5eadfa736f23a6adafac5de0a3",
+    "outputSummary": ".........                                                                [100%]\n9 passed in 0.78s",
+    "outputTruncated": false
+  },
+  "receiptHash": "73545d7a7d47b23c71692df13a40551a4a93212335ea85e5d9763cfb3a0b88d9"
+}

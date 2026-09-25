@@ -1,0 +1,8 @@
+{"sequence":1,"timestamp":"2026-09-25T05:42:05.706Z","type":"prepared"}
+{"sequence":2,"timestamp":"2026-09-25T05:42:08.822Z","type":"operation-started","operationId":"spec-1-ontology-constraint-runtime"}
+{"sequence":3,"timestamp":"2026-09-25T05:42:09.146Z","type":"operation-completed","operationId":"spec-1-ontology-constraint-runtime"}
+{"sequence":4,"timestamp":"2026-09-25T05:42:11.922Z","type":"operation-started","operationId":"archive-change"}
+{"sequence":5,"timestamp":"2026-09-25T05:42:12.860Z","type":"operation-completed","operationId":"archive-change"}
+{"sequence":6,"timestamp":"2026-09-25T05:42:13.428Z","type":"archive-finalization-started"}
+{"sequence":7,"timestamp":"2026-09-25T05:42:13.621Z","type":"archive-finalized"}
+{"sequence":8,"timestamp":"2026-09-25T05:42:13.742Z","type":"commit"}

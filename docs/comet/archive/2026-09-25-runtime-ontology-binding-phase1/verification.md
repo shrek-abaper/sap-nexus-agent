@@ -1,0 +1,170 @@
+# Acceptance evidence
+
+<!-- comet-native:acceptance-evidence:start -->
+[
+  {
+    "acceptance_id": "acceptance-00ad9663def12e42490fffeec76bbeab5b3edfe9f7986a998b6f5f8c4db15cd7",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/73545d7a7d47b23c71692df13a40551a4a93212335ea85e5d9763cfb3a0b88d9.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-082b91a0d0fc277bf2e2bdabc28ad8555c0825ff9647dde78209d516cfc4bee0",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/79a9fe896420bd8ff4cfca559f91b80664944c30003680e6b9bfbc6c8f9b8a7c.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-425fb88a020b1ee4028b4753a4123fcbd5f05115446db59bd7ad7c36030e40c9",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/aed745d394f3363c586d29178847bcb6b4871bf7c5ac8159edbaf111dc417c73.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-591ba7129b57093e95c64d263602c73379bb488e856b92dedd8b35e487bdc0aa",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/4cd4703ecded47f8ddfe1e2799b27eb98b6c9b8696a4e2a050f952e66d92225a.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-68ff8c9d6d20729df8c0197e217b1caac831e526129cad5db9861e89a2eeaf75",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/79a9fe896420bd8ff4cfca559f91b80664944c30003680e6b9bfbc6c8f9b8a7c.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-987c3c5d9d08bbf13c722c3a05f2a14ddf448ad12e87b0db1d79bb169387d030",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/79a9fe896420bd8ff4cfca559f91b80664944c30003680e6b9bfbc6c8f9b8a7c.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-9e3b5d0e3850df6adb517facba73c35968dcd6202a86b0bb65958eeb25982fa5",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/79a9fe896420bd8ff4cfca559f91b80664944c30003680e6b9bfbc6c8f9b8a7c.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-bb7299befe9c5873d018bd9f8cf9020822baa6893eacc602240698d012a9e91e",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/79a9fe896420bd8ff4cfca559f91b80664944c30003680e6b9bfbc6c8f9b8a7c.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-c49fc607ade5810728d1037cc0d1b7e7783a9fecbbcb065e2f81bc9652a986bd",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/aed745d394f3363c586d29178847bcb6b4871bf7c5ac8159edbaf111dc417c73.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-cea2ade70c3e0e6b7557bacaa58309caa40be9ad09382c7947c99d8415b8c12b",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/79a9fe896420bd8ff4cfca559f91b80664944c30003680e6b9bfbc6c8f9b8a7c.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-d0a1422ecfd540ab9ff929b4c352936b6439c0256f50249e251f6ea40da91ff8",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/aed745d394f3363c586d29178847bcb6b4871bf7c5ac8159edbaf111dc417c73.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-d1ed63654ff7397f3a0e1ef58a872d0d2aefe22ea766665c7af10cba383b336d",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/79a9fe896420bd8ff4cfca559f91b80664944c30003680e6b9bfbc6c8f9b8a7c.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-e9cd565d6ae6aee6d598dc895fdaa6df625fb9d2b414e831d8682624e699d159",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/4cd4703ecded47f8ddfe1e2799b27eb98b6c9b8696a4e2a050f952e66d92225a.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-e9f2ab136e59d7e62c358fce3434279ed1c3da1b5d54cad448d64a24af0ad7ac",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/79a9fe896420bd8ff4cfca559f91b80664944c30003680e6b9bfbc6c8f9b8a7c.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-edc8e189e7e076b6ae23040e466ffde709446a18d3dba5be4b03dff38426c59e",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/4cd4703ecded47f8ddfe1e2799b27eb98b6c9b8696a4e2a050f952e66d92225a.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-ee6a612343276232ac99e21a38bf2d7c5196cee47d3b666ceb1697307ba8c500",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/aed745d394f3363c586d29178847bcb6b4871bf7c5ac8159edbaf111dc417c73.json"
+    ]
+  },
+  {
+    "acceptance_id": "acceptance-ff94438ed31e7a20a5af856a6f1b1ccdbee526b5a5c28088387db000d2977e82",
+    "status": "passed",
+    "evidence_refs": [
+      "runtime/evidence/receipts/4cd4703ecded47f8ddfe1e2799b27eb98b6c9b8696a4e2a050f952e66d92225a.json"
+    ]
+  }
+]
+<!-- comet-native:acceptance-evidence:end -->
+
+17 项 acceptance 全部 passed，分别由 codegen 专项测试（5）、runtime 专项测试（4）、
+全量 agent 套件（8）的真实收据支撑。
+
+# Commands and results
+
+| 命令 | 结果 |
+|---|---|
+| `scripts/build-ontology-bundle.py` | 成功生成 ontology/generated 三产物 |
+| `scripts/build-ontology-bundle.py --check` | artifacts are in sync |
+| `pytest agent/tests/test_ontology_codegen.py` | passed（确定性/同步/manifest/SKOS/SHACL 内容） |
+| `pytest agent/tests/test_constraint_runtime.py` | passed（校验/前置正反控制） |
+| `pytest agent/tests`（240s 超时） | **1624 passed, 1 skipped, 2 xfailed** |
+| spike `assert_controls`（pyshacl/前置/权限/召回/跨后端） | 9 项控制全部 PASS |
+| eval inventory_availability | 7/7 passed |
+| eval eval_harness_seed | 13/13 passed |
+| eval pr_create | 9/9 passed（含审批缺失/过期/版本不符/重复提交） |
+| eval matcher | 23/23 passed |
+| eval purchase_order / sales_order / ar / ap | 3/3 each passed |
+| eval dry_run / derived_parameter | 1 / 2 unresolved（设计内 pending 语义，不计失败） |
+| 前置查询缓存延迟 | 0.56 ms/call（未缓存约 40ms，改善约 70×） |
+
+# Skipped checks
+
+无未运行的必需检查。eval dry_run（1）与 derived_parameter（2）为"did not execute"的
+设计内 pending 用例，按 EvalSummary 规则计 unresolved 而非 passed/failed。
+
+# Spec consistency
+
+规格 `ontology-constraint-runtime` 五项 Requirement 与 brief 全部满足：
+
+- codegen 确定性 + 同步校验：由专项测试与 --check 锁定；
+- 参数校验 SHACL 化：两处执行边界已切换，旧定制解释器已删除；
+- 前置条件解析器：交付为受测试能力（selector CLARIFY 的生产切换已明确为下一增量）；
+- resolve/enforce 分离、语义层不持凭据：结构与全量测试共同保证。
+
+# Known limitations and risks
+
+- 生产 selector 的 CLARIFY 仍读 registry，未切到图查询（用户确认的下一增量，规格已注明）；
+- codegen 产物入库依赖提交者保持同步；已由测试 test_generated_artifacts_are_in_sync 强制。
+
+# Conclusion
+
+**pass**——17/17 acceptance 通过；全量测试与 evals 全绿；行为与改造前一致，约束解释器
+标准化为 YAML codegen + SHACL 标准引擎，强制仍在确定性代码。
