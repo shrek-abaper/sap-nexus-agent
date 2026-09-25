@@ -1,0 +1,11 @@
+{
+  "schema": "comet.native.archive-cas.v1",
+  "operationId": "spec-1-list-bapi-executor-migration",
+  "role": "post",
+  "hash": "9c7fbdd9cfef108c5da0014994a985aa62c3bf27ed78abc87d0f2225ac8d2531",
+  "identity": {
+    "dev": 2096,
+    "ino": 459605,
+    "birthtimeMs": 1790378610175.698
+  }
+}

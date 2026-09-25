@@ -1,0 +1,51 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "migrate-list-bapis-rest-json",
+    "sourceRevision": 3,
+    "contractHash": "484189516c666ec4f91f8ad06161f2c7dc61d6c0845a8b0568e8257a287f2841",
+    "scopeHash": "96793ec834308cd3f029a82ec360662000bade42fd74718d22f6aea7a609aed2",
+    "snapshotHash": "e0ad709b2c9fa0a35f86a3de7cfa38898599dbab7961de69c9421ef61edfad55",
+    "artifactHash": "0d51ef9a86a0824809cf834061f67b4ddf5bbe44212c7c675fd250620e048ec8"
+  },
+  "acceptanceIds": [
+    "acceptance-739f008e76d75d5e5763f5eeda93a57ca43c3e79c6b12945453f63ff1ebd61f0",
+    "acceptance-b5b865b15951e9fdfa31dbc7661d781dab76f71e3cfabe0b3130e263dfcf96d7"
+  ],
+  "actor": "native-runtime:command:/home/shrek/projects/GitHub_Projects/sap-nexus-agent/services/gateway/gradlew",
+  "issuedAt": "2026-09-25T23:16:02.367Z",
+  "evidence": {
+    "executable": "/home/shrek/projects/GitHub_Projects/sap-nexus-agent/services/gateway/gradlew",
+    "args": [
+      "-p",
+      "/home/shrek/projects/GitHub_Projects/sap-nexus-agent/services/gateway",
+      "--no-daemon",
+      "test"
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 300000,
+    "startedAt": "2026-09-25T23:15:52.105Z",
+    "endedAt": "2026-09-25T23:16:02.367Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "aab8afabff1d692a490a9c98921097be0aed76c5",
+      "afterCommit": "aab8afabff1d692a490a9c98921097be0aed76c5"
+    },
+    "afterFence": {
+      "snapshotHash": "e0ad709b2c9fa0a35f86a3de7cfa38898599dbab7961de69c9421ef61edfad55",
+      "scopeHash": "96793ec834308cd3f029a82ec360662000bade42fd74718d22f6aea7a609aed2",
+      "matched": true
+    },
+    "outputHash": "fd4c684d7039d4b25e161a435740dfb6ee705071d3486bd50ddb9a184cfadf38",
+    "outputSummary": "To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.8/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.\nDaemon will be stopped at the end of the build \n> Task :core:compileJava UP-TO-DATE\n> Task :core:processResources NO-SOURCE\n> Task :core:classes UP-TO-DATE\n> Task :core:jar UP-TO-DATE\n> Task :jco:compileJava UP-TO-DATE\n> Task :jco:processResources NO-SOURCE\n> Task :jco:classes UP-TO-DATE\n> Task :jco:jar UP-TO-DATE\n> Task :odata:compileJava UP-TO-DATE\n> Task :odata:processResources NO-SOURCE\n> Task :odata:classes UP-TO-DATE\n> Task :odata:jar UP-TO-DATE\n> Task :rest:compileJava UP-TO-DATE\n> Task :rest:processResources NO-SOURCE\n> Task :rest:classes UP-TO-DATE\n> Task :rest:jar UP-TO-DATE\n> Task :app:compileJava UP-TO-DATE\n> Task :app:processResources UP-TO-DATE\n> Task :app:classes UP-TO-DATE\n> Task :app:compileTestJava UP-TO-DATE\n> Task :app:processTestResources NO-SOURCE\n> Task :app:testClasses UP-TO-DATE\n> Task :app:test UP-TO-DATE\n> Task :core:compileTestJava UP-TO-DATE\n> Task :core:processTestResources NO-SOURCE\n> Task :core:testClasses UP-TO-DATE\n> Task :core:test UP-TO-DATE\n> Task :jco:compileTestJava UP-TO-DATE\n> Task :jco:processTestResources NO-SOURCE\n> Task :jco:testClasses UP-TO-DATE\n> Task :jco:test UP-TO-DATE\n> Task :odata:compileTestJava UP-TO-DATE\n> Task :odata:processTestResources NO-SOURCE\n> Task :odata:testClasses UP-TO-DATE\n> Task :odata:test UP-TO-DATE\n> Task :rest:compileTestJava UP-TO-DATE\n> Task :rest:processTestResources NO-SOURCE\n> Task :rest:testClasses UP-TO-DATE\n> Task :rest:test UP-TO-DATE\n\nBUILD SUCCESSFUL in 9s\n20 actionable tasks: 20 up-to-date",
+    "outputTruncated": false
+  },
+  "receiptHash": "349bb26a5c307717f6b943bacef82bfeeba80a48603110b77885918c2b3cf716"
+}

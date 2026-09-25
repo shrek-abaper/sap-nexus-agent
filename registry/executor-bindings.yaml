@@ -123,10 +123,8 @@ bindings:
       timeoutMs: 30000
   - bindingId: sap.fi.ap.get-open-items-rest2rfc
     type: REST_JSON
-    # Vertical-slice preset for BAPI_AP_ACC_GETOPENITEMS via the pure-ABAP
-    # rest2rfc SICF dynamic gateway. Not referenced by a capability yet:
-    # the production flip follows live equivalence evidence (Comet change
-    # add-rest-json-executor).
+    # Production REST binding for BAPI_AP_ACC_GETOPENITEMS (migrated from
+    # JCO_RFC; live equivalence proven in add-rest-json-executor).
     systemRef: sap-sat
     method: POST
     pathTemplate: /sap/bc/rest2rfc
@@ -147,3 +145,53 @@ bindings:
     constraints:
       sideEffect: none
       timeoutMs: 30000
+  - bindingId: sap.fi.ar.get-open-items-rest2rfc
+    type: REST_JSON
+    # Production REST binding for BAPI_AR_ACC_GETOPENITEMS (migrated from
+    # JCO_RFC; live equivalence: 1,355 rows / 124 fields).
+    systemRef: sap-sat
+    method: POST
+    pathTemplate: /sap/bc/rest2rfc
+    request:
+      mode: dynamic
+      bodyMapping:
+        customer: CUSTOMER
+        companyCode: COMPANYCODE
+        keydate: KEYDATE
+    response:
+      mode: dynamic
+      dataMapping:
+        openItems: lineitems
+        returnMessages: return
+    auth:
+      type: basic
+      credentialRef: sap-rest2rfc
+    constraints:
+      sideEffect: none
+      timeoutMs: 30000
+  - bindingId: sap.sd.salesorder.getlist-rest2rfc
+    type: REST_JSON
+    # Production REST binding for BAPI_SALESORDER_GETLIST (migrated from
+    # JCO_RFC; live equivalence: 5,164 rows / 54 fields). RETURN is an
+    # EXPORTING structure: on business errors the SICF path returns a
+    # non-200 status (fail-closed) without the RETURN text.
+    systemRef: sap-sat
+    method: POST
+    pathTemplate: /sap/bc/rest2rfc
+    request:
+      mode: dynamic
+      bodyMapping:
+        customerNumber: CUSTOMER_NUMBER
+        salesOrganization: SALES_ORGANIZATION
+        material: MATERIAL
+        documentDate: DOCUMENT_DATE
+    response:
+      mode: dynamic
+      dataMapping:
+        salesOrders: sales_orders
+    auth:
+      type: basic
+      credentialRef: sap-rest2rfc
+    constraints:
+      sideEffect: none
+      timeoutMs: 300000

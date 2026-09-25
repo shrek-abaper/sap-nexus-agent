@@ -1,0 +1,8 @@
+{"sequence":1,"timestamp":"2026-09-25T23:23:26.938Z","type":"prepared"}
+{"sequence":2,"timestamp":"2026-09-25T23:23:30.094Z","type":"operation-started","operationId":"spec-1-list-bapi-executor-migration"}
+{"sequence":3,"timestamp":"2026-09-25T23:23:30.435Z","type":"operation-completed","operationId":"spec-1-list-bapi-executor-migration"}
+{"sequence":4,"timestamp":"2026-09-25T23:23:33.475Z","type":"operation-started","operationId":"archive-change"}
+{"sequence":5,"timestamp":"2026-09-25T23:23:34.275Z","type":"operation-completed","operationId":"archive-change"}
+{"sequence":6,"timestamp":"2026-09-25T23:23:34.747Z","type":"archive-finalization-started"}
+{"sequence":7,"timestamp":"2026-09-25T23:23:34.890Z","type":"archive-finalized"}
+{"sequence":8,"timestamp":"2026-09-25T23:23:34.993Z","type":"commit"}

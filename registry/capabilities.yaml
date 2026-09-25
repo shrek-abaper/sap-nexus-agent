@@ -807,7 +807,7 @@ capabilities:
         type: array
         evidenceRole: executionEvidence
     executor:
-      type: JCO_RFC
+      type: REST_JSON
       rfcName: BAPI_SALESORDER_GETLIST
       inputMapping:
         customerNumber: CUSTOMER_NUMBER
@@ -818,8 +818,8 @@ capabilities:
         salesOrders: SALES_ORDERS
         returnMessages: RETURN
     executorBinding:
-      type: JCO_RFC
-      bindingId: sap.sd.salesorder.getlist
+      type: REST_JSON
+      bindingId: sap.sd.salesorder.getlist-rest2rfc
     evalLinkage:
       evalFile: evals/sales_order_list_cases.yaml
       caseIds:
@@ -956,7 +956,7 @@ capabilities:
         type: array
         evidenceRole: executionEvidence
     executor:
-      type: JCO_RFC
+      type: REST_JSON
       rfcName: BAPI_AR_ACC_GETOPENITEMS
       inputMapping:
         customer: CUSTOMER
@@ -966,8 +966,8 @@ capabilities:
         openItems: LINEITEMS
         returnMessages: RETURN
     executorBinding:
-      type: JCO_RFC
-      bindingId: sap.fi.ar.get-open-items
+      type: REST_JSON
+      bindingId: sap.fi.ar.get-open-items-rest2rfc
     evalLinkage:
       evalFile: evals/ar_open_items_cases.yaml
       caseIds:
@@ -1103,7 +1103,7 @@ capabilities:
         type: array
         evidenceRole: executionEvidence
     executor:
-      type: JCO_RFC
+      type: REST_JSON
       rfcName: BAPI_AP_ACC_GETOPENITEMS
       inputMapping:
         vendor: VENDOR
@@ -1113,8 +1113,8 @@ capabilities:
         openItems: LINEITEMS
         returnMessages: RETURN
     executorBinding:
-      type: JCO_RFC
-      bindingId: sap.fi.ap.get-open-items
+      type: REST_JSON
+      bindingId: sap.fi.ap.get-open-items-rest2rfc
     evalLinkage:
       evalFile: evals/ap_open_items_cases.yaml
       caseIds:

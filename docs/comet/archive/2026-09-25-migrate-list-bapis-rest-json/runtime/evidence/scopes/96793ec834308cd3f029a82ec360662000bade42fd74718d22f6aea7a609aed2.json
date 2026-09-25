@@ -1,0 +1,149 @@
+{
+  "schema": "comet.native.implementation-scope.v2",
+  "contractHash": "484189516c666ec4f91f8ad06161f2c7dc61d6c0845a8b0568e8257a287f2841",
+  "baselineProjectionRef": "runtime/evidence/snapshots/c88ae70e490211386feddbba865ccd971c47457fd53c75a633b9f848e402901d.json",
+  "baselineProjectionHash": "c88ae70e490211386feddbba865ccd971c47457fd53c75a633b9f848e402901d",
+  "currentProjectionRef": "runtime/evidence/snapshots/e0ad709b2c9fa0a35f86a3de7cfa38898599dbab7961de69c9421ef61edfad55.json",
+  "currentProjectionHash": "e0ad709b2c9fa0a35f86a3de7cfa38898599dbab7961de69c9421ef61edfad55",
+  "complete": true,
+  "declaredArtifacts": [
+    {
+      "path": "agent/tests/test_semantic_planning_contract.py",
+      "kind": "file"
+    },
+    {
+      "path": "evals/matcher_cases.yaml",
+      "kind": "file"
+    },
+    {
+      "path": "registry/README.md",
+      "kind": "file"
+    },
+    {
+      "path": "registry/capabilities.yaml",
+      "kind": "file"
+    },
+    {
+      "path": "registry/executor-bindings.yaml",
+      "kind": "file"
+    },
+    {
+      "path": "tests/live/test_rest2rfc_ap_equivalence.py",
+      "kind": "file"
+    }
+  ],
+  "changes": [
+    {
+      "path": "agent/tests/test_semantic_planning_contract.py",
+      "kind": "modified",
+      "before": {
+        "hash": "b03da290213e5ada8dd19f26566f4d36191ec8e0d3323bf34d2bf374ed8a3a6e",
+        "size": 132919
+      },
+      "after": {
+        "hash": "b8a05a5b9d95b20e0b1bdd245803f21007b2618f68f5375e5f5dba94201628ca",
+        "size": 132920
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_semantic_planning_contract.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "evals/matcher_cases.yaml",
+      "kind": "modified",
+      "before": {
+        "hash": "811e9ea56ff21a9d9debc008f95ce91acbb7c549207658cf6e7fbe209ca57a58",
+        "size": 27349
+      },
+      "after": {
+        "hash": "4c8dbdb2f77a1ecb9b1112e8c4463ab22c32392f0a520bf7799b41b5650a1f73",
+        "size": 27349
+      },
+      "attributedTo": [
+        {
+          "path": "evals/matcher_cases.yaml",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "registry/README.md",
+      "kind": "modified",
+      "before": {
+        "hash": "6e1a88947f8b71504dca25774b3c3aa67ff90c807f183387070b1a3db14c1570",
+        "size": 2585
+      },
+      "after": {
+        "hash": "990b12b600ea751ecacab2cfe9288a88160abe4c7d158f598a3fd67adf6a5236",
+        "size": 2567
+      },
+      "attributedTo": [
+        {
+          "path": "registry/README.md",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "registry/capabilities.yaml",
+      "kind": "modified",
+      "before": {
+        "hash": "bacb11fd55743a853c94b09a80f8f22b7f1d151b4cad4fb479157d7eb52a8e93",
+        "size": 34547
+      },
+      "after": {
+        "hash": "cbf5a9c0d8ffc14738994d43e8b4d0f7db6e80a52fe6ccbc13c80b14daa6838d",
+        "size": 34586
+      },
+      "attributedTo": [
+        {
+          "path": "registry/capabilities.yaml",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "registry/executor-bindings.yaml",
+      "kind": "modified",
+      "before": {
+        "hash": "c3dbc8d573404bcf042e7ad0cf842780c3a72e28860ce876d24ebdacc7c19bc9",
+        "size": 4222
+      },
+      "after": {
+        "hash": "d259c1b5ea3d67aa62ab330ee2838873f3b5d2a0735c4e7539ef4f0c6ea11eab",
+        "size": 5595
+      },
+      "attributedTo": [
+        {
+          "path": "registry/executor-bindings.yaml",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "tests/live/test_rest2rfc_ap_equivalence.py",
+      "kind": "modified",
+      "before": {
+        "hash": "66e3de7ea15fe5d0aab4340a06c4550f8e23104edc6cea62002c0414c53d2337",
+        "size": 6166
+      },
+      "after": {
+        "hash": "c9fd2fbdf38b93c65137b8ffd7ee5abf3a693998db1cd8ebbc621f2733869dfd",
+        "size": 6850
+      },
+      "attributedTo": [
+        {
+          "path": "tests/live/test_rest2rfc_ap_equivalence.py",
+          "kind": "file"
+        }
+      ]
+    }
+  ],
+  "unattributed": [],
+  "unresolvedScopes": [],
+  "noCodeReason": null,
+  "scopeHash": "96793ec834308cd3f029a82ec360662000bade42fd74718d22f6aea7a609aed2"
+}

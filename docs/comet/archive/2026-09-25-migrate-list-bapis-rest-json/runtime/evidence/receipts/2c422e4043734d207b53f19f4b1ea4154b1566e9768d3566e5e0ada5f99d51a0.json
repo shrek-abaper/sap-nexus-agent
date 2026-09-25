@@ -1,0 +1,32 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "static-inspection",
+  "role": "required-check",
+  "status": "passed",
+  "bindings": {
+    "change": "migrate-list-bapis-rest-json",
+    "sourceRevision": 3,
+    "contractHash": "484189516c666ec4f91f8ad06161f2c7dc61d6c0845a8b0568e8257a287f2841",
+    "scopeHash": "96793ec834308cd3f029a82ec360662000bade42fd74718d22f6aea7a609aed2",
+    "snapshotHash": "e0ad709b2c9fa0a35f86a3de7cfa38898599dbab7961de69c9421ef61edfad55",
+    "artifactHash": "0d51ef9a86a0824809cf834061f67b4ddf5bbe44212c7c675fd250620e048ec8"
+  },
+  "acceptanceIds": [],
+  "actor": "native-runtime:scoped-text-safety",
+  "issuedAt": "2026-09-25T23:22:45.925Z",
+  "evidence": {
+    "subjects": [
+      "agent/tests/test_semantic_planning_contract.py",
+      "evals/matcher_cases.yaml",
+      "registry/README.md",
+      "registry/capabilities.yaml",
+      "registry/executor-bindings.yaml",
+      "tests/live/test_rest2rfc_ap_equivalence.py"
+    ],
+    "rule": "scoped-text-safety",
+    "resultSummary": "The built-in scoped inspection passed without skipped or blocking input.",
+    "checkReceiptRef": "runtime/evidence/check-receipts/0b64c67a96df370ec5f10950c8fbeeeabeefb5595020c1ac4f5d7ea8fc66d104.json",
+    "checkReceiptHash": "0b64c67a96df370ec5f10950c8fbeeeabeefb5595020c1ac4f5d7ea8fc66d104"
+  },
+  "receiptHash": "2c422e4043734d207b53f19f4b1ea4154b1566e9768d3566e5e0ada5f99d51a0"
+}

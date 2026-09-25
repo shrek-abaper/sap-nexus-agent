@@ -23,22 +23,22 @@ MM.PR.CreateDraft
 -> WRITE: requires a recorded human confirmation before execution
 
 SD.SalesOrder.GetList
--> executorBinding.bindingId = sap.sd.salesorder.getlist
--> current runtime executor = JCO_RFC / BAPI_SALESORDER_GETLIST
+-> executorBinding.bindingId = sap.sd.salesorder.getlist-rest2rfc
+-> current runtime executor = REST_JSON / BAPI_SALESORDER_GETLIST
 
 FI.AR.GetOpenItems
--> executorBinding.bindingId = sap.fi.ar.get-open-items
--> current runtime executor = JCO_RFC / BAPI_AR_ACC_GETOPENITEMS
+-> executorBinding.bindingId = sap.fi.ar.get-open-items-rest2rfc
+-> current runtime executor = REST_JSON / BAPI_AR_ACC_GETOPENITEMS
 
 FI.AP.GetOpenItems
--> executorBinding.bindingId = sap.fi.ap.get-open-items
--> current runtime executor = JCO_RFC / BAPI_AP_ACC_GETOPENITEMS
+-> executorBinding.bindingId = sap.fi.ap.get-open-items-rest2rfc
+-> current runtime executor = REST_JSON / BAPI_AP_ACC_GETOPENITEMS
 ```
 
-The binding catalog also contains `sap.fi.ap.get-open-items-rest2rfc` (REST_JSON),
-a preset for the ABAP rest2rfc SICF vertical slice. It is intentionally not
-referenced by a capability: the production flip follows live equivalence evidence
-(see `docs/proposals/rest2rfc-migration-assessment.md`).
+The three list capabilities were migrated from JCO_RFC to REST_JSON with live
+equivalence evidence (AP 28,197 / AR 1,355 / SD 5,164 rows; see
+`docs/proposals/rest2rfc-migration-assessment.md`). The original JCO_RFC bindings
+remain in the catalog.
 
 
 ## Contract Boundary

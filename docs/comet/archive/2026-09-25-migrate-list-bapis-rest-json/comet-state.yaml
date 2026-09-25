@@ -1,0 +1,23 @@
+schema: comet.native.v3
+minimum_runtime_version: 3
+revision: 5
+verification_protocol: legacy-v1
+name: migrate-list-bapis-rest-json
+language: zh-CN
+phase: archive
+brief: brief.md
+approval: confirmed
+approved_contract_hash: 484189516c666ec4f91f8ad06161f2c7dc61d6c0845a8b0568e8257a287f2841
+spec_changes:
+  - capability: list-bapi-executor-migration
+    operation: create
+    source: specs/list-bapi-executor-migration/spec.md
+    base_hash: null
+verification_result: pass
+verification_report: verification.md
+implementation_scope: runtime/evidence/scopes/96793ec834308cd3f029a82ec360662000bade42fd74718d22f6aea7a609aed2.json
+verification_evidence: runtime/evidence/verifications/3888741109ad0bb2ef12d9ffe9289357d8d603f47621d5a6fe69a008e16efb4a.json
+partial_allowance: null
+archived: true
+created_at: 2026-09-25
+run_id: 71c5a973-a2cb-4e0a-ada8-b7e9e327d769

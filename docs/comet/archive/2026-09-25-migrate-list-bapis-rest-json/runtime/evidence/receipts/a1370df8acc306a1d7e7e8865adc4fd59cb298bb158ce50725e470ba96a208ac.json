@@ -1,0 +1,28 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "manual-evidence",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "migrate-list-bapis-rest-json",
+    "sourceRevision": 3,
+    "contractHash": "484189516c666ec4f91f8ad06161f2c7dc61d6c0845a8b0568e8257a287f2841",
+    "scopeHash": "96793ec834308cd3f029a82ec360662000bade42fd74718d22f6aea7a609aed2",
+    "snapshotHash": "e0ad709b2c9fa0a35f86a3de7cfa38898599dbab7961de69c9421ef61edfad55",
+    "artifactHash": "0d51ef9a86a0824809cf834061f67b4ddf5bbe44212c7c675fd250620e048ec8"
+  },
+  "acceptanceIds": [
+    "acceptance-18655a20b60fce895907898370a4c47b1f1bf219b62fb8131d2a60f886c7e1b2"
+  ],
+  "actor": "native-runtime:manual-evidence",
+  "issuedAt": "2026-09-25T23:21:17.125Z",
+  "evidence": {
+    "steps": [
+      "检查 spec Purpose 段落"
+    ],
+    "observations": [
+      "spec.md Purpose 为人工撰写实质内容：三能力迁移到 REST_JSON 且保持契约/映射/错误行为不变"
+    ]
+  },
+  "receiptHash": "a1370df8acc306a1d7e7e8865adc4fd59cb298bb158ce50725e470ba96a208ac"
+}

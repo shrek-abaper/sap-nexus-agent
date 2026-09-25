@@ -1,0 +1,27 @@
+{
+  "schema": "comet.native.transaction.v2",
+  "id": "4eaa9f25-a9b6-4ff1-aabd-f1d0fc03a717",
+  "kind": "archive",
+  "status": "committed",
+  "change": "migrate-list-bapis-rest-json",
+  "createdAt": "2026-09-25T23:23:22.825Z",
+  "preflightHash": "122c3aab351df4ecf220372a8b7adcf4d782455f1776c30595f362518a577383",
+  "operations": [
+    {
+      "id": "spec-1-list-bapi-executor-migration",
+      "type": "write",
+      "target": "specs/list-bapi-executor-migration/spec.md",
+      "staged": "runtime/transactions/4eaa9f25-a9b6-4ff1-aabd-f1d0fc03a717/staged/specs/list-bapi-executor-migration/spec.md",
+      "expectedTargetHash": null,
+      "stagedHash": "9c7fbdd9cfef108c5da0014994a985aa62c3bf27ed78abc87d0f2225ac8d2531"
+    },
+    {
+      "id": "archive-change",
+      "type": "move",
+      "source": "changes/migrate-list-bapis-rest-json",
+      "target": "archive/2026-09-25-migrate-list-bapis-rest-json",
+      "expectedSourceHash": "dc7fe05a6650c2cfe833b77af4ffba6f8bdf3f0e0d17bc5fb500109b90fbbdae",
+      "expectedTargetHash": null
+    }
+  ]
+}

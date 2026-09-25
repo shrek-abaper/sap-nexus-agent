@@ -1,0 +1,53 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "migrate-list-bapis-rest-json",
+    "sourceRevision": 3,
+    "contractHash": "484189516c666ec4f91f8ad06161f2c7dc61d6c0845a8b0568e8257a287f2841",
+    "scopeHash": "96793ec834308cd3f029a82ec360662000bade42fd74718d22f6aea7a609aed2",
+    "snapshotHash": "e0ad709b2c9fa0a35f86a3de7cfa38898599dbab7961de69c9421ef61edfad55",
+    "artifactHash": "0d51ef9a86a0824809cf834061f67b4ddf5bbe44212c7c675fd250620e048ec8"
+  },
+  "acceptanceIds": [
+    "acceptance-778ce08178164b8c225c46c2c689ba93045f109822adddcfec011e2c7625673b",
+    "acceptance-8df5cefb364589f2e3f7566e6098450d0d9aaba48b3d2d961d4e3e82e28b3375",
+    "acceptance-c0f06fc5bedeff39996dd43ef661f13cc40ab8a9e9cb71a4bd57b41d6898f1ec",
+    "acceptance-d69945096607ee03da922d343717e2587fb9b145f466f53bcc9cef40791a3efc"
+  ],
+  "actor": "native-runtime:command:/home/shrek/projects/GitHub_Projects/sap-nexus-agent/.venv/bin/python",
+  "issuedAt": "2026-09-25T23:21:00.907Z",
+  "evidence": {
+    "executable": "/home/shrek/projects/GitHub_Projects/sap-nexus-agent/.venv/bin/python",
+    "args": [
+      "-m",
+      "pytest",
+      "/home/shrek/projects/GitHub_Projects/sap-nexus-agent/tests/live/test_rest2rfc_ap_equivalence.py",
+      "-q"
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 600000,
+    "startedAt": "2026-09-25T23:19:42.969Z",
+    "endedAt": "2026-09-25T23:21:00.907Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "aab8afabff1d692a490a9c98921097be0aed76c5",
+      "afterCommit": "aab8afabff1d692a490a9c98921097be0aed76c5"
+    },
+    "afterFence": {
+      "snapshotHash": "e0ad709b2c9fa0a35f86a3de7cfa38898599dbab7961de69c9421ef61edfad55",
+      "scopeHash": "96793ec834308cd3f029a82ec360662000bade42fd74718d22f6aea7a609aed2",
+      "matched": true
+    },
+    "outputHash": "67c3a5f9c1d3487b2c199ae57a8a871a7d20daa896c7cca116cb3f2f7eed10d0",
+    "outputSummary": "SICF rows: 28197 | Gateway rows: 28197 | baseline: 28197\nequivalence confirmed for 28197 rows\n.\nSICF rows: 1355 | Gateway rows: 1355 | baseline: 1355\nequivalence confirmed for 1355 rows\n.\nSICF rows: 5164 | Gateway rows: 5164 | baseline: 5164\nequivalence confirmed for 5164 rows\n.                                                                      [100%]\n3 passed in 77.55s (0:01:17)",
+    "outputTruncated": false
+  },
+  "receiptHash": "d469e31ee96ab141aadae37500836f0e64d605fc54770701b3af1e0f4d2a2369"
+}
