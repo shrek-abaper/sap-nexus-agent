@@ -1914,7 +1914,9 @@ def continue_action(
             "审批决策只能是 approve 或 reject。",
         )
 
-    approved = approve(approval_record)
+    approved = approve(
+        approval_record, evidence_ref=f"gateway-validate:{validation.trace_id}"
+    )
     registered_approval_id = gateway.approve(call_plan.capability_id, approved)
     if registered_approval_id != approved.approval_id:
         return _approval_failure(
@@ -1944,7 +1946,9 @@ def continue_action(
             approval_record=approved,
         )
 
-    executed = mark_executed(approved)
+    executed = mark_executed(
+        approved, evidence_ref=f"gateway-execute:{execution.trace_id}"
+    )
     return _finalize_narrative(
         call_plan,
         validation,

@@ -24,6 +24,41 @@ class InvalidApprovalTransition(Exception):
 
 
 @dataclass(frozen=True)
+class StateTransition:
+    """One immutable WRITE state migration (append-only chain entry)."""
+
+    from_state: str | None
+    to_state: str
+    event: str
+    timestamp: str
+    actor: str
+    evidence_ref: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        payload = {
+            "fromState": self.from_state,
+            "toState": self.to_state,
+            "event": self.event,
+            "timestamp": self.timestamp,
+            "actor": self.actor,
+        }
+        if self.evidence_ref:
+            payload["evidenceRef"] = self.evidence_ref
+        return payload
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> "StateTransition":
+        return cls(
+            from_state=payload.get("fromState"),
+            to_state=str(payload.get("toState", "")),
+            event=str(payload.get("event", "")),
+            timestamp=str(payload.get("timestamp", "")),
+            actor=str(payload.get("actor", "")),
+            evidence_ref=str(payload.get("evidenceRef", "")),
+        )
+
+
+@dataclass(frozen=True)
 class ApprovalRecord:
     approval_id: str
     capability_id: str
@@ -36,6 +71,7 @@ class ApprovalRecord:
     registry_snapshot_id: str = ""
     capability_version: str = ""
     approval_subject_hash: str = ""
+    transitions: tuple[StateTransition, ...] = ()
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "ApprovalRecord":
@@ -54,6 +90,10 @@ class ApprovalRecord:
             registry_snapshot_id=str(payload.get("registrySnapshotId", "")),
             capability_version=str(payload.get("capabilityVersion", "")),
             approval_subject_hash=str(payload.get("approvalSubjectHash", "")),
+            transitions=tuple(
+                StateTransition.from_dict(item)
+                for item in (payload.get("transitions") or ())
+            ),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -73,6 +113,8 @@ class ApprovalRecord:
             payload["capabilityVersion"] = self.capability_version
         if self.approval_subject_hash:
             payload["approvalSubjectHash"] = self.approval_subject_hash
+        if self.transitions:
+            payload["transitions"] = [t.to_dict() for t in self.transitions]
         return payload
 
 
@@ -154,6 +196,15 @@ def create_approval_record(
         registry_snapshot_id=registry_snapshot_id,
         capability_version=capability_version,
         approval_subject_hash=approval_subject_hash,
+        transitions=(
+            StateTransition(
+                from_state=None,
+                to_state=ApprovalState.pending.value,
+                event="approval-created",
+                timestamp=now.isoformat(),
+                actor=approver,
+            ),
+        ),
     )
     _append_trace_event(record, None, ApprovalState.pending)
     return record
@@ -163,6 +214,10 @@ def _transition(
     record: ApprovalRecord,
     target: ApprovalState,
     allowed_from: tuple[ApprovalState, ...],
+    *,
+    event: str,
+    actor: str | None = None,
+    evidence_ref: str = "",
 ) -> ApprovalRecord:
     if record.status not in allowed_from:
         raise InvalidApprovalTransition(
@@ -170,27 +225,52 @@ def _transition(
             f"allowed from: {[s.value for s in allowed_from]}"
         )
     from_state = record.status
+    timestamp = datetime.now(timezone.utc)
     updates: dict[str, Any] = {"status": target}
     if target is ApprovalState.approved:
-        updates["approved_at"] = datetime.now(timezone.utc)
+        updates["approved_at"] = timestamp
+
+    migration = StateTransition(
+        from_state=from_state.value,
+        to_state=target.value,
+        event=event,
+        timestamp=timestamp.isoformat(),
+        actor=actor or record.approver,
+        evidence_ref=evidence_ref,
+    )
+    updates["transitions"] = record.transitions + (migration,)
     new_record = dataclasses.replace(record, **updates)
     _append_trace_event(new_record, from_state, target)
     return new_record
 
 
-def approve(record: ApprovalRecord) -> ApprovalRecord:
-    return _transition(record, ApprovalState.approved, (ApprovalState.pending,))
+def approve(record: ApprovalRecord, evidence_ref: str = "") -> ApprovalRecord:
+    return _transition(
+        record,
+        ApprovalState.approved,
+        (ApprovalState.pending,),
+        event="approved",
+        evidence_ref=evidence_ref,
+    )
 
 
-def mark_executed(record: ApprovalRecord) -> ApprovalRecord:
-    return _transition(record, ApprovalState.executed, (ApprovalState.approved,))
+def mark_executed(record: ApprovalRecord, evidence_ref: str = "") -> ApprovalRecord:
+    return _transition(
+        record,
+        ApprovalState.executed,
+        (ApprovalState.approved,),
+        event="executed",
+        evidence_ref=evidence_ref,
+    )
 
 
-def reject(record: ApprovalRecord) -> ApprovalRecord:
+def reject(record: ApprovalRecord, evidence_ref: str = "") -> ApprovalRecord:
     return _transition(
         record,
         ApprovalState.rejected,
         (ApprovalState.pending, ApprovalState.approved),
+        event="rejected",
+        evidence_ref=evidence_ref,
     )
 
 
