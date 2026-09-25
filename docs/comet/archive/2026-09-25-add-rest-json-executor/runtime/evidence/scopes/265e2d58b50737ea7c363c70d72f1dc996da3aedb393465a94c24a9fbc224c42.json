@@ -1,0 +1,471 @@
+{
+  "schema": "comet.native.implementation-scope.v2",
+  "contractHash": "ec1e906c9dc6f43621a3f49955e174c72754da437ddcdb486ca51bdf59942e34",
+  "baselineProjectionRef": "runtime/evidence/snapshots/05ae85148dbb9be30034b2a42c42c637f0ed1b080c8b4e6770417103f1a3e2a9.json",
+  "baselineProjectionHash": "05ae85148dbb9be30034b2a42c42c637f0ed1b080c8b4e6770417103f1a3e2a9",
+  "currentProjectionRef": "runtime/evidence/snapshots/fd7323cfb0e59f90217a4da3ec1aaf611a6693aad5648f95dd64e3c6afc95cf7.json",
+  "currentProjectionHash": "fd7323cfb0e59f90217a4da3ec1aaf611a6693aad5648f95dd64e3c6afc95cf7",
+  "complete": true,
+  "declaredArtifacts": [
+    {
+      "path": "agent/tests/test_registry_contract.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_semantic_planning_contract.py",
+      "kind": "file"
+    },
+    {
+      "path": "docs/proposals/rest2rfc-migration-assessment.md",
+      "kind": "file"
+    },
+    {
+      "path": "evals/matcher_cases.yaml",
+      "kind": "file"
+    },
+    {
+      "path": "registry/README.md",
+      "kind": "file"
+    },
+    {
+      "path": "registry/executor-bindings.yaml",
+      "kind": "file"
+    },
+    {
+      "path": "schemas/capability.schema.json",
+      "kind": "file"
+    },
+    {
+      "path": "scripts/validate_registry_contract.py",
+      "kind": "file"
+    },
+    {
+      "path": "services/gateway/app/build.gradle",
+      "kind": "file"
+    },
+    {
+      "path": "services/gateway/app/src/test/java/com/sapnexus/gateway/api/CapabilityRestRoutingApiTest.java",
+      "kind": "file"
+    },
+    {
+      "path": "services/gateway/core/src/main/java/com/sapnexus/gateway/registry/BindingDefinition.java",
+      "kind": "file"
+    },
+    {
+      "path": "services/gateway/core/src/main/java/com/sapnexus/gateway/registry/BindingRegistryLoader.java",
+      "kind": "file"
+    },
+    {
+      "path": "services/gateway/core/src/test/java/com/sapnexus/gateway/registry/BindingRegistryLoaderTest.java",
+      "kind": "file"
+    },
+    {
+      "path": "services/gateway/core/src/test/java/com/sapnexus/gateway/registry/ExtractionMetadataIndifferenceTest.java",
+      "kind": "file"
+    },
+    {
+      "path": "services/gateway/rest/build.gradle",
+      "kind": "file"
+    },
+    {
+      "path": "services/gateway/rest/src/main/java/com/sapnexus/gateway/rest/Rest2RfcProperties.java",
+      "kind": "file"
+    },
+    {
+      "path": "services/gateway/rest/src/main/java/com/sapnexus/gateway/rest/RestConfiguration.java",
+      "kind": "file"
+    },
+    {
+      "path": "services/gateway/rest/src/main/java/com/sapnexus/gateway/rest/RestJsonTechnicalAdapter.java",
+      "kind": "file"
+    },
+    {
+      "path": "services/gateway/rest/src/test/java/com/sapnexus/gateway/rest/RestJsonTechnicalAdapterTest.java",
+      "kind": "file"
+    },
+    {
+      "path": "services/gateway/settings.gradle",
+      "kind": "file"
+    },
+    {
+      "path": "tests/live/README.md",
+      "kind": "file"
+    },
+    {
+      "path": "tests/live/test_rest2rfc_ap_equivalence.py",
+      "kind": "file"
+    }
+  ],
+  "changes": [
+    {
+      "path": "agent/tests/test_registry_contract.py",
+      "kind": "modified",
+      "before": {
+        "hash": "9b74157433c815c03af39d9b6b23a3e2c49ea16a9a1711aed154239c38877d66",
+        "size": 18403
+      },
+      "after": {
+        "hash": "18fe8edd79eb305a5d6d4a0a2b91f9f16a1fe45795039d11b4ec6448b1de2789",
+        "size": 20020
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_registry_contract.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_semantic_planning_contract.py",
+      "kind": "modified",
+      "before": {
+        "hash": "3b32b46425ba4d1eab4166a1d59e630aa2a230eef040e6767e2cbdfd47bac1a0",
+        "size": 132919
+      },
+      "after": {
+        "hash": "b03da290213e5ada8dd19f26566f4d36191ec8e0d3323bf34d2bf374ed8a3a6e",
+        "size": 132919
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_semantic_planning_contract.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "docs/proposals/rest2rfc-migration-assessment.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "08be12f690875eb2f3b81a015839328381fed0e36bed5be2fd717abab28eace9",
+        "size": 3867
+      },
+      "attributedTo": [
+        {
+          "path": "docs/proposals/rest2rfc-migration-assessment.md",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "evals/matcher_cases.yaml",
+      "kind": "modified",
+      "before": {
+        "hash": "4fcc4cc12664adc26f21508c8b9accd33743c7be2f38aade10395f33f3b5be11",
+        "size": 27349
+      },
+      "after": {
+        "hash": "811e9ea56ff21a9d9debc008f95ce91acbb7c549207658cf6e7fbe209ca57a58",
+        "size": 27349
+      },
+      "attributedTo": [
+        {
+          "path": "evals/matcher_cases.yaml",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "registry/README.md",
+      "kind": "modified",
+      "before": {
+        "hash": "92b22437436661bab5668f94f010199e7e97cd5369c7ed415b871bbdb1286edf",
+        "size": 2285
+      },
+      "after": {
+        "hash": "6e1a88947f8b71504dca25774b3c3aa67ff90c807f183387070b1a3db14c1570",
+        "size": 2585
+      },
+      "attributedTo": [
+        {
+          "path": "registry/README.md",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "registry/executor-bindings.yaml",
+      "kind": "modified",
+      "before": {
+        "hash": "87b4d7c1486e3411f44df0c2fb378f9756464bc670c8a3311bb68089daa76a07",
+        "size": 3454
+      },
+      "after": {
+        "hash": "c3dbc8d573404bcf042e7ad0cf842780c3a72e28860ce876d24ebdacc7c19bc9",
+        "size": 4222
+      },
+      "attributedTo": [
+        {
+          "path": "registry/executor-bindings.yaml",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "schemas/capability.schema.json",
+      "kind": "modified",
+      "before": {
+        "hash": "c43890631b6632d112525af8b051d99ff2e873a028d538ff2d8d5937a0f37229",
+        "size": 16824
+      },
+      "after": {
+        "hash": "b8d0b5bc189d4705ef0e9a63a60ccb38b310829c0fb5ce3c53ac93f603c95010",
+        "size": 17031
+      },
+      "attributedTo": [
+        {
+          "path": "schemas/capability.schema.json",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "scripts/validate_registry_contract.py",
+      "kind": "modified",
+      "before": {
+        "hash": "0f9de29c2de5c2e40b8dc37e26451927ec8f485abd6afc14a8ab06ecaae8876c",
+        "size": 33328
+      },
+      "after": {
+        "hash": "0a99fa4b1e652e2f09a68d5796ffa8281661893b8216e11be735fd041b7c4704",
+        "size": 33295
+      },
+      "attributedTo": [
+        {
+          "path": "scripts/validate_registry_contract.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "services/gateway/app/build.gradle",
+      "kind": "modified",
+      "before": {
+        "hash": "d0a77d3971c92a77a3b055385be747811f115c8411a5d2310128d555fed90b01",
+        "size": 589
+      },
+      "after": {
+        "hash": "8cc54a07326d1db2bfa26a635ced62ff04219dd4c7a22bbf3c0f632e122787b8",
+        "size": 625
+      },
+      "attributedTo": [
+        {
+          "path": "services/gateway/app/build.gradle",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "services/gateway/app/src/test/java/com/sapnexus/gateway/api/CapabilityRestRoutingApiTest.java",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "b6b1ad4840fd40653bffa4ebedc4bd591b160782bb71fc71e226f224c74a683f",
+        "size": 7735
+      },
+      "attributedTo": [
+        {
+          "path": "services/gateway/app/src/test/java/com/sapnexus/gateway/api/CapabilityRestRoutingApiTest.java",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "services/gateway/core/src/main/java/com/sapnexus/gateway/registry/BindingDefinition.java",
+      "kind": "modified",
+      "before": {
+        "hash": "ab6ae1800b45fbdc506b70ec5ceb4a9efacf1923727913e064546e3db40384dd",
+        "size": 775
+      },
+      "after": {
+        "hash": "765aa3dc783789e446a63099bcf60b8322929e41f418e79e4cfea73f8f0e9462",
+        "size": 1768
+      },
+      "attributedTo": [
+        {
+          "path": "services/gateway/core/src/main/java/com/sapnexus/gateway/registry/BindingDefinition.java",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "services/gateway/core/src/main/java/com/sapnexus/gateway/registry/BindingRegistryLoader.java",
+      "kind": "modified",
+      "before": {
+        "hash": "3ef90798145e6fd30add374865a9aadcc96559d47b64a13cf31b7a3c79430d2f",
+        "size": 3337
+      },
+      "after": {
+        "hash": "c4261d0ceff49858855a74d12f27b023470c73eba145d81f40137041a7912c47",
+        "size": 3581
+      },
+      "attributedTo": [
+        {
+          "path": "services/gateway/core/src/main/java/com/sapnexus/gateway/registry/BindingRegistryLoader.java",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "services/gateway/core/src/test/java/com/sapnexus/gateway/registry/BindingRegistryLoaderTest.java",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "8729497565c4b64d956d35622b865981c9b2a5dc00dee9adc9320c2c4f1244c7",
+        "size": 3004
+      },
+      "attributedTo": [
+        {
+          "path": "services/gateway/core/src/test/java/com/sapnexus/gateway/registry/BindingRegistryLoaderTest.java",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "services/gateway/core/src/test/java/com/sapnexus/gateway/registry/ExtractionMetadataIndifferenceTest.java",
+      "kind": "modified",
+      "before": {
+        "hash": "e52180bb143d4387a3f30575760b5407aaefac3d1db11b4965bed765adba7579",
+        "size": 6345
+      },
+      "after": {
+        "hash": "2aed9a877c3378349cbff17c5c890a330da8d4e6cbab187706e25eac7b9633ce",
+        "size": 6345
+      },
+      "attributedTo": [
+        {
+          "path": "services/gateway/core/src/test/java/com/sapnexus/gateway/registry/ExtractionMetadataIndifferenceTest.java",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "services/gateway/rest/build.gradle",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "e56cbacb4514ff57b9595fe0b63d65c130fc0dcc98d3979e1aff0da18926318c",
+        "size": 199
+      },
+      "attributedTo": [
+        {
+          "path": "services/gateway/rest/build.gradle",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "services/gateway/rest/src/main/java/com/sapnexus/gateway/rest/Rest2RfcProperties.java",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "ca25b67d62614137a761cc66b9ea79c7eb3f9f2471db85d5e1e168b64e3dfc9f",
+        "size": 1992
+      },
+      "attributedTo": [
+        {
+          "path": "services/gateway/rest/src/main/java/com/sapnexus/gateway/rest/Rest2RfcProperties.java",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "services/gateway/rest/src/main/java/com/sapnexus/gateway/rest/RestConfiguration.java",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "98d209f85b2b7709f86141d2b4e4d4a6c6e06354985dafc990dd77ff9f97906d",
+        "size": 287
+      },
+      "attributedTo": [
+        {
+          "path": "services/gateway/rest/src/main/java/com/sapnexus/gateway/rest/RestConfiguration.java",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "services/gateway/rest/src/main/java/com/sapnexus/gateway/rest/RestJsonTechnicalAdapter.java",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "411e55e3f1701c923ee861a96ba10b8757c24a8bf0852b2cc6c219e2ee705571",
+        "size": 15635
+      },
+      "attributedTo": [
+        {
+          "path": "services/gateway/rest/src/main/java/com/sapnexus/gateway/rest/RestJsonTechnicalAdapter.java",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "services/gateway/rest/src/test/java/com/sapnexus/gateway/rest/RestJsonTechnicalAdapterTest.java",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "e5a482e55fa787bd27544bc558effbb20085284f68b6eb6645fd89cf24b4a65e",
+        "size": 13931
+      },
+      "attributedTo": [
+        {
+          "path": "services/gateway/rest/src/test/java/com/sapnexus/gateway/rest/RestJsonTechnicalAdapterTest.java",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "services/gateway/settings.gradle",
+      "kind": "modified",
+      "before": {
+        "hash": "4809496c34f0cbe92b6be2fc78cc4145284bea5d18ddcc55b8a0e36e14da12c7",
+        "size": 325
+      },
+      "after": {
+        "hash": "d377fa45f62340033b483bc14be62c157d1e27f859413c46000a8f788be22d7e",
+        "size": 333
+      },
+      "attributedTo": [
+        {
+          "path": "services/gateway/settings.gradle",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "tests/live/README.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "553191f952b7e86100caa5bc9cfa53d49b0895f88fd55d25db9d1463b63043e8",
+        "size": 713
+      },
+      "attributedTo": [
+        {
+          "path": "tests/live/README.md",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "tests/live/test_rest2rfc_ap_equivalence.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "184b31fbb481a33d7ca11a7b6bbccd2ffed6cc29519f681d713d2d71195b0fde",
+        "size": 5675
+      },
+      "attributedTo": [
+        {
+          "path": "tests/live/test_rest2rfc_ap_equivalence.py",
+          "kind": "file"
+        }
+      ]
+    }
+  ],
+  "unattributed": [],
+  "unresolvedScopes": [],
+  "noCodeReason": null,
+  "scopeHash": "265e2d58b50737ea7c363c70d72f1dc996da3aedb393465a94c24a9fbc224c42"
+}

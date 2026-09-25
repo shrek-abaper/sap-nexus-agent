@@ -1,0 +1,60 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "add-rest-json-executor",
+    "sourceRevision": 7,
+    "contractHash": "ec1e906c9dc6f43621a3f49955e174c72754da437ddcdb486ca51bdf59942e34",
+    "scopeHash": "dd9c597fe4100d23cf0e4bdaffe121802de441382b88d7af64f85e2c30a564bd",
+    "snapshotHash": "637b0286a680f5bdb6a6afaaa9656b814387bb93b502d257b4e83617ae556d18",
+    "artifactHash": "b962208aee0de8dd243407f7991884d6bd4ef072691f9977ef81df703c1baeb2"
+  },
+  "acceptanceIds": [
+    "acceptance-384803e4333b63aea067eca44104094023315c4e8b1eaad1c55d5fcf068924d8",
+    "acceptance-3db7118c9090dc9bbce64fc6831072a86acd612b4c63c221ca66aab8dc6494b0",
+    "acceptance-5717dbc5feab9aaee50a5aba84c0f7fda0ce8c53f9103626a68cc47593da7f4c",
+    "acceptance-616e32ef429d70f11cf4a08d07cf3b74f221fa528c874902ba7549889ba5190a",
+    "acceptance-6a08c559325ec711e705a887da4e30ad663f84010f4e912e5a8843571462208a",
+    "acceptance-8bbd22eda20a93467eb67d2a7da32ce865fee658dddceec7d4ccaa6ed6edd5d9",
+    "acceptance-936d79d5d5301f4df3b867c23caf4ebea9dc7661cdc2bdedca14ea6fda5d910b",
+    "acceptance-95a1aef00b0b66dbf3c18b41a7b2d63c639188e4236ec06eac4b2dc0d5150689",
+    "acceptance-c143d8bf7ae801b76ecfb1bbfe5ef1fa55f29976e863f00708df7fc680f98c5b",
+    "acceptance-c3396a4ac10feb85ec49650f2948f388d9cd3a545258ec3d74928725ea987226",
+    "acceptance-e82023a6661b5764942ddb90728e5eba00bd06bac3d98690e40792ead5b0bc3b"
+  ],
+  "actor": "native-runtime:command:/home/shrek/projects/GitHub_Projects/sap-nexus-agent/services/gateway/gradlew",
+  "issuedAt": "2026-09-25T14:32:37.594Z",
+  "evidence": {
+    "executable": "/home/shrek/projects/GitHub_Projects/sap-nexus-agent/services/gateway/gradlew",
+    "args": [
+      "-p",
+      "/home/shrek/projects/GitHub_Projects/sap-nexus-agent/services/gateway",
+      "--no-daemon",
+      "test"
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 300000,
+    "startedAt": "2026-09-25T14:32:28.975Z",
+    "endedAt": "2026-09-25T14:32:37.594Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "95a352defd5e01a8936aabb92be6cd1fa321b471",
+      "afterCommit": "95a352defd5e01a8936aabb92be6cd1fa321b471"
+    },
+    "afterFence": {
+      "snapshotHash": "637b0286a680f5bdb6a6afaaa9656b814387bb93b502d257b4e83617ae556d18",
+      "scopeHash": "dd9c597fe4100d23cf0e4bdaffe121802de441382b88d7af64f85e2c30a564bd",
+      "matched": true
+    },
+    "outputHash": "575b79b4a88d10ddd3c88c1dc1de01b3de64c4583f62ee3c7c4b9ed26d1b385c",
+    "outputSummary": "To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.8/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.\nDaemon will be stopped at the end of the build \n> Task :core:compileJava UP-TO-DATE\n> Task :core:processResources NO-SOURCE\n> Task :core:classes UP-TO-DATE\n> Task :core:jar UP-TO-DATE\n> Task :jco:compileJava UP-TO-DATE\n> Task :jco:processResources NO-SOURCE\n> Task :jco:classes UP-TO-DATE\n> Task :jco:jar UP-TO-DATE\n> Task :odata:compileJava UP-TO-DATE\n> Task :odata:processResources NO-SOURCE\n> Task :odata:classes UP-TO-DATE\n> Task :odata:jar UP-TO-DATE\n> Task :rest:compileJava UP-TO-DATE\n> Task :rest:processResources NO-SOURCE\n> Task :rest:classes UP-TO-DATE\n> Task :rest:jar UP-TO-DATE\n> Task :app:compileJava UP-TO-DATE\n> Task :app:processResources UP-TO-DATE\n> Task :app:classes UP-TO-DATE\n> Task :app:compileTestJava UP-TO-DATE\n> Task :app:processTestResources NO-SOURCE\n> Task :app:testClasses UP-TO-DATE\n> Task :app:test UP-TO-DATE\n> Task :core:compileTestJava UP-TO-DATE\n> Task :core:processTestResources NO-SOURCE\n> Task :core:testClasses UP-TO-DATE\n> Task :core:test UP-TO-DATE\n> Task :jco:compileTestJava UP-TO-DATE\n> Task :jco:processTestResources NO-SOURCE\n> Task :jco:testClasses UP-TO-DATE\n> Task :jco:test UP-TO-DATE\n> Task :odata:compileTestJava UP-TO-DATE\n> Task :odata:processTestResources NO-SOURCE\n> Task :odata:testClasses UP-TO-DATE\n> Task :odata:test UP-TO-DATE\n> Task :rest:compileTestJava UP-TO-DATE\n> Task :rest:processTestResources NO-SOURCE\n> Task :rest:testClasses UP-TO-DATE\n> Task :rest:test UP-TO-DATE\n\nBUILD SUCCESSFUL in 8s\n20 actionable tasks: 20 up-to-date",
+    "outputTruncated": false
+  },
+  "receiptHash": "be0a2971d41808224570fded8279e8d7e75aef9f9146b12144343dc07b584f5d"
+}

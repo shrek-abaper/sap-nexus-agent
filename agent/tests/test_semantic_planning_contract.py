@@ -3584,7 +3584,7 @@ def _semantic_rule_sources(mutation):
         ("duplicate-capability-id", (("/capabilities/7/capabilityId", "DUPLICATE_ID"),)),
         ("duplicate-fact-type-id", (("/factTypes/7/factTypeId", "DUPLICATE_ID"),)),
         ("duplicate-relation-id", (("/relations/1/relationId", "DUPLICATE_ID"),)),
-        ("duplicate-binding-id", (("/bindings/7/bindingId", "DUPLICATE_ID"),)),
+        ("duplicate-binding-id", (("/bindings/8/bindingId", "DUPLICATE_ID"),)),
         (
             "binding-id-missing",
             (("/capabilities/0/executorBinding/bindingId", "SCHEMA_INVALID"),),

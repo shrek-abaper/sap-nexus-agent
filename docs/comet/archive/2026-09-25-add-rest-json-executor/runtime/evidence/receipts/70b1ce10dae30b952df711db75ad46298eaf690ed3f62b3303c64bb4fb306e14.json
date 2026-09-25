@@ -1,0 +1,48 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "static-inspection",
+  "role": "required-check",
+  "status": "passed",
+  "bindings": {
+    "change": "add-rest-json-executor",
+    "sourceRevision": 7,
+    "contractHash": "ec1e906c9dc6f43621a3f49955e174c72754da437ddcdb486ca51bdf59942e34",
+    "scopeHash": "dd9c597fe4100d23cf0e4bdaffe121802de441382b88d7af64f85e2c30a564bd",
+    "snapshotHash": "637b0286a680f5bdb6a6afaaa9656b814387bb93b502d257b4e83617ae556d18",
+    "artifactHash": "b962208aee0de8dd243407f7991884d6bd4ef072691f9977ef81df703c1baeb2"
+  },
+  "acceptanceIds": [],
+  "actor": "native-runtime:scoped-text-safety",
+  "issuedAt": "2026-09-25T14:38:48.562Z",
+  "evidence": {
+    "subjects": [
+      "agent/tests/test_registry_contract.py",
+      "agent/tests/test_semantic_planning_contract.py",
+      "docs/proposals/rest2rfc-migration-assessment.md",
+      "evals/matcher_cases.yaml",
+      "registry/README.md",
+      "registry/executor-bindings.yaml",
+      "schemas/capability.schema.json",
+      "scripts/validate_registry_contract.py",
+      "services/gateway/app/build.gradle",
+      "services/gateway/app/src/test/java/com/sapnexus/gateway/api/CapabilityRestRoutingApiTest.java",
+      "services/gateway/core/src/main/java/com/sapnexus/gateway/registry/BindingDefinition.java",
+      "services/gateway/core/src/main/java/com/sapnexus/gateway/registry/BindingRegistryLoader.java",
+      "services/gateway/core/src/test/java/com/sapnexus/gateway/registry/BindingRegistryLoaderTest.java",
+      "services/gateway/core/src/test/java/com/sapnexus/gateway/registry/ExtractionMetadataIndifferenceTest.java",
+      "services/gateway/rest/build.gradle",
+      "services/gateway/rest/src/main/java/com/sapnexus/gateway/rest/Rest2RfcProperties.java",
+      "services/gateway/rest/src/main/java/com/sapnexus/gateway/rest/RestConfiguration.java",
+      "services/gateway/rest/src/main/java/com/sapnexus/gateway/rest/RestJsonTechnicalAdapter.java",
+      "services/gateway/rest/src/test/java/com/sapnexus/gateway/rest/RestJsonTechnicalAdapterTest.java",
+      "services/gateway/settings.gradle",
+      "tests/live/README.md",
+      "tests/live/test_rest2rfc_ap_equivalence.py"
+    ],
+    "rule": "scoped-text-safety",
+    "resultSummary": "The built-in scoped inspection passed without skipped or blocking input.",
+    "checkReceiptRef": "runtime/evidence/check-receipts/56a106e64041dcde725eda2930ef722f523d3624008ad5798b4f0667ae2726c2.json",
+    "checkReceiptHash": "56a106e64041dcde725eda2930ef722f523d3624008ad5798b4f0667ae2726c2"
+  },
+  "receiptHash": "70b1ce10dae30b952df711db75ad46298eaf690ed3f62b3303c64bb4fb306e14"
+}

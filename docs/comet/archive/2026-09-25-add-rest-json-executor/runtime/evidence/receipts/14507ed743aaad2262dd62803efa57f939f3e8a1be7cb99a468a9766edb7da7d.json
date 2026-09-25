@@ -1,0 +1,28 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "manual-evidence",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "add-rest-json-executor",
+    "sourceRevision": 5,
+    "contractHash": "ec1e906c9dc6f43621a3f49955e174c72754da437ddcdb486ca51bdf59942e34",
+    "scopeHash": "265e2d58b50737ea7c363c70d72f1dc996da3aedb393465a94c24a9fbc224c42",
+    "snapshotHash": "fd7323cfb0e59f90217a4da3ec1aaf611a6693aad5648f95dd64e3c6afc95cf7",
+    "artifactHash": "b962208aee0de8dd243407f7991884d6bd4ef072691f9977ef81df703c1baeb2"
+  },
+  "acceptanceIds": [
+    "acceptance-7bc089498f117ced26114d723bbe93227881981afaa1966b052cebcd040a499b"
+  ],
+  "actor": "native-runtime:manual-evidence",
+  "issuedAt": "2026-09-25T14:07:52.577Z",
+  "evidence": {
+    "steps": [
+      "运行 tests/live harness 收集"
+    ],
+    "observations": [
+      ".venv/bin/python -m pytest tests/live → 1 skipped（gated 资产存在且默认跳过）"
+    ]
+  },
+  "receiptHash": "14507ed743aaad2262dd62803efa57f939f3e8a1be7cb99a468a9766edb7da7d"
+}

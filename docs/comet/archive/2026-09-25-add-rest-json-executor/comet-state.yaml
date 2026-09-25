@@ -1,0 +1,27 @@
+schema: comet.native.v3
+minimum_runtime_version: 3
+revision: 9
+verification_protocol: legacy-v1
+name: add-rest-json-executor
+language: zh-CN
+phase: archive
+brief: brief.md
+approval: confirmed
+approved_contract_hash: ec1e906c9dc6f43621a3f49955e174c72754da437ddcdb486ca51bdf59942e34
+spec_changes:
+  - capability: rest-json-execution
+    operation: create
+    source: specs/rest-json-execution/spec.md
+    base_hash: null
+  - capability: rest-json-registry-contract
+    operation: create
+    source: specs/rest-json-registry-contract/spec.md
+    base_hash: null
+verification_result: pass
+verification_report: verification.md
+implementation_scope: runtime/evidence/scopes/dd9c597fe4100d23cf0e4bdaffe121802de441382b88d7af64f85e2c30a564bd.json
+verification_evidence: runtime/evidence/verifications/954a23d6a150af683de5bdbdf3e4797ef06b3ff7363eda240f5ef22a24210826.json
+partial_allowance: null
+archived: true
+created_at: 2026-09-25
+run_id: 0aa63871-2a19-4838-8251-7254133f43c7

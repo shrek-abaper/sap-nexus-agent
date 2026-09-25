@@ -1,0 +1,28 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "manual-evidence",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "add-rest-json-executor",
+    "sourceRevision": 5,
+    "contractHash": "ec1e906c9dc6f43621a3f49955e174c72754da437ddcdb486ca51bdf59942e34",
+    "scopeHash": "265e2d58b50737ea7c363c70d72f1dc996da3aedb393465a94c24a9fbc224c42",
+    "snapshotHash": "fd7323cfb0e59f90217a4da3ec1aaf611a6693aad5648f95dd64e3c6afc95cf7",
+    "artifactHash": "b962208aee0de8dd243407f7991884d6bd4ef072691f9977ef81df703c1baeb2"
+  },
+  "acceptanceIds": [
+    "acceptance-c1f89c848177f58ed516bb2d6359682083ecb24da7d018c427b746013e9bec35"
+  ],
+  "actor": "native-runtime:manual-evidence",
+  "issuedAt": "2026-09-25T14:07:53.010Z",
+  "evidence": {
+    "steps": [
+      "检查 spec Purpose 段落"
+    ],
+    "observations": [
+      "spec.md Purpose 为人工撰写的实质内容，非占位符"
+    ]
+  },
+  "receiptHash": "cd9ec0a4184453e60f11dc8f7c585315e9b76f78e3890ac73e20d682b8ad4723"
+}

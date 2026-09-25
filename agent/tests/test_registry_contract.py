@@ -261,6 +261,61 @@ def test_unreferenced_unsafe_binding_still_fails(tmp_path):
     assert any("REST_JSON auth must not contain apiKey" in error for error in errors)
 
 
+def _copy_repo_fixture(tmp_path):
+    import shutil
+
+    for directory in ("registry", "ontology", "evals", "schemas"):
+        shutil.copytree(directory, tmp_path / directory)
+    return tmp_path
+
+
+_CLEAN_REST_BINDING = """
+  - bindingId: external.unused.clean
+    type: REST_JSON
+    systemRef: SAP_SAT
+    method: POST
+    pathTemplate: /sap/bc/rest2rfc
+    request:
+      mode: dynamic
+    response:
+      mode: dynamic
+    auth:
+      type: basic
+      credentialRef: sap-rest2rfc
+    constraints:
+      sideEffect: none
+"""
+
+
+def test_unreferenced_clean_post_binding_passes(tmp_path):
+    repo_root = _copy_repo_fixture(tmp_path)
+    binding_file = repo_root / "registry" / "executor-bindings.yaml"
+    binding_file.write_text(
+        binding_file.read_text(encoding="utf-8") + _CLEAN_REST_BINDING,
+        encoding="utf-8",
+    )
+
+    contract = load_registry_contract(repo_root / "registry" / "capabilities.yaml")
+    errors = validate_registry_contract(contract, repo_root=repo_root)
+
+    assert errors == []
+
+
+def test_rest_json_get_method_binding_fails(tmp_path):
+    repo_root = _copy_repo_fixture(tmp_path)
+    binding_file = repo_root / "registry" / "executor-bindings.yaml"
+    binding_file.write_text(
+        binding_file.read_text(encoding="utf-8")
+        + _CLEAN_REST_BINDING.replace("method: POST", "method: GET"),
+        encoding="utf-8",
+    )
+
+    contract = load_registry_contract(repo_root / "registry" / "capabilities.yaml")
+    errors = validate_registry_contract(contract, repo_root=repo_root)
+
+    assert any("REST_JSON Function binding must use POST" in error for error in errors)
+
+
 def test_odata_binding_missing_allowlist_fails(tmp_path):
     repo_root = tmp_path
     (repo_root / "registry").mkdir()

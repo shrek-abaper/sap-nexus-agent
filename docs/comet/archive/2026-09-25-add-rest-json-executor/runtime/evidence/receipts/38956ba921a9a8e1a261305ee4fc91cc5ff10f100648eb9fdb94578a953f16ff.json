@@ -1,0 +1,28 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "manual-evidence",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "add-rest-json-executor",
+    "sourceRevision": 5,
+    "contractHash": "ec1e906c9dc6f43621a3f49955e174c72754da437ddcdb486ca51bdf59942e34",
+    "scopeHash": "265e2d58b50737ea7c363c70d72f1dc996da3aedb393465a94c24a9fbc224c42",
+    "snapshotHash": "fd7323cfb0e59f90217a4da3ec1aaf611a6693aad5648f95dd64e3c6afc95cf7",
+    "artifactHash": "b962208aee0de8dd243407f7991884d6bd4ef072691f9977ef81df703c1baeb2"
+  },
+  "acceptanceIds": [
+    "acceptance-474caf7703a40274f786602660322b772b62c0f7cdc8184b0ca55e6d394ac94b"
+  ],
+  "actor": "native-runtime:manual-evidence",
+  "issuedAt": "2026-09-25T14:07:52.116Z",
+  "evidence": {
+    "steps": [
+      "检查迁移评估文档"
+    ],
+    "observations": [
+      "docs/proposals/rest2rfc-migration-assessment.md 已交付，逐 RFC 给出可迁/保留/typed 归属与证据"
+    ]
+  },
+  "receiptHash": "38956ba921a9a8e1a261305ee4fc91cc5ff10f100648eb9fdb94578a953f16ff"
+}

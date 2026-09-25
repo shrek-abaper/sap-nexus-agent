@@ -1,0 +1,28 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "manual-evidence",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "add-rest-json-executor",
+    "sourceRevision": 7,
+    "contractHash": "ec1e906c9dc6f43621a3f49955e174c72754da437ddcdb486ca51bdf59942e34",
+    "scopeHash": "dd9c597fe4100d23cf0e4bdaffe121802de441382b88d7af64f85e2c30a564bd",
+    "snapshotHash": "637b0286a680f5bdb6a6afaaa9656b814387bb93b502d257b4e83617ae556d18",
+    "artifactHash": "b962208aee0de8dd243407f7991884d6bd4ef072691f9977ef81df703c1baeb2"
+  },
+  "acceptanceIds": [
+    "acceptance-7bc089498f117ced26114d723bbe93227881981afaa1966b052cebcd040a499b"
+  ],
+  "actor": "native-runtime:manual-evidence",
+  "issuedAt": "2026-09-25T14:37:43.782Z",
+  "evidence": {
+    "steps": [
+      "运行 live harness"
+    ],
+    "observations": [
+      "SAP_REST2RFC_LIVE=1 pytest tests/live → equivalence confirmed for 28197 open item rows"
+    ]
+  },
+  "receiptHash": "31f0e9361ffbed71b213a84dacfad6a7d6d5ebd865072d09c93759380c456e09"
+}

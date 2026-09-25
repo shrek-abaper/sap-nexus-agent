@@ -45,7 +45,12 @@ public class BindingRegistryLoader {
                 asStringMap(raw.get("filterMapping")),
                 asNullableInt(raw.get("topLimit")),
                 asStringList(raw.get("selectFields")),
-                asObjectMap(raw.get("constraints"))
+                asObjectMap(raw.get("constraints")),
+                asString(raw.get("systemRef")),
+                asString(raw.get("pathTemplate")),
+                asObjectMap(raw.get("request")),
+                asObjectMap(raw.get("response")),
+                asObjectMap(raw.get("auth"))
         );
     }
 

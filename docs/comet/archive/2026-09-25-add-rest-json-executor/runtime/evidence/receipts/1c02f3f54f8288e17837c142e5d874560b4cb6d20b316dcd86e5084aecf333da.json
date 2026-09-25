@@ -1,0 +1,50 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "add-rest-json-executor",
+    "sourceRevision": 5,
+    "contractHash": "ec1e906c9dc6f43621a3f49955e174c72754da437ddcdb486ca51bdf59942e34",
+    "scopeHash": "265e2d58b50737ea7c363c70d72f1dc996da3aedb393465a94c24a9fbc224c42",
+    "snapshotHash": "fd7323cfb0e59f90217a4da3ec1aaf611a6693aad5648f95dd64e3c6afc95cf7",
+    "artifactHash": "b962208aee0de8dd243407f7991884d6bd4ef072691f9977ef81df703c1baeb2"
+  },
+  "acceptanceIds": [
+    "acceptance-21daf2a3b5af55a405b237313bc75350ce0646e80f923846834d337a69333272",
+    "acceptance-cae3679e1f30d5daa646353a40e3daf96e2f607768ae95ab69dda36873a6c398",
+    "acceptance-d4499773895b434b07b9a29d5dd59908a133fc30acacc03fffdacaf67dad962f"
+  ],
+  "actor": "native-runtime:command:/home/shrek/projects/GitHub_Projects/sap-nexus-agent/.venv/bin/python",
+  "issuedAt": "2026-09-25T14:07:31.693Z",
+  "evidence": {
+    "executable": "/home/shrek/projects/GitHub_Projects/sap-nexus-agent/.venv/bin/python",
+    "args": [
+      "/home/shrek/projects/GitHub_Projects/sap-nexus-agent/scripts/validate-registry-contract.py",
+      "/home/shrek/projects/GitHub_Projects/sap-nexus-agent/registry/capabilities.yaml"
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 120000,
+    "startedAt": "2026-09-25T14:07:31.590Z",
+    "endedAt": "2026-09-25T14:07:31.693Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "95a352defd5e01a8936aabb92be6cd1fa321b471",
+      "afterCommit": "95a352defd5e01a8936aabb92be6cd1fa321b471"
+    },
+    "afterFence": {
+      "snapshotHash": "fd7323cfb0e59f90217a4da3ec1aaf611a6693aad5648f95dd64e3c6afc95cf7",
+      "scopeHash": "265e2d58b50737ea7c363c70d72f1dc996da3aedb393465a94c24a9fbc224c42",
+      "matched": true
+    },
+    "outputHash": "f854d3001dee5f1dd81498cc7210742e2f1fe56809b30b5b50dad779a888eb54",
+    "outputSummary": "regex matchers in use: 19 (semantic-type catalog 10 + capability-level 9)\nwarning: MM.Inventory.GetAvailability: inputs[material].extraction is deprecated; replace extraction.matchers with binding.sources[{kind: userUtterance, matchers: [...]}]\nwarning: MM.Inventory.GetAvailability: inputs[plant].extraction is deprecated; replace extraction.matchers with binding.sources[{kind: userUtterance, matchers: [...]}]\nwarning: MM.Inventory.GetAvailability: inputs[unit].extraction is deprecated; replace extraction.matchers with binding.sources[{kind: userUtterance, matchers: [...]}]\nwarning: MM.PurchaseOrder.GetList: inputs[poNumber].extraction is deprecated; replace extraction.matchers with binding.sources[{kind: userUtterance, matchers: [...]}]\nwarning: MM.PurchaseOrder.GetList: inputs[vendor].extraction is deprecated; replace extraction.matchers with binding.sources[{kind: userUtterance, matchers: [...]}]\nwarning: MM.PurchaseOrder.GetList: inputs[plant].extraction is deprecated; replace extraction.matchers with binding.sources[{kind: userUtterance, matchers: [...]}]\nwarning: MM.PurchaseOrder.GetList: inputs[material].extraction is deprecated; replace extraction.matchers with binding.sources[{kind: userUtterance, matchers: [...]}]\nwarning: MM.PurchaseOrder.GetList: inputs[createdSince].extraction is deprecated; replace extraction.matchers with binding.sources[{kind: userUtterance, matchers: [...]}]\nwarning: MM.PurchaseOrder.GetList: inputs[openOnly].extraction is deprecated; replace extraction.matchers with binding.sources[{kind: userUtterance, matchers: [...]}]\nwarning: MM.PR.CreateDraft: inputs[material].extraction is deprecated; replace extraction.matchers with binding.sources[{kind: userUtterance, matchers: [...]}]\nwarning: MM.PR.CreateDraft: inputs[plant].extraction is deprecated; replace extraction.matchers with binding.sources[{kind: userUtterance, matchers: [...]}]\nwarning: MM.PR.CreateDraft: inputs[quantity].extraction is deprecated; replace extraction.matchers with binding.sources[{kind: userUtterance, matchers: [...]}]\nwarning: MM.PR.CreateDraft: inputs[unit].extraction is deprecated; replace extraction.matchers with binding.sources[{kind: userUtterance, matchers: [...]}]\nwarning: MM.PR.CreateDraft: inputs[delivery_date].extraction is deprecated; replace extraction.matchers with binding.sources[{kind: userUtterance, matchers: [...]}]\nwarning: MM.PR.CreateDraft: inputs[purchasing_group].extraction is deprecated; replace extraction.matchers with binding.sources[{kind: userUtterance, matchers: [...]}]\nwarning: MM.PR.CreateDraft: inputs[acct_assgn_cat].extraction is deprecated; replace extraction.matchers with binding.sources[{kind: userUtterance, matchers: [...]}]\nwarning: MM.PR.CreateDraft: inputs[cost_center].extraction is deprecated; replace extraction.matchers with binding.sources[{kind: userUtterance, matchers: [...]}]\nRegistry contract valid: /home/shrek/projects/GitHub_Projects/sap-nexus-agent/registry/capabilities.yaml",
+    "outputTruncated": false
+  },
+  "receiptHash": "1c02f3f54f8288e17837c142e5d874560b4cb6d20b316dcd86e5084aecf333da"
+}

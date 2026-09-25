@@ -121,3 +121,29 @@ bindings:
     constraints:
       sideEffect: none
       timeoutMs: 30000
+  - bindingId: sap.fi.ap.get-open-items-rest2rfc
+    type: REST_JSON
+    # Vertical-slice preset for BAPI_AP_ACC_GETOPENITEMS via the pure-ABAP
+    # rest2rfc SICF dynamic gateway. Not referenced by a capability yet:
+    # the production flip follows live equivalence evidence (Comet change
+    # add-rest-json-executor).
+    systemRef: sap-sat
+    method: POST
+    pathTemplate: /sap/bc/rest2rfc
+    request:
+      mode: dynamic
+      bodyMapping:
+        vendor: VENDOR
+        companyCode: COMPANYCODE
+        keydate: KEYDATE
+    response:
+      mode: dynamic
+      dataMapping:
+        openItems: lineitems
+        returnMessages: return
+    auth:
+      type: basic
+      credentialRef: sap-rest2rfc
+    constraints:
+      sideEffect: none
+      timeoutMs: 30000

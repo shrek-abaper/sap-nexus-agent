@@ -167,7 +167,7 @@
       "additionalProperties": false,
       "required": ["type"],
       "properties": {
-        "type": { "type": "string", "enum": ["JCO_RFC", "ODATA"] },
+        "type": { "type": "string", "enum": ["JCO_RFC", "ODATA", "REST_JSON"] },
         "rfcName": { "type": "string", "minLength": 1 },
         "inputMapping": {
           "type": "object",
@@ -183,6 +183,10 @@
       "allOf": [
         {
           "if": { "properties": { "type": { "const": "JCO_RFC" } }, "required": ["type"] },
+          "then": { "required": ["rfcName", "inputMapping", "outputMapping"] }
+        },
+        {
+          "if": { "properties": { "type": { "const": "REST_JSON" } }, "required": ["type"] },
           "then": { "required": ["rfcName", "inputMapping", "outputMapping"] }
         }
       ]

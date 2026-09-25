@@ -35,6 +35,12 @@ FI.AP.GetOpenItems
 -> current runtime executor = JCO_RFC / BAPI_AP_ACC_GETOPENITEMS
 ```
 
+The binding catalog also contains `sap.fi.ap.get-open-items-rest2rfc` (REST_JSON),
+a preset for the ABAP rest2rfc SICF vertical slice. It is intentionally not
+referenced by a capability: the production flip follows live equivalence evidence
+(see `docs/proposals/rest2rfc-migration-assessment.md`).
+
+
 ## Contract Boundary
 
 ```text

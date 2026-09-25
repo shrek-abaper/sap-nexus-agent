@@ -578,8 +578,8 @@ def _validate_rest_json_binding(capability: CapabilityEntry, binding: dict[str, 
     constraints = binding.get("constraints") or {}
     if capability.kind == "Function" and constraints.get("sideEffect") != "none":
         errors.append("REST_JSON Function binding must be read-only")
-    if capability.kind == "Function" and binding.get("method") not in (None, "GET"):
-        errors.append("REST_JSON Function binding must use GET in this contract phase")
+    if capability.kind == "Function" and binding.get("method") != "POST":
+        errors.append("REST_JSON Function binding must use POST")
     if "url" in binding:
         errors.append("REST_JSON binding must not contain raw url")
     auth = binding.get("auth") or {}

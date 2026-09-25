@@ -1,0 +1,10 @@
+{"sequence":1,"timestamp":"2026-09-25T14:39:20.872Z","type":"prepared"}
+{"sequence":2,"timestamp":"2026-09-25T14:39:22.898Z","type":"operation-started","operationId":"spec-1-rest-json-execution"}
+{"sequence":3,"timestamp":"2026-09-25T14:39:23.047Z","type":"operation-completed","operationId":"spec-1-rest-json-execution"}
+{"sequence":4,"timestamp":"2026-09-25T14:39:23.075Z","type":"operation-started","operationId":"spec-2-rest-json-registry-contract"}
+{"sequence":5,"timestamp":"2026-09-25T14:39:23.223Z","type":"operation-completed","operationId":"spec-2-rest-json-registry-contract"}
+{"sequence":6,"timestamp":"2026-09-25T14:39:25.076Z","type":"operation-started","operationId":"archive-change"}
+{"sequence":7,"timestamp":"2026-09-25T14:39:25.863Z","type":"operation-completed","operationId":"archive-change"}
+{"sequence":8,"timestamp":"2026-09-25T14:39:26.305Z","type":"archive-finalization-started"}
+{"sequence":9,"timestamp":"2026-09-25T14:39:26.402Z","type":"archive-finalized"}
+{"sequence":10,"timestamp":"2026-09-25T14:39:26.503Z","type":"commit"}

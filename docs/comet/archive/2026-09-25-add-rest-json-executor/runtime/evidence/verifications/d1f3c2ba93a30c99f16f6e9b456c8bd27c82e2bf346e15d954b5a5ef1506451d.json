@@ -1,0 +1,198 @@
+{
+  "schema": "comet.native.verification-evidence.v2",
+  "change": "add-rest-json-executor",
+  "sourceRevision": 3,
+  "result": "fail",
+  "freshness": "complete",
+  "contractHash": "231c2bd7900fc20fdd129da4f5292d3c8190690f0e6ed43f71a8dcb42f169912",
+  "acceptanceCriteriaHash": "bd628c5bf05a7a5fd0c3bd2d402f186f8f277d6d9a3b37262aea498389cfb103",
+  "implementationScopeRef": "runtime/evidence/scopes/6ede8450f60a0cb1fc2f844358b69999fa81519303c89e02869bc30655b5553d.json",
+  "implementationScopeHash": "6ede8450f60a0cb1fc2f844358b69999fa81519303c89e02869bc30655b5553d",
+  "reportRef": "verification.md",
+  "reportHash": "d33c74519e3eaf22903d1ec42cfa53ed42a1f519ae0a5d85e6abfdb67788b83f",
+  "acceptanceTrace": {
+    "schema": "comet.native.acceptance-trace.v2",
+    "nativeRootRef": "docs/comet",
+    "criteriaHash": "bd628c5bf05a7a5fd0c3bd2d402f186f8f277d6d9a3b37262aea498389cfb103",
+    "total": 21,
+    "evidenced": 0,
+    "skipped": 16,
+    "entries": [
+      {
+        "acceptanceId": "acceptance-21daf2a3b5af55a405b237313bc75350ce0646e80f923846834d337a69333272",
+        "status": "failed",
+        "kind": "spec-must",
+        "source": "specs/rest-json-registry-contract/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "round 1 not converged: Requirement: 能力 schema 支持 REST_JSON"
+      },
+      {
+        "acceptanceId": "acceptance-384803e4333b63aea067eca44104094023315c4e8b1eaad1c55d5fcf068924d8",
+        "status": "failed",
+        "kind": "brief-example",
+        "source": "brief.md",
+        "evidenceRefs": [],
+        "skippedReason": "round 1 not converged: **AC5（不可达 / 凭据缺失）**：连接超时/拒绝 → SAP_COMMUN"
+      },
+      {
+        "acceptanceId": "acceptance-3d7222190fee4c3bda3e320bb49d31da20e8cf1c80994e1599575faaf8d99a39",
+        "status": "failed",
+        "kind": "spec-must",
+        "source": "specs/rest-json-execution/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "round 1 not converged: Requirement: Gateway 侧受控连接配置"
+      },
+      {
+        "acceptanceId": "acceptance-3db7118c9090dc9bbce64fc6831072a86acd612b4c63c221ca66aab8dc6494b0",
+        "status": "failed",
+        "kind": "spec-must",
+        "source": "specs/rest-json-execution/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "round 1 not converged: Requirement: 业务错误与传输错误分类"
+      },
+      {
+        "acceptanceId": "acceptance-474caf7703a40274f786602660322b772b62c0f7cdc8184b0ca55e6d394ac94b",
+        "status": "failed",
+        "kind": "spec-must",
+        "source": "specs/rest-json-registry-contract/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "round 1 not converged: Requirement: 迁移评估清单"
+      },
+      {
+        "acceptanceId": "acceptance-5717dbc5feab9aaee50a5aba84c0f7fda0ce8c53f9103626a68cc47593da7f4c",
+        "status": "failed",
+        "kind": "spec-must",
+        "source": "specs/rest-json-execution/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "round 1 not converged: Requirement: 结果脱敏与只读边界"
+      },
+      {
+        "acceptanceId": "acceptance-626c996d5eb29d06a6231abe793e644f5b3e644316004750c11ebdb5fa919b58",
+        "status": "failed",
+        "kind": "brief-example",
+        "source": "brief.md",
+        "evidenceRefs": [],
+        "skippedReason": "round 1 not converged: **AC1（live 等价）**：`SAP_REST2RFC_LIVE=1` 运"
+      },
+      {
+        "acceptanceId": "acceptance-6a08c559325ec711e705a887da4e30ad663f84010f4e912e5a8843571462208a",
+        "status": "failed",
+        "kind": "spec-must",
+        "source": "specs/rest-json-execution/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "round 1 not converged: Requirement: registry 元数据驱动的请求组装"
+      },
+      {
+        "acceptanceId": "acceptance-7bc089498f117ced26114d723bbe93227881981afaa1966b052cebcd040a499b",
+        "status": "failed",
+        "kind": "spec-must",
+        "source": "specs/rest-json-registry-contract/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "round 1 not converged: Requirement: 垂直切片等价验证资产"
+      },
+      {
+        "acceptanceId": "acceptance-8bbd22eda20a93467eb67d2a7da32ce865fee658dddceec7d4ccaa6ed6edd5d9",
+        "status": "failed",
+        "kind": "spec-must",
+        "source": "specs/rest-json-execution/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "round 1 not converged: Requirement: 平级技术适配器"
+      },
+      {
+        "acceptanceId": "acceptance-936d79d5d5301f4df3b867c23caf4ebea9dc7661cdc2bdedca14ea6fda5d910b",
+        "status": "failed",
+        "kind": "brief-example",
+        "source": "brief.md",
+        "evidenceRefs": [],
+        "skippedReason": "round 1 not converged: **AC6（零 Java 迁移）**：测试中以 registry fixture"
+      },
+      {
+        "acceptanceId": "acceptance-95a1aef00b0b66dbf3c18b41a7b2d63c639188e4236ec06eac4b2dc0d5150689",
+        "status": "failed",
+        "kind": "spec-must",
+        "source": "specs/rest-json-execution/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "round 1 not converged: Requirement: 与 JCO_RFC 对齐的输出归一化"
+      },
+      {
+        "acceptanceId": "acceptance-b984633093d431483d52379c63e9af8cbc88409ece2f9db8e2f46a7206cb74cf",
+        "status": "failed",
+        "kind": "brief-example",
+        "source": "brief.md",
+        "evidenceRefs": [],
+        "skippedReason": "round 1 not converged: **AC8（全量回归）**：agent 全量 pytest、Gateway `."
+      },
+      {
+        "acceptanceId": "acceptance-c143d8bf7ae801b76ecfb1bbfe5ef1fa55f29976e863f00708df7fc680f98c5b",
+        "status": "failed",
+        "kind": "brief-example",
+        "source": "brief.md",
+        "evidenceRefs": [],
+        "skippedReason": "round 1 not converged: **AC4（非 200 空体）**：404（函数未在 ZTIF_GENERAL_"
+      },
+      {
+        "acceptanceId": "acceptance-c1f89c848177f58ed516bb2d6359682083ecb24da7d018c427b746013e9bec35",
+        "status": "failed",
+        "kind": "spec-must",
+        "source": "specs/rest-json-execution/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": "round 1 not converged: Purpose"
+      },
+      {
+        "acceptanceId": "acceptance-c3396a4ac10feb85ec49650f2948f388d9cd3a545258ec3d74928725ea987226",
+        "status": "failed",
+        "kind": "brief-example",
+        "source": "brief.md",
+        "evidenceRefs": [],
+        "skippedReason": "round 1 not converged: **AC3（200 业务错误）**：HTTP 200 但 `return` 含"
+      },
+      {
+        "acceptanceId": "acceptance-cae3679e1f30d5daa646353a40e3daf96e2f607768ae95ab69dda36873a6c398",
+        "status": "missing",
+        "kind": "brief-example",
+        "source": "brief.md",
+        "evidenceRefs": [],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-d4499773895b434b07b9a29d5dd59908a133fc30acacc03fffdacaf67dad962f",
+        "status": "missing",
+        "kind": "spec-must",
+        "source": "specs/rest-json-registry-contract/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-e82023a6661b5764942ddb90728e5eba00bd06bac3d98690e40792ead5b0bc3b",
+        "status": "missing",
+        "kind": "brief-example",
+        "source": "brief.md",
+        "evidenceRefs": [],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-e9b98cc065f869a10b23bb2c8f6a440e97c7e45404d4393ba15fcc8b328d3aa3",
+        "status": "missing",
+        "kind": "spec-must",
+        "source": "specs/rest-json-registry-contract/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-f1b8d9a7ba3cb313848a25e0fdcf2d18bf72ca9e0b8096ae966b262f57d4290c",
+        "status": "missing",
+        "kind": "spec-must",
+        "source": "specs/rest-json-registry-contract/spec.md",
+        "evidenceRefs": [],
+        "skippedReason": null
+      }
+    ],
+    "traceHash": "8e062a83119162223b08e0078fa5d786845e0d639d6949b1c9e5d1995843ca46"
+  },
+  "partialAllowanceRef": null,
+  "partialAllowanceHash": null,
+  "requiredReceiptRefs": [],
+  "receiptRefs": [],
+  "createdAt": "2026-09-25T13:54:12.121Z",
+  "envelopeHash": "d1f3c2ba93a30c99f16f6e9b456c8bd27c82e2bf346e15d954b5a5ef1506451d"
+}

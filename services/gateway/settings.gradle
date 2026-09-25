@@ -13,4 +13,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = 'sap-nexus-gateway'
-include 'core', 'jco', 'odata', 'app'
+include 'core', 'jco', 'odata', 'rest', 'app'

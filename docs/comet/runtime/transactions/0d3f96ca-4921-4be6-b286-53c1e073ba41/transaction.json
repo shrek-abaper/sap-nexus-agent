@@ -1,0 +1,35 @@
+{
+  "schema": "comet.native.transaction.v2",
+  "id": "0d3f96ca-4921-4be6-b286-53c1e073ba41",
+  "kind": "archive",
+  "status": "committed",
+  "change": "add-rest-json-executor",
+  "createdAt": "2026-09-25T14:39:18.287Z",
+  "preflightHash": "f1ca637a8a35621537a050b8d93219e2c9e92676e8b8be1f8bc8bcbcc14d436a",
+  "operations": [
+    {
+      "id": "spec-1-rest-json-execution",
+      "type": "write",
+      "target": "specs/rest-json-execution/spec.md",
+      "staged": "runtime/transactions/0d3f96ca-4921-4be6-b286-53c1e073ba41/staged/specs/rest-json-execution/spec.md",
+      "expectedTargetHash": null,
+      "stagedHash": "526a0b8a2031dc9f491646100b3faa17e272e5fabaa00f491d2fbd5d0d8bf454"
+    },
+    {
+      "id": "spec-2-rest-json-registry-contract",
+      "type": "write",
+      "target": "specs/rest-json-registry-contract/spec.md",
+      "staged": "runtime/transactions/0d3f96ca-4921-4be6-b286-53c1e073ba41/staged/specs/rest-json-registry-contract/spec.md",
+      "expectedTargetHash": null,
+      "stagedHash": "d6f8e20311c2432eab64543ed4b01e95cf46173fa045d026b70e05735e59b28a"
+    },
+    {
+      "id": "archive-change",
+      "type": "move",
+      "source": "changes/add-rest-json-executor",
+      "target": "archive/2026-09-25-add-rest-json-executor",
+      "expectedSourceHash": "477b488003e7e497cd3c86ee169bd957ac60278a0a1514bc0fbe0d708378aa23",
+      "expectedTargetHash": null
+    }
+  ]
+}
