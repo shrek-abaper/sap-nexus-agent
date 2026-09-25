@@ -12,6 +12,7 @@ the graph is loaded once per process.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -27,6 +28,75 @@ SKOS = "http://www.w3.org/2004/02/skos/core#"
 
 _DUMMY_SUBJECT = URIRef("https://sap-nexus-agent.local/runtime/value")
 _HOLDS = URIRef(f"{SH}holds")
+
+
+class MissingPartition:
+    """Intent-routing view of unbound required inputs.
+
+    missing_user: must be asked of the caller (CLARIFY).
+    missing_derivable: bindable from an auto-pullable producer in the governed
+    sources (ESCALATE_TO_PLANNER).
+    """
+
+    def __init__(self, missing_user: list[str], missing_derivable: list[str]):
+        self.missing_user = missing_user
+        self.missing_derivable = missing_derivable
+
+    def as_dict(self) -> dict:
+        return {
+            "missing_user": self.missing_user,
+            "missing_derivable": self.missing_derivable,
+        }
+
+
+def is_derivable_input(
+    capability_id: str,
+    input_name: str,
+    sources,
+) -> bool:
+    """Prove an auto-pullable producer exists in the governed sources.
+
+    Single authority, migrated from capability_selector._is_derivable_input.
+    A producer must (a) be reported by the derived data-dependency view and
+    (b) be an active READ/auto-pullable capability *within the governed
+    sources* - visibility-scoped runs must not answer from the full registry.
+    Declaration lookup only (no Gateway/RFC/SAP call); fails closed.
+    """
+    try:
+        if sources is None:
+            from sap_nexus_agent.semantic_planning import load_semantic_sources
+
+            repo_root = Path(__file__).resolve().parents[2]
+            sources = load_semantic_sources(repo_root)
+        from sap_nexus_agent.semantic_planning.derivation import (
+            derive_data_dependencies,
+        )
+        from sap_nexus_agent.planner.goal_spec import is_auto_pullable_governance
+
+        view = derive_data_dependencies(sources)
+        governance_by_capability = {
+            capability.get("capabilityId"): capability.get("governance") or {}
+            for capability in (sources.capabilities.get("capabilities") or ())
+            if isinstance(capability, Mapping)
+        }
+        for edge in view.edges:
+            if (
+                edge.consumer_capability_id != capability_id
+                or edge.consumer_input_name != input_name
+            ):
+                continue
+            governance = governance_by_capability.get(
+                edge.producer_capability_id
+            ) or {}
+            if is_auto_pullable_governance(
+                governance.get("sideEffect"),
+                governance.get("requiresApproval"),
+            ):
+                return True
+        return False
+    except Exception:
+        return False
+
 
 
 class ConstraintRuntime:
@@ -146,6 +216,75 @@ class ConstraintRuntime:
                     missing.append(inp["name"])
 
         return {"satisfied": not missing, "missing": sorted(missing)}
+
+    # ------------------------- intent-routing partition -------------------------
+
+    def partition_missing(
+        self,
+        capability_id: str,
+        provided_keys: set[str],
+        *,
+        sources=None,
+    ) -> MissingPartition:
+        """Split unbound required inputs into user-required vs derivable.
+
+        Single authority for the capability selector. ``provided_keys`` already
+        includes direct parameters and multi_parameters. Derivability is proven
+        against the governed ``sources`` (a producer outside this run's governed
+        set must not remove a missing input); fails closed into missing_user.
+        """
+        cap = self._registry()[capability_id]
+
+        required = {
+            inp["name"]
+            for inp in cap["inputs"]
+            if inp.get("required") and inp["name"] not in provided_keys
+        }
+
+        # requireAny group precondition: absent filter group is user-facing.
+        require_any = (cap.get("intent") or {}).get("requireAny")
+        group_missing: set[str] = set()
+        if require_any and not any(
+            name in provided_keys for name in require_any["inputs"]
+        ):
+            group_missing.add(require_any["missingName"])
+
+        # Conditional requiredWhen: only when the trigger holds.
+        for inp in cap["inputs"]:
+            cond = (inp.get("extraction") or {}).get("requiredWhen")
+            name = inp["name"]
+            if (
+                cond
+                and name not in provided_keys
+                and cond["field"] in provided_keys
+            ):
+                required.add(name)
+
+        unbound = required | group_missing
+        return self.classify_missing(capability_id, unbound, sources)
+
+    def classify_missing(
+        self,
+        capability_id: str,
+        candidate_missing,
+        sources,
+    ) -> MissingPartition:
+        """Partition an already-known set of missing inputs by derivability.
+
+        Rule path: the parser already computed missing entries, so required
+        inputs are not re-resolved here; each entry is only proven derivable
+        against an auto-pullable producer in the governed sources.
+        """
+        ordered = list(dict.fromkeys(candidate_missing))
+        derivable = {
+            name
+            for name in ordered
+            if is_derivable_input(capability_id, name, sources)
+        }
+        # Preserve the parser's original missing order (callers compare lists).
+        missing_user = [name for name in ordered if name not in derivable]
+        missing_derivable = [name for name in ordered if name in derivable]
+        return MissingPartition(missing_user, missing_derivable)
 
     # -------------------------------- helpers --------------------------------
 

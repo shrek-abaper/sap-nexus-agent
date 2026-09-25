@@ -955,7 +955,7 @@ def test_an_input_only_an_action_can_produce_is_not_treated_as_derivable():
     input as derivable, `pr_number` would be dropped from `missing_parameters` and
     then never bound -- neither asked nor derived.
     """
-    from sap_nexus_agent.capability_selector import _is_derivable_input
+    from sap_nexus_agent.constraint_runtime import is_derivable_input
     from sap_nexus_agent.semantic_planning.derivation import derive_data_dependencies
 
     sources = _sources_with_a_consumer_of_an_action_produced_fact()
@@ -968,7 +968,7 @@ def test_an_input_only_an_action_can_produce_is_not_treated_as_derivable():
         for edge in derive_data_dependencies(sources).edges
     )
 
-    assert _is_derivable_input(
+    assert is_derivable_input(
         "Test.Consumer.WantsPrNumber", "pr_number", sources
     ) is False
 
@@ -979,9 +979,9 @@ def test_a_read_produced_input_is_still_derivable():
     Without this, returning a constant False would satisfy the test above and
     silently disable the whole feature.
     """
-    from sap_nexus_agent.capability_selector import _is_derivable_input
+    from sap_nexus_agent.constraint_runtime import is_derivable_input
 
-    assert _is_derivable_input("MM.PR.CreateDraft", "unit", None) is True
+    assert is_derivable_input("MM.PR.CreateDraft", "unit", None) is True
 
 
 def test_the_selector_and_the_closure_share_one_pullability_rule():

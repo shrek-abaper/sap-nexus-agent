@@ -19,75 +19,22 @@ if TYPE_CHECKING:
     from sap_nexus_agent.match_decision import EscalationHandoff, MatchDecision, MatchedIntent
 
 
-def _is_derivable_input(
-    capability_id: str,
-    input_name: str,
-    sources: "SemanticSourceDocuments | None" = None,
-) -> bool:
-    """Whether the planner can bind ``input_name`` from an upstream capability.
+def _constraint_runtime():
+    """Cached runtime owning the missing-input partition authority."""
+    from functools import lru_cache
 
-    T5 task 7.1. Decided by **reading the registry**: the derived data-dependency
-    view already answers exactly this question — it pairs a consumer input that
-    declares ``satisfiableByFactType`` with a producer output whose
-    ``semanticType`` matches — so the selector reuses that authority instead of
-    reimplementing the rule and letting the two drift.
-
-    Invariant 2 holds: `derivation` reads the governed source documents and
-    performs no Gateway, RFC or OData call, which task 5.8's audit asserts as a
-    file-level lock. This is a declaration lookup, not a data fetch.
-
-    ``sources`` is the **governed** document set for this run. It matters that it
-    is honoured rather than re-read from disk: a caller that restricts the
-    governed capability set (a visibility scope, or an eval case exercising an
-    unreachable producer) must not have the selector answer from the full
-    registry, or a parameter would be dropped from ``missing_parameters`` on the
-    strength of a producer this run cannot use. Falls back to loading the
-    repository sources when no set is supplied, which is the single-turn default.
-
-    Fails closed on any load or derivation error: an input that cannot be proven
-    derivable is treated as not derivable, so the user is asked rather than
-    silently left with an unbindable parameter.
-    """
-    try:
+    @lru_cache(maxsize=1)
+    def get():
         from pathlib import Path
 
-        from sap_nexus_agent.semantic_planning import load_semantic_sources
-        from sap_nexus_agent.semantic_planning.derivation import (
-            derive_data_dependencies,
-        )
+        from sap_nexus_agent.constraint_runtime import ConstraintRuntime
 
-        if sources is None:
-            repo_root = Path(__file__).resolve().parents[2]
-            sources = load_semantic_sources(repo_root)
-        view = derive_data_dependencies(sources)
-    except Exception:  # noqa: BLE001 - fail closed, ask the user
-        return False
+        repo_root = Path(__file__).resolve().parents[2]
+        return ConstraintRuntime(repo_root)
 
-    # The derived view answers "is there a producer of this field", filtering
-    # producers on ``status: active`` alone. Auto-pull additionally requires a
-    # READ producer (invariant 5), so an edge whose producer would never be
-    # pulled must NOT count as derivable -- otherwise the input is dropped from
-    # ``missing_parameters`` and then never bound. One rule, imported rather
-    # than restated, so the two cannot drift apart again.
-    from sap_nexus_agent.planner.goal_spec import is_auto_pullable_governance
+    return get()
 
-    governance_by_capability = {
-        capability.get("capabilityId"): capability.get("governance") or {}
-        for capability in (sources.capabilities.get("capabilities") or ())
-        if isinstance(capability, Mapping)
-    }
-    for edge in view.edges:
-        if (
-            edge.consumer_capability_id != capability_id
-            or edge.consumer_input_name != input_name
-        ):
-            continue
-        governance = governance_by_capability.get(edge.producer_capability_id) or {}
-        if is_auto_pullable_governance(
-            governance.get("sideEffect"), governance.get("requiresApproval")
-        ):
-            return True
-    return False
+
 
 
 # Intent -> capabilityId closed set. The Agent never senses the executor type
@@ -301,47 +248,42 @@ def select_capability(
     # (SimpleNamespace) may not set it.
     multi_parameters = getattr(parse_result, "multi_parameters", {}) or {}
     provided_keys = set(parse_result.parameters.keys()) | set(multi_parameters.keys())
-    if parse_result.missing_parameters:
-        missing = [m for m in parse_result.missing_parameters if m not in provided_keys]
-    else:
-        missing = []
-        capability_id_for_missing = parse_result.capability_id
-        if not capability_id_for_missing and parse_result.matched_intents:
-            capability_id_for_missing = parse_result.matched_intents[0].capability_id
-        if capability_id_for_missing:
-            # Lazy import to get descriptor inputs (avoids module-level registry IO).
-            from sap_nexus_agent.registry_loader import load_intent_catalog
-            descriptor = load_intent_catalog().find(capability_id_for_missing)
-            if descriptor is not None:
-                missing = [
-                    inp.name
-                    for inp in descriptor.inputs
-                    if inp.required and inp.name not in provided_keys
-                ]
-    # T5 task 7.1: a parameter the planner can derive must not be asked.
-    #
-    # Until this, `missing_parameters` listed every unbound required input, so the
-    # user was asked for `unit` and `purchasing_group` even though an upstream
-    # capability publishes both. 6.1's reduction existed in the plan layer with no
-    # conversational entry point reaching it.
-    #
-    # Derivable entries are removed here, and if any was removed the decision
-    # escalates: deriving requires an upstream node plus a data edge in a
-    # PlanGraph (invariant 2), which the single-capability SELECT/CallPlan path
-    # cannot express. A genuinely unanswerable gap still clarifies.
-    derivable_cap_id = parse_result.capability_id
-    if not derivable_cap_id and parse_result.matched_intents:
-        derivable_cap_id = parse_result.matched_intents[0].capability_id
-    derivable: list[str] = []
-    if missing and derivable_cap_id:
-        derivable = [
-            name
-            for name in missing
-            if _is_derivable_input(derivable_cap_id, name, sources)
-        ]
-        if derivable:
-            missing = [name for name in missing if name not in derivable]
 
+    # Single authority: runtime partitions unbound required inputs into
+    # user-required vs derivable-from-an-auto-pullable-producer. The
+    # capability under evaluation is the parser's selected one, the first
+    # matched intent, or the intent->capability fallback.
+    partition_cap_id = parse_result.capability_id
+    if not partition_cap_id and parse_result.matched_intents:
+        partition_cap_id = parse_result.matched_intents[0].capability_id
+    if not partition_cap_id:
+        partition_cap_id = INTENT_TO_CAPABILITY.get(parse_result.intent)
+
+    runtime = _constraint_runtime()
+    if parse_result.missing_parameters:
+        # Rule path: the parser already named missing entries; do not
+        # re-resolve required inputs, only split them by derivability.
+        candidate = [
+            name for name in parse_result.missing_parameters
+            if name not in provided_keys
+        ]
+        partition = runtime.classify_missing(
+            partition_cap_id, candidate, sources
+        )
+    elif partition_cap_id:
+        # LLM path, parser checked nothing: recompute required inputs.
+        partition = runtime.partition_missing(
+            partition_cap_id, provided_keys, sources=sources
+        )
+    else:
+        partition = None
+
+    missing = (partition.missing_user if partition else [])
+    derivable = (partition.missing_derivable if partition else [])
+
+    # All unbound required inputs are derivable: escalate to the planner so the
+    # upstream read is orchestrated (the single-capability CallPlan cannot
+    # express the required upstream node + data edge, invariant 2).
     if not missing and derivable:
         return MatchDecision(
             decision_type="ESCALATE_TO_PLANNER",
@@ -349,7 +291,7 @@ def select_capability(
                 reason="derived-parameter",
                 matched_intents=[
                     MatchedIntent(
-                        capability_id=derivable_cap_id,
+                        capability_id=partition_cap_id,
                         parameters=dict(parse_result.parameters),
                         missing=[],
                     )
@@ -366,11 +308,9 @@ def select_capability(
         )
 
     if missing:
-        clarify_cap_id = parse_result.capability_id
-        if not clarify_cap_id and parse_result.matched_intents:
-            clarify_cap_id = parse_result.matched_intents[0].capability_id
-        if not clarify_cap_id:
-            clarify_cap_id = INTENT_TO_CAPABILITY.get(parse_result.intent)
+        clarify_cap_id = partition_cap_id or INTENT_TO_CAPABILITY.get(
+            parse_result.intent
+        )
         return MatchDecision(
             decision_type="CLARIFY",
             capability_id=clarify_cap_id,
