@@ -309,7 +309,7 @@ trap stop_services INT TERM EXIT
 
 start_service odata-service "$LOG_DIR/odata-service.log" bash -lc "cd '$ROOT_DIR/services/odata-service' && export PYTHONPATH=. && exec '$PYTHON_CMD' -c 'import os; from odata_service.server import run; run(int(os.environ.get(\"ODATA_SERVICE_PORT\", \"$ODATA_SERVICE_PORT\")))'"
 start_service gateway "$LOG_DIR/gateway.log" bash -lc "cd '$ROOT_DIR/services/gateway' && exec '$GRADLE_CMD' --no-daemon bootRun"
-start_service workbench "$LOG_DIR/workbench.log" npm --prefix "$ROOT_DIR/frontend" run dev -- --hostname "$FRONTEND_HOST" --port "$FRONTEND_PORT"
+start_service frontend "$LOG_DIR/frontend.log" npm --prefix "$ROOT_DIR/frontend" run dev -- --hostname "$FRONTEND_HOST" --port "$FRONTEND_PORT"
 
 cat <<READY
 [start] Services are starting.
