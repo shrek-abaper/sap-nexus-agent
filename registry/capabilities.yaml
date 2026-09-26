@@ -774,6 +774,10 @@ capabilities:
         binding:
           priority: 20
           resolver: text
+          # The bare-token MaterialNumber scan would otherwise re-claim a
+          # >=5-char customer number (e.g. B20677) already bound above.
+          excludes:
+            - customerNumber
           sources:
             - kind: userUtterance
               matchers:

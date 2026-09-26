@@ -94,6 +94,7 @@
               "minLength": {"type": "integer", "minimum": 1},
               "notIn": {"type": "array", "items": {"type": "string"}},
               "prefixBlacklist": {"type": "array", "items": {"type": "string"}},
+              "notMatches": {"type": "array", "items": {"type": "string"}},
               "toUpperCaseCompare": {"type": "boolean"},
               "toUpperCaseOutput": {"type": "boolean"}
             }

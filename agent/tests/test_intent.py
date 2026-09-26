@@ -59,6 +59,21 @@ def test_user_supplied_rfc_name_is_rejected():
 # --- Purchase order intent parsing (Task 7) ---
 
 
+def test_parse_sales_order_customer_number_not_duplicated_as_material():
+    result = parse_intent("查客户 B20677 在销售组织5260的未完结销售订单")
+    assert result.capability_id == "SD.SalesOrder.GetList"
+    assert result.parameters["customerNumber"] == "B20677"
+    assert result.parameters["salesOrganization"] == "5260"
+    assert "material" not in result.parameters
+
+
+def test_parse_sales_order_compact_date_not_duplicated_as_material():
+    result = parse_intent("查客户 C00002 销售组织2110 单据日期 20260112 的销售订单")
+    assert result.capability_id == "SD.SalesOrder.GetList"
+    assert result.parameters["documentDate"] == "2026-01-12"
+    assert "material" not in result.parameters
+
+
 def test_parse_intent_po_by_vendor():
     result = parse_intent("查供应商 DEMOV1 的采购订单")
     assert result.intent == "purchase_order_list"

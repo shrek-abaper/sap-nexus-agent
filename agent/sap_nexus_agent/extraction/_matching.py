@@ -126,7 +126,9 @@ def _passes_filters(value: str, filters: ValueFilters) -> bool:
     compare = value.upper() if filters.to_upper_compare else value
     if compare in filters.not_in:
         return False
-    return not any(value.startswith(prefix) for prefix in filters.prefix_blacklist)
+    if any(value.startswith(prefix) for prefix in filters.prefix_blacklist):
+        return False
+    return not any(re.fullmatch(pattern, value) for pattern in filters.not_matches)
 
 
 def _is_excluded(value: str, excluded_values: set[str], filters: ValueFilters) -> bool:

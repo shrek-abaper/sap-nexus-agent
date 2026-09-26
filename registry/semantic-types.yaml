@@ -48,6 +48,9 @@ semanticTypes:
       minLength: 5
       notIn: ['RFCNAME']
       prefixBlacklist: ['BAPI_']
+      # A bare 8-digit token is the DATS compact-date convention (see
+      # normalize_date), e.g. a document date, not a material number.
+      notMatches: ['\d{8}']
       toUpperCaseCompare: true
       toUpperCaseOutput: false
   - id: Quantity

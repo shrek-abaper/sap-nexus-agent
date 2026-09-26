@@ -235,6 +235,7 @@ def test_material_filters_reproduce_legacy_guards():
         "minLength": 5,             # legacy: len(token) > 4
         "notIn": ["RFCNAME"],       # legacy: excluded.update({"RFCNAME"})
         "prefixBlacklist": ["BAPI_"],
+        "notMatches": [r"\d{8}"],   # bare 8-digit token is a compact DATS date
         "toUpperCaseCompare": True, # legacy: token.upper() in excluded
         "toUpperCaseOutput": False, # legacy returns the original token
     }

@@ -50,6 +50,7 @@ class ValueFilters:
     min_length: int | None = None
     not_in: tuple[str, ...] = ()
     prefix_blacklist: tuple[str, ...] = ()
+    not_matches: tuple[str, ...] = ()
     to_upper_compare: bool = False
     to_upper_output: bool = False
 
@@ -281,6 +282,12 @@ def _parse_input_binding(raw: object) -> BindingConfig | None:
         return BindingConfig(
             sources=sources,
             elicit_if_missing=bool(binding_raw.get("elicitIfMissing", True)),
+            priority=int(binding_raw.get("priority", 0)),
+            excludes=tuple(str(x) for x in binding_raw.get("excludes") or []),
+            resolver=str(binding_raw.get("resolver", "text")),
+            when=_parse_condition(binding_raw.get("when")),
+            required_when=_parse_condition(binding_raw.get("requiredWhen")),
+            reask_suspect=bool(binding_raw.get("reaskSuspect", False)),
         )
     extraction = _parse_extraction(raw.get("extraction"))
     if extraction is None:
@@ -394,6 +401,7 @@ def _parse_value_filters(raw: object) -> ValueFilters:
         min_length=int(min_length) if min_length is not None else None,
         not_in=tuple(str(x) for x in raw.get("notIn") or []),
         prefix_blacklist=tuple(str(x) for x in raw.get("prefixBlacklist") or []),
+        not_matches=tuple(str(x) for x in raw.get("notMatches") or []),
         to_upper_compare=bool(raw.get("toUpperCaseCompare", False)),
         to_upper_output=bool(raw.get("toUpperCaseOutput", False)),
     )
