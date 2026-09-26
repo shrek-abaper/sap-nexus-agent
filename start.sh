@@ -11,7 +11,11 @@ FRONTEND_PORT=${FRONTEND_PORT:-3000}
 FRONTEND_HOST=${FRONTEND_HOST:-0.0.0.0}
 # JAVA_HOME is intentionally not defaulted to a distro-specific path; when it is
 # unset, the JVM on PATH is used (must be Java 17).
-GRADLE_USER_HOME=${GRADLE_USER_HOME:-/tmp/gradle-home}
+# Keep the Gradle distribution and dependency cache persistent in the user's
+# home (the wrapper distribution is cached under ~/.gradle). Pointing this at
+# /tmp made the wrapper re-download Gradle on every /tmp cleanup, which failed
+# offline/behind a proxy and left the Gateway down. Override via env if needed.
+GRADLE_USER_HOME=${GRADLE_USER_HOME:-$HOME/.gradle}
 DRY_RUN=0
 
 usage() {
@@ -40,7 +44,7 @@ Environment overrides:
   SAP_NEXUS_AGENT_PYTHON=/absolute/path/to/python
   SAP_GATEWAY_ODATA_PROXY_URL=http://127.0.0.1:8081
   JAVA_HOME=/path/to/jdk-17        # optional; system Java is used when unset
-  GRADLE_USER_HOME=/tmp/gradle-home
+  GRADLE_USER_HOME=$HOME/.gradle
   START_RUNTIME_DIR=runtime/dev-services
 
 Notes:
@@ -136,7 +140,7 @@ print_plan() {
   cat <<PLAN
 Dry run: SAP Nexus Agent services would start with:
   OData svc  : cd services/odata-service && PYTHONPATH=. ODATA_SERVICE_PORT=$ODATA_SERVICE_PORT $python_cmd -c 'from odata_service.server import run; run(...)'
-  Gateway    : cd services/gateway && JAVA_HOME=${JAVA_HOME:-} GRADLE_USER_HOME=$GRADLE_USER_HOME SERVER_PORT=$GATEWAY_PORT SAP_GATEWAY_ODATA_PROXY_URL=http://127.0.0.1:$ODATA_SERVICE_PORT $gradle_cmd --no-daemon bootRun
+  Gateway    : cd services/gateway && JAVA_HOME=${JAVA_HOME:-} GRADLE_USER_HOME=$GRADLE_USER_HOME SERVER_PORT=$GATEWAY_PORT SAP_GATEWAY_ODATA_PROXY_URL=http://127.0.0.1:$ODATA_SERVICE_PORT $gradle_cmd --no-daemon --offline bootRun
   Frontend  : npm --prefix frontend run dev -- --hostname $FRONTEND_HOST --port $FRONTEND_PORT (DSH Chat at /chat)
   Agent      : SAP_NEXUS_GATEWAY_URL=${SAP_NEXUS_GATEWAY_URL:-http://127.0.0.1:$GATEWAY_PORT} SAP_NEXUS_INTENT_MODE=${SAP_NEXUS_INTENT_MODE:-hybrid}
   Logs       : $LOG_DIR
@@ -308,7 +312,7 @@ export JAVA_TOOL_OPTIONS="-Djava.library.path=${SAP_JCO_LIB_PATH}"
 trap stop_services INT TERM EXIT
 
 start_service odata-service "$LOG_DIR/odata-service.log" bash -lc "cd '$ROOT_DIR/services/odata-service' && export PYTHONPATH=. && exec '$PYTHON_CMD' -c 'import os; from odata_service.server import run; run(int(os.environ.get(\"ODATA_SERVICE_PORT\", \"$ODATA_SERVICE_PORT\")))'"
-start_service gateway "$LOG_DIR/gateway.log" bash -lc "cd '$ROOT_DIR/services/gateway' && exec '$GRADLE_CMD' --no-daemon bootRun"
+start_service gateway "$LOG_DIR/gateway.log" bash -lc "cd '$ROOT_DIR/services/gateway' && exec '$GRADLE_CMD' --no-daemon --offline bootRun"
 start_service frontend "$LOG_DIR/frontend.log" npm --prefix "$ROOT_DIR/frontend" run dev -- --hostname "$FRONTEND_HOST" --port "$FRONTEND_PORT"
 
 cat <<READY
