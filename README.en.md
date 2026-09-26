@@ -16,7 +16,7 @@
 [![Java](https://img.shields.io/badge/Java-17-007396?style=flat-square&logo=openjdk&logoColor=white)](services/gateway)
 [![Python](https://img.shields.io/badge/Python-3.12+-3776AB?style=flat-square&logo=python&logoColor=white)](agent)
 [![Node](https://img.shields.io/badge/Node-20+-339933?style=flat-square&logo=nodedotjs&logoColor=white)](frontend)
-[![SAP](https://img.shields.io/badge/SAP-JCo%20RFC%20%2B%20OData-0FAAFF?style=flat-square&logo=sap&logoColor=white)](#registered-capabilities-server-side-internals)
+[![SAP](https://img.shields.io/badge/SAP-JCo%20RFC%20%2B%20OData%20%2B%20REST-0FAAFF?style=flat-square&logo=sap&logoColor=white)](#registered-capabilities-server-side-internals)
 [![Offline Gate](https://img.shields.io/badge/offline%20gate-22%2F22%20L3__ACTION__GOVERNED-2EA043?style=flat-square)](#target-achievement-status-s1s5)
 
 <!-- TODO: DSH Chat screenshot or GIF -->
@@ -48,7 +48,7 @@ SAP Nexus Agent aims to be a **supplier of SAP capabilities**, not yet another S
 - SAP On-Prem connectivity and credentials (for live smoke tests)
 - An OpenAI-compatible LLM endpoint and API key (for DSH Chat / harness-dsh; Rule mode and offline tests need neither)
 
-**Without SAP connectivity or credentials** you can run the full offline test suite, call-plan evals, and registry validation in the [“Verification Baseline”](#verification-baseline-as-of-2026-09-13) below, but you **cannot run interactive queries** — even with `--intent-mode rule` (no LLM key needed) the Python Agent CLI still connects to the Gateway to execute; DSH Chat / harness-dsh additionally need an LLM key.
+**Without SAP connectivity or credentials** you can run the full offline test suite, call-plan evals, and registry validation in the [“Verification Baseline”](#verification-baseline-as-of-2026-09-26) below, but you **cannot run interactive queries** — even with `--intent-mode rule` (no LLM key needed) the Python Agent CLI still connects to the Gateway to execute; DSH Chat / harness-dsh additionally need an LLM key.
 
 ### Prepare the Python Environment
 
@@ -66,7 +66,7 @@ cp .env.example .env
 # Fill in SAP connection parameters; for DSH also set SAP_NEXUS_LLM_BASE_URL / SAP_NEXUS_LLM_API_KEY / SAP_NEXUS_LLM_MODEL
 ```
 
-### Verification Baseline (as of 2026-09-13)
+### Verification Baseline (as of 2026-09-26)
 
 ```bash
 .venv/bin/python scripts/validate-registry-contract.py registry/capabilities.yaml
@@ -78,11 +78,12 @@ npm --prefix frontend run release-gate -- --profile all
 
 Current baselines:
 
-- Registry contract validation: `Registry contract valid` (17 deprecation warnings, all `extraction.matchers` → `binding.sources` migration notices; contract validity unaffected)
-- Agent test suite: `1574 passed, 1 skipped, 2 xfailed`
-- Frontend suite: `579 passed` (64 test files); `verify` (typecheck + vitest + next build) all green
-- Call-plan Evals: inventory `7/7`, eval_harness_seed_cases `13/13`, PR `9/9`, matcher `23/23`, dry-run `3/3` (plus 1 documented structural pending), derived-parameter `3/3` (plus 2 parser-blocked pending cases with written cause analysis)
-- Offline release gate: `22/22` / `L3_ACTION_GOVERNED` reached 2026-08-19 (historical milestone); all four L1–L3 hard gates are leakage `0`, approval bypass `0`, unsupported claim `0`, lineage `100%`; `liveSmoke: not_run` (the offline gate makes no real SAP calls; report: `runtime/evals/results/agent-release-l3-2026-08-19T13-09-48-499Z.json`; forensics on the older 2026-08-10 report see [roadmap §1.1.4](docs/wiki/sap-nexus-agent-implementation-roadmap.md))
+- Registry contract validation: `Registry contract valid` (deprecation warnings are all `extraction.matchers` → `binding.sources` migration notices; contract validity unaffected)
+- Agent test suite: passes in full (with a small number of pre-existing skips / xfails)
+- Frontend: `verify` (typecheck + vitest + next build) all green
+- Call-plan Evals: all pass (the PENDING items in dry-run / derived-parameter have written cause analysis in the cases themselves — kept by design, not failures)
+- Live equivalence (gated; `SAP_REST2RFC_LIVE=1`): after migration the three list capabilities are row-for-row, all-fields equivalent to the JCo baselines via SICF (direct SICF vs Gateway identical)
+- Offline release gate: highest consecutive level `L3_ACTION_GOVERNED` reached 2026-08-19 (historical milestone; every hard gate shows no leakage/bypass and lineage is complete; `liveSmoke` makes no real SAP calls by design; report: `runtime/evals/results/agent-release-l3-2026-08-19T13-09-48-499Z.json`; forensics on the older 2026-08-10 report see [roadmap §1.1.4](docs/wiki/sap-nexus-agent-implementation-roadmap.md))
 
 `PYTHONPATH=agent` verifies the current source tree directly.
 
@@ -179,18 +180,18 @@ Experience · Harness (replaceable)
   ┌─────────────────────────────────────────────────────────────────────┐
   │ Java Gateway (:8080 · the only security boundary)                     │
   │ Parameter validation (ontology constraints) · executor routing        │
-  │   (JCO_RFC / ODATA) · result normalization → TechnicalExecutionResult  │
-  │ · redaction / audit                                                   │
-  └──────────────────┬───────────────────────────────┬──────────────────┘
-                     ▼                                ▼
-           ┌──────────────────┐            ┌────────────────────────────┐
-           │ SAP JCo (RFC/BAPI)│            │ odata-service (:8081)       │
-           └────────┬─────────┘            │ Python read-only microsvc   │
-                    │                      │ · assembles $filter         │
-                    │                      └─────────────┬──────────────┘
-                    └──────────────────┬─────────────────┘
-                                       ▼
-                              SAP On-Prem system
+  │   (JCO_RFC / ODATA / REST_JSON) · result normalization               │
+  │   → TechnicalExecutionResult · redaction / audit                      │
+  └─────────┬──────────────────────────────┬────────────────────────┬────┘
+            ▼                              ▼                        ▼
+  ┌──────────────────────┐     ┌──────────────────────────┐  ┌──────────────────────┐
+  │ SAP JCo (RFC/BAPI)    │     │ odata-service (:8081)     │  │ SICF rest2rfc        │
+  └──────────┬───────────┘     │ Python read-only microsvc  │  │ pure-ABAP dynamic    │
+             │                 │ · assembles $filter        │  │ reflection gateway   │
+             │                 └────────────┬─────────────┘  │ (inside the SAP system)│
+             └──────────────┬───────────────┘                └──────────┬───────────┘
+                            ▼                                         ▼
+                                  SAP On-Prem system
 
 Side path: the Python Agent CLI (sap_nexus_agent.cli) can call the Gateway directly without a
 harness (rule / llm intent); the classic Workbench at /workbench shares the same agent-runtime
@@ -225,12 +226,13 @@ The fields and mechanisms below are all parts of the **implemented endpoint-leve
 - **Capability Ontology** — Every SAP operation (read/write) is modeled as a formal capability with `ontologyIri`, `semanticType`, typed inputs/outputs, and fact type references
 - **Semantic Parameter Mapping** — Input parameters link to ontology concepts (`MaterialNumber`, `Plant`) via `semanticName`/`semanticType`, decoupled from SAP technical parameters (`MATERIAL`, `PLANT`)
 - **Executor Binding** — Each capability binds to a specific executor (`JCO_RFC` / `ODATA`) via an allowlisted `bindingId`; runtime replacement is rejected
-- **OWL Reserved** — `ontologyIri` and `semanticType` preserve a migration path for future OWL ontology reasoning; current consistency gates use JSON Schema + Registry Validator
+- **Ontology Constraint Runtime** — `constraint_runtime.py`, built on **rdflib + pyshacl`: build-time codegen produces SHACL shapes from the registry and binds them to the snapshot; at request time it validates parameter shapes and evaluates preconditions via SPARQL (query plans are prepared once and cached). It strictly **separates resolve from enforce** — it only answers "does the shape hold"; blocking and execution stay with deterministic code. Heavier graph platforms (Semantica) were evaluated in `spikes/semantica-shadow` and are not introduced at this stage
+- **OWL Reserved** — `ontologyIri` and `semanticType` preserve a migration path toward heavier ontology reasoning; current consistency gates are carried by JSON Schema + Registry Validator + the SHACL runtime above
 - **Declarative Intent Parsing** — Rule-mode intent parsing is fully declaration-driven (`registry/capabilities.yaml` `intent` blocks + `registry/semantic-types.yaml` type catalog); adding a new capability requires no Agent code changes
 
 ### Governance & Security
 
-- **Fail-closed** — Unsupported executor types (`CDS_ADT` / `REST_JSON` / `SQL_READ`) default to denial
+- **Fail-closed** — Unsupported executor types (`CDS_ADT` / `SQL_READ`) default to denial; every executor fails closed when credentials are missing or invalid
 - **Parameter injection protection** — Callers cannot supply or override `rfcName`, `bindingId`, service URLs, HTTP methods, credential references, raw SQL, or CDS objects; the semantic-tool facade scans for technical keys at any depth
 - **READ safety** — READ capabilities must never call `BAPI_TRANSACTION_COMMIT` or `BAPI_TRANSACTION_ROLLBACK`
 - **WRITE human approval** — WRITE capabilities (purchase requisition creation / the `propose_replenishment` proposal) execute only when a recorded exact-subject human confirmation exists; the approval subject is computed and verified server-side
@@ -242,25 +244,25 @@ The fields and mechanisms below are all parts of the **implemented endpoint-leve
 | ----------- | ------------- | -------------------------------------------------------------------------------- |
 | `JCO_RFC`   | ✅ Live        | Direct RFC/BAPI execution via SAP JCo                                            |
 | `ODATA`     | ✅ Live        | Gateway thin reverse proxy → Python odata-service (:8081) → SAP OData            |
+| `REST_JSON` | ✅ Live        | Basic-Auth POST to the in-SAP pure-ABAP rest2rfc SICF gateway; registry-mapping-driven |
 | `CDS_ADT`   | 🔒 Fail-closed | Architecture reserve                                                             |
-| `REST_JSON` | 🔒 Fail-closed | Architecture reserve                                                             |
 | `SQL_READ`  | 🔒 Fail-closed | Architecture reserve                                                             |
 
 ---
 
 ## Target Achievement Status (S1–S5)
 
-The current implementation assessed against the target architecture's S1–S5 build sequence (re-verified 2026-09-13); full status tables are in [roadmap §1.1](docs/wiki/sap-nexus-agent-implementation-roadmap.md), and concrete test/gate figures are recorded only in the [“Verification Baseline”](#verification-baseline-as-of-2026-09-13) above.
+The current implementation assessed against the target architecture's S1–S5 build sequence (re-verified 2026-09-26); full status tables are in [roadmap §1.1](docs/wiki/sap-nexus-agent-implementation-roadmap.md), and concrete test/gate figures are recorded only in the [“Verification Baseline”](#verification-baseline-as-of-2026-09-26) above.
 
 - **Sequence progress**: S1 evidence complete · S2 (object keys + field-level schema) not started · S3 (definitions + relations into the ontology + compile-time pipeline) not started · **S4 capability-granularity lift complete, but it jumped over S2/S3** · S5 multi-host validation partially done (the cross-host consistency gate passes; MCP exposure and a third-party harness are not done).
-- **Layer status**: the harness experience layer, the contract boundary (four red lines), the SAP domain capability layer (4 business-semantic tools, 3 READ + 1 WRITE), and the Java Gateway with executors (JCO_RFC/ODATA live) are **built**; the compile-time derivation pipeline and runtime-state layer are **partial** (a hand-written versioned JSON Schema contract `contractVersion=2` exists; local JSONL store + placeholder principal); **the capability ontology (objects/definitions/relations) and the offline decision-feedback loop are untouched — the ontology is the one layer not yet on duty**.
+- **Layer status**: the harness experience layer, the contract boundary (four red lines), the SAP domain capability layer (4 business-semantic tools, 3 READ + 1 WRITE), and the Java Gateway with executors (JCO_RFC/ODATA/REST_JSON all live) are **built**; the compile-time derivation pipeline and runtime-state layer are **partial** (a hand-written versioned JSON Schema contract `contractVersion=2` exists; local JSONL store + placeholder principal); **the capability ontology (objects/definitions/relations) and the offline decision-feedback loop are untouched — the ontology is the one layer not yet on duty**.
 - **Three structural requirements**: ① granularity "**achieved, but misplaced**" (the 4 business tools exist but are declared in server code, not in the ontology; endpoint-level tools are no longer external); ② semantic assets **not achieved** (field-level schema, business definitions, and relations are all empty; tool descriptions remain hand-written); ③ identity & approval **partial** (approval handles and server-side identity injection exist; caller principal is still a placeholder and storage is local).
 - **Next steps are backfill, not new construction**: ① put a CI gate requiring every new capability output field to reference a `Definition` id (placeholder ids acceptable initially); ② split `ontology-core` (open-source) from `ontology-tenant` (kept private) as early as possible — cheapest while the ontology is nearly empty; ③ lift the definitions of the 4 existing capabilities (available stock / overdue / exposure) out of code one by one, producing field-level schema and the first cross-domain link.
 - **The one real break point**: business semantics are fixed in server-side code; the self-check "change one ontology line and Agent behavior changes with zero code changes" does not yet pass.
 - **The offline end-to-end governed composition main chain works**: intent → CallPlan → validation/execution → ExecutionResult → ReasoningFact → narrative → durable Workbench replay → plan-aware single Action continuation; the TypeScript composition coordinator wires up PlanExecutor, OutputProjection, Recommendation, and grounded Narrative (the single-capability `CallPlan` main chain remains available).
 - **Python Agent responsibilities**: LLM-first intent, closed-set recall, five-state decisioning, and PlanGraph v2 authoring; runs either as a subprocess spawned on demand by the Next server or standalone via the CLI.
-- **Release gate milestone**: the offline L1/L2/L3 gate reached its highest consecutive level `L3_ACTION_GOVERNED` on 2026-08-19; scale, the four hard-gate figures, and reproduction commands are in the [“Verification Baseline”](#verification-baseline-as-of-2026-09-13), and forensics on the older 2026-08-10 report are in [roadmap §1.1.4](docs/wiki/sap-nexus-agent-implementation-roadmap.md).
-- **SAP connectivity** (per `runtime/gateway-jco/traces.jsonl`): all four MM capabilities (`MM.Inventory.GetAvailability`, `MM.PurchaseOrder.GetList`, `MM.Material.GetInfo`, `MM.PR.CreateDraft`) have successful real-SAP execution records; the OData chain passed another end-to-end live smoke on 2026-09-13 (real purchase-order rows returned). `SD.SalesOrder.GetList` has live attempts but none succeeded against the current system; `FI.AR.GetOpenItems` / `FI.AP.GetOpenItems` are registered and covered by offline tests but have no live execution record yet — SD/FI live smoke tests remain to be done. The offline release gate's `liveSmoke` field stays `not_run` by design; any live WRITE still requires exact-subject Human Approval.
+- **Release gate milestone**: the offline L1/L2/L3 gate reached its highest consecutive level `L3_ACTION_GOVERNED` on 2026-08-19; scale, the four hard-gate figures, and reproduction commands are in the [“Verification Baseline”](#verification-baseline-as-of-2026-09-26), and forensics on the older 2026-08-10 report are in [roadmap §1.1.4](docs/wiki/sap-nexus-agent-implementation-roadmap.md).
+- **SAP connectivity**: all seven capabilities have real-SAP execution paths — the MM domain via JCo/OData; **the three SD/FI list capabilities migrated to REST_JSON** (2026-09-25) through the in-SAP pure-ABAP rest2rfc SICF gateway, with post-migration row-for-row, all-fields live equivalence (AP/AR/SD all verified). JCo/ODATA/REST_JSON share one set of SAP host, client, user, and password (`SAP_ASHOST` + `SAP_HTTP_PORT` / `SAP_SYSNR`); connection values and credentials exist only in Gateway-controlled configuration. Any live WRITE still requires exact-subject Human Approval.
 
 ---
 
@@ -287,9 +289,9 @@ The harness may name only business tools and slots; internally the server select
 | `MM.PurchaseOrder.GetList`     | Purchase Order List                                 | `ODATA`   | `API_PURCHASEORDER_PROCESS_SRV` | ✅ active                                      |
 | `MM.Material.GetInfo`           | Material Info (base UoM / purchasing group)        | `JCO_RFC` | `BAPI_MATERIAL_GET_DETAIL`      | ✅ active                                      |
 | `MM.PR.CreateDraft`             | PR Create Draft                                     | `JCO_RFC` | `BAPI_PR_CREATE`                | ✅ active (requires approval)                 |
-| `SD.SalesOrder.GetList`        | Sales Order List (VA05-style)                       | `JCO_RFC` | `BAPI_SALESORDER_GETLIST`       | ✅ active (live smoke pending)                 |
-| `FI.AR.GetOpenItems`           | Customer Open Receivables                           | `JCO_RFC` | `BAPI_AR_ACC_GETOPENITEMS`      | ✅ active (live smoke pending)                 |
-| `FI.AP.GetOpenItems`           | Vendor Open Payables                                | `JCO_RFC` | `BAPI_AP_ACC_GETOPENITEMS`      | ✅ active (live smoke pending)                 |
+| `SD.SalesOrder.GetList`        | Sales Order List (VA05-style)                       | `REST_JSON` | `BAPI_SALESORDER_GETLIST`     | ✅ active (live equivalence proven)  |
+| `FI.AR.GetOpenItems`           | Customer Open Receivables                           | `REST_JSON` | `BAPI_AR_ACC_GETOPENITEMS`    | ✅ active (live equivalence proven)  |
+| `FI.AP.GetOpenItems`           | Vendor Open Payables                                | `REST_JSON` | `BAPI_AP_ACC_GETOPENITEMS`    | ✅ active (live equivalence proven)  |
 
 7 capabilities: 6 read-only (`kind: Function`, `sideEffect: none`) plus one write
 (`MM.PR.CreateDraft`), which cannot execute without a recorded human confirmation.
@@ -304,8 +306,9 @@ frontend/                Next.js: DSH Chat (/chat), classic Workbench (/workbenc
                          semantic-tool facade, server-side dsh runtime, composition runtime
 harness-dsh/             Replaceable-harness pilot: standalone Node CLI (dsh T-A-O, pinned 0.1.5-rc.1)
 services/
-  gateway/               Java Spring Boot SAP Gateway (multi-module, the only security boundary)
+  gateway/               Java Spring Boot SAP Gateway (modules core/jco/odata/rest/app, the only security boundary)
   odata-service/         Python OData read-only microservice (:8081)
+tests/live/              Gated live equivalence verification (skipped by default; SAP_REST2RFC_LIVE=1)
 registry/                Capability registry and executor binding catalog (single YAML source)
 schemas/                 JSON Schema contracts
 ontology/                Offline OWL identity skeleton (reserved)
@@ -329,7 +332,7 @@ docs/
 | Agent                          | Python package + OpenAI-compatible LLM (DeepSeek `deepseek-chat` by default) + Rule hybrid                                                                    |
 | Server orchestration           | React/Next.js server side: Semantic Tool Facade, Composition Runtime, durable JSONL stores                                                                    |
 | Gateway                        | Java 17 / Spring Boot / Gradle multi-module (the only security boundary)                                                                                      |
-| SAP Connectivity               | SAP JCo 3 (RFC) + SAP OData (HTTP via odata-service)                                                                                                          |
+| SAP Connectivity               | SAP JCo 3 (RFC) + SAP OData (HTTP via odata-service) + SICF rest2rfc (HTTP/JSON, REST_JSON); credentials shared across the three paths                       |
 | Frontend                       | React / Next.js / TypeScript                                                                                                                                  |
 | Capability Registry            | YAML + JSON Schema                                                                                                                                            |
 | Ontology                       | YAML + JSON Schema + immutable in-memory graph; offline OWL skeleton; graph database and compile-time derivation pipeline are target-state                    |

@@ -16,7 +16,7 @@
 [![Java](https://img.shields.io/badge/Java-17-007396?style=flat-square&logo=openjdk&logoColor=white)](services/gateway)
 [![Python](https://img.shields.io/badge/Python-3.12+-3776AB?style=flat-square&logo=python&logoColor=white)](agent)
 [![Node](https://img.shields.io/badge/Node-20+-339933?style=flat-square&logo=nodedotjs&logoColor=white)](frontend)
-[![SAP](https://img.shields.io/badge/SAP-JCo%20RFC%20%2B%20OData-0FAAFF?style=flat-square&logo=sap&logoColor=white)](#当前已注册能力服务端内部)
+[![SAP](https://img.shields.io/badge/SAP-JCo%20RFC%20%2B%20OData%20%2B%20REST-0FAAFF?style=flat-square&logo=sap&logoColor=white)](#当前已注册能力服务端内部)
 [![Offline Gate](https://img.shields.io/badge/offline%20gate-22%2F22%20L3__ACTION__GOVERNED-2EA043?style=flat-square)](#目标达成状态s1s5)
 
 <!-- TODO: DSH Chat 界面截图或 GIF -->
@@ -48,7 +48,7 @@ SAP Nexus Agent 的目标是做 **SAP 能力的供应方**，而不是又一个 
 - SAP On-Prem 连接与凭证（用于实时冒烟测试）
 - OpenAI-compatible LLM 端点与 API Key（DSH Chat / harness-dsh 使用；Rule 模式与离线测试不需要）
 
-**无 SAP 连接或凭证时**，可运行下方[「验证基线」](#验证基线截至-2026-09-13)的完整离线测试套件、call-plan eval 与 registry 校验，但**无法进行交互式查询**——Python Agent CLI 即便使用 `--intent-mode rule`（免 LLM key）仍会连接 Gateway 执行；DSH Chat / harness-dsh 另需 LLM key。
+**无 SAP 连接或凭证时**，可运行下方[「验证基线」](#验证基线截至-2026-09-26)的完整离线测试套件、call-plan eval 与 registry 校验，但**无法进行交互式查询**——Python Agent CLI 即便使用 `--intent-mode rule`（免 LLM key）仍会连接 Gateway 执行；DSH Chat / harness-dsh 另需 LLM key。
 
 ### 准备 Python 环境
 
@@ -66,7 +66,7 @@ cp .env.example .env
 # 填入 SAP 连接参数；DSH 使用时另需 SAP_NEXUS_LLM_BASE_URL / SAP_NEXUS_LLM_API_KEY / SAP_NEXUS_LLM_MODEL
 ```
 
-### 验证基线（截至 2026-09-13）
+### 验证基线（截至 2026-09-26）
 
 ```bash
 .venv/bin/python scripts/validate-registry-contract.py registry/capabilities.yaml
@@ -78,11 +78,12 @@ npm --prefix frontend run release-gate -- --profile all
 
 当前基线：
 
-- Registry 合约校验：`Registry contract valid`（17 条 deprecation warning，均为 `extraction.matchers` → `binding.sources` 迁移提示，不影响合约有效性）
-- Agent 测试套件：`1574 passed, 1 skipped, 2 xfailed`
-- Frontend 套件：`579 passed`（64 个测试文件）；`verify`（typecheck + vitest + next build）全绿
-- Call-plan Eval：inventory `7/7`、eval_harness_seed_cases `13/13`、PR `9/9`、matcher `23/23`、dry-run `3/3`（另 1 条 structural pending）、derived-parameter `3/3`（另 2 条 parser-blocked pending，用例内有书面归因）
-- Offline release gate：2026-08-19 达成 `22/22` / `L3_ACTION_GOVERNED`（历史里程碑）；L1–L3 四项 hard gates 均为 leakage `0`、approval bypass `0`、unsupported claim `0`、lineage `100%`；`liveSmoke: not_run`（离线门禁不执行真实 SAP 调用；报告见 `runtime/evals/results/agent-release-l3-2026-08-19T13-09-48-499Z.json`；2026-08-10 旧报告的取证说明见[路线图 §1.1.4](docs/wiki/sap-nexus-agent-implementation-roadmap.md)）
+- Registry 合约校验：`Registry contract valid`（deprecation warning 均为 `extraction.matchers` → `binding.sources` 迁移提示，不影响合约有效性）
+- Agent 测试套件：全量通过（含少量既有 skip / xfail）
+- Frontend：`verify`（typecheck + vitest + next build）全绿
+- Call-plan Eval：全部通过（dry-run、derived-parameter 中的 PENDING 项均有用例内书面归因，属设计保留而非失败）
+- Live 等价（gated，需 `SAP_REST2RFC_LIVE=1`）：三个 list 能力迁移后经 SICF 与 JCo 基准逐行、全字段等价（直接 SICF ↔ Gateway 一致）
+- Offline release gate：2026-08-19 达成最高连续等级 `L3_ACTION_GOVERNED`（历史里程碑；各 hard gate 均无泄漏/绕过，血缘完整；`liveSmoke` 按离线门禁设计不执行真实 SAP 调用；报告见 `runtime/evals/results/agent-release-l3-2026-08-19T13-09-48-499Z.json`；2026-08-10 旧报告的取证说明见[路线图 §1.1.4](docs/wiki/sap-nexus-agent-implementation-roadmap.md)）
 
 `PYTHONPATH=agent` 用于直接验证当前源码树。
 
@@ -175,17 +176,18 @@ PYTHONPATH=agent .venv/bin/python -m sap_nexus_agent.cli \
                                    ▼
   ┌─────────────────────────────────────────────────────────────────────┐
   │ Java Gateway（:8080 · 唯一安全边界）                                    │
-  │ 参数校验（能力本体约束）· 执行器路由（JCO_RFC / ODATA）· 结果归一化       │
-  │ TechnicalExecutionResult · 脱敏 / 审计                                  │
-  └──────────────────┬───────────────────────────────┬──────────────────┘
-                     ▼                                ▼
-           ┌──────────────────┐            ┌────────────────────────────┐
-           │ SAP JCo（RFC/BAPI）│            │ odata-service（:8081）       │
-           └────────┬─────────┘            │ Python 只读微服务 · $filter  │
-                    │                      └─────────────┬──────────────┘
-                    └──────────────────┬─────────────────┘
-                                       ▼
-                              SAP On-Prem 系统
+  │ 参数校验（能力本体约束）· 执行器路由（JCO_RFC / ODATA / REST_JSON）       │
+  │ TechnicalExecutionResult · 结果归一化 · 脱敏 / 审计                      │
+  └─────────┬──────────────────────────────┬────────────────────────┬────────┘
+            ▼                              ▼                        ▼
+  ┌──────────────────────┐     ┌──────────────────────────┐  ┌──────────────────────┐
+  │ SAP JCo（RFC/BAPI）    │     │ odata-service（:8081）     │  │ SICF rest2rfc        │
+  └──────────┬───────────┘     │ Python 只读微服务 ·         │  │ 纯 ABAP 动态反射网关  │
+             │                 │ $filter 组装               │  │ （SAP 系统内部）       │
+             │                 └────────────┬─────────────┘  └──────────┬───────────┘
+             └──────────────┬───────────────┘                           │
+                            ▼                                           ▼
+                                  SAP On-Prem 系统
 
 旁路：Python Agent CLI（sap_nexus_agent.cli）可不经 harness 直连 Gateway（rule / llm intent）；
 经典 Workbench /workbench 与 DSH Chat 共用同一 agent-runtime + composition 治理链。
@@ -219,12 +221,13 @@ PYTHONPATH=agent .venv/bin/python -m sap_nexus_agent.cli \
 - **Capability Ontology** — 每个 SAP 操作（查询/写入）被建模为形式化能力，包含 `ontologyIri`、`semanticType`、输入/输出语义类型、事实类型引用
 - **语义参数映射** — 能力输入参数通过 `semanticName`/`semanticType` 关联到本体概念（如 `MaterialNumber`、`Plant`），与 SAP 技术参数（`MATERIAL`、`PLANT`）解耦
 - **执行器绑定** — 能力绑定到特定执行器（`JCO_RFC` / `ODATA`），通过白名单 `bindingId` 控制，运行时拒绝替换
-- **OWL 预留** — `ontologyIri` 和 `semanticType` 为未来 OWL 本体推理预留迁移路径，当前一致性门禁由 JSON Schema + Registry Validator 承担
+- **本体约束 runtime** — `constraint_runtime.py` 基于 **rdflib + pyshacl**：构建期 codegen 从 registry 生成 SHACL 形状并绑定 snapshot，请求期做参数形状校验与前置条件 SPARQL 求值（查询计划预编译缓存）；严格 **resolve/enforce 分离**——只回答"形状是否满足"，阻断与执行仍由确定性代码负责。更重的图平台（Semantica）经 `spikes/semantica-shadow` 评估后当前不引入
+- **OWL 预留** — `ontologyIri` 和 `semanticType` 为更重的本体推理预留迁移路径；当前一致性门禁由 JSON Schema + Registry Validator + 上述 SHACL runtime 共同承担
 - **声明式意图解析** — Rule 模式意图解析完全声明驱动（`registry/capabilities.yaml` 的 `intent` 块 + `registry/semantic-types.yaml` 语义类型目录），添加新能力无需修改 Agent 代码
 
 ### 治理与安全
 
-- **fail-closed** — 不支持的执行器类型（`CDS_ADT` / `REST_JSON` / `SQL_READ`）默认拒绝执行
+- **fail-closed** — 不支持的执行器类型（`CDS_ADT` / `SQL_READ`）默认拒绝执行；凭据缺失或非法时任何执行器均 fail-closed
 - **参数注入防护** — 调用者不得提供或覆盖 `rfcName`、`bindingId`、服务 URL、HTTP 方法、凭证引用、原生 SQL、CDS 对象等；semantic-tool facade 对技术键做任意深度扫描
 - **READ 安全边界** — READ 能力不得调用 `BAPI_TRANSACTION_COMMIT` 或 `BAPI_TRANSACTION_ROLLBACK`
 - **WRITE 人工审批** — WRITE 能力（采购申请创建 / `propose_replenishment` 提案）必须存在已记录的人工确认（exact-subject）才执行；审批 subject 由服务端计算与校验
@@ -236,25 +239,25 @@ PYTHONPATH=agent .venv/bin/python -m sap_nexus_agent.cli \
 |------|------|------|
 | `JCO_RFC` | ✅ Live | 通过 SAP JCo 直接执行 RFC/BAPI |
 | `ODATA` | ✅ Live | Gateway 薄反向代理 → Python odata-service（:8081）→ SAP OData |
+| `REST_JSON` | ✅ Live | 经 Basic Auth POST 调用 SAP 内部纯 ABAP rest2rfc SICF 网关，registry 映射驱动 |
 | `CDS_ADT` | 🔒 Fail-closed | 架构预留 |
-| `REST_JSON` | 🔒 Fail-closed | 架构预留 |
 | `SQL_READ` | 🔒 Fail-closed | 架构预留 |
 
 ---
 
 ## 目标达成状态（S1–S5）
 
-对照目标架构的 S1–S5 建设序列评估当前实现（2026-09-13 复核）；完整状态表见[路线图 §1.1](docs/wiki/sap-nexus-agent-implementation-roadmap.md)，测试与门禁的具体数字只记录在上方[「验证基线」](#验证基线截至-2026-09-13)。
+对照目标架构的 S1–S5 建设序列评估当前实现（2026-09-26 复核）；完整状态表见[路线图 §1.1](docs/wiki/sap-nexus-agent-implementation-roadmap.md)，测试与门禁的具体数字只记录在上方[「验证基线」](#验证基线截至-2026-09-26)。
 
 - **序列进度**：S1 补证据已完成 · S2（对象主键 + 字段级 schema）未开始 · S3（业务口径 + 关系入本体 + 编译期派生管线）未开始 · **S4 能力粒度上移已完成，但越过了 S2/S3** · S5 多宿主验证部分完成（跨宿主一致性门禁已通过；MCP 暴露与第三方 harness 未做）。
-- **层级达成**：Harness 体验层、契约边界（四条红线）、SAP 域能力层（4 个业务语义工具，3 读 1 写）、Java Gateway 与执行器（JCO_RFC/ODATA live）**已建成**；编译期派生管线与运行时状态层**部分**（已有手写版本化 JSON Schema 契约 `contractVersion=2`；本地 JSONL 存储 + placeholder principal）；**能力本体层（对象/口径/关系）与离线决策回流未动——本体是唯一未上岗的一层**。
+- **层级达成**：Harness 体验层、契约边界（四条红线）、SAP 域能力层（4 个业务语义工具，3 读 1 写）、Java Gateway 与执行器（JCO_RFC/ODATA/REST_JSON 均 live）**已建成**；编译期派生管线与运行时状态层**部分**（已有手写版本化 JSON Schema 契约 `contractVersion=2`；本地 JSONL 存储 + placeholder principal）；**能力本体层（对象/口径/关系）与离线决策回流未动——本体是唯一未上岗的一层**。
 - **三条结构性要求**：① 能力粒度「**已达成，但错位**」（4 个业务工具存在，但声明在服务端代码而非本体，端点级已不对外）；② 语义资产**未达成**（字段级 schema、业务口径、关系均为空，工具描述仍手写）；③ 身份与审批**部分**（审批句柄与服务端身份注入已有，调用主体仍占位、存储仍本地）。
 - **下一步是回填而非新建**：① CI 门禁要求新增能力输出字段引用 `Definition` 口径 id（允许占位 id 先行）；② 尽早切分 `ontology-core`（开源）/ `ontology-tenant`（不公开），本体近空时成本最低；③ 将 4 个已有能力的口径（可用库存 / 逾期 / 信用敞口）从代码逐条上提，同步产出字段级 schema 与首条跨域 link。
 - **唯一实质断点**：业务口径固化在服务端代码里，「改一行本体即改变 Agent 行为、零代码改动」的自检判据尚不通过。
 - **离线端到端治理编排主链可用**：意图 → CallPlan → 校验/执行 → ExecutionResult → ReasoningFact → 叙述 → durable Workbench 回放 → plan-aware single Action continuation；TypeScript composition coordinator 已接通 PlanExecutor、OutputProjection、Recommendation、grounded Narrative（单能力 `CallPlan` 主链保持可用）。
 - **Python Agent 职责**：LLM-first intent、closed-set recall、五态决策和 PlanGraph v2 authoring；作为 Next 服务端按需 spawn 的子进程运行，也可经 CLI 独立运行。
-- **Release gate 里程碑**：offline L1/L2/L3 gate 于 2026-08-19 达成最高连续等级 `L3_ACTION_GOVERNED`；规模、四项 hard gates 数值与复现命令见[「验证基线」](#验证基线截至-2026-09-13)，2026-08-10 旧报告的取证说明见[路线图 §1.1.4](docs/wiki/sap-nexus-agent-implementation-roadmap.md)。
-- **SAP 连通性**（依据 `runtime/gateway-jco/traces.jsonl`）：MM 域四个能力（`MM.Inventory.GetAvailability`、`MM.PurchaseOrder.GetList`、`MM.Material.GetInfo`、`MM.PR.CreateDraft`）均有真实 SAP 成功执行记录；OData 链于 2026-09-13 再次端到端冒烟通过（采购订单真实数据返回）。`SD.SalesOrder.GetList` 有 live 执行尝试但在当前系统尚未成功，`FI.AR.GetOpenItems` / `FI.AP.GetOpenItems` 已注册并由离线测试覆盖、尚无 live 执行记录——SD/FI live 冒烟待补。offline release gate 的 `liveSmoke` 字段保持 `not_run`（离线门禁不执行真实 SAP 调用）；任何 live WRITE 仍需 exact-subject Human Approval。
+- **Release gate 里程碑**：offline L1/L2/L3 gate 于 2026-08-19 达成最高连续等级 `L3_ACTION_GOVERNED`；规模、四项 hard gates 数值与复现命令见[「验证基线」](#验证基线截至-2026-09-26)，2026-08-10 旧报告的取证说明见[路线图 §1.1.4](docs/wiki/sap-nexus-agent-implementation-roadmap.md)。
+- **SAP 连通性**：七个能力均有真实 SAP 执行路径——MM 域经 JCo/OData；**SD/FI 三个 list 能力已迁移到 REST_JSON**（2026-09-25），经 SAP 内部纯 ABAP rest2rfc SICF 网关返回，迁移后 live 逐行、全字段等价（AP/AR/SD 均已实测）。JCo/ODATA/REST_JSON 三路共用同一套 SAP host、client、user、password（`SAP_ASHOST` + `SAP_HTTP_PORT` / `SAP_SYSNR`），连接值与凭据只存在于 Gateway 受控配置。任何 live WRITE 仍需 exact-subject Human Approval。
 
 ---
 
@@ -281,9 +284,9 @@ harness 只能命名业务工具与槽位；工具内部由服务端从已注册
 | `MM.PurchaseOrder.GetList` | 采购订单列表查询 | `ODATA` | `API_PURCHASEORDER_PROCESS_SRV` | ✅ active |
 | `MM.Material.GetInfo` | 物料主数据查询（基本单位/采购组） | `JCO_RFC` | `BAPI_MATERIAL_GET_DETAIL` | ✅ active |
 | `MM.PR.CreateDraft` | 采购申请创建 | `JCO_RFC` | `BAPI_PR_CREATE` | ✅ active（需人工审批） |
-| `SD.SalesOrder.GetList` | 销售订单列表查询（VA05 风格） | `JCO_RFC` | `BAPI_SALESORDER_GETLIST` | ✅ active（live 冒烟待补） |
-| `FI.AR.GetOpenItems` | 客户应收未清项查询 | `JCO_RFC` | `BAPI_AR_ACC_GETOPENITEMS` | ✅ active（live 冒烟待补） |
-| `FI.AP.GetOpenItems` | 供应商应付未清项查询 | `JCO_RFC` | `BAPI_AP_ACC_GETOPENITEMS` | ✅ active（live 冒烟待补） |
+| `SD.SalesOrder.GetList` | 销售订单列表查询（VA05 风格） | `REST_JSON` | `BAPI_SALESORDER_GETLIST` | ✅ active（live 等价已证） |
+| `FI.AR.GetOpenItems` | 客户应收未清项查询 | `REST_JSON` | `BAPI_AR_ACC_GETOPENITEMS` | ✅ active（live 等价已证） |
+| `FI.AP.GetOpenItems` | 供应商应付未清项查询 | `REST_JSON` | `BAPI_AP_ACC_GETOPENITEMS` | ✅ active（live 等价已证） |
 
 共 7 个能力：6 个只读（`kind: Function`，`sideEffect: none`）+ 1 个写入（`MM.PR.CreateDraft`，执行前必须存在已记录的人工确认）。
 
@@ -297,8 +300,9 @@ frontend/                Next.js：DSH Chat（/chat）、经典 Workbench（/wor
                          semantic-tool facade、服务端 dsh runtime、composition runtime
 harness-dsh/             可替换 harness 打样：独立 Node CLI（dsh T-A-O，钉 0.1.5-rc.1）
 services/
-  gateway/               Java Spring Boot SAP Gateway（多模块，唯一安全边界）
+  gateway/               Java Spring Boot SAP Gateway（多模块 core/jco/odata/rest/app，唯一安全边界）
   odata-service/         Python OData 只读微服务（:8081）
+tests/live/              Gated live 等价验证（默认 skip，SAP_REST2RFC_LIVE=1 启用）
 registry/                能力注册表和执行器绑定目录（YAML 单一来源）
 schemas/                 JSON Schema 契约
 ontology/                离线 OWL 本体骨架（预留）
@@ -322,7 +326,7 @@ docs/
 | Agent | Python package + OpenAI-compatible LLM（默认 DeepSeek `deepseek-chat`）+ Rule 混合 |
 | 服务端编排 | React/Next.js 服务端：Semantic Tool Facade、Composition Runtime、durable JSONL store |
 | Gateway | Java 17 / Spring Boot / Gradle 多模块（唯一安全边界） |
-| SAP 连接 | SAP JCo 3 (RFC) + SAP OData (HTTP，经 odata-service) |
+| SAP 连接 | SAP JCo 3 (RFC) + SAP OData (HTTP，经 odata-service) + SICF rest2rfc (HTTP/JSON，REST_JSON)；三路共用凭据 |
 | 前端 | React / Next.js / TypeScript |
 | 能力注册 | YAML + JSON Schema |
 | 本体 | YAML + JSON Schema + 不可变内存图；OWL 骨架 offline；图数据库与编译期派生管线为目标态 |
