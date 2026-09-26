@@ -1,7 +1,18 @@
 # rest2rfc 迁移评估清单
 
-状态日期：2026-09-25（当日 live 实测 + 正式 harness 证据）。Comet change
+状态日期：2026-09-26 更新（网关 EXPORTING 修复后重验）。Comet change
 `add-rest-json-executor`。
+
+## 2026-09-26 重验：网关已回传 EXPORTING 结构
+
+| # | 事实 | 证据 |
+| --- | --- | --- |
+| 1 | `BAPI_MATERIAL_GET_DETAIL` 现回传全部 EXPORTING：`material_general_data`（matl_desc/base_uom=EA 等）、`materialplantdata`、`materialvaluationdata`、`return`（EXPORTING 结构，type=S） | SICF live 调用 P0274635AB/5260 |
+| 2 | MM.Material 数据与 JCo 等价：两路均只产出 `baseUnitOfMeasure="EA"`（material/plant 字段在结构中不存在、pur_group 空 → 两路均省略） | JCo execute 同输入 |
+| 3 | `BAPI_MATERIAL_STOCK_REQ_LIST` 的 RETURN 结构现回传完整文本（MD/053 "Requirements/stock list ... has been created"） | SICF live |
+| 4 | 结论更新：此前"EXPORTING 丢失"导致的迁移阻塞（MM.Material 保留、Inventory 有条件、SD 错误缺文本）**在网关侧已解除** | — |
+| 5 | **新的剩余阻塞在 Java adapter，不在网关**：REST_JSON adapter 尚需支持 ① outputMapping 点路径抽取（`MATERIAL_GENERAL_DATA.BASE_UOM` → 嵌套结构字段）；② `MRP_IND_LINES.WB.AVAIL_QTY1` 式 TABLE.行.字段路径；③ RETURN 为结构（非 list）时的消息映射与业务错误识别 | adapter 现状只做顶层键查找 |
+
 
 ## 当日 live 结论（系统 SAT / client 800）
 
@@ -23,8 +34,8 @@
 | `FI.AP.GetOpenItems` / BAPI_AP_ACC_GETOPENITEMS | `LINEITEMS` + `RETURN` 均 TABLES | **可迁（live 已证实等价）**；翻转走后续独立变更 |
 | `FI.AR.GetOpenItems` / BAPI_AR_ACC_GETOPENITEMS | 同 AP 同构（BAPI3007_2） | **可迁（live 已证实等价：1,355 行）** |
 | `SD.SalesOrder.GetList` / BAPI_SALESORDER_GETLIST | `SALES_ORDERS` TABLE；**RETURN 实为 EXPORTING 结构**（live 确认成功时无 return 键） | **可迁（主事实 live 等价已证：5,164 行）**；业务错误时 SICF 仅给非 200 状态、缺 RETURN 文本（fail-closed 分类不变）；建议沿用日期收窄避免大数据 dump |
-| `MM.Inventory.GetAvailability` / BAPI_MATERIAL_STOCK_REQ_LIST | 主输出 `MRP_IND_LINES`（WB 行 59.0/2026-09-25 已 live 等价）；该函数 `RETURN` 为 EXPORTING 结构 → SICF 下缺失 | **有条件可迁**：接受 returnMessages 缺失，或待网关升级 |
-| `MM.Material.GetInfo` / BAPI_MATERIAL_GET_DETAIL | 输出全 EXPORTING；live body `{}` | **保留 JCO_RFC**；待网关升级 EXPORTING 回传后重评，或 typed 契约 |
+| `MM.Inventory.GetAvailability` / BAPI_MATERIAL_STOCK_REQ_LIST | 主输出 `MRP_IND_LINES`（WB 行已 live 等价）；RETURN 结构 09-26 起可回传（含文本） | **可迁候选**：前置 adapter 支持点/表路径与结构 RETURN |
+| `MM.Material.GetInfo` / BAPI_MATERIAL_GET_DETAIL | EXPORTING 结构 09-26 起可回传，`base_uom=EA` 与 JCo 等价 | **可迁候选**：前置 adapter 支持点路径抽取与结构 RETURN |
 | `MM.PR.CreateDraft` / BAPI_PR_CREATE | WRITE，EXPORTING NUMBER | **保留 JCO_RFC** |
 | `MM.PurchaseOrder.GetList` | OData | **不适用** |
 
