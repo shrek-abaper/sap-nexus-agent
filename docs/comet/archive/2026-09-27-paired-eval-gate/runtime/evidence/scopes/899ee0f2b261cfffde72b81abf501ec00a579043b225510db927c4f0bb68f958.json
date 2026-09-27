@@ -1,0 +1,96 @@
+{
+  "schema": "comet.native.implementation-scope.v2",
+  "contractHash": "8885dd78047b9d5f03bdf4aba2cde215b821d5d1396f88f5221a3ebc53138f4d",
+  "baselineProjectionRef": "runtime/evidence/snapshots/509e6b26cd2bbdcf1e8471a7280b3021f41edb466c829346c3b44300b6a1f303.json",
+  "baselineProjectionHash": "509e6b26cd2bbdcf1e8471a7280b3021f41edb466c829346c3b44300b6a1f303",
+  "currentProjectionRef": "runtime/evidence/snapshots/690113dcb2876e93c37de9f6eebb07dba855b4157c968149bbe0a1cd383d1492.json",
+  "currentProjectionHash": "690113dcb2876e93c37de9f6eebb07dba855b4157c968149bbe0a1cd383d1492",
+  "complete": true,
+  "declaredArtifacts": [
+    {
+      "path": "agent/sap_nexus_agent/eval.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/sap_nexus_agent/paired_eval.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_paired_eval.py",
+      "kind": "file"
+    },
+    {
+      "path": "scripts/paired_eval_gate.py",
+      "kind": "file"
+    }
+  ],
+  "changes": [
+    {
+      "path": "agent/sap_nexus_agent/eval.py",
+      "kind": "modified",
+      "before": {
+        "hash": "c7e2ac04c7e802932065811497ed1a3f018059c1ee076d0721f62668a4eae3cb",
+        "size": 48377
+      },
+      "after": {
+        "hash": "db9feb2cef0544b999ab36ee2b32deddbc1d1c55b896595135d37311e52d49d8",
+        "size": 55316
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/eval.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/sap_nexus_agent/paired_eval.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "1903debb9f88f7438402ed1551a581a60831d773709ff0c5e6b55e7d6b42f027",
+        "size": 7816
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/paired_eval.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_paired_eval.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "784717d1f0ec377a68b73aec2e021f4836bac3d960aefb37cfe0bceff4d42ca9",
+        "size": 6411
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_paired_eval.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "scripts/paired_eval_gate.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "2735c5bc15dd95eaf05bd051dc9ab5ac65b63fa4d75c5ec1397d04bc65695cd1",
+        "size": 2416
+      },
+      "attributedTo": [
+        {
+          "path": "scripts/paired_eval_gate.py",
+          "kind": "file"
+        }
+      ]
+    }
+  ],
+  "unattributed": [],
+  "unresolvedScopes": [],
+  "noCodeReason": null,
+  "scopeHash": "899ee0f2b261cfffde72b81abf501ec00a579043b225510db927c4f0bb68f958"
+}

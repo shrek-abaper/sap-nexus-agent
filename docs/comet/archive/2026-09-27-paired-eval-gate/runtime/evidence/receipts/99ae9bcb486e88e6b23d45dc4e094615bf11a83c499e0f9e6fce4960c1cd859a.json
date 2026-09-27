@@ -1,0 +1,30 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "static-inspection",
+  "role": "required-check",
+  "status": "passed",
+  "bindings": {
+    "change": "paired-eval-gate",
+    "sourceRevision": 3,
+    "contractHash": "8885dd78047b9d5f03bdf4aba2cde215b821d5d1396f88f5221a3ebc53138f4d",
+    "scopeHash": "899ee0f2b261cfffde72b81abf501ec00a579043b225510db927c4f0bb68f958",
+    "snapshotHash": "690113dcb2876e93c37de9f6eebb07dba855b4157c968149bbe0a1cd383d1492",
+    "artifactHash": "eaae1331f5a4cbcce493ac7ba609481cc060df7c8042f874db0bf9b11acf5dc3"
+  },
+  "acceptanceIds": [],
+  "actor": "native-runtime:scoped-text-safety",
+  "issuedAt": "2026-09-27T08:25:11.399Z",
+  "evidence": {
+    "subjects": [
+      "agent/sap_nexus_agent/eval.py",
+      "agent/sap_nexus_agent/paired_eval.py",
+      "agent/tests/test_paired_eval.py",
+      "scripts/paired_eval_gate.py"
+    ],
+    "rule": "scoped-text-safety",
+    "resultSummary": "The built-in scoped inspection passed without skipped or blocking input.",
+    "checkReceiptRef": "runtime/evidence/check-receipts/c24a4b46e51e8ccf4e33578f8c73524ac7d4c306ab9a9c19f5db2c92eaa846d9.json",
+    "checkReceiptHash": "c24a4b46e51e8ccf4e33578f8c73524ac7d4c306ab9a9c19f5db2c92eaa846d9"
+  },
+  "receiptHash": "99ae9bcb486e88e6b23d45dc4e094615bf11a83c499e0f9e6fce4960c1cd859a"
+}

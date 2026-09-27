@@ -1,0 +1,29 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "static-inspection",
+  "role": "required-check",
+  "status": "passed",
+  "bindings": {
+    "change": "decision-trace-recording",
+    "sourceRevision": 3,
+    "contractHash": "dda1efb774ccd1113bfe01f2e773338f118ed5e57a8a129403f89c5b801152bc",
+    "scopeHash": "30a1030737c5575e0c0e4d6aa01a4619ca6bb3d1866360722af95ac1cc705ba6",
+    "snapshotHash": "fae821851baeab5c91c4ad085f4b7ecd4b4733cfa229610654613739945142b1",
+    "artifactHash": "79d1fa1fa492024f8b394aeeafa9d430b44c742172a0feb79cbdae2f36d1a30c"
+  },
+  "acceptanceIds": [],
+  "actor": "native-runtime:scoped-text-safety",
+  "issuedAt": "2026-09-27T08:38:19.073Z",
+  "evidence": {
+    "subjects": [
+      "agent/sap_nexus_agent/decision_traces.py",
+      "agent/sap_nexus_agent/orchestrator.py",
+      "agent/tests/test_decision_traces.py"
+    ],
+    "rule": "scoped-text-safety",
+    "resultSummary": "The built-in scoped inspection passed without skipped or blocking input.",
+    "checkReceiptRef": "runtime/evidence/check-receipts/711e56db43d7f309ca7923ca53aeeda5a92f1b612b9a8386591999825399382a.json",
+    "checkReceiptHash": "711e56db43d7f309ca7923ca53aeeda5a92f1b612b9a8386591999825399382a"
+  },
+  "receiptHash": "c7ec0f25b1fa385f3af9feac7580184566e2029152425ffee7ae992ca4303284"
+}

@@ -1,0 +1,28 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "manual-evidence",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "paired-eval-gate",
+    "sourceRevision": 3,
+    "contractHash": "8885dd78047b9d5f03bdf4aba2cde215b821d5d1396f88f5221a3ebc53138f4d",
+    "scopeHash": "899ee0f2b261cfffde72b81abf501ec00a579043b225510db927c4f0bb68f958",
+    "snapshotHash": "690113dcb2876e93c37de9f6eebb07dba855b4157c968149bbe0a1cd383d1492",
+    "artifactHash": "eaae1331f5a4cbcce493ac7ba609481cc060df7c8042f874db0bf9b11acf5dc3"
+  },
+  "acceptanceIds": [
+    "acceptance-ee1da48a9c95164f4914b5eba8fb676ceea995cc2ea44d03da90241bd1ce0012"
+  ],
+  "actor": "native-runtime:manual-evidence",
+  "issuedAt": "2026-09-27T08:24:20.878Z",
+  "evidence": {
+    "steps": [
+      "Run scripts/paired_eval_gate.py --parent definitely-not-a-real-ref-xyz"
+    ],
+    "observations": [
+      "Exit code 1; git rev-parse returned 128 and the CalledProcessError was surfaced verbatim with no fallback"
+    ]
+  },
+  "receiptHash": "7c95984f2442f7971ee32f2219b10c70635b249a74e10d1d4c8aca3a14e84cc7"
+}

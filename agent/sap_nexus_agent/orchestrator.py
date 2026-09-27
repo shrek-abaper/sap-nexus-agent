@@ -1763,6 +1763,22 @@ def run_query(
     )
 
 
+_run_query_impl = run_query
+
+
+def run_query(  # type: ignore[no-redef]
+    text: str,
+    gateway: GatewayClientProtocol,
+    **kwargs: Any,
+) -> AgentOutcome:
+    """Append a decision trace after every turn; recording is best effort."""
+    from sap_nexus_agent.decision_traces import record_turn
+
+    outcome = _run_query_impl(text, gateway, **kwargs)
+    record_turn(text, outcome, intent_adapter=kwargs.get("intent_adapter"))
+    return outcome
+
+
 def continue_batch(
     call_plan: CallPlan,
     combinations: list[dict[str, str]],

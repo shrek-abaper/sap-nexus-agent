@@ -1,0 +1,20 @@
+version: 1
+# Object-level links. Same evidence contract as definitions.yaml: grounded
+# links bind to resolvable eval-case evidence.
+links:
+  - linkId: customer-ar-item
+    sourceObject: Customer
+    targetObject: ARItem
+    linkType: has-open-items
+    status: grounded
+    evidence:
+      suite: evals/ar_open_items_cases.yaml
+      caseId: ar-happy-path
+  - linkId: customer-sales-order-item
+    sourceObject: Customer
+    targetObject: SalesOrderItem
+    linkType: has-sales-orders
+    status: grounded
+    evidence:
+      suite: evals/sales_order_list_cases.yaml
+      caseId: so-by-customer

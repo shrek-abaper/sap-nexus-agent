@@ -1,0 +1,77 @@
+{
+  "schema": "comet.native.implementation-scope.v2",
+  "contractHash": "dda1efb774ccd1113bfe01f2e773338f118ed5e57a8a129403f89c5b801152bc",
+  "baselineProjectionRef": "runtime/evidence/snapshots/92712ffb93b3fcdaa2b8e19d3050ff1b15206fdb6c8cdc744855097229bb7282.json",
+  "baselineProjectionHash": "92712ffb93b3fcdaa2b8e19d3050ff1b15206fdb6c8cdc744855097229bb7282",
+  "currentProjectionRef": "runtime/evidence/snapshots/fae821851baeab5c91c4ad085f4b7ecd4b4733cfa229610654613739945142b1.json",
+  "currentProjectionHash": "fae821851baeab5c91c4ad085f4b7ecd4b4733cfa229610654613739945142b1",
+  "complete": true,
+  "declaredArtifacts": [
+    {
+      "path": "agent/sap_nexus_agent/decision_traces.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/sap_nexus_agent/orchestrator.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_decision_traces.py",
+      "kind": "file"
+    }
+  ],
+  "changes": [
+    {
+      "path": "agent/sap_nexus_agent/decision_traces.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "339433a80e6b9a22e6cb7f88b8ed4a53f54ab98a6825f2d265c391f6a20c650a",
+        "size": 6130
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/decision_traces.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/sap_nexus_agent/orchestrator.py",
+      "kind": "modified",
+      "before": {
+        "hash": "84c3b57dd052a7c7ccc14d1c11674a2b94e3bbfcc9973eef91b54c8517cfe2b5",
+        "size": 92193
+      },
+      "after": {
+        "hash": "6444ca53a50109134f168589a963d59fabedfbe2352ec6d41ef70cd38f3ad41f",
+        "size": 92644
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/orchestrator.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_decision_traces.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "439c9cd4cf09bfd48272d5a096442966fa493f618077482881039d877916009f",
+        "size": 5695
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_decision_traces.py",
+          "kind": "file"
+        }
+      ]
+    }
+  ],
+  "unattributed": [],
+  "unresolvedScopes": [],
+  "noCodeReason": null,
+  "scopeHash": "30a1030737c5575e0c0e4d6aa01a4619ca6bb3d1866360722af95ac1cc705ba6"
+}

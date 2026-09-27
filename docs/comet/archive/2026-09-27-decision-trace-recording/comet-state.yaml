@@ -1,0 +1,23 @@
+schema: comet.native.v3
+minimum_runtime_version: 3
+revision: 5
+verification_protocol: legacy-v1
+name: decision-trace-recording
+language: en
+phase: archive
+brief: brief.md
+approval: confirmed
+approved_contract_hash: dda1efb774ccd1113bfe01f2e773338f118ed5e57a8a129403f89c5b801152bc
+spec_changes:
+  - capability: decision-traces
+    operation: create
+    source: specs/decision-traces/spec.md
+    base_hash: null
+verification_result: pass
+verification_report: verification.md
+implementation_scope: runtime/evidence/scopes/30a1030737c5575e0c0e4d6aa01a4619ca6bb3d1866360722af95ac1cc705ba6.json
+verification_evidence: runtime/evidence/verifications/4f1a713f2f20caad3ff69c0ff853d0d6302d06484f301b569dce6a121da91435.json
+partial_allowance: null
+archived: true
+created_at: 2026-09-27
+run_id: ff99463d-e25b-4e29-ab19-721a03cf4450

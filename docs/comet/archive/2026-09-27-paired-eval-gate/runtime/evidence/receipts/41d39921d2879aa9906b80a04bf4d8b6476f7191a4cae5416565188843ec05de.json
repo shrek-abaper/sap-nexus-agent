@@ -1,0 +1,57 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "paired-eval-gate",
+    "sourceRevision": 3,
+    "contractHash": "8885dd78047b9d5f03bdf4aba2cde215b821d5d1396f88f5221a3ebc53138f4d",
+    "scopeHash": "899ee0f2b261cfffde72b81abf501ec00a579043b225510db927c4f0bb68f958",
+    "snapshotHash": "690113dcb2876e93c37de9f6eebb07dba855b4157c968149bbe0a1cd383d1492",
+    "artifactHash": "eaae1331f5a4cbcce493ac7ba609481cc060df7c8042f874db0bf9b11acf5dc3"
+  },
+  "acceptanceIds": [
+    "acceptance-03b6d1da2a23cef64e11d5aca1fdcd67d265025a360ed63337ada67f0691db98",
+    "acceptance-25aefe676a870ab42dff3fc8f65a01182f0c528fecb852c8b18284c5de01beb7",
+    "acceptance-3c683aeed637feb20fc0675db03fa471d04051714513d48d7bdfce6de7a9a085",
+    "acceptance-459e900e63514870ff582bc068b704111586aa04a19dcaf3b177722095f8c3d4",
+    "acceptance-7ac73c3c4963b9ff8c1528c3c636ff63d91c362370a053a20646d53954977b42",
+    "acceptance-800b5b1815e0b0100b317dbc40fe012999202431ea76ce44404a16ad0b73765e",
+    "acceptance-af74e7c9438b93a70ae315d7a9e265f3793843fb9aa6094a358e4ea51583bac3",
+    "acceptance-bae1d1d61a097d5d21ad774acfee9180024d3364fb0a9379df0682263d527cbe",
+    "acceptance-c7f15a3cddd4fa3630887b3c45a20a4ededd5c20b266d178647105d0eb8cddfa",
+    "acceptance-d8a88cc4056afd2999c0e58ee29b90852e2a622038405b1f09e7d502388c36f2",
+    "acceptance-f04464f9a743d55678f316395f7b54dba9d24bb0cae3bed48c01111ea1ee88df"
+  ],
+  "actor": "native-runtime:command:.venv/bin/python",
+  "issuedAt": "2026-09-27T08:22:51.516Z",
+  "evidence": {
+    "executable": ".venv/bin/python",
+    "args": [
+      "scripts/paired_eval_gate.py"
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 300000,
+    "startedAt": "2026-09-27T08:21:21.123Z",
+    "endedAt": "2026-09-27T08:22:51.516Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "4d350253c04d549be17d15de6d7e63eaf78721bc",
+      "afterCommit": "4d350253c04d549be17d15de6d7e63eaf78721bc"
+    },
+    "afterFence": {
+      "snapshotHash": "690113dcb2876e93c37de9f6eebb07dba855b4157c968149bbe0a1cd383d1492",
+      "scopeHash": "899ee0f2b261cfffde72b81abf501ec00a579043b225510db927c4f0bb68f958",
+      "matched": true
+    },
+    "outputHash": "5f6a4790e4a2f66f769e62f3cd9167b0c88eaebed668bf515df4fb1d31afb55c",
+    "outputSummary": "Paired eval: PASS | parent=4d350253c04d | candidate=worktree | slis=capabilityHitRate,parameterCompletionRate,businessCaliberAccuracy,missingParameterClarificationRate,unsafeExecutionBlockRate | report=runtime/evals/results/paired-eval-2026-09-27T08-21-21.282846+00-00.json",
+    "outputTruncated": false
+  },
+  "receiptHash": "41d39921d2879aa9906b80a04bf4d8b6476f7191a4cae5416565188843ec05de"
+}

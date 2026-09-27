@@ -1,0 +1,14 @@
+{
+  "change": "evidence-grounded-definitions",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "310b146733475e9d6e6be8ff699e3ff5d74e29d46624f3028dda918d62ed6832",
+  "files": [
+    { "path": "openspec/changes/evidence-grounded-definitions/proposal.md", "sha256": "ab170c34a6ea5a7274d36a52096f191cdb3ff9fb33ce446a0c7d853062bc7bbe" },
+    { "path": "openspec/changes/evidence-grounded-definitions/design.md", "sha256": "04932f5c562003b0e15a80059fe427bbdff26e52d34f3f0b95e3e7e2a3d45dd7" },
+    { "path": "openspec/changes/evidence-grounded-definitions/tasks.md", "sha256": "73e3e94ec4c95e6c8328a4aa8efb1d1d348ecc5a5406508f03f8ebec9bf4b578" },
+    { "path": "openspec/changes/evidence-grounded-definitions/specs/ontology-evidence-grounding/spec.md", "sha256": "c1b592fa5d0e2c27a19ae630b2453821082fef846cbcbe2bbf7525c93d120a31" }
+  ]
+}

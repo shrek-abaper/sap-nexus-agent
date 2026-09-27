@@ -1,0 +1,23 @@
+schema: comet.native.v3
+minimum_runtime_version: 3
+revision: 5
+verification_protocol: legacy-v1
+name: paired-eval-gate
+language: en
+phase: archive
+brief: brief.md
+approval: confirmed
+approved_contract_hash: 8885dd78047b9d5f03bdf4aba2cde215b821d5d1396f88f5221a3ebc53138f4d
+spec_changes:
+  - capability: paired-eval
+    operation: create
+    source: specs/paired-eval/spec.md
+    base_hash: null
+verification_result: pass
+verification_report: verification.md
+implementation_scope: runtime/evidence/scopes/899ee0f2b261cfffde72b81abf501ec00a579043b225510db927c4f0bb68f958.json
+verification_evidence: runtime/evidence/verifications/8e769a900d9249d95cb87f8de18538a377b1382b15d0b67f464d0fcf45ff4b00.json
+partial_allowance: null
+archived: true
+created_at: 2026-09-27
+run_id: 2dbf04ef-f585-42b3-a506-8df9bc5ac0e6

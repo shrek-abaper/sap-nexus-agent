@@ -1,0 +1,23 @@
+schema: comet.native.v3
+minimum_runtime_version: 3
+revision: 5
+verification_protocol: legacy-v1
+name: badcase-attribution-pipeline
+language: en
+phase: archive
+brief: brief.md
+approval: confirmed
+approved_contract_hash: 264867783a7cb33d4398dbd727f929b55d4d52b04569941bce1cfc9163bf1e0c
+spec_changes:
+  - capability: badcase-attribution
+    operation: create
+    source: specs/badcase-attribution/spec.md
+    base_hash: null
+verification_result: pass
+verification_report: verification.md
+implementation_scope: runtime/evidence/scopes/96191a4dbb4423c612e436c78759be3fe2be5a796d6d30cfa6f5377c473d4039.json
+verification_evidence: runtime/evidence/verifications/ce822242c0cb0c7420e337f0c09a3f94a96854fcbba6d4174f83fd7d7eba26fc.json
+partial_allowance: null
+archived: true
+created_at: 2026-09-27
+run_id: 9100c813-f7d5-4e3c-951d-6743b193f2d2

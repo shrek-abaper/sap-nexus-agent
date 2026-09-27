@@ -1,0 +1,9 @@
+{
+  "openspec_proposal": "openspec/changes/evidence-grounded-definitions/proposal.md",
+  "openspec_design": "openspec/changes/evidence-grounded-definitions/design.md",
+  "openspec_tasks": "openspec/changes/evidence-grounded-definitions/tasks.md",
+  "openspec_delta_spec": "openspec/changes/evidence-grounded-definitions/specs/ontology-evidence-grounding/spec.md",
+  "handoff_context": "openspec/changes/archive/2026-09-27-evidence-grounded-definitions/.comet/handoff/design-context.json",
+  "handoff_markdown": "openspec/changes/archive/2026-09-27-evidence-grounded-definitions/.comet/handoff/design-context.md",
+  "archive_directory": "openspec/changes/archive/2026-09-27-evidence-grounded-definitions"
+}

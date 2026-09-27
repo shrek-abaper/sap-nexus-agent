@@ -1,0 +1,28 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "manual-evidence",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "paired-eval-gate",
+    "sourceRevision": 3,
+    "contractHash": "8885dd78047b9d5f03bdf4aba2cde215b821d5d1396f88f5221a3ebc53138f4d",
+    "scopeHash": "899ee0f2b261cfffde72b81abf501ec00a579043b225510db927c4f0bb68f958",
+    "snapshotHash": "690113dcb2876e93c37de9f6eebb07dba855b4157c968149bbe0a1cd383d1492",
+    "artifactHash": "eaae1331f5a4cbcce493ac7ba609481cc060df7c8042f874db0bf9b11acf5dc3"
+  },
+  "acceptanceIds": [
+    "acceptance-4f121496d6423df9d8cc7bd78a25a12deb17edaf4c01c657a749406e0b41c0b9"
+  ],
+  "actor": "native-runtime:manual-evidence",
+  "issuedAt": "2026-09-27T08:24:20.430Z",
+  "evidence": {
+    "steps": [
+      "Empty inventory primaryKeywords/triggerKeywords, run scripts/paired_eval_gate.py, then revert"
+    ],
+    "observations": [
+      "Output began 'Paired eval: FAIL' with exit=1; named capabilityHitRate 0.682->0.409 delta=-0.273 plus parameterCompletionRate/businessCaliberAccuracy/missingParameterClarificationRate/unsafeExecutionBlockRate; report runtime/evals/results/paired-eval-2026-09-27T08-23-09.222757+00-00.json"
+    ]
+  },
+  "receiptHash": "b941afdb154b410155a00e4e9b20e37e6fd8583a944040fd42a8b3dd7e8315be"
+}

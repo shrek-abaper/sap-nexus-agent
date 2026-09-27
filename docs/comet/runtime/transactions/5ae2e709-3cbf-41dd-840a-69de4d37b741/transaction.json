@@ -1,0 +1,27 @@
+{
+  "schema": "comet.native.transaction.v2",
+  "id": "5ae2e709-3cbf-41dd-840a-69de4d37b741",
+  "kind": "archive",
+  "status": "committed",
+  "change": "badcase-attribution-pipeline",
+  "createdAt": "2026-09-27T08:50:40.172Z",
+  "preflightHash": "8c8cd93f52c00994b6e57ddb394994be5f57db613026d0d8b6f75a04e360022a",
+  "operations": [
+    {
+      "id": "spec-1-badcase-attribution",
+      "type": "write",
+      "target": "specs/badcase-attribution/spec.md",
+      "staged": "runtime/transactions/5ae2e709-3cbf-41dd-840a-69de4d37b741/staged/specs/badcase-attribution/spec.md",
+      "expectedTargetHash": null,
+      "stagedHash": "4c43f3c0bbc94027288d3e2e7d04de421a873f33f5cafdb58df8f7f08b63439d"
+    },
+    {
+      "id": "archive-change",
+      "type": "move",
+      "source": "changes/badcase-attribution-pipeline",
+      "target": "archive/2026-09-27-badcase-attribution-pipeline",
+      "expectedSourceHash": "06688ed4ea811a45354a13141a71ccf195cad55d38ed9a8de3467a0a900c28a5",
+      "expectedTargetHash": null
+    }
+  ]
+}

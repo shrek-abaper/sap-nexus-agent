@@ -1,0 +1,30 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "static-inspection",
+  "role": "required-check",
+  "status": "passed",
+  "bindings": {
+    "change": "badcase-attribution-pipeline",
+    "sourceRevision": 3,
+    "contractHash": "264867783a7cb33d4398dbd727f929b55d4d52b04569941bce1cfc9163bf1e0c",
+    "scopeHash": "96191a4dbb4423c612e436c78759be3fe2be5a796d6d30cfa6f5377c473d4039",
+    "snapshotHash": "fd1edf465ba50d884324e1843b10f94cd91b5171b8998b7a5d212cac0b6c32e2",
+    "artifactHash": "3d1009eeb7e1d3ef0782b4fd8ac13c2750fff3237bbd97e42ad562038e2b1748"
+  },
+  "acceptanceIds": [],
+  "actor": "native-runtime:scoped-text-safety",
+  "issuedAt": "2026-09-27T08:50:24.927Z",
+  "evidence": {
+    "subjects": [
+      "agent/sap_nexus_agent/badcase_attribution.py",
+      "agent/sap_nexus_agent/badcase_pipeline.py",
+      "agent/tests/test_badcase_attribution.py",
+      "scripts/attribute_badcases.py"
+    ],
+    "rule": "scoped-text-safety",
+    "resultSummary": "The built-in scoped inspection passed without skipped or blocking input.",
+    "checkReceiptRef": "runtime/evidence/check-receipts/8f7d2ce42522ac2924dc1a698d089cca6cc166157f2cb740ff869f9645ee2bf5.json",
+    "checkReceiptHash": "8f7d2ce42522ac2924dc1a698d089cca6cc166157f2cb740ff869f9645ee2bf5"
+  },
+  "receiptHash": "1b5262a417c628640476101e071577cce54f367870f31621cdf657f7c6f2d623"
+}

@@ -1,0 +1,36 @@
+version: 1
+# Business caliber Definitions. Grounded entries bind to resolvable eval-case
+# evidence; proposed entries declare an explicit evidence gap and are not
+# authoritative. See openspec change evidence-grounded-definitions.
+definitions:
+  - definitionId: sapnexus:def.available-for-commitment
+    title: Available stock for commitment
+    statement: >-
+      The quantity available to promise is derived from the MD04
+      stock/requirements list (running available quantity across stock and
+      in-transit MRP elements). Unrestricted stock alone is not the
+      commitment quantity.
+    status: grounded
+    evidence:
+      suite: evals/eval_harness_seed_cases.json
+      caseId: bc_mm_inventory_business_caliber_001
+  - definitionId: sapnexus:def.overdue
+    title: Overdue open item
+    statement: >-
+      An AR/AP open item is overdue when the current date is past its
+      baseline payment date.
+    status: proposed
+    evidenceGap: >-
+      No overdue computation exists in code or evals; AR/AP suites return
+      blineDate without overdue classification. Requires a dedicated
+      overdue capability change.
+  - definitionId: sapnexus:def.credit-exposure
+    title: Customer credit exposure
+    statement: >-
+      A customer's credit exposure combines open receivables with open
+      sales order commitments.
+    status: proposed
+    evidenceGap: >-
+      No composite exposure capability exists; review_customer_exposure is
+      a roadmap target only (SD.SalesOrder.GetList and FI.AR.GetOpenItems
+      are registered separately).

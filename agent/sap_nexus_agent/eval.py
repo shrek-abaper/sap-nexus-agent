@@ -18,6 +18,62 @@ _CAPABILITY_TO_INTENT = {
     "MM.PurchaseOrder.GetList": "purchase_order_list",
 }
 
+# Eval SLI names (architecture §10.1), in report order.
+SLI_NAMES = (
+    "capabilityHitRate",
+    "parameterCompletionRate",
+    "businessCaliberAccuracy",
+    "missingParameterClarificationRate",
+    "unsafeExecutionBlockRate",
+    "narrativeGroundingRate",
+)
+
+_DECISION_SLIS: dict[str, list[str]] = {
+    "SELECT": ["capabilityHitRate", "parameterCompletionRate"],
+    "CLARIFY": ["missingParameterClarificationRate"],
+    "REJECT": ["unsafeExecutionBlockRate"],
+    "SHOW_OPTIONS": [],
+    "ESCALATE_TO_PLANNER": [],
+}
+_LEGACY_STATUS_DECISION = {"success": "SELECT", "clarification": "CLARIFY", "failure": "REJECT"}
+
+
+def _classify_case_slis(case: dict[str, Any]) -> tuple[str, list[str]]:
+    """Return ``(decision label, SLI names)`` a case contributes to (D1)."""
+    if case.get("fixtureVersion") == "governed-read-context-v1":
+        decisions = {
+            str((turn.get("expected") or {}).get("decision"))
+            for turn in case.get("turns", [])
+            if (turn.get("expected") or {}).get("decision")
+        }
+        slis = sorted({sli for d in decisions for sli in _DECISION_SLIS.get(d, [])})
+        return "MULTI_TURN", slis
+    if "expectedDecision" in case:
+        decision = str(case["expectedDecision"])
+        slis = list(_DECISION_SLIS.get(decision, []))
+        if decision == "SELECT" and case.get("expectedBusinessCaliber"):
+            slis.append("businessCaliberAccuracy")
+        return decision, slis
+    expected = case.get("expected") or {}
+    if "decisionType" in expected:
+        decision = str(expected["decisionType"])
+        return decision, list(_DECISION_SLIS.get(decision, []))
+    if "status" in expected:
+        decision = _LEGACY_STATUS_DECISION[str(expected["status"])]
+        return decision, list(_DECISION_SLIS[decision])
+    return "UNKNOWN", []
+
+
+def _empty_sli_counts() -> dict[str, dict[str, int]]:
+    return {name: {"passed": 0, "total": 0} for name in SLI_NAMES}
+
+
+def _record_case(counts: dict[str, dict[str, int]], slis: list[str], passed: bool) -> None:
+    for name in slis:
+        counts[name]["total"] += 1
+        if passed:
+            counts[name]["passed"] += 1
+
 
 @dataclass(frozen=True)
 class EvalSummary:
@@ -350,6 +406,120 @@ def run_matcher_cases(
     if failures:
         raise AssertionError("\n".join(failures))
     return EvalSummary(total=passed, passed=passed, failed=0, unresolved=skipped)
+
+
+def run_metrics_file(path: Path) -> dict[str, Any]:
+    """Metrics mode: per-case pass results and aggregated SLI counts.
+
+    Unlike :func:`run_eval_file`, assertion failures never abort the run; each
+    case is recorded independently so SLI rates keep their denominators.
+    """
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    cases = payload["cases"]
+    if cases and "decisionType" in (cases[0].get("expected") or {}):
+        observed_cases, counts = _run_matcher_metrics(cases, path)
+    else:
+        observed_cases, counts = _run_legacy_metrics(cases)
+    return {"suite": path.stem, "cases": observed_cases, "sli": counts}
+
+
+def _metrics_entry(
+    case: dict[str, Any], passed: bool, message: str | None, decision: str
+) -> dict[str, Any]:
+    entry: dict[str, Any] = {"caseId": _case_id(case), "decision": decision, "passed": passed}
+    if message:
+        entry["error"] = message
+    return entry
+
+
+def _run_legacy_metrics(
+    cases: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], dict[str, dict[str, int]]]:
+    observed: list[dict[str, Any]] = []
+    counts = _empty_sli_counts()
+    for case in cases:
+        gateway = FakeGatewayClient(case)
+        outcome = run_query(_case_utterance(case), gateway)
+        expected = case.get("expected", {})
+        if outcome.status == "awaiting_approval" and expected.get("executeCalls") == 1:
+            outcome = continue_action(
+                outcome.call_plan,
+                outcome.validation_result,
+                outcome.approval_record,
+                gateway,
+                decision="approve",
+            )
+        try:
+            _assert_case(case, outcome, gateway)
+        except AssertionError as exc:
+            passed, message = False, str(exc) or "assertion failed"
+        else:
+            passed, message = True, None
+        decision, slis = _classify_case_slis(case)
+        _record_case(counts, slis, passed)
+        observed.append(_metrics_entry(case, passed, message, decision))
+    return observed, counts
+
+
+def _load_release_recordings(cases_dir: Path) -> dict[str, dict[str, Any]]:
+    recordings_path = cases_dir / "recorded_llm" / "end_to_end_agent_release.json"
+    return {
+        str(recording["recordingId"]): recording
+        for recording in json.loads(recordings_path.read_text(encoding="utf-8"))["recordings"]
+    }
+
+
+def _run_matcher_metrics(
+    cases: list[dict[str, Any]], path: Path
+) -> tuple[list[dict[str, Any]], dict[str, dict[str, int]]]:
+    recordings = (
+        _load_release_recordings(path.parent)
+        if any(case.get("fixtureVersion") == "governed-read-context-v1" for case in cases)
+        else None
+    )
+    observed: list[dict[str, Any]] = []
+    counts = _empty_sli_counts()
+    for case in cases:
+        case_id = _case_id(case)
+        if case.get("pending"):
+            observed.append({
+                "caseId": case_id, "decision": "PENDING", "passed": None, "skipped": True,
+            })
+            continue
+        if case.get("fixtureVersion") == "governed-read-context-v1":
+            try:
+                _run_governed_read_context_case(case, recordings)
+            except AssertionError as exc:
+                passed, message = False, str(exc) or "assertion failed"
+            else:
+                passed, message = True, None
+            decision, slis = _classify_case_slis(case)
+            _record_case(counts, slis, passed)
+            observed.append(_metrics_entry(case, passed, message, decision))
+            continue
+
+        gateway = FakeGatewayClient(case)
+        outcome = run_query(
+            _case_utterance(case), gateway, **_governed_source_override(case)
+        )
+        expected = case["expected"]
+        decision_obj = outcome.match_decision
+        if decision_obj is None:
+            passed, message = False, "outcome.match_decision is None"
+        else:
+            try:
+                _assert_matcher_decision_type(case_id, decision_obj, expected)
+                _assert_matcher_state_fields(case_id, decision_obj, expected)
+                _assert_matcher_gateway_calls(case_id, gateway, expected)
+                _assert_matcher_dry_run(case_id, outcome, expected)
+            except AssertionError as exc:
+                passed, message = False, str(exc) or "assertion failed"
+            else:
+                passed, message = True, None
+        decision, slis = _classify_case_slis(case)
+        _record_case(counts, slis, passed)
+        observed.append(_metrics_entry(case, passed, message, decision))
+    return observed, counts
 
 
 def _governed_source_override(case: dict[str, Any]) -> dict[str, Any]:
@@ -1110,12 +1280,18 @@ def _case_utterance(case: dict[str, Any]) -> str:
 
 def main(argv: list[str] | None = None) -> int:
     args = argv if argv is not None else sys.argv[1:]
+    metrics = "--metrics" in args
+    args = [arg for arg in args if arg != "--metrics"]
     if len(args) not in {1, 2} or (len(args) == 2 and args[1] != "--context-evidence"):
         print(
-            "Usage: python -m sap_nexus_agent.eval <json-formatted-cases-file> [--context-evidence]",
+            "Usage: python -m sap_nexus_agent.eval <json-formatted-cases-file> "
+            "[--context-evidence|--metrics]",
             file=sys.stderr,
         )
         return 2
+    if metrics:
+        print(json.dumps(run_metrics_file(Path(args[0])), ensure_ascii=False))
+        return 0
     if len(args) == 2:
         print(json.dumps({"cases": run_governed_context_evidence(Path(args[0]))}, ensure_ascii=False))
         return 0
