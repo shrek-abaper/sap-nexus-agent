@@ -1,5 +1,6 @@
 import { dshModelConfigured, getDshRuntime } from "../../../../../../../src/server/dsh/registry";
 import { dshConversationStore } from "../../../../../../../src/server/dsh/conversation-store";
+import { recordDshTurn } from "../../../../../../../src/server/dsh/decision-trace";
 import type { DshStreamEvent } from "../../../../../../../src/server/dsh/runtime";
 
 // SSE over POST: token deltas + tool lifecycle, then one final event.
@@ -56,6 +57,13 @@ export async function POST(
             ...(reasoning.trim() ? { assistantReasoning: reasoning } : {}),
             assistantToolCalls: finalEvent?.toolCalls,
             ...(errorEvent ? { assistantError: errorEvent.message } : {}),
+          });
+          // Append the redacted decision trace (best effort).
+          recordDshTurn({
+            conversationId: id,
+            userText,
+            toolCalls: finalEvent?.toolCalls,
+            errorMessage: errorEvent?.message,
           });
         }
       } catch (error) {

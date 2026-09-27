@@ -1039,8 +1039,14 @@ function runProcess(command: string, args: string[], cwd: string): Promise<{
     const child = spawn(command, args, {
       cwd,
       stdio: ["ignore", "pipe", "pipe"],
-      // This gate is offline by contract: keep the eval off the network.
-      env: { ...process.env, LLM_API_KEY: "", LLM_BASE_URL: "" },
+      // This gate is offline by contract: keep the eval off the network and
+      // keep test subprocesses out of runtime/traces.
+      env: {
+        ...process.env,
+        LLM_API_KEY: "",
+        LLM_BASE_URL: "",
+        SAP_NEXUS_DECISION_TRACE: "off",
+      },
     });
     let stdout = "";
     child.stdout.on("data", (chunk) => { stdout += String(chunk); });

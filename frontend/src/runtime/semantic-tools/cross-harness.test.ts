@@ -50,7 +50,11 @@ function runPythonCli(query: string, url: string): Promise<{ status: number; std
       query,
       "--json",
       "--gateway-url", url,
-    ], { cwd: repoRoot });
+    ], {
+      cwd: repoRoot,
+      // Keep the Python recorder from appending to runtime/traces during tests.
+      env: { ...process.env, SAP_NEXUS_DECISION_TRACE: "off" },
+    });
     let stdout = "";
     let stderr = "";
     const timer = setTimeout(() => {
