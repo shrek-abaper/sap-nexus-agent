@@ -15,3 +15,10 @@ import pytest
 def _isolate_llm_env(monkeypatch):
     monkeypatch.setenv("LLM_API_KEY", "")
     monkeypatch.setenv("LLM_BASE_URL", "")
+
+
+@pytest.fixture(autouse=True)
+def _disable_decision_trace(monkeypatch):
+    # Keep test runs from appending to the real runtime/traces/decisions.jsonl.
+    # Tests that exercise recording override this with their own temp path.
+    monkeypatch.setenv("SAP_NEXUS_DECISION_TRACE", "off")

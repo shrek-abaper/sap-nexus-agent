@@ -41,6 +41,7 @@ Environment overrides:
   FRONTEND_HOST=0.0.0.0
   SAP_NEXUS_GATEWAY_URL=http://127.0.0.1:8080
   SAP_NEXUS_INTENT_MODE=hybrid
+  SAP_NEXUS_DECISION_TRACE=runtime/traces/decisions.jsonl  # set "off" to disable turn recording
   SAP_NEXUS_AGENT_PYTHON=/absolute/path/to/python
   SAP_GATEWAY_ODATA_PROXY_URL=http://127.0.0.1:8081
   JAVA_HOME=/path/to/jdk-17        # optional; system Java is used when unset
