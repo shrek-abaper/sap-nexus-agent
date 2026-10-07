@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SAP Nexus Agent · 能力本体驱动的 SAP 能力供应方</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --red:#CC0000; --blue:#006393; --ink:#333333; --gray:#A3A3A3;
+    --bg:#F5F5F5; --line:#CCCCCC; --soft:#FFF2F2;
+  }
+  html,body{width:100%;height:100%;overflow:hidden;background:#E8E8E8;
+    font-family:"PingFang SC","Microsoft YaHei","Hiragino Sans GB","Source Han Sans SC","Noto Sans SC","Helvetica Neue",Arial,sans-serif;}
+  #stage{position:absolute;top:0;left:0;width:1920px;height:1080px;transform-origin:top left}
+  .slide{position:absolute;inset:0;width:1920px;height:1080px;background:#FFFFFF;
+    padding:20px;display:none;overflow:hidden}
+  .slide.on{display:block}
+
+  /* ---- 标题区 / 分隔线 ---- */
+  .title-zone{height:150px;display:flex;align-items:center;justify-content:space-between;padding-right:4px}
+  .title-zone h1{font-size:46px;font-weight:700;color:#333333;line-height:1.22;max-width:1500px}
+  .title-zone .kicker{font-size:18px;font-weight:600;color:#A3A3A3;letter-spacing:4px;text-transform:uppercase;white-space:nowrap}
+  .rule{height:5px;background:#000000;margin:0 -20px}
+  .body{position:relative;height:885px}
+  .footer{position:absolute;left:0;bottom:6px;width:1880px;display:flex;justify-content:space-between;
+    font-size:14px;color:#A3A3A3}
+
+  /* ---- 总结条 ---- */
+  .summary{display:flex;gap:26px;margin:30px 0 30px}
+  .summary .bar{width:6px;background:#CC0000;flex:0 0 6px;border-radius:1px}
+  .summary p{font-size:26px;font-weight:600;color:#333333;line-height:1.5}
+  .summary p span{display:block;font-size:23px;font-weight:400;color:#777777;margin-top:4px}
+
+  /* ---- 通用图形容器 ---- */
+  .fig{display:flex;align-items:center;justify-content:center}
+  .fig svg{display:block}
+
+  /* ---- P2 对比双栏 ---- */
+  .vs{display:flex;gap:50px;margin-top:24px}
+  .vs .pane{flex:1;border:1.5px solid #DDDDDD;border-radius:6px;overflow:hidden}
+  .vs .pane .head{padding:22px 28px;font-size:27px;font-weight:700;color:#fff;display:flex;align-items:center;gap:14px}
+  .vs .pane.old .head{background:#777777}
+  .vs .pane.new .head{background:#006393}
+  .vs .pane .head svg{width:32px;height:32px;color:#fff;flex:0 0 32px}
+  .vs .pane .bd{padding:14px 28px 26px}
+  .vs .item{display:flex;gap:16px;padding:20px 0;border-bottom:1px solid #EEEEEE}
+  .vs .item:last-child{border-bottom:none}
+  .vs .item svg{width:34px;height:34px;flex:0 0 34px;margin-top:2px}
+  .vs .old .item svg{color:#A3A3A3}
+  .vs .new .item svg{color:#006393}
+  .vs .item p{font-size:21px;line-height:1.55;color:#333}
+  .vs .old .item p{color:#666}
+  .vs .item b{font-weight:700}
+
+  /* ---- P4 四原则卡片 ---- */
+  .principles{display:flex;gap:30px;margin-top:34px}
+  .princ{flex:1;border:1.5px solid #D8D8D8;border-radius:6px;padding:34px 30px;height:440px;display:flex;flex-direction:column}
+  .princ .n{font-size:60px;font-weight:700;color:#ECECEC;line-height:1;margin-bottom:18px}
+  .princ svg{width:52px;height:52px;color:#006393;margin-bottom:22px}
+  .princ h3{font-size:28px;font-weight:700;color:#333;margin-bottom:16px}
+  .princ p{font-size:20px;line-height:1.6;color:#777}
+  .princ.hot{border-color:#CC0000;background:#FFF2F2}
+  .princ.hot svg{color:#CC0000}
+  .princ.hot .n{color:#F6D4D4}
+
+  /* ---- P6 左文右图 ---- */
+  .split{display:flex;gap:60px;margin-top:10px}
+  .col-text{width:700px;flex:0 0 700px;padding-top:18px}
+  .col-figure{width:1120px;flex:0 0 1120px;display:flex;align-items:center;justify-content:center}
+  .pt{margin-bottom:46px}
+  .pt .row{display:flex;align-items:center;gap:18px;margin-bottom:14px}
+  .pt .ico{width:46px;height:46px;color:#006393;flex:0 0 46px}
+  .pt h3{font-size:26px;font-weight:700;color:#333}
+  .pt p{font-size:21px;color:#777;line-height:1.65;padding-left:64px}
+
+  /* ---- P9 KPI ---- */
+  .kpis{display:flex;gap:28px;margin-top:60px}
+  .kpi{flex:1;border:1.5px solid #DDDDDD;border-radius:6px;padding:44px 26px;text-align:center;height:380px;display:flex;flex-direction:column;justify-content:center}
+  .kpi .num{font-size:84px;font-weight:700;line-height:1;color:#006393;font-variant-numeric:tabular-nums}
+  .kpi .unit{font-size:24px;font-weight:600;color:#006393;margin-top:6px}
+  .kpi .lbl{font-size:22px;font-weight:700;color:#333;margin-top:22px}
+  .kpi .sub{font-size:18px;color:#999;margin-top:10px;line-height:1.5}
+  .kpi.hot{border-color:#CC0000;background:#FFF2F2}
+  .kpi.hot .num,.kpi.hot .unit{color:#CC0000}
+  .kpi-note{margin-top:44px;font-size:20px;color:#777;text-align:center;line-height:1.6}
+
+  /* ---- P12 金句 ---- */
+  .quote{height:720px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+  .quote .big{font-size:76px;font-weight:700;color:#333;line-height:1.35;letter-spacing:2px}
+  .quote .big em{font-style:normal;color:#CC0000}
+  .quote .sub{font-size:27px;color:#777;margin-top:42px;letter-spacing:1px}
+  .quote .tags{margin-top:56px;display:flex;gap:18px}
+  .quote .tags span{font-size:19px;color:#006393;border:1.5px solid #CFE0EA;background:#F0F6FA;border-radius:4px;padding:10px 20px}
+
+  /* ---- 封面 ---- */
+  .cover{position:relative;height:100%;display:flex;flex-direction:column;justify-content:center;padding-left:40px}
+  .cover .eyebrow{font-size:22px;font-weight:600;color:#A3A3A3;letter-spacing:6px;margin-bottom:34px}
+  .cover h1{font-size:104px;font-weight:700;color:#1A1A1A;line-height:1.08;letter-spacing:1px}
+  .cover h1 .accent{color:#CC0000}
+  .cover .lead{font-size:34px;font-weight:600;color:#006393;margin-top:34px}
+  .cover .line{width:120px;height:6px;background:#CC0000;margin:44px 0}
+  .cover .desc{font-size:23px;color:#666;line-height:1.8;max-width:1300px}
+  .cover .badges{margin-top:52px;display:flex;gap:16px;flex-wrap:wrap}
+  .cover .badges span{font-size:19px;color:#444;border:1.5px solid #D0D0D0;border-radius:4px;padding:11px 20px;background:#FAFAFA}
+  .cover .corner{position:absolute;right:60px;bottom:60px;text-align:right;font-size:18px;color:#A3A3A3;line-height:1.9}
+
+  /* ---- 翻页导航 ---- */
+  #nav{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:50;
+    display:flex;align-items:center;gap:16px;background:rgba(255,255,255,.92);
+    border:1px solid #DDDDDD;border-radius:24px;padding:8px 18px}
+  #nav button.arw{border:none;background:none;font-size:22px;color:#777;cursor:pointer;width:30px;height:28px;line-height:1}
+  #nav button.arw:hover{color:#CC0000}
+  #dots{display:flex;gap:8px}
+  #dots .dot{width:9px;height:9px;border:none;border-radius:50%;background:#D2D2D2;cursor:pointer;padding:0}
+  #dots .dot.on{background:#CC0000;width:22px;border-radius:5px}
+  #plabel{font-size:14px;color:#888;min-width:52px;text-align:center;font-variant-numeric:tabular-nums}
+  .hint{position:fixed;left:18px;bottom:22px;font-size:13px;color:#BBBBB;z-index:50}
+</style>
+</head>
+<body>
+
+<!-- 图标精灵（35 个单色线稿图标） -->
+<svg width="0" height="0" style="position:absolute;overflow:hidden" aria-hidden="true"><defs>
+<symbol id="i-target" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="24" r="16"/><circle cx="24" cy="24" r="8"/><circle cx="24" cy="24" r="2.5" fill="currentColor" stroke="none"/></symbol>
+<symbol id="i-bulb" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M24 8a11 11 0 0 1 6 20v4H18v-4A11 11 0 0 1 24 8z"/><path d="M20 36h8"/><path d="M22 41h4"/></symbol>
+<symbol id="i-clock" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="24" r="16"/><path d="M24 24V13"/><path d="M24 24l9 5"/></symbol>
+<symbol id="i-code" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 15 7 24l10 9"/><path d="M31 15l10 9-10 9"/><path d="M27 12l-6 24"/></symbol>
+<symbol id="i-loop" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 24a12 12 0 0 1 20-9"/><path d="M33 9v8h-8"/><path d="M36 24a12 12 0 0 1-20 9"/><path d="M15 39v-8h8"/></symbol>
+<symbol id="i-grid" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="7" width="15" height="15"/><rect x="26" y="7" width="15" height="15"/><rect x="7" y="26" width="15" height="15"/><rect x="26" y="26" width="15" height="15"/></symbol>
+<symbol id="i-check" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="24" r="16"/><path d="M16 25l6 6 11-13"/></symbol>
+<symbol id="i-node" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="10" r="5"/><circle cx="10" cy="35" r="5"/><circle cx="38" cy="35" r="5"/><path d="M21 14l-8 16"/><path d="M27 14l8 16"/><path d="M15 35h18"/></symbol>
+<symbol id="i-chart" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 36l11-12 8 6 15-18"/><path d="M31 12h10v10"/><path d="M7 41h34"/></symbol>
+<symbol id="i-scale" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M24 8v30"/><path d="M8 15h32"/><path d="M8 15 2 27h12z"/><path d="M40 15 34 27h12z"/><path d="M16 41h16"/></symbol>
+<symbol id="i-search" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="21" cy="21" r="12"/><path d="M30 30l11 11"/></symbol>
+<symbol id="i-doc" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5h17l9 9v29H11z"/><path d="M28 5v9h9"/><path d="M17 24h14"/><path d="M17 32h14"/></symbol>
+<symbol id="i-shield" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M24 5l15 6v13c0 9-6 15-15 19-9-4-15-10-15-19V11z"/><path d="M17 24l5 5 10-11"/></symbol>
+<symbol id="i-people" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="15" r="7"/><path d="M10 41c0-8 6-13 14-13s14 5 14 13"/></symbol>
+<symbol id="i-step" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="31" width="12" height="11"/><rect x="18" y="21" width="12" height="21"/><rect x="30" y="11" width="12" height="31"/></symbol>
+<symbol id="i-flag" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v38"/><path d="M12 8h22l-5 8 5 8H12z"/></symbol>
+<symbol id="i-db" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="24" cy="12" rx="14" ry="6"/><path d="M10 12v24c0 3 6 6 14 6s14-3 14-6V12"/><path d="M10 24c0 3 6 6 14 6s14-3 14-6"/></symbol>
+<symbol id="i-warn" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M24 7l17 30H7z"/><path d="M24 18v11"/><path d="M24 33v.5"/></symbol>
+<symbol id="i-eye" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 24s8-13 20-13 20 13 20 13-8 13-20 13S4 24 4 24z"/><circle cx="24" cy="24" r="6"/></symbol>
+<symbol id="i-key" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="14" cy="24" r="9"/><path d="M23 24h21"/><path d="M36 24v7"/><path d="M43 24v5"/></symbol>
+<symbol id="i-split" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M24 6v13"/><path d="M24 19 10 33v9"/><path d="M24 19l14 14v9"/></symbol>
+</defs></svg>
+
+<div id="stage">
+
+<!-- ============ P1 封面 ============ -->
+<section class="slide on">
+  <div class="cover">
+    <div class="eyebrow">SAP NEXUS AGENT</div>
+    <h1>能力本体驱动的<br><span class="accent">SAP 能力供应方</span></h1>
+    <div class="lead">SAP 能力的供应方，而不是又一个 SAP Agent</div>
+    <div class="line"></div>
+    <div class="desc">能力本体建模 · 编译期派生 · 业务语义级能力 · 服务端强制治理 · 全链路血缘 · 可替换 Harness<br>
+      一次调用回答一个业务问题；覆盖域之外显式拒答，而非降级凑答。</div>
+    <div class="badges">
+      <span>Apache-2.0</span><span>自托管</span><span>SAP On-Prem</span>
+      <span>无厂商锁定</span><span>唯一安全边界：Java Gateway</span>
+    </div>
+    <div class="corner">核心原则<br><b style="color:#333">事实先于叙事 · 能力即边界</b></div>
+  </div>
+</section>
+
+<!-- ============ P2 矛盾：对比双栏 ============ -->
+<section class="slide">
+  <header class="title-zone">
+    <h1>把“Agent 直接操作 SAP”换成“服务端供应 SAP 能力”，三道鸿沟才有解</h1>
+    <span class="kicker">SECTION 01 · CONTEXT</span>
+  </header>
+  <div class="rule"></div>
+  <main class="body">
+    <div class="summary">
+      <div class="bar"></div>
+      <p>传统 SAP Agent 的三道鸿沟，靠“换个更大的模型”跨不过去<span>问题不在模型能力，而在业务口径、执行边界与宿主耦合</span></p>
+    </div>
+    <div class="vs">
+      <div class="pane old">
+        <div class="head"><svg><use href="#i-warn"/></svg>传统 SAP Agent</div>
+        <div class="bd">
+          <div class="item"><svg><use href="#i-doc"/></svg><p><b>口径写在 prompt 与代码里</b><br>“可用库存 / 逾期 / 信用敞口”的算法随提示漂移，同问不同答。</p></div>
+          <div class="item"><svg><use href="#i-node"/></svg><p><b>LLM 直连 RFC / BAPI</b><br>参数、提交动作不受控，READ 可能误触发事务提交。</p></div>
+          <div class="item"><svg><use href="#i-grid"/></svg><p><b>业务语义绑死单一宿主</b><br>换一个 Harness 就换出第二套语义，无法跨宿主一致。</p></div>
+        </div>
+      </div>
+      <div class="pane new">
+        <div class="head"><svg><use href="#i-check"/></svg>SAP Nexus</div>
+        <div class="bd">
+          <div class="item"><svg><use href="#i-target"/></svg><p><b>口径沉淀为能力，服务端强制</b><br>端点链、时点一致性、基数归约固化，回答不随提示漂移。</p></div>
+          <div class="item"><svg><use href="#i-shield"/></svg><p><b>Gateway 是唯一安全边界</b><br>四条红线不可由 Harness 注入，READ 不提交、WRITE 先审批。</p></div>
+          <div class="item"><svg><use href="#i-loop"/></svg><p><b>Harness 可整体替换</b><br>只做能力选择与展示，换宿主不会换出第二套业务语义。</p></div>
+        </div>
+      </div>
+    </div>
+    <div class="footer"><span>资料来源：项目 README</span><span>02 / 12</span></div>
+  </main>
+</section>
+
+<!-- ============ P3 六层架构 ============ -->
+<section class="slide">
+  <header class="title-zone">
+    <h1>不做又一个 Agent：四方各管一件事，能力层是唯一核心资产</h1>
+    <span class="kicker">SECTION 02 · POSITIONING</span>
+  </header>
+  <div class="rule"></div>
+  <main class="body">
+    <div class="fig" style="height:820px">
+      <svg width="1880" height="700" viewBox="0 0 1880 700" xmlns="http://www.w3.org/2000/svg">
+        <!-- 六层：标签 x0-78 / 内容 x90-1880；层高96 间隙10；y起30 -->
+        <!-- L1 控制面 -->
+        <rect x="0" y="30" width="78" height="96" fill="#333333" rx="4"/>
+        <text x="39" y="72" font-size="18" font-weight="700" fill="#fff" text-anchor="middle">控制面</text>
+        <text x="39" y="98" font-size="12.5" fill="#D5D5D5" text-anchor="middle">定义</text>
+        <rect x="90" y="30" width="1790" height="96" fill="#F7F7F7" stroke="#E2E2E2" stroke-width="1.5" rx="4"/>
+        <text x="112" y="66" font-size="17" font-weight="700" fill="#333">能力本体 Capability Ontology · YAML 单一来源</text>
+        <g font-size="13.5" fill="#555">
+          <rect x="112" y="78" width="300" height="36" fill="#fff" stroke="#CCCCCC" stroke-width="1.5" rx="3"/><text x="128" y="101">对象 Object：物料 · 客户 · 供应商</text>
+          <rect x="428" y="78" width="360" height="36" fill="#fff" stroke="#CCCCCC" stroke-width="1.5" rx="3"/><text x="444" y="101">口径 Definition：可用库存 · 逾期 · 敞口</text>
+          <rect x="804" y="78" width="300" height="36" fill="#fff" stroke="#CCCCCC" stroke-width="1.5" rx="3"/><text x="820" y="101">关系 links：客户—未清项—销售单</text>
+          <rect x="1120" y="78" width="320" height="36" fill="#fff" stroke="#CCCCCC" stroke-width="1.5" rx="3"/><text x="1136" y="101">可解决 can_solve 的业务问题</text>
+        </g>
+
+        <!-- L2 编译期 -->
+        <rect x="0" y="136" width="78" height="96" fill="#006393" rx="4"/>
+        <text x="39" y="178" font-size="18" font-weight="700" fill="#fff" text-anchor="middle">编译期</text>
+        <text x="39" y="204" font-size="12.5" fill="#CFE3EE" text-anchor="middle">离线派生</text>
+        <rect x="90" y="136" width="1790" height="96" fill="#F0F6FA" stroke="#D3E2EC" stroke-width="1.5" rx="4"/>
+        <text x="112" y="172" font-size="17" font-weight="700" fill="#006393">派生管线 Compile-time Derivation · 请求期零本体查询</text>
+        <rect x="112" y="184" width="430" height="36" fill="#fff" stroke="#BFD3E2" stroke-width="1.5" rx="3"/>
+        <text x="128" y="207" font-size="13.5" fill="#336B88">能力卡 · 候选索引 · 依赖约束 · Guardrail</text>
+        <path d="M560 202 h40" stroke="#006393" stroke-width="2" marker-end="url(#arrB)"/>
+        <rect x="612" y="184" width="430" height="36" fill="#006393" rx="3"/>
+        <text x="628" y="207" font-size="14" font-weight="700" fill="#fff">Capability Manifest（静态产物 · 可签名可 diff）</text>
+
+        <!-- L3 体验层 -->
+        <rect x="0" y="242" width="78" height="96" fill="#333333" rx="4"/>
+        <text x="39" y="284" font-size="18" font-weight="700" fill="#fff" text-anchor="middle">体验层</text>
+        <text x="39" y="310" font-size="12.5" fill="#D5D5D5" text-anchor="middle">可替换</text>
+        <rect x="90" y="242" width="1790" height="96" fill="#F7F7F7" stroke="#E2E2E2" stroke-width="1.5" rx="4"/>
+        <text x="112" y="278" font-size="17" font-weight="700" fill="#333">Harness 运行时 · 只做选型 / 展示 / 澄清，可整体替换</text>
+        <g font-size="14" fill="#333">
+          <rect x="112" y="290" width="300" height="36" fill="#fff" stroke="#CCCCCC" stroke-width="1.5" rx="3"/><text x="128" y="313">DSH Chat（Next 内置 / SSE）</text>
+          <rect x="428" y="290" width="300" height="36" fill="#fff" stroke="#CCCCCC" stroke-width="1.5" rx="3"/><text x="444" y="313">MCP Client（预留）</text>
+          <rect x="744" y="290" width="300" height="36" fill="#fff" stroke="#CCCCCC" stroke-width="1.5" rx="3"/><text x="760" y="313">自有 CLI（harness-dsh）</text>
+          <rect x="1060" y="290" width="380" height="36" fill="#fff" stroke="#CCCCCC" stroke-width="1.5" rx="3"/><text x="1076" y="313">只读 Manifest · 不构造调用图</text>
+        </g>
+
+        <!-- L4 契约边界 -->
+        <rect x="0" y="348" width="78" height="96" fill="#B36B00" rx="4"/>
+        <text x="39" y="390" font-size="18" font-weight="700" fill="#fff" text-anchor="middle">契约边界</text>
+        <text x="39" y="416" font-size="12.5" fill="#F3E2CC" text-anchor="middle">四条红线</text>
+        <rect x="90" y="348" width="1790" height="96" fill="#FFF8EC" stroke="#ECDCC4" stroke-width="1.5" rx="4"/>
+        <g font-size="13" fill="#8A5A12">
+          <rect x="112" y="368" width="410" height="58" fill="#fff" stroke="#E4CFAA" stroke-width="1.5" rx="3"/>
+          <text x="128" y="392" font-weight="700" fill="#8A5A12">禁专属对象入能力层</text><text x="128" y="414">ctx 与插件上下文不签名</text>
+          <rect x="538" y="368" width="410" height="58" fill="#fff" stroke="#E4CFAA" stroke-width="1.5" rx="3"/>
+          <text x="554" y="392" font-weight="700" fill="#8A5A12">禁自由 tool calling 到网关</text><text x="554" y="414">bindingId 与 rfcName 不可覆盖</text>
+          <rect x="964" y="368" width="410" height="58" fill="#fff" stroke="#E4CFAA" stroke-width="1.5" rx="3"/>
+          <text x="980" y="392" font-weight="700" fill="#8A5A12">契约版本 pin</text><text x="980" y="414">Manifest 带版本，升级须评审</text>
+          <rect x="1390" y="368" width="468" height="58" fill="#fff" stroke="#E4CFAA" stroke-width="1.5" rx="3"/>
+          <text x="1406" y="392" font-weight="700" fill="#8A5A12">最低模型能力线</text><text x="1406" y="414">工具选择与参数合规达标才接 live</text>
+        </g>
+
+        <!-- L5 能力层（红色标签 = 唯一红） -->
+        <rect x="0" y="454" width="78" height="96" fill="#CC0000" rx="4"/>
+        <text x="39" y="496" font-size="18" font-weight="700" fill="#fff" text-anchor="middle">能力层</text>
+        <text x="39" y="522" font-size="12.5" fill="#F3C9C9" text-anchor="middle">核心资产</text>
+        <rect x="90" y="454" width="1790" height="96" fill="#F0F6FA" stroke="#D3E2EC" stroke-width="1.5" rx="4"/>
+        <text x="112" y="486" font-size="17" font-weight="700" fill="#006393">SAP 域能力 · 业务语义级（不感知 Harness 类型）· 一次调用回答一个业务问题</text>
+        <g font-size="12.5" fill="#00517A">
+          <rect x="112" y="498" width="416" height="40" fill="#fff" stroke="#9CC1D8" stroke-width="1.5" rx="3"/><text x="128" y="523">diagnose_material_supply（读）</text>
+          <rect x="544" y="498" width="416" height="40" fill="#fff" stroke="#9CC1D8" stroke-width="1.5" rx="3"/><text x="560" y="523">review_customer_exposure（读）</text>
+          <rect x="976" y="498" width="416" height="40" fill="#fff" stroke="#9CC1D8" stroke-width="1.5" rx="3"/><text x="992" y="523">review_vendor_exposure（读）</text>
+          <rect x="1408" y="498" width="448" height="40" fill="#fff" stroke="#9CC1D8" stroke-width="1.5" rx="3"/><text x="1424" y="523">propose_replenishment（写 · 先审批）</text>
+        </g>
+
+        <!-- L6 执行层 -->
+        <rect x="0" y="560" width="78" height="110" fill="#333333" rx="4"/>
+        <text x="39" y="606" font-size="18" font-weight="700" fill="#fff" text-anchor="middle">执行层</text>
+        <text x="39" y="632" font-size="12.5" fill="#D5D5D5" text-anchor="middle">唯一边界</text>
+        <rect x="90" y="560" width="1790" height="110" fill="#F7F7F7" stroke="#E2E2E2" stroke-width="1.5" rx="4"/>
+        <rect x="112" y="592" width="300" height="50" fill="#fff" stroke="#CCCCCC" stroke-width="1.5" rx="3"/>
+        <text x="128" y="613" font-size="14" font-weight="700" fill="#333">Java Gateway :8080</text>
+        <text x="128" y="632" font-size="12" fill="#888">校验 · 路由 · 脱敏 / 审计</text>
+        <path d="M412 617 h28" stroke="#888" stroke-width="2" marker-end="url(#arrG)"/>
+        <rect x="440" y="592" width="280" height="50" fill="#fff" stroke="#CCCCCC" stroke-width="1.5" rx="3"/>
+        <text x="456" y="613" font-size="13" font-weight="700" fill="#333">JCO_RFC</text>
+        <text x="456" y="632" font-size="12" fill="#888">RFC / BAPI 调用</text>
+        <path d="M720 617 h28" stroke="#888" stroke-width="2" marker-end="url(#arrG)"/>
+        <rect x="748" y="592" width="280" height="50" fill="#fff" stroke="#CCCCCC" stroke-width="1.5" rx="3"/>
+        <text x="764" y="613" font-size="13" font-weight="700" fill="#333">ODATA</text>
+        <text x="764" y="632" font-size="12" fill="#888">odata-service</text>
+        <path d="M1028 617 h28" stroke="#888" stroke-width="2" marker-end="url(#arrG)"/>
+        <rect x="1056" y="592" width="280" height="50" fill="#fff" stroke="#CCCCCC" stroke-width="1.5" rx="3"/>
+        <text x="1072" y="613" font-size="13" font-weight="700" fill="#333">REST_JSON</text>
+        <text x="1072" y="632" font-size="12" fill="#888">SICF rest2rfc</text>
+        <path d="M1336 617 h28" stroke="#888" stroke-width="2" marker-end="url(#arrG)"/>
+        <rect x="1364" y="592" width="488" height="50" fill="#333" rx="3"/>
+        <text x="1608" y="623" font-size="16" font-weight="700" fill="#fff" text-anchor="middle">SAP On-Prem · ECC / S4</text>
+
+        <defs>
+          <marker id="arrB" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0 L8 4.5 L0 9 z" fill="#006393"/></marker>
+          <marker id="arrG" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0 L8 4.5 L0 9 z" fill="#888888"/></marker>
+        </defs>
+      </svg>
+    </div>
+    <div class="footer"><span>图号 C·02（六层通栏架构）· 目标形态，不含进度</span><span>03 / 12</span></div>
+  </main>
+</section>
+
+<!-- ============ P4 四原则 ============ -->
+<section class="slide">
+  <header class="title-zone">
+    <h1>一句话读懂架构：定义在顶、推理在编译期、治理在能力内、体验可替换</h1>
+    <span class="kicker">SECTION 03 · PRINCIPLES</span>
+  </header>
+  <div class="rule"></div>
+  <main class="body">
+    <div class="principles">
+      <div class="princ">
+        <div class="n">01</div>
+        <svg><use href="#i-target"/></svg>
+        <h3>定义在顶</h3>
+        <p>业务对象、业务口径与关系只存在于能力本体 YAML；人只在这里维护，端点不手工描述。</p>
+      </div>
+      <div class="princ">
+        <div class="n">02</div>
+        <svg><use href="#i-code"/></svg>
+        <h3>推理在编译期</h3>
+        <p>Manifest 离线派生、可重放可签名；请求期不查本体，只做确定性选择与执行。</p>
+      </div>
+      <div class="princ hot">
+        <div class="n">03</div>
+        <svg><use href="#i-shield"/></svg>
+        <h3>治理在能力内</h3>
+        <p>端点链、时点一致、基数归约与审批裁决固化在服务端能力，写在代码里即视为未达成。</p>
+      </div>
+      <div class="princ">
+        <div class="n">04</div>
+        <svg><use href="#i-loop"/></svg>
+        <h3>体验可替换</h3>
+        <p>Harness 只做能力选择与展示；换宿主不换语义，也换不出第二套业务口径。</p>
+      </div>
+    </div>
+    <div class="footer"><span>图号 A·18（Bento / 原则卡）</span><span>04 / 12</span></div>
+  </main>
+</section>
+
+<!-- ============ P5 4 业务语义工具（文本分类 24） ============ -->
+<section class="slide">
+  <header class="title-zone">
+    <h1>一次调用回答一个业务问题：Harness 只见 4 个业务语义工具</h1>
+    <span class="kicker">SECTION 04 · CAPABILITIES</span>
+  </header>
+  <div class="rule"></div>
+  <main class="body">
+    <div class="fig" style="height:760px">
+      <svg width="1880" height="595" viewBox="0 0 1200 380" xmlns="http://www.w3.org/2000/svg">
+        <!-- 4 列：宽282 间距24；x 0/306/612/918 -->
+        <!-- 列1 -->
+        <rect x="0" y="0" width="282" height="58" fill="#006393" rx="4"/>
+        <g color="#fff"><use href="#i-search" width="22" height="22" x="14" y="18"/></g>
+        <text x="44" y="36" font-size="13.5" font-weight="700" fill="#fff">diagnose_material_supply</text>
+        <rect x="0" y="58" width="282" height="322" fill="#FCFCFC" stroke="#D8E4EC" stroke-width="1.5" rx="4"/>
+        <rect x="18" y="80" width="3.5" height="18" fill="#006393"/>
+        <text x="30" y="94" font-size="13.5" font-weight="700" fill="#333">性质 · 必填槽位</text>
+        <text x="30" y="120" font-size="13" fill="#666">READ · 无必填槽位</text>
+        <text x="30" y="142" font-size="13" fill="#666">可带物料 / 工厂追问</text>
+        <line x1="18" y1="166" x2="264" y2="166" stroke="#ECECEC" stroke-width="1.5"/>
+        <rect x="18" y="182" width="3.5" height="18" fill="#006393"/>
+        <text x="30" y="196" font-size="13.5" font-weight="700" fill="#333">服务端能力链</text>
+        <text x="30" y="224" font-size="12.5" fill="#006393" font-family="Consolas,monospace">MM.Inventory</text>
+        <text x="30" y="246" font-size="12.5" fill="#006393" font-family="Consolas,monospace">.GetAvailability</text>
+        <text x="30" y="276" font-size="12.5" fill="#006393" font-family="Consolas,monospace">MM.PurchaseOrder</text>
+        <text x="30" y="298" font-size="12.5" fill="#006393" font-family="Consolas,monospace">.GetList（在途）</text>
+        <text x="30" y="338" font-size="12.5" fill="#999">库存可用性 + 在途订单</text>
+
+        <!-- 列2 -->
+        <rect x="306" y="0" width="282" height="58" fill="#006393" rx="4"/>
+        <g color="#fff"><use href="#i-eye" width="22" height="22" x="320" y="18"/></g>
+        <text x="350" y="36" font-size="13.5" font-weight="700" fill="#fff">review_customer_exposure</text>
+        <rect x="306" y="58" width="282" height="322" fill="#FCFCFC" stroke="#D8E4EC" stroke-width="1.5" rx="4"/>
+        <rect x="324" y="80" width="3.5" height="18" fill="#006393"/>
+        <text x="336" y="94" font-size="13.5" font-weight="700" fill="#333">性质 · 必填槽位</text>
+        <text x="336" y="120" font-size="13" fill="#666">READ</text>
+        <text x="336" y="142" font-size="12.5" fill="#666" font-family="Consolas,monospace">customerNumber</text>
+        <line x1="324" y1="166" x2="570" y2="166" stroke="#ECECEC" stroke-width="1.5"/>
+        <rect x="324" y="182" width="3.5" height="18" fill="#006393"/>
+        <text x="336" y="196" font-size="13.5" font-weight="700" fill="#333">服务端能力链</text>
+        <text x="336" y="224" font-size="12.5" fill="#006393" font-family="Consolas,monospace">SD.SalesOrder.GetList</text>
+        <text x="336" y="252" font-size="12.5" fill="#006393" font-family="Consolas,monospace">FI.AR.GetOpenItems</text>
+        <text x="336" y="286" font-size="13" fill="#666">（AR 另需公司代码）</text>
+        <text x="336" y="338" font-size="12.5" fill="#999">订单净值 + 应收未清项</text>
+
+        <!-- 列3 -->
+        <rect x="612" y="0" width="282" height="58" fill="#333333" rx="4"/>
+        <g color="#fff"><use href="#i-scale" width="22" height="22" x="626" y="18"/></g>
+        <text x="656" y="36" font-size="13.5" font-weight="700" fill="#fff">review_vendor_exposure</text>
+        <rect x="612" y="58" width="282" height="322" fill="#FCFCFC" stroke="#DDDDDD" stroke-width="1.5" rx="4"/>
+        <rect x="630" y="80" width="3.5" height="18" fill="#333"/>
+        <text x="642" y="94" font-size="13.5" font-weight="700" fill="#333">性质 · 必填槽位</text>
+        <text x="642" y="120" font-size="13" fill="#666">READ</text>
+        <text x="642" y="142" font-size="12.5" fill="#666" font-family="Consolas,monospace">vendor · companyCode</text>
+        <line x1="630" y1="166" x2="876" y2="166" stroke="#ECECEC" stroke-width="1.5"/>
+        <rect x="630" y="182" width="3.5" height="18" fill="#333"/>
+        <text x="642" y="196" font-size="13.5" font-weight="700" fill="#333">服务端能力链</text>
+        <text x="642" y="224" font-size="12.5" fill="#333" font-family="Consolas,monospace">FI.AP.GetOpenItems</text>
+        <text x="642" y="258" font-size="13" fill="#666">供应商应付未清项</text>
+        <text x="642" y="338" font-size="12.5" fill="#999">目标链另含采购订单</text>
+
+        <!-- 列4 WRITE（唯一红） -->
+        <rect x="918" y="0" width="282" height="58" fill="#CC0000" rx="4"/>
+        <g color="#fff"><use href="#i-doc" width="22" height="22" x="932" y="18"/></g>
+        <text x="962" y="36" font-size="13" font-weight="700" fill="#fff">propose_replenishment</text>
+        <rect x="918" y="58" width="282" height="322" fill="#FFF2F2" stroke="#CC0000" stroke-width="1.5" rx="4"/>
+        <rect x="936" y="80" width="3.5" height="18" fill="#CC0000"/>
+        <text x="948" y="94" font-size="13.5" font-weight="700" fill="#333">性质 · 必填槽位</text>
+        <text x="948" y="120" font-size="13" fill="#666">WRITE 草案 · 先审批</text>
+        <text x="948" y="142" font-size="12" fill="#666" font-family="Consolas,monospace">material · plant</text>
+        <text x="948" y="162" font-size="12" fill="#666" font-family="Consolas,monospace">requiredQuantity · date</text>
+        <line x1="936" y1="178" x2="1182" y2="178" stroke="#E8B4B4" stroke-width="1.5"/>
+        <rect x="936" y="192" width="3.5" height="18" fill="#CC0000"/>
+        <text x="948" y="206" font-size="13.5" font-weight="700" fill="#333">服务端能力链</text>
+        <text x="948" y="234" font-size="12.5" fill="#CC0000" font-family="Consolas,monospace">缺口诊断 →</text>
+        <text x="948" y="258" font-size="12.5" fill="#CC0000" font-family="Consolas,monospace">MM.PR.CreateDraft</text>
+        <text x="948" y="292" font-size="13" fill="#666">执行前 exact-subject</text>
+        <text x="948" y="314" font-size="13" fill="#666">人工审批</text>
+        <text x="948" y="348" font-size="12.5" fill="#CC0000">缺口 → 提案 → 写入</text>
+      </svg>
+    </div>
+    <div class="footer"><span>图号 A·24（纵向分列）· Harness 可见面已从 7 个端点级工具降为 4 个业务语义工具</span><span>05 / 12</span></div>
+  </main>
+</section>
+
+<!-- ============ P6 中心辐射：五件事 ============ -->
+<section class="slide">
+  <header class="title-zone">
+    <h1>业务语义不是一段描述，而是服务端强制的五件事</h1>
+    <span class="kicker">SECTION 05 · ENFORCEMENT</span>
+  </header>
+  <div class="rule"></div>
+  <main class="body">
+    <div class="split">
+      <div class="col-text">
+        <div class="pt">
+          <div class="row">
+            <svg class="ico"><use href="#i-node"/></svg>
+            <h3>一次调用，一个业务问题</h3>
+          </div>
+          <p>多端点顺序与传参在服务端固化为能力链，LLM 不在请求期临时编排多跳。</p>
+        </div>
+        <div class="pt">
+          <div class="row">
+            <svg class="ico"><use href="#i-shield"/></svg>
+            <h3>覆盖域之外，显式拒答</h3>
+          </div>
+          <p>能力缺口返回 CapabilityGap，而非降级凑答或编造结果，事实先于叙事。</p>
+        </div>
+        <div class="pt">
+          <div class="row">
+            <svg class="ico"><use href="#i-check"/></svg>
+            <h3>取值口径固化，不随提示漂移</h3>
+          </div>
+          <p>时点、基数与审批裁决全部由服务端代码与本体口径决定，对所有 Harness 一致。</p>
+        </div>
+      </div>
+      <div class="col-figure">
+        <svg width="1120" height="700" viewBox="0 0 1120 700" xmlns="http://www.w3.org/2000/svg">
+          <!-- 连线 -->
+          <g stroke="#BFBFBF" stroke-width="1.8" fill="none">
+            <line x1="560" y1="120" x2="560" y2="298"/>
+            <line x1="779" y1="279" x2="648" y2="330"/>
+            <line x1="695" y1="536" x2="600" y2="404"/>
+            <line x1="425" y1="536" x2="520" y2="404"/>
+            <line x1="341" y1="279" x2="472" y2="330"/>
+          </g>
+          <!-- 外围五框 -->
+          <g font-size="16" font-weight="700" fill="#333">
+            <rect x="450" y="72" width="220" height="60" fill="#fff" stroke="#CCCCCC" stroke-width="1.8" rx="6"/>
+            <text x="560" y="98" text-anchor="middle">链固化</text>
+            <text x="560" y="120" font-size="12.5" font-weight="400" fill="#999" text-anchor="middle">多端点顺序与传参</text>
+
+            <rect x="679" y="249" width="200" height="60" fill="#fff" stroke="#CCCCCC" stroke-width="1.8" rx="6"/>
+            <text x="779" y="275" text-anchor="middle">时点一致性</text>
+            <text x="779" y="297" font-size="12.5" font-weight="400" fill="#999" text-anchor="middle">asOf 检查与容差</text>
+
+            <rect x="595" y="506" width="200" height="60" fill="#fff" stroke="#CCCCCC" stroke-width="1.8" rx="6"/>
+            <text x="695" y="532" text-anchor="middle">基数归约</text>
+            <text x="695" y="554" font-size="12.5" font-weight="400" fill="#999" text-anchor="middle">求和 · 取一 · 要求唯一</text>
+
+            <rect x="325" y="506" width="200" height="60" fill="#fff" stroke="#CCCCCC" stroke-width="1.8" rx="6"/>
+            <text x="425" y="532" text-anchor="middle">审批 subject</text>
+            <text x="425" y="554" font-size="12.5" font-weight="400" fill="#999" text-anchor="middle">服务端计算与校验</text>
+
+            <rect x="241" y="249" width="200" height="60" fill="#fff" stroke="#CCCCCC" stroke-width="1.8" rx="6"/>
+            <text x="341" y="275" text-anchor="middle">显式拒答</text>
+            <text x="341" y="297" font-size="12.5" font-weight="400" fill="#999" text-anchor="middle">CapabilityGap 不降级</text>
+          </g>
+          <!-- 中心（唯一红） -->
+          <ellipse cx="560" cy="350" rx="128" ry="56" fill="#CC0000"/>
+          <text x="560" y="344" font-size="20" font-weight="700" fill="#fff" text-anchor="middle">业务语义能力</text>
+          <text x="560" y="372" font-size="13" fill="#F5C9C9" text-anchor="middle">服务端强制 · 全 Harness 一致</text>
+        </svg>
+      </div>
+    </div>
+    <div class="footer"><span>图号 A·14（Hub &amp; Spoke）</span><span>06 / 12</span></div>
+  </main>
+</section>
+
+<!-- ============ P7 四条红线（27 结论带） ============ -->
+<section class="slide">
+  <header class="title-zone">
+    <h1>四条红线锁死：Harness 无法把任何技术键注入到执行路径</h1>
+    <span class="kicker">SECTION 06 · SECURITY</span>
+  </header>
+  <div class="rule"></div>
+  <main class="body">
+    <div class="fig" style="height:760px">
+      <svg width="1880" height="633" viewBox="0 0 1200 404" xmlns="http://www.w3.org/2000/svg">
+        <!-- 4 列 宽282 间距24 -->
+        <g>
+          <rect x="0" y="0" width="282" height="50" fill="#333" rx="4"/>
+          <g color="#fff"><use href="#i-key" width="20" height="20" x="14" y="15"/></g>
+          <text x="42" y="31" font-size="13.5" font-weight="700" fill="#fff">禁专属对象入能力层</text>
+          <rect x="0" y="50" width="282" height="250" fill="#FCFCFC" stroke="#DDDDDD" stroke-width="1.5" rx="4"/>
+          <rect x="18" y="72" width="3.5" height="16" fill="#333"/>
+          <text x="30" y="86" font-size="12.5" fill="#666">运行上下文 ctx、插件</text>
+          <text x="30" y="108" font-size="12.5" fill="#666">注入的上下文不进入签</text>
+          <text x="30" y="130" font-size="12.5" fill="#666">名能力，防 prompt</text>
+          <text x="30" y="152" font-size="12.5" fill="#666">injection 携带越权。</text>
+        </g>
+        <g>
+          <rect x="306" y="0" width="282" height="50" fill="#006393" rx="4"/>
+          <g color="#fff"><use href="#i-code" width="20" height="20" x="320" y="15"/></g>
+          <text x="348" y="31" font-size="13.5" font-weight="700" fill="#fff">禁自由 tool calling</text>
+          <rect x="306" y="50" width="282" height="250" fill="#FCFCFC" stroke="#D8E4EC" stroke-width="1.5" rx="4"/>
+          <rect x="324" y="72" width="3.5" height="16" fill="#006393"/>
+          <text x="336" y="86" font-size="12.5" fill="#666">facade 对技术键任意</text>
+          <text x="336" y="108" font-size="12.5" fill="#666">深度扫描；bindingId、</text>
+          <text x="336" y="130" font-size="12.5" fill="#666">rfcName 运行时拒绝</text>
+          <text x="336" y="152" font-size="12.5" fill="#666">替换。</text>
+        </g>
+        <g>
+          <rect x="612" y="0" width="282" height="50" fill="#333" rx="4"/>
+          <g color="#fff"><use href="#i-doc" width="20" height="20" x="626" y="15"/></g>
+          <text x="654" y="31" font-size="13.5" font-weight="700" fill="#fff">契约版本 pin</text>
+          <rect x="612" y="50" width="282" height="250" fill="#FCFCFC" stroke="#DDDDDD" stroke-width="1.5" rx="4"/>
+          <rect x="630" y="72" width="3.5" height="16" fill="#333"/>
+          <text x="642" y="86" font-size="12.5" fill="#666">Manifest 带版本号，</text>
+          <text x="642" y="108" font-size="12.5" fill="#666">升级契约须独立评</text>
+          <text x="642" y="130" font-size="12.5" fill="#666">审，禁止静默漂移。</text>
+        </g>
+        <g>
+          <rect x="918" y="0" width="282" height="50" fill="#006393" rx="4"/>
+          <g color="#fff"><use href="#i-chart" width="20" height="20" x="932" y="15"/></g>
+          <text x="960" y="31" font-size="13.5" font-weight="700" fill="#fff">最低模型能力线</text>
+          <rect x="918" y="50" width="282" height="250" fill="#FCFCFC" stroke="#D8E4EC" stroke-width="1.5" rx="4"/>
+          <rect x="936" y="72" width="3.5" height="16" fill="#006393"/>
+          <text x="948" y="86" font-size="12.5" fill="#666">工具选择与参数合规</text>
+          <text x="948" y="108" font-size="12.5" fill="#666">达标才允许接 live，</text>
+          <text x="948" y="130" font-size="12.5" fill="#666">READ 不调用事务提交。</text>
+        </g>
+        <!-- 底部结论带（唯一红） -->
+        <rect x="0" y="316" width="1200" height="88" fill="#FFF2F2" stroke="#CC0000" stroke-width="2" rx="6"/>
+        <text x="600" y="352" font-size="16.5" font-weight="700" fill="#CC0000" text-anchor="middle">bindingId、RFC 名、服务 URL、HTTP 方法与凭证引用 —— 永不可由 Harness 提供或覆盖</text>
+        <text x="600" y="382" font-size="13" fill="#A35A5A" text-anchor="middle">唯一安全边界是远程 Java Gateway；READ 不提交，WRITE 必须存在已记录的人工确认</text>
+      </svg>
+    </div>
+    <div class="footer"><span>图号 A·27（分类 + 结论带）</span><span>07 / 12</span></div>
+  </main>
+</section>
+
+<!-- ============ P8 集成关系图 ============ -->
+<section class="slide">
+  <header class="title-zone">
+    <h1>三路执行器直连 SAP，未就绪路径运行时一律拒绝（fail-closed）</h1>
+    <span class="kicker">SECTION 07 · INTEGRATION</span>
+  </header>
+  <div class="rule"></div>
+  <main class="body">
+    <div class="fig" style="height:760px">
+      <svg width="1880" height="700" viewBox="0 0 1880 700" xmlns="http://www.w3.org/2000/svg">
+        <!-- Gateway（唯一红） -->
+        <rect x="60" y="270" width="280" height="160" fill="#CC0000" rx="6"/>
+        <text x="200" y="330" font-size="24" font-weight="700" fill="#fff" text-anchor="middle">Java Gateway</text>
+        <text x="200" y="362" font-size="15" fill="#F5C9C9" text-anchor="middle">唯一安全边界 :8080</text>
+        <text x="200" y="392" font-size="14" fill="#F5C9C9" text-anchor="middle">校验 · 白名单路由</text>
+
+        <!-- 分叉线（直角） -->
+        <g stroke="#9AA7B0" stroke-width="2" fill="none">
+          <path d="M340 310 H420 V180 H540"/>
+          <path d="M340 350 H470 V350 H540"/>
+          <path d="M340 390 H420 V520 H540"/>
+        </g>
+
+        <!-- 三执行器 -->
+        <g>
+          <rect x="540" y="120" width="420" height="120" fill="#fff" stroke="#006393" stroke-width="2" rx="6"/>
+          <text x="564" y="158" font-size="21" font-weight="700" fill="#006393">JCO_RFC</text>
+          <text x="754" y="158" font-size="14" font-weight="700" fill="#006393" text-anchor="end">● LIVE</text>
+          <text x="564" y="192" font-size="14" fill="#777">经 SAP JCo 直接执行</text>
+          <text x="564" y="216" font-size="13" fill="#999" font-family="Consolas,monospace">RFC / BAPI 调用</text>
+
+          <rect x="540" y="290" width="420" height="120" fill="#fff" stroke="#006393" stroke-width="2" rx="6"/>
+          <text x="564" y="328" font-size="21" font-weight="700" fill="#006393">ODATA</text>
+          <text x="936" y="328" font-size="14" font-weight="700" fill="#006393" text-anchor="end">● LIVE</text>
+          <text x="564" y="362" font-size="14" fill="#777">Gateway → odata-service :8081</text>
+          <text x="564" y="386" font-size="13" fill="#999">→ SAP OData（$filter）</text>
+
+          <rect x="540" y="460" width="420" height="120" fill="#fff" stroke="#006393" stroke-width="2" rx="6"/>
+          <text x="564" y="498" font-size="21" font-weight="700" fill="#006393">REST_JSON</text>
+          <text x="936" y="498" font-size="14" font-weight="700" fill="#006393" text-anchor="end">● LIVE</text>
+          <text x="564" y="532" font-size="14" fill="#777">Basic Auth → SICF rest2rfc</text>
+          <text x="564" y="556" font-size="13" fill="#999">纯 ABAP 动态反射网关</text>
+        </g>
+
+        <!-- 汇聚线 -->
+        <g stroke="#9AA7B0" stroke-width="2" fill="none">
+          <path d="M960 180 H1080 V340 H1500"/>
+          <path d="M960 350 H1500"/>
+          <path d="M960 520 H1080 V360 H1500"/>
+        </g>
+
+        <!-- SAP -->
+        <rect x="1500" y="270" width="320" height="160" fill="#333333" rx="6"/>
+        <text x="1660" y="332" font-size="25" font-weight="700" fill="#fff" text-anchor="middle">SAP On-Prem</text>
+        <text x="1660" y="368" font-size="16" fill="#CFCFCF" text-anchor="middle">ECC / S4</text>
+        <text x="1660" y="398" font-size="14" fill="#CFCFCF" text-anchor="middle">权限与字段级授权由 SAP 裁决</text>
+
+        <!-- fail-closed 预留 -->
+        <g>
+          <rect x="540" y="620" width="200" height="56" fill="#F7F7F7" stroke="#A3A3A3" stroke-width="1.8" stroke-dasharray="6 5" rx="6"/>
+          <text x="640" y="644" font-size="14" font-weight="700" fill="#888" text-anchor="middle">CDS_ADT</text>
+          <text x="640" y="665" font-size="12.5" fill="#A3A3A3" text-anchor="middle">fail-closed 预留</text>
+          <rect x="760" y="620" width="200" height="56" fill="#F7F7F7" stroke="#A3A3A3" stroke-width="1.8" stroke-dasharray="6 5" rx="6"/>
+          <text x="860" y="644" font-size="14" font-weight="700" fill="#888" text-anchor="middle">SQL_READ</text>
+          <text x="860" y="665" font-size="12.5" fill="#A3A3A3" text-anchor="middle">fail-closed 预留</text>
+        </g>
+        <text x="1260" y="648" font-size="14" fill="#999">三路共用同一套 SAP host / client / 凭据，</text>
+        <text x="1260" y="672" font-size="14" fill="#999">连接值只存在于 Gateway 受控配置。</text>
+      </svg>
+    </div>
+    <div class="footer"><span>图号 C·07（集成关系 / 总线型）</span><span>08 / 12</span></div>
+  </main>
+</section>
+
+<!-- ============ P9 KPI ============ -->
+<section class="slide">
+  <header class="title-zone">
+    <h1>离线端到端治理主链已跑通，质量门禁达到最高连续等级</h1>
+    <span class="kicker">SECTION 08 · RESULTS</span>
+  </header>
+  <div class="rule"></div>
+  <main class="body">
+    <div class="kpis">
+      <div class="kpi">
+        <div class="num">4</div><div class="unit">个业务语义工具</div>
+        <div class="lbl">Harness 可见面</div>
+        <div class="sub">3 读 1 写 · 端点级工具不对外</div>
+      </div>
+      <div class="kpi">
+        <div class="num">7</div><div class="unit">个已注册能力</div>
+        <div class="lbl">服务端内部</div>
+        <div class="sub">6 个只读 + 1 个写入</div>
+      </div>
+      <div class="kpi">
+        <div class="num">3</div><div class="unit">路 live 执行器</div>
+        <div class="lbl">JCO · ODATA · REST</div>
+        <div class="sub">均有真实 SAP 执行路径</div>
+      </div>
+      <div class="kpi hot">
+        <div class="num">L3</div><div class="unit">ACTION_GOVERNED</div>
+        <div class="lbl">最高离线门禁等级</div>
+        <div class="sub">2026-08-19 达成 · 血缘完整</div>
+      </div>
+    </div>
+    <div class="kpi-note">
+      主链：意图 → CallPlan → 校验 / 执行 → ExecutionResult → ReasoningFact → 叙述 → durable 回放 → plan-aware 单 Action 续跑<br>
+      每次执行生成 TraceSpan / JSONL，完整链路可审计；READ 不调用事务提交，任何 live WRITE 仍需 exact-subject 人工审批
+    </div>
+    <div class="footer"><span>图号 A·17（KPI 指标条）· 数据截至 2026-09-26</span><span>09 / 12</span></div>
+  </main>
+</section>
+
+<!-- ============ P10 审批泳道 ============ -->
+<section class="slide">
+  <header class="title-zone">
+    <h1>WRITE 不执行，直到“已记录的人工确认”作为可核验事项存在</h1>
+    <span class="kicker">SECTION 09 · APPROVAL</span>
+  </header>
+  <div class="rule"></div>
+  <main class="body">
+    <div class="fig" style="height:760px">
+      <svg width="1880" height="700" viewBox="0 0 1880 700" xmlns="http://www.w3.org/2000/svg">
+        <!-- 泳道背景与标题 -->
+        <g>
+          <rect x="0" y="0" width="470" height="700" fill="#FBFBFB" stroke="#E6E6E6" stroke-width="1.2"/>
+          <rect x="470" y="0" width="470" height="700" fill="#FFFFFF" stroke="#E6E6E6" stroke-width="1.2"/>
+          <rect x="940" y="0" width="470" height="700" fill="#FBFBFB" stroke="#E6E6E6" stroke-width="1.2"/>
+          <rect x="1410" y="0" width="470" height="700" fill="#FFFFFF" stroke="#E6E6E6" stroke-width="1.2"/>
+          <rect x="0" y="0" width="470" height="52" fill="#EFEFEF"/><text x="235" y="33" font-size="17" font-weight="700" fill="#555" text-anchor="middle">Harness</text>
+          <rect x="470" y="0" width="470" height="52" fill="#E4EFF6"/><text x="705" y="33" font-size="17" font-weight="700" fill="#006393" text-anchor="middle">服务端 · 能力层</text>
+          <rect x="940" y="0" width="470" height="52" fill="#EFEFEF"/><text x="1175" y="33" font-size="17" font-weight="700" fill="#555" text-anchor="middle">Java Gateway</text>
+          <rect x="1410" y="0" width="470" height="52" fill="#EFEFEF"/><text x="1645" y="33" font-size="17" font-weight="700" fill="#555" text-anchor="middle">人工审批人</text>
+        </g>
+
+        <!-- 节点 -->
+        <rect x="90" y="92" width="290" height="60" fill="#fff" stroke="#CCCCCC" stroke-width="1.8" rx="8"/>
+        <text x="235" y="118" font-size="15" font-weight="700" fill="#333" text-anchor="middle">发起补货提案</text>
+        <text x="235" y="140" font-size="12.5" fill="#999" text-anchor="middle" font-family="Consolas,monospace">propose_replenishment</text>
+
+        <rect x="560" y="92" width="290" height="60" fill="#fff" stroke="#006393" stroke-width="1.8" rx="8"/>
+        <text x="705" y="118" font-size="15" font-weight="700" fill="#333" text-anchor="middle">计算审批 subject</text>
+        <text x="705" y="140" font-size="12.5" fill="#999" text-anchor="middle">物料 · 工厂 · 数量 · 日期</text>
+
+        <rect x="560" y="190" width="290" height="60" fill="#fff" stroke="#006393" stroke-width="1.8" rx="8"/>
+        <text x="705" y="216" font-size="15" font-weight="700" fill="#333" text-anchor="middle">查已记录人工确认</text>
+        <text x="705" y="238" font-size="12.5" fill="#999" text-anchor="middle">exact-subject 精确匹配</text>
+
+        <!-- 判断菱形 -->
+        <polygon points="705,290 800,345 705,400 610,345" fill="#fff" stroke="#006393" stroke-width="1.8"/>
+        <text x="705" y="341" font-size="14" font-weight="700" fill="#333" text-anchor="middle">存在确认?</text>
+        <text x="705" y="362" font-size="12.5" fill="#999" text-anchor="middle">fail-closed</text>
+
+        <!-- 人工确认节点（唯一红） -->
+        <rect x="1500" y="315" width="290" height="60" fill="#CC0000" rx="8"/>
+        <text x="1645" y="341" font-size="16" font-weight="700" fill="#fff" text-anchor="middle">记录人工确认</text>
+        <text x="1645" y="363" font-size="12.5" fill="#F5C9C9" text-anchor="middle">可核验 acceptance item</text>
+
+        <!-- Gateway 执行 -->
+        <rect x="1030" y="450" width="290" height="60" fill="#fff" stroke="#CCCCCC" stroke-width="1.8" rx="8"/>
+        <text x="1175" y="476" font-size="15" font-weight="700" fill="#333" text-anchor="middle">执行采购申请创建</text>
+        <text x="1175" y="498" font-size="12.5" fill="#999" text-anchor="middle" font-family="Consolas,monospace">BAPI_PR_CREATE</text>
+
+        <rect x="90" y="560" width="290" height="60" fill="#fff" stroke="#CCCCCC" stroke-width="1.8" rx="8"/>
+        <text x="235" y="586" font-size="15" font-weight="700" fill="#333" text-anchor="middle">返回结果与证据</text>
+        <text x="235" y="608" font-size="12.5" fill="#999" text-anchor="middle">展示 PR 编号 / TraceSpan</text>
+
+        <!-- 连线 -->
+        <g stroke="#8A8A8A" stroke-width="2" fill="none" marker-end="url(#a10)">
+          <path d="M380 122 H560"/>
+          <path d="M705 152 V190"/>
+          <path d="M705 250 V290"/>
+          <!-- 否 → 人工 -->
+          <path d="M800 345 H1190 V345 H1500"/>
+          <!-- 人工回到查询 -->
+          <path d="M1645 315 V265 H850 V220"/>
+          <!-- 是 → Gateway -->
+          <path d="M610 345 H430 V480 H1030"/>
+          <!-- Gateway → 返回 -->
+          <path d="M1030 490 H480 V590 H380"/>
+        </g>
+        <text x="1150" y="332" font-size="13" fill="#777">否</text>
+        <text x="455" y="372" font-size="13" fill="#006393">是</text>
+
+        <text x="235" y="660" font-size="13.5" fill="#A3A3A3" text-anchor="middle">审批不是一句聊天：必须是“该 WRITE 能力已有记录在案的人工确认”</text>
+
+        <defs>
+          <marker id="a10" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0 L8 4.5 L0 9 z" fill="#8A8A8A"/></marker>
+        </defs>
+      </svg>
+    </div>
+    <div class="footer"><span>图号 C·11（UML Activity / 泳道）</span><span>10 / 12</span></div>
+  </main>
+</section>
+
+<!-- ============ P11 时间轴 S1-S5 ============ -->
+<section class="slide">
+  <header class="title-zone">
+    <h1>能力粒度已上移、却越过了 S2/S3：下一步是回填本体而非新建</h1>
+    <span class="kicker">SECTION 10 · ROADMAP</span>
+  </header>
+  <div class="rule"></div>
+  <main class="body">
+    <div class="fig" style="height:600px;margin-top:30px">
+      <svg width="1880" height="520" viewBox="0 0 1880 520" xmlns="http://www.w3.org/2000/svg">
+        <line x1="120" y1="270" x2="1760" y2="270" stroke="#D8D8D8" stroke-width="3"/>
+        <!-- 节点 x: 200 570 940 1310 1680 -->
+        <!-- S1 done -->
+        <line x1="200" y1="200" x2="200" y2="250" stroke="#B9B9B9" stroke-width="2"/>
+        <rect x="60" y="80" width="280" height="120" fill="#fff" stroke="#006393" stroke-width="1.8" rx="6"/>
+        <text x="80" y="116" font-size="21" font-weight="700" fill="#006393">S1 补证据</text>
+        <text x="80" y="146" font-size="13.5" fill="#777">测试失败清零</text>
+        <text x="80" y="170" font-size="13.5" fill="#777">重跑离线门禁</text>
+        <circle cx="200" cy="270" r="17" fill="#006393"/><path d="M192 270 l6 7 l11 -13" stroke="#fff" stroke-width="3" fill="none"/>
+
+        <!-- S2 todo -->
+        <line x1="570" y1="290" x2="570" y2="340" stroke="#B9B9B9" stroke-width="2"/>
+        <circle cx="570" cy="270" r="17" fill="#fff" stroke="#A3A3A3" stroke-width="3"/>
+        <rect x="430" y="340" width="280" height="120" fill="#fff" stroke="#D8D8D8" stroke-width="1.8" rx="6"/>
+        <text x="450" y="376" font-size="21" font-weight="700" fill="#888">S2 字段级 schema</text>
+        <text x="450" y="406" font-size="13.5" fill="#999">对象主键 + 2 个</text>
+        <text x="450" y="430" font-size="13.5" fill="#999">FactType 按语义类型标注</text>
+
+        <!-- S3 red focus -->
+        <line x1="940" y1="200" x2="940" y2="250" stroke="#E8B4B4" stroke-width="2"/>
+        <rect x="800" y="80" width="280" height="120" fill="#FFF2F2" stroke="#CC0000" stroke-width="2" rx="6"/>
+        <text x="820" y="116" font-size="20" font-weight="700" fill="#CC0000">S3 关系与派生</text>
+        <text x="820" y="146" font-size="13" fill="#A35A5A">口径 / 关系入本体</text>
+        <text x="820" y="170" font-size="13" fill="#A35A5A">产出 Manifest · 当前焦点</text>
+        <circle cx="940" cy="270" r="18" fill="#CC0000"/>
+
+        <!-- S4 done -->
+        <line x1="1310" y1="290" x2="1310" y2="340" stroke="#B9B9B9" stroke-width="2"/>
+        <circle cx="1310" cy="270" r="17" fill="#006393"/><path d="M1302 270 l6 7 l11 -13" stroke="#fff" stroke-width="3" fill="none"/>
+        <rect x="1170" y="340" width="280" height="120" fill="#fff" stroke="#006393" stroke-width="1.8" rx="6"/>
+        <text x="1190" y="376" font-size="20" font-weight="700" fill="#006393">S4 粒度上移</text>
+        <text x="1190" y="406" font-size="13.5" fill="#777">一个业务语义能力</text>
+        <text x="1190" y="430" font-size="13.5" fill="#777">端到端打通（越过 S2/S3）</text>
+
+        <!-- S5 partial -->
+        <line x1="1680" y1="200" x2="1680" y2="250" stroke="#B9B9B9" stroke-width="2"/>
+        <rect x="1540" y="80" width="280" height="120" fill="#fff" stroke="#D8D8D8" stroke-width="1.8" rx="6"/>
+        <text x="1560" y="116" font-size="20" font-weight="700" fill="#555">S5 多宿主验证</text>
+        <text x="1560" y="146" font-size="13.5" fill="#888">一致性门禁已通过</text>
+        <text x="1560" y="170" font-size="13.5" fill="#888">MCP / 第三方 harness 未做</text>
+        <circle cx="1680" cy="270" r="17" fill="#fff" stroke="#006393" stroke-width="3"/>
+        <circle cx="1680" cy="270" r="7" fill="#006393"/>
+      </svg>
+    </div>
+    <div class="summary" style="margin-top:10px">
+      <div class="bar" style="background:#006393"></div>
+      <p>唯一实质断点：业务口径固化在服务端代码里<span>“改一行本体即改变 Agent 行为、零代码改动”的自检判据尚未通过；本体是唯一未上岗的一层</span></p>
+    </div>
+    <div class="footer"><span>图号 A·11（横向时间轴）· 2026-09-26 复核</span><span>11 / 12</span></div>
+  </main>
+</section>
+
+<!-- ============ P12 金句 ============ -->
+<section class="slide">
+  <header class="title-zone">
+    <h1 style="font-size:40px">结语</h1>
+    <span class="kicker">CLOSING</span>
+  </header>
+  <div class="rule"></div>
+  <main class="body">
+    <div class="quote">
+      <div class="big">事实先于叙事 · <em>能力即边界</em></div>
+      <div class="sub">做 SAP 能力的供应方，而不是又一个 SAP Agent</div>
+      <div class="tags">
+        <span>Harness 可换，语义唯一</span>
+        <span>红线不破，执行可审计</span>
+        <span>WRITE 先审批，READ 不提交</span>
+      </div>
+    </div>
+    <div class="footer"><span>图号 A·21（金句聚焦）· Apache-2.0 自托管</span><span>12 / 12</span></div>
+  </main>
+</section>
+
+</div><!-- /stage -->
+
+<!-- 翻页导航 -->
+<div id="nav">
+  <button class="arw" id="prev" aria-label="上一页">‹</button>
+  <div id="dots"></div>
+  <span id="plabel">01 / 12</span>
+  <button class="arw" id="next" aria-label="下一页">›</button>
+</div>
+<div class="hint">← / → 或空格翻页</div>
+
+<script>
+(function(){
+  var stage=document.getElementById('stage');
+  var slides=[].slice.call(document.querySelectorAll('.slide'));
+  var dots=document.getElementById('dots');
+  var label=document.getElementById('plabel');
+  var cur=0;
+
+  slides.forEach(function(_,k){
+    var b=document.createElement('button');
+    b.className='dot';b.setAttribute('aria-label','第'+(k+1)+'页');
+    b.onclick=function(){go(k)};
+    dots.appendChild(b);
+  });
+
+  function go(k){
+    cur=Math.max(0,Math.min(slides.length-1,k));
+    slides.forEach(function(s,i){s.className='slide'+(i===cur?' on':'')});
+    [].slice.call(dots.children).forEach(function(d,i){d.className='dot'+(i===cur?' on':'')});
+    label.textContent=String(cur+1).padStart(2,'0')+' / '+slides.length;
+  }
+  document.getElementById('prev').onclick=function(){go(cur-1)};
+  document.getElementById('next').onclick=function(){go(cur+1)};
+  addEventListener('keydown',function(e){
+    if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown'){e.preventDefault();go(cur+1)}
+    if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();go(cur-1)}
+    if(e.key==='Home'){go(0)}
+    if(e.key==='End'){go(slides.length-1)}
+  });
+
+  // 居中缩放：固定 1920×1080，transform-origin top left
+  function fit(){
+    var s=Math.min(innerWidth/1920,innerHeight/1080);
+    var x=(innerWidth-1920*s)/2;
+    var y=(innerHeight-1080*s)/2;
+    stage.style.transform='translate('+x+'px,'+y+'px) scale('+s+')';
+  }
+  addEventListener('resize',fit);
+  fit();
+  go(0);
+})();
+</script>
+</body>
+</html>
