@@ -58,3 +58,63 @@ def test_analysis_versions_asset_validates():
 def test_analysis_versions_rejects_bad_shapes(bad):
     with pytest.raises(jsonschema.ValidationError):
         jsonschema.validate(bad, _schema("analysis-versions.schema.json"))
+
+
+def test_object_types_asset_validates_and_uses_ontology_vocabulary():
+    doc = _yaml("ontology/object-types.yaml")
+    jsonschema.validate(doc, _schema("object-types.schema.json"))
+    allowed = {
+        "sapnexus:MaterialNumber",
+        "sapnexus:Plant",
+        "sapnexus:Supplier",
+        "sapnexus:PurchaseOrderNumber",
+        "sapnexus:PurchaseOrderItem",
+    }
+    assert {o["semanticType"] for o in doc["objectTypes"]} <= allowed
+    ids = [o["objectTypeId"] for o in doc["objectTypes"]]
+    assert len(set(ids)) == len(ids)
+    expected = {
+        "sapnexus:Material",
+        "sapnexus:Plant",
+        "sapnexus:Supplier",
+        "sapnexus:PurchaseOrder",
+        "sapnexus:PurchaseOrderItem",
+    }
+    assert set(ids) == expected
+
+
+def test_object_types_reject_bad_shapes():
+    schema = _schema("object-types.schema.json")
+    with pytest.raises(jsonschema.ValidationError):
+        # unknown property
+        jsonschema.validate(
+            {
+                "version": 1,
+                "objectTypes": [
+                    {
+                        "objectTypeId": "sapnexus:Material",
+                        "semanticType": "sapnexus:MaterialNumber",
+                        "keyFields": ["material"],
+                        "scopeFields": [],
+                        "extra": 1,
+                    }
+                ],
+            },
+            schema,
+        )
+    with pytest.raises(jsonschema.ValidationError):
+        # empty keyFields
+        jsonschema.validate(
+            {
+                "version": 1,
+                "objectTypes": [
+                    {
+                        "objectTypeId": "sapnexus:Material",
+                        "semanticType": "sapnexus:MaterialNumber",
+                        "keyFields": [],
+                        "scopeFields": [],
+                    }
+                ],
+            },
+            schema,
+        )

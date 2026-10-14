@@ -1,0 +1,27 @@
+version: 1
+# Minimum MM object set for the ontology-governed read analysis path.
+# Object keys bind same-typed values to the same business object; scopeFields
+# carry the organizational/system dimension (plant is the only v1 scope
+# dimension in the single-user sandbox). semanticType values MUST resolve in
+# the ontology vocabulary declared by capability signatures and Fact types.
+objectTypes:
+  - objectTypeId: sapnexus:Material
+    semanticType: sapnexus:MaterialNumber
+    keyFields: [material]
+    scopeFields: []
+  - objectTypeId: sapnexus:Plant
+    semanticType: sapnexus:Plant
+    keyFields: [plant]
+    scopeFields: [plant]
+  - objectTypeId: sapnexus:Supplier
+    semanticType: sapnexus:Supplier
+    keyFields: [supplier]
+    scopeFields: []
+  - objectTypeId: sapnexus:PurchaseOrder
+    semanticType: sapnexus:PurchaseOrderNumber
+    keyFields: [purchaseOrder]
+    scopeFields: [plant]
+  - objectTypeId: sapnexus:PurchaseOrderItem
+    semanticType: sapnexus:PurchaseOrderItem
+    keyFields: [purchaseOrder, purchaseOrderItem]
+    scopeFields: [plant]
