@@ -1,0 +1,22 @@
+{
+  "traceId": "fake-po",
+  "capabilityId": "MM.PurchaseOrder.GetList",
+  "success": true,
+  "executor": {"type": "fake"},
+  "returnMessages": [],
+  "data": {
+    "purchaseOrders": [
+      {"purchaseOrder": "4500000001", "purchaseOrderItem": "00010",
+       "supplier": "V72719", "material": "DEMOA2", "plant": "1000",
+       "orderQuantity": "100", "purchaseOrderUnit": "EA"},
+      {"purchaseOrder": "4500000001", "purchaseOrderItem": "00020",
+       "supplier": "V72719", "material": "DEMOA2", "plant": "1000",
+       "orderQuantity": "150", "purchaseOrderUnit": "EA"},
+      {"purchaseOrder": "4500000002", "purchaseOrderItem": "00010",
+       "supplier": "V88888", "material": "DEMOA2", "plant": "1000",
+       "orderQuantity": "40", "purchaseOrderUnit": "KG"}
+    ]
+  },
+  "durationMs": 0,
+  "errorType": ""
+}

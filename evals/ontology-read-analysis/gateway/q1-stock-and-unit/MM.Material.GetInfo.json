@@ -1,0 +1,15 @@
+{
+  "traceId": "fake-q1-material",
+  "capabilityId": "MM.Material.GetInfo",
+  "success": true,
+  "executor": {"type": "fake"},
+  "returnMessages": [],
+  "data": {
+    "material": "DEMOA2",
+    "plant": "1000",
+    "baseUnitOfMeasure": "EA",
+    "purchasingGroup": "001"
+  },
+  "durationMs": 0,
+  "errorType": ""
+}

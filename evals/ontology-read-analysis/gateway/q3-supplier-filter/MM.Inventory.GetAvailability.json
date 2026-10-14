@@ -1,0 +1,13 @@
+{
+  "traceId": "fake-inventory",
+  "capabilityId": "MM.Inventory.GetAvailability",
+  "success": true,
+  "executor": {"type": "fake"},
+  "returnMessages": [],
+  "data": {
+    "availableQuantity": "12.000",
+    "mrpElementLines": [{"indicator": "WB", "availableQuantity": "12.000"}]
+  },
+  "durationMs": 0,
+  "errorType": ""
+}
