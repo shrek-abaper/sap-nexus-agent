@@ -2,6 +2,7 @@
 change: semantic-release-asset-pipeline
 design-doc: docs/superpowers/specs/2026-10-14-semantic-release-asset-pipeline-design.md
 base-ref: 6444144a57da8ce34b2248eeab42b6bbf26b1d72
+archived-with: 2026-10-14-semantic-release-asset-pipeline
 ---
 
 # SemanticRelease Asset Pipeline Implementation Plan

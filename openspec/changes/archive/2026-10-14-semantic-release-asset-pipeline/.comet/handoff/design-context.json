@@ -1,0 +1,14 @@
+{
+  "change": "semantic-release-asset-pipeline",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "70b009d6b2ee4cc190df9ca0e663a37b82b7caa70bb316b35e113c78e4ffea21",
+  "files": [
+    { "path": "openspec/changes/semantic-release-asset-pipeline/proposal.md", "sha256": "dcff77425e796f1eefacea426df6d637361d51617af04e700763f634b998a938" },
+    { "path": "openspec/changes/semantic-release-asset-pipeline/design.md", "sha256": "6ba9e96d2d21c9ea1bda87183d30ba21310a6fcaa8dc146f5428b44bdabb6a3e" },
+    { "path": "openspec/changes/semantic-release-asset-pipeline/tasks.md", "sha256": "edc429f91e4afe842ec212b70e830e6edbbc8ee2661880c6d7a205b276a99a8a" },
+    { "path": "openspec/changes/semantic-release-asset-pipeline/specs/semantic-release-package/spec.md", "sha256": "f30859b79f07028b8f2f412179432cfdad6c24e65a3f20b549a602babecde9a5" }
+  ]
+}
