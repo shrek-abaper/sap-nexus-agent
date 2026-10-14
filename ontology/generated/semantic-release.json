@@ -1,0 +1,95 @@
+{
+  "businessValidity": {
+    "applicability": []
+  },
+  "compilerVersion": "0.1.0",
+  "operatorImplementationVersion": {
+    "compare": "0.1.0",
+    "filter_eq": "0.1.0",
+    "group_sum": "0.1.0",
+    "select_fields": "0.1.0"
+  },
+  "registrySnapshotId": "sha256:fe1b50611c749211deefed2b5c9fdb159ebf57afbeeddeeef0fcfdbb1acad51e",
+  "schemaVersion": 1,
+  "semanticSnapshotId": "sha256:c4b1ed64b207454cf30e9587ce0a1991eeb2dc820e57f9fa23b4f6013408aaa7",
+  "sources": [
+    {
+      "digest": "sha256:916c0bc68b624cc90d6a164e72794575a221fa3a57221829b2bd420785aef369",
+      "documentVersion": 1,
+      "path": "ontology/analysis-fact-fields.yaml",
+      "role": "semantic"
+    },
+    {
+      "digest": "sha256:f9e68f28dfe6c42503060186ee377a3b9d3e2c9e8773cfc00b0e83009cd74a40",
+      "documentVersion": 1,
+      "path": "ontology/analysis-operators.yaml",
+      "role": "semantic"
+    },
+    {
+      "digest": "sha256:fbfb0cf0aae916da68ffa1e95c35d7c8ced4630f3f934cc4270bce20c107f07d",
+      "documentVersion": 1,
+      "path": "ontology/analysis-versions.yaml",
+      "role": "semantic"
+    },
+    {
+      "digest": "sha256:0ab5855adf45cef4d8144b5022c086d82fb2502794baa56af8822f5a815d6780",
+      "documentVersion": 1,
+      "path": "ontology/business-rules.yaml",
+      "role": "semantic"
+    },
+    {
+      "digest": "sha256:c568b8e683a9d4999a9ac3130712df92a445d2396623d50e2d4b898b9edfdce5",
+      "documentVersion": 2,
+      "path": "ontology/capability-relations.yaml",
+      "role": "legacy"
+    },
+    {
+      "digest": "sha256:b9f7f71fd16dcd897edb7052a663f3db0fc5a63ea11514a9d7bf437d63a7caad",
+      "documentVersion": 1,
+      "path": "ontology/definition-applicability.yaml",
+      "role": "semantic"
+    },
+    {
+      "digest": "sha256:d48ba64f4432eadd814cd8d826d97327b94b5c6408a2f0aa9d05f2a5ee87b976",
+      "documentVersion": 1,
+      "path": "ontology/definitions.yaml",
+      "role": "semantic"
+    },
+    {
+      "digest": "sha256:d72a8f8f9b7fc567a1b9a0735da78b5c04255a51afdbbcd2412e611f5c9a2d03",
+      "documentVersion": 3,
+      "path": "ontology/fact-types.yaml",
+      "role": "legacy"
+    },
+    {
+      "digest": "sha256:59d6d516d1f64e1e39f73f7dd05a56388a72b4cd653e8367e2760307a1ac6a2b",
+      "documentVersion": 1,
+      "path": "ontology/object-links.yaml",
+      "role": "semantic"
+    },
+    {
+      "digest": "sha256:f6abb146c4ab85b9b44f539bc52043ff0be06d9195802c869e6794aa29ef4c37",
+      "documentVersion": 1,
+      "path": "ontology/object-types.yaml",
+      "role": "semantic"
+    },
+    {
+      "digest": "sha256:c4013865f49a4704de1dac18a62c09fb01532c8f745a926e8aba949372c1461b",
+      "documentVersion": 2,
+      "path": "registry/capabilities.yaml",
+      "role": "legacy"
+    },
+    {
+      "digest": "sha256:b920df2b28cfc794a47e365387d6d705163c654026d35eee267471cdc5093328",
+      "documentVersion": 1,
+      "path": "registry/executor-bindings.yaml",
+      "role": "legacy"
+    },
+    {
+      "digest": "sha256:0e0c36b679404b0351622f95c5030f0cfc468a8b487d993a3700e1ee94688a43",
+      "documentVersion": 3,
+      "path": "registry/semantic-types.yaml",
+      "role": "legacy"
+    }
+  ]
+}
