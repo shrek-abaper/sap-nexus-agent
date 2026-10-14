@@ -66,13 +66,12 @@ class ScriptedInterpreter:
         return self._documents[index]
 
 
-def test_repair_round_recovers_unknown_field(world):
+def test_structural_repair_round_recovers(world):
     pinned, sources = world
     good = json.loads(
         (REPO_ROOT / "evals/ontology-read-analysis/drafts/q1-stock-and-unit.json").read_text()
     )
-    bad = json.loads(json.dumps(good))
-    bad["requestedFacts"][0]["fields"] = ["deliveryDate"]
+    bad = {"unexpected": True}  # schema-level failure the model can repair
     interpreter = ScriptedInterpreter([bad, good])
     draft, terminal = prepare_draft(
         _request(interpreter="model", utterance="stock"),
@@ -83,6 +82,25 @@ def test_repair_round_recovers_unknown_field(world):
     assert terminal is None
     assert interpreter.call_count == 2
     assert interpreter.feedback_seen, "repair must feed issues back"
+
+
+def test_unknown_field_is_first_round_semantic_gap_without_repair(world):
+    pinned, sources = world
+    good = json.loads(
+        (REPO_ROOT / "evals/ontology-read-analysis/drafts/q1-stock-and-unit.json").read_text()
+    )
+    bad = json.loads(json.dumps(good))
+    bad["requestedFacts"][0]["fields"] = ["deliveryDate"]
+    interpreter = ScriptedInterpreter([bad, good])
+    draft, terminal = prepare_draft(
+        _request(interpreter="model", utterance="arrivals?"),
+        sources, pinned, REPO_ROOT / "evals/ontology-read-analysis",
+        interpreter_instance=interpreter,
+        live=True,
+    )
+    assert draft is None
+    assert terminal["status"] == "semantic_gap"
+    assert interpreter.call_count == 1  # the question must not be "repaired away"
 
 
 def test_persistent_bad_draft_is_rejected(world):

@@ -39,10 +39,24 @@ _SYSTEM_TEMPLATE = """你是 SAP Nexus 本体约束只读分析的"目标解释�
 
 # 口径铁律
 - orderQuantity 是采购订单订购量，绝不代表"到货量/在途/ATP/承诺交期"。
-- 本发布不存在交期、收货数量、需求预测、ATP 相关字段；用户问到这些时，仍只允许使用上表字段，
-  由下游判定语义缺口，严禁编造字段。
+- 本发布不存在交期、收货数量、到货确认、需求预测、ATP 相关字段。用户问到这些语义时：
+  仍以最接近的事实类型提出请求，但把用户真正要的字段名（如 deliveryDate、dueQuantity、
+  requiredQuantity）写入 fields，由服务端判定为语义缺口并拒绝；严禁用上表现有字段伪装回答。
 - 不得出现 RFC、binding、URL、路径、SQL、凭据、可执行代码等任何技术性键或值。
-- 只读：不得提出任何写入或采购申请创建类结论。
+- 当且仅当用户明确要求创建/修改/审批任何 SAP 对象（如"创建采购申请"）时：
+  在 requestedFacts 中使用 factTypeId=sapnexus:PurchaseRequisitionCreatedFact、
+  fields=["prNumber"]、objectSelectors=[]，由服务端以只读策略拒绝；不得改写成只读查询。
+- 问到"未来会不会断供/能否保证供应/需求多少"这类需求与确定性判断时：
+  使用 factTypeId=sapnexus:DemandForecastFact、fields=["requiredQuantity"]（该事实本发布
+  无生产者，由服务端报能力缺口），严禁用采购订单订购量代替需求。
+- 多步分析时，下游节点必须通过 {"kind":"nodeRef","nodeId":"..."} 引用上游节点并声明
+  dependsOn；例如"先按供应商过滤再汇总"：a1=filter_eq(supplier) 的 inputs 引用
+  factField，a2=group_sum 的 inputs 为 [{"kind":"nodeRef","nodeId":"a1"}] 且
+  dependsOn=["a1"]，不要在 a2 重复引用原始 factField。
+
+# 输出禁止
+- analysisNodes 的输入只有 factField/nodeRef 两种；严禁出现 source、parameterBindings、
+  governance、capabilityId、nodeId 等执行计划/节点字段。
 
 # 输出格式（严格 JSON，键固定）
 {{
@@ -64,7 +78,41 @@ def build_system_prompt(pinned: Any) -> str:
     for fact_type in sorted(pinned.allowlist_fields):
         fields = ", ".join(sorted(pinned.allowlist_fields[fact_type]))
         lines.append(f"- {fact_type}: {fields}")
-    return _SYSTEM_TEMPLATE.format(fact_table="\n".join(lines))
+    return _SYSTEM_TEMPLATE.replace("{fact_table}", "\n".join(lines))
+
+
+_CONSTRAINT_TYPES = {
+    "material": "sapnexus:MaterialNumber",
+    "plant": "sapnexus:Plant",
+    "vendor": "sapnexus:Supplier",
+    "supplier": "sapnexus:Supplier",
+}
+
+
+def normalize_document(document: dict[str, Any]) -> dict[str, Any]:
+    """Coerce model output to strict draft shape (server stays authoritative)."""
+    constraints = []
+    for constraint in document.get("constraints", []):
+        if not isinstance(constraint, dict) or not constraint.get("name"):
+            continue
+        name = str(constraint["name"])
+        semantic_type = constraint.get("semanticType")
+        source = constraint.get("source")
+        if source not in {"explicitUser", "confirmedContext"}:
+            source = "explicitUser"
+        if not isinstance(semantic_type, str) or not semantic_type.startswith("sapnexus:"):
+            semantic_type = _CONSTRAINT_TYPES.get(name)
+        if semantic_type is None or constraint.get("value") in (None, ""):
+            continue
+        constraints.append({
+            "name": name,
+            "semanticType": semantic_type,
+            "value": str(constraint["value"]),
+            "source": source,
+        })
+    normalized = dict(document)
+    normalized["constraints"] = constraints
+    return normalized
 
 
 class ModelGoalInterpreter:
@@ -119,6 +167,7 @@ class ModelGoalInterpreter:
 
         if not isinstance(document, dict):
             raise ModelInterpreterError("MODEL_OUTPUT_NOT_OBJECT")
+        document = normalize_document(document)
         # Cheap local guard before returning; the authoritative validation is
         # the shared draft pipeline (which also feeds repair feedback).
         report = validate_draft(document, self._pinned)

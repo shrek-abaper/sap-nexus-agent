@@ -42,7 +42,9 @@ def test_prompt_confinement(pinned):
     for operator in ("select_fields", "filter_eq", "group_sum", "compare"):
         assert operator in prompt
     assert "sapnexus:PurchaseOrderSupplyFact" in prompt
-    assert "deliveryDate" not in prompt  # non-existent fields never advertised
+    # Non-existent fields may be named only inside the gap-instruction context.
+    assert "不存在交期" in prompt
+    assert "deliveryDate" in prompt  # instructed to surface the gap, not fake an answer
     assert "availableQuantity" in prompt
 
 
@@ -106,3 +108,25 @@ def test_pipeline_rejects_technical_model_draft(pinned):
     )
     assert terminal["status"] == "rejected"
     assert interpreter.call_count == 2  # one repair attempt, then rejected
+
+
+def test_normalize_document_repairs_constraint_shape(pinned):
+    from sap_nexus_agent.ontology_planning.model_interpreter import normalize_document
+
+    raw = {
+        "schemaVersion": 1,
+        "requestedFacts": [],
+        "constraints": [
+            {"name": "plant", "semanticType": "explicitUser", "value": "1000"},
+            {"name": "vendor", "value": "V72719", "source": "confirmedContext"},
+            {"name": "unknown", "value": "x"},
+        ],
+        "analysisNodes": [],
+        "requestedConclusions": [],
+        "assumptions": [],
+    }
+    normalized = normalize_document(raw)
+    assert normalized["constraints"] == [
+        {"name": "plant", "semanticType": "sapnexus:Plant", "value": "1000", "source": "explicitUser"},
+        {"name": "vendor", "semanticType": "sapnexus:Supplier", "value": "V72719", "source": "confirmedContext"},
+    ]
