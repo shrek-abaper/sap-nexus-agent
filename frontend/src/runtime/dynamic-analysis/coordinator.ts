@@ -19,6 +19,7 @@ import type {
   NodeFactRecord,
   PlanGraphV2,
 } from "../plan-executor/types";
+import { runPythonAnalysis } from "./python-analysis-adapter";
 import type { AnalysisWireInput, AnalysisWireOutput } from "./types";
 
 export interface PlanEnvelope {
@@ -62,67 +63,9 @@ export type AnalysisRunner = (
   input: AnalysisWireInput,
 ) => Promise<AnalysisWireOutput> | AnalysisWireOutput;
 
-/** Default analysis runner: one controlled Python subprocess (no credentials). */
+/** Default analysis runner: one controlled Python subprocess via the adapter. */
 export function subprocessAnalysisRunner(opts: { timeoutMs?: number } = {}): AnalysisRunner {
-  return async (input: AnalysisWireInput): Promise<AnalysisWireOutput> => {
-    const repoRoot = repoRootPath();
-    const env: Record<string, string | undefined> = {};
-    for (const [key, value] of Object.entries(process.env)) {
-      if (key === "SAP_NEXUS_APPROVAL_TOKEN") continue;
-      if (key === "SAP_NEXUS_GATEWAY_URL") continue;
-      if (key === "SAP_NEXUS_PRINCIPAL") continue;
-      env[key] = value;
-    }
-    env.PYTHONPATH = [path.join(repoRoot, "agent"), process.env.PYTHONPATH]
-      .filter(Boolean)
-      .join(path.delimiter);
-
-    return new Promise<AnalysisWireOutput>((resolvePromise, rejectPromise) => {
-      let settled = false;
-      let stdout = "";
-      let stderr = "";
-      const child = spawn(
-        pythonExecutable(repoRoot),
-        ["-m", "sap_nexus_agent.ontology_planning.analysis_runtime"],
-        { cwd: repoRoot, env: env as NodeJS.ProcessEnv },
-      );
-      const timer = setTimeout(
-        () => {
-          child.kill();
-          fail(new DynamicAnalysisError("analysis subprocess timed out"));
-        },
-        opts.timeoutMs ?? 90_000,
-      );
-      const fail = (error: Error) => {
-        if (settled) return;
-        settled = true;
-        clearTimeout(timer);
-        rejectPromise(error);
-      };
-      child.stdout.on("data", (chunk: Buffer) => {
-        stdout += chunk.toString("utf8");
-      });
-      child.stderr.on("data", (chunk: Buffer) => {
-        stderr += chunk.toString("utf8");
-      });
-      child.on("error", (error) => fail(new DynamicAnalysisError(error.message)));
-      child.on("close", (code) => {
-        if (settled) return;
-        clearTimeout(timer);
-        if (code !== 0) {
-          fail(new DynamicAnalysisError(`analysis subprocess exit ${code}: ${stderr.slice(-300)}`));
-          return;
-        }
-        try {
-          resolvePromise(JSON.parse(stdout.trim()) as AnalysisWireOutput);
-          settled = true;
-        } catch {
-          fail(new DynamicAnalysisError("analysis output is not valid JSON"));
-        }
-      });
-      child.stdin.end(JSON.stringify(input));
-    });
-  };
+  return (input: AnalysisWireInput) => runPythonAnalysis(input, opts);
 }
 
 /** Planner runner: one controlled Python subprocess returning the plan envelope. */
