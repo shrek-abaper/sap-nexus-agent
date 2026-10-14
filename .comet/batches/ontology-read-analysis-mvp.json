@@ -1,0 +1,98 @@
+{
+  "version": 1,
+  "batchId": "ontology-read-analysis-mvp",
+  "createdAt": "2026-10-14",
+  "workflow": "classic",
+  "artifactLanguage": "en",
+  "designInput": "docs/nexus-ontology-planning-handoff.md",
+  "baseline": {
+    "head": "6444144a57da8ce34b2248eeab42b6bbf26b1d72",
+    "verifiedAt": "2026-10-14",
+    "activeChangesAtCreation": "none (native probe: no-active-native-changes; openspec list: [])"
+  },
+  "originalGoalSummary": "Ontology-constrained dynamic read-only analysis MVP: the LLM proposes typed semantic goals and controlled analysis steps; the server deterministically compiles only registered READ capabilities into a read PlanGraph v2 plus a separate registered-operator AnalysisPlan, executes offline (FakeGateway) through a new DynamicReadCoordinator reusing PlanExecutor, and returns evidence-grounded facts with semantic/capability gaps. Legacy four tools, WRITE governance, and existing execution paths must not regress. C0 (design only) precedes any C1/C2 build; C3 chat integration is excluded from this batch.",
+  "openCompletedAt": "2026-10-14",
+  "c0ConfirmedAt": "2026-10-14",
+  "c0Decision": "user confirmed both changes' open artifacts and chose to hold both at phase=open; do NOT run open guard --apply until the user explicitly starts C1; resume order is C1 (semantic-release-asset-pipeline) then C2 (ontology-goal-read-analysis), and C2 build starts only after C1 archive or explicit handoff confirmation",
+  "openPreflight": {
+    "openspecStrictValidate": "both changes valid",
+    "stateCheck": "both full-workflow changes at phase=open with proposal/design/tasks non-empty and design_doc=null; awaiting user review before open guard --apply",
+    "preExistingStrictWarnings": "16 archived main specs carry placeholder-Purpose/long-requirement warnings on tracked files untouched by this batch"
+  },
+  "ordering": [
+    "semantic-release-asset-pipeline",
+    "ontology-goal-read-analysis"
+  ],
+  "dependencies": {
+    "ontology-goal-read-analysis": [
+      "semantic-release-asset-pipeline (C2 build starts only after C1 is archived or explicitly handoff-confirmed by the user)"
+    ]
+  },
+  "items": [
+    {
+      "name": "semantic-release-asset-pipeline",
+      "phase": "C1",
+      "status": "archived",
+      "goals": "Publish one deterministic, content-hashed SemanticRelease v1 package that binds the existing registrySnapshotId (4 legacy source documents, old paths untouched) to a new semanticSnapshotId covering all semantic assets the new path consumes: MM minimum object keys/scopes (object-types), the first allowlist of analysis-legal Fact field mappings, the registered analysis operator catalog (select_fields, filter_eq, group_sum, compare), and Definition/caliber applicability declarations. Provide build, validation, and cache binding with reproducible, timestamp-free artifacts.",
+      "scope": [
+        "New ontology assets: object-types.yaml (MM minimum object set), analysis-operators.yaml (4 registered operators)",
+        "Fact field analysis-allowlist mapping grounded in ontology/fact-types.yaml (existing three READ facts only)",
+        "Selective consumption of definitions.yaml / object-links.yaml / business-rules.yaml by the new package; legacy RegistrySnapshot source set unchanged",
+        "SemanticRelease v1 versioned contract + JSON schema; semanticSnapshotId digest over expanded source set incl. compiler/operator implementation version digests",
+        "Deterministic build/check entry point and snapshot association/correlation checks",
+        "Schema/reference/determinism tests"
+      ],
+      "nonGoals": [
+        "No goal interpreter, resolver, compiler, coordinator, or runtime execution",
+        "No changes to the legacy registrySnapshot computation or existing snapshot consumers",
+        "No hand-writing derivable edges back into relation files",
+        "No new supply/demand/ATP formulas; proposed definitions are not promoted to grounded",
+        "No Neo4j/GraphDB/OWL reasoner, no new SAP executor family",
+        "No frontend/chat integration"
+      ],
+      "acceptanceScenarios": [
+        "Changing any consumed semantic source (asset, mapping, operator definition, bound implementation) changes semanticSnapshotId; identical inputs byte-for-byte reproduce the package",
+        "Legacy registrySnapshotId and the four legacy tools remain compatible; old snapshot consumers are untouched",
+        "Reference existence validation and business-validity validation produce distinct validation states",
+        "SemanticRelease carries both registrySnapshotId and semanticSnapshotId and their association is verified at compile/execute time by C2",
+        "openspec validate --strict and ontology bundle check pass; no derivable edge is authored into catalogs"
+      ]
+    },
+    {
+      "name": "ontology-goal-read-analysis",
+      "phase": "C2",
+      "status": "archived",
+      "goals": "Provide the goal-first dynamic read-only analysis path: fake GoalInterpreter + model adapter interface, strict SemanticGoalDraft v1 validator, GoalResolver and deterministic SemanticCompiler reusing the producer index and dependency derivation, independent AnalysisPlan v1 with registered operators only, TypedFact/AnalysisResult v1 contracts, TypedFactNormalizer, four deterministic analysis operators with single Python authority, DynamicReadCoordinator over the existing PlanExecutor with FakeGateway, and a Python contract/CLI entry emitting full execution evidence.",
+      "scope": [
+        "Versioned schemas: semantic-goal-draft, read-analysis-plan, typed-fact/analysis-result (SemanticRelease schema belongs to C1)",
+        "agent/sap_nexus_agent/ontology_planning/ new package (contracts, interpreter seam, resolver, compiler, validation, fact_normalizer, analysis_runtime, cli)",
+        "Reuse semantic_planning graph/derivation and PlanGraph v2 compiler primitives via wrappers; legacy entry points preserved",
+        "TS dynamic-analysis coordinator + python-analysis-adapter reusing agent-runtime-adapter subprocess pattern; only existing GatewayClient executes SAP calls",
+        "Bounded planning config (node/depth/calls/timeout/row/byte limits), server-owned",
+        "Offline eval cases and holdout harness surface; WRITE/gap rejection before Gateway"
+      ],
+      "nonGoals": [
+        "No DSH chat registration or shipped UI (C3, separate workstream, not in this batch)",
+        "No SAP live connections and no paid model calls; default fake interpreter + FakeGateway",
+        "No dynamic WRITE, approval bypass, saga/compensation, ad-hoc capability registration",
+        "No LLM-authored SQL/SPARQL/code/expressions; no open operator plugin; no unbounded replanning",
+        "No changes to CompositionCoordinator, Java Gateway/bindings, Harness main loop, or SemanticTool v2 contract",
+        "No Python/TS dual implementations of analysis math; no replenishment formula reuse without verified caliber"
+      ],
+      "acceptanceScenarios": [
+        "Q1 inventory+base unit and Q2/Q3 PO grouping/filtering compile to materially different legal read+analysis plans without question-specific recipes",
+        "Q5 (arrivals next week) and Q6 (stockout certainty) return semantic/fact gaps; order quantity is never presented as arrival quantity or ATP; Q7 WRITE is rejected before any Gateway call (zero WRITE calls, including nested/disguised attempts)",
+        "Missing required values trigger CLARIFY; zero producer -> CAPABILITY_GAP; multiple producers never auto-pick list order",
+        "Group sums preserve per-row lineage; missing unit blocks quantity aggregation; duplicate row identities are reported, never silently deduped; truncation marks incomplete and aggregates are not reported as complete",
+        "Plan execution pins one SemanticRelease; in-flight runs never mix releases; plans are server-owned records",
+        "Holdout question variants pass without business-code changes; legacy four-tool regression suite passes"
+      ]
+    }
+  ],
+  "excluded": [
+    "C3 sandbox chat integration, live SAP smoke, paid-model evaluation (requires separate authorization)",
+    "Cross-domain expansion, shared identity/tenant governance, WRITE governance workstreams"
+  ],
+  "c2CompletedAt": "2026-10-14",
+  "c2Note": "C2 archived locally after full verification (Python 100 new + 485 regression, frontend 601 passed, 24-case matrix); no push."
+}
