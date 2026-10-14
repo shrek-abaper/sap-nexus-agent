@@ -294,3 +294,34 @@ class Normalization:
     facts: tuple[TypedFact, ...]
     exclusions: tuple[ExcludedRow, ...]
     conflicts: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class AnalysisResult:
+    node_id: str
+    operator_id: str
+    status: str
+    output_type: str
+    rows: tuple[Mapping[str, Any], ...]
+    excluded_rows: tuple[ExcludedRow, ...]
+    operator_version: str
+    definition_refs: tuple[str, ...] = ()
+    partial: bool = False
+    limits: Mapping[str, Any] = field(default_factory=dict)
+    reasons: tuple[str, ...] = ()
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schemaVersion": 1,
+            "nodeId": self.node_id,
+            "operatorId": self.operator_id,
+            "status": self.status,
+            "outputType": self.output_type,
+            "rows": [dict(row) for row in self.rows],
+            "excludedRows": [row.to_dict() for row in self.excluded_rows],
+            "operatorVersion": self.operator_version,
+            "definitionRefs": list(self.definition_refs),
+            "partial": self.partial,
+            "limits": dict(self.limits),
+            "reasons": list(self.reasons),
+        }
