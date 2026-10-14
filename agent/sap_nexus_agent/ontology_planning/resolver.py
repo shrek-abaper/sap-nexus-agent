@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from sap_nexus_agent.planner.capability_card import CapabilityCard, discover_cards
+from sap_nexus_agent.semantic_planning.derivation import derive_data_dependencies
 
 
 @dataclass(frozen=True)
@@ -24,6 +25,15 @@ class DesiredFact:
     selectors: tuple[Mapping[str, str], ...]
 
 
+@dataclass(frozen=True, order=True)
+class ClosureBinding:
+    consumer_capability_id: str
+    consumer_input_name: str
+    producer_capability_id: str
+    fact_type_id: str
+    fact_field_name: str
+
+
 @dataclass(frozen=True)
 class Resolution:
     status: str
@@ -32,7 +42,8 @@ class Resolution:
     clarification: tuple[str, ...]
     gaps: tuple[str, ...]
     candidates: Mapping[str, tuple[str, ...]]
-    closure: tuple[Any, ...] = ()
+    closure: tuple[ClosureBinding, ...] = ()
+    closure_capabilities: tuple[str, ...] = ()
 
 
 def _visible_read_cards(
@@ -132,6 +143,11 @@ def resolve(
         )
         producers[fact_type] = card.capability_id
 
+    closure_bindings, auto_pulled, closure_clarification = _close_inputs(
+        sources, visible, desired, producers_by_fact, producers, supplied_map(draft)
+    )
+    clarification.extend(closure_clarification)
+
     status = _overall_status(gaps, clarification)
     return Resolution(
         status=status,
@@ -140,7 +156,105 @@ def resolve(
         clarification=tuple(clarification),
         gaps=tuple(gaps),
         candidates=dict(sorted(candidates.items())),
+        closure=tuple(sorted(closure_bindings)),
+        closure_capabilities=tuple(sorted(auto_pulled)),
     )
+
+
+def supplied_map(draft: Any) -> dict[str, str]:
+    supplied: dict[str, str] = {}
+    for fact in draft.requested_facts:
+        for selector in fact.selectors:
+            supplied.setdefault(selector.key, selector.value)
+    for constraint in draft.constraints:
+        supplied.setdefault(constraint.name, constraint.value)
+    return supplied
+
+
+def _fact_field_cardinality(sources: Any, fact_type: str, field_name: str) -> str:
+    for fact in sources.fact_types.get("factTypes", []):
+        if fact.get("factTypeId") != fact_type:
+            continue
+        for field in fact.get("fields", []):
+            if field.get("name") == field_name:
+                return str(field.get("cardinality", "one"))
+    return "one"
+
+
+def _close_inputs(
+    sources: Any,
+    visible: list[CapabilityCard],
+    desired: list[DesiredFact],
+    producers_by_fact: Mapping[str, tuple[CapabilityCard, ...]],
+    producers: dict[str, str],
+    supplied: dict[str, str],
+) -> tuple[set[ClosureBinding], set[str], list[str]]:
+    view = derive_data_dependencies(sources)
+    cards_by_id = {card.capability_id: card for card in visible}
+    bindings: set[ClosureBinding] = set()
+    auto_pulled: set[str] = set()
+    clarification: list[str] = []
+
+    planned = {fact.producer_capability_id for fact in desired}
+    # Deriver diagnostics on planned consumers (e.g. many-cardinality fields
+    # requiring a reduction the planner must not choose) stay unbound.
+    for diagnostic in view.diagnostics:
+        if diagnostic.consumer_capability_id not in planned:
+            continue
+        if diagnostic.kind == "needsReduction":
+            clarification.append(
+                f"NEEDS_REDUCTION:{diagnostic.fact_type_id}."
+                f"{diagnostic.consumer_input_name} "
+                f"for {diagnostic.consumer_capability_id}"
+            )
+
+    worklist = list(planned)
+    while worklist:
+        consumer_id = worklist.pop()
+        consumer = cards_by_id.get(consumer_id)
+        if consumer is None:
+            continue
+        for edge in view.edges:
+            if edge.consumer_capability_id != consumer_id:
+                continue
+            descriptor = next(
+                (i for i in consumer.inputs if i.name == edge.consumer_input_name),
+                None,
+            )
+            if descriptor is None or not descriptor.required:
+                continue
+            if edge.consumer_input_name in supplied:
+                continue  # user/context value wins; no derived binding
+            cardinality = _fact_field_cardinality(
+                sources, edge.fact_type_id, edge.fact_field_name
+            )
+            if cardinality == "many":
+                clarification.append(
+                    f"NEEDS_REDUCTION:{edge.fact_type_id}.{edge.fact_field_name} "
+                    f"for {consumer_id}.{edge.consumer_input_name}"
+                )
+                continue
+            producer_cards = producers_by_fact.get(edge.fact_type_id, ())
+            if len(producer_cards) != 1:
+                clarification.append(
+                    f"MISSING_SELECTOR_VALUE:{edge.consumer_input_name}"
+                )
+                continue
+            producer_id = producer_cards[0].capability_id
+            bindings.add(
+                ClosureBinding(
+                    consumer_capability_id=consumer_id,
+                    consumer_input_name=edge.consumer_input_name,
+                    producer_capability_id=producer_id,
+                    fact_type_id=edge.fact_type_id,
+                    fact_field_name=edge.fact_field_name,
+                )
+            )
+            if producer_id not in planned:
+                auto_pulled.add(producer_id)
+                planned.add(producer_id)
+                worklist.append(producer_id)
+    return bindings, auto_pulled, clarification
 
 
 def _missing_required_values(requested: Any, draft: Any, card: CapabilityCard) -> tuple[str, ...]:

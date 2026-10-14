@@ -170,3 +170,91 @@ def test_missing_required_selector_clarifies(pinned, built):
     resolution = resolve(draft, pinned, sources, snapshot, graph, PRINCIPAL)
     assert resolution.status == "clarification"
     assert any("MISSING_SELECTOR_VALUE" in c for c in resolution.clarification)
+
+
+def _tmp_registry_with_derived_input(tmp_path: Path, many: bool = False):
+    import shutil
+    import yaml
+
+    for rel in ("registry/capabilities.yaml", "registry/executor-bindings.yaml",
+                "registry/semantic-types.yaml", "ontology/fact-types.yaml",
+                "ontology/capability-relations.yaml"):
+        target = tmp_path / rel
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(REPO_ROOT / rel, target)
+    caps_path = tmp_path / "registry/capabilities.yaml"
+    caps = yaml.safe_load(caps_path.read_text())
+    inventory = next(
+        c for c in caps["capabilities"] if c["capabilityId"] == "MM.Inventory.GetAvailability"
+    )
+    derived_input = {
+        "name": "baseUnitOfMeasure",
+        "semanticName": "baseUnitOfMeasure",
+        "semanticType": "sapnexus:UnitOfMeasure",
+        "bindingKind": "identifier",
+        "required": True,
+        "type": "string",
+        "sapParameter": "MEINS",
+        "satisfiableByFactType": "sapnexus:MaterialInfoFact",
+    }
+    if many:
+        derived_input["name"] = "supplier"
+        derived_input["semanticName"] = "supplier"
+        derived_input["semanticType"] = "sapnexus:Supplier"
+        derived_input["sapParameter"] = "LIFNR"
+        derived_input["satisfiableByFactType"] = "sapnexus:PurchaseOrderSupplyFact"
+    inventory["inputs"].append(derived_input)
+    caps_path.write_text(yaml.safe_dump(caps, allow_unicode=True))
+    tmp_sources = load_semantic_sources(tmp_path)
+    contracts = build_semantic_contracts(tmp_sources)
+    assert contracts.report.valid, [str(i) for i in contracts.report.issues]
+    return tmp_sources, contracts
+
+
+def test_closure_auto_pulls_registered_producer(pinned, tmp_path):
+    sources, contracts = _tmp_registry_with_derived_input(tmp_path)
+    draft = _draft([
+        _fact("sapnexus:InventoryAvailabilityFact", ["availableQuantity"],
+              [_sel("sapnexus:Material", "material", "DEMOA2"),
+               _sel("sapnexus:Plant", "plant", "1000")])
+    ])
+    resolution = resolve(draft, pinned, sources, contracts.snapshot, contracts.graph, PRINCIPAL)
+    assert resolution.status == "complete"
+    assert "MM.Material.GetInfo" in resolution.closure_capabilities
+    binding = next(
+        b for b in resolution.closure
+        if b.consumer_capability_id == "MM.Inventory.GetAvailability"
+        and b.consumer_input_name == "baseUnitOfMeasure"
+    )
+    assert binding.producer_capability_id == "MM.Material.GetInfo"
+    assert binding.fact_field_name == "baseUnitOfMeasure"
+
+
+def test_closure_many_cardinality_stays_unbound(pinned, tmp_path):
+    sources, contracts = _tmp_registry_with_derived_input(tmp_path, many=True)
+    draft = _draft([
+        _fact("sapnexus:InventoryAvailabilityFact", ["availableQuantity"],
+              [_sel("sapnexus:Material", "material", "DEMOA2"),
+               _sel("sapnexus:Plant", "plant", "1000")])
+    ])
+    resolution = resolve(draft, pinned, sources, contracts.snapshot, contracts.graph, PRINCIPAL)
+    assert resolution.status == "clarification"
+    assert any("NEEDS_REDUCTION" in c or "MISSING_SELECTOR_VALUE:supplier" in c
+               for c in resolution.clarification)
+
+
+def test_user_supplied_value_is_not_derived(pinned, built):
+    sources, snapshot, graph = built
+    draft = _draft(
+        [
+            _fact("sapnexus:InventoryAvailabilityFact", ["availableQuantity"],
+                  [_sel("sapnexus:Material", "material", "DEMOA2"),
+                   _sel("sapnexus:Plant", "plant", "1000")]),
+        ],
+        constraints=(_con("plant", "sapnexus:Plant", "1000"),),
+    )
+    resolution = resolve(draft, pinned, sources, snapshot, graph, PRINCIPAL)
+    assert resolution.status == "complete"
+    assert all(
+        b.consumer_input_name != "plant" for b in resolution.closure
+    )
