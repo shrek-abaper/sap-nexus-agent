@@ -141,8 +141,9 @@ export const dshConversationStore = {
 
   list(): StoredConversationSummary[] {
     const records = readRecords();
-    const byId = new Map<string, StoredConversationSummary>();
-    for (const record of records) {
+    type IndexedSummary = StoredConversationSummary & { firstSeenIndex: number };
+    const byId = new Map<string, IndexedSummary>();
+    records.forEach((record, index) => {
       if (record.kind === "conversation") {
         byId.set(record.id, {
           id: record.id,
@@ -150,21 +151,29 @@ export const dshConversationStore = {
           createdAt: record.createdAt,
           updatedAt: record.createdAt,
           messageCount: 0,
+          firstSeenIndex: index,
         });
       } else {
-        const summary = byId.get(record.conversationId) ?? {
+        const existing = byId.get(record.conversationId);
+        const summary: IndexedSummary = existing ?? {
           id: record.conversationId,
           title: titleFrom(record.role === "user" ? record.text : "新会话"),
           createdAt: record.ts,
           updatedAt: record.ts,
           messageCount: 0,
+          firstSeenIndex: index,
         };
         summary.messageCount += 1;
         summary.updatedAt = Math.max(summary.updatedAt, record.ts);
         byId.set(record.conversationId, summary);
       }
-    }
-    return [...byId.values()].sort((a, b) => b.updatedAt - a.updatedAt);
+    });
+    // Updated time first; the append-order index breaks same-millisecond ties
+    // (the store writes ms timestamps and turns may land in one millisecond
+    // under parallel test load).
+    return [...byId.values()]
+      .sort((a, b) => b.updatedAt - a.updatedAt || b.firstSeenIndex - a.firstSeenIndex)
+      .map(({ firstSeenIndex: _ignored, ...summary }) => summary);
   },
 
   get(id: string): StoredConversation | null {
