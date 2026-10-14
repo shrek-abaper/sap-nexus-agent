@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sap-nexus-agent.local/schemas/analysis-versions.schema.json",
+  "title": "SAP Nexus Analysis Version Markers",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "compilerVersion", "operatorImplementations"],
+  "properties": {
+    "version": { "type": "integer", "const": 1 },
+    "compilerVersion": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "operatorImplementations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["select_fields", "filter_eq", "group_sum", "compare"],
+      "properties": {
+        "select_fields": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+        "filter_eq": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+        "group_sum": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+        "compare": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" }
+      }
+    }
+  }
+}

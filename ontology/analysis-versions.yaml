@@ -1,0 +1,12 @@
+version: 1
+# Declared version markers for the ontology-governed read analysis path.
+# C1 ships constants only (no operator/compiler implementation exists yet);
+# C2 binds these to the actual implementation entry-point versions/digests.
+# This file is a covered SemanticRelease source: changing it changes
+# semanticSnapshotId.
+compilerVersion: "0.1.0"
+operatorImplementations:
+  select_fields: "0.1.0"
+  filter_eq: "0.1.0"
+  group_sum: "0.1.0"
+  compare: "0.1.0"
