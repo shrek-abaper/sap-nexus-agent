@@ -47,9 +47,14 @@ Environment overrides:
   JAVA_HOME=/path/to/jdk-17        # optional; system Java is used when unset
   GRADLE_USER_HOME=$HOME/.gradle
   START_RUNTIME_DIR=runtime/dev-services
+  SAP_NEXUS_ONTOLOGY_ANALYSIS_ENABLED=1   # register analyze_business_question DSH tool (also settable in .env)
+  SAP_NEXUS_LLM_LIVE=1                    # paid model interpreter for ontology free-text + live LLM intent (also in .env)
 
 Notes:
   - Root .env is loaded via python-dotenv when present, but its contents are never printed.
+  - The two SAP_NEXUS_* ontology flags are off when unset: the DSH tool stays unregistered
+    and ontology questions use the offline fake interpreter. Set them in .env or the shell;
+    SAP_NEXUS_LLM_LIVE=1 enables the paid DeepSeek model and incurs token costs.
   - Logs are written under runtime/dev-services/logs/ by default.
   - Press Ctrl+C to stop all child services.
 USAGE
