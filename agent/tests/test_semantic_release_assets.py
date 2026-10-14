@@ -177,3 +177,61 @@ def test_allowlist_rejects_bad_shapes():
             {"version": 1, "allowlist": [{"factTypeId": "x", "fields": []}]},
             schema,
         )
+
+
+def test_operator_catalog_is_closed_four():
+    doc = _yaml("ontology/analysis-operators.yaml")
+    jsonschema.validate(doc, _schema("analysis-operators.schema.json"))
+    ids = [o["operatorId"] for o in doc["operators"]]
+    assert ids == ["select_fields", "filter_eq", "group_sum", "compare"]
+    for operator in doc["operators"]:
+        assert set(operator) <= {"operatorId", "version", "input", "output", "params", "constraints"}
+        assert operator["version"] == "0.1.0"
+        for param in operator["params"]:
+            assert set(param) == {"name", "type", "required"}
+        assert not any(
+            key in operator or any(key in p for p in operator["params"])
+            for key in ("path", "module", "expression", "code")
+        )
+
+
+def test_operator_catalog_rejects_bad_shapes():
+    schema = _schema("analysis-operators.schema.json")
+    base_operator = {
+        "operatorId": "select_fields",
+        "version": "0.1.0",
+        "input": {"kind": "rows"},
+        "output": {"kind": "rows"},
+        "params": [
+            {"name": "fields", "type": "fieldRefList", "required": True}
+        ],
+        "constraints": ["fields-must-be-allowlisted"],
+    }
+    with pytest.raises(jsonschema.ValidationError):
+        # unknown property at operator level
+        jsonschema.validate(
+            {"version": 1, "operators": [{**base_operator, "path": "x"}]},
+            schema,
+        )
+    with pytest.raises(jsonschema.ValidationError):
+        # unknown property at param level
+        bad = {
+            **base_operator,
+            "params": [{"name": "fields", "type": "fieldRefList",
+                        "required": True, "expression": "x"}],
+        }
+        jsonschema.validate({"version": 1, "operators": [bad]}, schema)
+    with pytest.raises(jsonschema.ValidationError):
+        # fifth operator
+        fifth = {**base_operator, "operatorId": "join"}
+        jsonschema.validate(
+            {"version": 1, "operators": [
+                {**base_operator, "operatorId": "select_fields"},
+                {**base_operator, "operatorId": "filter_eq"},
+                {**base_operator, "operatorId": "group_sum"},
+                {**base_operator, "operatorId": "compare",
+                 "output": {"kind": "comparison"}},
+                fifth,
+            ]},
+            schema,
+        )

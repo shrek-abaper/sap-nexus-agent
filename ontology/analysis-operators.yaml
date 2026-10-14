@@ -1,0 +1,49 @@
+version: 1
+# Closed catalog of registered analysis operators. Exactly four operators
+# exist in v1; there is no plugin or dynamic registration mechanism, and no
+# path/module/expression property exists anywhere in this document. The
+# catalog declares typed contracts only; the single Python implementation is
+# versioned separately in analysis-versions.yaml.
+operators:
+  - operatorId: select_fields
+    version: "0.1.0"
+    input: {kind: rows}
+    output: {kind: rows}
+    params:
+      - {name: fields, type: fieldRefList, required: true}
+    constraints:
+      - fields-must-be-allowlisted
+  - operatorId: filter_eq
+    version: "0.1.0"
+    input: {kind: rows}
+    output: {kind: rows}
+    params:
+      - {name: field, type: fieldRef, required: true}
+      - {name: value, type: typedLiteral, required: true}
+    constraints:
+      - field-must-be-allowlisted
+      - literal-type-must-match-field
+  - operatorId: group_sum
+    version: "0.1.0"
+    input: {kind: rows}
+    output: {kind: groupedRows}
+    params:
+      - {name: dimensions, type: fieldRefList, required: true}
+      - {name: measure, type: fieldRef, required: true}
+      - {name: unitField, type: fieldRef, required: true}
+    constraints:
+      - dimensions-must-be-allowlisted
+      - measure-semantic-type-quantity
+      - unit-grouping-mandatory
+      - decimal-only
+  - operatorId: compare
+    version: "0.1.0"
+    input: {kind: rows}
+    output: {kind: comparison}
+    params:
+      - {name: left, type: measureRef, required: true}
+      - {name: right, type: measureRef, required: true}
+    constraints:
+      - same-semantic-kind
+      - same-unit
+      - time-point-policy

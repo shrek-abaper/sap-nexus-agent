@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sap-nexus-agent.local/schemas/analysis-operators.schema.json",
+  "title": "SAP Nexus Registered Analysis Operator Catalog",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "operators"],
+  "properties": {
+    "version": { "type": "integer", "const": 1 },
+    "operators": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": { "$ref": "#/$defs/operator" }
+    }
+  },
+  "$defs": {
+    "operator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operatorId", "version", "input", "output", "params", "constraints"],
+      "properties": {
+        "operatorId": {
+          "type": "string",
+          "enum": ["select_fields", "filter_eq", "group_sum", "compare"]
+        },
+        "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+        "input": { "$ref": "#/$defs/kind" },
+        "output": { "$ref": "#/$defs/kind" },
+        "params": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/param" }
+        },
+        "constraints": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "kind": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": { "type": "string", "enum": ["rows", "groupedRows", "comparison"] }
+      }
+    },
+    "param": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "type", "required"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "type": {
+          "type": "string",
+          "enum": ["fieldRef", "fieldRefList", "typedLiteral", "measureRef"]
+        },
+        "required": { "type": "boolean" }
+      }
+    }
+  }
+}
