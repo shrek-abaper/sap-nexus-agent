@@ -148,9 +148,12 @@ const TOOL_SPECS: Record<string, ParameterSchemaSpec> = {
     purchasingGroup: { type: "string", required: true, description: "采购组（1-3 字符，如 601）" },
   },
   analyze_business_question: {
+    question: {
+      type: "string",
+      description: "用户关于库存/采购订单只读分析的自然语言原话（启用 SAP_NEXUS_LLM_LIVE 时由模型解释）",
+    },
     questionType: {
       type: "string",
-      required: true,
       enum: [
         "stock-with-unit",
         "po-grouped-by-supplier",
@@ -466,7 +469,7 @@ function toolDescription(name: string): string {
     case "propose_replenishment":
       return "补货建议：依据库存与目标需求量计算缺口，生成一个待人工审批的采购申请提案（不会直接写入）。";
     case "analyze_business_question":
-      return "本体约束只读分析：按受控问题类型返回库存/采购订单事实、注册算子分析结果与缺口说明（离线样例数据，只读，不执行任何写入）。";
+      return "本体约束只读分析：返回库存/采购订单事实、注册算子分析结果与缺口说明（只读，不执行写入）。未启用 live 开关时按 questionType 走离线样例；模型只负责生成结构化草案，服务端保留全部校验与执行授权。";
     default:
       return name;
   }

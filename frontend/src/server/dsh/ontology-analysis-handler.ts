@@ -90,7 +90,9 @@ export interface OntologyEvidence {
 }
 
 export type OntologyAnalysisRunner = (request: {
-  caseId: string;
+  caseId?: string;
+  interpreter?: "fake" | "model";
+  utterance?: string;
   slots: Record<string, string>;
   scope: Record<string, string>;
 }) => Promise<OntologyEvidence>;
@@ -168,8 +170,9 @@ export function subprocessOntologyRunner(timeoutMs = 90_000): OntologyAnalysisRu
       child.stdin.end(
         JSON.stringify({
           schemaVersion: 1,
-          caseId: request.caseId,
-          interpreter: "fake",
+          ...(request.caseId ? { caseId: request.caseId } : {}),
+          interpreter: request.interpreter ?? "fake",
+          ...(request.utterance ? { utterance: request.utterance } : {}),
           slots: request.slots,
           scope: request.scope,
         }),
@@ -236,7 +239,7 @@ function buildNarrative(
 }
 
 function toToolResponse(
-  questionType: QuestionType,
+  questionType: QuestionType | "model",
   evidence: OntologyEvidence,
 ): OntologyAnalysisToolResponse {
   const results = evidence.analysis?.results ?? [];
@@ -276,10 +279,33 @@ function toToolResponse(
   return response;
 }
 
+function liveModelEnabled(): boolean {
+  return process.env.SAP_NEXUS_LLM_LIVE === "1";
+}
+
 export function createOntologyAnalysisHandler(
   runner: OntologyAnalysisRunner = subprocessOntologyRunner(),
 ) {
   return async (args: Record<string, unknown>): Promise<OntologyAnalysisToolResponse> => {
+    const question = typeof args.question === "string" ? args.question : "";
+    const slots: Record<string, string> = {};
+    for (const key of ["material", "plant", "vendor"]) {
+      const value = args[key];
+      if (typeof value === "string" && value) slots[key] = value;
+    }
+    const scope: Record<string, string> = {};
+    if (slots.plant) scope.plant = slots.plant;
+
+    if (question && liveModelEnabled()) {
+      const evidence = await runner({
+        interpreter: "model",
+        utterance: question,
+        slots,
+        scope,
+      });
+      return toToolResponse("model", evidence);
+    }
+
     const questionType = String(args.questionType ?? "") as QuestionType;
     const caseId = QUESTION_CASES[questionType];
     if (!caseId) {
@@ -300,13 +326,6 @@ export function createOntologyAnalysisHandler(
         error: { errorType: "INVALID_QUESTION_TYPE", message: String(args.questionType ?? "") },
       };
     }
-    const slots: Record<string, string> = {};
-    for (const key of ["material", "plant", "vendor"]) {
-      const value = args[key];
-      if (typeof value === "string" && value) slots[key] = value;
-    }
-    const scope: Record<string, string> = {};
-    if (slots.plant) scope.plant = slots.plant;
     const evidence = await runner({ caseId, slots, scope });
     return toToolResponse(questionType, evidence);
   };

@@ -68,3 +68,24 @@ def test_analyze_mode_malformed_exit_one():
         capture_output=True, timeout=60,
     )
     assert result.returncode == 1
+
+
+def test_analyze_model_interpreter_requires_live_flag():
+    clean = {k: v for k, v in os.environ.items()
+             if k not in ("SAP_NEXUS_LLM_LIVE",)}
+    payload = json.dumps({
+        "schemaVersion": 1,
+        "interpreter": "model",
+        "utterance": "DEMOA2 1000 工厂的库存",
+    })
+    result = subprocess.run(
+        [sys.executable, "-m",
+         "sap_nexus_agent.ontology_planning.analysis_runtime",
+         "--mode", "analyze"],
+        cwd=REPO_ROOT, env=clean, input=payload,
+        capture_output=True, text=True, timeout=60,
+    )
+    assert result.returncode == 3
+    response = json.loads(result.stdout)
+    assert response["status"] == "rejected"
+    assert "MODEL_INTERPRETER_NOT_AUTHORIZED" in response["reasons"]

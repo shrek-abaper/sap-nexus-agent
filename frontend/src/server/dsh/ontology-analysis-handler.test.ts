@@ -137,3 +137,41 @@ describe.skipIf(!process.env.RUN_PYTHON_INTEGRATION)("real Python subprocess", (
     expect(response.facts.length).toBeGreaterThan(0);
   });
 });
+
+describe("live model routing", () => {
+  it("routes free-form question to the model interpreter when the live flag is on", async () => {
+    const original = process.env.SAP_NEXUS_LLM_LIVE;
+    process.env.SAP_NEXUS_LLM_LIVE = "1";
+    try {
+      const requests: unknown[] = [];
+      const handler = createOntologyAnalysisHandler(async (request) => {
+        requests.push(request);
+        return evidence();
+      });
+      await handler({ question: "帮我查 DEMOA2 在 1000 工厂的库存，订单按供应商汇总" });
+      const sent = requests[0] as { interpreter?: string; utterance?: string; slots?: Record<string, string> };
+      expect(sent.interpreter).toBe("model");
+      expect(sent.utterance).toContain("DEMOA2");
+    } finally {
+      if (original === undefined) delete process.env.SAP_NEXUS_LLM_LIVE;
+      else process.env.SAP_NEXUS_LLM_LIVE = original;
+    }
+  });
+
+  it("falls back to the fake questionType path without the live flag", async () => {
+    const original = process.env.SAP_NEXUS_LLM_LIVE;
+    delete process.env.SAP_NEXUS_LLM_LIVE;
+    try {
+      const requests: unknown[] = [];
+      const handler = createOntologyAnalysisHandler(async (request) => {
+        requests.push(request);
+        return evidence();
+      });
+      await handler({ questionType: "stock-with-unit", material: "DEMOA2", plant: "1000" });
+      const sent = requests[0] as { caseId?: string };
+      expect(sent.caseId).toBe("q1-stock-and-unit");
+    } finally {
+      if (original !== undefined) process.env.SAP_NEXUS_LLM_LIVE = original;
+    }
+  });
+});
