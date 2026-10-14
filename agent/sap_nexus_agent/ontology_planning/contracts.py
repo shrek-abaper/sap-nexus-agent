@@ -200,3 +200,97 @@ class SemanticGoalDraft:
             ),
             assumptions=tuple(document.get("assumptions", ())),
         )
+
+
+@dataclass(frozen=True)
+class NodeResult:
+    """Raw execution record for one read plan node."""
+
+    node_id: str
+    capability_id: str
+    parameters: Mapping[str, str]
+    gateway_trace_id: str | None
+    executed_at: str
+    data: Mapping[str, Any]
+
+
+@dataclass(frozen=True)
+class TypedFieldValue:
+    value: str
+    semantic_type: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"value": self.value, "semanticType": self.semantic_type}
+
+    @classmethod
+    def from_dict(cls, document: Mapping[str, Any]) -> "TypedFieldValue":
+        return cls(value=str(document["value"]), semantic_type=str(document["semanticType"]))
+
+
+@dataclass(frozen=True)
+class FactEvidence:
+    run_id: str
+    node_id: str
+    gateway_trace_id: str | None
+    raw_fields: tuple[str, ...]
+    completeness: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "runId": self.run_id,
+            "nodeId": self.node_id,
+            "gatewayTraceId": self.gateway_trace_id,
+            "rawFields": list(self.raw_fields),
+            "completeness": self.completeness,
+        }
+
+
+@dataclass(frozen=True)
+class TypedFact:
+    fact_id: str
+    fact_type_ref: str
+    object_type: str
+    object_key: Mapping[str, str]
+    scope: Mapping[str, str]
+    row_identity: Mapping[str, str]
+    fields: Mapping[str, TypedFieldValue]
+    unit: Mapping[str, str] | None
+    business_time: str | None
+    collected_at: str
+    definition_ref: str | None
+    evidence: FactEvidence
+    completeness: str = "complete"
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schemaVersion": 1,
+            "factId": self.fact_id,
+            "factTypeRef": self.fact_type_ref,
+            "objectType": self.object_type,
+            "objectKey": dict(self.object_key),
+            "scope": dict(self.scope),
+            "rowIdentity": dict(self.row_identity),
+            "fields": {k: v.to_dict() for k, v in self.fields.items()},
+            "unit": dict(self.unit) if self.unit else None,
+            "businessTime": self.business_time,
+            "collectedAt": self.collected_at,
+            "definitionRef": self.definition_ref,
+            "evidence": self.evidence.to_dict(),
+            "completeness": self.completeness,
+        }
+
+
+@dataclass(frozen=True, order=True)
+class ExcludedRow:
+    fact_id: str
+    reason: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"factId": self.fact_id, "reason": self.reason}
+
+
+@dataclass(frozen=True)
+class Normalization:
+    facts: tuple[TypedFact, ...]
+    exclusions: tuple[ExcludedRow, ...]
+    conflicts: tuple[str, ...]
