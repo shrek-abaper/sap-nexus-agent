@@ -17,6 +17,9 @@ import { SessionId } from "@deepseek-ai/dsh-session";
 import { createUserMessage } from "@deepseek-ai/dsh-llm";
 import type { JsonValue } from "../../shared/types/artifacts";
 import type { SemanticToolResponse } from "../../runtime/semantic-tools/types";
+import type { OntologyAnalysisToolResponse } from "./ontology-analysis-handler";
+
+export type ToolResponse = SemanticToolResponse | OntologyAnalysisToolResponse;
 
 export const DEFAULT_DSH_PERSONA = [
   "你是 SAP Nexus 的 DeepSeek Harness 运行时，也是本工作台唯一的对话运行时。",
@@ -33,7 +36,7 @@ export type ToolCallRecord = {
   name: string;
   args: unknown;
   status: "completed" | "failed" | "awaiting_approval";
-  result?: SemanticToolResponse;
+  result?: ToolResponse;
   error?: string;
 };
 
@@ -43,7 +46,7 @@ export type DshTurnResult = {
   reasonKind?: string;
 };
 
-export type ToolHandler = (args: Record<string, unknown>) => Promise<SemanticToolResponse>;
+export type ToolHandler = (args: Record<string, unknown>) => Promise<ToolResponse>;
 
 export type CreateDshRuntimeOptions = {
   provider: string;
@@ -58,7 +61,7 @@ export type DshStreamEvent =
   // "answer" = after all tool results returned (the visible final answer).
   | { type: "delta"; text: string; phase: "reasoning" | "answer" }
   | { type: "tool-start"; callId: string; name: string; args: unknown }
-  | { type: "tool-result"; callId: string; name: string; status: ToolCallRecord["status"]; result?: SemanticToolResponse; error?: string }
+  | { type: "tool-result"; callId: string; name: string; status: ToolCallRecord["status"]; result?: ToolResponse; error?: string }
   | { type: "final"; output: string; toolCalls: ToolCallRecord[]; reasonKind?: string }
   | { type: "error"; message: string };
 
@@ -144,6 +147,24 @@ const TOOL_SPECS: Record<string, ParameterSchemaSpec> = {
     targetDate: { type: "string", required: true, description: "目标交货日期 YYYY-MM-DD" },
     purchasingGroup: { type: "string", required: true, description: "采购组（1-3 字符，如 601）" },
   },
+  analyze_business_question: {
+    questionType: {
+      type: "string",
+      required: true,
+      enum: [
+        "stock-with-unit",
+        "po-grouped-by-supplier",
+        "po-by-vendor",
+        "arrivals-next-week",
+        "stockout-certainty",
+        "create-pr",
+      ],
+      description: "问题类型（受控枚举）：库存+单位/订单按供应商汇总/按供应商过滤/下周到货/断供确定性/创建采购申请",
+    },
+    material: { type: "string", description: "物料编号，如 DEMOA2" },
+    plant: { type: "string", description: "工厂编码，如 1000" },
+    vendor: { type: "string", description: "供应商编号" },
+  },
 };
 
 export async function createDshRuntime(options: CreateDshRuntimeOptions): Promise<DshRuntime> {
@@ -179,8 +200,7 @@ export async function createDshRuntime(options: CreateDshRuntimeOptions): Promis
       // elementQty vs the authoritative fact value). The structured value is
       // retained in session.pending and drives the UI fact cards.
       output: { schema: { type: "json" }, render: (_args, value) => {
-        const result = value as SemanticToolResponse;
-        return [{ type: "text", text: resultToModelText(result) }];
+        return [{ type: "text", text: toolResultToModelText(value as ToolResponse) }];
       } },
       async execute(args, exec): Promise<JsonValue> {
         const session = exec.agent ? sessions.get(exec.agent.session.id) : undefined;
@@ -398,7 +418,14 @@ export async function createDshRuntime(options: CreateDshRuntimeOptions): Promis
 // taken from the authoritative mapped facts (value/unit/asOf), then the
 // server-generated narrative. JSON internals are intentionally omitted so the
 // model cannot confuse a null MRP elementQty with the fact value.
-function resultToModelText(result: SemanticToolResponse): string {
+export function toolResultToModelText(result: ToolResponse): string {
+  if ("kind" in result && result.kind === "ontology-analysis") {
+    return result.narrative.summary;
+  }
+  return semanticToolModelText(result as SemanticToolResponse);
+}
+
+function semanticToolModelText(result: SemanticToolResponse): string {
   const lines: string[] = [];
   lines.push(`状态: ${result.status}`);
   for (const fact of result.facts) {
@@ -438,6 +465,8 @@ function toolDescription(name: string): string {
       return "供应商敞口：查询某供应商的应付未清项（金额/币种/到期基准日，需公司代码）。只读。";
     case "propose_replenishment":
       return "补货建议：依据库存与目标需求量计算缺口，生成一个待人工审批的采购申请提案（不会直接写入）。";
+    case "analyze_business_question":
+      return "本体约束只读分析：按受控问题类型返回库存/采购订单事实、注册算子分析结果与缺口说明（离线样例数据，只读，不执行任何写入）。";
     default:
       return name;
   }

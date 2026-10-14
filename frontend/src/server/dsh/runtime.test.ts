@@ -144,7 +144,10 @@ describe("in-process dsh runtime", () => {
 
     const first = await runtime.sendMessage("conv-w", "补 3 个");
     expect(first.toolCalls[0].status).toBe("awaiting_approval");
-    expect(first.toolCalls[0].result?.approval?.approvalId).toBe("appr-1");
+    const approvalResult = first.toolCalls[0].result;
+    expect(
+      approvalResult && "approval" in approvalResult ? approvalResult.approval?.approvalId : undefined,
+    ).toBe("appr-1");
 
     const second = await runtime.sendMessage("conv-w", "再说一句");
     expect(second.output).toContain("第二条消息");

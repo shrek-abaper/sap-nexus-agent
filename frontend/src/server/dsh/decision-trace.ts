@@ -71,7 +71,8 @@ export function buildTraceRecord(input: TraceTurnInput): Record<string, unknown>
   const primary = input.toolCalls?.find((call) => call.result) ?? input.toolCalls?.[0];
   const result = primary?.result;
   const toolStatus = result?.status ?? (input.errorMessage ? "error" : undefined);
-  const capabilityEntry = result?.capabilityChain?.find((entry) => entry.state === "executed");
+  const semanticResult = result && "capabilityChain" in result ? result : undefined;
+  const capabilityEntry = semanticResult?.capabilityChain?.find((entry) => entry.state === "executed");
 
   return {
     schema: "sap-nexus.decision-trace.v1",

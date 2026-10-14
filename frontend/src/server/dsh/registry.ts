@@ -7,6 +7,12 @@ import {
 import { OpenAiCompatibleAdapter } from "./openai-compatible-adapter";
 import { executeSemanticTool } from "../../runtime/semantic-tools/execute-tool";
 import { PLACEHOLDER_PRINCIPAL } from "../../runtime/principal/types";
+export { ONTOLOGY_ANALYSIS_TOOL };
+import {
+  ONTOLOGY_ANALYSIS_TOOL,
+  createOntologyAnalysisHandler,
+  type OntologyAnalysisRunner,
+} from "./ontology-analysis-handler";
 import {
   DIAGNOSE_MATERIAL_SUPPLY,
   PROPOSE_REPLENISHMENT,
@@ -32,9 +38,17 @@ function envModelConfig() {
   };
 }
 
+export function ontologyAnalysisEnabled(): boolean {
+  return process.env.SAP_NEXUS_ONTOLOGY_ANALYSIS_ENABLED === "1";
+}
+
+export interface DshHandlerOptions {
+  ontologyRunner?: OntologyAnalysisRunner;
+}
+
 // Tool handlers run the SAME governed server entry as the HTTP facade; the
 // in-process dsh tools never call HTTP or name capability/RFC/binding.
-function buildHandlers(): Record<string, ToolHandler> {
+export function buildDshHandlers(options: DshHandlerOptions = {}): Record<string, ToolHandler> {
   const handler = (tool: (typeof SEMANTIC_TOOL_NAMES)[number]): ToolHandler =>
     (args): Promise<SemanticToolResponse> => {
       const slots: Record<string, unknown> = {};
@@ -52,12 +66,18 @@ function buildHandlers(): Record<string, ToolHandler> {
       }, PLACEHOLDER_PRINCIPAL);
     };
 
-  return {
+  const handlers: Record<string, ToolHandler> = {
     [DIAGNOSE_MATERIAL_SUPPLY]: handler(DIAGNOSE_MATERIAL_SUPPLY),
     [REVIEW_CUSTOMER_EXPOSURE]: handler(REVIEW_CUSTOMER_EXPOSURE),
     [REVIEW_VENDOR_EXPOSURE]: handler(REVIEW_VENDOR_EXPOSURE),
     [PROPOSE_REPLENISHMENT]: handler(PROPOSE_REPLENISHMENT),
   };
+  if (ontologyAnalysisEnabled()) {
+    handlers[ONTOLOGY_ANALYSIS_TOOL] = createOntologyAnalysisHandler(
+      options.ontologyRunner,
+    );
+  }
+  return handlers;
 }
 
 export async function getDshRuntime(): Promise<DshRuntime> {
@@ -67,7 +87,7 @@ export async function getDshRuntime(): Promise<DshRuntime> {
       provider: PROVIDER,
       model: config.model,
       adapter: new OpenAiCompatibleAdapter(config),
-      handlers: buildHandlers(),
+      handlers: buildDshHandlers(),
     });
   }
   return globalForDsh.__sapNexusDshRuntime;
