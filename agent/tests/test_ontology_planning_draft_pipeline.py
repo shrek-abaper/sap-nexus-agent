@@ -42,7 +42,8 @@ def test_fake_draft_passes_unchanged(world):
 
 def test_model_interpreter_requires_live_flag(world, monkeypatch):
     pinned, sources = world
-    monkeypatch.delenv("SAP_NEXUS_LLM_LIVE", raising=False)
+    # Explicit 0 wins over the .env default (dotenv never overrides set vars).
+    monkeypatch.setenv("SAP_NEXUS_LLM_LIVE", "0")
     draft, terminal = prepare_draft(
         _request(interpreter="model", utterance="stock please"),
         sources, pinned, REPO_ROOT / "evals/ontology-read-analysis",

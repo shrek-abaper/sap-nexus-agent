@@ -73,6 +73,8 @@ def test_analyze_mode_malformed_exit_one():
 def test_analyze_model_interpreter_requires_live_flag():
     clean = {k: v for k, v in os.environ.items()
              if k not in ("SAP_NEXUS_LLM_LIVE",)}
+    # Explicit opt-out must win over any .env-provided default in the child.
+    clean["SAP_NEXUS_LLM_LIVE"] = "0"
     payload = json.dumps({
         "schemaVersion": 1,
         "interpreter": "model",

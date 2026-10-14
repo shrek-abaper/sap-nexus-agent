@@ -31,6 +31,15 @@ InterpreterFactory = Callable[[Any], Any]
 
 
 def live_model_authorized() -> bool:
+    # Standalone Python entry points (CLI/--mode analyze) must see flags from
+    # .env too; the TS/Next path already injects the process environment before
+    # spawning. Mirrors load_llm_settings() in llm_client.
+    try:
+        from dotenv import load_dotenv
+
+        load_dotenv()
+    except Exception:
+        pass
     return os.environ.get("SAP_NEXUS_LLM_LIVE") == "1"
 
 

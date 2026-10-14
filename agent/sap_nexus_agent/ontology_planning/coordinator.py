@@ -78,6 +78,13 @@ def _render(status: str, facts: list[dict[str, Any]], results: list[dict[str, An
     return {"format": "deterministic-text-v1", "text": "\n".join(lines)}
 
 
+def _fixture_case_for_plan(plan: dict) -> str:
+    capabilities = {n["capabilityId"] for n in plan["readPlan"]["nodes"]}
+    if "MM.PurchaseOrder.GetList" in capabilities:
+        return "q2-po-group-by-supplier"
+    return "q1-stock-and-unit"
+
+
 def run_analysis_request(
     request: Mapping[str, Any],
     repo_root: Path,
@@ -130,7 +137,11 @@ def run_analysis_request(
 
     read_ids = read_capability_ids(sources)
     fact_types = capability_fact_types(sources)
-    gateway = FakeGatewayClient(fixtures, request["caseId"], read_ids)
+    # Free-form model requests carry no fixture case id; pick the offline
+    # envelope that contains every capability the compiled plan needs. The
+    # real (live Gateway) path does not construct a FakeGateway at all.
+    case_id = request.get("caseId") or _fixture_case_for_plan(plan)
+    gateway = FakeGatewayClient(fixtures, case_id, read_ids)
     node_results: list[NodeResult] = []
     failed_nodes: list[str] = []
     for node_id in plan["readPlan"]["topologicalOrder"]:
