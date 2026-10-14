@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from .builder import build_semantic_release
 from .contracts import (
     BusinessValidityEntry,
     BusinessValidityReport,
@@ -11,6 +12,7 @@ from .contracts import (
     StructuralValidationReport,
     STRUCTURAL_ISSUE_CODES,
 )
+from .validation import assess_business_validity, validate_structure
 
 __all__ = [
     "BusinessValidityEntry",
@@ -20,4 +22,7 @@ __all__ = [
     "SemanticReleasePackage",
     "StructuralValidationReport",
     "STRUCTURAL_ISSUE_CODES",
+    "assess_business_validity",
+    "build_semantic_release",
+    "validate_structure",
 ]

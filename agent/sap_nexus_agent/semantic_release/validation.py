@@ -186,9 +186,10 @@ def validate_structure(
     versions = assets.get("ontology/analysis-versions.yaml", {})
     compiler_version = versions.get("compilerVersion")
     operator_versions = dict(versions.get("operatorImplementations", {}))
-    if rows and compiler_version is not None:
+    semantic_rows = [row for row in rows if row.get("role") == "semantic"]
+    if semantic_rows and compiler_version is not None:
         expected_id = compute_semantic_snapshot_id(
-            rows, compiler_version, operator_versions
+            semantic_rows, compiler_version, operator_versions
         )
         if package.get("semanticSnapshotId") != expected_id:
             issue(
