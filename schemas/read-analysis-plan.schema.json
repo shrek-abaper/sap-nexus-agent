@@ -26,6 +26,7 @@
     "scope": { "type": "object" },
     "readPlan": { "$ref": "#/$defs/planGraphV2" },
     "analysisPlan": { "$ref": "#/$defs/analysisPlan" },
+    "goalSpec": { "type": "object" },
     "limits": { "type": "object" },
     "freshness": { "type": "object" },
     "coverage": { "$ref": "#/$defs/coverage" }
