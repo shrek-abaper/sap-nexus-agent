@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { DshToolCall } from "./types";
+import { isOntologyResult, isSemanticToolResult, ontologySections } from "./ontology-card";
 import {
   approvalExecutionFromEvent,
   isRejectionEvent,
@@ -15,6 +16,7 @@ const TOOL_LABELS: Record<string, string> = {
   review_customer_exposure: "客户敞口",
   review_vendor_exposure: "供应商敞口",
   propose_replenishment: "补货建议（写入）",
+  analyze_business_question: "本体只读分析",
 };
 
 const EVIDENCE_LABELS: Record<string, string> = {
@@ -51,10 +53,13 @@ const ARG_LABELS: Record<string, string> = {
   requiredQuantity: "需求量",
   targetDate: "目标日期",
   purchasingGroup: "采购组",
+  questionType: "问题类型",
 };
 
 export function ToolCallCard({ call }: { call: DshToolCall }) {
-  const approval = call.result?.approval;
+  const semanticResult =
+    call.result && isSemanticToolResult(call.result) ? call.result : null;
+  const approval = semanticResult?.approval;
   const [decision, setDecision] = useState<"approve" | "reject" | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -147,7 +152,49 @@ export function ToolCallCard({ call }: { call: DshToolCall }) {
       {call.error ? <div className="dsh-tool__error">{call.error}</div> : null}
       {call.result?.error ? <div className="dsh-tool__error">{call.result.error.errorType}: {call.result.error.message}</div> : null}
 
-      {Object.keys(call.args).length > 0 ? (
+      {call.result && isOntologyResult(call.result) ? (
+        (() => {
+          const sections = ontologySections(call.result);
+          return (
+            <div className="dsh-tool__ontology" data-testid="ontology-card">
+              {sections.facts.length > 0 ? (
+                <div className="dsh-facts">
+                  <div className="dsh-tool__section-title">事实</div>
+                  <ul className="dsh-tool__section-list">
+                    {sections.facts.map((line, index) => <li key={index}>{line}</li>)}
+                  </ul>
+                </div>
+              ) : null}
+              {sections.analysis.length > 0 ? (
+                <div className="dsh-analysis">
+                  <div className="dsh-tool__section-title">分析</div>
+                  <ul className="dsh-tool__section-list">
+                    {sections.analysis.map((line, index) => <li key={index}>{line}</li>)}
+                  </ul>
+                </div>
+              ) : null}
+              {sections.limitations.length > 0 || call.result.gaps.length > 0 ? (
+                <div className="dsh-tool__limits">
+                  <div className="dsh-tool__section-title">限制与缺口</div>
+                  <ul className="dsh-tool__limitations">
+                    {call.result.gaps.map((gap, index) => <li key={`gap-${index}`}>{gap}</li>)}
+                    {sections.limitations.map((limitation, index) => <li key={`lim-${index}`}>{limitation}</li>)}
+                  </ul>
+                </div>
+              ) : null}
+              {call.result.narrative.summary ? (
+                <div className="dsh-tool__narrative">{call.result.narrative.summary}</div>
+              ) : null}
+              <details className="dsh-tool__raw">
+                <summary>原始结果（完整 JSON）</summary>
+                <pre>{JSON.stringify(call.result, null, 2)}</pre>
+              </details>
+            </div>
+          );
+        })()
+      ) : null}
+
+      {call.result && semanticResult && Object.keys(call.args).length > 0 ? (
         <dl className="dsh-tool__args">
           {Object.entries(call.args).map(([key, value]) => (
             <div className="dsh-tool__arg" key={key}>
@@ -158,9 +205,9 @@ export function ToolCallCard({ call }: { call: DshToolCall }) {
         </dl>
       ) : null}
 
-      {call.result && call.result.capabilityChain.length > 0 ? (
+      {call.result && semanticResult && semanticResult.capabilityChain.length > 0 ? (
         <div className="dsh-tool__chain">
-          {call.result.capabilityChain.map((entry) => (
+          {semanticResult.capabilityChain.map((entry) => (
             <span key={entry.capabilityId} className="dsh-chip" title={entry.state}>
               {entry.capabilityId}
             </span>
@@ -168,13 +215,13 @@ export function ToolCallCard({ call }: { call: DshToolCall }) {
         </div>
       ) : null}
 
-      {call.result?.narrative.summary ? (
-        <div className="dsh-tool__narrative">{call.result.narrative.summary}</div>
+      {call.result && semanticResult?.narrative.summary ? (
+        <div className="dsh-tool__narrative">{semanticResult.narrative.summary}</div>
       ) : null}
 
-      {call.result && call.result.facts.length > 0 ? (
+      {semanticResult && semanticResult.facts.length > 0 ? (
         <div className="dsh-facts">
-          {call.result.facts.map((fact) => (
+          {semanticResult.facts.map((fact) => (
             <div key={fact.ref} className="dsh-fact">
               <div className="dsh-fact__value">
                 {fact.value !== null ? fact.value : formatEvidenceValue(fact.evidence)}
@@ -204,20 +251,20 @@ export function ToolCallCard({ call }: { call: DshToolCall }) {
         </div>
       ) : null}
 
-      {call.result?.limitations?.length ? (
+      {call.result && semanticResult?.limitations?.length ? (
         <ul className="dsh-tool__limitations">
-          {call.result.limitations.map((limitation, index) => <li key={index}>{limitation}</li>)}
+          {semanticResult.limitations.map((limitation, index) => <li key={index}>{limitation}</li>)}
         </ul>
       ) : null}
 
-      {call.result ? (
+      {call.result && isSemanticToolResult(call.result) ? (
         <details className="dsh-tool__raw">
           <summary>原始结果（完整 JSON）</summary>
           <pre>{JSON.stringify(call.result, null, 2)}</pre>
         </details>
       ) : null}
 
-      {approval ? (
+      {approval && call.result && isSemanticToolResult(call.result) ? (
         <div className="dsh-approval">
           <div className="dsh-approval__title">采购申请提案 · 待人工审批</div>
           <dl className="dsh-approval__grid">

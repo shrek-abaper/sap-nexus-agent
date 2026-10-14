@@ -28,21 +28,50 @@ export type DshApprovalHandle = {
   hashes: { subjectHash: string; proposalHash: string; parameterSnapshotHash: string };
 };
 
+export type DshSemanticToolResult = {
+  kind?: undefined;
+  status: string;
+  runId: string;
+  capabilityChain: DshCapability[];
+  facts: DshFact[];
+  narrative: { summary: string; limitations: string[] };
+  limitations: string[];
+  approval?: DshApprovalHandle;
+  error?: { errorType: string; message: string };
+};
+
+// Client-safe mirror of the server OntologyAnalysisToolResponse (no server imports).
+export type DshOntologyField = { value: string; semanticType: string };
+export type DshOntologyToolResult = {
+  kind: "ontology-analysis";
+  contractVersion?: number;
+  tool?: string;
+  status: string;
+  runId: string;
+  facts: {
+    factTypeRef: string;
+    fields: Record<string, DshOntologyField>;
+    unit: { field: string; value: string } | null;
+  }[];
+  results: {
+    nodeId: string;
+    operatorId: string;
+    status: string;
+    rows: Record<string, unknown>[];
+  }[];
+  gaps: string[];
+  limitations: string[];
+  writeGatewayCalls?: number;
+  narrative: { summary: string; limitations: string[] };
+  error?: { errorType: string; message: string };
+};
+
 export type DshToolCall = {
   callId: string;
   name: string;
   args: Record<string, unknown>;
   status: "running" | "completed" | "failed" | "awaiting_approval";
-  result?: {
-    status: string;
-    runId: string;
-    capabilityChain: DshCapability[];
-    facts: DshFact[];
-    narrative: { summary: string; limitations: string[] };
-    limitations: string[];
-    approval?: DshApprovalHandle;
-    error?: { errorType: string; message: string };
-  };
+  result?: DshSemanticToolResult | DshOntologyToolResult;
   error?: string;
 };
 
