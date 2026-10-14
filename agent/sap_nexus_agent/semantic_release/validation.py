@@ -167,13 +167,17 @@ def validate_structure(
         if row.get("path") not in SEMANTIC_PATHS and row.get("path") not in _LEGACY_PATHS:
             issue(str(row.get("path")), "SR_MANIFEST_VIOLATION", "path not in manifest")
 
-    # Per-source digest verification for semantic-role documents.
+    legacy_documents = _legacy_documents(root)
+
+    # Per-source digest verification for semantic-role and legacy documents.
     for row in rows:
         path = row.get("path")
-        if row.get("role") != "semantic" or path not in assets:
-            continue
-        expected = _sha256(assets[path])
-        if row.get("digest") != expected:
+        document = None
+        if row.get("role") == "semantic" and path in assets:
+            document = assets[path]
+        elif row.get("role") == "legacy" and path in legacy_documents:
+            document = legacy_documents[path]
+        if document is not None and row.get("digest") != _sha256(document):
             issue(path, "SR_DIGEST_MISMATCH", "source digest does not match content")
 
     if package.get("registrySnapshotId") != registry_snapshot_id:
@@ -198,13 +202,12 @@ def validate_structure(
                 "semanticSnapshotId does not match recomputed content digest",
             )
 
-    legacy = _legacy_documents(root)
-    vocabulary = _collect_vocabulary(legacy)
+    vocabulary = _collect_vocabulary(legacy_documents)
 
     # Allowlist references resolve against the Fact type catalog.
     fact_catalog = {
         fact_type["factTypeId"]: fact_type
-        for fact_type in legacy.get("ontology/fact-types.yaml", {}).get(
+        for fact_type in legacy_documents.get("ontology/fact-types.yaml", {}).get(
             "factTypes", []
         )
     }

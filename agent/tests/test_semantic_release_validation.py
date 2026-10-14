@@ -234,3 +234,18 @@ def test_business_validity_grounded_and_proposed(real_assets):
     by_id = {e.definition_id: e for e in report.entries}
     assert by_id["sapnexus:def.available-for-commitment"].state == "grounded"
     assert by_id["sapnexus:def.overdue"].state == "not_grounded"
+
+
+def test_tampered_legacy_digest_fails(real_assets):
+    from sap_nexus_agent.semantic_release.builder import build_semantic_release
+
+    document = build_semantic_release(REPO_ROOT).to_dict()
+    legacy_row = next(s for s in document["sources"] if s["role"] == "legacy")
+    legacy_row["digest"] = "sha256:" + "9" * 64
+    report = validate_structure(
+        document,
+        real_assets,
+        registry_snapshot_id=document["registrySnapshotId"],
+        repo_root=REPO_ROOT,
+    )
+    assert any(i.code == "SR_DIGEST_MISMATCH" for i in report.issues)
