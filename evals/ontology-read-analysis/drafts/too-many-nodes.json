@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "requestedFacts": [
+    {"factTypeId": "sapnexus:InventoryAvailabilityFact", "fields": ["availableQuantity"],
+     "objectSelectors": [
+       {"objectTypeId": "sapnexus:Material", "key": "material", "value": "DEMOA2"},
+       {"objectTypeId": "sapnexus:Plant", "key": "plant", "value": "1000"}]}
+  ],
+  "constraints": [],
+  "analysisNodes": [
+    {"nodeId": "a0", "operatorId": "select_fields", "inputs": [], "params": {}, "dependsOn": []},
+    {"nodeId": "a1", "operatorId": "select_fields", "inputs": [], "params": {}, "dependsOn": ["a0"]},
+    {"nodeId": "a2", "operatorId": "select_fields", "inputs": [], "params": {}, "dependsOn": ["a1"]},
+    {"nodeId": "a3", "operatorId": "select_fields", "inputs": [], "params": {}, "dependsOn": ["a2"]},
+    {"nodeId": "a4", "operatorId": "select_fields", "inputs": [], "params": {}, "dependsOn": ["a3"]},
+    {"nodeId": "a5", "operatorId": "select_fields", "inputs": [], "params": {}, "dependsOn": ["a4"]},
+    {"nodeId": "a6", "operatorId": "select_fields", "inputs": [], "params": {}, "dependsOn": ["a5"]}
+  ],
+  "requestedConclusions": [{"id": "c1", "statement": "stock", "evidenceRequirement": ""}],
+  "assumptions": []
+}

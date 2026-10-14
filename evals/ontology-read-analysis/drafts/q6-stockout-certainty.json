@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "requestedFacts": [
+    {"factTypeId": "sapnexus:DemandForecastFact", "fields": ["requiredQuantity"],
+     "objectSelectors": [
+       {"objectTypeId": "sapnexus:Material", "key": "material", "value": "DEMOA2"},
+       {"objectTypeId": "sapnexus:Plant", "key": "plant", "value": "1000"}]}
+  ],
+  "constraints": [], "analysisNodes": [],
+  "requestedConclusions": [{"id": "c1", "statement": "will stock hold next week", "evidenceRequirement": ""}],
+  "assumptions": []
+}

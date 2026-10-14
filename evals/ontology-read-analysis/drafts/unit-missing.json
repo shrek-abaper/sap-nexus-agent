@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "requestedFacts": [
+    {"factTypeId": "sapnexus:PurchaseOrderSupplyFact",
+     "fields": ["orderQuantity", "supplier", "purchaseOrderUnit"],
+     "objectSelectors": [
+       {"objectTypeId": "sapnexus:Material", "key": "material", "value": "DEMOA2"},
+       {"objectTypeId": "sapnexus:Plant", "key": "plant", "value": "1000"}]}
+  ],
+  "constraints": [],
+  "analysisNodes": [
+    {"nodeId": "a1", "operatorId": "group_sum",
+     "inputs": [{"kind": "factField", "factTypeId": "sapnexus:PurchaseOrderSupplyFact", "field": "orderQuantity"}],
+     "params": {"dimensions": ["supplier"], "measure": "orderQuantity", "unitField": "purchaseOrderUnit"},
+     "dependsOn": []}
+  ],
+  "requestedConclusions": [{"id": "c1", "statement": "grouped orders", "evidenceRequirement": "units"}],
+  "assumptions": []
+}

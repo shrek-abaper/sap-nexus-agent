@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "requestedFacts": [
+    {"factTypeId": "sapnexus:InventoryAvailabilityFact", "fields": ["availableQuantity"],
+     "objectSelectors": [
+       {"objectTypeId": "sapnexus:Material", "key": "material", "value": "DEMOA2"}]}
+  ],
+  "constraints": [
+    {"name": "plant", "semanticType": "sapnexus:Plant", "value": "1000",
+     "source": "confirmedContext"}
+  ],
+  "analysisNodes": [],
+  "requestedConclusions": [{"id": "c1", "statement": "stock", "evidenceRequirement": ""}],
+  "assumptions": []
+}

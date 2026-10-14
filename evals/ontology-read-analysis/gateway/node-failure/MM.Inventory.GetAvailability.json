@@ -1,0 +1,2 @@
+{"traceId":"fake-fail","capabilityId":"MM.Inventory.GetAvailability","success":false,
+ "executor":{"type":"fake"},"returnMessages":[],"data":{},"durationMs":0,"errorType":"MATERIAL_NOT_FOUND"}

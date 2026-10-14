@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "requestedFacts": [
+    {"factTypeId": "sapnexus:InventoryAvailabilityFact", "fields": ["availableQuantity"],
+     "objectSelectors": [
+       {"objectTypeId": "sapnexus:Material", "key": "material", "value": "DEMOA2"},
+       {"objectTypeId": "sapnexus:Plant", "key": "plant", "value": "1000"}]}
+  ],
+  "constraints": [
+    {"name": "rfcName", "semanticType": "sapnexus:Plant", "value": "BAPI_MATERIAL_AVAILABILITY",
+     "source": "explicitUser"}],
+  "analysisNodes": [],
+  "requestedConclusions": [{"id": "c1", "statement": "stock", "evidenceRequirement": ""}],
+  "assumptions": []
+}

@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "requestedFacts": [
+    {"factTypeId": "sapnexus:InventoryAvailabilityFact", "fields": ["availableQuantity"],
+     "objectSelectors": [
+       {"objectTypeId": "sapnexus:Material", "key": "material", "value": "DEMOA2"},
+       {"objectTypeId": "sapnexus:Plant", "key": "plant", "value": "1000"}]},
+    {"factTypeId": "sapnexus:PurchaseOrderSupplyFact",
+     "fields": ["orderQuantity", "supplier", "purchaseOrderUnit", "purchaseOrder", "purchaseOrderItem"],
+     "objectSelectors": [
+       {"objectTypeId": "sapnexus:Material", "key": "material", "value": "DEMOA2"},
+       {"objectTypeId": "sapnexus:Plant", "key": "plant", "value": "1000"}]}
+  ],
+  "constraints": [],
+  "analysisNodes": [
+    {"nodeId": "a1", "operatorId": "select_fields",
+     "inputs": [{"kind": "factField", "factTypeId": "sapnexus:PurchaseOrderSupplyFact", "field": "supplier"},
+                {"kind": "factField", "factTypeId": "sapnexus:PurchaseOrderSupplyFact", "field": "orderQuantity"}],
+     "params": {"fields": ["supplier", "orderQuantity"]}, "dependsOn": []}
+  ],
+  "requestedConclusions": [{"id": "c1", "statement": "stock beside orders", "evidenceRequirement": "rows"}],
+  "assumptions": []
+}

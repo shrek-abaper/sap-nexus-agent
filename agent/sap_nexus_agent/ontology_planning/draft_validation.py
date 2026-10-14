@@ -151,37 +151,6 @@ def validate_draft(document: Mapping[str, Any], release: Any) -> DraftValidation
 
     _scan(document, "$", 0, issues)
 
-    facts = document.get("requestedFacts", [])
-    if isinstance(facts, list):
-        if len(facts) > BOUNDS.max_requested_facts:
-            issues.append(
-                DraftIssue("$.requestedFacts", "DRAFT_BOUNDS", "too many facts")
-            )
-        for index, fact in enumerate(facts):
-            if not isinstance(fact, Mapping):
-                continue
-            fact_type = fact.get("factTypeId")
-            base = f"$.requestedFacts[{index}]"
-            allowed_fields = release.allowlist_fields.get(fact_type)
-            if allowed_fields is None:
-                issues.append(
-                    DraftIssue(
-                        f"{base}.factTypeId",
-                        "DRAFT_UNKNOWN_FACT_TYPE",
-                        f"{fact_type} not in release allowlist",
-                    )
-                )
-                continue
-            for field in fact.get("fields", ()):
-                if field not in allowed_fields:
-                    issues.append(
-                        DraftIssue(
-                            f"{base}.fields.{field}",
-                            "DRAFT_UNKNOWN_FIELD",
-                            f"{fact_type}.{field} not analysis-legal",
-                        )
-                    )
-
     operator_ids = getattr(release, "operators", None) or getattr(release, "operator_ids")
     nodes = document.get("analysisNodes", [])
     node_list = [n for n in nodes if isinstance(n, Mapping)] if isinstance(nodes, list) else []

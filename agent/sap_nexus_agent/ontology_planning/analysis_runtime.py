@@ -104,9 +104,21 @@ def run_analysis(wire: dict[str, Any], pinned: Any | None = None) -> dict[str, A
 
         pinned = pin_release(Path(repo_root) if repo_root else Path.cwd())
 
+    release = wire.get("release", {})
+    if (
+        release.get("semanticSnapshotId") != pinned.package.semantic_snapshot_id
+        or release.get("registrySnapshotId") != pinned.package.registry_snapshot_id
+    ):
+        return {"wireVersion": 1, "status": "failed", "facts": [], "results": [],
+                "uncoveredConclusions": [], "limits": {},
+                "semanticSnapshotId": release.get("semanticSnapshotId"),
+                "reasons": ["RELEASE_MISMATCH"]}
+
+    from .bounds import BOUNDS
     normalization = normalize(
         _node_results(wire.get("nodeResults", [])), pinned,
         run_id=wire.get("runId", "run"),
+        max_rows=BOUNDS.max_rows,
     )
     facts = normalization.facts
     conflicts = normalization.conflicts
@@ -190,6 +202,7 @@ def run_analysis(wire: dict[str, Any], pinned: Any | None = None) -> dict[str, A
             for exclusion in result.excluded_rows
         ],
         "conflicts": list(conflicts),
+        "normalizationExclusions": [e.to_dict() for e in normalization.exclusions],
     }
 
 

@@ -151,9 +151,13 @@ def run_analysis_request(
 
     gateway = FakeGatewayClient(fixtures, request["caseId"])
     node_results: list[NodeResult] = []
+    failed_nodes: list[str] = []
     for node_id in plan["readPlan"]["topologicalOrder"]:
         node = next(n for n in plan["readPlan"]["nodes"] if n["nodeId"] == node_id)
         execution = gateway.execute(node["capabilityId"], _node_parameters(node, draft))
+        if not execution.success:
+            failed_nodes.append(node["capabilityId"])
+            continue
         node_results.append(NodeResult(
             node_id=node_id,
             capability_id=node["capabilityId"],
@@ -185,6 +189,11 @@ def run_analysis_request(
         "requestedConclusions": [c.to_dict() for c in draft.requested_conclusions],
     }
     analysis = run_analysis(wire, pinned)
+    if failed_nodes:
+        analysis["status"] = "partial" if node_results else "failed"
+        analysis.setdefault("nodeFailures", []).extend(
+            f"NODE_FAILED:{cap}" for cap in failed_nodes
+        )
 
     render = _render(
         analysis["status"], analysis["facts"], analysis["results"],
@@ -193,6 +202,7 @@ def run_analysis_request(
     return {
         "schemaVersion": 1,
         "status": analysis["status"],
+        "nodeFailures": analysis.get("nodeFailures", []),
         "plan": {key: value for key, value in plan.items() if key != "goalSpec"},
         "releaseIds": {
             "semanticSnapshotId": pinned.package.semantic_snapshot_id,
@@ -204,6 +214,7 @@ def run_analysis_request(
         "writeGatewayCalls": _write_calls(gateway.calls),
         "notRun": list(NOT_RUN),
         "reasons": [],
+        "executedCapabilities": sorted({n.capability_id for n in node_results}),
     }
 
 

@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "requestedFacts": [
+    {"factTypeId": "sapnexus:InventoryAvailabilityFact", "fields": ["availableQuantity"],
+     "objectSelectors": [
+       {"objectTypeId": "sapnexus:Material", "key": "material", "value": "DEMOA2"},
+       {"objectTypeId": "sapnexus:Plant", "key": "plant", "value": "1000"}]}
+  ],
+  "constraints": [],
+  "analysisNodes": [
+    {"nodeId": "a1", "operatorId": "select_fields", "inputs": [],
+     "params": {"bindingId": "sap.mm.read"}, "dependsOn": []}
+  ],
+  "requestedConclusions": [{"id": "c1", "statement": "stock", "evidenceRequirement": ""}],
+  "assumptions": []
+}

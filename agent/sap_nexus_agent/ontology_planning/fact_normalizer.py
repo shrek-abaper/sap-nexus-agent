@@ -7,6 +7,8 @@ identity) but arithmetic stays downstream in the Python operators.
 
 from __future__ import annotations
 
+import dataclasses
+
 import re
 from typing import Any
 
@@ -80,10 +82,12 @@ def normalize(
     node_results: tuple[NodeResult, ...],
     pinned: Any,
     run_id: str,
+    max_rows: int | None = None,
 ) -> Normalization:
     semantic_types = _field_semantic_types(pinned)
     facts: list[TypedFact] = []
     exclusions: list[ExcludedRow] = []
+    truncated = False
     identities: dict[tuple[str, tuple[tuple[str, str], ...]], int] = {}
     conflicts: list[str] = []
     row_counter = 0
@@ -101,6 +105,12 @@ def normalize(
             rows = [_scalar_row(node)]
 
         for row in rows:
+            if max_rows is not None and row_counter >= max_rows:
+                truncated = True
+                exclusions.append(
+                    ExcludedRow(f"{node.node_id}:row:{row_counter}", "TRUNCATED")
+                )
+                continue
             identity = tuple(sorted(
                 (key, str(value))
                 for key, value in row.items()
@@ -168,6 +178,11 @@ def normalize(
                 )
             )
 
+    if truncated:
+        facts = [
+            dataclasses.replace(fact, completeness="incomplete:truncated")
+            for fact in facts
+        ]
     facts.sort(key=lambda fact: (fact.fact_type_ref, fact.fact_id))
     return Normalization(
         facts=tuple(facts),

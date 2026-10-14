@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "requestedFacts": [
+    {"factTypeId": "sapnexus:PurchaseRequisitionCreatedFact", "fields": ["prNumber"],
+     "objectSelectors": []}
+  ],
+  "constraints": [], "analysisNodes": [],
+  "requestedConclusions": [{"id": "c1", "statement": "create a purchase requisition", "evidenceRequirement": ""}],
+  "assumptions": []
+}
