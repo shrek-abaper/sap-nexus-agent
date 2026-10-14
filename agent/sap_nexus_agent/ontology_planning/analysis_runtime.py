@@ -206,7 +206,30 @@ def run_analysis(wire: dict[str, Any], pinned: Any | None = None) -> dict[str, A
     }
 
 
+def _main_plan(raw: bytes) -> int:
+    import json as _json
+    from pathlib import Path
+
+    request = _json.loads(raw, parse_constant=lambda value: (_ for _ in ()).throw(
+        ValueError(f"non-finite constant: {value}")
+    ))
+    from .planner_service import plan_request
+
+    repo_root = Path(
+        os.environ.get("SAP_NEXUS_AGENT_ROOT")
+        or Path(__file__).resolve().parents[3]
+    )
+    envelope = plan_request(request, repo_root)
+    _json.dump(envelope, sys.stdout, ensure_ascii=False, sort_keys=True)
+    sys.stdout.write("\n")
+    return 0 if envelope["status"] in {"planned", "complete", "partial"} else (
+        3 if envelope["status"] == "rejected" else 1
+    )
+
+
 def main() -> int:
+    if len(sys.argv) >= 2 and sys.argv[1] == "--mode" and sys.argv[2] == "plan":
+        return _main_plan(sys.stdin.buffer.read())
     raw = sys.stdin.buffer.read()
     try:
         wire = json.loads(raw, parse_constant=lambda value: (_ for _ in ()).throw(
