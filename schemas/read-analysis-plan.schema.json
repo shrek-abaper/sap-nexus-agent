@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sap-nexus-agent.local/schemas/read-analysis-plan.schema.json",
+  "title": "ValidatedReadAnalysisPlan v1 (server-owned)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "planId",
+    "semanticSnapshotId",
+    "registrySnapshotId",
+    "principalId",
+    "scope",
+    "readPlan",
+    "analysisPlan",
+    "limits",
+    "freshness",
+    "coverage"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "planId": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "semanticSnapshotId": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "registrySnapshotId": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "principalId": { "type": "string", "minLength": 1 },
+    "scope": { "type": "object" },
+    "readPlan": { "$ref": "#/$defs/planGraphV2" },
+    "analysisPlan": { "$ref": "#/$defs/analysisPlan" },
+    "limits": { "type": "object" },
+    "freshness": { "type": "object" },
+    "coverage": { "$ref": "#/$defs/coverage" }
+  },
+  "$defs": {
+    "planGraphV2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "planGraphVersion", "planId", "goalId", "executionMode", "snapshotId",
+        "nodes", "edges", "topologicalOrder", "goalOutputs",
+        "readPartition", "actionPartition", "projectionRef", "ruleSetRefs"
+      ],
+      "properties": {
+        "planGraphVersion": { "type": "integer", "const": 2 },
+        "planId": { "type": "string", "minLength": 1 },
+        "goalId": { "type": "string", "minLength": 1 },
+        "executionMode": { "type": "string", "const": "READ_ONLY" },
+        "snapshotId": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+        "nodes": { "type": "array" },
+        "edges": { "type": "array" },
+        "topologicalOrder": { "type": "array", "items": { "type": "string" } },
+        "goalOutputs": { "type": "array" },
+        "readPartition": { "type": "array", "items": { "type": "string" } },
+        "actionPartition": { "type": "array", "maxItems": 0 },
+        "projectionRef": { "type": "array" },
+        "ruleSetRefs": { "type": "array" }
+      }
+    },
+    "analysisPlan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nodes", "outputs"],
+      "properties": {
+        "nodes": { "type": "array", "items": { "$ref": "#/$defs/analysisNode" } },
+        "outputs": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "analysisNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nodeId", "operatorId", "inputs", "params", "definitionRefs", "dependsOn"],
+      "properties": {
+        "nodeId": { "type": "string", "minLength": 1 },
+        "operatorId": {
+          "type": "string",
+          "enum": ["select_fields", "filter_eq", "group_sum", "compare"]
+        },
+        "inputs": { "type": "array" },
+        "params": { "type": "object" },
+        "definitionRefs": { "type": "array", "items": { "type": "string" } },
+        "dependsOn": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["covered", "uncovered"],
+      "properties": {
+        "covered": { "type": "array", "items": { "type": "string" } },
+        "uncovered": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["conclusionId", "reason"],
+            "properties": {
+              "conclusionId": { "type": "string" },
+              "reason": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sap-nexus-agent.local/schemas/typed-fact.schema.json",
+  "title": "TypedFact v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "factId",
+    "factTypeRef",
+    "objectType",
+    "objectKey",
+    "scope",
+    "rowIdentity",
+    "fields",
+    "unit",
+    "businessTime",
+    "collectedAt",
+    "definitionRef",
+    "evidence"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "factId": { "type": "string", "minLength": 1 },
+    "factTypeRef": { "type": "string", "pattern": "^sapnexus:[A-Za-z]+Fact$" },
+    "objectType": { "type": "string", "minLength": 1 },
+    "objectKey": { "type": "object", "additionalProperties": { "type": "string" } },
+    "scope": { "type": "object", "additionalProperties": { "type": "string" } },
+    "rowIdentity": { "type": "object", "additionalProperties": { "type": "string" } },
+    "fields": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/typedValue" }
+    },
+    "unit": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["field", "value"],
+          "properties": {
+            "field": { "type": "string" },
+            "value": { "type": "string" }
+          }
+        }
+      ]
+    },
+    "businessTime": { "type": ["string", "null"] },
+    "collectedAt": { "type": "string", "minLength": 1 },
+    "definitionRef": { "type": ["string", "null"] },
+    "evidence": { "$ref": "#/$defs/evidence" },
+    "completeness": { "type": "string", "enum": ["complete", "incomplete:truncated"] }
+  },
+  "$defs": {
+    "typedValue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "semanticType"],
+      "properties": {
+        "value": { "type": "string" },
+        "semanticType": { "type": "string", "pattern": "^sapnexus:[A-Za-z]+$" }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["runId", "nodeId", "gatewayTraceId", "rawFields", "completeness"],
+      "properties": {
+        "runId": { "type": "string" },
+        "nodeId": { "type": "string" },
+        "gatewayTraceId": { "type": ["string", "null"] },
+        "rawFields": { "type": "array", "items": { "type": "string" } },
+        "completeness": {
+          "type": "string",
+          "enum": ["complete", "incomplete:truncated"]
+        }
+      }
+    }
+  }
+}

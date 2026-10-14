@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sap-nexus-agent.local/schemas/semantic-goal-draft.schema.json",
+  "title": "SemanticGoalDraft v1 (untrusted interpreter output)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "requestedFacts",
+    "constraints",
+    "analysisNodes",
+    "requestedConclusions",
+    "assumptions"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "requestedFacts": { "type": "array", "items": { "$ref": "#/$defs/requestedFact" } },
+    "constraints": { "type": "array", "items": { "$ref": "#/$defs/constraint" } },
+    "analysisNodes": { "type": "array", "items": { "$ref": "#/$defs/analysisNode" } },
+    "requestedConclusions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/conclusion" }
+    },
+    "assumptions": { "type": "array", "items": { "type": "string" } }
+  },
+  "$defs": {
+    "requestedFact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["factTypeId", "fields", "objectSelectors"],
+      "properties": {
+        "factTypeId": { "type": "string", "pattern": "^sapnexus:[A-Za-z]+Fact$" },
+        "fields": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "objectSelectors": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/selector" }
+        }
+      }
+    },
+    "selector": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["objectTypeId", "key", "value"],
+      "properties": {
+        "objectTypeId": { "type": "string", "pattern": "^sapnexus:[A-Za-z]+$" },
+        "key": { "type": "string", "minLength": 1 },
+        "value": { "type": "string", "minLength": 1 }
+      }
+    },
+    "constraint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "semanticType", "value", "source"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "semanticType": { "type": "string", "pattern": "^sapnexus:[A-Za-z]+$" },
+        "value": { "type": "string", "minLength": 1 },
+        "source": { "type": "string", "enum": ["explicitUser", "confirmedContext"] }
+      }
+    },
+    "analysisNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nodeId", "operatorId", "inputs", "params", "dependsOn"],
+      "properties": {
+        "nodeId": { "type": "string", "minLength": 1 },
+        "operatorId": {
+          "type": "string",
+          "enum": ["select_fields", "filter_eq", "group_sum", "compare"]
+        },
+        "inputs": { "type": "array", "items": { "$ref": "#/$defs/nodeInput" } },
+        "params": { "type": "object" },
+        "dependsOn": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "nodeInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": { "type": "string", "enum": ["factField", "nodeRef"] },
+        "factTypeId": { "type": "string" },
+        "field": { "type": "string" },
+        "nodeId": { "type": "string" }
+      }
+    },
+    "conclusion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "statement", "evidenceRequirement"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "statement": { "type": "string", "minLength": 1 },
+        "evidenceRequirement": { "type": "string" }
+      }
+    }
+  }
+}

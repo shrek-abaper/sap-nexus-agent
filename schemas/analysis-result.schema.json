@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sap-nexus-agent.local/schemas/analysis-result.schema.json",
+  "title": "AnalysisResult v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "nodeId",
+    "operatorId",
+    "status",
+    "outputType",
+    "rows",
+    "excludedRows",
+    "operatorVersion",
+    "definitionRefs",
+    "partial",
+    "limits",
+    "reasons"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "nodeId": { "type": "string", "minLength": 1 },
+    "operatorId": {
+      "type": "string",
+      "enum": ["select_fields", "filter_eq", "group_sum", "compare"]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "complete",
+        "partial",
+        "clarification",
+        "capability_gap",
+        "semantic_gap",
+        "rejected",
+        "failed"
+      ]
+    },
+    "outputType": {
+      "type": "string",
+      "enum": ["rows", "groupedRows", "comparison"]
+    },
+    "rows": { "type": "array", "items": { "type": "object" } },
+    "excludedRows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["factId", "reason"],
+        "properties": {
+          "factId": { "type": "string" },
+          "reason": { "type": "string" }
+        }
+      }
+    },
+    "operatorVersion": { "type": "string", "minLength": 1 },
+    "definitionRefs": { "type": "array", "items": { "type": "string" } },
+    "partial": { "type": "boolean" },
+    "limits": { "type": "object" },
+    "reasons": { "type": "array", "items": { "type": "string" } }
+  }
+}
