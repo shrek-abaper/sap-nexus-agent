@@ -108,36 +108,43 @@ def prepare_draft(
 
         feedback = None
         draft_document = None
-        for attempt in range(2):  # initial + one repair turn at most
-            vocabulary = {
-                "allowlist": pinned.allowlist_fields,
-                "operators": pinned.operators,
-            }
-            draft_document = interpreter_instance.interpret(
-                request, vocabulary, feedback=feedback
-            )
-            write_precheck = _precheck_write(draft_document, sources)
-            if write_precheck:
-                return None, _failure("rejected", [write_precheck], pinned)
-            report = validate_draft(draft_document, pinned)
-            fact_issues = _fact_gate_issues(draft_document, pinned)
-            if report.valid and not fact_issues:
-                return draft_document, None
-            if attempt == 1 or interpreter_name != "model":
-                break
-            feedback = [
-                {"path": issue.path, "code": issue.code, "message": issue.message}
-                for issue in report.issues
-            ] + [
-                {"path": "$.requestedFacts", "code": code, "message": message}
-                for code, message in fact_issues
-            ]
+        try:
+            for attempt in range(2):  # initial + one repair turn at most
+                vocabulary = {
+                    "allowlist": pinned.allowlist_fields,
+                    "operators": pinned.operators,
+                }
+                draft_document = interpreter_instance.interpret(
+                    request, vocabulary, feedback=feedback
+                )
+                write_precheck = _precheck_write(draft_document, sources)
+                if write_precheck:
+                    return None, _failure("rejected", [write_precheck], pinned)
+                report = validate_draft(draft_document, pinned)
+                fact_issues = _fact_gate_issues(draft_document, pinned)
+                if report.valid and not fact_issues:
+                    return draft_document, None
+                if attempt == 1 or interpreter_name != "model":
+                    break
+                feedback = [
+                    {"path": issue.path, "code": issue.code, "message": issue.message}
+                    for issue in report.issues
+                ] + [
+                    {"path": "$.requestedFacts", "code": code, "message": message}
+                    for code, message in fact_issues
+                ]
+        except Exception as exc:  # noqa: BLE001 - interpreter boundary
+            from .model_interpreter import ModelInterpreterError
+
+            if isinstance(exc, ModelInterpreterError):
+                return None, _failure("failed", [str(exc)], pinned)
+            raise
+
         codes = {issue.code for issue in report.issues} | {code for code, _ in fact_issues}
         messages = [f"{issue.code}:{issue.message}" for issue in report.issues]
         # Fact-gate terminals use the resolver-compatible FIELD_NOT_ALLOWLISTED code.
         messages.extend(message for _code, message in fact_issues)
         return None, _terminal_for_codes(codes, messages, pinned)
-
     write_precheck = _precheck_write(draft_document, sources)
     if write_precheck:
         return None, _failure("rejected", [write_precheck], pinned)
@@ -146,7 +153,6 @@ def prepare_draft(
     if not report.valid or fact_issues:
         codes = {issue.code for issue in report.issues} | {code for code, _ in fact_issues}
         messages = [f"{issue.code}:{issue.message}" for issue in report.issues]
-        # Fact-gate terminals use the resolver-compatible FIELD_NOT_ALLOWLISTED code.
         messages.extend(message for _code, message in fact_issues)
         return None, _terminal_for_codes(codes, messages, pinned)
     return draft_document, None
