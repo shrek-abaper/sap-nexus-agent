@@ -66,7 +66,7 @@ def _wire() -> dict:
 
 def test_run_analysis_groups_and_enriches():
     pinned = pin_release(REPO_ROOT)
-    envelope = run_analysis(_wire(), pinned)
+    envelope = run_analysis(_wire(), pinned, fact_types={"MM.PurchaseOrder.GetList": "sapnexus:PurchaseOrderSupplyFact"})
     assert envelope["wireVersion"] == 1
     assert envelope["status"] == "complete"
     assert len(envelope["facts"]) == 2

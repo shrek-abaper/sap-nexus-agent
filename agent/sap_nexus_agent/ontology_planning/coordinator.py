@@ -14,6 +14,7 @@ from .analysis_runtime import run_analysis
 from .contracts import NodeResult, SemanticGoalDraft
 from .draft_validation import validate_draft
 from .fake_gateway import FakeGatewayClient
+from .registry_view import capability_fact_types, read_capability_ids
 from .interpreter import FakeGoalInterpreter
 from .release import pin_release
 from .resolver import resolve
@@ -127,7 +128,9 @@ def run_analysis_request(
     except compiler_module.CompilerFailure as exc:
         return _terminal("rejected", [f"COMPILER_FAILURE:{exc}"], pinned, 0)
 
-    gateway = FakeGatewayClient(fixtures, request["caseId"])
+    read_ids = read_capability_ids(sources)
+    fact_types = capability_fact_types(sources)
+    gateway = FakeGatewayClient(fixtures, request["caseId"], read_ids)
     node_results: list[NodeResult] = []
     failed_nodes: list[str] = []
     for node_id in plan["readPlan"]["topologicalOrder"]:
@@ -166,7 +169,7 @@ def run_analysis_request(
         "analysisPlan": plan["analysisPlan"],
         "requestedConclusions": [c.to_dict() for c in draft.requested_conclusions],
     }
-    analysis = run_analysis(wire, pinned)
+    analysis = run_analysis(wire, pinned, fact_types=fact_types)
     if failed_nodes:
         analysis["status"] = "partial" if node_results else "failed"
         analysis.setdefault("nodeFailures", []).extend(

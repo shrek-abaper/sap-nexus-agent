@@ -6,6 +6,12 @@ from pathlib import Path
 
 import pytest
 
+READ_IDS = frozenset({
+    "MM.Inventory.GetAvailability",
+    "MM.PurchaseOrder.GetList",
+    "MM.Material.GetInfo",
+})
+
 from sap_nexus_agent.ontology_planning.fake_gateway import (
     FixtureNotFound,
     FakeGatewayClient,
@@ -17,7 +23,7 @@ FIXTURES = REPO_ROOT / "evals/ontology-read-analysis"
 
 
 def test_execute_returns_fixture_data_and_logs():
-    gateway = FakeGatewayClient(FIXTURES, "q1-stock-and-unit")
+    gateway = FakeGatewayClient(FIXTURES, "q1-stock-and-unit", READ_IDS)
     result = gateway.execute(
         "MM.Inventory.GetAvailability",
         {"material": "DEMOA2", "plant": "1000"},
@@ -30,13 +36,13 @@ def test_execute_returns_fixture_data_and_logs():
 
 
 def test_write_capability_rejected():
-    gateway = FakeGatewayClient(FIXTURES, "q1-stock-and-unit")
+    gateway = FakeGatewayClient(FIXTURES, "q1-stock-and-unit", READ_IDS)
     with pytest.raises(WriteRejected):
         gateway.execute("MM.PR.CreateDraft", {})
     assert gateway.calls == []
 
 
 def test_missing_fixture_raises():
-    gateway = FakeGatewayClient(FIXTURES, "no-such-case")
+    gateway = FakeGatewayClient(FIXTURES, "no-such-case", READ_IDS)
     with pytest.raises(FixtureNotFound):
         gateway.execute("MM.Inventory.GetAvailability", {})

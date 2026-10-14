@@ -23,24 +23,7 @@ from .contracts import (
 
 _DECIMAL = re.compile(r"^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$")
 
-# Closed v1 mapping of read capability -> produced fact/object metadata.
-_CAPABILITY_FACT = {
-    "MM.PurchaseOrder.GetList": (
-        "sapnexus:PurchaseOrderSupplyFact",
-        "PurchaseOrderItem",
-        "purchaseOrderUnit",
-    ),
-    "MM.Inventory.GetAvailability": (
-        "sapnexus:InventoryAvailabilityFact",
-        "InventoryStock",
-        None,
-    ),
-    "MM.Material.GetInfo": (
-        "sapnexus:MaterialInfoFact",
-        "Material",
-        None,
-    ),
-}
+
 
 _IDENTITY_FIELDS = ("purchaseOrder", "purchaseOrderItem")
 
@@ -78,12 +61,19 @@ def _decimal_text(value: Any) -> str | None:
     return None
 
 
+def _object_type(fact_type: str) -> str:
+    suffix = fact_type.split(":", 1)[-1]
+    return suffix.removesuffix("Fact")
+
+
 def normalize(
     node_results: tuple[NodeResult, ...],
     pinned: Any,
     run_id: str,
     max_rows: int | None = None,
+    fact_types: dict[str, str] | None = None,
 ) -> Normalization:
+    fact_types = fact_types or {}
     semantic_types = _field_semantic_types(pinned)
     facts: list[TypedFact] = []
     exclusions: list[ExcludedRow] = []
@@ -93,10 +83,15 @@ def normalize(
     row_counter = 0
 
     for node in node_results:
-        mapping = _CAPABILITY_FACT.get(node.capability_id)
-        if mapping is None:
+        fact_type = fact_types.get(node.capability_id)
+        if fact_type is None:
             continue
-        fact_type, object_type, unit_field = mapping
+        object_type = _object_type(fact_type)
+        unit_field = None
+        unit_semantic = "sapnexus:UnitOfMeasure"
+        for field_name, field_type in semantic_types.get(fact_type, {}).items():
+            if field_type == unit_semantic:
+                unit_field = field_name
         allowed = semantic_types.get(fact_type, {})
 
         if node.capability_id == "MM.PurchaseOrder.GetList":

@@ -19,6 +19,13 @@ def pinned():
     return pin_release(REPO_ROOT)
 
 
+FACT_TYPES = {
+    "MM.PurchaseOrder.GetList": "sapnexus:PurchaseOrderSupplyFact",
+    "MM.Inventory.GetAvailability": "sapnexus:InventoryAvailabilityFact",
+    "MM.Material.GetInfo": "sapnexus:MaterialInfoFact",
+}
+
+
 def _node(node_id, capability_id, data, parameters=None):
     return NodeResult(
         node_id=node_id,
@@ -46,7 +53,7 @@ def test_po_header_items_expand_once_with_fallback(pinned):
             }
         ]
     })
-    result = normalize((node,), pinned, run_id="run-1")
+    result = normalize((node,), pinned, run_id="run-1", fact_types=FACT_TYPES)
     facts = result.facts
     assert len(facts) == 2
     rows = {f.object_key["purchaseOrderItem"]: f for f in facts}
@@ -67,7 +74,7 @@ def test_non_finite_quantity_excluded(pinned):
              "purchaseOrderUnit": "EA"}
         ]
     })
-    result = normalize((node,), pinned, run_id="run-1")
+    result = normalize((node,), pinned, run_id="run-1", fact_types=FACT_TYPES)
     assert result.facts == ()
     assert any(e.reason == "NON_FINITE_MEASURE" for e in result.exclusions)
 
@@ -78,7 +85,7 @@ def test_inventory_scalar_without_mrp_fields(pinned):
         "mrpElementLines": [{"indicator": "WB", "quantity": "12.000"}],
         "returnMessages": [],
     })
-    result = normalize((node,), pinned, run_id="run-1")
+    result = normalize((node,), pinned, run_id="run-1", fact_types=FACT_TYPES)
     assert len(result.facts) == 1
     fact = result.facts[0]
     assert set(fact.fields) == {"availableQuantity"}
@@ -93,7 +100,7 @@ def test_material_scalar_fact(pinned):
         "baseUnitOfMeasure": "EA",
         "purchasingGroup": "001",
     })
-    result = normalize((node,), pinned, run_id="run-1")
+    result = normalize((node,), pinned, run_id="run-1", fact_types=FACT_TYPES)
     assert len(result.facts) == 1
     assert result.facts[0].fields["baseUnitOfMeasure"].value == "EA"
 
@@ -109,7 +116,7 @@ def test_duplicate_row_identity_conflict(pinned):
              "purchaseOrderUnit": "EA"},
         ]
     })
-    result = normalize((node,), pinned, run_id="run-1")
+    result = normalize((node,), pinned, run_id="run-1", fact_types=FACT_TYPES)
     assert result.conflicts
     assert all("4500000001" in c for c in result.conflicts)
 
@@ -119,5 +126,5 @@ def test_non_allowlisted_payload_field_dropped(pinned):
         "availableQuantity": "12.000",
         "deliveryDate": "2026-10-21",
     })
-    result = normalize((node,), pinned, run_id="run-1")
+    result = normalize((node,), pinned, run_id="run-1", fact_types=FACT_TYPES)
     assert set(result.facts[0].fields) == {"availableQuantity"}

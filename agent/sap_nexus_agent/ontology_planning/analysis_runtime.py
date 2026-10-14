@@ -93,7 +93,11 @@ def _dispatch(node: dict[str, Any], inputs, version: str, conflicts: tuple[str, 
     return func(node["nodeId"], tuple(inputs), params, node.get("operatorVersion", version), conflicts)
 
 
-def run_analysis(wire: dict[str, Any], pinned: Any | None = None) -> dict[str, Any]:
+def run_analysis(
+    wire: dict[str, Any],
+    pinned: Any | None = None,
+    fact_types: dict[str, str] | None = None,
+) -> dict[str, Any]:
     if wire.get("wireVersion") != 1:
         return {"wireVersion": 1, "status": "failed", "facts": [], "results": [],
                 "uncoveredConclusions": [], "limits": {},
@@ -115,10 +119,21 @@ def run_analysis(wire: dict[str, Any], pinned: Any | None = None) -> dict[str, A
                 "reasons": ["RELEASE_MISMATCH"]}
 
     from .bounds import BOUNDS
+    if not fact_types:
+        from pathlib import Path as _Path
+        from .registry_view import capability_fact_types
+        from sap_nexus_agent.semantic_planning.loader import load_semantic_sources
+
+        root = _Path(
+            os.environ.get("SAP_NEXUS_AGENT_ROOT")
+            or _Path(__file__).resolve().parents[3]
+        )
+        fact_types = capability_fact_types(load_semantic_sources(root))
     normalization = normalize(
         _node_results(wire.get("nodeResults", [])), pinned,
         run_id=wire.get("runId", "run"),
         max_rows=BOUNDS.max_rows,
+        fact_types=fact_types,
     )
     facts = normalization.facts
     conflicts = normalization.conflicts
