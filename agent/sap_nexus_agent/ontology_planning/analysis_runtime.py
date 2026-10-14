@@ -227,9 +227,43 @@ def _main_plan(raw: bytes) -> int:
     )
 
 
+def _main_analyze(raw: bytes) -> int:
+    import json as _json
+    from pathlib import Path
+
+    try:
+        request = _json.loads(
+            raw, parse_constant=lambda value: (_ for _ in ()).throw(
+                ValueError(f"non-finite constant: {value}")
+            )
+        )
+    except (ValueError, json.JSONDecodeError):
+        print(json.dumps({"status": "failed", "reasons": ["MALFORMED_REQUEST"]}))
+        return 1
+    from .coordinator import run_analysis_request
+
+    repo_root = Path(
+        os.environ.get("SAP_NEXUS_AGENT_ROOT")
+        or Path(__file__).resolve().parents[3]
+    )
+    response = run_analysis_request(request, repo_root)
+    json.dump(response, sys.stdout, ensure_ascii=False, sort_keys=True)
+    sys.stdout.write("\n")
+    status = response.get("status", "failed")
+    if status == "rejected":
+        return 3
+    if status in {"complete", "partial", "clarification", "capability_gap",
+                  "semantic_gap"}:
+        return 0
+    return 1
+
+
 def main() -> int:
-    if len(sys.argv) >= 2 and sys.argv[1] == "--mode" and sys.argv[2] == "plan":
-        return _main_plan(sys.stdin.buffer.read())
+    if len(sys.argv) >= 3 and sys.argv[1] == "--mode":
+        if sys.argv[2] == "plan":
+            return _main_plan(sys.stdin.buffer.read())
+        if sys.argv[2] == "analyze":
+            return _main_analyze(sys.stdin.buffer.read())
     raw = sys.stdin.buffer.read()
     try:
         wire = json.loads(raw, parse_constant=lambda value: (_ for _ in ()).throw(
