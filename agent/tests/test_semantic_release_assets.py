@@ -118,3 +118,62 @@ def test_object_types_reject_bad_shapes():
             },
             schema,
         )
+
+
+def test_allowlist_triples_exist_in_fact_catalog():
+    doc = _yaml("ontology/analysis-fact-fields.yaml")
+    jsonschema.validate(doc, _schema("analysis-fact-fields.schema.json"))
+    facts = {f["factTypeId"]: f for f in _yaml("ontology/fact-types.yaml")["factTypes"]}
+    allowed_fact_types = {
+        "sapnexus:InventoryAvailabilityFact",
+        "sapnexus:PurchaseOrderSupplyFact",
+        "sapnexus:MaterialInfoFact",
+    }
+    assert {e["factTypeId"] for e in doc["allowlist"]} == allowed_fact_types
+    all_fields = set()
+    for entry in doc["allowlist"]:
+        catalog = facts[entry["factTypeId"]]
+        catalog_fields = {f["name"]: f["semanticType"] for f in catalog["fields"]}
+        for field in entry["fields"]:
+            assert catalog_fields[field["name"]] == field["semanticType"]
+            all_fields.add(field["name"])
+    assert "mrpElementLines" not in all_fields
+
+
+def test_allowlist_rejects_bad_shapes():
+    schema = _schema("analysis-fact-fields.schema.json")
+    valid_entry = {
+        "factTypeId": "sapnexus:MaterialInfoFact",
+        "fields": [
+            {"name": "material", "semanticType": "sapnexus:MaterialNumber"},
+        ],
+    }
+    with pytest.raises(jsonschema.ValidationError):
+        # unknown property
+        jsonschema.validate(
+            {"version": 1, "allowlist": [{**valid_entry, "extra": 1}]},
+            schema,
+        )
+    with pytest.raises(jsonschema.ValidationError):
+        # duplicate field object inside one entry
+        jsonschema.validate(
+            {
+                "version": 1,
+                "allowlist": [
+                    {
+                        "factTypeId": "sapnexus:MaterialInfoFact",
+                        "fields": [
+                            {"name": "material", "semanticType": "sapnexus:MaterialNumber"},
+                            {"name": "material", "semanticType": "sapnexus:MaterialNumber"},
+                        ],
+                    }
+                ],
+            },
+            schema,
+        )
+    with pytest.raises(jsonschema.ValidationError):
+        # empty fields
+        jsonschema.validate(
+            {"version": 1, "allowlist": [{"factTypeId": "x", "fields": []}]},
+            schema,
+        )

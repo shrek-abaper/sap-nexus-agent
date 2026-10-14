@@ -1,0 +1,39 @@
+version: 1
+# Analysis-legal Fact fields for the ontology-governed read analysis path.
+# Every (factTypeId, field name, semanticType) triple MUST resolve in
+# ontology/fact-types.yaml; structural validation enforces that. Fields not
+# listed here cannot become TypedFact analysis inputs. mrpElementLines stays
+# opaque (its interior is not decomposed); no delivery/receipt/ATP field
+# exists on these facts, which is the structural reason arrival/stockout
+# questions return semantic gaps.
+allowlist:
+  - factTypeId: sapnexus:InventoryAvailabilityFact
+    fields:
+      - name: availableQuantity
+        semanticType: sapnexus:AvailableQuantity
+  - factTypeId: sapnexus:PurchaseOrderSupplyFact
+    fields:
+      - name: purchaseOrder
+        semanticType: sapnexus:PurchaseOrderNumber
+      - name: purchaseOrderItem
+        semanticType: sapnexus:PurchaseOrderItemNumber
+      - name: supplier
+        semanticType: sapnexus:Supplier
+      - name: material
+        semanticType: sapnexus:MaterialNumber
+      - name: plant
+        semanticType: sapnexus:Plant
+      - name: orderQuantity
+        semanticType: sapnexus:Quantity
+      - name: purchaseOrderUnit
+        semanticType: sapnexus:UnitOfMeasure
+  - factTypeId: sapnexus:MaterialInfoFact
+    fields:
+      - name: material
+        semanticType: sapnexus:MaterialNumber
+      - name: plant
+        semanticType: sapnexus:Plant
+      - name: baseUnitOfMeasure
+        semanticType: sapnexus:UnitOfMeasure
+      - name: purchasingGroup
+        semanticType: sapnexus:PurchasingGroup
