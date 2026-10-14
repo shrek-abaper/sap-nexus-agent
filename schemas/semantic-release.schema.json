@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sap-nexus-agent.local/schemas/semantic-release.schema.json",
+  "title": "SAP Nexus SemanticRelease v1 Package",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "registrySnapshotId",
+    "semanticSnapshotId",
+    "compilerVersion",
+    "operatorImplementationVersion",
+    "sources",
+    "businessValidity"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "registrySnapshotId": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "semanticSnapshotId": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "compilerVersion": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "operatorImplementationVersion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["select_fields", "filter_eq", "group_sum", "compare"],
+      "properties": {
+        "select_fields": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+        "filter_eq": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+        "group_sum": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+        "compare": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/source" }
+    },
+    "businessValidity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["applicability"],
+      "properties": {
+        "applicability": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/applicabilityEntry" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "documentVersion", "digest", "role"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "documentVersion": { "type": "integer", "minimum": 1 },
+        "digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+        "role": { "type": "string", "enum": ["legacy", "semantic"] }
+      }
+    },
+    "applicabilityEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["definitionId", "declaredStatus", "state"],
+      "properties": {
+        "definitionId": {
+          "type": "string",
+          "pattern": "^sapnexus:def\\.[a-z0-9-]+$"
+        },
+        "declaredStatus": { "type": "string", "enum": ["grounded", "proposed"] },
+        "state": { "type": "string", "enum": ["grounded", "not_grounded"] }
+      }
+    }
+  }
+}

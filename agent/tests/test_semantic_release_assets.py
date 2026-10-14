@@ -275,3 +275,50 @@ def test_definition_applicability_entry_shape():
             },
             schema,
         )
+
+
+VALID_PACKAGE = {
+    "schemaVersion": 1,
+    "registrySnapshotId": "sha256:" + "a" * 64,
+    "semanticSnapshotId": "sha256:" + "b" * 64,
+    "compilerVersion": "0.1.0",
+    "operatorImplementationVersion": {
+        "select_fields": "0.1.0",
+        "filter_eq": "0.1.0",
+        "group_sum": "0.1.0",
+        "compare": "0.1.0",
+    },
+    "sources": [
+        {
+            "path": "ontology/analysis-versions.yaml",
+            "documentVersion": 1,
+            "digest": "sha256:" + "c" * 64,
+            "role": "semantic",
+        }
+    ],
+    "businessValidity": {"applicability": []},
+}
+
+
+def test_semantic_release_package_schema_accepts_valid():
+    jsonschema.validate(VALID_PACKAGE, _schema("semantic-release.schema.json"))
+
+
+@pytest.mark.parametrize(
+    "mutate",
+    [
+        lambda d: d.update(extra=1),
+        lambda d: d["sources"][0].update(extra=1),
+        lambda d: d["sources"][0].update(role="other"),
+        lambda d: d.update(registrySnapshotId="sha256:short"),
+        lambda d: d.update(schemaVersion=2),
+        lambda d: d["operatorImplementationVersion"].update(fifth="0.1.0"),
+    ],
+)
+def test_semantic_release_package_schema_rejects_bad(mutate):
+    import copy
+
+    doc = copy.deepcopy(VALID_PACKAGE)
+    mutate(doc)
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.validate(doc, _schema("semantic-release.schema.json"))
