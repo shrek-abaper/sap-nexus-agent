@@ -2,6 +2,8 @@
 comet_change: ontology-goal-model-interpreter
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-10-14-ontology-goal-model-interpreter
+status: final
 ---
 
 # Design Doc — Model Goal Interpreter

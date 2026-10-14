@@ -2,6 +2,7 @@
 change: ontology-goal-model-interpreter
 design-doc: docs/superpowers/specs/2026-10-14-ontology-goal-model-interpreter-design.md
 base-ref: 82444b0
+archived-with: 2026-10-14-ontology-goal-model-interpreter
 ---
 
 # Ontology Goal Model Interpreter — Implementation Plan
