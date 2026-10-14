@@ -1,0 +1,11 @@
+version: 1
+# Definitions declared applicable to ontology-goal read-analysis conclusions.
+#
+# v1 is deliberately EMPTY: no existing Definition is declared applicable.
+# The sole grounded Definition (sapnexus:def.available-for-commitment) phrases
+# the MD04 running available quantity as "available to promise"; the read
+# analysis path must not label WB/MD04 stock as ATP, so it is not cited here.
+# The two proposed Definitions carry evidence gaps and are not applicable.
+# Structural validation still resolves every entry below against
+# ontology/definitions.yaml when future entries are added.
+applicability: []

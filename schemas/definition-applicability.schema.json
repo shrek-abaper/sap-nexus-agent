@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sap-nexus-agent.local/schemas/definition-applicability.schema.json",
+  "title": "SAP Nexus Definition Applicability Declarations",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "applicability"],
+  "properties": {
+    "version": { "type": "integer", "const": 1 },
+    "applicability": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/entry" }
+    }
+  },
+  "$defs": {
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["definitionId", "status", "applicableScopes"],
+      "properties": {
+        "definitionId": {
+          "type": "string",
+          "pattern": "^sapnexus:def\\.[a-z0-9-]+$"
+        },
+        "status": { "type": "string", "enum": ["grounded", "proposed"] },
+        "applicableScopes": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

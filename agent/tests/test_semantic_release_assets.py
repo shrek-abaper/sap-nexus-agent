@@ -235,3 +235,43 @@ def test_operator_catalog_rejects_bad_shapes():
             ]},
             schema,
         )
+
+
+def test_definition_applicability_empty_in_v1():
+    doc = _yaml("ontology/definition-applicability.yaml")
+    jsonschema.validate(doc, _schema("definition-applicability.schema.json"))
+    assert doc["applicability"] == []
+
+
+def test_definition_applicability_entry_shape():
+    schema = _schema("definition-applicability.schema.json")
+    valid = {
+        "version": 1,
+        "applicability": [
+            {
+                "definitionId": "sapnexus:def.available-for-commitment",
+                "status": "grounded",
+                "applicableScopes": ["MM"],
+            }
+        ],
+    }
+    jsonschema.validate(valid, schema)
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.validate(
+            {"version": 1, "applicability": [{"definitionId": "bad-id"}]},
+            schema,
+        )
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.validate(
+            {
+                "version": 1,
+                "applicability": [
+                    {
+                        "definitionId": "sapnexus:def.x",
+                        "status": "unknown",
+                        "applicableScopes": [],
+                    }
+                ],
+            },
+            schema,
+        )
