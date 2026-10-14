@@ -80,3 +80,16 @@ describe("ToolCallCard ontology safety", () => {
     expect(isOntologyResult(call.result)).toBe(true);
   });
 });
+
+describe("defensive rendering", () => {
+  it("tolerates legacy/minimal ontology results missing arrays", () => {
+    const minimal = {
+      kind: "ontology-analysis" as const,
+      status: "failed",
+      runId: "x",
+    } as unknown as Parameters<typeof ontologySections>[0];
+    const sections = ontologySections(minimal);
+    expect(sections).toEqual({ facts: [], analysis: [], limitations: [] });
+    expect(isOntologyResult(minimal)).toBe(true);
+  });
+});

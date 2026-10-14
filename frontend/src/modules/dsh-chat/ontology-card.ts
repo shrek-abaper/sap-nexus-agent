@@ -32,11 +32,11 @@ export interface DshOntologyToolResult {
   kind: "ontology-analysis";
   status: string;
   runId: string;
-  facts: DshOntologyFact[];
-  results: DshOntologyResult[];
-  gaps: string[];
-  limitations: string[];
-  narrative: { summary: string; limitations: string[] };
+  facts?: DshOntologyFact[];
+  results?: DshOntologyResult[];
+  gaps?: string[];
+  limitations?: string[];
+  narrative?: { summary: string; limitations: string[] };
   error?: { errorType: string; message: string };
 }
 
@@ -81,8 +81,8 @@ export interface OntologySections {
 
 export function ontologySections(result: DshOntologyToolResult): OntologySections {
   return {
-    facts: result.facts.map(factLine),
-    analysis: result.results.map(resultLine),
+    facts: (result.facts ?? []).map(factLine),
+    analysis: (result.results ?? []).map(resultLine),
     limitations: result.limitations ?? [],
   };
 }

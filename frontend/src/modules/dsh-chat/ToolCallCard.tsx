@@ -173,16 +173,16 @@ export function ToolCallCard({ call }: { call: DshToolCall }) {
                   </ul>
                 </div>
               ) : null}
-              {sections.limitations.length > 0 || call.result.gaps.length > 0 ? (
+              {sections.limitations.length > 0 || (call.result.gaps?.length ?? 0) > 0 ? (
                 <div className="dsh-tool__limits">
                   <div className="dsh-tool__section-title">限制与缺口</div>
                   <ul className="dsh-tool__limitations">
-                    {call.result.gaps.map((gap, index) => <li key={`gap-${index}`}>{gap}</li>)}
+                    {(call.result.gaps ?? []).map((gap, index) => <li key={`gap-${index}`}>{gap}</li>)}
                     {sections.limitations.map((limitation, index) => <li key={`lim-${index}`}>{limitation}</li>)}
                   </ul>
                 </div>
               ) : null}
-              {call.result.narrative.summary ? (
+              {call.result.narrative?.summary ? (
                 <div className="dsh-tool__narrative">{call.result.narrative.summary}</div>
               ) : null}
               <details className="dsh-tool__raw">

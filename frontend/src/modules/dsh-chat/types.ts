@@ -53,16 +53,16 @@ export type DshOntologyToolResult = {
     fields: Record<string, DshOntologyField>;
     unit: { field: string; value: string } | null;
   }[];
-  results: {
+  results?: {
     nodeId: string;
     operatorId: string;
     status: string;
     rows: Record<string, unknown>[];
   }[];
-  gaps: string[];
-  limitations: string[];
+  gaps?: string[];
+  limitations?: string[];
   writeGatewayCalls?: number;
-  narrative: { summary: string; limitations: string[] };
+  narrative?: { summary: string; limitations: string[] };
   error?: { errorType: string; message: string };
 };
 
