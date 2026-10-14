@@ -18,11 +18,12 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 def _wire() -> dict:
+    pinned = pin_release(REPO_ROOT)
     return {
         "wireVersion": 1,
         "release": {
-            "semanticSnapshotId": "sha256:" + "a" * 64,
-            "registrySnapshotId": "sha256:" + "b" * 64,
+            "semanticSnapshotId": pinned.package.semantic_snapshot_id,
+            "registrySnapshotId": pinned.package.registry_snapshot_id,
         },
         "nodeResults": [
             {

@@ -1,0 +1,9 @@
+{
+  "openspec_proposal": "openspec/changes/ontology-goal-read-analysis/proposal.md",
+  "openspec_design": "openspec/changes/ontology-goal-read-analysis/design.md",
+  "openspec_tasks": "openspec/changes/ontology-goal-read-analysis/tasks.md",
+  "openspec_delta_spec": "openspec/changes/ontology-goal-read-analysis/specs/deterministic-read-analysis/spec.md",
+  "handoff_context": "openspec/changes/archive/2026-10-14-ontology-goal-read-analysis/.comet/handoff/design-context.json",
+  "handoff_markdown": "openspec/changes/archive/2026-10-14-ontology-goal-read-analysis/.comet/handoff/design-context.md",
+  "archive_directory": "openspec/changes/archive/2026-10-14-ontology-goal-read-analysis"
+}

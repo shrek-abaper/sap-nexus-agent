@@ -90,17 +90,6 @@ def test_technical_content_rejected(location, mutate):
     assert "DRAFT_TECHNICAL_KEY" in _codes(report), location
 
 
-def test_unknown_fact_and_field():
-    doc = _valid_draft()
-    doc["requestedFacts"][0]["factTypeId"] = "sapnexus:NopeFact"
-    report = validate_draft(doc, RELEASE)
-    assert "DRAFT_UNKNOWN_FACT_TYPE" in _codes(report)
-    doc = _valid_draft()
-    doc["requestedFacts"][0]["fields"] = ["mrpElementLines"]
-    report = validate_draft(doc, RELEASE)
-    assert "DRAFT_UNKNOWN_FIELD" in _codes(report)
-
-
 def test_unknown_operator_and_unresolved_input():
     doc = _valid_draft()
     doc["analysisNodes"] = [

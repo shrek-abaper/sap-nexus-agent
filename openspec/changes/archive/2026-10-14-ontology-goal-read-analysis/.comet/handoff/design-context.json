@@ -1,0 +1,16 @@
+{
+  "change": "ontology-goal-read-analysis",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "7577b066d48d660feb7bece9c1260ff2df35da71710455c59be77cc2c7e7d53f",
+  "files": [
+    { "path": "openspec/changes/ontology-goal-read-analysis/proposal.md", "sha256": "0b813d77b32969c095bb1b3498f288201a2099b441d59e66e11b4f1956ef1319" },
+    { "path": "openspec/changes/ontology-goal-read-analysis/design.md", "sha256": "b92f6e14b193a697e27bf9993297c80cb0c41b9bb3d1ef2550d527cacd626142" },
+    { "path": "openspec/changes/ontology-goal-read-analysis/tasks.md", "sha256": "ce2cd713130de5aa624e4cec06c74b7b5771c1a1c2d2247cba0fd8b297032899" },
+    { "path": "openspec/changes/ontology-goal-read-analysis/specs/deterministic-read-analysis/spec.md", "sha256": "6a98e5172414401197f2cc492999128671bf221718e6b2510df1c123ce1263bd" },
+    { "path": "openspec/changes/ontology-goal-read-analysis/specs/dynamic-read-coordinator/spec.md", "sha256": "93ae7adb6aa53a6be1d43f6c13e65cc55d935baac61d608db50fde78926c06cc" },
+    { "path": "openspec/changes/ontology-goal-read-analysis/specs/semantic-goal-resolution/spec.md", "sha256": "2e56f8bc226ff54ac68c0aae393bca84f3dcb91214f03b30e02a16be35496150" }
+  ]
+}

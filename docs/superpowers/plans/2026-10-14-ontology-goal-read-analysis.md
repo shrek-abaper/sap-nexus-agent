@@ -2,6 +2,7 @@
 change: ontology-goal-read-analysis
 design-doc: docs/superpowers/specs/2026-10-14-ontology-goal-read-analysis-design.md
 base-ref: be39b54d33e949c7057dab16b69b2969a1ec53d3
+archived-with: 2026-10-14-ontology-goal-read-analysis
 ---
 
 # Ontology-Goal Dynamic Read Analysis Implementation Plan
