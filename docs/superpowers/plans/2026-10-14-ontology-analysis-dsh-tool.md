@@ -2,6 +2,7 @@
 change: ontology-analysis-dsh-tool
 design-doc: docs/superpowers/specs/2026-10-14-ontology-analysis-dsh-tool-design.md
 base-ref: fcf45204c7b7a4e40487084e56319abfb881cf95
+archived-with: 2026-10-14-ontology-analysis-dsh-tool
 ---
 
 # Ontology Analysis DSH Tool Implementation Plan
@@ -43,4 +44,4 @@ base-ref: fcf45204c7b7a4e40487084e56319abfb881cf95
 - [x] commit
 
 ### Task 5: Verification + archive — IN PROGRESS
-- [ ] Python affected suites, npm verify, openspec strict, build checks; checkoff; verify; archive (local, no push).
+- [x] Python affected suites, npm verify, openspec strict, build checks; checkoff; verify; archive (local, no push).

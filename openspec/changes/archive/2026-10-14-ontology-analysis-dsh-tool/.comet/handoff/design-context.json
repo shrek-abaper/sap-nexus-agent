@@ -1,0 +1,14 @@
+{
+  "change": "ontology-analysis-dsh-tool",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "33f86d87f339d76864c9d4520c8eada06e5bfeb68714939c49e6b297c10e60a5",
+  "files": [
+    { "path": "openspec/changes/ontology-analysis-dsh-tool/proposal.md", "sha256": "83e06bec17c7eebed8bc40c2bcf4297856b0a75806230f9035285a6ac6b878c9" },
+    { "path": "openspec/changes/ontology-analysis-dsh-tool/design.md", "sha256": "1922e3926776fad2518b2b1dfcf61dfbd3fa30bd38d377297e5b09b30ef70682" },
+    { "path": "openspec/changes/ontology-analysis-dsh-tool/tasks.md", "sha256": "e66a6e5e5ae23bee2aa43f2db9af3d9162840f0c0f25f91cb6ed5817f1693491" },
+    { "path": "openspec/changes/ontology-analysis-dsh-tool/specs/ontology-analysis-chat-tool/spec.md", "sha256": "000c6384a9f0418f17a6daf68875d8302cb656b88b74aa79b83f46f051405e50" }
+  ]
+}
