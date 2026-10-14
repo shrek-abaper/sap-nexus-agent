@@ -182,6 +182,7 @@ def validate_draft(document: Mapping[str, Any], release: Any) -> DraftValidation
                         )
                     )
 
+    operator_ids = getattr(release, "operators", None) or getattr(release, "operator_ids")
     nodes = document.get("analysisNodes", [])
     node_list = [n for n in nodes if isinstance(n, Mapping)] if isinstance(nodes, list) else []
     if len(node_list) > BOUNDS.max_analysis_nodes:
@@ -191,7 +192,7 @@ def validate_draft(document: Mapping[str, Any], release: Any) -> DraftValidation
     node_ids = {str(n.get("nodeId")) for n in node_list}
     for node in node_list:
         node_id = str(node.get("nodeId"))
-        if node.get("operatorId") not in release.operator_ids:
+        if node.get("operatorId") not in operator_ids:
             issues.append(
                 DraftIssue(
                     f"$.analysisNodes[{node_id}]",

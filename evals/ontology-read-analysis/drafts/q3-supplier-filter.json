@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "requestedFacts": [
+    {"factTypeId": "sapnexus:InventoryAvailabilityFact",
+     "fields": ["availableQuantity"],
+     "objectSelectors": [
+       {"objectTypeId": "sapnexus:Material", "key": "material", "value": "DEMOA2"},
+       {"objectTypeId": "sapnexus:Plant", "key": "plant", "value": "1000"}]},
+    {"factTypeId": "sapnexus:PurchaseOrderSupplyFact",
+     "fields": ["orderQuantity", "supplier", "purchaseOrderUnit"],
+     "objectSelectors": [
+       {"objectTypeId": "sapnexus:Material", "key": "material", "value": "DEMOA2"},
+       {"objectTypeId": "sapnexus:Plant", "key": "plant", "value": "1000"}]}
+  ],
+  "constraints": [],
+  "analysisNodes": [
+    {"nodeId": "a1", "operatorId": "filter_eq",
+     "inputs": [{"kind": "factField",
+                 "factTypeId": "sapnexus:PurchaseOrderSupplyFact",
+                 "field": "supplier"}],
+     "params": {"field": "supplier", "value": "V72719"},
+     "dependsOn": []},
+    {"nodeId": "a2", "operatorId": "group_sum",
+     "inputs": [{"kind": "nodeRef", "nodeId": "a1"}],
+     "params": {"dimensions": ["supplier"], "measure": "orderQuantity",
+                "unitField": "purchaseOrderUnit"},
+     "dependsOn": ["a1"]}
+  ],
+  "requestedConclusions": [
+    {"id": "c1", "statement": "V72719 order quantity beside all-supplier totals",
+     "evidenceRequirement": "lineage and units"}],
+  "assumptions": []
+}
