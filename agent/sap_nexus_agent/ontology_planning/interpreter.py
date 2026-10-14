@@ -8,7 +8,12 @@ from typing import Any, Protocol
 
 
 class GoalInterpreter(Protocol):
-    def interpret(self, request: dict[str, Any], vocabulary: Any) -> dict[str, Any]:
+    def interpret(
+        self,
+        request: dict[str, Any],
+        vocabulary: Any = None,
+        feedback: list[dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
         ...
 
 
@@ -18,7 +23,12 @@ class FakeGoalInterpreter:
     def __init__(self, drafts_dir: Path):
         self._drafts_dir = Path(drafts_dir)
 
-    def interpret(self, request: dict[str, Any], vocabulary: Any = None) -> dict[str, Any]:
+    def interpret(
+        self,
+        request: dict[str, Any],
+        vocabulary: Any = None,
+        feedback: list[dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
         draft_file = request.get("draftFile")
         if draft_file is None:
             draft_file = f"{request['caseId']}.json"

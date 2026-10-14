@@ -99,36 +99,14 @@ def run_analysis_request(
 
     pinned = pin_release(repo_root)
 
-    if request.get("draftOverride") is not None:
-        draft_document = request["draftOverride"]
-    else:
-        if request.get("interpreter", "fake") != "fake":
-            return _failure("rejected", ["MODEL_INTERPRETER_NOT_AUTHORIZED"])
-        draft_document = FakeGoalInterpreter(fixtures / "drafts").interpret(request)
+    fixtures = Path(fixtures_dir) if fixtures_dir else (
+        repo_root / "evals/ontology-read-analysis"
+    )
+    from .draft_pipeline import prepare_draft
 
-    write_precheck = _precheck_write(draft_document, sources)
-    if write_precheck:
-        return _terminal(
-            "rejected", [write_precheck], pinned, write_gateway_calls=0
-        )
-
-    report = validate_draft(draft_document, pinned)
-    if not report.valid:
-        codes = {issue.code for issue in report.issues}
-        if codes & {"DRAFT_UNKNOWN_FIELD", "DRAFT_UNKNOWN_FACT_TYPE"}:
-            reasons = [
-                f"{issue.code}:{issue.message}"
-                for issue in report.issues
-                if issue.code in {"DRAFT_UNKNOWN_FIELD", "DRAFT_UNKNOWN_FACT_TYPE"}
-            ]
-            return _terminal("semantic_gap", reasons, pinned, write_gateway_calls=0)
-        if codes & _REJECTED_CODES:
-            return _terminal(
-                "rejected",
-                [f"{issue.code}:{issue.message}" for issue in report.issues],
-                pinned, write_gateway_calls=0,
-            )
-
+    draft_document, terminal = prepare_draft(request, sources, pinned, fixtures)
+    if terminal is not None:
+        return terminal
     draft = SemanticGoalDraft.from_dict(draft_document)
     resolution = resolve(
         draft, pinned, sources, contracts.snapshot, contracts.graph, principal
