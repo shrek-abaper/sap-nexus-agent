@@ -23,6 +23,8 @@ export type StoredMessage = {
   toolCalls?: StoredToolCall[];
   error?: string;
   ts: number;
+  /** Latest feedback record for this message, merged at read time. */
+  feedback?: StoredFeedback;
 };
 
 export type StoredConversationSummary = {
@@ -37,6 +39,14 @@ export type StoredConversation = StoredConversationSummary & {
   messages: StoredMessage[];
 };
 
+export type MessageRating = "up" | "down";
+
+export type StoredFeedback = {
+  rating: MessageRating;
+  note?: string;
+  ts: number;
+};
+
 type HeaderRecord = {
   kind: "conversation";
   id: string;
@@ -47,7 +57,17 @@ type MessageRecord = StoredMessage & {
   kind: "message";
   conversationId: string;
 };
-type RecordLine = HeaderRecord | MessageRecord;
+// Feedback is append-only like messages: the latest record per
+// (conversationId, messageId) wins; rating null with no note is a tombstone.
+type FeedbackRecord = {
+  kind: "feedback";
+  conversationId: string;
+  messageId: string;
+  rating: MessageRating | null;
+  note?: string;
+  ts: number;
+};
+type RecordLine = HeaderRecord | MessageRecord | FeedbackRecord;
 
 const TITLE_MAX = 24;
 
@@ -103,10 +123,19 @@ export const dshConversationStore = {
     assistantReasoning?: string;
     assistantToolCalls?: StoredToolCall[];
     assistantError?: string;
-  }): Promise<void> {
+  }): Promise<{ userMessageId: string; assistantMessageId: string }> {
     const records = readRecords();
     const hasHeader = records.some((r) => r.kind === "conversation" && r.id === input.conversationId);
-    const now = Date.now();
+    // Message ts must be strictly increasing: two turns landing in the same
+    // millisecond would otherwise tie on ts, and the ts-sorted read path
+    // would interleave them (user2 replayed before assistant1) and collide
+    // on the u-/a-<ts> message ids.
+    let lastTs = 0;
+    for (const record of records) {
+      if (record.kind === "message" || record.kind === "feedback") lastTs = Math.max(lastTs, record.ts);
+    }
+    const userTs = Math.max(Date.now(), lastTs + 1);
+    const assistantTs = userTs + 1;
     const baseId = input.conversationId;
 
     if (!hasHeader) {
@@ -114,29 +143,30 @@ export const dshConversationStore = {
         kind: "conversation",
         id: baseId,
         title: titleFrom(input.userText),
-        createdAt: now,
+        createdAt: userTs,
       });
     }
 
     await append({
       kind: "message",
       conversationId: baseId,
-      id: `u-${now}`,
+      id: `u-${userTs}`,
       role: "user",
       text: input.userText,
-      ts: now,
+      ts: userTs,
     });
     await append({
       kind: "message",
       conversationId: baseId,
-      id: `a-${now}`,
+      id: `a-${assistantTs}`,
       role: "assistant",
       text: input.assistantText,
       ...(input.assistantReasoning ? { reasoning: input.assistantReasoning } : {}),
       ...(input.assistantToolCalls ? { toolCalls: input.assistantToolCalls } : {}),
       ...(input.assistantError ? { error: input.assistantError } : {}),
-      ts: now + 1,
+      ts: assistantTs,
     });
+    return { userMessageId: `u-${userTs}`, assistantMessageId: `a-${assistantTs}` };
   },
 
   list(): StoredConversationSummary[] {
@@ -153,6 +183,9 @@ export const dshConversationStore = {
           messageCount: 0,
           firstSeenIndex: index,
         });
+      } else if (record.kind === "feedback") {
+        // Feedback records never affect summaries or message counts.
+        return;
       } else {
         const existing = byId.get(record.conversationId);
         const summary: IndexedSummary = existing ?? {
@@ -180,9 +213,32 @@ export const dshConversationStore = {
     const records = readRecords();
     const header = records.find((r) => r.kind === "conversation" && r.id === id) as HeaderRecord | undefined;
     if (!header) return null;
+    // Latest feedback record per message wins; tombstones (rating null and
+    // no note) hide the entry entirely.
+    const feedbackByMessage = new Map<string, FeedbackRecord>();
+    for (const record of records) {
+      if (record.kind === "feedback" && record.conversationId === id) {
+        feedbackByMessage.set(record.messageId, record);
+      }
+    }
     const messages: StoredMessage[] = records
       .filter((r): r is MessageRecord => r.kind === "message" && r.conversationId === id)
-      .map(({ kind: _kind, conversationId: _cid, ...message }) => message)
+      .map(({ kind: _kind, conversationId: _cid, ...message }) => {
+        const feedback = feedbackByMessage.get(message.id);
+        // Only an active rating is surfaced; a note persists in storage and
+        // reappears when the user rates again (UI never produces note-only).
+        if (feedback?.rating) {
+          return {
+            ...message,
+            feedback: {
+              rating: feedback.rating,
+              ...(feedback.note ? { note: feedback.note } : {}),
+              ts: feedback.ts,
+            },
+          };
+        }
+        return message;
+      })
       .sort((a, b) => a.ts - b.ts);
     const updatedAt = messages.reduce((max, m) => Math.max(max, m.ts), header.createdAt);
     return {
@@ -195,13 +251,73 @@ export const dshConversationStore = {
     };
   },
 
+  // Upsert the latest feedback state for one message. `rating: null` with
+  // no surviving note is a tombstone; omitting `note` keeps the prior note.
+  async setFeedback(input: {
+    conversationId: string;
+    messageId: string;
+    rating: MessageRating | null;
+    note?: string;
+  }): Promise<void> {
+    const records = readRecords();
+    let previous: FeedbackRecord | undefined;
+    for (const record of records) {
+      if (record.kind === "feedback"
+        && record.conversationId === input.conversationId
+        && record.messageId === input.messageId) {
+        previous = record;
+      }
+    }
+    const note = input.note !== undefined ? input.note : previous?.note;
+    await append({
+      kind: "feedback",
+      conversationId: input.conversationId,
+      messageId: input.messageId,
+      rating: input.rating,
+      ...(note ? { note } : {}),
+      ts: Date.now(),
+    });
+  },
+
+  // Copy the parent conversation's message prefix (through throughMessageId,
+  // inclusive) into a new conversation. Message ids are preserved; feedback
+  // is not carried over. Returns the new conversation, or null when the
+  // parent or the message is unknown.
+  async forkConversation(input: {
+    parentId: string;
+    throughMessageId: string;
+    newId: string;
+  }): Promise<StoredConversation | null> {
+    const parent = this.get(input.parentId);
+    if (!parent) return null;
+    const cutIndex = parent.messages.findIndex((message) => message.id === input.throughMessageId);
+    if (cutIndex < 0) return null;
+    const prefix = parent.messages.slice(0, cutIndex + 1).map(({ feedback: _f, ...message }) => message);
+    const now = Date.now();
+    await append({
+      kind: "conversation",
+      id: input.newId,
+      title: titleFrom(`${parent.title} · 分叉`),
+      createdAt: now,
+    });
+    for (const message of prefix) {
+      await append({
+        kind: "message",
+        conversationId: input.newId,
+        ...message,
+      });
+    }
+    return this.get(input.newId);
+  },
+
   async remove(id: string): Promise<boolean> {
     const file = dataFile();
     const before = readRecords();
     const kept = before.filter(
       (record) =>
         !(record.kind === "conversation" && record.id === id)
-        && !(record.kind === "message" && record.conversationId === id),
+        && !(record.kind === "message" && record.conversationId === id)
+        && !(record.kind === "feedback" && record.conversationId === id),
     );
     if (kept.length === before.length) return false;
     writeChain = writeChain.then(() => {

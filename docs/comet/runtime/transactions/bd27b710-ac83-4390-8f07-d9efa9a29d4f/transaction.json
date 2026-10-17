@@ -1,0 +1,27 @@
+{
+  "schema": "comet.native.transaction.v2",
+  "id": "bd27b710-ac83-4390-8f07-d9efa9a29d4f",
+  "kind": "archive",
+  "status": "committed",
+  "change": "dsh-message-actions",
+  "createdAt": "2026-10-17T04:45:29.112Z",
+  "preflightHash": "e43bbd59d97238b1566bb29d5203e8442a8ced8a48b29b123f512ead1467479d",
+  "operations": [
+    {
+      "id": "spec-1-dsh-message-actions",
+      "type": "write",
+      "target": "specs/dsh-message-actions/spec.md",
+      "staged": "runtime/transactions/bd27b710-ac83-4390-8f07-d9efa9a29d4f/staged/specs/dsh-message-actions/spec.md",
+      "expectedTargetHash": null,
+      "stagedHash": "50cf709ea21e86112c99d707643a1c9a18b3aef9d516fbf041cf21cb011d5804"
+    },
+    {
+      "id": "archive-change",
+      "type": "move",
+      "source": "changes/dsh-message-actions",
+      "target": "archive/2026-10-17-dsh-message-actions",
+      "expectedSourceHash": "ff8b9ef460170993941c50b35b98cc574c030b804f66549dcaf56487f2807c22",
+      "expectedTargetHash": null
+    }
+  ]
+}

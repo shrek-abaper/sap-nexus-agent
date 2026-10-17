@@ -1,0 +1,23 @@
+schema: comet.native.v3
+minimum_runtime_version: 3
+revision: 5
+verification_protocol: legacy-v1
+name: dsh-message-actions
+language: zh-CN
+phase: archive
+brief: brief.md
+approval: confirmed
+approved_contract_hash: e2359068504b1fc3736ce485cd266e02833b337cd95fb361acf034d451b7199e
+spec_changes:
+  - capability: dsh-message-actions
+    operation: create
+    source: specs/dsh-message-actions/spec.md
+    base_hash: null
+verification_result: pass
+verification_report: verification.md
+implementation_scope: runtime/evidence/scopes/039a8dff79b7b42f9b6b5b870023ca8089fb0bfe8827be50083e5c251ddb1503.json
+verification_evidence: runtime/evidence/verifications/ca6dbff47245df0f38f40b43c8b22ac673d678b96de20f9629ebdac67c940740.json
+partial_allowance: null
+archived: true
+created_at: 2026-10-17
+run_id: 8d43d74a-51cd-4b67-8f2a-db892bfeb2e7

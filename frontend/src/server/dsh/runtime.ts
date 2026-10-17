@@ -13,7 +13,7 @@ import * as scopeInvariant from "@deepseek-ai/dsh-scope/invariant";
 import AgentLoop from "@deepseek-ai/dsh-agent-loop";
 import * as agentLoopInvariant from "@deepseek-ai/dsh-agent-loop/invariant";
 import * as llmRetry from "@deepseek-ai/dsh-llm-retry";
-import { SessionId } from "@deepseek-ai/dsh-session";
+import { SessionId, SessionLogOffset } from "@deepseek-ai/dsh-session";
 import { createUserMessage } from "@deepseek-ai/dsh-llm";
 import type { JsonValue } from "../../shared/types/artifacts";
 import type { SemanticToolResponse } from "../../runtime/semantic-tools/types";
@@ -68,8 +68,39 @@ export type DshStreamEvent =
 export type DshRuntime = {
   sendMessage(conversationId: string, text: string): Promise<DshTurnResult>;
   streamMessage(conversationId: string, text: string): AsyncIterable<DshStreamEvent>;
+  forkSession(parentConversationId: string, completedTurns: number, newConversationId: string): Promise<void>;
   dispose(): Promise<void>;
 };
+
+/** Fork failures the API layer maps to 409: no partial session is created. */
+export class DshForkError extends Error {
+  constructor(
+    readonly code: "PARENT_NOT_LIVE" | "PREFIX_UNBALANCED",
+    message: string,
+  ) {
+    super(message);
+    this.name = "DshForkError";
+  }
+}
+
+/**
+ * Slice an event log right after the Nth turn/end — the balanced
+ * completed-turn prefix dsh fork seeds require. Returns null when the log
+ * holds fewer than N completed turns.
+ */
+export function sliceCompletedTurnPrefix<T extends { type?: string }>(
+  events: readonly T[],
+  completedTurns: number,
+): T[] | null {
+  let ends = 0;
+  for (let index = 0; index < events.length; index += 1) {
+    if (events[index].type === "turn/end") {
+      ends += 1;
+      if (ends === completedTurns) return events.slice(0, index + 1);
+    }
+  }
+  return null;
+}
 
 type AgentSession = {
   agent: Agent;
@@ -238,6 +269,16 @@ export async function createDshRuntime(options: CreateDshRuntimeOptions): Promis
     const key = `dsh-${conversationId}`;
     const existing = sessions.get(key);
     if (existing) return existing;
+    return createSession(conversationId);
+  }
+
+  async function createSession(
+    conversationId: string,
+    fork?: { parent: AgentSession; completedTurns: number },
+  ): Promise<AgentSession> {
+    const key = `dsh-${conversationId}`;
+    const existing = sessions.get(key);
+    if (existing) return existing;
     const sessionId = SessionId(key);
     const session: AgentSession = {
       agent: null as unknown as Agent,
@@ -250,9 +291,31 @@ export async function createDshRuntime(options: CreateDshRuntimeOptions): Promis
     const route = `sapnexus-${key}`.replace(/[^a-zA-Z0-9_-]/g, "");
     const tapping = new SessionTappingAdapter(options.adapter, session, route);
     ctx.llm.registerAdapter([route], tapping);
+
+    // Fork: the seed must be a balanced completed-turn prefix of the parent
+    // log — slice right after the Nth turn/end, dsh validates the rest.
+    let seed: ReturnType<Agent["session"]["snapshotEvents"]> | undefined;
+    if (fork) {
+      const prefix = sliceCompletedTurnPrefix(
+        fork.parent.agent.session.snapshotEvents(),
+        fork.completedTurns,
+      );
+      if (!prefix) {
+        throw new DshForkError(
+          "PREFIX_UNBALANCED",
+          `parent session has fewer than ${fork.completedTurns} completed turns`,
+        );
+      }
+      seed = prefix;
+    }
+
     const created = await ctx.agents.create({
       sessionId,
-      meta: { cwd: process.cwd() },
+      meta: {
+        cwd: process.cwd(),
+        ...(fork ? { parentSession: fork.parent.agent.session.id, isSeeded: true as const } : {}),
+      },
+      ...(fork && seed ? { inheritedEventCount: SessionLogOffset(seed.length), seed } : {}),
       agentOptions: { provider: route, model: options.model },
     });
     session.agent = created.agent;
@@ -409,6 +472,19 @@ export async function createDshRuntime(options: CreateDshRuntimeOptions): Promis
     streamMessage(conversationId: string, text: string): AsyncIterable<DshStreamEvent> {
       return { [Symbol.asyncIterator]: () => streamTurn(conversationId, text) };
     },
+    async forkSession(parentConversationId: string, completedTurns: number, newConversationId: string): Promise<void> {
+      const parent = sessions.get(`dsh-${parentConversationId}`);
+      if (!parent) {
+        throw new DshForkError(
+          "PARENT_NOT_LIVE",
+          "父会话不在内存中，无法分叉（服务器重启后的历史会话暂不支持 branch）",
+        );
+      }
+      if (completedTurns < 1) {
+        throw new DshForkError("PREFIX_UNBALANCED", "fork requires at least one completed turn");
+      }
+      await createSession(newConversationId, { parent, completedTurns });
+    },
     async dispose() {
       for (const session of sessions.values()) session.dispose();
       sessions.clear();
@@ -469,7 +545,7 @@ function toolDescription(name: string): string {
     case "propose_replenishment":
       return "补货建议：依据库存与目标需求量计算缺口，生成一个待人工审批的采购申请提案（不会直接写入）。";
     case "analyze_business_question":
-      return "本体约束只读分析：返回库存/采购订单事实、注册算子分析结果与缺口说明（只读，不执行写入）。未启用 live 开关时按 questionType 走离线样例；模型只负责生成结构化草案，服务端保留全部校验与执行授权。";
+      return "本体约束只读分析：返回库存/采购订单事实、注册算子分析结果与缺口说明（只读，不执行写入）。注意：本工具的事实数据始终来自离线样例（fixtures），不连接真实 SAP——SAP_NEXUS_LLM_LIVE 只把问题解释升级为模型解释，不切换数据源；需要真实 SAP 数据时改用 diagnose_material_supply / review_customer_exposure / review_vendor_exposure。模型只负责生成结构化草案，服务端保留全部校验与执行授权。";
     default:
       return name;
   }

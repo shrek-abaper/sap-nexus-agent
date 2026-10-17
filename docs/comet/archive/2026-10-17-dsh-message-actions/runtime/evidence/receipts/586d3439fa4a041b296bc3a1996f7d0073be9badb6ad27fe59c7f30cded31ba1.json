@@ -1,0 +1,36 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "manual-evidence",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "dsh-message-actions",
+    "sourceRevision": 3,
+    "contractHash": "e2359068504b1fc3736ce485cd266e02833b337cd95fb361acf034d451b7199e",
+    "scopeHash": "039a8dff79b7b42f9b6b5b870023ca8089fb0bfe8827be50083e5c251ddb1503",
+    "snapshotHash": "a2278498a9d93ef7bc8de0fc1ae368fbf729ec4ef74ab5f4e7bfcd4ed2d5d9f9",
+    "artifactHash": "ca5904194930a4a3249896b9ea22fa836b9b171ada9880da69cfdc3a89934735"
+  },
+  "acceptanceIds": [
+    "acceptance-04651f5e45f0384f4883fd055493d9de2b0bd627960d9f394a864f138de56c5d",
+    "acceptance-2146b1e4aabfded7121c3b88d584b3332f81a0edb1ea1390a04c3c547fe3b407",
+    "acceptance-5f48b74361fb05bf0094459a2c809635e4fea5de72912213f8cea8382a2d813a",
+    "acceptance-83c9acd93c8f847c3e2ac0dc9f807ffd1ee5dc760f30ee4d46a0c00c7b3ad265",
+    "acceptance-8b35595d2820372fce412e6ee94a94c3827ed5d92359ee2e8ada37b03802dfec",
+    "acceptance-9e4cadf7c99bded04c3f30f670c7940ebdcf6bb4790a7624e70b16428fb12705",
+    "acceptance-cb21bfdbfee470861bb4fd21ad9b61cbaed24400275a5e3fb68cd08ba0c16ee4",
+    "acceptance-d3eaeb897be1c3efb79153dbbbfe0127b56d15a4fc8e9abbe14410ebbce19300",
+    "acceptance-fd59f6d395a135fe89bac613647dab20817c21b36479bb7094cf8c049b34b403"
+  ],
+  "actor": "native-runtime:manual-evidence",
+  "issuedAt": "2026-10-17T04:43:17.235Z",
+  "evidence": {
+    "steps": [
+      "代码审查 MessageActions.tsx（CopyButton catch 静默降级、settled && !error 渲染门、用户消息 hover 行）、DshChat.tsx（branchErrors 就地渲染与 5s 清除、settled 判定）、globals.css（.msg-actions--user opacity 0 → :hover/:focus-within 揭示、@media (hover:none) 常显）与 fork 路由 409 测试"
+    ],
+    "observations": [
+      "clipboard 失败时 writeClipboard 返回 false，图标不变且无弹窗（静默降级）；pending/streaming 消息因 message.settled 条件不渲染动作行；父会话不在内存时 fork 路由返回 409 PARENT_NOT_LIVE（测试锁定），客户端 branchErrors[messageId] 在动作行内联显示后 5s 自动清除；用户消息 copy+时钟行默认 opacity 0，hover/focus-within 揭示，无 hover 设备常显"
+    ]
+  },
+  "receiptHash": "586d3439fa4a041b296bc3a1996f7d0073be9badb6ad27fe59c7f30cded31ba1"
+}

@@ -1,0 +1,326 @@
+{
+  "schema": "comet.native.implementation-scope.v2",
+  "contractHash": "e2359068504b1fc3736ce485cd266e02833b337cd95fb361acf034d451b7199e",
+  "baselineProjectionRef": "runtime/evidence/snapshots/57c3ed0790d232b41225e09cbf162fa3487b9d72ce6ef0842c4629ad32bac447.json",
+  "baselineProjectionHash": "57c3ed0790d232b41225e09cbf162fa3487b9d72ce6ef0842c4629ad32bac447",
+  "currentProjectionRef": "runtime/evidence/snapshots/a2278498a9d93ef7bc8de0fc1ae368fbf729ec4ef74ab5f4e7bfcd4ed2d5d9f9.json",
+  "currentProjectionHash": "a2278498a9d93ef7bc8de0fc1ae368fbf729ec4ef74ab5f4e7bfcd4ed2d5d9f9",
+  "complete": true,
+  "declaredArtifacts": [
+    {
+      "path": "frontend/app/api/dsh/conversations/[id]/feedback/route.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/app/api/dsh/conversations/[id]/fork/route.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/app/api/dsh/conversations/[id]/messages/stream/route.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/app/globals.css",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/modules/dsh-chat/DshChat.tsx",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/modules/dsh-chat/MessageActions.tsx",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/modules/dsh-chat/types.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/server/dsh/conversation-store.test.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/server/dsh/conversation-store.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/server/dsh/feedback-route.test.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/server/dsh/fork-route.test.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/server/dsh/fork.test.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/server/dsh/messages-route.test.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/server/dsh/runtime.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/server/dsh/stream-route.test.ts",
+      "kind": "file"
+    }
+  ],
+  "changes": [
+    {
+      "path": "frontend/app/api/dsh/conversations/[id]/feedback/route.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "3cc98c63d8b03148730be5e72c77137ed513399569366207d98d682faa08d7ea",
+        "size": 1554
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/app/api/dsh/conversations/[id]/feedback/route.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/app/api/dsh/conversations/[id]/fork/route.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "c0927df62b042c57cad32518157aa20eecd29b9f6d71d336064c9001792b5525",
+        "size": 2744
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/app/api/dsh/conversations/[id]/fork/route.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/app/api/dsh/conversations/[id]/messages/stream/route.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "539a88b72ecfb94fc6206011b82b8ede18679746fe4d8ce7735627a71baa7855",
+        "size": 3574
+      },
+      "after": {
+        "hash": "c93b69d06890d67bd3640c40800ce7d67d38b27249df72a9655ca20528d0ea2b",
+        "size": 3822
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/app/api/dsh/conversations/[id]/messages/stream/route.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/app/globals.css",
+      "kind": "modified",
+      "before": {
+        "hash": "8857adef321f814692bd1b278c5f379fa1e84c3948c08db7e497294711d10b0c",
+        "size": 56095
+      },
+      "after": {
+        "hash": "f2b6cd0c5caad51dd32048a47fe10979aa8100d29cbdd7cc434ae08119d18439",
+        "size": 58940
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/app/globals.css",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/modules/dsh-chat/DshChat.tsx",
+      "kind": "modified",
+      "before": {
+        "hash": "20f7d051555de5c9fbf70ffa793b3ebe7d56d76f7320cdbe548fde6a238387ba",
+        "size": 16291
+      },
+      "after": {
+        "hash": "868ffb14f8cd270b99d87f8ef0e9d12800d8f3439f5d521443a847a3ce6ae1b0",
+        "size": 20009
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/modules/dsh-chat/DshChat.tsx",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/modules/dsh-chat/MessageActions.tsx",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "293e99da601e43030e3986338f629406661489afb8ea5f2dab8183026f096bb1",
+        "size": 6555
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/modules/dsh-chat/MessageActions.tsx",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/modules/dsh-chat/types.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "5e157ce9e5ced5b6301fed8ee0ea8184f3a409098196adbdf9236600ac6ec6b1",
+        "size": 3334
+      },
+      "after": {
+        "hash": "2e0e16c6685ac382a54bc2831fd4514212414b1ed0f1658b37b2c005aeff2bbf",
+        "size": 3911
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/modules/dsh-chat/types.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/server/dsh/conversation-store.test.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "4976f0b2e8e63fb67483606dbaa7ad294e3b45277b30de870fc9199c676be2c6",
+        "size": 3140
+      },
+      "after": {
+        "hash": "fc90f7ab84360b56517d7178e4d28e109c97bac63106f45573470808e20f2520",
+        "size": 6484
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/server/dsh/conversation-store.test.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/server/dsh/conversation-store.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "1523ce3836ddb0f390913be0878d91f5ab90a55f66fdeeee24084d5f2722bffc",
+        "size": 6763
+      },
+      "after": {
+        "hash": "21d77d3f3f2083d2b5c370c6e3ef376c5c1ac6640df783223695209cfa902a23",
+        "size": 11050
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/server/dsh/conversation-store.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/server/dsh/feedback-route.test.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "5dfd4d0bbe72fd4e51b4c75bef07b94b986c49a4dc1363f5b09a7f0a8edd4b49",
+        "size": 1896
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/server/dsh/feedback-route.test.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/server/dsh/fork-route.test.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "b95d0490bb55732ebed8e01e4cf7f672e6da5fc68597f322a38f7153fac7486e",
+        "size": 3426
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/server/dsh/fork-route.test.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/server/dsh/fork.test.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "3b095ae3570f7cd5c413e44fb5f1c954d3f84ea1c6713f43effeefc14cb2f433",
+        "size": 4640
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/server/dsh/fork.test.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/server/dsh/messages-route.test.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "509b8d59d9c2deb766851bc5802fc3eb94ea12a456d91b224a0898a53acbc6d1",
+        "size": 2305
+      },
+      "after": {
+        "hash": "db1521e1931535f2545612af8dd5e039bd0c3b754485c91cc763e9fd4bb3b5bb",
+        "size": 2367
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/server/dsh/messages-route.test.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/server/dsh/runtime.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "3175aa66090a1549cf2c05667f1d768bab63e2373c3b4144403b23004b699ccf",
+        "size": 21486
+      },
+      "after": {
+        "hash": "eb00e7c7a2ecef1098c0e8ad7228478a0120566c450460b02740d695823a7229",
+        "size": 24189
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/server/dsh/runtime.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/server/dsh/stream-route.test.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "13ceacb1b5235373b364bff5dfd9a91b6d88df60bd1f5e6036ff439f5042860b",
+        "size": 2009
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/server/dsh/stream-route.test.ts",
+          "kind": "file"
+        }
+      ]
+    }
+  ],
+  "unattributed": [],
+  "unresolvedScopes": [],
+  "noCodeReason": null,
+  "scopeHash": "039a8dff79b7b42f9b6b5b870023ca8089fb0bfe8827be50083e5c251ddb1503"
+}

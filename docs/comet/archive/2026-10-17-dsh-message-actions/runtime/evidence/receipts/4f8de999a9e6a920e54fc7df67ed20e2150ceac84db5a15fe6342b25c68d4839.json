@@ -1,0 +1,35 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "manual-evidence",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "dsh-message-actions",
+    "sourceRevision": 3,
+    "contractHash": "e2359068504b1fc3736ce485cd266e02833b337cd95fb361acf034d451b7199e",
+    "scopeHash": "039a8dff79b7b42f9b6b5b870023ca8089fb0bfe8827be50083e5c251ddb1503",
+    "snapshotHash": "a2278498a9d93ef7bc8de0fc1ae368fbf729ec4ef74ab5f4e7bfcd4ed2d5d9f9",
+    "artifactHash": "ca5904194930a4a3249896b9ea22fa836b9b171ada9880da69cfdc3a89934735"
+  },
+  "acceptanceIds": [
+    "acceptance-12fcad55a1cc43e128b66e4b87714bbcf205f3b73effb058f2920ff2cc24e09f",
+    "acceptance-1ed46cfbc7fa8118e9a66a0e74eb7cb631aa427d48583020bc56725bee1f2b5e",
+    "acceptance-21e21de3df5efc27e3ad1d3fd8bfc0ef9860c3322702df8b3754f976c587e139",
+    "acceptance-2aaa34645f28a1a1217c27e9c4b007b6e9262887a90439fde342b1da5e56a65e",
+    "acceptance-3888d19cb12696b8aa69e41fa938cd791981e341d92749288a99ac394e9cbf72",
+    "acceptance-3ddd7e04836c6c3cd574c182509951e7a46151787cb98ae120be7216647c35bc",
+    "acceptance-8c8f07dbf5f2ebbab2d8825bfbcc3b9bdf7f3f9a94e42f07fad731ec814aff01",
+    "acceptance-9d73ec34a8bfe11e8d0811c76ac29d3c5c0c0c619acc199058d0bd1746f8b32a"
+  ],
+  "actor": "native-runtime:manual-evidence",
+  "issuedAt": "2026-10-17T04:42:48.138Z",
+  "evidence": {
+    "steps": [
+      "playwright e2e（dev server /chat）：截图核对动作行渲染（/tmp/sn-verify/shots/actions-rated.png：copy/蓝色激活赞/踩/备注/branch 图标 + hover 时钟 10/14 22:37）；live 一轮后显示 12:19·耗时 11s；点赞激活态；点击 branch 后侧栏出现分叉会话并自动切换；点击复制 markdown 与用户消息后 navigator.clipboard.readText() 读回验证"
+    ],
+    "observations": [
+      "settled 助手消息显示 turn-tail（copy/赞/踩/备注/branch 常驻图标 + hover 才显的时钟与耗时秒）；点赞变蓝激活；复制写回的是原始 markdown 源码（含 ** 标记，无工具卡），用户消息复制为输入原文逐字一致；branch 点击后新分叉会话出现在侧栏并切换；分叉会话中模型记得前缀物料/工厂（e2e 上下文问答验证）"
+    ]
+  },
+  "receiptHash": "4f8de999a9e6a920e54fc7df67ed20e2150ceac84db5a15fe6342b25c68d4839"
+}

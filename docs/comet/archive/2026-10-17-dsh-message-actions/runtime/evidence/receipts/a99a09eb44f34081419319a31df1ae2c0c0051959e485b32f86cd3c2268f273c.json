@@ -1,0 +1,41 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "static-inspection",
+  "role": "required-check",
+  "status": "passed",
+  "bindings": {
+    "change": "dsh-message-actions",
+    "sourceRevision": 3,
+    "contractHash": "e2359068504b1fc3736ce485cd266e02833b337cd95fb361acf034d451b7199e",
+    "scopeHash": "039a8dff79b7b42f9b6b5b870023ca8089fb0bfe8827be50083e5c251ddb1503",
+    "snapshotHash": "a2278498a9d93ef7bc8de0fc1ae368fbf729ec4ef74ab5f4e7bfcd4ed2d5d9f9",
+    "artifactHash": "ca5904194930a4a3249896b9ea22fa836b9b171ada9880da69cfdc3a89934735"
+  },
+  "acceptanceIds": [],
+  "actor": "native-runtime:scoped-text-safety",
+  "issuedAt": "2026-10-17T04:44:49.200Z",
+  "evidence": {
+    "subjects": [
+      "frontend/app/api/dsh/conversations/[id]/feedback/route.ts",
+      "frontend/app/api/dsh/conversations/[id]/fork/route.ts",
+      "frontend/app/api/dsh/conversations/[id]/messages/stream/route.ts",
+      "frontend/app/globals.css",
+      "frontend/src/modules/dsh-chat/DshChat.tsx",
+      "frontend/src/modules/dsh-chat/MessageActions.tsx",
+      "frontend/src/modules/dsh-chat/types.ts",
+      "frontend/src/server/dsh/conversation-store.test.ts",
+      "frontend/src/server/dsh/conversation-store.ts",
+      "frontend/src/server/dsh/feedback-route.test.ts",
+      "frontend/src/server/dsh/fork-route.test.ts",
+      "frontend/src/server/dsh/fork.test.ts",
+      "frontend/src/server/dsh/messages-route.test.ts",
+      "frontend/src/server/dsh/runtime.ts",
+      "frontend/src/server/dsh/stream-route.test.ts"
+    ],
+    "rule": "scoped-text-safety",
+    "resultSummary": "The built-in scoped inspection passed without skipped or blocking input.",
+    "checkReceiptRef": "runtime/evidence/check-receipts/ab3a667c06f21d009fab7759b46751efc23edb5b94f4ea4d2ca59f5d04db9f23.json",
+    "checkReceiptHash": "ab3a667c06f21d009fab7759b46751efc23edb5b94f4ea4d2ca59f5d04db9f23"
+  },
+  "receiptHash": "a99a09eb44f34081419319a31df1ae2c0c0051959e485b32f86cd3c2268f273c"
+}

@@ -5,6 +5,7 @@ import { createConversationId } from "../agent-console/conversation-id";
 import { ToolCallCard } from "./ToolCallCard";
 import { Markdown } from "./Markdown";
 import { DshSidebar } from "./DshSidebar";
+import { AssistantMessageActions, UserMessageActions } from "./MessageActions";
 import type { ChatMessage, ConversationSummary, DshStreamEvent, DshToolCall } from "./types";
 
 const SUGGESTIONS = [
@@ -68,7 +69,7 @@ export function DshChat() {
       const body = await response.json() as {
         messages?: Array<ChatMessage & { ts?: number; reasoning?: string }>;
       };
-      const history = (body.messages ?? []).map(({ ts: _ts, reasoning, ...message }) => ({
+      const history = (body.messages ?? []).map(({ reasoning, ...message }) => ({
         ...message,
         // Replay the persisted chain of thought in the collapsed trace panel.
         trace: reasoning ?? "",
@@ -144,13 +145,14 @@ export function DshChat() {
     requestAnimationFrame(() => inputRef.current?.focus());
     const assistantId = `a-${Date.now()}`;
     const userId = `u-${Date.now()}`;
+    const sentAt = Date.now();
     // Pin the new question at the TOP of the viewport on every send. The
     // answer expands downward without auto-scrolling; the user can scroll.
     stickToBottomRef.current = false;
     setMessages((previous) => [
       ...previous,
-      { id: userId, role: "user", text: trimmed },
-      { id: assistantId, role: "assistant", text: "", pending: true, trace: "", answerTrace: "", liveTools: [], settled: false },
+      { id: userId, role: "user", text: trimmed, ts: sentAt },
+      { id: assistantId, role: "assistant", text: "", pending: true, trace: "", answerTrace: "", liveTools: [], settled: false, ts: sentAt },
     ]);
     requestAnimationFrame(() => {
       const main = mainRef.current;
@@ -183,7 +185,7 @@ export function DshChat() {
           const line = chunk.split("\n").find((item) => item.startsWith("data:"));
           if (!line) continue;
           const event = JSON.parse(line.slice(5).trim()) as DshStreamEvent;
-          handleEvent(assistantId, event);
+          handleEvent(userId, assistantId, event);
         }
       }
       patchAssistant(assistantId, (message) =>
@@ -200,8 +202,17 @@ export function DshChat() {
     }
   }
 
-  function handleEvent(assistantId: string, event: DshStreamEvent) {
+  function handleEvent(userId: string, assistantId: string, event: DshStreamEvent) {
     switch (event.type) {
+      case "persisted":
+        // Swap the local temp ids for the store-assigned ids so feedback and
+        // branch reference messages the server actually persisted.
+        setMessages((previous) => previous.map((message) => {
+          if (message.id === userId) return { ...message, id: event.userMessageId };
+          if (message.id === assistantId) return { ...message, id: event.assistantMessageId };
+          return message;
+        }));
+        break;
       case "delta":
         patchAssistant(assistantId, (message) => event.phase === "answer"
           ? { ...message, answerTrace: `${message.answerTrace ?? ""}${event.text}` }
@@ -241,12 +252,71 @@ export function DshChat() {
           settled: true,
           text: event.output || message.trace || "(无输出)",
           toolCalls: event.toolCalls,
+          runMs: message.ts ? Date.now() - message.ts : undefined,
         }));
         break;
       case "error":
         setError(event.message);
         patchAssistant(assistantId, (message) => ({ ...message, pending: false, settled: true, error: event.message }));
         break;
+    }
+  }
+
+  const [branchErrors, setBranchErrors] = useState<Record<string, string>>({});
+
+  async function postFeedback(messageId: string, rating: "up" | "down" | null, note?: string) {
+    try {
+      await fetch(`/api/dsh/conversations/${encodeURIComponent(conversationId)}/feedback`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ messageId, rating, ...(note !== undefined ? { note } : {}) }),
+      });
+    } catch {
+      /* feedback is best-effort; the optimistic state stays */
+    }
+  }
+
+  function handleRate(message: ChatMessage, rating: "up" | "down" | null) {
+    // Optimistic toggle; the server keeps the note when it is omitted.
+    setMessages((previous) => previous.map((item) => item.id === message.id
+      ? { ...item, feedback: rating ? { rating, note: item.feedback?.note, ts: Date.now() } : undefined }
+      : item));
+    void postFeedback(message.id, rating);
+  }
+
+  function handleSaveNote(message: ChatMessage, note: string) {
+    const rating = message.feedback?.rating;
+    if (!rating) return;
+    setMessages((previous) => previous.map((item) => item.id === message.id
+      ? { ...item, feedback: { rating, ...(note ? { note } : {}), ts: Date.now() } }
+      : item));
+    void postFeedback(message.id, rating, note);
+  }
+
+  async function handleBranch(message: ChatMessage) {
+    try {
+      const response = await fetch(`/api/dsh/conversations/${encodeURIComponent(conversationId)}/fork`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ throughMessageId: message.id }),
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => null) as { message?: string } | null;
+        throw new Error(body?.message ?? `HTTP ${response.status}`);
+      }
+      const conversation = await response.json() as ConversationSummary;
+      await refreshConversations();
+      await handleSelectConversation(conversation.id);
+    } catch (branchError) {
+      const text = branchError instanceof Error ? branchError.message : String(branchError);
+      setBranchErrors((previous) => ({ ...previous, [message.id]: text }));
+      setTimeout(() => {
+        setBranchErrors((previous) => {
+          const next = { ...previous };
+          delete next[message.id];
+          return next;
+        });
+      }, 5000);
     }
   }
 
@@ -388,8 +458,21 @@ export function DshChat() {
                     </div>
                   )
                 ) : (
-                  <div className="dsh-message__bubble">{message.text}</div>
+                  <div className="dsh-message__bubble-wrap">
+                    <div className="dsh-message__bubble">{message.text}</div>
+                    <UserMessageActions message={message} />
+                  </div>
                 )}
+
+                {message.role === "assistant" && message.settled && !message.error ? (
+                  <AssistantMessageActions
+                    message={message}
+                    onRate={(rating) => handleRate(message, rating)}
+                    onSaveNote={(note) => handleSaveNote(message, note)}
+                    onBranch={() => void handleBranch(message)}
+                    branchError={branchErrors[message.id] ?? null}
+                  />
+                ) : null}
 
                 {message.error ? <div className="dsh-error dsh-error--inline">{message.error}</div> : null}
               </div>

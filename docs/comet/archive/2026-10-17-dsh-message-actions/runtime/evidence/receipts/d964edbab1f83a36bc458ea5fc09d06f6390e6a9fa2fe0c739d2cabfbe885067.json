@@ -1,0 +1,67 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "dsh-message-actions",
+    "sourceRevision": 3,
+    "contractHash": "e2359068504b1fc3736ce485cd266e02833b337cd95fb361acf034d451b7199e",
+    "scopeHash": "039a8dff79b7b42f9b6b5b870023ca8089fb0bfe8827be50083e5c251ddb1503",
+    "snapshotHash": "a2278498a9d93ef7bc8de0fc1ae368fbf729ec4ef74ab5f4e7bfcd4ed2d5d9f9",
+    "artifactHash": "ca5904194930a4a3249896b9ea22fa836b9b171ada9880da69cfdc3a89934735"
+  },
+  "acceptanceIds": [
+    "acceptance-0328428374468d4e22879798ef44f7db6d2248847c5f8ecb84543b83c8929d64",
+    "acceptance-1677d241ef6db75f4c8e2f2a20446994d54980ad9d85a11524295365a9283eb5",
+    "acceptance-17c7ae7feca5f3f03cffa3f0544485ebb40c3cb0db3085926de2f669bdcc7941",
+    "acceptance-21ad0d25fe1e6b14c7eee3a4da4d7b0d098b22d8d1fe2dd0b9e357dab9f79305",
+    "acceptance-40c7df206134e7af54e0ce413726f828727c6cc2fa5348eaa073195a764f446a",
+    "acceptance-5a69a36144bd022768e00c941748507ee4ec777474d871655919c646587c7ad9",
+    "acceptance-63920053d10f60b4bcdeff7a02500f86a012b191255f9c520f95fc7ec6747e97",
+    "acceptance-8482e6fdae4b6b09ce98bb77f706bc7078734254d69c03bda36167f86fac6a14",
+    "acceptance-8d1d3f4607abb6baccccb222bfe3dace8b32fbc9819047051578d0096404a1dc",
+    "acceptance-92981842c16d47039834e1bcc51402da35dec31494a842d5adcf8b521411e267",
+    "acceptance-955033516942fcf5e0d0e28ad4e1fc89c3e60691a110f3130056c51075121c69",
+    "acceptance-99b81d9ae811eaa4c196227698de60d4e40348c888eef0d45feb0ff37f0305aa",
+    "acceptance-af5fa7d449c596a2a0acf580469d3a0124e5199dbf188766a0bcd3d1f97f681f",
+    "acceptance-b512342d8aef9798cf3d3a3b7b952c50d789d0cbbb48aaeae744be4046970a97",
+    "acceptance-bc53a4b325586f6a88ffcf32f8150042e539847ea52eaf9f0e87b9f5645d1288",
+    "acceptance-bed6d63bd9964bae3940b4c25004080b69b87d9eea377c434992ab99c3bc50a5",
+    "acceptance-c96961a5698472ff6e1562c41cdd7c5a8d051b26e9268c00e3b955af979acca6",
+    "acceptance-d33386f45dfaf281175dd5b6ad240156f78af875a31239daac52b00fd3d5a0d3",
+    "acceptance-dd33086bce3b1d65e006604f52513e5bb54a4c29b5412752e7fffc7384bd74eb",
+    "acceptance-e17c6e886fa0a04795d29717e0aa5dbd0b262640d0c6cf43231e2e87814d7283",
+    "acceptance-e75ecf4d7f5cab0d4ce55ea69799df328d26ad9ab1707f6d9d403b8a6acb6446",
+    "acceptance-f0be094aa944ce84789513b0daef911c0972961d943260661214801bc486c77c",
+    "acceptance-f1a0e5c7820065a658e68c56ecb365ba0fed28ff2e8a65c1923a014e5833e6d3"
+  ],
+  "actor": "native-runtime:command:/tmp/sn-verify/run-verify.sh",
+  "issuedAt": "2026-10-17T04:42:19.146Z",
+  "evidence": {
+    "executable": "/tmp/sn-verify/run-verify.sh",
+    "args": [],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 420000,
+    "startedAt": "2026-10-17T04:41:09.774Z",
+    "endedAt": "2026-10-17T04:42:19.146Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "993fcb5df06b991bb34f5b97311dd5ff7aed9744",
+      "afterCommit": "993fcb5df06b991bb34f5b97311dd5ff7aed9744"
+    },
+    "afterFence": {
+      "snapshotHash": "a2278498a9d93ef7bc8de0fc1ae368fbf729ec4ef74ab5f4e7bfcd4ed2d5d9f9",
+      "scopeHash": "039a8dff79b7b42f9b6b5b870023ca8089fb0bfe8827be50083e5c251ddb1503",
+      "matched": true
+    },
+    "outputHash": "ab149020ba01116d0672d39cb9c7c168e40b949ebf733da247acdc2b0afac197",
+    "outputSummary": "Test Files  76 passed (76)\n      Tests  634 passed | 4 skipped (638)\nOK: npm run verify passed (typecheck + vitest + next build)",
+    "outputTruncated": false
+  },
+  "receiptHash": "d964edbab1f83a36bc458ea5fc09d06f6390e6a9fa2fe0c739d2cabfbe885067"
+}

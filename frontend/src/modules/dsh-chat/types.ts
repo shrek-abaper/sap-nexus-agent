@@ -82,6 +82,12 @@ export type DshTurnResponse = {
   reasonKind?: string;
 };
 
+export type MessageFeedback = {
+  rating: "up" | "down";
+  note?: string;
+  ts?: number;
+};
+
 export type ChatMessage = {
   id: string;
   role: "user" | "assistant";
@@ -97,6 +103,12 @@ export type ChatMessage = {
   liveTools?: DshToolCall[];
   /** True once the final answer arrived and the trace must collapse. */
   settled?: boolean;
+  /** Send/store time of the message; drives the hover clock label. */
+  ts?: number;
+  /** Wall time of the turn, filled when the final answer arrives. */
+  runMs?: number;
+  /** Latest persisted feedback for this message, if any. */
+  feedback?: MessageFeedback;
 };
 
 export type ConversationSummary = {
@@ -116,4 +128,7 @@ export type DshStreamEvent =
   | { type: "tool-start"; callId: string; name: string; args: unknown }
   | { type: "tool-result"; callId: string; name: string; status: DshToolCall["status"]; result?: unknown; error?: string }
   | { type: "final"; output: string; toolCalls: DshToolCall[]; reasonKind?: string }
+  /** Emitted by the stream route after the turn is persisted: the
+   * store-assigned message ids that feedback/branch actions reference. */
+  | { type: "persisted"; userMessageId: string; assistantMessageId: string }
   | { type: "error"; message: string };

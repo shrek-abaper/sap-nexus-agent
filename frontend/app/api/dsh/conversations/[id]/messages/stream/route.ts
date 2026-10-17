@@ -48,9 +48,11 @@ export async function POST(
           if (event.type === "error") errorEvent = event;
           if (event.type === "final" || event.type === "error") break;
         }
-        // Persist the completed turn for the sidebar/history.
+        // Persist the completed turn for the sidebar/history, then tell the
+        // client the store-assigned message ids: feedback/branch actions
+        // reference them, and client-side temp ids never match otherwise.
         if (finalEvent || errorEvent) {
-          await dshConversationStore.addTurn({
+          const stored = await dshConversationStore.addTurn({
             conversationId: id,
             userText,
             assistantText: finalEvent?.output ?? "",
@@ -58,6 +60,7 @@ export async function POST(
             assistantToolCalls: finalEvent?.toolCalls,
             ...(errorEvent ? { assistantError: errorEvent.message } : {}),
           });
+          controller.enqueue(send({ type: "persisted", ...stored }));
           // Append the redacted decision trace (best effort).
           recordDshTurn({
             conversationId: id,
