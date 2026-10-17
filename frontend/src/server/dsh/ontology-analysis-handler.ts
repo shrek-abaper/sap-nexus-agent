@@ -72,18 +72,19 @@ export interface OntologyAnalysisToolResponse {
   error?: { errorType: string; message: string };
 }
 
-/** C2 coordinator EvidenceResponse subset consumed here. */
+/** C2 coordinator EvidenceResponse subset consumed here. facts/reasons are
+ * optional: early-exit envelopes (e.g. clarification) omit them entirely. */
 export interface OntologyEvidence {
   schemaVersion: 1;
   status: OntologyAnalysisStatus;
   plan?: { planId?: string };
-  facts: OntologyFact[];
+  facts?: OntologyFact[];
   analysis?: {
     results: OntologyResult[];
     uncoveredConclusions?: { conclusionId: string; reason: string }[];
     conflicts?: string[];
   };
-  reasons: string[];
+  reasons?: string[];
   nodeFailures?: string[];
   writeGatewayCalls: number;
   notRun: string[];
@@ -242,6 +243,10 @@ function toToolResponse(
   questionType: QuestionType | "model",
   evidence: OntologyEvidence,
 ): OntologyAnalysisToolResponse {
+  // Early-exit envelopes (clarification etc.) omit facts/reasons entirely;
+  // normalize before mapping instead of trusting the declared shape.
+  const facts = evidence.facts ?? [];
+  const reasons = evidence.reasons ?? [];
   const results = evidence.analysis?.results ?? [];
   const uncovered = (evidence.analysis?.uncoveredConclusions ?? []).map((item) => item.reason);
   const exclusions = results.flatMap((result) =>
@@ -252,9 +257,9 @@ function toToolResponse(
   const limitations = [...new Set([...exclusions, ...conflicts, ...failures])];
   const summary = buildNarrative(
     evidence.status,
-    evidence.facts,
+    facts,
     results,
-    evidence.reasons,
+    reasons,
     uncovered,
   );
   const response: OntologyAnalysisToolResponse = {
@@ -263,9 +268,9 @@ function toToolResponse(
     tool: ONTOLOGY_ANALYSIS_TOOL,
     status: evidence.status,
     runId: evidence.plan?.planId ?? `ont-${questionType}`,
-    facts: evidence.facts,
+    facts,
     results,
-    gaps: [...evidence.reasons, ...uncovered],
+    gaps: [...reasons, ...uncovered],
     limitations,
     writeGatewayCalls: evidence.writeGatewayCalls,
     narrative: { summary, limitations },
@@ -273,7 +278,7 @@ function toToolResponse(
   if (evidence.status === "failed") {
     response.error = {
       errorType: "ANALYSIS_FAILED",
-      message: evidence.reasons.join("; ") || "unknown",
+      message: reasons.join("; ") || "unknown",
     };
   }
   return response;

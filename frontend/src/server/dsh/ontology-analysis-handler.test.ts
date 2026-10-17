@@ -158,6 +158,35 @@ describe("live model routing", () => {
     }
   });
 
+  it("handles model-mode envelopes that omit facts/analysis (clarification)", async () => {
+    const original = process.env.SAP_NEXUS_LLM_LIVE;
+    process.env.SAP_NEXUS_LLM_LIVE = "1";
+    try {
+      // Exact envelope shape emitted by the Python analysis runtime on an
+      // early-exit clarification: no facts/analysis keys at all.
+      const handler = createOntologyAnalysisHandler(async () => ({
+        schemaVersion: 1,
+        status: "clarification",
+        reasons: ["MISSING_SELECTOR_VALUE:plant"],
+        writeGatewayCalls: 0,
+        notRun: ["SAP live", "paid model", "chat registration"],
+      }) as OntologyEvidence);
+      const response = await handler({
+        question: "看下P0235094AE这个物料的库存",
+        material: "P0235094AE",
+        plant: "5260",
+      });
+      expect(response.status).toBe("clarification");
+      expect(response.facts).toEqual([]);
+      expect(response.results).toEqual([]);
+      expect(response.gaps).toContain("MISSING_SELECTOR_VALUE:plant");
+      expect(response.narrative.summary).toContain("需要澄清");
+    } finally {
+      if (original === undefined) delete process.env.SAP_NEXUS_LLM_LIVE;
+      else process.env.SAP_NEXUS_LLM_LIVE = original;
+    }
+  });
+
   it("falls back to the fake questionType path without the live flag", async () => {
     const original = process.env.SAP_NEXUS_LLM_LIVE;
     delete process.env.SAP_NEXUS_LLM_LIVE;
