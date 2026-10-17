@@ -290,6 +290,52 @@ export function ToolCallCard({ call }: { call: DshToolCall }) {
         </ul>
       ) : null}
 
+      {semanticResult?.exchange ? (
+        <div className="dsh-exchange">
+          <div className="dsh-tool__section-title">SAP 原始交换（证据链）</div>
+          <div className="dsh-exchange__io">
+            <span className="dsh-exchange__label">IN</span>
+            <pre className="dsh-exchange__pre">{JSON.stringify({
+              capabilityId: semanticResult.exchange.request.capabilityId,
+              parameters: semanticResult.exchange.request.parameters,
+            }, null, 2)}</pre>
+          </div>
+          <div className="dsh-exchange__io">
+            <span className="dsh-exchange__label">OUT</span>
+            <div className="dsh-exchange__out">
+              <div className="dsh-exchange__meta">
+                {[
+                  semanticResult.exchange.response.executor?.type,
+                  semanticResult.exchange.response.executor?.rfcName,
+                  semanticResult.exchange.response.durationMs !== undefined
+                    ? `${semanticResult.exchange.response.durationMs}ms`
+                    : undefined,
+                  semanticResult.exchange.response.errorType && semanticResult.exchange.response.errorType !== "NONE"
+                    ? semanticResult.exchange.response.errorType
+                    : undefined,
+                ].filter(Boolean).join(" · ")}
+              </div>
+              {semanticResult.exchange.response.traceId ? (
+                <div className="dsh-exchange__trace" title={semanticResult.exchange.response.traceId}>
+                  traceId: {semanticResult.exchange.response.traceId}
+                </div>
+              ) : null}
+              {semanticResult.exchange.response.returnMessages?.length ? (
+                <ul className="dsh-exec__messages">
+                  {semanticResult.exchange.response.returnMessages.map((message, index) => (
+                    <li key={index} className={`dsh-exec__msg dsh-exec__msg--${(message.type || "I").toLowerCase()}`}>
+                      <span className="dsh-exec__msg-type">{message.type || "I"}</span>
+                      {message.id ? `${message.id}${message.number ? `/${message.number}` : ""} ` : ""}{message.message}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              <pre className="dsh-exchange__pre">{JSON.stringify(semanticResult.exchange.response.data, null, 2)}</pre>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {call.result && isSemanticToolResult(call.result) ? (
         <details className="dsh-tool__raw">
           <summary>原始结果（完整 JSON）</summary>

@@ -3,7 +3,6 @@ import {
   DIAGNOSE_MATERIAL_SUPPLY,
   PROPOSE_REPLENISHMENT,
   SEMANTIC_TOOL_CONTRACT_VERSION,
-  type ApprovalHandle,
   type CapabilityChainEntry,
   type ResolvedSemanticValue,
   type SemanticToolFact,
@@ -117,6 +116,60 @@ export function mapDiagnoseEvents(
       }
     }
   }
+
+  // Raw SAP exchange for the evidence chain: the intent artifact carries the
+  // request parameters, the gateway_execute_completed artifact the raw
+  // execution envelope (traceId/executor/messages/data, already redacted).
+  const intentEvent = events.find((event) => event.type === "intent_parsed");
+  const intentData = intentEvent ? artifactData(intentEvent) : null;
+  const intentParameters: Record<string, string> = {};
+  if (intentData?.parameters && typeof intentData.parameters === "object" && !Array.isArray(intentData.parameters)) {
+    for (const [key, value] of Object.entries(intentData.parameters as Record<string, unknown>)) {
+      if (typeof value === "string" && value) intentParameters[key] = value;
+    }
+  }
+  const executionEvent = events.find((event) =>
+    event.type === "gateway_execute_completed" && event.artifact);
+  // Do NOT route this payload through artifactData(): the ExecutionResult
+  // envelope itself carries a `data` field (the raw SAP payload), and the
+  // composition unwrap rule would mistake it for the wrapper and drop the
+  // envelope (traceId/executor/messages) entirely.
+  const executionPayload = executionEvent?.artifact?.payload;
+  const executionData = executionPayload && typeof executionPayload === "object"
+    ? executionPayload as Record<string, unknown>
+    : null;
+  const exchange = executionData ? {
+    request: {
+      capabilityId: asString(executionEvent?.capabilityId)
+        ?? asString(intentData?.capabilityId)
+        ?? chain[0]?.capabilityId
+        ?? "",
+      parameters: intentParameters,
+    },
+    response: {
+      traceId: asString(executionData.traceId) ?? undefined,
+      executor: executionData.executor && typeof executionData.executor === "object"
+        ? {
+            type: asString((executionData.executor as Record<string, unknown>).type) ?? undefined,
+            rfcName: asString((executionData.executor as Record<string, unknown>).rfcName) ?? undefined,
+          }
+        : undefined,
+      success: typeof executionData.success === "boolean" ? executionData.success : undefined,
+      durationMs: asNumberOrNull(executionData.durationMs) ?? undefined,
+      errorType: asString(executionData.errorType) ?? undefined,
+      returnMessages: Array.isArray(executionData.returnMessages)
+        ? (executionData.returnMessages as Record<string, unknown>[])
+            .filter((entry) => entry && typeof entry === "object")
+            .map((entry) => ({
+              type: asString(entry.type) ?? "I",
+              id: asString(entry.id) ?? undefined,
+              number: asString(entry.number) ?? undefined,
+              message: asString(entry.message) ?? "",
+            }))
+        : undefined,
+      data: executionData.data,
+    },
+  } : undefined;
 
   const facts: SemanticToolFact[] = [];
   for (const event of factEvents) {
@@ -237,6 +290,7 @@ export function mapDiagnoseEvents(
 
   if (terminal?.traceId) response.traceId = terminal.traceId;
   if (projection) response.projection = projection;
+  if (exchange) response.exchange = exchange;
   if (status === "failed" || status === "unavailable") {
     response.error = terminal?.error
       ? { errorType: terminal.error.errorType, message: terminal.error.message }

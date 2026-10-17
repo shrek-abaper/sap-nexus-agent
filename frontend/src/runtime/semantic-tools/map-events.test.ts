@@ -181,6 +181,69 @@ describe("mapDiagnoseEvents", () => {
     ]);
     expect(response.facts[0]).toMatchObject({ ref: "fact:legacy-1", value: 7, material: "B200" });
   });
+
+  it("maps the raw SAP exchange from intent and gateway execution artifacts", () => {
+    const events: AgentRunEvent[] = [
+      { ...baseEvent, type: "run_started", state: "running", sequence: 1 },
+      {
+        ...baseEvent,
+        type: "intent_parsed",
+        state: "intent_parsed",
+        sequence: 2,
+        capabilityId: "MM.Inventory.GetAvailability",
+        artifact: {
+          label: "IntentParseResult",
+          kind: "intent",
+          payload: { query: "库存", status: "ready", parameters: { material: "P0235094AE", plant: "5260" } },
+        },
+      },
+      {
+        ...baseEvent,
+        type: "gateway_execute_completed",
+        state: "executing",
+        sequence: 3,
+        capabilityId: "MM.Inventory.GetAvailability",
+        artifact: {
+          label: "ExecutionResult",
+          kind: "execution-result",
+          payload: {
+            traceId: "trace-gw-1",
+            capabilityId: "MM.Inventory.GetAvailability",
+            success: true,
+            executor: { type: "JCO_RFC", rfcName: "BAPI_MATERIAL_STOCK_REQ_LIST" },
+            returnMessages: [{ type: "S", id: "MD", number: "053", message: "Requirements/stock list created" }],
+            data: { availableQuantity: 46.0, mrpElementLines: [{ mrpElementInd: "WB", availQty1: 46.0 }] },
+            durationMs: 1559,
+            errorType: "NONE",
+          },
+        },
+      },
+      { ...baseEvent, type: "run_completed", state: "completed", sequence: 4 },
+    ];
+    const response = mapDiagnoseEvents(events, "run-1");
+    expect(response.exchange).toBeDefined();
+    expect(response.exchange?.request).toEqual({
+      capabilityId: "MM.Inventory.GetAvailability",
+      parameters: { material: "P0235094AE", plant: "5260" },
+    });
+    expect(response.exchange?.response).toMatchObject({
+      traceId: "trace-gw-1",
+      executor: { type: "JCO_RFC", rfcName: "BAPI_MATERIAL_STOCK_REQ_LIST" },
+      success: true,
+      durationMs: 1559,
+      errorType: "NONE",
+    });
+    expect(response.exchange?.response.returnMessages?.[0]).toMatchObject({ type: "S", id: "MD" });
+    expect(response.exchange?.response.data).toMatchObject({ availableQuantity: 46.0 });
+  });
+
+  it("leaves exchange undefined when no execution artifact exists", () => {
+    const events: AgentRunEvent[] = [
+      { ...baseEvent, type: "run_started", state: "running", sequence: 1 },
+      { ...baseEvent, type: "run_completed", state: "completed", sequence: 2 },
+    ];
+    expect(mapDiagnoseEvents(events, "run-1").exchange).toBeUndefined();
+  });
 });
 
 function evidenceTaskFact(

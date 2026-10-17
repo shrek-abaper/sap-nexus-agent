@@ -2342,6 +2342,64 @@ pre {
   display: contents;
 }
 
+/* ---------- SAP raw exchange (evidence chain IN/OUT) ---------- */
+.dsh-exchange {
+  margin: 10px 14px 0;
+}
+
+.dsh-exchange__io {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  margin-top: 8px;
+}
+
+.dsh-exchange__label {
+  padding-top: 8px;
+  font: 700 10px var(--sn-font-mono);
+  letter-spacing: 0.08em;
+  color: var(--sn-label-tertiary);
+}
+
+.dsh-exchange__out {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dsh-exchange__meta {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sn-label-secondary);
+}
+
+.dsh-exchange__trace {
+  font: 11px var(--sn-font-mono);
+  color: var(--sn-label-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dsh-exchange__pre {
+  margin: 0;
+  max-height: 240px;
+  overflow: auto;
+  padding: 10px;
+  background: var(--sn-bg-layer-1);
+  border: 1px solid var(--sn-border-l1);
+  border-radius: var(--sn-radius-sm);
+  font: 11px/1.5 var(--sn-font-mono);
+  white-space: pre;
+  color: var(--sn-label-secondary);
+}
+
+.dsh-exchange__out .dsh-exec__messages {
+  margin-top: 0;
+}
+
 .dsh-tool__raw {
   padding: 6px 14px 12px;
 }

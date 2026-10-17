@@ -91,12 +91,32 @@ export type ApprovalHandle = {
   };
 };
 
+/** Raw SAP exchange behind a tool call: the capability request sent to the
+ * Gateway and the Gateway's raw execution envelope (already redacted), so
+ * the UI can show the full evidence chain, not just projected facts. */
+export type SemanticToolExchange = {
+  request: {
+    capabilityId: string;
+    parameters: Record<string, string>;
+  };
+  response: {
+    traceId?: string;
+    executor?: { type?: string; rfcName?: string };
+    success?: boolean;
+    durationMs?: number;
+    errorType?: string;
+    returnMessages?: { type: string; id?: string; number?: string; message: string }[];
+    data?: unknown;
+  };
+};
+
 export type SemanticToolResponse = {
   contractVersion: 1 | typeof SEMANTIC_TOOL_CONTRACT_VERSION;
   tool: SemanticToolName;
   status: SemanticToolStatus;
   runId: string;
   traceId?: string;
+  exchange?: SemanticToolExchange;
   resolved: { semanticValues: ResolvedSemanticValue[] };
   capabilityChain: CapabilityChainEntry[];
   facts: SemanticToolFact[];

@@ -28,6 +28,22 @@ export type DshApprovalHandle = {
   hashes: { subjectHash: string; proposalHash: string; parameterSnapshotHash: string };
 };
 
+export type DshToolExchange = {
+  request: {
+    capabilityId: string;
+    parameters: Record<string, string>;
+  };
+  response: {
+    traceId?: string;
+    executor?: { type?: string; rfcName?: string };
+    success?: boolean;
+    durationMs?: number;
+    errorType?: string;
+    returnMessages?: { type: string; id?: string; number?: string; message: string }[];
+    data?: unknown;
+  };
+};
+
 export type DshSemanticToolResult = {
   kind?: undefined;
   status: string;
@@ -36,6 +52,7 @@ export type DshSemanticToolResult = {
   facts: DshFact[];
   narrative: { summary: string; limitations: string[] };
   limitations: string[];
+  exchange?: DshToolExchange;
   approval?: DshApprovalHandle;
   error?: { errorType: string; message: string };
 };
