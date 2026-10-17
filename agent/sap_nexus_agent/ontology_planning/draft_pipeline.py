@@ -173,6 +173,12 @@ def prepare_draft(
                 draft_document = interpreter_instance.interpret(
                     request, vocabulary, feedback=feedback
                 )
+                # Supplement BEFORE validation and before the valid-draft early
+                # return: the deterministic server slots must reach the draft
+                # even when the model's own output already passes validation,
+                # otherwise an omitted selector becomes a resolver-time
+                # clarification (the supplement below the loop was unreachable).
+                draft_document = _supplement_slots(draft_document, request)
                 write_precheck = _precheck_write(draft_document, sources)
                 if write_precheck:
                     return None, _failure("rejected", [write_precheck], pinned)
@@ -205,7 +211,7 @@ def prepare_draft(
         # Fact-gate terminals use the resolver-compatible FIELD_NOT_ALLOWLISTED code.
         messages.extend(message for _code, message in fact_issues)
         return None, _terminal_for_codes(codes, messages, pinned)
-    draft_document = _supplement_slots(draft_document, request)
+    # draft_document was already supplemented inside the interpret loop.
     write_precheck = _precheck_write(draft_document, sources)
     if write_precheck:
         return None, _failure("rejected", [write_precheck], pinned)

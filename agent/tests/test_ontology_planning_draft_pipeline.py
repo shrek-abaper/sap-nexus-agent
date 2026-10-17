@@ -40,6 +40,40 @@ def test_fake_draft_passes_unchanged(world):
     assert draft["requestedFacts"][0]["factTypeId"] == "sapnexus:InventoryAvailabilityFact"
 
 
+class _StubInterpreter:
+    def __init__(self, document):
+        self._document = document
+
+    def interpret(self, request, vocabulary, feedback=None):
+        return self._document
+
+
+def test_model_draft_is_supplemented_with_server_slots(world):
+    pinned, sources = world
+    document = json.loads(
+        (REPO_ROOT / "evals/ontology-read-analysis/drafts/q1-stock-and-unit.json").read_text()
+    )
+    # The model omitted the plant selector entirely (the utterance named no plant).
+    for fact in document["requestedFacts"]:
+        fact["objectSelectors"] = [
+            selector for selector in fact["objectSelectors"] if selector["key"] != "plant"
+        ]
+    draft, terminal = prepare_draft(
+        _request(interpreter="model", utterance="看下库存", slots={"material": "DEMOA2", "plant": "5260"}),
+        sources,
+        pinned,
+        REPO_ROOT / "evals/ontology-read-analysis",
+        interpreter_instance=_StubInterpreter(document),
+        live=True,
+    )
+    assert terminal is None
+    for fact in draft["requestedFacts"]:
+        keys = {selector["key"] for selector in fact["objectSelectors"]}
+        assert "plant" in keys
+        plant = next(selector for selector in fact["objectSelectors"] if selector["key"] == "plant")
+        assert plant["value"] == "5260"
+
+
 def test_model_interpreter_requires_live_flag(world, monkeypatch):
     pinned, sources = world
     # Explicit 0 wins over the .env default (dotenv never overrides set vars).

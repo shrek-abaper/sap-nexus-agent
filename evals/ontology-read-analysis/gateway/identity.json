@@ -1,0 +1,10 @@
+{
+  "comment": "Offline fixture object coverage. The FakeGateway answers only for these identities; any other requested selector object is not covered by the offline sample. Negative test cases (node-failure etc.) are intentionally absent so their semantics stay unchanged.",
+  "q1-stock-and-unit": { "material": "DEMOA2", "plant": "1000" },
+  "q2-po-group-by-supplier": { "material": "DEMOA2", "plant": "1000" },
+  "q3-supplier-filter": { "material": "DEMOA2", "plant": "1000" },
+  "q4-inventory-and-orders-side-by-side": { "material": "DEMOA2", "plant": "1000" },
+  "unit-missing": { "material": "DEMOA2", "plant": "1000" },
+  "duplicate-identity": { "material": "DEMOA2", "plant": "1000" },
+  "non-finite-quantity": { "material": "DEMOA2", "plant": "1000" }
+}

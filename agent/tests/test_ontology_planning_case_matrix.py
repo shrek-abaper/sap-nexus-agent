@@ -22,7 +22,10 @@ def _request(case: dict) -> dict:
         "schemaVersion": 1,
         "caseId": case["gatewayCase"],
         "draftFile": case["draftFile"],
-        "slots": {"material": "DEMOA2", "plant": "1000"},
+        # Per-case slots override: negative cases that exercise the resolver's
+        # missing-selector path must withhold the slot explicitly now that
+        # server slots authoritatively supplement the draft.
+        "slots": case.get("slots", {"material": "DEMOA2", "plant": "1000"}),
         "scope": {"plant": "1000"},
         "interpreter": "fake",
         "principal": {"principalId": "local-user-0001",
@@ -78,6 +81,42 @@ def _predicate(response: dict, predicate: str) -> bool:
         reasons |= {e["reason"] for e in analysis.get("normalizationExclusions", [])}
         return reason in reasons
     raise AssertionError(f"unknown predicate: {predicate}")
+
+
+def test_fixture_uncovered_object_returns_clarification_not_borrowed_numbers():
+    # A free-form question about a real material must NOT be answered with the
+    # fixture's DEMOA2 numbers: the offline sample covers only its declared
+    # identity (gateway/identity.json).
+    request = {
+        "schemaVersion": 1,
+        "caseId": "q1-stock-and-unit",
+        "draftOverride": {
+            "schemaVersion": 1,
+            "requestedFacts": [
+                {"factTypeId": "sapnexus:InventoryAvailabilityFact",
+                 "fields": ["availableQuantity"],
+                 "objectSelectors": [
+                     {"objectTypeId": "sapnexus:Material", "key": "material", "value": "P0235094AE"},
+                     {"objectTypeId": "sapnexus:Plant", "key": "plant", "value": "5260"}]},
+            ],
+            "constraints": [],
+            "analysisNodes": [],
+            "requestedConclusions": [
+                {"id": "c1", "statement": "current stock", "evidenceRequirement": "fact values"}
+            ],
+            "assumptions": [],
+        },
+        "slots": {"material": "P0235094AE", "plant": "5260"},
+        "interpreter": "fake",
+    }
+    response = run_analysis_request(request, REPO_ROOT, EVALS)
+    assert response["status"] == "clarification"
+    assert any(
+        "OFFLINE_FIXTURE_OBJECT_NOT_COVERED:material=P0235094AE" in reason
+        for reason in response["reasons"]
+    ), response["reasons"]
+    # The fixture's DEMOA2 numbers must never leak into the answer.
+    assert "12.000" not in json.dumps(response, ensure_ascii=False)
 
 
 @pytest.mark.parametrize("case", CASES, ids=[c["id"] for c in CASES])

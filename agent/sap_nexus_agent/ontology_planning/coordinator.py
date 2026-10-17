@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
@@ -85,6 +86,40 @@ def _fixture_case_for_plan(plan: dict) -> str:
     return "q1-stock-and-unit"
 
 
+_FIXTURE_IDENTITY_KEYS = ("material", "plant", "vendor", "customer", "companyCode")
+
+
+def _fixture_uncovered_objects(
+    draft: SemanticGoalDraft, fixtures: Path, case_id: str
+) -> list[str]:
+    """Selector objects the offline fixture case does not cover.
+
+    Returns one OFFLINE_FIXTURE_OBJECT_NOT_COVERED reason per mismatched
+    selector, or [] when the case covers them (or declares no identity).
+    """
+    manifest_path = Path(fixtures) / "gateway" / "identity.json"
+    if not manifest_path.exists():
+        return []
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    identity = manifest.get(case_id)
+    if not isinstance(identity, dict):
+        return []
+    reasons: list[str] = []
+    covered = ",".join(f"{key}={value}" for key, value in identity.items())
+    for fact in draft.requested_facts:
+        for selector in fact.selectors:
+            if selector.key not in _FIXTURE_IDENTITY_KEYS:
+                continue
+            expected = identity.get(selector.key)
+            if expected is None or selector.value == expected:
+                continue
+            reasons.append(
+                f"OFFLINE_FIXTURE_OBJECT_NOT_COVERED:{selector.key}={selector.value}"
+                f"（离线样例仅覆盖 {covered}；真实数据请改用 diagnose/review 工具）"
+            )
+    return reasons
+
+
 def run_analysis_request(
     request: Mapping[str, Any],
     repo_root: Path,
@@ -141,6 +176,14 @@ def run_analysis_request(
     # envelope that contains every capability the compiled plan needs. The
     # real (live Gateway) path does not construct a FakeGateway at all.
     case_id = request.get("caseId") or _fixture_case_for_plan(plan)
+    # The FakeGateway envelope is per-case canned data with no object identity
+    # of its own; without this check an arbitrary requested object (e.g. a
+    # real material number) would be answered with the fixture's DEMOA2
+    # numbers. Declared identities live in gateway/identity.json; cases absent
+    # from the manifest keep their (negative-test) semantics unchecked.
+    uncovered = _fixture_uncovered_objects(draft, fixtures, case_id)
+    if uncovered:
+        return _terminal("clarification", uncovered, pinned, 0)
     gateway = FakeGatewayClient(fixtures, case_id, read_ids)
     node_results: list[NodeResult] = []
     failed_nodes: list[str] = []
