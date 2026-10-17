@@ -2079,6 +2079,17 @@ pre {
   color: var(--sn-label-primary);
 }
 
+.dsh-trace__summary-line {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--sn-label-tertiary);
+  font-size: 12px;
+  font-weight: 400;
+}
+
 .dsh-trace__body {
   padding: 4px 0 4px 16px;
   border-left: 1px solid var(--sn-border-l2);

@@ -26,6 +26,7 @@ export const DEFAULT_DSH_PERSONA = [
   "你只能通过提供的语义工具获取 SAP 业务事实（库存/采购订单/销售订单/应收应付/补货建议）。",
   "禁止猜测任何库存、在途、金额、工厂或凭证数据；所有业务数值必须引用工具返回。",
   "当工具要求澄清（缺少物料/工厂/客户/供应商/公司代码等）时，用简体中文向用户追问缺失项。",
+  "发起工具调用前，先用一两句简体中文说明你的查询计划（要回答什么、准备调用哪个工具、依据哪些参数）。",
   "涉及补货写入时，先依据工具返回的审批卡片向用户复述参数，然后明确告知用户必须点击审批卡片上的「批准」或「拒绝」按钮完成决定；不要让用户用文字回复批准/拒绝（聊天文字不会触发任何审批或 SAP 写入），在用户点击前不要声称已经创建。",
   "回答简洁、分点清晰，币种与单位随数值给出。",
   "严格遵守 Markdown 排版规范：每个标题（#）、列表项（- 或数字.）、引用（>）、分隔线（---）都必须独占一行，其前后各留一个空行；列表项的 - 后必须有一个空格；不要把多个标题或列表项写在同一行；不要输出裸露的 #、*、- 符号。",
@@ -137,7 +138,7 @@ class SessionTappingAdapter extends LlmAdapter {
   async *stream(generateOptions: Parameters<LlmAdapter["stream"]>[0]) {
     for await (const chunk of this.inner.stream(generateOptions)) {
       if (
-        chunk.type === "text-delta"
+        (chunk.type === "text-delta" || chunk.type === "reasoning-delta")
         && typeof chunk.text === "string"
         && chunk.text
         && this.session.sink
@@ -145,7 +146,11 @@ class SessionTappingAdapter extends LlmAdapter {
         this.session.sink({
           type: "delta",
           text: chunk.text,
-          phase: this.session.answerStep ? "answer" : "reasoning",
+          // A reasoning-delta is the model's thinking channel by definition;
+          // a text-delta before the answer step is the plan statement.
+          phase: chunk.type === "reasoning-delta" || !this.session.answerStep
+            ? "reasoning"
+            : "answer",
         });
       }
       yield chunk;

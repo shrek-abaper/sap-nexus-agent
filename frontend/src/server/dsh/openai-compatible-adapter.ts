@@ -20,7 +20,9 @@ export type OpenAiCompatibleConfig = {
 
 type Delta = {
   content?: string | null;
+  reasoning_content?: string | null;
   tool_calls?: Array<{
+    index?: number;
     id?: string;
     type?: "function";
     function?: { name?: string; arguments?: string };
@@ -155,9 +157,43 @@ export class OpenAiCompatibleAdapter extends LlmAdapter {
       throw new Error(`LLM HTTP ${response.status}: ${text.slice(0, 300)}`);
     }
 
-    const textParts: string[] = [];
-    const calls = new Map<number, { id: string; name: string; args: string }>();
+    // Token-level streaming with block lifecycle: reasoning (if the model
+    // emits reasoning_content) -> text -> tool-call blocks, closed in that
+    // order. dsh requires block-start before deltas and block-end before
+    // finish, so every open block is closed before the next one opens and
+    // at end of stream.
     let finishReason: "stop" | "tool-calls" = "stop";
+    let outputChars = 0;
+    let nextIndex = 0;
+    let openText: { index: number; blockType: "reasoning" | "text"; text: string } | null = null;
+    let openCall: { index: number; seq: number; id: string; name: string; args: string } | null = null;
+
+    function* closeText(): Generator<StreamChunk> {
+      if (!openText) return;
+      yield {
+        type: "block-end",
+        index: openText.index,
+        block: { type: openText.blockType, text: openText.text },
+      } as StreamChunk;
+      openText = null;
+    }
+    function* closeCall(): Generator<StreamChunk> {
+      if (!openCall) return;
+      const id = ToolCallId(openCall.id || `call-${Math.random().toString(36).slice(2)}`);
+      yield {
+        type: "block-end",
+        index: openCall.index,
+        block: { type: "tool-call", id, name: openCall.name, arguments: openCall.args },
+      } as StreamChunk;
+      openCall = null;
+    }
+    function* openBlock(blockType: "reasoning" | "text"): Generator<StreamChunk, { index: number }> {
+      yield* closeCall();
+      yield* closeText();
+      const index = nextIndex++;
+      yield { type: "block-start", index, blockType } as StreamChunk;
+      return { index };
+    }
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
@@ -181,40 +217,58 @@ export class OpenAiCompatibleAdapter extends LlmAdapter {
         }
         const choice = parsed.choices?.[0];
         if (!choice) continue;
-        if (choice.delta?.content) textParts.push(choice.delta.content);
+
+        const reasoningDelta = choice.delta?.reasoning_content;
+        if (reasoningDelta) {
+          if (!openText || openText.blockType !== "reasoning") {
+            const { index } = yield* openBlock("reasoning");
+            openText = { index, blockType: "reasoning", text: "" };
+          }
+          openText.text += reasoningDelta;
+          yield { type: "reasoning-delta", index: openText.index, text: reasoningDelta } as StreamChunk;
+        }
+
+        const contentDelta = choice.delta?.content;
+        if (contentDelta) {
+          if (!openText || openText.blockType !== "text") {
+            const { index } = yield* openBlock("text");
+            openText = { index, blockType: "text", text: "" };
+          }
+          openText.text += contentDelta;
+          outputChars += contentDelta.length;
+          yield { type: "text-delta", index: openText.index, text: contentDelta } as StreamChunk;
+        }
+
         for (const call of choice.delta?.tool_calls ?? []) {
-          const index = 0;
-          const existing = calls.get(index) ?? { id: "", name: "", args: "" };
-          if (call.id) existing.id = call.id;
-          if (call.function?.name) existing.name = call.function.name;
-          if (call.function?.arguments) existing.args += call.function.arguments;
-          calls.set(index, existing);
+          const seq = call.index ?? 0;
+          if (!openCall || openCall.seq !== seq) {
+            yield* closeCall();
+            yield* closeText();
+            const index = nextIndex++;
+            yield { type: "block-start", index, blockType: "tool-call" } as StreamChunk;
+            openCall = { index, seq, id: "", name: "", args: "" };
+          }
+          if (call.id) openCall.id = call.id;
+          if (call.function?.name) openCall.name = call.function.name;
+          const argsDelta = call.function?.arguments ?? "";
+          if (argsDelta) {
+            openCall.args += argsDelta;
+            yield {
+              type: "tool-call-delta",
+              index: openCall.index,
+              id: ToolCallId(openCall.id || `call-pending-${openCall.seq}`),
+              name: openCall.name,
+              argumentsDelta: argsDelta,
+            } as StreamChunk;
+          }
         }
         if (choice.finish_reason === "tool_calls") finishReason = "tool-calls";
       }
     }
 
-    let index = 0;
-    const text = textParts.join("");
-    if (text.length > 0) {
-      yield { type: "block-start", index, blockType: "text" };
-      yield { type: "text-delta", index, text };
-      yield { type: "block-end", index, block: { type: "text", text } };
-      index += 1;
-    }
-    for (const call of calls.values()) {
-      if (!call.name) continue;
-      const id = ToolCallId(call.id || `call-${Math.random().toString(36).slice(2)}`);
-      yield { type: "block-start", index, blockType: "tool-call" };
-      yield { type: "tool-call-delta", index, id, name: call.name, argumentsDelta: call.args };
-      yield {
-        type: "block-end",
-        index,
-        block: { type: "tool-call", id, name: call.name, arguments: call.args },
-      };
-      index += 1;
-    }
-    yield { type: "usage", usage: { inputTokens: 0, outputTokens: text.length } };
+    yield* closeText();
+    yield* closeCall();
+    yield { type: "usage", usage: { inputTokens: 0, outputTokens: outputChars } };
     yield { type: "finish", reason: { kind: finishReason } };
   }
 }

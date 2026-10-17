@@ -423,6 +423,14 @@ export function DshChat() {
                 ? "正在调用工具…"
                 : streaming ? "DeepSeek 思考中…" : "思考过程与工具调用";
             const waitingForAnswer = message.role === "assistant" && message.pending && !message.answerTrace;
+            // ReasoningRow-style one-line summary: the newest thinking line
+            // while streaming, the first line once settled.
+            const traceLines = (message.trace ?? "")
+              .split("\n")
+              .filter((line) => line.trim().length > 0);
+            const traceSummary = streaming
+              ? traceLines.at(-1) ?? ""
+              : traceLines[0] ?? "";
 
             return (
               <div key={message.id} data-msg-id={message.id} className={`dsh-message dsh-message--${message.role}`}>
@@ -435,6 +443,7 @@ export function DshChat() {
                       {streaming || anyRunning
                         ? <span className="shimmer-text">{traceLabel}</span>
                         : traceLabel}
+                      {traceSummary ? <span className="dsh-trace__summary-line">{traceSummary}</span> : null}
                     </summary>
                     <div className="dsh-trace__body">
                       {message.trace ? <div className="dsh-trace__reasoning">{message.trace}</div> : null}
