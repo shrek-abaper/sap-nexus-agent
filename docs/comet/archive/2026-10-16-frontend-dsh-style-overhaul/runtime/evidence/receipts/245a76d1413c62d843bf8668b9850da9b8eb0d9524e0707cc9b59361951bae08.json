@@ -1,0 +1,32 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "manual-evidence",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "frontend-dsh-style-overhaul",
+    "sourceRevision": 5,
+    "contractHash": "e425f1f8938c17f9df0b3de679374e176fbd669e5531465bef0ab6da5bfbb812",
+    "scopeHash": "ba62fe4b44e8137b58e0a8dcae82a70a52b753a3c9770c3a0e832d749cbed09f",
+    "snapshotHash": "249c9f3443342e9d5f780ae309f4d63d1654ad3085cf6e4a806824f83451d690",
+    "artifactHash": "a02e46c5fed3eb49f2569aeae7044c98a53c1e651ecf78d363eb605743d215ae"
+  },
+  "acceptanceIds": [
+    "acceptance-447835205a6f4cbb2dcf5aacee359881112be64ea7baea18af83f34a5bc7b099",
+    "acceptance-b8c8383930e7b386dbc541d75bba89e6cf868e094abc19bf3ce063dd657b78a4",
+    "acceptance-c5e19ed79e7d4bf1f4bbd91f1d874e8c07717f5a6eb1dc1243acd8ca19667311",
+    "acceptance-d50aa1e6a108e51ce4bb5d865621e5d333110f5daffd40e1a8ce1beb21f7647b",
+    "acceptance-da0277c79fa8ff1a2823a0775e6514864e3d8beeeb3ce7ce417d06e1c49961f4"
+  ],
+  "actor": "native-runtime:manual-evidence",
+  "issuedAt": "2026-10-16T16:01:53.900Z",
+  "evidence": {
+    "steps": [
+      "next start 截图核对 /chat 消息流（/tmp/sn-verify/shots/chat-light-trace.png、chat-dark-thread.png、chat-light-tool-failed.png）"
+    ],
+    "observations": [
+      "助手消息整宽 markdown 无气泡（标题/列表/表格全宽排版）；用户消息右对齐淡蓝气泡（light=blue-50 / dark=nb-850，圆角 22px，max-width 82% 内）；消息列 760px 居中"
+    ]
+  },
+  "receiptHash": "245a76d1413c62d843bf8668b9850da9b8eb0d9524e0707cc9b59361951bae08"
+}

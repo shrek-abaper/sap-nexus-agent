@@ -120,7 +120,7 @@ export function ChatStream({ turns, activeIndex, onApprovalDecision }: ChatStrea
                 ) : bubble.hasNarrative ? (
                   view.result.body
                 ) : bubble.showStreaming ? (
-                  <span className="streaming-cursor">{bubble.placeholder}</span>
+                  <span className="shimmer-text">{bubble.placeholder}</span>
                 ) : (
                   bubble.placeholder
                 )}

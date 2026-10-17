@@ -1,0 +1,32 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "manual-evidence",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "frontend-dsh-style-overhaul",
+    "sourceRevision": 3,
+    "contractHash": "e425f1f8938c17f9df0b3de679374e176fbd669e5531465bef0ab6da5bfbb812",
+    "scopeHash": "6c707fda2acafe58cfed24a8f70860555914fa446809e344f519e8864366e758",
+    "snapshotHash": "df93d9e8784d1857d4c55f5b6a1b99e33d6f2aee117270d2f78fb983e5ae8de7",
+    "artifactHash": "cddf518ae4496c3c9a82b2673f1cdb338cdac6e63c995f7dc02645c55027050f"
+  },
+  "acceptanceIds": [
+    "acceptance-3586cf6f9d4270d7039070bcb617dd26db25bdc052490467ef35a62d3e76f425",
+    "acceptance-92515b20a4ce9d369e82616a77690264c9cce65065bcf3fb263768c20c997651",
+    "acceptance-b0d602df0bf15e5139c8d3904719341fff6bd696538b9c18d8f699b1e0293cb4",
+    "acceptance-e878b7e8852bd5b1d7734319dd47d7b1d7c4fdf48cea938a309f1bdef795765a",
+    "acceptance-f64466f4eb4efbdb1cfeba2833bd88efc809d89ec1e1a3ad052571bf57851298"
+  ],
+  "actor": "native-runtime:manual-evidence",
+  "issuedAt": "2026-10-16T15:48:59.498Z",
+  "evidence": {
+    "steps": [
+      "next start 截图核对 /chat 工具调用呈现（chat-light-trace.png 折叠行、chat-light-tool-failed.png 失败展开卡、chat-dark-thread.png 思考过程折叠行）"
+    ],
+    "observations": [
+      "工具调用默认单行折叠行（chevron+状态点+工具名+单行参数摘要+状态 pill），点击展开为参数/能力链/事实栅格/原始 JSON 卡片；运行中行有 row-sweep 浅色扫光；思考过程与工具调用同为 disclosure row 语言；失败行摘要即错误首行"
+    ]
+  },
+  "receiptHash": "555fd352c20909d5aeccd0a59761e811447c0942e16a0a1773cf7663720d38db"
+}

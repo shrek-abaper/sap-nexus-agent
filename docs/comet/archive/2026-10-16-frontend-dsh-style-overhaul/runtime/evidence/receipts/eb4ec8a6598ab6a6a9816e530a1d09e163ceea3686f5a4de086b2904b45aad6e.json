@@ -1,0 +1,38 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "static-inspection",
+  "role": "required-check",
+  "status": "passed",
+  "bindings": {
+    "change": "frontend-dsh-style-overhaul",
+    "sourceRevision": 5,
+    "contractHash": "e425f1f8938c17f9df0b3de679374e176fbd669e5531465bef0ab6da5bfbb812",
+    "scopeHash": "ba62fe4b44e8137b58e0a8dcae82a70a52b753a3c9770c3a0e832d749cbed09f",
+    "snapshotHash": "249c9f3443342e9d5f780ae309f4d63d1654ad3085cf6e4a806824f83451d690",
+    "artifactHash": "a02e46c5fed3eb49f2569aeae7044c98a53c1e651ecf78d363eb605743d215ae"
+  },
+  "acceptanceIds": [],
+  "actor": "native-runtime:scoped-text-safety",
+  "issuedAt": "2026-10-16T16:03:46.275Z",
+  "evidence": {
+    "subjects": [
+      "frontend/app/globals.css",
+      "frontend/app/layout.tsx",
+      "frontend/app/styles/base.css",
+      "frontend/app/styles/tokens.css",
+      "frontend/src/modules/agent-console/AgentConsole.tsx",
+      "frontend/src/modules/agent-console/ChatStream.tsx",
+      "frontend/src/modules/dsh-chat/DshChat.tsx",
+      "frontend/src/modules/dsh-chat/DshSidebar.tsx",
+      "frontend/src/modules/dsh-chat/Markdown.tsx",
+      "frontend/src/modules/dsh-chat/ToolCallCard.tsx",
+      "frontend/src/shared/ui/ThemeToggle.tsx",
+      "frontend/src/shared/ui/theme.ts"
+    ],
+    "rule": "scoped-text-safety",
+    "resultSummary": "The built-in scoped inspection passed without skipped or blocking input.",
+    "checkReceiptRef": "runtime/evidence/check-receipts/3370fdfaa2c1e8d5fd49e45cf11e1892b66315e679f94c835b6d78a9193a06ee.json",
+    "checkReceiptHash": "3370fdfaa2c1e8d5fd49e45cf11e1892b66315e679f94c835b6d78a9193a06ee"
+  },
+  "receiptHash": "eb4ec8a6598ab6a6a9816e530a1d09e163ceea3686f5a4de086b2904b45aad6e"
+}

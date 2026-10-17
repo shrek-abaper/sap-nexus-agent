@@ -1,0 +1,80 @@
+{
+  "schema": "comet.native.check-receipt.v1",
+  "change": "frontend-dsh-style-overhaul",
+  "sourceRevision": 3,
+  "checker": {
+    "policy": "scoped-text-safety",
+    "version": 1,
+    "hash": "859ac9d93d19ac346e5e0c6dfca376112da6b0c9caeb9d7d7aa68393c73e0eaf",
+    "limits": {
+      "maxFiles": 256,
+      "maxFileBytes": 2097152,
+      "maxTotalBytes": 8388608,
+      "maxIssues": 128
+    }
+  },
+  "inputHash": "79ebe73759064cadf1ba0156f6c540aff1afc80a409450793ba21fe4ed3b9109",
+  "status": "failed",
+  "startedAt": "2026-10-16T15:52:04.988Z",
+  "endedAt": "2026-10-16T15:52:06.992Z",
+  "contract": {
+    "expectedHash": "e425f1f8938c17f9df0b3de679374e176fbd669e5531465bef0ab6da5bfbb812",
+    "beforeHash": "e425f1f8938c17f9df0b3de679374e176fbd669e5531465bef0ab6da5bfbb812",
+    "afterHash": "e425f1f8938c17f9df0b3de679374e176fbd669e5531465bef0ab6da5bfbb812"
+  },
+  "implementation": {
+    "scopeHash": "6c707fda2acafe58cfed24a8f70860555914fa446809e344f519e8864366e758",
+    "expectedSnapshotHash": "df93d9e8784d1857d4c55f5b6a1b99e33d6f2aee117270d2f78fb983e5ae8de7",
+    "beforeSnapshotHash": "df93d9e8784d1857d4c55f5b6a1b99e33d6f2aee117270d2f78fb983e5ae8de7",
+    "afterSnapshotHash": "df93d9e8784d1857d4c55f5b6a1b99e33d6f2aee117270d2f78fb983e5ae8de7"
+  },
+  "counts": {
+    "filesSelected": 19,
+    "filesScanned": 12,
+    "binaryFilesSkipped": 7,
+    "bytesScanned": 1109304,
+    "issueCount": 7,
+    "recordedIssueCount": 7
+  },
+  "issues": [
+    {
+      "path": ".playwright-cli/shots/chat-dark-thread.png",
+      "line": 1,
+      "kind": "binary-skipped"
+    },
+    {
+      "path": ".playwright-cli/shots/chat-dark.png",
+      "line": 1,
+      "kind": "binary-skipped"
+    },
+    {
+      "path": ".playwright-cli/shots/chat-light-tool-failed.png",
+      "line": 1,
+      "kind": "binary-skipped"
+    },
+    {
+      "path": ".playwright-cli/shots/chat-light-trace.png",
+      "line": 1,
+      "kind": "binary-skipped"
+    },
+    {
+      "path": ".playwright-cli/shots/chat-light.png",
+      "line": 1,
+      "kind": "binary-skipped"
+    },
+    {
+      "path": ".playwright-cli/shots/workbench-dark.png",
+      "line": 1,
+      "kind": "binary-skipped"
+    },
+    {
+      "path": ".playwright-cli/shots/workbench-light.png",
+      "line": 1,
+      "kind": "binary-skipped"
+    }
+  ],
+  "issuesTruncated": false,
+  "stale": false,
+  "staleReasons": [],
+  "receiptHash": "e44fe29eeaf8f3c0b3bf53faddb36805def54d3bfb2ec3c465e4233081a21504"
+}

@@ -1,0 +1,8 @@
+{"sequence":1,"timestamp":"2026-10-16T16:04:37.434Z","type":"prepared"}
+{"sequence":2,"timestamp":"2026-10-16T16:04:39.675Z","type":"operation-started","operationId":"spec-1-frontend-dsh-design-language"}
+{"sequence":3,"timestamp":"2026-10-16T16:04:39.837Z","type":"operation-completed","operationId":"spec-1-frontend-dsh-design-language"}
+{"sequence":4,"timestamp":"2026-10-16T16:04:41.926Z","type":"operation-started","operationId":"archive-change"}
+{"sequence":5,"timestamp":"2026-10-16T16:04:42.697Z","type":"operation-completed","operationId":"archive-change"}
+{"sequence":6,"timestamp":"2026-10-16T16:04:43.118Z","type":"archive-finalization-started"}
+{"sequence":7,"timestamp":"2026-10-16T16:04:43.216Z","type":"archive-finalized"}
+{"sequence":8,"timestamp":"2026-10-16T16:04:43.275Z","type":"commit"}

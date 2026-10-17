@@ -1,0 +1,305 @@
+/* =====================================================================
+   Base layer — reset, typography, scrollbar, shared interaction chrome.
+   Consumes alias/specific tokens from tokens.css only.
+   ===================================================================== */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  color: var(--sn-label-primary);
+  background: var(--sn-bg-layer-1);
+  font-family: var(--sn-font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+button {
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  background: none;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+/* ---------- scrollbar (WebKit + Firefox paths) ---------- */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--sn-scrollbar-thumb) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--sn-scrollbar-thumb);
+  border-radius: var(--sn-radius-full);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--sn-scrollbar-thumb-hover);
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ---------- shared: disclosure row chrome (dsh DisclosureRow analogue) —
+   the single collapsed-row language for thinking traces, tool calls,
+   match decisions, dry-run previews and evidence groups. ---------- */
+.drow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  max-width: 100%;
+  min-height: 24px;
+  padding: 3px 8px;
+  margin-left: -8px;
+  border: 0;
+  border-radius: var(--sn-radius-sm);
+  background: transparent;
+  color: var(--sn-drow-text);
+  font-size: 13px;
+  line-height: 18px;
+  cursor: pointer;
+  user-select: none;
+  text-align: left;
+  transition: background var(--sn-dur-fast) var(--sn-ease), color var(--sn-dur-fast) var(--sn-ease);
+}
+
+.drow:hover {
+  background: var(--sn-drow-hover);
+  color: var(--sn-label-primary);
+}
+
+.drow__chevron {
+  display: inline-block;
+  flex-shrink: 0;
+  color: var(--sn-label-tertiary);
+  font-size: 10px;
+  transition: transform var(--sn-dur-fast) var(--sn-ease);
+}
+
+.drow__chevron.is-open {
+  transform: rotate(90deg);
+}
+
+.drow__summary {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--sn-label-tertiary);
+  font-size: 12px;
+}
+
+.drow__badge {
+  flex-shrink: 0;
+  padding: 1px 8px;
+  border-radius: var(--sn-radius-full);
+  background: var(--sn-state-info-bg);
+  color: var(--sn-state-info);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.drow__badge--warn {
+  background: var(--sn-state-warn-bg);
+  color: var(--sn-state-warn);
+}
+
+/* ---------- shared: semantic state dot (dsh StateDot analogue) ---------- */
+.state-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--sn-label-caption);
+}
+
+.state-dot--success {
+  background: var(--sn-state-success);
+}
+
+.state-dot--error {
+  background: var(--sn-state-error);
+}
+
+.state-dot--warn {
+  background: var(--sn-state-warn);
+}
+
+.state-dot--info {
+  background: var(--sn-state-info);
+}
+
+/* ---------- shared: shimmer status text (replaces every spinner) ---------- */
+.shimmer-text {
+  background: linear-gradient(90deg, var(--sn-shimmer-from) 0%, var(--sn-shimmer-to) 50%, var(--sn-shimmer-from) 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: sn-shimmer 1.8s linear infinite;
+}
+
+@keyframes sn-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* ---------- shared: running-row light sweep ---------- */
+.row-sweep {
+  position: relative;
+  overflow: hidden;
+}
+
+.row-sweep::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(100deg, transparent 20%, var(--sn-interactive-hover) 50%, transparent 80%);
+  background-size: 300px 100%;
+  background-repeat: no-repeat;
+  animation: sn-row-sweep 1.6s var(--sn-ease) infinite;
+}
+
+@keyframes sn-row-sweep {
+  from {
+    background-position: -300px 0;
+  }
+  to {
+    background-position: calc(100% + 300px) 0;
+  }
+}
+
+/* ---------- shared: buttons ---------- */
+.sn-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 6px 16px;
+  border: 1px solid transparent;
+  border-radius: var(--sn-radius-full);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--sn-dur-fast) var(--sn-ease), box-shadow var(--sn-dur-fast) var(--sn-ease), border-color var(--sn-dur-fast) var(--sn-ease);
+}
+
+.sn-btn--primary {
+  background: var(--sn-brand);
+  color: var(--sn-label-inverse);
+}
+
+.sn-btn--primary:hover:not(:disabled) {
+  background: var(--sn-brand-hover);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--sn-brand) 35%, transparent);
+}
+
+.sn-btn--ghost {
+  background: var(--sn-bg-base);
+  border-color: var(--sn-border-l3);
+  color: var(--sn-label-secondary);
+}
+
+.sn-btn--ghost:hover:not(:disabled) {
+  background: var(--sn-bg-layer-2);
+  color: var(--sn-label-primary);
+}
+
+.sn-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+  box-shadow: none;
+}
+
+/* ---------- shared: theme toggle ---------- */
+.theme-toggle {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: var(--sn-radius-sm);
+  background: transparent;
+  color: var(--sn-label-tertiary);
+  cursor: pointer;
+  transition: background var(--sn-dur-fast) var(--sn-ease), color var(--sn-dur-fast) var(--sn-ease);
+}
+
+.theme-toggle:hover {
+  background: var(--sn-interactive-hover);
+  color: var(--sn-label-primary);
+}
+
+.theme-toggle svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ---------- shared: entrance ---------- */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---------- reduced motion: every animation degrades to static ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .shimmer-text {
+    background: none;
+    color: var(--sn-brand);
+  }
+
+  .row-sweep::after {
+    display: none;
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "manual-evidence",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "frontend-dsh-style-overhaul",
+    "sourceRevision": 5,
+    "contractHash": "e425f1f8938c17f9df0b3de679374e176fbd669e5531465bef0ab6da5bfbb812",
+    "scopeHash": "ba62fe4b44e8137b58e0a8dcae82a70a52b753a3c9770c3a0e832d749cbed09f",
+    "snapshotHash": "249c9f3443342e9d5f780ae309f4d63d1654ad3085cf6e4a806824f83451d690",
+    "artifactHash": "a02e46c5fed3eb49f2569aeae7044c98a53c1e651ecf78d363eb605743d215ae"
+  },
+  "acceptanceIds": [
+    "acceptance-1aa730594d4e5019dc2d7608fbd725e97840b88cccbd1b849340ce5ff51c2148",
+    "acceptance-21cbcdf10d28e24b98fa46888fc7814b5697d8089b4f50bbf1be4bb4b78213d6",
+    "acceptance-6057fb9aa35fb35d5e3ee419fbbd9d0bed1ee48bf1ad4d6e241166a9d70f1787",
+    "acceptance-8cdb1f514d70b7f8e036a5e622203d9abd2315c209e27564898f32633f970fd4",
+    "acceptance-9c2f2481e26b156930709628c2e5ca07801899e4954473c83fba55cd9419ab9d",
+    "acceptance-b0139fcf6b3943950462ba5a94200b54476272e15ca331fc4d53d6f48c3cff5f",
+    "acceptance-bbb18ec42c9d18ea8940e0885adf7feac75a6cc7e780f16c18557b7ecba88fb5",
+    "acceptance-d4272b8fbbc497f61fdfdab47d743d5b13ec6b8ec7e587b54f6b07340146781e",
+    "acceptance-d9b5c3888065238858e6d9a7d25d49022908cb35fda7412e129b8d2520d2f6f8"
+  ],
+  "actor": "native-runtime:manual-evidence",
+  "issuedAt": "2026-10-16T16:02:39.994Z",
+  "evidence": {
+    "steps": [
+      "playwright 操作：localStorage sap-nexus-theme=dark 后 reload（首屏即暗色无闪烁），再切回 light；核对 layout.tsx boot 内联脚本、theme.ts 持久化与 system 跟随、两侧栏 ThemeToggle 图标"
+    ],
+    "observations": [
+      "light/dark/system 三档生效，默认 system；偏好写 localStorage 且刷新后保持；alias 层在 body[data-theme=dark] 整体重定义，static 不变、specific 跟随；暗色下代码块/滚动条/阴影均有暗色值；切换入口在 /chat 侧栏 footer 与 /workbench 用户行"
+    ]
+  },
+  "receiptHash": "20edeb945af90a920f4ebe435dca284c2410699b5c431e00014d3552cef8add7"
+}

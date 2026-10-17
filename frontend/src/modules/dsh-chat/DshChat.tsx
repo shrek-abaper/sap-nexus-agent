@@ -358,12 +358,13 @@ export function DshChat() {
               <div key={message.id} data-msg-id={message.id} className={`dsh-message dsh-message--${message.role}`}>
                 {showTracePanel ? (
                   <details
-                    className={`dsh-trace${streaming || hasPendingApproval ? " dsh-trace--open" : ""}`}
+                    className="dsh-trace"
                     open={streaming || hasPendingApproval}
                   >
                     <summary>
-                      {streaming || anyRunning ? <span className="dsh-spinner dsh-spinner--inline" /> : null}
-                      {traceLabel}
+                      {streaming || anyRunning
+                        ? <span className="shimmer-text">{traceLabel}</span>
+                        : traceLabel}
                     </summary>
                     <div className="dsh-trace__body">
                       {message.trace ? <div className="dsh-trace__reasoning">{message.trace}</div> : null}
@@ -376,12 +377,11 @@ export function DshChat() {
 
                 {message.role === "assistant" ? (
                   waitingForAnswer ? (
-                    <div className="dsh-thinking">
-                      <span className="dsh-spinner dsh-spinner--inline" />
-                      <span>{tools.length > 0 ? "正在调用工具" : "DeepSeek 思考中"}</span>
+                    <div className="dsh-status">
+                      <span className="shimmer-text">{tools.length > 0 ? "正在调用工具…" : "DeepSeek 思考中…"}</span>
                     </div>
                   ) : (
-                    <div className="dsh-message__bubble">
+                    <div className="dsh-message__answer">
                       {message.pending
                         ? <Markdown raw>{message.answerTrace || ""}</Markdown>
                         : <Markdown>{message.text}</Markdown>}

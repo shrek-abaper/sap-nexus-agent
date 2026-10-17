@@ -1,0 +1,47 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "blocked",
+  "bindings": {
+    "change": "frontend-dsh-style-overhaul",
+    "sourceRevision": 3,
+    "contractHash": "e425f1f8938c17f9df0b3de679374e176fbd669e5531465bef0ab6da5bfbb812",
+    "scopeHash": "6c707fda2acafe58cfed24a8f70860555914fa446809e344f519e8864366e758",
+    "snapshotHash": "df93d9e8784d1857d4c55f5b6a1b99e33d6f2aee117270d2f78fb983e5ae8de7",
+    "artifactHash": "cddf518ae4496c3c9a82b2673f1cdb338cdac6e63c995f7dc02645c55027050f"
+  },
+  "acceptanceIds": [
+    "acceptance-bf0434dee026fafd7d68156bc32e42b7623bebb104d65704564d1d7578a72672",
+    "acceptance-e0c2de6e382542b59c03ca65d19c0640aa608ba518d5516ac0f1f852849cc386",
+    "acceptance-e6bca9b5c237ddf69d93e38d9d396ef004c6abebd3691d52b6b703ed50c89324"
+  ],
+  "actor": "native-runtime:command:/tmp/sn-verify/check-shimmer.sh",
+  "issuedAt": "2026-10-16T15:54:47.877Z",
+  "evidence": {
+    "executable": "/tmp/sn-verify/check-shimmer.sh",
+    "args": [],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 120000,
+    "startedAt": "2026-10-16T15:54:47.858Z",
+    "endedAt": "2026-10-16T15:54:47.877Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "befa0c8cb45704b496057191c9a80645e358dfd5",
+      "afterCommit": "befa0c8cb45704b496057191c9a80645e358dfd5"
+    },
+    "afterFence": {
+      "snapshotHash": "249c9f3443342e9d5f780ae309f4d63d1654ad3085cf6e4a806824f83451d690",
+      "scopeHash": "d92f4306250e29a436b845b6860163a682fdc35abcb7572fc4eab79660862d8f",
+      "matched": false
+    },
+    "outputHash": "19e9e5b636fb238dfc834b92db2d2c1c1dec55afdd32ba08b2f0c68b4887db93",
+    "outputSummary": "OK: shimmer status language present, no spinner residue",
+    "outputTruncated": false
+  },
+  "receiptHash": "6017b02dfb7820da2dc1e28341ba07cc3d967ef38c16e2748bbc1d2c24975da6"
+}

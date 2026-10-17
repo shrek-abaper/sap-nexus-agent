@@ -1,0 +1,27 @@
+{
+  "schema": "comet.native.transaction.v2",
+  "id": "c41608f7-207d-416c-8425-b58bd3436daa",
+  "kind": "archive",
+  "status": "committed",
+  "change": "frontend-dsh-style-overhaul",
+  "createdAt": "2026-10-16T16:04:34.533Z",
+  "preflightHash": "398fe0b1f78cf410e4027eee61278fc18d01e3dcaa861b374daa35bfcc779e38",
+  "operations": [
+    {
+      "id": "spec-1-frontend-dsh-design-language",
+      "type": "write",
+      "target": "specs/frontend-dsh-design-language/spec.md",
+      "staged": "runtime/transactions/c41608f7-207d-416c-8425-b58bd3436daa/staged/specs/frontend-dsh-design-language/spec.md",
+      "expectedTargetHash": null,
+      "stagedHash": "d3b3abd41e0c33f67f0c99f4c454a84af60fed3aab7629ee5b923064ecfd9572"
+    },
+    {
+      "id": "archive-change",
+      "type": "move",
+      "source": "changes/frontend-dsh-style-overhaul",
+      "target": "archive/2026-10-16-frontend-dsh-style-overhaul",
+      "expectedSourceHash": "69705a7e7007254870a83983ce28173e65f76d8e95016502d6e16622d0aab05e",
+      "expectedTargetHash": null
+    }
+  ]
+}

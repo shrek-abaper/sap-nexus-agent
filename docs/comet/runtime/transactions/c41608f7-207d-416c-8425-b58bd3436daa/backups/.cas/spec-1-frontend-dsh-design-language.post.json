@@ -1,0 +1,11 @@
+{
+  "schema": "comet.native.archive-cas.v1",
+  "operationId": "spec-1-frontend-dsh-design-language",
+  "role": "post",
+  "hash": "d3b3abd41e0c33f67f0c99f4c454a84af60fed3aab7629ee5b923064ecfd9572",
+  "identity": {
+    "dev": 2096,
+    "ino": 97284,
+    "birthtimeMs": 1792166679719.3623
+  }
+}

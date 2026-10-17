@@ -1,0 +1,28 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "manual-evidence",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "frontend-dsh-style-overhaul",
+    "sourceRevision": 3,
+    "contractHash": "e425f1f8938c17f9df0b3de679374e176fbd669e5531465bef0ab6da5bfbb812",
+    "scopeHash": "6c707fda2acafe58cfed24a8f70860555914fa446809e344f519e8864366e758",
+    "snapshotHash": "df93d9e8784d1857d4c55f5b6a1b99e33d6f2aee117270d2f78fb983e5ae8de7",
+    "artifactHash": "cddf518ae4496c3c9a82b2673f1cdb338cdac6e63c995f7dc02645c55027050f"
+  },
+  "acceptanceIds": [
+    "acceptance-4e2a9aaf3de28dcd406923abad3bc0b4fd691d58c512d509938a0e80d4cd9fa5"
+  ],
+  "actor": "native-runtime:manual-evidence",
+  "issuedAt": "2026-10-16T15:51:03.703Z",
+  "evidence": {
+    "steps": [
+      "grep 审查 app/ 与 src/ 全部 css/tsx（check-residue.sh，见自动 receipt 27be2fcd）"
+    ],
+    "observations": [
+      "组件无绕过 token 的硬编码颜色字面值；globals.css 无 hex/rgb 字面值（color-mix 除外），明暗两主题下截图无失真"
+    ]
+  },
+  "receiptHash": "22d55af6f3de9ee9325a0be33902260d0a125ea3b055f0d09f6bb38388f8afae"
+}

@@ -1,0 +1,50 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "frontend-dsh-style-overhaul",
+    "sourceRevision": 3,
+    "contractHash": "e425f1f8938c17f9df0b3de679374e176fbd669e5531465bef0ab6da5bfbb812",
+    "scopeHash": "6c707fda2acafe58cfed24a8f70860555914fa446809e344f519e8864366e758",
+    "snapshotHash": "df93d9e8784d1857d4c55f5b6a1b99e33d6f2aee117270d2f78fb983e5ae8de7",
+    "artifactHash": "cddf518ae4496c3c9a82b2673f1cdb338cdac6e63c995f7dc02645c55027050f"
+  },
+  "acceptanceIds": [
+    "acceptance-146c5eac869668c7d60c79a021107c71c45d1cdac6bc6408220ddecf9bc10da8",
+    "acceptance-17d534a542d36572d30379163c0ef5ba17d05c68c7f51897a465c1d8138cd255",
+    "acceptance-1bf046d7d594a41c66628d3f86749924b7d84d35a1d7574fa8cb26e7765efd2c",
+    "acceptance-7790ddf5debdb3c5df0a170d2c7f07a2b71e93f173a60afb02d3fb8229c88a0c",
+    "acceptance-7d9bc3bf6e091411d9f42dc39a9370436c18ea7510be1816763253f399c60f09",
+    "acceptance-a804c76718af974ae579dc47e1639d38c58876af888e3a9b157c947df8ee08e7"
+  ],
+  "actor": "native-runtime:command:/tmp/sn-verify/run-verify.sh",
+  "issuedAt": "2026-10-16T15:47:32.105Z",
+  "evidence": {
+    "executable": "/tmp/sn-verify/run-verify.sh",
+    "args": [],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 420000,
+    "startedAt": "2026-10-16T15:46:25.023Z",
+    "endedAt": "2026-10-16T15:47:32.105Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "befa0c8cb45704b496057191c9a80645e358dfd5",
+      "afterCommit": "befa0c8cb45704b496057191c9a80645e358dfd5"
+    },
+    "afterFence": {
+      "snapshotHash": "df93d9e8784d1857d4c55f5b6a1b99e33d6f2aee117270d2f78fb983e5ae8de7",
+      "scopeHash": "6c707fda2acafe58cfed24a8f70860555914fa446809e344f519e8864366e758",
+      "matched": true
+    },
+    "outputHash": "71db02014128705666531afe2f913cc4d6830802d6b4564c653aa5df407f3d07",
+    "outputSummary": "Test Files  72 passed (72)\n      Tests  618 passed | 4 skipped (622)\nOK: npm run verify passed (typecheck + vitest + next build)",
+    "outputTruncated": false
+  },
+  "receiptHash": "0d255239ec259f7767ba109c6070496b752a686ecd218ecc0b1df8448c234de4"
+}

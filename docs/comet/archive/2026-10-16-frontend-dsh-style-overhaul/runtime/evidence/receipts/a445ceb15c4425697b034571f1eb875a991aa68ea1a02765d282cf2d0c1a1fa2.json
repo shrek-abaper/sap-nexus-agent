@@ -1,0 +1,35 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "manual-evidence",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "frontend-dsh-style-overhaul",
+    "sourceRevision": 5,
+    "contractHash": "e425f1f8938c17f9df0b3de679374e176fbd669e5531465bef0ab6da5bfbb812",
+    "scopeHash": "ba62fe4b44e8137b58e0a8dcae82a70a52b753a3c9770c3a0e832d749cbed09f",
+    "snapshotHash": "249c9f3443342e9d5f780ae309f4d63d1654ad3085cf6e4a806824f83451d690",
+    "artifactHash": "a02e46c5fed3eb49f2569aeae7044c98a53c1e651ecf78d363eb605743d215ae"
+  },
+  "acceptanceIds": [
+    "acceptance-42cfd93bfbe2f3ec5a002f6508fd71d736c4739e1010f5251d3ee6abcf97fb46",
+    "acceptance-456952772888dda2e703d29ea579628a9c05d97b2fa80d80eea0a875bb98d706",
+    "acceptance-54e83ec6a7bca95f5ab7e486c6defcc2394741fa86970f8e7253e201e3134a97",
+    "acceptance-54e85bf283a4d11ced0259b2b98d1838b58078496810c73c87ff88b4f72d06aa",
+    "acceptance-5813cabc7a8b279c905ce5bdd1c4b26dd316457f4399fe2b0b79b12c632ecf8a",
+    "acceptance-5a3b300bb9aa5b1ff1e7487e3d293d589e598a20731279c2830edc664fe9b24c",
+    "acceptance-75494a62c6338a7d7360af5a5947a745c944555905fe3513e3af5b272fe21658",
+    "acceptance-e3bcc3552e18aa19a6323df1aff943bec02341fa6d30f128d55a9c12bbbebfad"
+  ],
+  "actor": "native-runtime:manual-evidence",
+  "issuedAt": "2026-10-16T16:01:54.530Z",
+  "evidence": {
+    "steps": [
+      "next start 截图核对 /workbench 明暗两态（/tmp/sn-verify/shots/workbench-light.png、workbench-dark.png）及 globals.css 中 workbench 区块"
+    ],
+    "observations": [
+      "topbar/side-nav/hero/quick-prompts/composer 与 /chat 同一品牌蓝与字级，无视觉跳变；plan-evidence 衬线标题已移除（grep 无 Georgia），证据对象用折叠卡+统一 token；思考步骤/匹配决策/dry-run 摘要行与 /chat 同为 disclosure row chrome"
+    ]
+  },
+  "receiptHash": "a445ceb15c4425697b034571f1eb875a991aa68ea1a02765d282cf2d0c1a1fa2"
+}

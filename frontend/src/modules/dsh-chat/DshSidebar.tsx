@@ -1,5 +1,6 @@
 "use client";
 
+import { ThemeToggle } from "@/shared/ui/ThemeToggle";
 import type { ConversationSummary } from "./types";
 
 type DshSidebarProps = {
@@ -101,8 +102,11 @@ export function DshSidebar({
       </div>
 
       <div className="dsh-sidebar__footer">
-        <span className="dsh-sidebar__dot" aria-hidden />
-        <span>DeepSeek Harness 运行时</span>
+        <span className="dsh-sidebar__footer-text">
+          <span className="dsh-sidebar__dot" aria-hidden />
+          <span>DeepSeek Harness 运行时</span>
+        </span>
+        <ThemeToggle />
       </div>
     </aside>
   );

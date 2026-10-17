@@ -1,0 +1,51 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "frontend-dsh-style-overhaul",
+    "sourceRevision": 3,
+    "contractHash": "e425f1f8938c17f9df0b3de679374e176fbd669e5531465bef0ab6da5bfbb812",
+    "scopeHash": "6c707fda2acafe58cfed24a8f70860555914fa446809e344f519e8864366e758",
+    "snapshotHash": "df93d9e8784d1857d4c55f5b6a1b99e33d6f2aee117270d2f78fb983e5ae8de7",
+    "artifactHash": "cddf518ae4496c3c9a82b2673f1cdb338cdac6e63c995f7dc02645c55027050f"
+  },
+  "acceptanceIds": [
+    "acceptance-0ad092ce5afd5f188fe4494df61f6d44a3d62a01f7ba8eeb53d0672d955b7e2a",
+    "acceptance-4e2a9aaf3de28dcd406923abad3bc0b4fd691d58c512d509938a0e80d4cd9fa5",
+    "acceptance-6f65df5dff4abc6ab5db6bbc2518d6cce557070a7f6160cc0c5fd0d895f37303",
+    "acceptance-8d21d1179c339055d80af71b527d33bb00fc03df8017ae2c9994949e3bb104cd",
+    "acceptance-acb9a7dbf8cf340d1e54c30e4477d6e78357e1d71e002b9bacba6e22664be226",
+    "acceptance-eb452e5b532c786c8b26ad4b1756252d0f19bb554c4cdce1df8cc6447e3ecbf5",
+    "acceptance-f5a3f1eac00bbb04401278adf1daa1056e79e2e7bbc2d7dcec1d9a94dc8c32ee"
+  ],
+  "actor": "native-runtime:command:/tmp/sn-verify/check-residue.sh",
+  "issuedAt": "2026-10-16T15:58:04.426Z",
+  "evidence": {
+    "executable": "/tmp/sn-verify/check-residue.sh",
+    "args": [],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 120000,
+    "startedAt": "2026-10-16T15:58:04.413Z",
+    "endedAt": "2026-10-16T15:58:04.426Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "befa0c8cb45704b496057191c9a80645e358dfd5",
+      "afterCommit": "befa0c8cb45704b496057191c9a80645e358dfd5"
+    },
+    "afterFence": {
+      "snapshotHash": "df93d9e8784d1857d4c55f5b6a1b99e33d6f2aee117270d2f78fb983e5ae8de7",
+      "scopeHash": "6c707fda2acafe58cfed24a8f70860555914fa446809e344f519e8864366e758",
+      "matched": true
+    },
+    "outputHash": "67b88768384e43ebff8d2429e5f3a9e9a8b269e589f231b3f27e95d82fd241df",
+    "outputSummary": "OK: no legacy residue, no hardcoded color literals outside tokens.css",
+    "outputTruncated": false
+  },
+  "receiptHash": "62856bd525634aae281eb5bd4e9f44c5df6919a50657cd84b66771858a818621"
+}

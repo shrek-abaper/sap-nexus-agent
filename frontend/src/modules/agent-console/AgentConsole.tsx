@@ -9,6 +9,7 @@ import { summarizeSession } from "./view-model";
 import type { ChatTurn, ActiveTurnIndex, Session } from "./chat-types";
 import { createConversationId } from "./conversation-id";
 import { Icon, type IconName } from "@/shared/ui/Icon";
+import { ThemeToggle } from "@/shared/ui/ThemeToggle";
 import { samplePrompts, heroInputPlaceholder } from "./sample-data";
 import { buildStreamUrl, lastEventSequence, RECONNECT_DELAY } from "./stream-helpers";
 
@@ -289,6 +290,7 @@ export function AgentConsole() {
             <button className="side-nav__user-action" type="button" aria-label="设置" disabled>
               <Icon name="setting" size={18} />
             </button>
+            <ThemeToggle />
           </div>
         </nav>
 

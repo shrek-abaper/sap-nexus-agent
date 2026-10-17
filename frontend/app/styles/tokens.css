@@ -1,0 +1,209 @@
+/* =====================================================================
+   SAP Nexus design tokens — three-layer architecture aligned with the
+   DeepSeek Harness web client (ontology-dsh packages/client/ui-theme):
+
+     static    raw scales, no semantics        (--sn-blue-*, --sn-nb-*)
+     alias     semantic roles, theme-switched  (--sn-bg-*, --sn-label-*)
+     specific  component-level, alias-only     (--sn-bubble, --sn-rail-fill)
+
+   Dark theme redefines ONLY the alias layer under body[data-theme="dark"];
+   specific tokens follow automatically because they reference aliases.
+   ===================================================================== */
+
+:root {
+  /* ---------- static: brand blue (deepseek) ---------- */
+  --sn-blue-50: rgb(238, 243, 255);
+  --sn-blue-100: rgb(224, 233, 255);
+  --sn-blue-200: rgb(198, 214, 254);
+  --sn-blue-300: rgb(158, 187, 253);
+  --sn-blue-400: rgb(103, 158, 254);
+  --sn-blue-500: rgb(65, 118, 230);
+  --sn-blue-600: rgb(51, 101, 209);
+  --sn-blue-700: rgb(41, 82, 170);
+
+  /* ---------- static: neutral bluish grey ---------- */
+  --sn-nb-50: rgb(249, 250, 251);
+  --sn-nb-100: rgb(245, 246, 248);
+  --sn-nb-150: rgb(240, 242, 245);
+  --sn-nb-200: rgb(233, 236, 240);
+  --sn-nb-300: rgb(213, 217, 224);
+  --sn-nb-400: rgb(168, 174, 184);
+  --sn-nb-500: rgb(129, 133, 140);
+  --sn-nb-600: rgb(100, 105, 113);
+  --sn-nb-700: rgb(67, 69, 74);
+  --sn-nb-800: rgb(45, 48, 53);
+  --sn-nb-850: rgb(34, 37, 42);
+  --sn-nb-900: rgb(27, 29, 33);
+  --sn-nb-950: rgb(20, 22, 26);
+  --sn-nb-1000: rgb(15, 17, 21);
+
+  /* ---------- static: state hues ---------- */
+  --sn-green-50: rgb(233, 247, 240);
+  --sn-green-500: rgb(34, 158, 112);
+  --sn-green-600: rgb(28, 138, 97);
+  --sn-red-50: rgb(253, 235, 235);
+  --sn-red-500: rgb(224, 76, 76);
+  --sn-red-600: rgb(204, 60, 60);
+  --sn-amber-50: rgb(252, 244, 224);
+  --sn-amber-500: rgb(190, 138, 28);
+  --sn-amber-600: rgb(166, 118, 20);
+
+  /* ---------- alias: surfaces ---------- */
+  --sn-bg-base: rgb(255, 255, 255);
+  --sn-bg-layer-1: var(--sn-nb-50);
+  --sn-bg-layer-2: var(--sn-nb-100);
+  --sn-bg-layer-3: var(--sn-nb-150);
+
+  /* ---------- alias: borders (l1 = faintest hairline) ---------- */
+  --sn-border-l1: rgba(15, 17, 21, 0.05);
+  --sn-border-l2: rgba(15, 17, 21, 0.08);
+  --sn-border-l3: rgba(15, 17, 21, 0.12);
+  --sn-border-l4: rgba(15, 17, 21, 0.2);
+
+  /* ---------- alias: text ---------- */
+  --sn-label-primary: var(--sn-nb-1000);
+  --sn-label-secondary: var(--sn-nb-700);
+  --sn-label-tertiary: var(--sn-nb-500);
+  --sn-label-caption: var(--sn-nb-400);
+  --sn-label-inverse: rgb(255, 255, 255);
+
+  /* ---------- alias: interactive ---------- */
+  --sn-interactive-hover: rgba(38, 49, 72, 0.06);
+  --sn-interactive-active: rgba(38, 49, 72, 0.1);
+  --sn-focus-ring: rgba(65, 118, 230, 0.14);
+
+  /* ---------- alias: brand ---------- */
+  --sn-brand: var(--sn-blue-500);
+  --sn-brand-hover: var(--sn-blue-600);
+  --sn-brand-soft: var(--sn-blue-50);
+  --sn-brand-soft-hover: var(--sn-blue-100);
+  --sn-shimmer-from: var(--sn-blue-500);
+  --sn-shimmer-to: var(--sn-blue-200);
+
+  /* ---------- alias: states ---------- */
+  --sn-state-success: var(--sn-green-600);
+  --sn-state-success-bg: var(--sn-green-50);
+  --sn-state-error: var(--sn-red-600);
+  --sn-state-error-bg: var(--sn-red-50);
+  --sn-state-warn: var(--sn-amber-600);
+  --sn-state-warn-bg: var(--sn-amber-50);
+  --sn-state-info: var(--sn-blue-600);
+  --sn-state-info-bg: var(--sn-blue-50);
+
+  /* ---------- alias: markdown ---------- */
+  --sn-md-code-block-bg: rgb(27, 27, 28);
+  --sn-md-code-block-text: rgb(235, 238, 242);
+  --sn-md-inline-code-bg: var(--sn-nb-100);
+  --sn-md-quote-bg: var(--sn-nb-100);
+  --sn-md-highlight-bg: var(--sn-blue-50);
+  /* Copy button floats on the always-dark code block; overlays are relative
+     to that constant surface, not to the theme. */
+  --sn-codeblock-btn-text: rgb(200, 204, 210);
+  --sn-codeblock-btn-bg: rgba(255, 255, 255, 0.08);
+  --sn-codeblock-btn-bg-hover: rgba(255, 255, 255, 0.16);
+  --sn-codeblock-btn-border: rgba(255, 255, 255, 0.16);
+
+  /* ---------- alias: elevation ---------- */
+  --sn-shadow-1: 0 1px 2px rgba(15, 17, 21, 0.04), 0 4px 16px rgba(15, 17, 21, 0.05);
+  --sn-shadow-2: 0 1px 2px -2px rgba(15, 17, 21, 0.1), 0 3px 6px rgba(15, 17, 21, 0.06), 0 5px 12px 4px rgba(15, 17, 21, 0.04);
+  --sn-shadow-3: 0 3px 6px -4px rgba(15, 17, 21, 0.1), 0 6px 16px rgba(15, 17, 21, 0.06), 0 9px 28px 8px rgba(15, 17, 21, 0.03);
+
+  /* ---------- alias: geometry / motion / type ---------- */
+  --sn-radius-sm: 8px;
+  --sn-radius-md: 12px;
+  --sn-radius-lg: 16px;
+  --sn-radius-bubble: 22px;
+  --sn-radius-full: 999px;
+  --sn-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --sn-dur-fast: 0.1s;
+  --sn-dur: 0.2s;
+  --sn-dur-slow: 0.3s;
+  --sn-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  /* Mono stack deliberately does NOT end in bare `monospace`: on Windows the
+     CJK fallback would otherwise degrade to SimSun inside code spans. */
+  --sn-font-mono: "SF Mono", ui-monospace, "JetBrains Mono", "Fira Code", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --sn-font-md: 16px/28px var(--sn-font-sans);
+
+  /* ---------- specific: components (alias references only) ---------- */
+  --sn-bubble: var(--sn-brand-soft);
+  --sn-bubble-text: var(--sn-label-primary);
+  --sn-rail-fill: var(--sn-bg-layer-2);
+  --sn-rail-active: var(--sn-bg-base);
+  --sn-composer-fill: var(--sn-bg-base);
+  --sn-drow-text: var(--sn-label-secondary);
+  --sn-drow-hover: var(--sn-interactive-hover);
+  --sn-scrollbar-thumb: var(--sn-nb-300);
+  --sn-scrollbar-thumb-hover: var(--sn-nb-400);
+  --sn-tag-bg: var(--sn-bg-layer-2);
+  --sn-tag-text: var(--sn-label-secondary);
+}
+
+/* =====================================================================
+   Dark theme — alias layer redefinition only.
+   ===================================================================== */
+body[data-theme="dark"] {
+  --sn-bg-base: var(--sn-nb-950);
+  --sn-bg-layer-1: var(--sn-nb-900);
+  --sn-bg-layer-2: var(--sn-nb-850);
+  --sn-bg-layer-3: var(--sn-nb-800);
+
+  --sn-border-l1: rgba(255, 255, 255, 0.06);
+  --sn-border-l2: rgba(255, 255, 255, 0.09);
+  --sn-border-l3: rgba(255, 255, 255, 0.14);
+  --sn-border-l4: rgba(255, 255, 255, 0.22);
+
+  --sn-label-primary: rgb(232, 234, 238);
+  --sn-label-secondary: rgb(184, 189, 198);
+  --sn-label-tertiary: rgb(138, 143, 153);
+  --sn-label-caption: rgb(104, 109, 118);
+  --sn-label-inverse: rgb(255, 255, 255);
+
+  --sn-interactive-hover: rgba(255, 255, 255, 0.06);
+  --sn-interactive-active: rgba(255, 255, 255, 0.1);
+  --sn-focus-ring: rgba(103, 158, 254, 0.2);
+
+  --sn-brand: var(--sn-blue-400);
+  --sn-brand-hover: var(--sn-blue-300);
+  --sn-brand-soft: rgba(103, 158, 254, 0.14);
+  --sn-brand-soft-hover: rgba(103, 158, 254, 0.22);
+  --sn-shimmer-from: var(--sn-blue-300);
+  --sn-shimmer-to: var(--sn-blue-500);
+
+  --sn-state-success: rgb(63, 185, 135);
+  --sn-state-success-bg: rgba(63, 185, 135, 0.14);
+  --sn-state-error: rgb(240, 110, 110);
+  --sn-state-error-bg: rgba(240, 110, 110, 0.14);
+  --sn-state-warn: rgb(222, 170, 60);
+  --sn-state-warn-bg: rgba(222, 170, 60, 0.14);
+  --sn-state-info: rgb(133, 175, 255);
+  --sn-state-info-bg: rgba(103, 158, 254, 0.14);
+
+  --sn-md-code-block-bg: rgb(10, 11, 13);
+  --sn-md-code-block-text: rgb(235, 238, 242);
+  --sn-md-inline-code-bg: var(--sn-nb-850);
+  --sn-md-quote-bg: var(--sn-nb-900);
+  --sn-md-highlight-bg: rgba(103, 158, 254, 0.16);
+  --sn-codeblock-btn-text: rgb(200, 204, 210);
+  --sn-codeblock-btn-bg: rgba(255, 255, 255, 0.08);
+  --sn-codeblock-btn-bg-hover: rgba(255, 255, 255, 0.16);
+  --sn-codeblock-btn-border: rgba(255, 255, 255, 0.16);
+
+  --sn-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(0, 0, 0, 0.28);
+  --sn-shadow-2: 0 1px 2px -2px rgba(0, 0, 0, 0.5), 0 3px 6px rgba(0, 0, 0, 0.35), 0 5px 12px 4px rgba(0, 0, 0, 0.25);
+  --sn-shadow-3: 0 3px 6px -4px rgba(0, 0, 0, 0.5), 0 6px 16px rgba(0, 0, 0, 0.35), 0 9px 28px 8px rgba(0, 0, 0, 0.25);
+
+  /* Every specific token that references an alias must be redefined here:
+     var() in a custom property resolves where the property is defined
+     (:root), so alias references would otherwise stay light in dark mode. */
+  --sn-bubble: var(--sn-nb-850);
+  --sn-bubble-text: rgb(232, 234, 238);
+  --sn-rail-fill: var(--sn-nb-900);
+  --sn-rail-active: var(--sn-nb-850);
+  --sn-composer-fill: var(--sn-nb-900);
+  --sn-drow-text: rgb(184, 189, 198);
+  --sn-drow-hover: rgba(255, 255, 255, 0.06);
+  --sn-scrollbar-thumb: var(--sn-nb-700);
+  --sn-scrollbar-thumb-hover: var(--sn-nb-600);
+  --sn-tag-bg: var(--sn-nb-850);
+  --sn-tag-text: rgb(184, 189, 198);
+}

@@ -1,0 +1,23 @@
+schema: comet.native.v3
+minimum_runtime_version: 3
+revision: 7
+verification_protocol: legacy-v1
+name: frontend-dsh-style-overhaul
+language: zh-CN
+phase: archive
+brief: brief.md
+approval: confirmed
+approved_contract_hash: e425f1f8938c17f9df0b3de679374e176fbd669e5531465bef0ab6da5bfbb812
+spec_changes:
+  - capability: frontend-dsh-design-language
+    operation: create
+    source: specs/frontend-dsh-design-language/spec.md
+    base_hash: null
+verification_result: pass
+verification_report: verification.md
+implementation_scope: runtime/evidence/scopes/ba62fe4b44e8137b58e0a8dcae82a70a52b753a3c9770c3a0e832d749cbed09f.json
+verification_evidence: runtime/evidence/verifications/763d33e47ef6dc927a1a5103bee5a4e004acd9251607057c1da19d621dfb0a64.json
+partial_allowance: null
+archived: true
+created_at: 2026-10-16
+run_id: 3e7c55b4-cccb-4db0-ade9-c2d272a2bdf7

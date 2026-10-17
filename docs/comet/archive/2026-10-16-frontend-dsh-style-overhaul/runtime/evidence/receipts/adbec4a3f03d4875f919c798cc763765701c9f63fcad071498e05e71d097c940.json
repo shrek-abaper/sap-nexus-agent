@@ -1,0 +1,45 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "static-inspection",
+  "role": "required-check",
+  "status": "blocked",
+  "bindings": {
+    "change": "frontend-dsh-style-overhaul",
+    "sourceRevision": 3,
+    "contractHash": "e425f1f8938c17f9df0b3de679374e176fbd669e5531465bef0ab6da5bfbb812",
+    "scopeHash": "6c707fda2acafe58cfed24a8f70860555914fa446809e344f519e8864366e758",
+    "snapshotHash": "df93d9e8784d1857d4c55f5b6a1b99e33d6f2aee117270d2f78fb983e5ae8de7",
+    "artifactHash": "cddf518ae4496c3c9a82b2673f1cdb338cdac6e63c995f7dc02645c55027050f"
+  },
+  "acceptanceIds": [],
+  "actor": "native-runtime:scoped-text-safety",
+  "issuedAt": "2026-10-16T15:52:06.992Z",
+  "evidence": {
+    "subjects": [
+      ".playwright-cli/shots/chat-dark-thread.png",
+      ".playwright-cli/shots/chat-dark.png",
+      ".playwright-cli/shots/chat-light-tool-failed.png",
+      ".playwright-cli/shots/chat-light-trace.png",
+      ".playwright-cli/shots/chat-light.png",
+      ".playwright-cli/shots/workbench-dark.png",
+      ".playwright-cli/shots/workbench-light.png",
+      "frontend/app/globals.css",
+      "frontend/app/layout.tsx",
+      "frontend/app/styles/base.css",
+      "frontend/app/styles/tokens.css",
+      "frontend/src/modules/agent-console/AgentConsole.tsx",
+      "frontend/src/modules/agent-console/ChatStream.tsx",
+      "frontend/src/modules/dsh-chat/DshChat.tsx",
+      "frontend/src/modules/dsh-chat/DshSidebar.tsx",
+      "frontend/src/modules/dsh-chat/Markdown.tsx",
+      "frontend/src/modules/dsh-chat/ToolCallCard.tsx",
+      "frontend/src/shared/ui/ThemeToggle.tsx",
+      "frontend/src/shared/ui/theme.ts"
+    ],
+    "rule": "scoped-text-safety",
+    "resultSummary": "The built-in scoped inspection recorded 7 blocking issue(s).",
+    "checkReceiptRef": "runtime/evidence/check-receipts/e44fe29eeaf8f3c0b3bf53faddb36805def54d3bfb2ec3c465e4233081a21504.json",
+    "checkReceiptHash": "e44fe29eeaf8f3c0b3bf53faddb36805def54d3bfb2ec3c465e4233081a21504"
+  },
+  "receiptHash": "adbec4a3f03d4875f919c798cc763765701c9f63fcad071498e05e71d097c940"
+}

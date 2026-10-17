@@ -63,12 +63,27 @@ export function ToolCallCard({ call }: { call: DshToolCall }) {
   const [decision, setDecision] = useState<"approve" | "reject" | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Disclosure-row paradigm (dsh ToolRow analogue): collapsed single row by
+  // default, expanding to the full card. Running / awaiting-approval /
+  // failed calls stay open so their status and actions remain reachable;
+  // a plain completed READ collapses once it finishes.
+  const [open, setOpen] = useState(
+    call.status !== "completed" || Boolean(approval) || Boolean(call.error),
+  );
   // Remote WRITE execution state, streamed from the governed run after the
   // approval decision (and replayed on history load if it already finished).
   const [execution, setExecution] = useState<ApprovalExecution | null>(null);
   const expired = approval ? Date.parse(approval.expiresAt) < Date.now() : false;
 
   const runId = approval?.runId;
+  useEffect(() => {
+    if (call.status === "running" || call.status === "awaiting_approval" || call.status === "failed") {
+      setOpen(true);
+    } else if (call.status === "completed" && !approval && !call.error) {
+      setOpen(false);
+    }
+  }, [call.status, approval, call.error]);
+
   useEffect(() => {
     if (!runId) return;
     const streamRunId = runId;
@@ -136,19 +151,37 @@ export function ToolCallCard({ call }: { call: DshToolCall }) {
     }
   }
 
+  const toolLabel = TOOL_LABELS[call.name] ?? call.name;
+  const dotVariant = call.status === "completed"
+    ? "success"
+    : call.status === "failed"
+      ? "error"
+      : call.status === "awaiting_approval"
+        ? "warn"
+        : "info";
+  const summary = summaryFor(call);
+
   return (
     <div className={`dsh-tool dsh-tool--${call.status}`}>
-      <div className="dsh-tool__head">
-        <span className="dsh-tool__name">
-          {call.status === "running" ? <span className="dsh-spinner" aria-hidden /> : null}
-          {TOOL_LABELS[call.name] ?? call.name}
-        </span>
+      <button
+        type="button"
+        className={`dsh-tool__row${call.status === "running" ? " row-sweep" : ""}`}
+        onClick={() => setOpen((value) => !value)}
+        aria-expanded={open}
+      >
+        <span className={`dsh-tool__chevron${open ? " is-open" : ""}`} aria-hidden>▸</span>
+        <span className={`state-dot state-dot--${dotVariant}`} aria-hidden />
+        {call.status === "running"
+          ? <span className="shimmer-text">{toolLabel}</span>
+          : <span>{toolLabel}</span>}
+        {summary ? <span className="dsh-tool__summary">{summary}</span> : null}
         <span className={`dsh-tool__status dsh-tool__status--${call.status}`}>
           {call.status === "running" ? "执行中" : call.status === "completed" ? "完成"
             : call.status === "awaiting_approval" ? "待审批" : "失败"}
         </span>
-      </div>
+      </button>
 
+      {open ? <div className="dsh-tool__body">
       {call.error ? <div className="dsh-tool__error">{call.error}</div> : null}
       {call.result?.error ? <div className="dsh-tool__error">{call.result.error.errorType}: {call.result.error.message}</div> : null}
 
@@ -282,15 +315,14 @@ export function ToolCallCard({ call }: { call: DshToolCall }) {
               <span className="dsh-approval__state dsh-approval__state--reject">已拒绝</span>
             ) : decision === "approve" || execution?.phase === "executing" ? (
               <span className="dsh-approval__state dsh-approval__state--executing">
-                <span className="dsh-spinner" aria-hidden />
-                已批准，SAP 后台执行中…
+                <span className="shimmer-text">已批准，SAP 后台执行中…</span>
               </span>
             ) : (
               <>
-                <button type="button" className="dsh-btn dsh-btn--approve" disabled={busy} onClick={() => decide("approve")}>
+                <button type="button" className="sn-btn sn-btn--primary" disabled={busy} onClick={() => decide("approve")}>
                   批准
                 </button>
-                <button type="button" className="dsh-btn dsh-btn--reject" disabled={busy} onClick={() => decide("reject")}>
+                <button type="button" className="sn-btn sn-btn--ghost" disabled={busy} onClick={() => decide("reject")}>
                   拒绝
                 </button>
               </>
@@ -300,8 +332,22 @@ export function ToolCallCard({ call }: { call: DshToolCall }) {
           {execution ? <ApprovalResult execution={execution} /> : null}
         </div>
       ) : null}
+      </div> : null}
     </div>
   );
+}
+
+// One-line collapsed-row summary: the business key args, or the failure's
+// first line. Keeps a folded tool call identifiable without expanding it.
+function summaryFor(call: DshToolCall): string {
+  if (call.error) return call.error;
+  const parts: string[] = [];
+  for (const key of ["material", "customerNumber", "customer", "vendor", "plant", "companyCode"]) {
+    const value = call.args?.[key];
+    if (typeof value === "string" && value) parts.push(value);
+    if (parts.length >= 2) break;
+  }
+  return parts.join(" · ");
 }
 
 function ApprovalResult({ execution }: { execution: ApprovalExecution }) {

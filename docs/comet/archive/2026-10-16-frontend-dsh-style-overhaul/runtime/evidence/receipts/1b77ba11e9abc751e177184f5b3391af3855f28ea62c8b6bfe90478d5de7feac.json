@@ -1,0 +1,38 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "manual-evidence",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "frontend-dsh-style-overhaul",
+    "sourceRevision": 3,
+    "contractHash": "e425f1f8938c17f9df0b3de679374e176fbd669e5531465bef0ab6da5bfbb812",
+    "scopeHash": "6c707fda2acafe58cfed24a8f70860555914fa446809e344f519e8864366e758",
+    "snapshotHash": "df93d9e8784d1857d4c55f5b6a1b99e33d6f2aee117270d2f78fb983e5ae8de7",
+    "artifactHash": "cddf518ae4496c3c9a82b2673f1cdb338cdac6e63c995f7dc02645c55027050f"
+  },
+  "acceptanceIds": [
+    "acceptance-120c912dbc8e45feb4c01fbe42792bcb81a2cf57d14b0099f2c04e12b1d35643",
+    "acceptance-206aaa9f734742c3c18cbbc3a91bc47fbf173305fd31a179bf7e86664ab920d5",
+    "acceptance-2506a15b0f92daca868fb450327cf6caeceb0c3d467b9127ca99911bbe005193",
+    "acceptance-381b6b07a3e621683694bd11b74f887edac7ec2d731585ad3f79ba904888ed51",
+    "acceptance-7984296d7dc1c9a69f8dd4c07e389b2abb51bb354e339bfee33e7a97593081cb",
+    "acceptance-877778f7a41520075d27bf030bb0d06194e45221e402f9956cdcb7522bc8ddb2",
+    "acceptance-a179162da0b4e40df77b655e2251aa8d202e93a24d14ba689da9bb0e4b3fea72",
+    "acceptance-a5690c2b0710267c4c9d647c6b92116ab783823b18903eb1303f3fc3f1e8d8e7",
+    "acceptance-bd9e2c2c796bc02241d8a88b81bdc742d74c56d58e623162f8cf8fc9ee12d5c3",
+    "acceptance-d9a7cfb8465edfb1095a244a7e2ba534d661d12a4d6f926e0af8e88161c02133",
+    "acceptance-de64603b95b933bf6a57744128636fd9abdc82378654917add77ad1f0684ba91"
+  ],
+  "actor": "native-runtime:manual-evidence",
+  "issuedAt": "2026-10-16T15:49:22.376Z",
+  "evidence": {
+    "steps": [
+      "代码审查 tokens.css（三层定义）、base.css（字体/动效/reduced-motion）、globals.css（token 引用）、Markdown.tsx（CodeBlock 复制按钮）与 dsh-md 样式"
+    ],
+    "observations": [
+      "static 层含 deepseek-500=rgb(65,118,230) 品牌蓝阶/中性偏蓝灰阶/语义色阶；alias 层含 bg-base/bg-layer-N/border-l1..l4/label-*/interactive-hover/state-*/markdown-*；specific 层只引用 alias；sans 栈含 PingFang SC/Microsoft YaHei，等宽栈不以裸 monospace 结尾；markdown 基准 16px/28px（--sn-font-md）；所有动画配 prefers-reduced-motion 降级；代码块为深色底+hover 复制按钮"
+    ]
+  },
+  "receiptHash": "1b77ba11e9abc751e177184f5b3391af3855f28ea62c8b6bfe90478d5de7feac"
+}

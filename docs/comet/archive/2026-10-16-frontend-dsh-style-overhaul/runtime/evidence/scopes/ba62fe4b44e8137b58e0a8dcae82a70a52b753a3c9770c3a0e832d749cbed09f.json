@@ -1,0 +1,269 @@
+{
+  "schema": "comet.native.implementation-scope.v2",
+  "contractHash": "e425f1f8938c17f9df0b3de679374e176fbd669e5531465bef0ab6da5bfbb812",
+  "baselineProjectionRef": "runtime/evidence/snapshots/5ae8a814c7a734118db29ea835d4c7c4355b9cdbfb13dd4507fa8627812ac416.json",
+  "baselineProjectionHash": "5ae8a814c7a734118db29ea835d4c7c4355b9cdbfb13dd4507fa8627812ac416",
+  "currentProjectionRef": "runtime/evidence/snapshots/249c9f3443342e9d5f780ae309f4d63d1654ad3085cf6e4a806824f83451d690.json",
+  "currentProjectionHash": "249c9f3443342e9d5f780ae309f4d63d1654ad3085cf6e4a806824f83451d690",
+  "complete": true,
+  "declaredArtifacts": [
+    {
+      "path": "frontend/app/globals.css",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/app/layout.tsx",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/app/styles/base.css",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/app/styles/tokens.css",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/modules/agent-console/AgentConsole.tsx",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/modules/agent-console/ChatStream.tsx",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/modules/dsh-chat/DshChat.tsx",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/modules/dsh-chat/DshSidebar.tsx",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/modules/dsh-chat/Markdown.tsx",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/modules/dsh-chat/ToolCallCard.tsx",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/shared/ui/ThemeToggle.tsx",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/shared/ui/theme.ts",
+      "kind": "file"
+    }
+  ],
+  "changes": [
+    {
+      "path": "frontend/app/globals.css",
+      "kind": "modified",
+      "before": {
+        "hash": "bccce58f058e3077533a53c67228014a1a63369c38798b7405831c83d5cb7977",
+        "size": 54316
+      },
+      "after": {
+        "hash": "8857adef321f814692bd1b278c5f379fa1e84c3948c08db7e497294711d10b0c",
+        "size": 56095
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/app/globals.css",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/app/layout.tsx",
+      "kind": "modified",
+      "before": {
+        "hash": "00d467ae632a2d9e57c28e943f09c0aa32f3993859e11ffd2b1487713d8ee043",
+        "size": 350
+      },
+      "after": {
+        "hash": "e3538aa90d74ed187144a8f27b4a7f3c9c9790067165e792307138f082d4ccf6",
+        "size": 979
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/app/layout.tsx",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/app/styles/base.css",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "7ebd7e7e58963ab540c0fa69e81c2553e7288fb33aff064b84945fc9856bb4a5",
+        "size": 6376
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/app/styles/base.css",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/app/styles/tokens.css",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "cad6b9b2c636b75f18da1c0651024caeabc4917b4ac39ad2f028ec4964a3f091",
+        "size": 8739
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/app/styles/tokens.css",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/modules/agent-console/AgentConsole.tsx",
+      "kind": "modified",
+      "before": {
+        "hash": "9301a1ba4011026c15aa6c53a9924eb7ce84d7caf16aa564d26f9504137dea22",
+        "size": 14079
+      },
+      "after": {
+        "hash": "6fd9bfcc3da2861d862b030a9106899a75ce861a2a858608a4e3747c86b76585",
+        "size": 14162
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/modules/agent-console/AgentConsole.tsx",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/modules/agent-console/ChatStream.tsx",
+      "kind": "modified",
+      "before": {
+        "hash": "fdc907de0507718d8549e80638be888f98a70a5fffb84b9ab676ece21f9e9fab",
+        "size": 19073
+      },
+      "after": {
+        "hash": "39e64937cc7d3faec21e3e25f5e9c506a9fbe0fc54880a5ba939dbdb093dc61b",
+        "size": 19069
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/modules/agent-console/ChatStream.tsx",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/modules/dsh-chat/DshChat.tsx",
+      "kind": "modified",
+      "before": {
+        "hash": "61f0756fd629d02ee857347da7cf8d59fc0933f8129b852d39bdafe80c2ac95f",
+        "size": 16382
+      },
+      "after": {
+        "hash": "20f7d051555de5c9fbf70ffa793b3ebe7d56d76f7320cdbe548fde6a238387ba",
+        "size": 16291
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/modules/dsh-chat/DshChat.tsx",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/modules/dsh-chat/DshSidebar.tsx",
+      "kind": "modified",
+      "before": {
+        "hash": "e318549be62c47d3d2637833784a1426e5fb04fd06d84dce66f59cbed315d2a6",
+        "size": 3443
+      },
+      "after": {
+        "hash": "da76d6b8489e51afda3cb388e2e7b5afb6932d8a4677a4de36a8acf06d3fd4d2",
+        "size": 3594
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/modules/dsh-chat/DshSidebar.tsx",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/modules/dsh-chat/Markdown.tsx",
+      "kind": "modified",
+      "before": {
+        "hash": "4c7b3af05742f084819deb4e7660bc3a9e854e4d5c3a80274a05b4f70405f231",
+        "size": 1093
+      },
+      "after": {
+        "hash": "2e5edc81a8e80c3c27f91d3de033cc94cf0988b7b10ff5668fb30fe9a3fe20a9",
+        "size": 2058
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/modules/dsh-chat/Markdown.tsx",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/modules/dsh-chat/ToolCallCard.tsx",
+      "kind": "modified",
+      "before": {
+        "hash": "78bfe6e508eee0be9d380462b435b831f918cdbd45aa7b133ba3e1dec7fdb0b9",
+        "size": 14318
+      },
+      "after": {
+        "hash": "94234e68928e7874e9b916cce7912b16dbcbcb9f44a7b5013e452ce08cb59eb0",
+        "size": 16227
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/modules/dsh-chat/ToolCallCard.tsx",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/shared/ui/ThemeToggle.tsx",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "ac516af35c4c3c1100c93ecdf6586676849f38a572d8d259493e296812c380e9",
+        "size": 1475
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/shared/ui/ThemeToggle.tsx",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/shared/ui/theme.ts",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "1b268126405df926cec01511a7459a1764e7d26f5477b3cc15c52bbe11298f62",
+        "size": 2754
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/shared/ui/theme.ts",
+          "kind": "file"
+        }
+      ]
+    }
+  ],
+  "unattributed": [],
+  "unresolvedScopes": [],
+  "noCodeReason": null,
+  "scopeHash": "ba62fe4b44e8137b58e0a8dcae82a70a52b753a3c9770c3a0e832d749cbed09f"
+}
