@@ -54,7 +54,27 @@ export type DshSemanticToolResult = {
   limitations: string[];
   exchange?: DshToolExchange;
   approval?: DshApprovalHandle;
+  entityChoice?: DshEntityChoiceSet;
   error?: { errorType: string; message: string };
+};
+
+/** Client-safe mirror of the server EntityChoiceSet (durable/types). */
+export type DshEntityChoiceSet = {
+  candidateSetId: string;
+  objectType: string;
+  targetCapabilityId: string;
+  targetSlot: string;
+  snapshotId: string;
+  sourceExtractedAt?: string | null;
+  candidates: {
+    index: number;
+    canonicalCode: string;
+    displayName: string;
+    distinguishing: Record<string, string>;
+    matchKind: string;
+    status: "active" | "inactive";
+    orgScopes: { field: string; value: string }[];
+  }[];
 };
 
 // Client-safe mirror of the server OntologyAnalysisToolResponse (no server imports).

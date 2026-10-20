@@ -239,7 +239,10 @@ export async function createDshRuntime(options: CreateDshRuntimeOptions): Promis
       // elementQty vs the authoritative fact value). The structured value is
       // retained in session.pending and drives the UI fact cards.
       output: { schema: { type: "json" }, render: (_args, value) => {
-        return [{ type: "text", text: toolResultToModelText(value as ToolResponse) }];
+        // Loose boundary: the executor built this value as a ToolResponse;
+        // the EntityChoiceSet readonly arrays are not JsonValue-shaped, so
+        // the cast goes through unknown rather than pretending overlap.
+        return [{ type: "text", text: toolResultToModelText(value as unknown as ToolResponse) }];
       } },
       async execute(args, exec): Promise<JsonValue> {
         const session = exec.agent ? sessions.get(exec.agent.session.id) : undefined;

@@ -89,6 +89,37 @@ describe("JsonlConversationStore", () => {
       registrySnapshotId: "snapshot-1",
       expiresAt: "2099-01-01T00:00:00Z",
     }],
+    ["entity choice", {
+      kind: "ENTITY_CHOICE" as const,
+      frameId: "MM.Inventory.GetAvailability:turn-1",
+      expectedFields: ["material"],
+      entityChoice: {
+        candidateSetId: "ecs-test-1",
+        objectType: "sapnexus:Material",
+        targetCapabilityId: "MM.Inventory.GetAvailability",
+        targetSlot: "material",
+        mention: "蓝色耐高温密封圈",
+        candidates: [{
+          index: 1,
+          canonicalCode: "DEMOA1",
+          displayName: "蓝色耐高温密封圈 Ø20",
+          distinguishing: { sizeDimension: "20mm" },
+          matchKind: "substring",
+          status: "active" as const,
+          orgScopes: [{ field: "plant", value: "1000" }],
+        }],
+        snapshotId: "snap-1",
+        provider: "PG_MASTERDATA_READ",
+        createdAt: "2026-10-20T00:00:00Z",
+        expiresAt: "2099-01-01T00:00:00Z",
+        principalId: "local-user-0001",
+        registrySnapshotId: "snapshot-1",
+        sourceExtractedAt: "2026-10-01T00:00:00Z",
+      },
+      stateVersion: 1,
+      registrySnapshotId: "snapshot-1",
+      expiresAt: "2099-01-01T00:00:00Z",
+    }],
   ])("round-trips strict typed pending: %s", async (_label, pendingInteraction) => {
     const store = new JsonlConversationStore(dir);
     const session = makeSession({ pendingInteraction });

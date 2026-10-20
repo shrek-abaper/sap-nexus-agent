@@ -78,6 +78,10 @@ def outcome_to_workbench_dict(outcome: AgentOutcome) -> dict[str, object]:
         "conversationReadState": (
             outcome.read_state.to_dict() if outcome.read_state is not None else None
         ),
+        # Entity resolution: display-safe candidate set for the chat layer
+        # (ENTITY_CHOICE). The authoritative set lives in the server-side
+        # pending inside conversationReadState; this is the same projection.
+        "entityChoice": outcome.entity_choice,
         "resolutionReport": (
             dict(outcome.resolution_report)
             if outcome.resolution_report is not None

@@ -132,6 +132,8 @@ def test_cli_resolve_read_turn_never_constructs_gateway(capsys, monkeypatch):
 
     monkeypatch.setattr("sap_nexus_agent.cli.GatewayClient", forbidden_gateway)
 
+    monkeypatch.delenv("ENTITY_RESOLUTION_MODE", raising=False)
+
     exit_code = main([
         "查库存",
         "--resolve-read-turn",
@@ -239,3 +241,60 @@ def test_cli_continue_read_semantic_preflight_finishes_before_gateway_constructi
     assert json.loads(capsys.readouterr().out)["errorType"] == (
         "READ_EXECUTION_BINDING_MISMATCH"
     )
+
+
+def test_cli_resolve_read_turn_constructs_gateway_only_with_entity_flag(capsys, monkeypatch):
+    """Flag on: the resolve phase may search governed master data (never
+    business execution); flag off (test above) it stays completely IO-free."""
+    from sap_nexus_agent.orchestrator import AgentOutcome
+
+    context_payload = {
+        "lastContext": None,
+        "history": None,
+        "schemaVersion": 2,
+        "readState": {
+            "activeFrame": None,
+            "pendingInteraction": None,
+            "stateVersion": 0,
+            "recentFrames": [],
+        },
+    }
+    monkeypatch.setattr("sys.stdin", io.StringIO(json.dumps(context_payload)))
+    captured = {}
+
+    def fake_resolve(text, **kwargs):
+        captured.update(text=text, **kwargs)
+        return AgentOutcome(
+            status="clarification",
+            response_text="请选择",
+            turn_id=kwargs["turn_id"],
+            frame_id="frame-cli",
+            state_version=1,
+            registry_snapshot_id="snapshot-cli",
+        )
+
+    marker = object()
+    monkeypatch.setattr(
+        "sap_nexus_agent.cli._build_adapter_and_principal",
+        lambda _mode: (marker, marker, marker, marker),
+    )
+    monkeypatch.setattr("sap_nexus_agent.cli.resolve_read_turn", fake_resolve)
+    gateway_calls = []
+    monkeypatch.setattr(
+        "sap_nexus_agent.cli.GatewayClient",
+        lambda url: gateway_calls.append(url) or object(),
+    )
+    monkeypatch.setenv("ENTITY_RESOLUTION_MODE", "on")
+
+    exit_code = main([
+        "查一下蓝色耐高温密封圈在 1000 工厂的库存",
+        "--resolve-read-turn",
+        "--turn-id",
+        "turn-er",
+        "--gateway-url",
+        "http://127.0.0.1:8080",
+        "--json",
+    ])
+    assert exit_code == 0
+    assert gateway_calls == ["http://127.0.0.1:8080"]
+    assert captured["gateway"] is not None

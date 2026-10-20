@@ -69,6 +69,7 @@ def test_object_types_asset_validates_and_uses_ontology_vocabulary():
         "sapnexus:Supplier",
         "sapnexus:PurchaseOrderNumber",
         "sapnexus:PurchaseOrderItem",
+        "sapnexus:CustomerNumber",
     }
     assert {o["semanticType"] for o in doc["objectTypes"]} <= allowed
     ids = [o["objectTypeId"] for o in doc["objectTypes"]]
@@ -79,6 +80,7 @@ def test_object_types_asset_validates_and_uses_ontology_vocabulary():
         "sapnexus:Supplier",
         "sapnexus:PurchaseOrder",
         "sapnexus:PurchaseOrderItem",
+        "sapnexus:Customer",
     }
     assert set(ids) == expected
 

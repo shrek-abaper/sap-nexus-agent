@@ -1,0 +1,48 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "blocked",
+  "bindings": {
+    "change": "entity-resolution-master-data",
+    "sourceRevision": 10,
+    "contractHash": "666febf09bfa30372dc90ccaac9fcdbc13121466568d1244dadfb5b8ac0ebf7a",
+    "scopeHash": "5f18afb2765e694a1323fe41c36e69f067fff76042ba16c63123a40ac84cde22",
+    "snapshotHash": "211a11bfcba58946dfba3877c817c057c42024b51722167a85e8998683e6216b",
+    "artifactHash": "94ee99e4a75c2382a50b80864748e8b07c192a40735d5e023705100cb3323aa1"
+  },
+  "acceptanceIds": [
+    "acceptance-04178fff0831c0e3a7af8345dd9ae9e9b5bca823d9adad73d360c2b6ed4e1351"
+  ],
+  "actor": "native-runtime:command:bash",
+  "issuedAt": "2026-10-20T09:49:32.818Z",
+  "evidence": {
+    "executable": "bash",
+    "args": [
+      "-c",
+      "PYTHONPATH=agent .venv/bin/python -m pytest agent/tests/test_entity_resolution_orchestration.py agent/tests/test_entity_resolution_security.py -q"
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 300000,
+    "startedAt": "2026-10-20T09:49:17.518Z",
+    "endedAt": "2026-10-20T09:49:32.818Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "b622857e2f1ffffd377f900d4d43614f1d1a9ab9",
+      "afterCommit": "b622857e2f1ffffd377f900d4d43614f1d1a9ab9"
+    },
+    "afterFence": {
+      "snapshotHash": "98b6a900b7de701d0d6de9b323750310b1f7c9d8bfc173b9cf9446fe11e45ea3",
+      "scopeHash": "5d82e6e6cb32f9b3cf0dee3f6a81282988302be2e2e93dc2434937bf3e033798",
+      "matched": false
+    },
+    "outputHash": "c9975f372c6ae2aea298e6be4dabe2c67efc728b13e4a2aba819c807966271a5",
+    "outputSummary": "....................                                                     [100%]\n20 passed in 14.92s",
+    "outputTruncated": false
+  },
+  "receiptHash": "fff8212455a2d8d4a77dc4f322f0e0b3e55620b9e5e43631d5d7d19a19b311d8"
+}

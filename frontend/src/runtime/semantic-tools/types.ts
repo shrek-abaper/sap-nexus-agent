@@ -1,4 +1,5 @@
 import type { JsonValue } from "../../shared/types/artifacts";
+import type { EntityChoiceSet } from "../durable/types";
 
 export const SEMANTIC_TOOL_CONTRACT_VERSION = 2 as const;
 export const DIAGNOSE_MATERIAL_SUPPLY = "diagnose_material_supply" as const;
@@ -127,6 +128,10 @@ export type SemanticToolResponse = {
     outputHash?: string;
     limitations: { kind?: string; detail?: string }[];
   };
+  /** Master-data entity candidates awaiting user selection (ENTITY_CHOICE).
+   * The authoritative set lives server-side in the conversation pending;
+   * this is the display-safe projection for the candidate card. */
+  entityChoice?: EntityChoiceSet;
   narrative: {
     summary: string;
     limitations: string[];

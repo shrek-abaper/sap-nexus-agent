@@ -1,0 +1,28 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "manual-evidence",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "entity-resolution-master-data",
+    "sourceRevision": 10,
+    "contractHash": "666febf09bfa30372dc90ccaac9fcdbc13121466568d1244dadfb5b8ac0ebf7a",
+    "scopeHash": "5f18afb2765e694a1323fe41c36e69f067fff76042ba16c63123a40ac84cde22",
+    "snapshotHash": "211a11bfcba58946dfba3877c817c057c42024b51722167a85e8998683e6216b",
+    "artifactHash": "94ee99e4a75c2382a50b80864748e8b07c192a40735d5e023705100cb3323aa1"
+  },
+  "acceptanceIds": [
+    "acceptance-40e4c46b59c6afd451fec78c19bae96464defdec268c5a2f6e1150710b049cf9"
+  ],
+  "actor": "native-runtime:manual-evidence",
+  "issuedAt": "2026-10-20T10:57:06.348Z",
+  "evidence": {
+    "steps": [
+      "审查凭据路径：importer/provider 连接参数来源、.env.example 内容、冒烟命令的密码处理"
+    ],
+    "observations": [
+      "连接仅读 SAP_NEXUS_MD_DSN/DBNAME/PG_MASTERDATA_* 环境变量；.env.example 全占位符；冒烟用 read -s + grep 注入，密码未进聊天/命令参数/代码/日志/提交"
+    ]
+  },
+  "receiptHash": "aa66371c5475c0b6ad4eaaa9b887396ff383ff64b870c396155d0e9435ababae"
+}

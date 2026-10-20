@@ -89,8 +89,18 @@ public record CapabilityDefinition(
             String type,
             String rfcName,
             Map<String, String> inputMapping,
-            Map<String, String> outputMapping
+            Map<String, String> outputMapping,
+            String queryTemplateId
     ) {
+        /** Convenience for executors without a query template (JCO_RFC/ODATA/REST_JSON). */
+        public Executor(
+                String type,
+                String rfcName,
+                Map<String, String> inputMapping,
+                Map<String, String> outputMapping
+        ) {
+            this(type, rfcName, inputMapping, outputMapping, null);
+        }
     }
 
     public record ExecutorBinding(

@@ -597,7 +597,7 @@ def _validate_rest_json_binding(capability: CapabilityEntry, binding: dict[str, 
 def _validate_binding_shape(binding_id: str, binding: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     binding_type = binding.get("type")
-    if binding_type not in ("JCO_RFC", "ODATA", "CDS_ADT", "CDS_ODATA", "REST_JSON"):
+    if binding_type not in ("JCO_RFC", "ODATA", "CDS_ADT", "CDS_ODATA", "REST_JSON", "PG_MASTERDATA_READ"):
         errors.append(f"{binding_id}: binding type is invalid")
     constraints = binding.get("constraints")
     if not isinstance(constraints, dict) or "sideEffect" not in constraints:
@@ -613,6 +613,30 @@ def _validate_binding_shape(binding_id: str, binding: dict[str, Any]) -> list[st
     if binding_type == "REST_JSON":
         errors.extend(_require_binding_fields(binding_id, binding, ["systemRef", "method", "pathTemplate", "request", "response", "auth"], "REST_JSON"))
         errors.extend(_validate_rest_json_binding(CapabilityEntry({}, "", "Function", "", "REST_JSON", binding_id), binding))
+    if binding_type == "PG_MASTERDATA_READ":
+        errors.extend(_validate_pg_masterdata_binding(binding_id, binding))
+    return errors
+
+
+def _validate_pg_masterdata_binding(binding_id: str, binding: dict[str, Any]) -> list[str]:
+    """PG master-data search bindings carry a fixed query template id only.
+
+    The registry never contains SQL, table/column names, connection strings,
+    or credentials for the master-data projection: the trusted query templates
+    and the physical mapping live in server-side Provider configuration, and
+    the connection is resolved from the approved credential reference.
+    """
+    errors = _require_binding_fields(binding_id, binding, ["queryTemplateId", "auth"], "PG_MASTERDATA_READ")
+    for forbidden in ("sql", "rawSql", "table", "tables", "columns", "url", "host", "port", "database"):
+        if forbidden in binding:
+            errors.append(f"PG_MASTERDATA_READ binding must not contain {forbidden}")
+    auth = binding.get("auth") or {}
+    if "credentialRef" not in auth:
+        errors.append("PG_MASTERDATA_READ auth requires credentialRef")
+    for secret_key in ("token", "apiKey", "secret", "password", "connectionString", "dsn"):
+        if secret_key in auth:
+            errors.append(f"PG_MASTERDATA_READ auth must not contain {secret_key}")
+    errors.extend(_find_forbidden_secret_keys(binding, "PG_MASTERDATA_READ binding"))
     return errors
 
 

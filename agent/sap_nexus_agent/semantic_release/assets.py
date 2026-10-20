@@ -19,6 +19,7 @@ SEMANTIC_SOURCE_MANIFEST: tuple[tuple[str, str], ...] = (
     ("ontology/definitions.yaml", "semantic"),
     ("ontology/object-links.yaml", "semantic"),
     ("ontology/business-rules.yaml", "semantic"),
+    ("ontology/entity-resolution.yaml", "semantic"),
 )
 
 # Legacy RegistrySnapshot documents (role "legacy"). The digest convention
@@ -39,6 +40,7 @@ ASSET_SCHEMAS: dict[str, str] = {
     "ontology/analysis-versions.yaml": "analysis-versions.schema.json",
     "ontology/definition-applicability.yaml": "definition-applicability.schema.json",
     "ontology/object-types.yaml": "object-types.schema.json",
+    "ontology/entity-resolution.yaml": "entity-resolution.schema.json",
 }
 
 CLOSED_OPERATOR_IDS: frozenset[str] = frozenset(

@@ -1,0 +1,10 @@
+dependencies {
+    implementation project(':core')
+    implementation 'org.springframework.boot:spring-boot-starter'
+    implementation 'org.yaml:snakeyaml'
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+    implementation 'com.zaxxer:HikariCP'
+    implementation 'org.postgresql:postgresql'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}

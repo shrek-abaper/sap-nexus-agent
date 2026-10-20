@@ -50,7 +50,8 @@ public class BindingRegistryLoader {
                 asString(raw.get("pathTemplate")),
                 asObjectMap(raw.get("request")),
                 asObjectMap(raw.get("response")),
-                asObjectMap(raw.get("auth"))
+                asObjectMap(raw.get("auth")),
+                asString(raw.get("queryTemplateId"))
         );
     }
 

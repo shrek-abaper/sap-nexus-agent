@@ -1,0 +1,28 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "manual-evidence",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "entity-resolution-master-data",
+    "sourceRevision": 10,
+    "contractHash": "666febf09bfa30372dc90ccaac9fcdbc13121466568d1244dadfb5b8ac0ebf7a",
+    "scopeHash": "5f18afb2765e694a1323fe41c36e69f067fff76042ba16c63123a40ac84cde22",
+    "snapshotHash": "211a11bfcba58946dfba3877c817c057c42024b51722167a85e8998683e6216b",
+    "artifactHash": "94ee99e4a75c2382a50b80864748e8b07c192a40735d5e023705100cb3323aa1"
+  },
+  "acceptanceIds": [
+    "acceptance-1debc91d05187441a4b7361a05ea620f3b549478ba4b24bfd3297ca2cecf7e86"
+  ],
+  "actor": "native-runtime:manual-evidence",
+  "issuedAt": "2026-10-20T10:57:05.281Z",
+  "evidence": {
+    "steps": [
+      "审查审计链路：gateway adapterMetadata（queryTemplateId+snapshotId+durationMs）、agent run events（entity_choice_created/continue_resolved_read 关联 traceId）、TechnicalRedactor 脱敏"
+    ],
+    "observations": [
+      "解析/搜索/确认/绑定/执行经 run-events 与 gateway metadata 关联同一 traceId；无秘密记录；脱敏规则沿用现有实现"
+    ]
+  },
+  "receiptHash": "ff0f01be29b325b8b2c679e98ad4669c972375bdd187b7aa84a12a623b88a88e"
+}

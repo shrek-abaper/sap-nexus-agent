@@ -113,7 +113,7 @@ def test_one_shape_per_constrained_input():
             ) or inp.get("type") in ("string", "number"):
                 expected += 1
 
-    assert len(set(graph.subjects(RDF.type, SH.NodeShape))) == expected == 29
+    assert len(set(graph.subjects(RDF.type, SH.NodeShape))) == expected == 41
 
 
 def test_shape_constraints_match_registry():

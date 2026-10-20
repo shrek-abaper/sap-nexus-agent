@@ -1,0 +1,48 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "entity-resolution-master-data",
+    "sourceRevision": 10,
+    "contractHash": "666febf09bfa30372dc90ccaac9fcdbc13121466568d1244dadfb5b8ac0ebf7a",
+    "scopeHash": "5f18afb2765e694a1323fe41c36e69f067fff76042ba16c63123a40ac84cde22",
+    "snapshotHash": "211a11bfcba58946dfba3877c817c057c42024b51722167a85e8998683e6216b",
+    "artifactHash": "94ee99e4a75c2382a50b80864748e8b07c192a40735d5e023705100cb3323aa1"
+  },
+  "acceptanceIds": [
+    "acceptance-2bb98c6154b0d63739c5da768f6221e8ec6d24e0e87aa7849c51eb81f39f7c05"
+  ],
+  "actor": "native-runtime:command:bash",
+  "issuedAt": "2026-10-20T09:58:18.123Z",
+  "evidence": {
+    "executable": "bash",
+    "args": [
+      "-c",
+      "set -o pipefail; cd services/gateway && ./gradlew :masterdata:test -q 2>&1 | tail -1"
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 300000,
+    "startedAt": "2026-10-20T09:58:16.571Z",
+    "endedAt": "2026-10-20T09:58:18.123Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "b622857e2f1ffffd377f900d4d43614f1d1a9ab9",
+      "afterCommit": "b622857e2f1ffffd377f900d4d43614f1d1a9ab9"
+    },
+    "afterFence": {
+      "snapshotHash": "211a11bfcba58946dfba3877c817c057c42024b51722167a85e8998683e6216b",
+      "scopeHash": "5f18afb2765e694a1323fe41c36e69f067fff76042ba16c63123a40ac84cde22",
+      "matched": true
+    },
+    "outputHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "outputSummary": "(exit 0)",
+    "outputTruncated": false
+  },
+  "receiptHash": "24ae4a7cb03be2d1d4185b0fef670f12aa0583a9f7d97ecda709d6b86706f83f"
+}

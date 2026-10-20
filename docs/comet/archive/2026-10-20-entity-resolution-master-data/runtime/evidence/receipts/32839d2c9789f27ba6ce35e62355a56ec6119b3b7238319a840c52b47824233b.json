@@ -1,0 +1,48 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "automated-check",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "entity-resolution-master-data",
+    "sourceRevision": 10,
+    "contractHash": "666febf09bfa30372dc90ccaac9fcdbc13121466568d1244dadfb5b8ac0ebf7a",
+    "scopeHash": "5f18afb2765e694a1323fe41c36e69f067fff76042ba16c63123a40ac84cde22",
+    "snapshotHash": "211a11bfcba58946dfba3877c817c057c42024b51722167a85e8998683e6216b",
+    "artifactHash": "94ee99e4a75c2382a50b80864748e8b07c192a40735d5e023705100cb3323aa1"
+  },
+  "acceptanceIds": [
+    "acceptance-596b55534d4b2f1706116686fcc0315f51e8132579ea9074bf56f98271e08396"
+  ],
+  "actor": "native-runtime:command:bash",
+  "issuedAt": "2026-10-20T10:01:06.534Z",
+  "evidence": {
+    "executable": "bash",
+    "args": [
+      "-c",
+      "set -o pipefail; PYTHONPATH=agent .venv/bin/python -m pytest agent/tests/test_master_data_pg.py -q 2>&1 | tail -1"
+    ],
+    "cwd": ".",
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "timeoutMs": 300000,
+    "startedAt": "2026-10-20T10:01:05.574Z",
+    "endedAt": "2026-10-20T10:01:06.534Z",
+    "worktree": {
+      "provider": "git",
+      "root": ".",
+      "beforeCommit": "b622857e2f1ffffd377f900d4d43614f1d1a9ab9",
+      "afterCommit": "b622857e2f1ffffd377f900d4d43614f1d1a9ab9"
+    },
+    "afterFence": {
+      "snapshotHash": "211a11bfcba58946dfba3877c817c057c42024b51722167a85e8998683e6216b",
+      "scopeHash": "5f18afb2765e694a1323fe41c36e69f067fff76042ba16c63123a40ac84cde22",
+      "matched": true
+    },
+    "outputHash": "2ba628fece4fbcc78d047cb42b0b2c118e59877d98c7c7a8bde8373dd22b405b",
+    "outputSummary": "19 passed in 0.62s",
+    "outputTruncated": false
+  },
+  "receiptHash": "32839d2c9789f27ba6ce35e62355a56ec6119b3b7238319a840c52b47824233b"
+}

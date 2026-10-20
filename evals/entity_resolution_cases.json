@@ -1,0 +1,34 @@
+{
+  "suite": "entity-resolution",
+  "note": "Governed master-data entity search cases (synthetic data only). Codes always come from the PG projection via the Provider; the model never fabricates them.",
+  "cases": [
+    {
+      "id": "md-material-search-by-description",
+      "status": "pending",
+      "utterance": "查一下蓝色耐高温密封圈在 1000 工厂的库存。",
+      "expectedCapabilityId": "MD.Material.Search",
+      "note": "Description-driven search must return real projection candidates; binding happens only after user confirmation. Pending until Phase B wiring lands."
+    },
+    {
+      "id": "md-material-get-by-key-exact-code",
+      "status": "pending",
+      "utterance": "DEMOA1 在 1000 的库存",
+      "expectedCapabilityId": "MD.Material.Search",
+      "note": "Exact code path: get-by-key verifies existence/validity before bind-with-evidence. Pending until Phase B wiring lands."
+    },
+    {
+      "id": "md-customer-search-by-name",
+      "status": "pending",
+      "utterance": "苏州那家华远机械有多少未清应收？",
+      "expectedCapabilityId": "MD.Customer.Search",
+      "note": "Customer disambiguation by city attribute; binds to FI.AR.GetOpenItems.customer. Pending until Phase C wiring lands."
+    },
+    {
+      "id": "md-supplier-search-by-alias",
+      "status": "pending",
+      "utterance": "宏达的应付未清项",
+      "expectedCapabilityId": "MD.Supplier.Search",
+      "note": "Approved alias hit still requires confirmation (conservative policy). Pending until Phase C wiring lands."
+    }
+  ]
+}

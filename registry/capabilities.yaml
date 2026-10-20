@@ -1138,3 +1138,310 @@ capabilities:
       fieldMapping:
         row: "凭证 {documentNumber}：金额 {amount} {currency}，到期基准日 {netDueDate}"
       detailFormatter: none
+  - capabilityId: MD.Material.Search
+    name: Material Master Search
+    description: Search authorized material master projections by description, alias, or distinguishing attributes through the governed master-data search adapter. Returns deduplicated candidates with snapshot metadata; codes come from the projection, never from the model.
+    status: active
+    kind: Function
+    domain: MD
+    businessObject: EntityCandidateSet
+    ontologyIri: sapnexus:MD_Material_Search
+    semanticType: sapnexus:MaterialSearchFunction
+    inputs:
+      - name: query
+        semanticName: searchText
+        semanticType: sapnexus:MasterDataSearchText
+        bindingKind: identifier
+        required: false
+        type: string
+        sapParameter: QUERY
+        maxLength: 200
+      - name: entityKey
+        semanticName: materialNumber
+        semanticType: sapnexus:MaterialNumber
+        bindingKind: identifier
+        required: false
+        type: string
+        sapParameter: ENTITY_KEY
+        maxLength: 40
+      - name: plant
+        semanticName: plant
+        semanticType: sapnexus:Plant
+        bindingKind: identifier
+        required: false
+        type: string
+        sapParameter: PLANT
+        pattern: ^[A-Z0-9]{4}$
+      - name: language
+        semanticName: language
+        semanticType: sapnexus:LanguageCode
+        bindingKind: identifier
+        required: false
+        type: string
+        sapParameter: LANGUAGE
+        maxLength: 10
+      - name: limit
+        semanticName: resultLimit
+        semanticType: sapnexus:SearchResultLimit
+        bindingKind: identifier
+        required: false
+        type: integer
+        sapParameter: LIMIT
+    outputs:
+      - name: candidates
+        semanticType: sapnexus:EntityCandidateSet
+        type: array
+        evidenceRole: primaryFact
+        factTypeRef: sapnexus:EntityCandidateSetFact
+      - name: objectType
+        semanticType: sapnexus:EntityObjectType
+        type: string
+        evidenceRole: primaryFact
+        factTypeRef: sapnexus:EntityCandidateSetFact
+      - name: snapshotId
+        semanticType: sapnexus:MasterDataSnapshotId
+        type: string
+        evidenceRole: primaryFact
+        factTypeRef: sapnexus:EntityCandidateSetFact
+      - name: resultCompleteness
+        semanticType: sapnexus:ResultCompleteness
+        type: string
+        evidenceRole: primaryFact
+        factTypeRef: sapnexus:EntityCandidateSetFact
+      - name: sourceExtractedAt
+        semanticType: sapnexus:MasterDataSnapshotId
+        type: string
+        evidenceRole: executionEvidence
+    executor:
+      type: PG_MASTERDATA_READ
+      queryTemplateId: md.material.search
+      inputMapping:
+        query: QUERY
+        entityKey: ENTITY_KEY
+        plant: PLANT
+        language: LANGUAGE
+        limit: LIMIT
+      outputMapping:
+        candidates: CANDIDATES
+        objectType: OBJECT_TYPE
+        snapshotId: SNAPSHOT_ID
+        resultCompleteness: RESULT_COMPLETENESS
+        sourceExtractedAt: SOURCE_EXTRACTED_AT
+    executorBinding:
+      type: PG_MASTERDATA_READ
+      bindingId: md.material.search-pg
+    evalLinkage:
+      evalFile: evals/entity_resolution_cases.json
+      caseIds:
+        - md-material-search-by-description
+        - md-material-get-by-key-exact-code
+    governance:
+      sideEffect: none
+      requiresApproval: false
+      approvalPolicy: not_required
+      dataClassification: internal
+      auditRequired: true
+  - capabilityId: MD.Customer.Search
+    name: Customer Master Search
+    description: Search authorized customer master projections by name, alias, city, or search term through the governed master-data search adapter. Returns deduplicated candidates with snapshot metadata; codes come from the projection, never from the model.
+    status: active
+    kind: Function
+    domain: MD
+    businessObject: EntityCandidateSet
+    ontologyIri: sapnexus:MD_Customer_Search
+    semanticType: sapnexus:CustomerSearchFunction
+    inputs:
+      - name: query
+        semanticName: searchText
+        semanticType: sapnexus:MasterDataSearchText
+        bindingKind: identifier
+        required: false
+        type: string
+        sapParameter: QUERY
+        maxLength: 200
+      - name: entityKey
+        semanticName: customerNumber
+        semanticType: sapnexus:CustomerNumber
+        bindingKind: identifier
+        required: false
+        type: string
+        sapParameter: ENTITY_KEY
+        maxLength: 10
+      - name: companyCode
+        semanticName: companyCode
+        semanticType: sapnexus:CompanyCode
+        bindingKind: identifier
+        required: false
+        type: string
+        sapParameter: COMPANY_CODE
+        pattern: ^[A-Z0-9]{4}$
+      - name: language
+        semanticName: language
+        semanticType: sapnexus:LanguageCode
+        bindingKind: identifier
+        required: false
+        type: string
+        sapParameter: LANGUAGE
+        maxLength: 10
+      - name: limit
+        semanticName: resultLimit
+        semanticType: sapnexus:SearchResultLimit
+        bindingKind: identifier
+        required: false
+        type: integer
+        sapParameter: LIMIT
+    outputs:
+      - name: candidates
+        semanticType: sapnexus:EntityCandidateSet
+        type: array
+        evidenceRole: primaryFact
+        factTypeRef: sapnexus:EntityCandidateSetFact
+      - name: objectType
+        semanticType: sapnexus:EntityObjectType
+        type: string
+        evidenceRole: primaryFact
+        factTypeRef: sapnexus:EntityCandidateSetFact
+      - name: snapshotId
+        semanticType: sapnexus:MasterDataSnapshotId
+        type: string
+        evidenceRole: primaryFact
+        factTypeRef: sapnexus:EntityCandidateSetFact
+      - name: resultCompleteness
+        semanticType: sapnexus:ResultCompleteness
+        type: string
+        evidenceRole: primaryFact
+        factTypeRef: sapnexus:EntityCandidateSetFact
+      - name: sourceExtractedAt
+        semanticType: sapnexus:MasterDataSnapshotId
+        type: string
+        evidenceRole: executionEvidence
+    executor:
+      type: PG_MASTERDATA_READ
+      queryTemplateId: md.customer.search
+      inputMapping:
+        query: QUERY
+        entityKey: ENTITY_KEY
+        companyCode: COMPANY_CODE
+        language: LANGUAGE
+        limit: LIMIT
+      outputMapping:
+        candidates: CANDIDATES
+        objectType: OBJECT_TYPE
+        snapshotId: SNAPSHOT_ID
+        resultCompleteness: RESULT_COMPLETENESS
+        sourceExtractedAt: SOURCE_EXTRACTED_AT
+    executorBinding:
+      type: PG_MASTERDATA_READ
+      bindingId: md.customer.search-pg
+    evalLinkage:
+      evalFile: evals/entity_resolution_cases.json
+      caseIds:
+        - md-customer-search-by-name
+    governance:
+      sideEffect: none
+      requiresApproval: false
+      approvalPolicy: not_required
+      dataClassification: internal
+      auditRequired: true
+  - capabilityId: MD.Supplier.Search
+    name: Supplier Master Search
+    description: Search authorized supplier master projections by name, alias, city, or search term through the governed master-data search adapter. Returns deduplicated candidates with snapshot metadata; codes come from the projection, never from the model.
+    status: active
+    kind: Function
+    domain: MD
+    businessObject: EntityCandidateSet
+    ontologyIri: sapnexus:MD_Supplier_Search
+    semanticType: sapnexus:SupplierSearchFunction
+    inputs:
+      - name: query
+        semanticName: searchText
+        semanticType: sapnexus:MasterDataSearchText
+        bindingKind: identifier
+        required: false
+        type: string
+        sapParameter: QUERY
+        maxLength: 200
+      - name: entityKey
+        semanticName: supplier
+        semanticType: sapnexus:Supplier
+        bindingKind: identifier
+        required: false
+        type: string
+        sapParameter: ENTITY_KEY
+        maxLength: 10
+      - name: companyCode
+        semanticName: companyCode
+        semanticType: sapnexus:CompanyCode
+        bindingKind: identifier
+        required: false
+        type: string
+        sapParameter: COMPANY_CODE
+        pattern: ^[A-Z0-9]{4}$
+      - name: language
+        semanticName: language
+        semanticType: sapnexus:LanguageCode
+        bindingKind: identifier
+        required: false
+        type: string
+        sapParameter: LANGUAGE
+        maxLength: 10
+      - name: limit
+        semanticName: resultLimit
+        semanticType: sapnexus:SearchResultLimit
+        bindingKind: identifier
+        required: false
+        type: integer
+        sapParameter: LIMIT
+    outputs:
+      - name: candidates
+        semanticType: sapnexus:EntityCandidateSet
+        type: array
+        evidenceRole: primaryFact
+        factTypeRef: sapnexus:EntityCandidateSetFact
+      - name: objectType
+        semanticType: sapnexus:EntityObjectType
+        type: string
+        evidenceRole: primaryFact
+        factTypeRef: sapnexus:EntityCandidateSetFact
+      - name: snapshotId
+        semanticType: sapnexus:MasterDataSnapshotId
+        type: string
+        evidenceRole: primaryFact
+        factTypeRef: sapnexus:EntityCandidateSetFact
+      - name: resultCompleteness
+        semanticType: sapnexus:ResultCompleteness
+        type: string
+        evidenceRole: primaryFact
+        factTypeRef: sapnexus:EntityCandidateSetFact
+      - name: sourceExtractedAt
+        semanticType: sapnexus:MasterDataSnapshotId
+        type: string
+        evidenceRole: executionEvidence
+    executor:
+      type: PG_MASTERDATA_READ
+      queryTemplateId: md.supplier.search
+      inputMapping:
+        query: QUERY
+        entityKey: ENTITY_KEY
+        companyCode: COMPANY_CODE
+        language: LANGUAGE
+        limit: LIMIT
+      outputMapping:
+        candidates: CANDIDATES
+        objectType: OBJECT_TYPE
+        snapshotId: SNAPSHOT_ID
+        resultCompleteness: RESULT_COMPLETENESS
+        sourceExtractedAt: SOURCE_EXTRACTED_AT
+    executorBinding:
+      type: PG_MASTERDATA_READ
+      bindingId: md.supplier.search-pg
+    evalLinkage:
+      evalFile: evals/entity_resolution_cases.json
+      caseIds:
+        - md-supplier-search-by-alias
+    governance:
+      sideEffect: none
+      requiresApproval: false
+      approvalPolicy: not_required
+      dataClassification: internal
+      auditRequired: true

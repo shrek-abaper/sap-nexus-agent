@@ -270,6 +270,11 @@ export function mapDiagnoseEvents(
     status = "clarification";
   }
 
+  const entityChoiceEvent = events.find((event) => event.type === "entity_choice_created");
+  const entityChoice = entityChoiceEvent
+    ? (artifactData(entityChoiceEvent) as unknown as SemanticToolResponse["entityChoice"])
+    : undefined;
+
   const response: SemanticToolResponse = {
     contractVersion: SEMANTIC_TOOL_CONTRACT_VERSION,
     tool,
@@ -291,6 +296,7 @@ export function mapDiagnoseEvents(
   if (terminal?.traceId) response.traceId = terminal.traceId;
   if (projection) response.projection = projection;
   if (exchange) response.exchange = exchange;
+  if (entityChoice) response.entityChoice = entityChoice;
   if (status === "failed" || status === "unavailable") {
     response.error = terminal?.error
       ? { errorType: terminal.error.errorType, message: terminal.error.message }

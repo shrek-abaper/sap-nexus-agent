@@ -14,6 +14,7 @@ export type RedactedArtifact = {
     | "narrative"
     | "trace"
     | "match-decision"
+    | "entity-choice"
     | "intent-envelope"
     | "capability-recall"
     | "plan-graph"

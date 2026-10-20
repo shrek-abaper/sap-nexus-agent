@@ -106,3 +106,82 @@ describe("executeSemanticTool WRITE branch", () => {
     }, PLACEHOLDER_PRINCIPAL)).rejects.toThrow(/requiredQuantity/);
   });
 });
+
+
+describe("executeSemanticTool entity choice", () => {
+  const clarifyEvents: AgentRunEvent[] = [
+    { runId: "run-er", sequence: 0, timestamp: "t", type: "run_started", state: "running" },
+    {
+      runId: "run-er", sequence: 1, timestamp: "t", type: "narrative_created", state: "running",
+      artifact: {
+        label: "narrated", kind: "narrative",
+        payload: { ref: "narrative:x", snapshotId: "s1", data: { text: "找到 2 个可能的匹配" } },
+      },
+    },
+    { runId: "run-er", sequence: 2, timestamp: "t", type: "run_completed", state: "completed" },
+  ];
+
+  const entityChoiceForEvent = {
+    candidateSetId: "ecs-1",
+    objectType: "sapnexus:Material",
+    targetCapabilityId: "MM.Inventory.GetAvailability",
+    targetSlot: "material",
+    mention: "蓝色耐高温密封圈",
+    candidates: [{
+      index: 1, canonicalCode: "DEMOA1", displayName: "蓝色耐高温密封圈 Ø20",
+      distinguishing: { sizeDimension: "20mm" }, matchKind: "substring",
+      status: "active", orgScopes: [{ field: "plant", value: "1000" }],
+    }],
+    snapshotId: "snap-1",
+    provider: "PG_MASTERDATA_READ",
+    createdAt: "2026-10-20T00:00:00Z",
+    expiresAt: "2026-10-20T00:15:00Z",
+    principalId: PLACEHOLDER_PRINCIPAL.principalId,
+    registrySnapshotId: "sha256:abc",
+    sourceExtractedAt: "2026-10-01T00:00:00Z",
+  };
+
+  const clarifyEventsWithChoice: AgentRunEvent[] = [
+    clarifyEvents[0],
+    {
+      runId: "run-er", sequence: 1, timestamp: "t", type: "entity_choice_created", state: "narrated",
+      artifact: {
+        label: "EntityChoiceSet", kind: "entity-choice",
+        payload: { ref: "ecs:1", snapshotId: "s1", data: entityChoiceForEvent },
+      },
+    },
+    clarifyEvents[1],
+    clarifyEvents[2],
+  ];
+
+  it("surfaces the pending entity choice on clarification responses", async () => {
+    const response = await executeSemanticTool({
+      contractVersion: 2,
+      tool: "diagnose_material_supply",
+      utterance: "查一下蓝色耐高温密封圈在 1000 工厂的库存",
+    }, PLACEHOLDER_PRINCIPAL, {
+      timeoutMs: 1000,
+      createRun: async () => ({ runId: "run-er", turnId: "turn-1" }),
+      getEvents: async () => clarifyEventsWithChoice,
+    });
+
+    expect(response.status).toBe("clarification");
+    expect(response.entityChoice?.candidateSetId).toBe("ecs-1");
+    expect(response.entityChoice?.candidates[0]?.canonicalCode).toBe("DEMOA1");
+  });
+
+  it("omits entityChoice when the run has no entity pending", async () => {
+    const response = await executeSemanticTool({
+      contractVersion: 2,
+      tool: "diagnose_material_supply",
+      utterance: "库存",
+    }, PLACEHOLDER_PRINCIPAL, {
+      timeoutMs: 1000,
+      createRun: async () => ({ runId: "run-er", turnId: "turn-1" }),
+      getEvents: async () => clarifyEvents,
+    });
+
+    expect(response.status).toBe("clarification");
+    expect(response.entityChoice).toBeUndefined();
+  });
+});

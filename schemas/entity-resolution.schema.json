@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sap-nexus-agent.local/schemas/entity-resolution.schema.json",
+  "title": "SAP Nexus Entity Resolution Rule Catalog",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "objectTypes"],
+  "properties": {
+    "version": { "type": "integer", "const": 1 },
+    "objectTypes": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/resolutionRule" }
+    }
+  },
+  "$defs": {
+    "resolvableField": {
+      "type": "string",
+      "pattern": "^[a-z][a-zA-Z]*$"
+    },
+    "searchableField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["field", "kind"],
+      "properties": {
+        "field": { "$ref": "#/$defs/resolvableField" },
+        "kind": { "type": "string", "enum": ["label", "alias", "attribute"] }
+      }
+    },
+    "organizationalFilter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["field", "semanticType"],
+      "properties": {
+        "field": { "$ref": "#/$defs/resolvableField" },
+        "semanticType": { "type": "string", "pattern": "^sapnexus:[A-Za-z]+$" }
+      }
+    },
+    "confirmationPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["exactCode", "exactLabelUnique", "fuzzy"],
+      "properties": {
+        "exactCode": { "type": "string", "enum": ["bind-with-evidence", "confirm"] },
+        "exactLabelUnique": { "type": "string", "enum": ["bind-with-evidence", "confirm"] },
+        "fuzzy": { "type": "string", "const": "confirm" }
+      }
+    },
+    "parameterBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["capabilityId", "inputName"],
+      "properties": {
+        "capabilityId": { "type": "string", "pattern": "^[A-Z][A-Za-z0-9]*\\.[A-Za-z0-9]+\\.[A-Za-z0-9]+$" },
+        "inputName": { "$ref": "#/$defs/resolvableField" }
+      }
+    },
+    "resolutionRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "objectTypeId",
+        "identifierSemanticType",
+        "identifierField",
+        "displayNameField",
+        "searchCapabilityId",
+        "searchableFields",
+        "distinguishingFields",
+        "organizationalFilters",
+        "languages",
+        "confirmationPolicy",
+        "candidateDisplayFields",
+        "parameterBindings"
+      ],
+      "properties": {
+        "objectTypeId": { "type": "string", "pattern": "^sapnexus:[A-Za-z]+$" },
+        "identifierSemanticType": { "type": "string", "pattern": "^sapnexus:[A-Za-z]+$" },
+        "identifierField": { "$ref": "#/$defs/resolvableField" },
+        "displayNameField": { "$ref": "#/$defs/resolvableField" },
+        "searchCapabilityId": { "type": "string", "pattern": "^[A-Z][A-Za-z0-9]*\\.[A-Za-z0-9]+\\.[A-Za-z0-9]+$" },
+        "searchableFields": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/searchableField" }
+        },
+        "distinguishingFields": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/resolvableField" }
+        },
+        "organizationalFilters": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/organizationalFilter" }
+        },
+        "languages": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[a-z]{2}(-[A-Z]{2})?$" }
+        },
+        "confirmationPolicy": { "$ref": "#/$defs/confirmationPolicy" },
+        "candidateDisplayFields": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/resolvableField" }
+        },
+        "parameterBindings": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/parameterBinding" }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "schema": "comet.native.checkpoint-manifest.v1",
+  "change": "entity-resolution-master-data",
+  "artifacts": [
+    {
+      "path": "agent/sap_nexus_agent/master_data/provider.py",
+      "hash": "bf96a3a59aac6bba4a44bead79a304f5260f96249e41528cd184414f390829b9",
+      "size": 16368
+    },
+    {
+      "path": "agent/tests/test_master_data_pg.py",
+      "hash": "e0cb5f35cadb85f1a56e508b26931eb48a559e94e6a61252dd103daf9f1bbb4d",
+      "size": 11564
+    },
+    {
+      "path": "db/migrations/0001_master_data.sql",
+      "hash": "53a0c72b709c6622f830a9bb7eab1938f7df63cf4991b5a72b8bca986c1568d8",
+      "size": 6876
+    },
+    {
+      "path": "ontology/entity-resolution.yaml",
+      "hash": "7d76c4ab1d5ed423b0f19061bf75db612bd34f1290b2a4f3f030f1269c21fb2d",
+      "size": 3909
+    }
+  ],
+  "totalBytes": 38717
+}

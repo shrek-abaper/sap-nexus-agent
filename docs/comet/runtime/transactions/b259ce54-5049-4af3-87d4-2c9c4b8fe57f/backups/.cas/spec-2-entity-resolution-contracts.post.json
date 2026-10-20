@@ -1,0 +1,11 @@
+{
+  "schema": "comet.native.archive-cas.v1",
+  "operationId": "spec-2-entity-resolution-contracts",
+  "role": "post",
+  "hash": "b4ff050346e4a4a5f40c70682bbb4e9fcb1b062d5bf7d9a5fc90dcc9fe04cb30",
+  "identity": {
+    "dev": 2096,
+    "ino": 665751,
+    "birthtimeMs": 1792494004224.6226
+  }
+}

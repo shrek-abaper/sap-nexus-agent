@@ -139,6 +139,10 @@ class AgentOutcome:
     # Authoritative READ two-phase payload. These fields are populated by
     # resolve_read_turn before any Gateway client exists.
     read_state: "ConversationReadState | None" = None
+    # Entity resolution (ENTITY_CHOICE): display-safe candidate-set payload for
+    # the chat layer when the user must pick a master-data entity. The full
+    # set stays in the server-side pending; this mirrors the same projection.
+    entity_choice: dict | None = None
     resolution_report: Mapping[str, object] | None = None
     read_execution_binding: ReadExecutionBinding | None = None
     selection_execution_binding: SelectionExecutionBinding | None = None
@@ -182,8 +186,14 @@ def resolve_read_turn(
     snapshot: RegistrySnapshot,
     sources: SemanticSourceDocuments,
     turn_id: str,
+    gateway: GatewayClientProtocol | None = None,
 ) -> AgentOutcome:
-    """Resolve one READ turn into persisted state and a plan without Gateway IO."""
+    """Resolve one READ turn into persisted state and a plan.
+
+    Business execution stays with the continuation phase; when ``gateway`` is
+    provided, the IO orchestration layer may still run governed master-data
+    searches (entity resolution) — the reducer itself never performs IO.
+    """
     lease, governed_context, visible = _governed_read_authority(
         principal, snapshot, sources
     )
@@ -206,6 +216,7 @@ def resolve_read_turn(
         lease=lease,
         visible=visible,
         turn_id=turn_id,
+        gateway=gateway,
     )
     if outcome is not None:
         return outcome
@@ -635,6 +646,314 @@ def _governed_read_authority(
     return lease, governed_context, visible
 
 
+
+
+def _with_confirmation_candidate(candidates, candidate):
+    """Append one validated CONFIRMATION candidate to a ContextCandidateSet."""
+    from sap_nexus_agent.context_candidates import ContextCandidateSet, SlotCandidates
+
+    slots = dict(candidates.slots)
+    existing = slots.get(candidate.slot, SlotCandidates(candidate.slot, ()))
+    slots[candidate.slot] = SlotCandidates(
+        candidate.slot, existing.candidates + (candidate,)
+    )
+    return ContextCandidateSet(
+        slots=slots,
+        clear_slots=candidates.clear_slots,
+        discard_reasons=candidates.discard_reasons,
+    )
+
+
+def _entity_choice_reply_outcome(
+    entity_decision,
+    *,
+    context: ConversationContext,
+    prior_state,
+    pending,
+    lease: SnapshotLease,
+    turn_id: str,
+) -> AgentOutcome:
+    """Deterministic non-confirm replies to an ENTITY_CHOICE pending.
+
+    refuse/stale clear the pending; clarify keeps it untouched (binding key
+    preserved); new-choice replaces it with the fresh candidate set.
+    """
+    from sap_nexus_agent.read_context import ConversationReadState, PendingInteraction
+
+    kind = entity_decision.kind
+    if kind in {"refuse", "stale"}:
+        next_state = ConversationReadState(
+            active_frame=prior_state.active_frame,
+            pending_interaction=None,
+            state_version=prior_state.state_version + 1,
+            recent_frames=prior_state.recent_frames,
+        )
+        return AgentOutcome(
+            status="clarification",
+            message=entity_decision.message,
+            response_text=entity_decision.message,
+            updated_context=replace(context, read_state=next_state),
+            read_state=next_state,
+            turn_id=turn_id,
+            frame_id=pending.frame_id,
+            state_version=next_state.state_version,
+            registry_snapshot_id=lease.snapshot_id,
+        )
+    if kind == "new-choice":
+        choice_set = entity_decision.choice_set
+        new_pending = PendingInteraction.entity_choice_pending(
+            frame_id=pending.frame_id,
+            choice_set=choice_set,
+            state_version=prior_state.state_version + 1,
+            registry_snapshot_id=lease.snapshot_id,
+            expires_at=choice_set.expires_at,
+        )
+        next_state = ConversationReadState(
+            active_frame=prior_state.active_frame,
+            pending_interaction=new_pending,
+            state_version=prior_state.state_version + 1,
+            recent_frames=prior_state.recent_frames,
+        )
+        from sap_nexus_agent.entity_resolution.orchestration import render_choice_question
+
+        return AgentOutcome(
+            status="clarification",
+            message="已根据新的描述重新检索。",
+            response_text=render_choice_question(choice_set),
+            updated_context=replace(context, read_state=next_state),
+            read_state=next_state,
+            entity_choice=choice_set.to_dict(),
+            turn_id=turn_id,
+            frame_id=pending.frame_id,
+            state_version=next_state.state_version,
+            registry_snapshot_id=lease.snapshot_id,
+        )
+    # clarify: keep the pending binding untouched
+    return AgentOutcome(
+        status="clarification",
+        message=entity_decision.message,
+        response_text=entity_decision.message,
+        updated_context=replace(context, read_state=prior_state),
+        read_state=prior_state,
+        entity_choice=pending.entity_choice.to_dict() if pending.entity_choice else None,
+        turn_id=turn_id,
+        frame_id=pending.frame_id,
+        state_version=prior_state.state_version,
+        registry_snapshot_id=lease.snapshot_id,
+    )
+
+
+def _attempt_entity_resolution(
+    *,
+    text: str,
+    context: ConversationContext,
+    clarify_decision: MatchDecision,
+    descriptor,
+    prior_state,
+    next_state,
+    next_context,
+    governed_context: GovernedContext,
+    gateway: GatewayClientProtocol,
+    principal: TrustedPrincipal,
+    lease: SnapshotLease,
+    turn_id: str,
+):
+    """Hook 2: resolve a missing required slot from the user's description.
+
+    Returns an AgentOutcome for choose/clarify outcomes, a
+    (resolution, decision_result, next_state, next_context) tuple when an
+    exact code bound with evidence (re-reduced), or None when no slot has a
+    resolution rule / no usable mention.
+    """
+    from sap_nexus_agent.context_decision_gate import (
+        ReadCapabilityCandidates,
+        decide_read_context,
+    )
+    from sap_nexus_agent.context_reducer import ContextReductionRequest, reduce_context
+    from sap_nexus_agent.entity_resolution.orchestration import (
+        attempt_slot_resolution,
+        render_choice_question,
+    )
+    from sap_nexus_agent.entity_resolution.service import (
+        BindOutcome,
+        ChooseOutcome,
+        ClarifyOutcome,
+    )
+    from sap_nexus_agent.read_context import ConversationReadState, PendingInteraction
+
+    frame = next_state.active_frame
+    missing = tuple(
+        input_.name
+        for input_ in descriptor.inputs
+        if input_.required
+        and (
+            input_.name not in frame.slots
+            or frame.slots[input_.name].state != "RESOLVED"
+        )
+    )
+    resolved_values = tuple(
+        slot.value for slot in frame.slots.values() if slot.value
+    )
+    outcome = attempt_slot_resolution(
+        text=text,
+        descriptor=descriptor,
+        frame_slots=frame.slots,
+        missing_required=missing,
+        gateway=gateway,
+        principal_id=principal.principal_id,
+        registry_snapshot_id=lease.snapshot_id,
+        frame_id=frame.frame_id,
+        turn_id=turn_id,
+        resolved_values=resolved_values,
+    )
+    if outcome is None:
+        return None
+    if isinstance(outcome, ClarifyOutcome):
+        return AgentOutcome(
+            status="clarification",
+            message=outcome.message,
+            response_text=outcome.message,
+            match_decision=clarify_decision,
+            updated_context=next_context,
+            read_state=next_state,
+            turn_id=turn_id,
+            frame_id=next_state.active_frame.frame_id,
+            state_version=next_state.state_version,
+            registry_snapshot_id=lease.snapshot_id,
+        )
+    if isinstance(outcome, ChooseOutcome):
+        choice_set = outcome.choice_set
+        pending = PendingInteraction.entity_choice_pending(
+            frame_id=frame.frame_id,
+            choice_set=choice_set,
+            state_version=next_state.state_version,
+            registry_snapshot_id=lease.snapshot_id,
+            expires_at=choice_set.expires_at,
+        )
+        entity_state = ConversationReadState(
+            active_frame=frame,
+            pending_interaction=pending,
+            state_version=next_state.state_version,
+            recent_frames=next_state.recent_frames,
+        )
+        return AgentOutcome(
+            status="clarification",
+            message="需要从候选中确认一个对象。",
+            response_text=render_choice_question(choice_set),
+            match_decision=clarify_decision,
+            updated_context=replace(next_context, read_state=entity_state),
+            read_state=entity_state,
+            entity_choice=choice_set.to_dict(),
+            turn_id=turn_id,
+            frame_id=frame.frame_id,
+            state_version=entity_state.state_version,
+            registry_snapshot_id=lease.snapshot_id,
+        )
+    # BindOutcome: exact code verified; re-reduce with the validated
+    # CONFIRMATION candidate so the normal SELECT path resumes the target.
+    assert isinstance(outcome, BindOutcome)
+    from sap_nexus_agent.capability_selector import build_read_context_candidates
+    from sap_nexus_agent.context_candidates import ContextCandidate
+
+    confirmation = ContextCandidate(
+        slot=outcome.ref.target_slot,
+        value=outcome.ref.canonical_code,
+        source="CONFIRMATION",
+    )
+    rebound_candidates = _with_confirmation_candidate(
+        build_read_context_candidates(text, descriptor, None), confirmation
+    )
+    resolution = reduce_context(
+        ContextReductionRequest(
+            prior_state=prior_state,
+            candidates=rebound_candidates,
+            descriptor=descriptor,
+            registry_snapshot_id=lease.snapshot_id,
+            capability_version=_read_capability_version(
+                lease.sources, descriptor.capability_id
+            ),
+            turn_id=turn_id,
+            server_time=datetime.now(UTC),
+        )
+    )
+    decision_result = decide_read_context(
+        resolution,
+        governed_context=governed_context,
+        lease=lease,
+        capability_candidates=ReadCapabilityCandidates(
+            capability_ids=(descriptor.capability_id,),
+            snapshot_id=lease.snapshot_id,
+            purpose="AMBIGUITY",
+        ),
+    )
+    rebound_state = resolution.next_state
+    rebound_context = replace(next_context, read_state=rebound_state)
+    return resolution, decision_result, rebound_state, rebound_context
+
+
+
+def _verify_explicit_identifier_slots(
+    *,
+    descriptor,
+    next_state,
+    next_context: ConversationContext,
+    gateway: GatewayClientProtocol,
+    principal: TrustedPrincipal,
+    lease: SnapshotLease,
+    turn_id: str,
+) -> AgentOutcome | None:
+    """Existence check for user-typed identifier codes (spec §7.4).
+
+    A semantic-type regex match is only a format check: with entity
+    resolution enabled, a code bound THIS turn from the utterance must also
+    exist, be active, and be visible in the projection before execution.
+    """
+    from sap_nexus_agent.entity_resolution.orchestration import _search
+    from sap_nexus_agent.entity_resolution.rules import load_resolution_rules
+    from sap_nexus_agent.entity_resolution.service import BindOutcome, ClarifyOutcome
+
+    frame = next_state.active_frame
+    if frame is None:
+        return None
+    rules = load_resolution_rules()
+    by_semantic = {rule.identifier_semantic_type: rule for rule in rules}
+    for input_ in descriptor.inputs:
+        rule = by_semantic.get(getattr(input_, "semantic_type", ""))
+        if rule is None:
+            continue
+        slot = frame.slots.get(input_.name)
+        if (
+            slot is None
+            or slot.state != "RESOLVED"
+            or slot.value is None
+            or slot.provenance != "EXPLICIT"
+            or slot.source_turn_id != turn_id
+        ):
+            continue
+        outcome = _search(
+            rule=rule, gateway=gateway,
+            target_capability_id=descriptor.capability_id, target_slot=input_.name,
+            mention=slot.value, entity_key=slot.value, org_filters=(),
+            principal_id=principal.principal_id,
+            registry_snapshot_id=lease.snapshot_id,
+            frame_id=frame.frame_id, turn_id=turn_id,
+        )
+        if isinstance(outcome, BindOutcome):
+            continue
+        message = (
+            outcome.message
+            if isinstance(outcome, ClarifyOutcome)
+            else f"编码 {slot.value} 需要通过候选确认后才能继续。"
+        )
+        return AgentOutcome(
+            status="clarification",
+            message=message,
+            response_text=message,
+            updated_context=next_context,
+            read_state=next_state,
+        )
+    return None
+
 def _resolve_authoritative_read(
     *,
     text: str,
@@ -647,6 +966,7 @@ def _resolve_authoritative_read(
     lease: SnapshotLease,
     visible: VisibleCapabilitySet,
     turn_id: str,
+    gateway: GatewayClientProtocol | None = None,
 ) -> AgentOutcome | None:
     from sap_nexus_agent.capability_selector import build_read_context_candidates
     from sap_nexus_agent.context_decision_gate import (
@@ -671,7 +991,53 @@ def _resolve_authoritative_read(
         return pending_resolution
     prior_state = pending_resolution
 
-    capability_id = legacy_decision.capability_id
+    # Entity resolution (hook 1): a live ENTITY_CHOICE pending turns the reply
+    # into either a validated CONFIRMATION candidate for the original slot, or
+    # a deterministic clarify/refuse/new-search outcome. Runs before any
+    # capability descriptor handling so a bare "第二个" never needs intent.
+    capability_override: str | None = None
+    injected_confirmation = None
+    pending_entity = prior_state.pending_interaction
+    if (
+        gateway is not None
+        and _entity_resolution_enabled()
+        and pending_entity is not None
+        and pending_entity.kind == "ENTITY_CHOICE"
+        and pending_entity.entity_choice is not None
+    ):
+        from sap_nexus_agent.entity_resolution.orchestration import (
+            resolve_entity_choice_turn,
+        )
+
+        entity_decision = resolve_entity_choice_turn(
+            text=text,
+            choice_set=pending_entity.entity_choice,
+            gateway=gateway,
+            principal_id=principal.principal_id,
+            registry_snapshot_id=lease.snapshot_id,
+            frame_id=pending_entity.frame_id,
+            turn_id=turn_id,
+        )
+        if entity_decision.kind == "confirm":
+            from sap_nexus_agent.context_candidates import ContextCandidate
+
+            capability_override = entity_decision.capability_id
+            injected_confirmation = ContextCandidate(
+                slot=entity_decision.slot,
+                value=entity_decision.code,
+                source="CONFIRMATION",
+            )
+        else:
+            return _entity_choice_reply_outcome(
+                entity_decision,
+                context=context,
+                prior_state=prior_state,
+                pending=pending_entity,
+                lease=lease,
+                turn_id=turn_id,
+            )
+
+    capability_id = capability_override or legacy_decision.capability_id
     if legacy_decision.decision_type in {"SHOW_OPTIONS", "ESCALATE_TO_PLANNER"}:
         if legacy_decision.decision_type == "SHOW_OPTIONS":
             candidate_ids = tuple(
@@ -710,7 +1076,7 @@ def _resolve_authoritative_read(
                 turn_id=turn_id,
                 lease=lease,
             )
-    if legacy_decision.decision_type == "REJECT":
+    if legacy_decision.decision_type == "REJECT" and capability_override is None:
         return _resolved_non_read_outcome(
             context=context,
             prior_state=prior_state,
@@ -745,10 +1111,13 @@ def _resolve_authoritative_read(
             ),
         )
 
+    read_candidates = build_read_context_candidates(text, descriptor, envelope)
+    if injected_confirmation is not None:
+        read_candidates = _with_confirmation_candidate(read_candidates, injected_confirmation)
     resolution = reduce_context(
         ContextReductionRequest(
             prior_state=prior_state,
-            candidates=build_read_context_candidates(text, descriptor, envelope),
+            candidates=read_candidates,
             descriptor=descriptor,
             registry_snapshot_id=lease.snapshot_id,
             capability_version=_read_capability_version(lease.sources, capability_id),
@@ -776,6 +1145,35 @@ def _resolve_authoritative_read(
         read_state=next_state,
         schema_version=2,
     )
+
+    # Entity resolution (hook 2): a CLARIFY caused by a missing required slot
+    # that has an ontology resolution rule searches the governed master-data
+    # projection instead of asking the user for a code.
+    if (
+        gateway is not None
+        and _entity_resolution_enabled()
+        and decision.decision_type == "CLARIFY"
+        and next_state.active_frame is not None
+    ):
+        entity_rebound = _attempt_entity_resolution(
+            text=text,
+            context=context,
+            clarify_decision=decision,
+            descriptor=descriptor,
+            prior_state=prior_state,
+            next_state=next_state,
+            next_context=next_context,
+            governed_context=governed_context,
+            gateway=gateway,
+            principal=principal,
+            lease=lease,
+            turn_id=turn_id,
+        )
+        if isinstance(entity_rebound, AgentOutcome):
+            return entity_rebound
+        if entity_rebound is not None:
+            resolution, decision_result, next_state, next_context = entity_rebound
+            decision = decision_result.decision
     call_plan = None
     binding = None
     combinations = None
@@ -833,6 +1231,24 @@ def _resolve_authoritative_read(
                     _current_capability(lease.sources, capability_id) or {}
                 ) or "",
             )
+
+    if (
+        gateway is not None
+        and _entity_resolution_enabled()
+        and decision.decision_type == "SELECT"
+        and call_plan is not None
+    ):
+        unverified = _verify_explicit_identifier_slots(
+            descriptor=descriptor,
+            next_state=next_state,
+            next_context=next_context,
+            gateway=gateway,
+            principal=principal,
+            lease=lease,
+            turn_id=turn_id,
+        )
+        if unverified is not None:
+            return unverified
 
     status = "awaiting_batch_confirm" if combinations is not None else {
         "SELECT": "resolved_read",
@@ -1076,7 +1492,8 @@ def _resolve_non_slot_pending(
     from sap_nexus_agent.read_context import ConversationReadState
 
     pending = prior_state.pending_interaction
-    if pending is None or pending.kind == "SLOT_CLARIFICATION":
+    if pending is None or pending.kind in ("SLOT_CLARIFICATION", "ENTITY_CHOICE"):
+        # ENTITY_CHOICE is owned by the entity-resolution hook downstream.
         return prior_state
     active_frame_id = prior_state.active_frame.frame_id if prior_state.active_frame else None
     synthetic = pending.frame_id.startswith("pending:") and active_frame_id is None
@@ -1494,6 +1911,7 @@ def run_query(
             lease=lease,
             visible=visible_capability_set,
             turn_id=f"turn-{context.read_state.state_version + 1}",
+            gateway=gateway,
         )
         if resolved is not None:
             if resolved.match_decision is None or resolved.match_decision.decision_type != "SELECT":
@@ -2107,6 +2525,11 @@ def _finalize_narrative(
         context_shadow=context_shadow,
         approval_record=approval_record,
     )
+
+
+def _entity_resolution_enabled() -> bool:
+    """Feature flag (spec case 28): off keeps the legacy code-entry path."""
+    return os.environ.get("ENTITY_RESOLUTION_MODE", "off").strip().lower() == "on"
 
 
 def _read_context_mode() -> str:

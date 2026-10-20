@@ -124,3 +124,46 @@ describe("buildToolQuery", () => {
     expect(query).toContain("工厂: 1000");
   });
 });
+
+
+describe("entity resolution party slots", () => {
+  it("accepts description-only party tools when the flag is on", async () => {
+    process.env.ENTITY_RESOLUTION_MODE = "on";
+    try {
+      const customer = validateSemanticToolRequest({
+        contractVersion: 2,
+        tool: "review_customer_exposure",
+        utterance: "华远机械在公司代码 1000 的未清应收",
+      });
+      expect(customer.tool).toBe("review_customer_exposure");
+      const vendor = validateSemanticToolRequest({
+        contractVersion: 2,
+        tool: "review_vendor_exposure",
+        utterance: "宏达在公司代码 1000 的应付",
+        slots: { companyCode: "1000" },
+      });
+      expect(vendor.tool).toBe("review_vendor_exposure");
+    } finally {
+      delete process.env.ENTITY_RESOLUTION_MODE;
+    }
+  });
+
+  it("still requires party codes when the flag is off", () => {
+    expect(() => validateSemanticToolRequest({
+      contractVersion: 2,
+      tool: "review_customer_exposure",
+      utterance: "华远机械的未清应收",
+    })).toThrowError(/customerNumber/);
+    // companyCode stays required even with the flag on
+    process.env.ENTITY_RESOLUTION_MODE = "on";
+    try {
+      expect(() => validateSemanticToolRequest({
+        contractVersion: 2,
+        tool: "review_vendor_exposure",
+        utterance: "宏达的应付",
+      })).toThrowError(/companyCode/);
+    } finally {
+      delete process.env.ENTITY_RESOLUTION_MODE;
+    }
+  });
+});

@@ -137,8 +137,8 @@ class ExtractionMetadataIndifferenceTest {
         // The repository registry carries extraction metadata after tasks.md 1.5.
         CapabilityRegistry loaded = new CapabilityRegistryLoader().load(projectRegistry());
 
-        assertThat(loaded.allCapabilities()).hasSize(7);
-        assertThat(loaded.enabledCapabilities()).hasSize(7);
+        assertThat(loaded.allCapabilities()).hasSize(10);
+        assertThat(loaded.enabledCapabilities()).hasSize(10);
     }
 
     private Path writeRegistry(String fileName, String yaml) throws Exception {

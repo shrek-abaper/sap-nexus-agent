@@ -64,7 +64,7 @@ def _valid_package_dict(assets: dict[str, dict], legacy_snapshot_id: str = "sha2
     }
 
 
-def test_manifest_lists_eight_semantic_sources():
+def test_manifest_lists_nine_semantic_sources():
     semantic = {path for path, role in SEMANTIC_SOURCE_MANIFEST if role == "semantic"}
     assert semantic == {
         "ontology/analysis-fact-fields.yaml",
@@ -75,6 +75,7 @@ def test_manifest_lists_eight_semantic_sources():
         "ontology/definitions.yaml",
         "ontology/object-links.yaml",
         "ontology/business-rules.yaml",
+        "ontology/entity-resolution.yaml",
     }
 
 

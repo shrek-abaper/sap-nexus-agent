@@ -159,6 +159,17 @@ def _main_impl(argv: list[str] | None = None) -> int:
             )
             if snapshot is None or sources is None:
                 raise ValueError("Registry snapshot is unavailable")
+            # The resolve phase constructs a gateway ONLY for governed
+            # master-data search (entity resolution flag on); business
+            # execution still belongs to the continuation phase, and with the
+            # flag off resolve stays completely IO-free.
+            from sap_nexus_agent.orchestrator import _entity_resolution_enabled
+
+            gateway = (
+                GatewayClient(args.gateway_url)
+                if args.gateway_url and _entity_resolution_enabled()
+                else None
+            )
             outcome = resolve_read_turn(
                 args.query,
                 context=context,
@@ -167,6 +178,7 @@ def _main_impl(argv: list[str] | None = None) -> int:
                 snapshot=snapshot,
                 sources=sources,
                 turn_id=args.turn_id,
+                gateway=gateway,
             )
         except (json.JSONDecodeError, KeyError, TypeError, ValueError, AttributeError):
             if args.json:

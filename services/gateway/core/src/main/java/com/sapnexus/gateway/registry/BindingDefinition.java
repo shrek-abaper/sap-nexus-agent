@@ -29,8 +29,30 @@ public record BindingDefinition(
         String pathTemplate,
         Map<String, Object> request,
         Map<String, Object> response,
-        Map<String, Object> auth
+        Map<String, Object> auth,
+        String queryTemplateId
 ) {
+    /** Convenience constructor for bindings without a query template. */
+    public BindingDefinition(
+            String bindingId,
+            String type,
+            String serviceRef,
+            String entitySet,
+            String method,
+            Map<String, String> filterMapping,
+            Integer topLimit,
+            List<String> selectFields,
+            Map<String, Object> constraints,
+            String systemRef,
+            String pathTemplate,
+            Map<String, Object> request,
+            Map<String, Object> response,
+            Map<String, Object> auth
+    ) {
+        this(bindingId, type, serviceRef, entitySet, method, filterMapping, topLimit,
+                selectFields, constraints, systemRef, pathTemplate, request, response, auth, null);
+    }
+
     /** Convenience constructor for bindings without REST fields. */
     public BindingDefinition(
             String bindingId,
@@ -44,6 +66,6 @@ public record BindingDefinition(
             Map<String, Object> constraints
     ) {
         this(bindingId, type, serviceRef, entitySet, method, filterMapping, topLimit,
-                selectFields, constraints, null, null, Map.of(), Map.of(), Map.of());
+                selectFields, constraints, null, null, Map.of(), Map.of(), Map.of(), null);
     }
 }

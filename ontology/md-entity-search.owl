@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<rdf:RDF
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:sapnexus="https://sap-nexus-agent.local/ontology#">
+
+  <owl:Ontology rdf:about="https://sap-nexus-agent.local/ontology/md-entity-search">
+    <owl:imports rdf:resource="https://sap-nexus-agent.local/ontology/core"/>
+  </owl:Ontology>
+
+  <!-- Governed master-data entity search capabilities (READ). Logical
+       resolution rules live in ontology/entity-resolution.yaml; this skeleton
+       only anchors the capability IRIs referenced by the registry. -->
+
+  <owl:Class rdf:about="https://sap-nexus-agent.local/ontology#EntityCandidateSet">
+    <rdfs:subClassOf rdf:resource="https://sap-nexus-agent.local/ontology#BusinessObject"/>
+  </owl:Class>
+
+  <owl:Class rdf:about="https://sap-nexus-agent.local/ontology#EntityCandidateSetFact">
+    <rdfs:subClassOf rdf:resource="https://sap-nexus-agent.local/ontology#ReasoningFact"/>
+  </owl:Class>
+
+  <!-- Mirrors predicate declared in ontology/fact-types.yaml. -->
+  <owl:FunctionalProperty rdf:about="https://sap-nexus-agent.local/ontology#hasEntityCandidateSet">
+    <rdfs:domain rdf:resource="https://sap-nexus-agent.local/ontology#EntityCandidateSet"/>
+    <rdfs:range rdf:resource="https://sap-nexus-agent.local/ontology#EntityCandidateSetFact"/>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+  </owl:FunctionalProperty>
+
+  <owl:NamedIndividual rdf:about="https://sap-nexus-agent.local/ontology#MD_Material_Search">
+    <rdf:type rdf:resource="https://sap-nexus-agent.local/ontology#Function"/>
+    <rdfs:label>MD.Material.Search</rdfs:label>
+  </owl:NamedIndividual>
+
+  <owl:NamedIndividual rdf:about="https://sap-nexus-agent.local/ontology#MD_Customer_Search">
+    <rdf:type rdf:resource="https://sap-nexus-agent.local/ontology#Function"/>
+    <rdfs:label>MD.Customer.Search</rdfs:label>
+  </owl:NamedIndividual>
+
+  <owl:NamedIndividual rdf:about="https://sap-nexus-agent.local/ontology#MD_Supplier_Search">
+    <rdf:type rdf:resource="https://sap-nexus-agent.local/ontology#Function"/>
+    <rdfs:label>MD.Supplier.Search</rdfs:label>
+  </owl:NamedIndividual>
+</rdf:RDF>

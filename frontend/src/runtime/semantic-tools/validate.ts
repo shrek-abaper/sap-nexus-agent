@@ -80,6 +80,16 @@ const REQUIRED_SLOTS: Record<SemanticToolName, string[]> = {
   [PROPOSE_REPLENISHMENT]: ["material", "plant", "requiredQuantity", "targetDate", "purchasingGroup"],
 };
 
+/** Feature flag (spec case 28): with entity resolution enabled, a party
+ * description in the utterance replaces the up-front party-code requirement;
+ * the governed resolution layer finds and verifies the real code instead.
+ * Organizational filters (companyCode) stay required. */
+function entityResolutionEnabled(): boolean {
+  return (process.env.ENTITY_RESOLUTION_MODE ?? "off").trim().toLowerCase() === "on";
+}
+
+const RESOLVABLE_PARTY_SLOTS = new Set(["customerNumber", "vendor"]);
+
 export function validateSemanticToolRequest(raw: unknown): SemanticToolRequest {
   if (!isRecord(raw)) {
     throw new SemanticToolRequestError("INVALID_REQUEST", "Request body must be a JSON object", 400);
@@ -150,6 +160,7 @@ export function validateSemanticToolRequest(raw: unknown): SemanticToolRequest {
   }
 
   for (const required of REQUIRED_SLOTS[tool as SemanticToolName]) {
+    if (entityResolutionEnabled() && RESOLVABLE_PARTY_SLOTS.has(required)) continue;
     const value = slots[required];
     const missing = value === undefined || value === null || (typeof value === "string" && value.trim() === "");
     if (missing) {

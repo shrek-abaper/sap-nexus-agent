@@ -352,7 +352,9 @@ def test_capability_schema_accepts_current_registry_input_patterns():
     # capabilities: SalesOrder.GetList.customerNumber/salesOrganization,
     # AR.GetOpenItems.customer/companyCode, AP.GetOpenItems.vendor/companyCode.
     # Customer and vendor numbers share the 1-10 shape; sales organization and
-    # company code share the 1-4 organizational-key shape.
+    # company code share the 1-4 organizational-key shape. The three master-data
+    # search capabilities (entity-resolution change) add plant/companyCode
+    # organizational filters with the same 4-char shape.
     assert patterns == [
         "^[A-Z0-9]{4}$",
         "^[A-Z0-9]{1,10}$",
@@ -365,6 +367,9 @@ def test_capability_schema_accepts_current_registry_input_patterns():
         "^[A-Z0-9]{1,4}$",
         "^[A-Z0-9]{1,10}$",
         "^[A-Z0-9]{1,4}$",
+        "^[A-Z0-9]{4}$",
+        "^[A-Z0-9]{4}$",
+        "^[A-Z0-9]{4}$",
     ]
 
 
@@ -403,6 +408,7 @@ def test_initial_fact_type_and_relation_catalogs_validate():
         "sapnexus:SalesOrderListFact",
         "sapnexus:CustomerOpenItemsFact",
         "sapnexus:VendorOpenItemsFact",
+        "sapnexus:EntityCandidateSetFact",
     }
     assert relations == {"version": 2, "relations": []}
 

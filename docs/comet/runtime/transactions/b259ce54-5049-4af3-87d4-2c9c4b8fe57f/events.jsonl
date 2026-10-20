@@ -1,0 +1,16 @@
+{"sequence":1,"timestamp":"2026-10-20T11:00:01.371Z","type":"prepared"}
+{"sequence":2,"timestamp":"2026-10-20T11:00:04.010Z","type":"operation-started","operationId":"spec-1-entity-choice-protocol"}
+{"sequence":3,"timestamp":"2026-10-20T11:00:04.156Z","type":"operation-completed","operationId":"spec-1-entity-choice-protocol"}
+{"sequence":4,"timestamp":"2026-10-20T11:00:04.180Z","type":"operation-started","operationId":"spec-2-entity-resolution-contracts"}
+{"sequence":5,"timestamp":"2026-10-20T11:00:04.339Z","type":"operation-completed","operationId":"spec-2-entity-resolution-contracts"}
+{"sequence":6,"timestamp":"2026-10-20T11:00:04.367Z","type":"operation-started","operationId":"spec-3-entity-resolution-orchestration"}
+{"sequence":7,"timestamp":"2026-10-20T11:00:04.526Z","type":"operation-completed","operationId":"spec-3-entity-resolution-orchestration"}
+{"sequence":8,"timestamp":"2026-10-20T11:00:04.555Z","type":"operation-started","operationId":"spec-4-entity-search-provider"}
+{"sequence":9,"timestamp":"2026-10-20T11:00:04.706Z","type":"operation-completed","operationId":"spec-4-entity-search-provider"}
+{"sequence":10,"timestamp":"2026-10-20T11:00:04.728Z","type":"operation-started","operationId":"spec-5-master-data-snapshot-store"}
+{"sequence":11,"timestamp":"2026-10-20T11:00:04.882Z","type":"operation-completed","operationId":"spec-5-master-data-snapshot-store"}
+{"sequence":12,"timestamp":"2026-10-20T11:00:07.245Z","type":"operation-started","operationId":"archive-change"}
+{"sequence":13,"timestamp":"2026-10-20T11:00:08.851Z","type":"operation-completed","operationId":"archive-change"}
+{"sequence":14,"timestamp":"2026-10-20T11:00:09.695Z","type":"archive-finalization-started"}
+{"sequence":15,"timestamp":"2026-10-20T11:00:09.801Z","type":"archive-finalized"}
+{"sequence":16,"timestamp":"2026-10-20T11:00:10.001Z","type":"commit"}

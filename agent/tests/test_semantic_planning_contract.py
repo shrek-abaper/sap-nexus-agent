@@ -2380,6 +2380,21 @@ def test_compiles_expected_immutable_producer_edges():
         ),
         (
             "producesFactType",
+            "MD.Customer.Search",
+            "sapnexus:EntityCandidateSetFact",
+        ),
+        (
+            "producesFactType",
+            "MD.Material.Search",
+            "sapnexus:EntityCandidateSetFact",
+        ),
+        (
+            "producesFactType",
+            "MD.Supplier.Search",
+            "sapnexus:EntityCandidateSetFact",
+        ),
+        (
+            "producesFactType",
             "MM.Inventory.GetAvailability",
             "sapnexus:InventoryAvailabilityFact",
         ),
@@ -2590,7 +2605,7 @@ def test_exact_duplicate_fact_type_reports_indexed_duplicate_id():
 
     result = build_semantic_contracts(sources)
 
-    _assert_fail_closed(result, (("/factTypes/7/factTypeId", "DUPLICATE_ID"),))
+    _assert_fail_closed(result, (("/factTypes/8/factTypeId", "DUPLICATE_ID"),))
 
 
 def test_exact_duplicate_relation_reports_id_and_semantic_edge_duplicates():
@@ -2651,7 +2666,7 @@ def test_mixed_exact_and_same_id_fact_type_duplicates_report_every_later_index()
         result,
         (
             ValidationIssue(
-                path="/factTypes/7/factTypeId",
+                path="/factTypes/8/factTypeId",
                 code="DUPLICATE_ID",
                 message=(
                     "duplicate factTypeId: "
@@ -2659,7 +2674,7 @@ def test_mixed_exact_and_same_id_fact_type_duplicates_report_every_later_index()
                 ),
             ),
             ValidationIssue(
-                path="/factTypes/8/factTypeId",
+                path="/factTypes/9/factTypeId",
                 code="DUPLICATE_ID",
                 message=(
                     "duplicate factTypeId: "
@@ -3581,10 +3596,10 @@ def _semantic_rule_sources(mutation):
 @pytest.mark.parametrize(
     ("mutation", "expected_path_codes"),
     [
-        ("duplicate-capability-id", (("/capabilities/7/capabilityId", "DUPLICATE_ID"),)),
-        ("duplicate-fact-type-id", (("/factTypes/7/factTypeId", "DUPLICATE_ID"),)),
+        ("duplicate-capability-id", (("/capabilities/10/capabilityId", "DUPLICATE_ID"),)),
+        ("duplicate-fact-type-id", (("/factTypes/8/factTypeId", "DUPLICATE_ID"),)),
         ("duplicate-relation-id", (("/relations/1/relationId", "DUPLICATE_ID"),)),
-        ("duplicate-binding-id", (("/bindings/10/bindingId", "DUPLICATE_ID"),)),
+        ("duplicate-binding-id", (("/bindings/13/bindingId", "DUPLICATE_ID"),)),
         (
             "binding-id-missing",
             (("/capabilities/0/executorBinding/bindingId", "SCHEMA_INVALID"),),

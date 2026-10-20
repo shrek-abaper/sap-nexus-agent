@@ -1,0 +1,69 @@
+{
+  "batch": {
+    "sourceSystem": "S4H",
+    "client": "100",
+    "objectType": "sapnexus:Supplier",
+    "snapshotKind": "full",
+    "sourceExtractedAt": "2026-09-15T00:00:00Z",
+    "coverage": {
+      "sourceSystems": ["S4H"],
+      "clients": ["100"],
+      "objectTypes": ["sapnexus:Supplier"]
+    }
+  },
+  "entities": [
+    {
+      "canonicalCode": "V10001",
+      "status": "active",
+      "descriptions": [
+        { "language": "zh-CN", "text": "宏达精密五金（东莞）有限公司", "official": true },
+        { "language": "en", "text": "Hongda Precision Hardware (Dongguan) Co., Ltd.", "official": false }
+      ],
+      "attributes": { "city": "东莞", "country": "CN", "searchTerm": "宏达" },
+      "aliases": [
+        { "alias": "宏达", "source": "approved-list", "scope": "sandbox", "active": true }
+      ],
+      "orgScopes": [
+        { "field": "companyCode", "value": "1000" }
+      ]
+    },
+    {
+      "canonicalCode": "V10002",
+      "status": "active",
+      "descriptions": [
+        { "language": "zh-CN", "text": "宏达塑胶（苏州）有限公司", "official": true }
+      ],
+      "attributes": { "city": "苏州", "country": "CN", "searchTerm": "宏达塑胶" },
+      "aliases": [
+        { "alias": "宏达", "source": "approved-list", "scope": "sandbox", "active": true }
+      ],
+      "orgScopes": [
+        { "field": "companyCode", "value": "2000" }
+      ]
+    },
+    {
+      "canonicalCode": "0VEND07",
+      "status": "active",
+      "descriptions": [
+        { "language": "zh-CN", "text": "南方包装材料厂", "official": true }
+      ],
+      "attributes": { "city": "广州", "country": "CN", "searchTerm": "南方包装" },
+      "aliases": [],
+      "orgScopes": [
+        { "field": "companyCode", "value": "1000" }
+      ]
+    },
+    {
+      "canonicalCode": "V90000",
+      "status": "inactive",
+      "descriptions": [
+        { "language": "zh-CN", "text": "宏达旧料回收（已停用）", "official": true }
+      ],
+      "attributes": { "city": "佛山", "country": "CN", "searchTerm": "宏达" },
+      "aliases": [],
+      "orgScopes": [
+        { "field": "companyCode", "value": "1000" }
+      ]
+    }
+  ]
+}

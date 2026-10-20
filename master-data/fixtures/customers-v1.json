@@ -1,0 +1,82 @@
+{
+  "batch": {
+    "sourceSystem": "S4H",
+    "client": "100",
+    "objectType": "sapnexus:Customer",
+    "snapshotKind": "full",
+    "sourceExtractedAt": null,
+    "coverage": {
+      "sourceSystems": ["S4H"],
+      "clients": ["100"],
+      "objectTypes": ["sapnexus:Customer"]
+    }
+  },
+  "entities": [
+    {
+      "canonicalCode": "C10001",
+      "status": "active",
+      "descriptions": [
+        { "language": "zh-CN", "text": "华远机械（苏州）有限公司", "official": true },
+        { "language": "en", "text": "Huayuan Machinery (Suzhou) Co., Ltd.", "official": false }
+      ],
+      "attributes": { "city": "苏州", "country": "CN", "searchTerm": "华远" },
+      "aliases": [
+        { "alias": "苏州华远", "source": "approved-list", "scope": "sandbox", "active": true }
+      ],
+      "orgScopes": [
+        { "field": "companyCode", "value": "1000" }
+      ]
+    },
+    {
+      "canonicalCode": "C10002",
+      "status": "active",
+      "descriptions": [
+        { "language": "zh-CN", "text": "华远机械（天津）有限公司", "official": true },
+        { "language": "en", "text": "Huayuan Machinery (Tianjin) Co., Ltd.", "official": false }
+      ],
+      "attributes": { "city": "天津", "country": "CN", "searchTerm": "华远" },
+      "aliases": [
+        { "alias": "天津华远", "source": "approved-list", "scope": "sandbox", "active": true }
+      ],
+      "orgScopes": [
+        { "field": "companyCode", "value": "1000" }
+      ]
+    },
+    {
+      "canonicalCode": "C20010",
+      "status": "active",
+      "descriptions": [
+        { "language": "zh-CN", "text": "苏州华远贸易有限公司", "official": true }
+      ],
+      "attributes": { "city": "苏州", "country": "CN", "searchTerm": "华远贸易" },
+      "aliases": [],
+      "orgScopes": [
+        { "field": "companyCode", "value": "2000" }
+      ]
+    },
+    {
+      "canonicalCode": "0CUST09",
+      "status": "active",
+      "descriptions": [
+        { "language": "zh-CN", "text": "北方联合商贸 5% 折扣客户", "official": true }
+      ],
+      "attributes": { "city": "北京", "country": "CN", "searchTerm": "北方联合" },
+      "aliases": [],
+      "orgScopes": [
+        { "field": "companyCode", "value": "1000" }
+      ]
+    },
+    {
+      "canonicalCode": "C90000",
+      "status": "inactive",
+      "descriptions": [
+        { "language": "zh-CN", "text": "华远机械（沈阳）有限公司（已注销）", "official": true }
+      ],
+      "attributes": { "city": "沈阳", "country": "CN", "searchTerm": "华远" },
+      "aliases": [],
+      "orgScopes": [
+        { "field": "companyCode", "value": "1000" }
+      ]
+    }
+  ]
+}

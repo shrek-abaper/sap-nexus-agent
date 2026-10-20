@@ -1,0 +1,59 @@
+{
+  "schema": "comet.native.transaction.v2",
+  "id": "b259ce54-5049-4af3-87d4-2c9c4b8fe57f",
+  "kind": "archive",
+  "status": "committed",
+  "change": "entity-resolution-master-data",
+  "createdAt": "2026-10-20T10:59:57.630Z",
+  "preflightHash": "d0b99a19ce791ddbf61b649a682b7ebf73810ffb0fdef1c40c15192f7c544465",
+  "operations": [
+    {
+      "id": "spec-1-entity-choice-protocol",
+      "type": "write",
+      "target": "specs/entity-choice-protocol/spec.md",
+      "staged": "runtime/transactions/b259ce54-5049-4af3-87d4-2c9c4b8fe57f/staged/specs/entity-choice-protocol/spec.md",
+      "expectedTargetHash": null,
+      "stagedHash": "1164d739b0b85fa20178a84afee1c8c03d747505b584a0408e1e2abad46250c0"
+    },
+    {
+      "id": "spec-2-entity-resolution-contracts",
+      "type": "write",
+      "target": "specs/entity-resolution-contracts/spec.md",
+      "staged": "runtime/transactions/b259ce54-5049-4af3-87d4-2c9c4b8fe57f/staged/specs/entity-resolution-contracts/spec.md",
+      "expectedTargetHash": null,
+      "stagedHash": "b4ff050346e4a4a5f40c70682bbb4e9fcb1b062d5bf7d9a5fc90dcc9fe04cb30"
+    },
+    {
+      "id": "spec-3-entity-resolution-orchestration",
+      "type": "write",
+      "target": "specs/entity-resolution-orchestration/spec.md",
+      "staged": "runtime/transactions/b259ce54-5049-4af3-87d4-2c9c4b8fe57f/staged/specs/entity-resolution-orchestration/spec.md",
+      "expectedTargetHash": null,
+      "stagedHash": "e95b4dd14c8e9fbb0a59989e07f94c52ef0a7220cb27743e563d29f6e1e5f394"
+    },
+    {
+      "id": "spec-4-entity-search-provider",
+      "type": "write",
+      "target": "specs/entity-search-provider/spec.md",
+      "staged": "runtime/transactions/b259ce54-5049-4af3-87d4-2c9c4b8fe57f/staged/specs/entity-search-provider/spec.md",
+      "expectedTargetHash": null,
+      "stagedHash": "9bc504481c465ae54642ef62118051bd759b88061c9e31b57f0027604599ac6d"
+    },
+    {
+      "id": "spec-5-master-data-snapshot-store",
+      "type": "write",
+      "target": "specs/master-data-snapshot-store/spec.md",
+      "staged": "runtime/transactions/b259ce54-5049-4af3-87d4-2c9c4b8fe57f/staged/specs/master-data-snapshot-store/spec.md",
+      "expectedTargetHash": null,
+      "stagedHash": "bb323355b3915ff731d8b28c685e3a45da4239047ba3aa5c8f0cf18274c5ae5d"
+    },
+    {
+      "id": "archive-change",
+      "type": "move",
+      "source": "changes/entity-resolution-master-data",
+      "target": "archive/2026-10-20-entity-resolution-master-data",
+      "expectedSourceHash": "9096dc490659a03d9d4251b40063a6d0d17d0e8f6ea6b38fc09a26714f745b42",
+      "expectedTargetHash": null
+    }
+  ]
+}

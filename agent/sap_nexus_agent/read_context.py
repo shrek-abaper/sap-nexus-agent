@@ -11,11 +11,17 @@ from typing import Literal
 
 FrameStatus = Literal["COLLECTING", "READY", "CONFLICTED", "STALE"]
 SlotState = Literal["RESOLVED", "CONFLICTED", "CLEARED"]
+from sap_nexus_agent.entity_resolution.models import EntityChoiceSet
+
 SlotProvenance = Literal[
     "EXPLICIT", "CONFIRMED", "INHERITED", "MODEL_CANDIDATE", "INHERITED_LEGACY"
 ]
 PendingKind = Literal[
-    "SLOT_CLARIFICATION", "CAPABILITY_CHOICE", "BATCH_CONFIRMATION", "PLANNER_CONFIRMATION"
+    "SLOT_CLARIFICATION",
+    "CAPABILITY_CHOICE",
+    "BATCH_CONFIRMATION",
+    "PLANNER_CONFIRMATION",
+    "ENTITY_CHOICE",
 ]
 
 _FRAME_STATUSES = frozenset({"COLLECTING", "READY", "CONFLICTED", "STALE"})
@@ -24,7 +30,13 @@ _SLOT_PROVENANCES = frozenset(
     {"EXPLICIT", "CONFIRMED", "INHERITED", "MODEL_CANDIDATE", "INHERITED_LEGACY"}
 )
 _PENDING_KINDS = frozenset(
-    {"SLOT_CLARIFICATION", "CAPABILITY_CHOICE", "BATCH_CONFIRMATION", "PLANNER_CONFIRMATION"}
+    {
+        "SLOT_CLARIFICATION",
+        "CAPABILITY_CHOICE",
+        "BATCH_CONFIRMATION",
+        "PLANNER_CONFIRMATION",
+        "ENTITY_CHOICE",
+    }
 )
 _UTC_ISO_TIMESTAMP = re.compile(
     r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?Z$"
@@ -270,6 +282,7 @@ class PendingInteraction:
     batch_ref: str | None = None
     planner_ref: str | None = None
     planner_goals: tuple[PendingPlannerGoal, ...] = ()
+    entity_choice: EntityChoiceSet | None = None
 
     def __post_init__(self) -> None:
         if self.kind not in _PENDING_KINDS:
@@ -312,6 +325,17 @@ class PendingInteraction:
             if fields or capability_ids or self.batch_ref or not self.planner_ref or not goals:
                 raise ValueError("PendingInteraction PLANNER_CONFIRMATION payload is invalid")
             _non_empty_string(self.planner_ref, "PendingInteraction.planner_ref")
+        elif self.kind == "ENTITY_CHOICE":
+            if capability_ids or self.batch_ref or self.planner_ref or goals:
+                raise ValueError("PendingInteraction ENTITY_CHOICE payload is invalid")
+            if self.entity_choice is None or not isinstance(self.entity_choice, EntityChoiceSet):
+                raise ValueError("PendingInteraction ENTITY_CHOICE requires an EntityChoiceSet")
+            if fields != (self.entity_choice.target_slot,):
+                raise ValueError(
+                    "PendingInteraction ENTITY_CHOICE expected_fields must be the target slot"
+                )
+        if self.kind != "ENTITY_CHOICE" and self.entity_choice is not None:
+            raise ValueError("PendingInteraction entity_choice is only valid for ENTITY_CHOICE")
 
     @property
     def binding_key(self) -> tuple[str, int, str]:
@@ -402,6 +426,26 @@ class PendingInteraction:
             planner_goals=parsed_goals,
         )
 
+    @classmethod
+    def entity_choice_pending(
+        cls,
+        *,
+        frame_id: str,
+        choice_set: EntityChoiceSet,
+        state_version: int,
+        registry_snapshot_id: str,
+        expires_at: str,
+    ) -> "PendingInteraction":
+        return cls(
+            kind="ENTITY_CHOICE",
+            frame_id=frame_id,
+            state_version=state_version,
+            registry_snapshot_id=registry_snapshot_id,
+            expires_at=expires_at,
+            expected_fields=(choice_set.target_slot,),
+            entity_choice=choice_set,
+        )
+
     def to_dict(self) -> dict[str, object]:
         payload: dict[str, object] = {
             "kind": self.kind,
@@ -416,6 +460,11 @@ class PendingInteraction:
             payload["capabilityIds"] = list(self.capability_ids)
         elif self.kind == "BATCH_CONFIRMATION":
             payload["batchRef"] = self.batch_ref
+        elif self.kind == "ENTITY_CHOICE":
+            payload["expectedFields"] = list(self.expected_fields)
+            payload["entityChoice"] = (
+                self.entity_choice.to_dict() if self.entity_choice is not None else None
+            )
         else:
             payload["plannerRef"] = self.planner_ref
             payload["plannerGoals"] = [goal.to_dict() for goal in self.planner_goals]
@@ -431,6 +480,7 @@ class PendingInteraction:
             "CAPABILITY_CHOICE": {"capabilityIds"},
             "BATCH_CONFIRMATION": {"batchRef"},
             "PLANNER_CONFIRMATION": {"plannerRef", "plannerGoals"},
+            "ENTITY_CHOICE": {"expectedFields", "entityChoice"},
         }.get(kind)
         if payload_fields is None or set(raw) != common | payload_fields:
             raise ValueError("PendingInteraction contains unsupported or missing fields")
@@ -458,6 +508,11 @@ class PendingInteraction:
             planner_goals=tuple(
                 PendingPlannerGoal.from_dict(goal)
                 for goal in planner_goals
+            ),
+            entity_choice=(
+                EntityChoiceSet.from_dict(raw["entityChoice"])
+                if isinstance(raw.get("entityChoice"), Mapping)
+                else None
             ),
         )
 

@@ -17,6 +17,10 @@ objectTypes:
     semanticType: sapnexus:Supplier
     keyFields: [supplier]
     scopeFields: []
+  - objectTypeId: sapnexus:Customer
+    semanticType: sapnexus:CustomerNumber
+    keyFields: [customer]
+    scopeFields: []
   - objectTypeId: sapnexus:PurchaseOrder
     semanticType: sapnexus:PurchaseOrderNumber
     keyFields: [purchaseOrder]

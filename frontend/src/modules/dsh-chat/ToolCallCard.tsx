@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { DshToolCall } from "./types";
+import type { DshEntityChoiceSet, DshToolCall } from "./types";
 import { isOntologyResult, isSemanticToolResult, ontologySections } from "./ontology-card";
 import {
   approvalExecutionFromEvent,
@@ -56,7 +56,16 @@ const ARG_LABELS: Record<string, string> = {
   questionType: "问题类型",
 };
 
-export function ToolCallCard({ call }: { call: DshToolCall }) {
+export function ToolCallCard({
+  call,
+  onQuickReply,
+}: {
+  call: DshToolCall;
+  /** Quick-reply channel for master-data candidate buttons: the click posts
+   * the ordinal reply as a normal user turn; the server still validates
+   * the selection against the authoritative candidate set. */
+  onQuickReply?: (text: string) => void;
+}) {
   const semanticResult =
     call.result && isSemanticToolResult(call.result) ? call.result : null;
   const approval = semanticResult?.approval;
@@ -245,6 +254,41 @@ export function ToolCallCard({ call }: { call: DshToolCall }) {
               {entry.capabilityId}
             </span>
           ))}
+        </div>
+      ) : null}
+
+      {call.result && semanticResult?.entityChoice ? (
+        <div className="dsh-entity-choice">
+          <div className="dsh-entity-choice__meta">
+            主数据候选（快照 {semanticResult.entityChoice.snapshotId}，提取时间{" "}
+            {semanticResult.entityChoice.sourceExtractedAt ?? "unknown"}）—
+            点击候选或回复序号选择，也可以说"都不是"
+          </div>
+          <ol className="dsh-entity-choice__list">
+            {semanticResult.entityChoice.candidates.map((candidate: DshEntityChoiceSet["candidates"][number]) => (
+              <li key={candidate.canonicalCode} className="dsh-entity-choice__item">
+                <button
+                  type="button"
+                  className="dsh-entity-choice__pick"
+                  disabled={!onQuickReply}
+                  onClick={() => onQuickReply?.(`第${candidate.index}个`)}
+                >
+                  <span className="dsh-entity-choice__name">
+                    {candidate.index}. {candidate.displayName}（{candidate.canonicalCode}）
+                  </span>
+                  <span className="dsh-entity-choice__details">
+                    {Object.entries(candidate.distinguishing)
+                      .filter(([, value]) => value)
+                      .map(([key, value]) => `${key}=${value}`)
+                      .join("，")}
+                    {candidate.orgScopes.length > 0
+                      ? `；${candidate.orgScopes.map((scope: { field: string; value: string }) => `${scope.field}=${scope.value}`).join("，")}`
+                      : ""}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ol>
         </div>
       ) : null}
 

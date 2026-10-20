@@ -102,7 +102,8 @@ public class CapabilityRegistryLoader {
                 asString(raw.get("type")),
                 asString(raw.get("rfcName")),
                 asStringMap(raw.get("inputMapping")),
-                asStringMap(raw.get("outputMapping"))
+                asStringMap(raw.get("outputMapping")),
+                asString(raw.get("queryTemplateId"))
         );
     }
 

@@ -88,3 +88,18 @@ sapnexus:FI_AP_GetOpenItems a skos:Concept ;
     skos:example "供应商 1000 还有多少应付未清项" ;
     skos:topConceptOf sapnexus:CapabilityConceptScheme ;
     skos:inScheme sapnexus:CapabilityConceptScheme .
+sapnexus:MD_Material_Search a skos:Concept ;
+    skos:prefLabel "Material Master Search"@en ;
+    skos:definition "Search authorized material master projections by description, alias, or distinguishing attributes through the governed master-data search adapter. Returns deduplicated candidates with snapshot metadata; codes come from the projection, never from the model." ;
+    skos:topConceptOf sapnexus:CapabilityConceptScheme ;
+    skos:inScheme sapnexus:CapabilityConceptScheme .
+sapnexus:MD_Customer_Search a skos:Concept ;
+    skos:prefLabel "Customer Master Search"@en ;
+    skos:definition "Search authorized customer master projections by name, alias, city, or search term through the governed master-data search adapter. Returns deduplicated candidates with snapshot metadata; codes come from the projection, never from the model." ;
+    skos:topConceptOf sapnexus:CapabilityConceptScheme ;
+    skos:inScheme sapnexus:CapabilityConceptScheme .
+sapnexus:MD_Supplier_Search a skos:Concept ;
+    skos:prefLabel "Supplier Master Search"@en ;
+    skos:definition "Search authorized supplier master projections by name, alias, city, or search term through the governed master-data search adapter. Returns deduplicated candidates with snapshot metadata; codes come from the projection, never from the model." ;
+    skos:topConceptOf sapnexus:CapabilityConceptScheme ;
+    skos:inScheme sapnexus:CapabilityConceptScheme .

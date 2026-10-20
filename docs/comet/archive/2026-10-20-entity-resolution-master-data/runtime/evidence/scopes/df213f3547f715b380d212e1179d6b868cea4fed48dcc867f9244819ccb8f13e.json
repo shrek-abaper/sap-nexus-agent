@@ -1,0 +1,1197 @@
+{
+  "schema": "comet.native.implementation-scope.v2",
+  "contractHash": "666febf09bfa30372dc90ccaac9fcdbc13121466568d1244dadfb5b8ac0ebf7a",
+  "baselineProjectionRef": "runtime/evidence/snapshots/d10535f0bc6baa25f46df348acafe13f1ff82fb2395a951c2e1024e81c4c7768.json",
+  "baselineProjectionHash": "d10535f0bc6baa25f46df348acafe13f1ff82fb2395a951c2e1024e81c4c7768",
+  "currentProjectionRef": "runtime/evidence/snapshots/85446d148068ff6fee2ce0958a7206e686ef4cd4cc4d740b32380f9e39971f83.json",
+  "currentProjectionHash": "85446d148068ff6fee2ce0958a7206e686ef4cd4cc4d740b32380f9e39971f83",
+  "complete": false,
+  "declaredArtifacts": [
+    {
+      "path": "agent/sap_nexus_agent/entity_resolution/rules.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/sap_nexus_agent/master_data/importer.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/sap_nexus_agent/master_data/provider.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_master_data_pg.py",
+      "kind": "file"
+    },
+    {
+      "path": "db/migrations/0001_master_data.sql",
+      "kind": "file"
+    },
+    {
+      "path": "master-data/physical-mappings.yaml",
+      "kind": "file"
+    },
+    {
+      "path": "ontology/entity-resolution.yaml",
+      "kind": "file"
+    },
+    {
+      "path": "registry/capabilities.yaml",
+      "kind": "file"
+    }
+  ],
+  "changes": [
+    {
+      "path": "agent/sap_nexus_agent/entity_resolution/__init__.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "524798e20a40456f68538d07e760d36b4a374008c9771bbe468ab5c1e231d79c",
+        "size": 605
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "agent/sap_nexus_agent/entity_resolution/rules.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "bf124818000bcaf2ee988f174d864de79aad22a3e0ebee1935fb5acfbf4bf328",
+        "size": 8575
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/entity_resolution/rules.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/sap_nexus_agent/master_data/__init__.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "803fca0b5862c868ca3e369826d69c77410a9bcd1c3e56cad98b0fb9fe6e8a46",
+        "size": 728
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "agent/sap_nexus_agent/master_data/importer.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "7354b39a4fb8220d851e6f3bcdd9c20d055b68658a66b29070750afe3e5d52a8",
+        "size": 13378
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/master_data/importer.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/sap_nexus_agent/master_data/provider.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "bf96a3a59aac6bba4a44bead79a304f5260f96249e41528cd184414f390829b9",
+        "size": 16368
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/master_data/provider.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/sap_nexus_agent/semantic_release/assets.py",
+      "kind": "modified",
+      "before": {
+        "hash": "dbe239cc4512684b9cc16b46e322deee6491a57c568de8d2fe36731295dc5685",
+        "size": 2153
+      },
+      "after": {
+        "hash": "b83878aa255083b48e73890f03fc08146eb1134d05039b29625dda3316c51c5c",
+        "size": 2278
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "agent/tests/test_capability_selector.py",
+      "kind": "modified",
+      "before": {
+        "hash": "31bd19faa4eae6796b46b0c9871768a2e072f31e04bcbfb17446e598ecae175f",
+        "size": 39567
+      },
+      "after": {
+        "hash": "156c1445575a71be29ba08594bdf7427b0494ca87e3b05e30e0902cf83f0e2ad",
+        "size": 39568
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "agent/tests/test_contract_files.py",
+      "kind": "modified",
+      "before": {
+        "hash": "f58a8359e945a30814c422877392cb85336865f63a28a22bb6ffe7feff7f22ff",
+        "size": 24741
+      },
+      "after": {
+        "hash": "411a4e7c6392b0fc96c77786d49e931c5e24ccf6ceb30eec3f9b445df3575442",
+        "size": 25013
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "agent/tests/test_entity_resolution_rules.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "8fd7b44f1ae29533db1ba8acc8d8ada3393091288ea4e777f4a81d51a0fd0404",
+        "size": 3239
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "agent/tests/test_master_data_pg.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "e0cb5f35cadb85f1a56e508b26931eb48a559e94e6a61252dd103daf9f1bbb4d",
+        "size": 11564
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_master_data_pg.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_ontology_codegen.py",
+      "kind": "modified",
+      "before": {
+        "hash": "17ab638983d3a5d29f545e90e291c5f2bedbd4c0be57c075d7629f39963c7a64",
+        "size": 4477
+      },
+      "after": {
+        "hash": "43ac53bdea91b251ffdb385b502c09e47fd5c72d07194ecdcffcca2051d1a200",
+        "size": 4477
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "agent/tests/test_planner_capability_card.py",
+      "kind": "modified",
+      "before": {
+        "hash": "7a808f4ae23d6673dec5b2215364cfc0a5692567f3c331911480e1a217d65162",
+        "size": 39447
+      },
+      "after": {
+        "hash": "08f98c35fd1da900e4de6cd60bccb0d4db5f72a11ce7bb3e8cb83872ae7bbf6a",
+        "size": 39538
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "agent/tests/test_registry_loader.py",
+      "kind": "modified",
+      "before": {
+        "hash": "8d19f2cdb5f4e8ae5626aef5ec08a6e88c31392e0517dcfa4ffdd53c4b0d6337",
+        "size": 9864
+      },
+      "after": {
+        "hash": "fd57a5bf145bc17a105f19dd87bae2151e55a514b8df008e2b6e0473e9fea1ac",
+        "size": 9954
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "agent/tests/test_semantic_planning_contract.py",
+      "kind": "modified",
+      "before": {
+        "hash": "b8a05a5b9d95b20e0b1bdd245803f21007b2618f68f5375e5f5dba94201628ca",
+        "size": 132920
+      },
+      "after": {
+        "hash": "a2e935611fb62ba78decb4565cd3cf15681496c4b889bb98137e4e1047ec6b51",
+        "size": 133323
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "agent/tests/test_semantic_release_assets.py",
+      "kind": "modified",
+      "before": {
+        "hash": "bb7ace1a088d7afa48a17172c524d82762fabd98af594fc167ae68a7f62e0d78",
+        "size": 10807
+      },
+      "after": {
+        "hash": "bb7cd7888a60cb3b40c9c123efe9ab7b1bb875c4251b6453dcc31e0f83429df8",
+        "size": 10871
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "agent/tests/test_semantic_release_builder.py",
+      "kind": "modified",
+      "before": {
+        "hash": "e3f3463b19b7e921e0daa4dff885552f22b998f36d0f3c0461c0ea88665193e6",
+        "size": 1985
+      },
+      "after": {
+        "hash": "030ff6e420eac52a89d580077e97ee9a625efe3a3c668635fa940fbd0a095f42",
+        "size": 1985
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "agent/tests/test_semantic_release_properties.py",
+      "kind": "modified",
+      "before": {
+        "hash": "df30165c6b5f98c07d94445a3198bae7a1fc57eaa66631ef694e32f2c88cb667",
+        "size": 5507
+      },
+      "after": {
+        "hash": "0c5d54181a0bf1ab649e4fdddb682cf610e547b022c8f62a9132370c9f4dc1e8",
+        "size": 5546
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "agent/tests/test_semantic_release_validation.py",
+      "kind": "modified",
+      "before": {
+        "hash": "210757215cc70a7c4fb2c173b7379822a1abf990a5da3a5cf182f2b1142b4523",
+        "size": 9121
+      },
+      "after": {
+        "hash": "8020c3e8c4670fdee2bdb0fd41067985ad62ba3acac6b6d37bbd3c5e6da6a0a8",
+        "size": 9163
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "db/migrations/0001_master_data.sql",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "53a0c72b709c6622f830a9bb7eab1938f7df63cf4991b5a72b8bca986c1568d8",
+        "size": 6876
+      },
+      "attributedTo": [
+        {
+          "path": "db/migrations/0001_master_data.sql",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "db/migrations/0002_master_data_roles.sql",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "b166737d6f1d489a7cadfe8212ee9328e4889785b552c4d06a2cf022c5054269",
+        "size": 1030
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "evals/entity_resolution_cases.json",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "385c122f9cb134aa3894a95776ff9d3678d1acc4b8280cf3091f2aab81cecbcf",
+        "size": 1575
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "evals/matcher_cases.yaml",
+      "kind": "modified",
+      "before": {
+        "hash": "c0fe7a304020b6e1f5c81b504afa0b9ccc05720807dad06f18212bd4e60d1f70",
+        "size": 27349
+      },
+      "after": {
+        "hash": "d7adc5192c29616dc3f9db0ec4fa981d446659c05696c79a6f0dd9d05b6c668a",
+        "size": 27349
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "master-data/fixtures/customers-v1.json",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "2c6790c7c7adb8444e26a976780635e7c713f693e17d36f4d802cbd2a4e0b35e",
+        "size": 2681
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "master-data/fixtures/materials-v1.json",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "8da78920faea6ecca5219efa98d0cd66245fbbb8bf5846447eae668410180d85",
+        "size": 3239
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "master-data/fixtures/materials-v2.json",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "3d98f7200e6d9c28851ac34a19885c62f9610cc2332e61e7da8f8f9a01a037e3",
+        "size": 2382
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "master-data/fixtures/suppliers-v1.json",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "9e36061b65770761a227d6e64e25ca4d8dc2cd1bcd38afaa3a54346441a7dd10",
+        "size": 2192
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "master-data/physical-mappings.yaml",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "611b4417a63081a2a3d932ffbe44bd90cf3df1d67613b243665756b92873691e",
+        "size": 2308
+      },
+      "attributedTo": [
+        {
+          "path": "master-data/physical-mappings.yaml",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "ontology/entity-resolution.yaml",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "7d76c4ab1d5ed423b0f19061bf75db612bd34f1290b2a4f3f030f1269c21fb2d",
+        "size": 3909
+      },
+      "attributedTo": [
+        {
+          "path": "ontology/entity-resolution.yaml",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "ontology/fact-types.yaml",
+      "kind": "modified",
+      "before": {
+        "hash": "ee63d312c7804fde3a27c8f39489f11d873c3031327fdc2cbecdc8d75bf67679",
+        "size": 12988
+      },
+      "after": {
+        "hash": "46ff30a798fae4b135d4102ed70028a74b29329e71ac5a0ae8c2e304522a0bf5",
+        "size": 14448
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "ontology/generated/manifest.json",
+      "kind": "modified",
+      "before": {
+        "hash": "aea0acd0705110765d98c25c350aa304c99b66966fbf11f150763689d719186c",
+        "size": 188
+      },
+      "after": {
+        "hash": "5475971f20935291d029e0a791f83236b0b3bfda7b088e476a798d0a65268682",
+        "size": 188
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "ontology/generated/semantic-release.json",
+      "kind": "modified",
+      "before": {
+        "hash": "4acc187b3bbf70a4de17a5c4d2f98828045069f34d36163a6ae7a0ccff77cda6",
+        "size": 3120
+      },
+      "after": {
+        "hash": "dd214475118737620aab63bf41ab2deb918e5359b34700fd7819c4c3a7839766",
+        "size": 3326
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "ontology/generated/shacl-inputs.ttl",
+      "kind": "modified",
+      "before": {
+        "hash": "0c621c013a57e35689651a7c00323932b9e3c27b4c122ac500daa2bab1ed5aea",
+        "size": 8483
+      },
+      "after": {
+        "hash": "d746f5467a7a9eef8d80caf5e0a9ffab3cd221bfd3403f26cddfcc85dd0ae5ec",
+        "size": 11606
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "ontology/generated/skos-capabilities.ttl",
+      "kind": "modified",
+      "before": {
+        "hash": "c40c7567785af1c96e6dd5f6b5d6da2a0f91d121715f00b8741bbe194a9c045e",
+        "size": 4658
+      },
+      "after": {
+        "hash": "93fe672463fbbd1ef05d8aea962b82f50a702316d95eac05158e784440fb9f2a",
+        "size": 6083
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "ontology/md-entity-search.owl",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "6d0d7834f9276bbda2fe5bd5d37bbf85d661b0d8d9846d04653aa2fdd218b817",
+        "size": 2258
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "ontology/object-types.yaml",
+      "kind": "modified",
+      "before": {
+        "hash": "ae809251ab7bfd0533cb1e68d70d7f9b519f20fa3c76fb8868cb07c2407c7f46",
+        "size": 1062
+      },
+      "after": {
+        "hash": "7d32bb70b4f1889b7a3d1d2d0156e6b222cf64efe0712d0c82bc624b23dbc14f",
+        "size": 1186
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "registry/capabilities.yaml",
+      "kind": "modified",
+      "before": {
+        "hash": "1c04805b076c50befa193e61445e43ffaf602ef078d365e46fe5ab591ed0bf85",
+        "size": 34781
+      },
+      "after": {
+        "hash": "9cd5728b39ca704ea7077502e37a303597590b6b39cc478feeee240a18bf520f",
+        "size": 44443
+      },
+      "attributedTo": [
+        {
+          "path": "registry/capabilities.yaml",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "registry/executor-bindings.yaml",
+      "kind": "modified",
+      "before": {
+        "hash": "d259c1b5ea3d67aa62ab330ee2838873f3b5d2a0735c4e7539ef4f0c6ea11eab",
+        "size": 5595
+      },
+      "after": {
+        "hash": "e8204bab2853954aa358964080e53174f319521b4e947964f8dc9619f027bdc5",
+        "size": 6615
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "schemas/capability.schema.json",
+      "kind": "modified",
+      "before": {
+        "hash": "b8d0b5bc189d4705ef0e9a63a60ccb38b310829c0fb5ce3c53ac93f603c95010",
+        "size": 17031
+      },
+      "after": {
+        "hash": "201ec149ceb15736d5906a2a67a5afc85e5aa45623f4ce742a42c44c42be61e1",
+        "size": 23385
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "schemas/entity-resolution.schema.json",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "5ee8842e97437779b2c087a234ace62c5dc2a524d1c0be28448a1c7aa82aa33e",
+        "size": 3995
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "schemas/executor-binding.schema.json",
+      "kind": "modified",
+      "before": {
+        "hash": "89b365cecd49eb5e5d606e4f37a180bb3c85ad455a4059fcbe5dfb17dd858ba9",
+        "size": 3839
+      },
+      "after": {
+        "hash": "1739dd99ff8b845ba44d9434dbad6b4cccf1d12ddb1c66a0dd45934e933756cd",
+        "size": 5974
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "scripts/validate_registry_contract.py",
+      "kind": "modified",
+      "before": {
+        "hash": "0a99fa4b1e652e2f09a68d5796ffa8281661893b8216e11be735fd041b7c4704",
+        "size": 33295
+      },
+      "after": {
+        "hash": "9d9908605c9985077dcee5dbdf461e14bfa7670ce60e2f178f007e36ecffdf24",
+        "size": 34710
+      },
+      "attributedTo": []
+    }
+  ],
+  "unattributed": [
+    {
+      "path": "agent/sap_nexus_agent/entity_resolution/__init__.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "524798e20a40456f68538d07e760d36b4a374008c9771bbe468ab5c1e231d79c",
+        "size": 605
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "agent/sap_nexus_agent/master_data/__init__.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "803fca0b5862c868ca3e369826d69c77410a9bcd1c3e56cad98b0fb9fe6e8a46",
+        "size": 728
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "agent/sap_nexus_agent/semantic_release/assets.py",
+      "kind": "modified",
+      "before": {
+        "hash": "dbe239cc4512684b9cc16b46e322deee6491a57c568de8d2fe36731295dc5685",
+        "size": 2153
+      },
+      "after": {
+        "hash": "b83878aa255083b48e73890f03fc08146eb1134d05039b29625dda3316c51c5c",
+        "size": 2278
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "agent/tests/test_capability_selector.py",
+      "kind": "modified",
+      "before": {
+        "hash": "31bd19faa4eae6796b46b0c9871768a2e072f31e04bcbfb17446e598ecae175f",
+        "size": 39567
+      },
+      "after": {
+        "hash": "156c1445575a71be29ba08594bdf7427b0494ca87e3b05e30e0902cf83f0e2ad",
+        "size": 39568
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "agent/tests/test_contract_files.py",
+      "kind": "modified",
+      "before": {
+        "hash": "f58a8359e945a30814c422877392cb85336865f63a28a22bb6ffe7feff7f22ff",
+        "size": 24741
+      },
+      "after": {
+        "hash": "411a4e7c6392b0fc96c77786d49e931c5e24ccf6ceb30eec3f9b445df3575442",
+        "size": 25013
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "agent/tests/test_entity_resolution_rules.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "8fd7b44f1ae29533db1ba8acc8d8ada3393091288ea4e777f4a81d51a0fd0404",
+        "size": 3239
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "agent/tests/test_ontology_codegen.py",
+      "kind": "modified",
+      "before": {
+        "hash": "17ab638983d3a5d29f545e90e291c5f2bedbd4c0be57c075d7629f39963c7a64",
+        "size": 4477
+      },
+      "after": {
+        "hash": "43ac53bdea91b251ffdb385b502c09e47fd5c72d07194ecdcffcca2051d1a200",
+        "size": 4477
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "agent/tests/test_planner_capability_card.py",
+      "kind": "modified",
+      "before": {
+        "hash": "7a808f4ae23d6673dec5b2215364cfc0a5692567f3c331911480e1a217d65162",
+        "size": 39447
+      },
+      "after": {
+        "hash": "08f98c35fd1da900e4de6cd60bccb0d4db5f72a11ce7bb3e8cb83872ae7bbf6a",
+        "size": 39538
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "agent/tests/test_registry_loader.py",
+      "kind": "modified",
+      "before": {
+        "hash": "8d19f2cdb5f4e8ae5626aef5ec08a6e88c31392e0517dcfa4ffdd53c4b0d6337",
+        "size": 9864
+      },
+      "after": {
+        "hash": "fd57a5bf145bc17a105f19dd87bae2151e55a514b8df008e2b6e0473e9fea1ac",
+        "size": 9954
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "agent/tests/test_semantic_planning_contract.py",
+      "kind": "modified",
+      "before": {
+        "hash": "b8a05a5b9d95b20e0b1bdd245803f21007b2618f68f5375e5f5dba94201628ca",
+        "size": 132920
+      },
+      "after": {
+        "hash": "a2e935611fb62ba78decb4565cd3cf15681496c4b889bb98137e4e1047ec6b51",
+        "size": 133323
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "agent/tests/test_semantic_release_assets.py",
+      "kind": "modified",
+      "before": {
+        "hash": "bb7ace1a088d7afa48a17172c524d82762fabd98af594fc167ae68a7f62e0d78",
+        "size": 10807
+      },
+      "after": {
+        "hash": "bb7cd7888a60cb3b40c9c123efe9ab7b1bb875c4251b6453dcc31e0f83429df8",
+        "size": 10871
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "agent/tests/test_semantic_release_builder.py",
+      "kind": "modified",
+      "before": {
+        "hash": "e3f3463b19b7e921e0daa4dff885552f22b998f36d0f3c0461c0ea88665193e6",
+        "size": 1985
+      },
+      "after": {
+        "hash": "030ff6e420eac52a89d580077e97ee9a625efe3a3c668635fa940fbd0a095f42",
+        "size": 1985
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "agent/tests/test_semantic_release_properties.py",
+      "kind": "modified",
+      "before": {
+        "hash": "df30165c6b5f98c07d94445a3198bae7a1fc57eaa66631ef694e32f2c88cb667",
+        "size": 5507
+      },
+      "after": {
+        "hash": "0c5d54181a0bf1ab649e4fdddb682cf610e547b022c8f62a9132370c9f4dc1e8",
+        "size": 5546
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "agent/tests/test_semantic_release_validation.py",
+      "kind": "modified",
+      "before": {
+        "hash": "210757215cc70a7c4fb2c173b7379822a1abf990a5da3a5cf182f2b1142b4523",
+        "size": 9121
+      },
+      "after": {
+        "hash": "8020c3e8c4670fdee2bdb0fd41067985ad62ba3acac6b6d37bbd3c5e6da6a0a8",
+        "size": 9163
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "db/migrations/0002_master_data_roles.sql",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "b166737d6f1d489a7cadfe8212ee9328e4889785b552c4d06a2cf022c5054269",
+        "size": 1030
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "evals/entity_resolution_cases.json",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "385c122f9cb134aa3894a95776ff9d3678d1acc4b8280cf3091f2aab81cecbcf",
+        "size": 1575
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "evals/matcher_cases.yaml",
+      "kind": "modified",
+      "before": {
+        "hash": "c0fe7a304020b6e1f5c81b504afa0b9ccc05720807dad06f18212bd4e60d1f70",
+        "size": 27349
+      },
+      "after": {
+        "hash": "d7adc5192c29616dc3f9db0ec4fa981d446659c05696c79a6f0dd9d05b6c668a",
+        "size": 27349
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "master-data/fixtures/customers-v1.json",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "2c6790c7c7adb8444e26a976780635e7c713f693e17d36f4d802cbd2a4e0b35e",
+        "size": 2681
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "master-data/fixtures/materials-v1.json",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "8da78920faea6ecca5219efa98d0cd66245fbbb8bf5846447eae668410180d85",
+        "size": 3239
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "master-data/fixtures/materials-v2.json",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "3d98f7200e6d9c28851ac34a19885c62f9610cc2332e61e7da8f8f9a01a037e3",
+        "size": 2382
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "master-data/fixtures/suppliers-v1.json",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "9e36061b65770761a227d6e64e25ca4d8dc2cd1bcd38afaa3a54346441a7dd10",
+        "size": 2192
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "ontology/fact-types.yaml",
+      "kind": "modified",
+      "before": {
+        "hash": "ee63d312c7804fde3a27c8f39489f11d873c3031327fdc2cbecdc8d75bf67679",
+        "size": 12988
+      },
+      "after": {
+        "hash": "46ff30a798fae4b135d4102ed70028a74b29329e71ac5a0ae8c2e304522a0bf5",
+        "size": 14448
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "ontology/generated/manifest.json",
+      "kind": "modified",
+      "before": {
+        "hash": "aea0acd0705110765d98c25c350aa304c99b66966fbf11f150763689d719186c",
+        "size": 188
+      },
+      "after": {
+        "hash": "5475971f20935291d029e0a791f83236b0b3bfda7b088e476a798d0a65268682",
+        "size": 188
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "ontology/generated/semantic-release.json",
+      "kind": "modified",
+      "before": {
+        "hash": "4acc187b3bbf70a4de17a5c4d2f98828045069f34d36163a6ae7a0ccff77cda6",
+        "size": 3120
+      },
+      "after": {
+        "hash": "dd214475118737620aab63bf41ab2deb918e5359b34700fd7819c4c3a7839766",
+        "size": 3326
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "ontology/generated/shacl-inputs.ttl",
+      "kind": "modified",
+      "before": {
+        "hash": "0c621c013a57e35689651a7c00323932b9e3c27b4c122ac500daa2bab1ed5aea",
+        "size": 8483
+      },
+      "after": {
+        "hash": "d746f5467a7a9eef8d80caf5e0a9ffab3cd221bfd3403f26cddfcc85dd0ae5ec",
+        "size": 11606
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "ontology/generated/skos-capabilities.ttl",
+      "kind": "modified",
+      "before": {
+        "hash": "c40c7567785af1c96e6dd5f6b5d6da2a0f91d121715f00b8741bbe194a9c045e",
+        "size": 4658
+      },
+      "after": {
+        "hash": "93fe672463fbbd1ef05d8aea962b82f50a702316d95eac05158e784440fb9f2a",
+        "size": 6083
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "ontology/md-entity-search.owl",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "6d0d7834f9276bbda2fe5bd5d37bbf85d661b0d8d9846d04653aa2fdd218b817",
+        "size": 2258
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "ontology/object-types.yaml",
+      "kind": "modified",
+      "before": {
+        "hash": "ae809251ab7bfd0533cb1e68d70d7f9b519f20fa3c76fb8868cb07c2407c7f46",
+        "size": 1062
+      },
+      "after": {
+        "hash": "7d32bb70b4f1889b7a3d1d2d0156e6b222cf64efe0712d0c82bc624b23dbc14f",
+        "size": 1186
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "registry/executor-bindings.yaml",
+      "kind": "modified",
+      "before": {
+        "hash": "d259c1b5ea3d67aa62ab330ee2838873f3b5d2a0735c4e7539ef4f0c6ea11eab",
+        "size": 5595
+      },
+      "after": {
+        "hash": "e8204bab2853954aa358964080e53174f319521b4e947964f8dc9619f027bdc5",
+        "size": 6615
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "schemas/capability.schema.json",
+      "kind": "modified",
+      "before": {
+        "hash": "b8d0b5bc189d4705ef0e9a63a60ccb38b310829c0fb5ce3c53ac93f603c95010",
+        "size": 17031
+      },
+      "after": {
+        "hash": "201ec149ceb15736d5906a2a67a5afc85e5aa45623f4ce742a42c44c42be61e1",
+        "size": 23385
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "schemas/entity-resolution.schema.json",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "5ee8842e97437779b2c087a234ace62c5dc2a524d1c0be28448a1c7aa82aa33e",
+        "size": 3995
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "schemas/executor-binding.schema.json",
+      "kind": "modified",
+      "before": {
+        "hash": "89b365cecd49eb5e5d606e4f37a180bb3c85ad455a4059fcbe5dfb17dd858ba9",
+        "size": 3839
+      },
+      "after": {
+        "hash": "1739dd99ff8b845ba44d9434dbad6b4cccf1d12ddb1c66a0dd45934e933756cd",
+        "size": 5974
+      },
+      "attributedTo": []
+    },
+    {
+      "path": "scripts/validate_registry_contract.py",
+      "kind": "modified",
+      "before": {
+        "hash": "0a99fa4b1e652e2f09a68d5796ffa8281661893b8216e11be735fd041b7c4704",
+        "size": 33295
+      },
+      "after": {
+        "hash": "9d9908605c9985077dcee5dbdf461e14bfa7670ce60e2f178f007e36ecffdf24",
+        "size": 34710
+      },
+      "attributedTo": []
+    }
+  ],
+  "unresolvedScopes": [
+    {
+      "id": "scope:7c65f361791dfe0b8c645b8f1ca8801817bd5778191c2d04c876650f07b414b8",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": "agent/sap_nexus_agent/entity_resolution/__init__.py",
+      "reason": "Changed path is not covered by a declared artifact: agent/sap_nexus_agent/entity_resolution/__init__.py"
+    },
+    {
+      "id": "scope:33aa2d2f5cf3e1e8375c0446d81f215534c300427f30d3336ec1aeaddecf4082",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": "agent/sap_nexus_agent/master_data/__init__.py",
+      "reason": "Changed path is not covered by a declared artifact: agent/sap_nexus_agent/master_data/__init__.py"
+    },
+    {
+      "id": "scope:3b6870b1734135d4b2a75bf3485a4fee4259091257ed4271a030c78d5576524f",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": "agent/sap_nexus_agent/semantic_release/assets.py",
+      "reason": "Changed path is not covered by a declared artifact: agent/sap_nexus_agent/semantic_release/assets.py"
+    },
+    {
+      "id": "scope:b1dc6a6f6732ed71b87a92da9944d411d7ae2452f441eeaf2cb878b66d4bf327",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": "agent/tests/test_capability_selector.py",
+      "reason": "Changed path is not covered by a declared artifact: agent/tests/test_capability_selector.py"
+    },
+    {
+      "id": "scope:1d5c542a9a96ccf5166c06700e2c565b0dd278a536c8579fa1961199036bc64c",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": "agent/tests/test_contract_files.py",
+      "reason": "Changed path is not covered by a declared artifact: agent/tests/test_contract_files.py"
+    },
+    {
+      "id": "scope:ea259f629257e2d97418f57b10a614df5e216902d8c6b8da9398a2fdc5bd3363",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": "agent/tests/test_entity_resolution_rules.py",
+      "reason": "Changed path is not covered by a declared artifact: agent/tests/test_entity_resolution_rules.py"
+    },
+    {
+      "id": "scope:68007d3adb192b40f6d438bf7c9b2d40ead9f14e93a19bf399984b9f3b5ccbea",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": "agent/tests/test_ontology_codegen.py",
+      "reason": "Changed path is not covered by a declared artifact: agent/tests/test_ontology_codegen.py"
+    },
+    {
+      "id": "scope:291b8ab05993512e84e6933d0d817959f50099ea2c310299ea1f527a738075cb",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": "agent/tests/test_planner_capability_card.py",
+      "reason": "Changed path is not covered by a declared artifact: agent/tests/test_planner_capability_card.py"
+    },
+    {
+      "id": "scope:1d441017b2f547a06c069f6eb74695bce01fa99cf6aa0a154a64196da2bdb9ea",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": "agent/tests/test_registry_loader.py",
+      "reason": "Changed path is not covered by a declared artifact: agent/tests/test_registry_loader.py"
+    },
+    {
+      "id": "scope:c4cda7810e9bd7d6667164cc1aa430e4ba5bbb1bc9533a0f18e601c57b5e7caa",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": "agent/tests/test_semantic_planning_contract.py",
+      "reason": "Changed path is not covered by a declared artifact: agent/tests/test_semantic_planning_contract.py"
+    },
+    {
+      "id": "scope:f05af62bd37a4ff368e47d6210cf1022bfe3a9818b36ad4e18c55b9b4e792c29",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": "agent/tests/test_semantic_release_assets.py",
+      "reason": "Changed path is not covered by a declared artifact: agent/tests/test_semantic_release_assets.py"
+    },
+    {
+      "id": "scope:175f0841c0d1b171f170f2ce855aed36b0eaee9fbb7966a8f85ba52ffd6529a2",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": "agent/tests/test_semantic_release_builder.py",
+      "reason": "Changed path is not covered by a declared artifact: agent/tests/test_semantic_release_builder.py"
+    },
+    {
+      "id": "scope:4c6120740b4cd093da6acdf7604e537aed091e64cb9f4df5aacdc83d041fbaea",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": "agent/tests/test_semantic_release_properties.py",
+      "reason": "Changed path is not covered by a declared artifact: agent/tests/test_semantic_release_properties.py"
+    },
+    {
+      "id": "scope:0eae7fed7d5e111cf661bccc45c7c0880d2bfb27034d995b8f6b9df37c0602ff",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": "agent/tests/test_semantic_release_validation.py",
+      "reason": "Changed path is not covered by a declared artifact: agent/tests/test_semantic_release_validation.py"
+    },
+    {
+      "id": "scope:891fc4d563e6e9c4a4543dc68f24b78ccab5145293440fcc63618367ce44788e",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": "db/migrations/0002_master_data_roles.sql",
+      "reason": "Changed path is not covered by a declared artifact: db/migrations/0002_master_data_roles.sql"
+    },
+    {
+      "id": "scope:aacf16b351c7f2d7a9255f0f27a7cb1d1448f6d4b87c8f133a44abf1e52f813d",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": "evals/entity_resolution_cases.json",
+      "reason": "Changed path is not covered by a declared artifact: evals/entity_resolution_cases.json"
+    },
+    {
+      "id": "scope:3d098fa29cac55b42d64c8d80892ce9884c41fb0af94efe086c8c3b05f621456",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": "evals/matcher_cases.yaml",
+      "reason": "Changed path is not covered by a declared artifact: evals/matcher_cases.yaml"
+    },
+    {
+      "id": "scope:a733857d1d07b3455bf3e873c4ef5342b25822d5b16d93f7622f331d0259d704",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": "master-data/fixtures/customers-v1.json",
+      "reason": "Changed path is not covered by a declared artifact: master-data/fixtures/customers-v1.json"
+    },
+    {
+      "id": "scope:54bcd44dc7abb9f8fa2a5016816c65ae0c060ef030d35e618b7dfb52b8b72c16",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": "master-data/fixtures/materials-v1.json",
+      "reason": "Changed path is not covered by a declared artifact: master-data/fixtures/materials-v1.json"
+    },
+    {
+      "id": "scope:f945ec0cb4d17db0d363b792da38a0cf6000a04967778a629a46e388a8e4d117",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": "master-data/fixtures/materials-v2.json",
+      "reason": "Changed path is not covered by a declared artifact: master-data/fixtures/materials-v2.json"
+    },
+    {
+      "id": "scope:16cfae942be86bf25c464f68cc5ea985c513c8a06c8cffadb2fcafb561026f6c",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": "master-data/fixtures/suppliers-v1.json",
+      "reason": "Changed path is not covered by a declared artifact: master-data/fixtures/suppliers-v1.json"
+    },
+    {
+      "id": "scope:f679a201e419ba4c2ccfe0293a22563b04daf76b44d78950350b85718a26d2c8",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": "ontology/fact-types.yaml",
+      "reason": "Changed path is not covered by a declared artifact: ontology/fact-types.yaml"
+    },
+    {
+      "id": "scope:68b3835166cd56a394a7c78dbb69d2b727488d0bb1bb4555b508f0d0c74267d8",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": "ontology/generated/manifest.json",
+      "reason": "Changed path is not covered by a declared artifact: ontology/generated/manifest.json"
+    },
+    {
+      "id": "scope:ed687edafe69f8e9cc53537301e72da791c489011cbd2cf5059bf54937d39568",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": "ontology/generated/semantic-release.json",
+      "reason": "Changed path is not covered by a declared artifact: ontology/generated/semantic-release.json"
+    },
+    {
+      "id": "scope:a79258367a58028298dc28bfa9c004d02bc573c74b33e29cba1f137b3b1ffb52",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": "ontology/generated/shacl-inputs.ttl",
+      "reason": "Changed path is not covered by a declared artifact: ontology/generated/shacl-inputs.ttl"
+    },
+    {
+      "id": "scope:f51e3d8a8c729199cc77b96d35da4beb825992a8b61e2ac396b83f31b4bea3af",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": "ontology/generated/skos-capabilities.ttl",
+      "reason": "Changed path is not covered by a declared artifact: ontology/generated/skos-capabilities.ttl"
+    },
+    {
+      "id": "scope:9cd4251e724ff348016ff134b03d34d801b1d0c9bc5c89174a8ddd70385a6bab",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": "ontology/md-entity-search.owl",
+      "reason": "Changed path is not covered by a declared artifact: ontology/md-entity-search.owl"
+    },
+    {
+      "id": "scope:846763b4116f6c88696ac5ef8002ed3953c672efb668d7f5d644eed798f51b9e",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": "ontology/object-types.yaml",
+      "reason": "Changed path is not covered by a declared artifact: ontology/object-types.yaml"
+    },
+    {
+      "id": "scope:bb5cc9aab56e75e66facb85bd382a39decb8bba26a2729dabebf64b62862132c",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": "registry/executor-bindings.yaml",
+      "reason": "Changed path is not covered by a declared artifact: registry/executor-bindings.yaml"
+    },
+    {
+      "id": "scope:3d6e9b17bf2b83ca67341b6d4bed4849effc4760899aa138fffb03a48fd6dbd7",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": "schemas/capability.schema.json",
+      "reason": "Changed path is not covered by a declared artifact: schemas/capability.schema.json"
+    },
+    {
+      "id": "scope:f76630c7b52bebdb96ebd26717fa838e4a4833a791277173ae1ad4df001b615d",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": "schemas/entity-resolution.schema.json",
+      "reason": "Changed path is not covered by a declared artifact: schemas/entity-resolution.schema.json"
+    },
+    {
+      "id": "scope:5bc60de56b513922e80ef76864a7740b0a001f5a2276295c72ade7b35d8dfc19",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": "schemas/executor-binding.schema.json",
+      "reason": "Changed path is not covered by a declared artifact: schemas/executor-binding.schema.json"
+    },
+    {
+      "id": "scope:03f31e53f0aecf5766c200ffd3bbeabdcff411e48e75a541775db9f5ed1571d3",
+      "kind": "unattributed-change",
+      "source": "implementation-scope",
+      "path": "scripts/validate_registry_contract.py",
+      "reason": "Changed path is not covered by a declared artifact: scripts/validate_registry_contract.py"
+    }
+  ],
+  "noCodeReason": null,
+  "scopeHash": "df213f3547f715b380d212e1179d6b868cea4fed48dcc867f9244819ccb8f13e"
+}

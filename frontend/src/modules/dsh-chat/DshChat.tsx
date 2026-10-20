@@ -448,7 +448,7 @@ export function DshChat() {
                     <div className="dsh-trace__body">
                       {message.trace ? <div className="dsh-trace__reasoning">{message.trace}</div> : null}
                       <div className="dsh-message__tools">
-                        {tools.map((call, index) => <ToolCallCard key={call.callId || index} call={call} />)}
+                        {tools.map((call, index) => <ToolCallCard key={call.callId || index} call={call} onQuickReply={send} />)}
                       </div>
                     </div>
                   </details>

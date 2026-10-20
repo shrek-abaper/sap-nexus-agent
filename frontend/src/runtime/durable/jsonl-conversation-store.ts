@@ -20,6 +20,8 @@ import type {
   ConversationStoreErrorCode,
   ConversationTurnLookup,
   DurableConversationStore,
+  EntityCandidateView,
+  EntityChoiceSet,
   LastContext,
   PendingInteraction,
   ReadContextFrame,
@@ -726,9 +728,63 @@ function parseSlot(payload: unknown): SlotBinding {
   };
 }
 
+function parseEntityCandidateView(payload: unknown): EntityCandidateView {
+  const raw = requireRecord(payload, "EntityCandidateView");
+  const distinguishing = requireRecord(raw.distinguishing ?? {}, "EntityCandidateView.distinguishing");
+  const status = requireEnum(raw.status, ["active", "inactive"] as const, "EntityCandidateView.status");
+  const orgScopes = requireArray(raw.orgScopes ?? [], "EntityCandidateView.orgScopes").map(
+    (value) => {
+      const scope = requireRecord(value, "EntityCandidateView.orgScopes entry");
+      return {
+        field: requireString(scope.field, "EntityCandidateView.orgScopes.field"),
+        value: requireString(scope.value, "EntityCandidateView.orgScopes.value"),
+      };
+    },
+  );
+  return {
+    index: requireNonNegativeInteger(raw.index, "EntityCandidateView.index"),
+    canonicalCode: requireString(raw.canonicalCode, "EntityCandidateView.canonicalCode"),
+    displayName: typeof raw.displayName === "string" ? raw.displayName : "",
+    distinguishing: Object.fromEntries(
+      Object.entries(distinguishing).map(([key, value]) => [key, String(value)]),
+    ),
+    matchKind: typeof raw.matchKind === "string" ? raw.matchKind : "",
+    status,
+    orgScopes,
+  };
+}
+
+function parseEntityChoiceSet(payload: unknown): EntityChoiceSet {
+  const raw = requireRecord(payload, "EntityChoiceSet");
+  const candidates = requireArray(raw.candidates, "EntityChoiceSet.candidates").map(
+    parseEntityCandidateView,
+  );
+  if (candidates.length === 0) {
+    throw new Error("EntityChoiceSet.candidates must not be empty");
+  }
+  const result: EntityChoiceSet = {
+    candidateSetId: requireString(raw.candidateSetId, "EntityChoiceSet.candidateSetId"),
+    objectType: requireString(raw.objectType, "EntityChoiceSet.objectType"),
+    targetCapabilityId: requireString(raw.targetCapabilityId, "EntityChoiceSet.targetCapabilityId"),
+    targetSlot: requireString(raw.targetSlot, "EntityChoiceSet.targetSlot"),
+    mention: typeof raw.mention === "string" ? raw.mention : "",
+    candidates,
+    snapshotId: requireString(raw.snapshotId, "EntityChoiceSet.snapshotId"),
+    provider: typeof raw.provider === "string" ? raw.provider : "",
+    createdAt: requireString(raw.createdAt, "EntityChoiceSet.createdAt"),
+    expiresAt: requireString(raw.expiresAt, "EntityChoiceSet.expiresAt"),
+    principalId: requireString(raw.principalId, "EntityChoiceSet.principalId"),
+    registrySnapshotId: requireString(raw.registrySnapshotId, "EntityChoiceSet.registrySnapshotId"),
+  };
+  if (typeof raw.sourceExtractedAt === "string") {
+    return { ...result, sourceExtractedAt: raw.sourceExtractedAt };
+  }
+  return result;
+}
+
 function parsePending(payload: unknown): PendingInteraction {
   const raw = requireRecord(payload, "PendingInteraction");
-  const kind = requireEnum(raw.kind, ["SLOT_CLARIFICATION", "CAPABILITY_CHOICE", "BATCH_CONFIRMATION", "PLANNER_CONFIRMATION"] as const, "PendingInteraction.kind");
+  const kind = requireEnum(raw.kind, ["SLOT_CLARIFICATION", "CAPABILITY_CHOICE", "BATCH_CONFIRMATION", "PLANNER_CONFIRMATION", "ENTITY_CHOICE"] as const, "PendingInteraction.kind");
   const common = {
     frameId: requireString(raw.frameId, "PendingInteraction.frameId"),
     stateVersion: requireNonNegativeInteger(raw.stateVersion, "PendingInteraction.stateVersion"),
@@ -760,6 +816,23 @@ function parsePending(payload: unknown): PendingInteraction {
       ...common,
       batchRef: requireString(raw.batchRef, "PendingInteraction.batchRef"),
     };
+  }
+
+  if (kind === "ENTITY_CHOICE") {
+    requireExactFields(
+      raw,
+      [...commonFields, "expectedFields", "entityChoice"],
+      "PendingInteraction",
+    );
+    const expectedFields = uniqueNonEmptyStrings(
+      raw.expectedFields,
+      "PendingInteraction.expectedFields",
+    );
+    const entityChoice = parseEntityChoiceSet(raw.entityChoice);
+    if (expectedFields.length !== 1 || expectedFields[0] !== entityChoice.targetSlot) {
+      throw new Error("PendingInteraction ENTITY_CHOICE expectedFields must be the target slot");
+    }
+    return { kind, ...common, expectedFields, entityChoice };
   }
 
   requireExactFields(

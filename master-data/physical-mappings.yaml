@@ -1,0 +1,58 @@
+version: 1
+# Trusted server-side physical mapping for master-data search bindings.
+#
+# Consumed ONLY by the Provider / TechnicalAdapter. Binds each registry
+# queryTemplateId (registry/executor-bindings.yaml) to the normalized read
+# views and the logical columns the fixed parameterized queries may use.
+# No SQL is generated from this file: query text is fixed in Provider code;
+# this file whitelists which view/column each logical field resolves to.
+# Users and the LLM must never be able to modify view or column names here.
+# Connection credentials are NOT part of this file (credential reference:
+# pg-masterdata-readonly).
+queryTemplates:
+  md.material.search:
+    objectType: sapnexus:Material
+    identifierField: material
+    entityView: md.v_entity_current
+    descriptionView: md.v_entity_description_current
+    aliasView: md.v_entity_alias_current
+    orgScopeView: md.v_entity_org_scope_current
+    snapshotView: md.v_snapshot_current
+    columns:
+      material: canonical_code
+      description: description
+      materialGroup: "attributes->>'materialGroup'"
+      sizeDimension: "attributes->>'sizeDimension'"
+      baseUnitOfMeasure: "attributes->>'baseUnitOfMeasure'"
+      basicText: "attributes->>'basicText'"
+    orgFilterField: plant
+  md.customer.search:
+    objectType: sapnexus:Customer
+    identifierField: customer
+    entityView: md.v_entity_current
+    descriptionView: md.v_entity_description_current
+    aliasView: md.v_entity_alias_current
+    orgScopeView: md.v_entity_org_scope_current
+    snapshotView: md.v_snapshot_current
+    columns:
+      customer: canonical_code
+      name: description
+      city: "attributes->>'city'"
+      country: "attributes->>'country'"
+      searchTerm: "attributes->>'searchTerm'"
+    orgFilterField: companyCode
+  md.supplier.search:
+    objectType: sapnexus:Supplier
+    identifierField: supplier
+    entityView: md.v_entity_current
+    descriptionView: md.v_entity_description_current
+    aliasView: md.v_entity_alias_current
+    orgScopeView: md.v_entity_org_scope_current
+    snapshotView: md.v_snapshot_current
+    columns:
+      supplier: canonical_code
+      name: description
+      city: "attributes->>'city'"
+      country: "attributes->>'country'"
+      searchTerm: "attributes->>'searchTerm'"
+    orgFilterField: companyCode

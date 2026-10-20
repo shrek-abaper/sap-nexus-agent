@@ -71,6 +71,35 @@ export type PendingPlannerGoal = {
   readonly missing: readonly string[];
 };
 
+/** Display-safe projection of one master-data candidate (server-issued). */
+export type EntityCandidateView = {
+  readonly index: number;
+  readonly canonicalCode: string;
+  readonly displayName: string;
+  readonly distinguishing: Readonly<Record<string, string>>;
+  readonly matchKind: string;
+  readonly status: "active" | "inactive";
+  readonly orgScopes: readonly { readonly field: string; readonly value: string }[];
+  readonly score?: number;
+};
+
+/** Server-side candidate set bound to frame/principal/snapshot/versions. */
+export type EntityChoiceSet = {
+  readonly candidateSetId: string;
+  readonly objectType: string;
+  readonly targetCapabilityId: string;
+  readonly targetSlot: string;
+  readonly mention: string;
+  readonly candidates: readonly EntityCandidateView[];
+  readonly snapshotId: string;
+  readonly provider: string;
+  readonly createdAt: string;
+  readonly expiresAt: string;
+  readonly principalId: string;
+  readonly registrySnapshotId: string;
+  readonly sourceExtractedAt?: string | null;
+};
+
 export type PendingInteraction = PendingBinding & (
   | { readonly kind: "SLOT_CLARIFICATION"; readonly expectedFields: readonly string[] }
   | { readonly kind: "CAPABILITY_CHOICE"; readonly capabilityIds: readonly string[] }
@@ -79,6 +108,11 @@ export type PendingInteraction = PendingBinding & (
       readonly kind: "PLANNER_CONFIRMATION";
       readonly plannerRef: string;
       readonly plannerGoals: readonly PendingPlannerGoal[];
+    }
+  | {
+      readonly kind: "ENTITY_CHOICE";
+      readonly expectedFields: readonly string[];
+      readonly entityChoice: EntityChoiceSet;
     }
 );
 
@@ -168,6 +202,7 @@ export type WorkbenchOutcome = {
   stateVersion?: number | null;
   registrySnapshotId?: string | null;
   conversationReadState?: ConversationReadState | null;
+  entityChoice?: EntityChoiceSet | null;
   resolutionReport?: Record<string, unknown> | null;
   decision?: Record<string, unknown> | null;
   readExecutionBinding?: ReadExecutionBinding | null;

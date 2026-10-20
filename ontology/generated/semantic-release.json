@@ -9,9 +9,9 @@
     "group_sum": "0.1.0",
     "select_fields": "0.1.0"
   },
-  "registrySnapshotId": "sha256:fe1b50611c749211deefed2b5c9fdb159ebf57afbeeddeeef0fcfdbb1acad51e",
+  "registrySnapshotId": "sha256:a9a9a05fe94949c4b556ba44ca56da23206f1cf8583ba5ca7fb916735b872d7a",
   "schemaVersion": 1,
-  "semanticSnapshotId": "sha256:c4b1ed64b207454cf30e9587ce0a1991eeb2dc820e57f9fa23b4f6013408aaa7",
+  "semanticSnapshotId": "sha256:64cf3fae0b4d42cce229c7d900b30eb8f0591b5b5625d272990bb4cec87e4012",
   "sources": [
     {
       "digest": "sha256:916c0bc68b624cc90d6a164e72794575a221fa3a57221829b2bd420785aef369",
@@ -56,7 +56,13 @@
       "role": "semantic"
     },
     {
-      "digest": "sha256:d72a8f8f9b7fc567a1b9a0735da78b5c04255a51afdbbcd2412e611f5c9a2d03",
+      "digest": "sha256:cfd679c681b34ae9ac3f8600d2a560dd9909a77dd4fd8c39702a87afb3aac415",
+      "documentVersion": 1,
+      "path": "ontology/entity-resolution.yaml",
+      "role": "semantic"
+    },
+    {
+      "digest": "sha256:38babc3fa64c767ec4cb8d664f8571b0356639c50eac0ea3f2d082f628c78625",
       "documentVersion": 3,
       "path": "ontology/fact-types.yaml",
       "role": "legacy"
@@ -68,19 +74,19 @@
       "role": "semantic"
     },
     {
-      "digest": "sha256:f6abb146c4ab85b9b44f539bc52043ff0be06d9195802c869e6794aa29ef4c37",
+      "digest": "sha256:aafa06d5881d141d8eea1ef8c81e7c99adc9466985d2b1121cf95f12c8f91d3d",
       "documentVersion": 1,
       "path": "ontology/object-types.yaml",
       "role": "semantic"
     },
     {
-      "digest": "sha256:c4013865f49a4704de1dac18a62c09fb01532c8f745a926e8aba949372c1461b",
+      "digest": "sha256:a9b1c1f2acbde722c9717026eeca16ec07c26dc54d95329a74d8bf49a1eb1250",
       "documentVersion": 2,
       "path": "registry/capabilities.yaml",
       "role": "legacy"
     },
     {
-      "digest": "sha256:b920df2b28cfc794a47e365387d6d705163c654026d35eee267471cdc5093328",
+      "digest": "sha256:5ab58c6c1bde27b464434e35d33813807daa5382d669bc9bb74c97b086c95c95",
       "documentVersion": 1,
       "path": "registry/executor-bindings.yaml",
       "role": "legacy"

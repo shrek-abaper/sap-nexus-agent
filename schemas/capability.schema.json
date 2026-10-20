@@ -4,7 +4,10 @@
   "title": "SAP Nexus Capability Registry",
   "type": "object",
   "additionalProperties": false,
-  "required": ["version", "capabilities"],
+  "required": [
+    "version",
+    "capabilities"
+  ],
   "properties": {
     "version": {
       "type": "integer",
@@ -13,7 +16,9 @@
     "capabilities": {
       "type": "array",
       "minItems": 1,
-      "items": { "$ref": "#/$defs/capability" }
+      "items": {
+        "$ref": "#/$defs/capability"
+      }
     }
   },
   "$defs": {
@@ -42,52 +47,116 @@
           "type": "string",
           "pattern": "^[A-Z][A-Za-z0-9]*(\\.[A-Z][A-Za-z0-9]*)+$"
         },
-        "name": { "type": "string", "minLength": 1 },
-        "description": { "type": "string", "minLength": 1 },
-        "status": { "type": "string", "enum": ["active", "disabled"] },
-        "kind": { "type": "string", "enum": ["Function", "Action"] },
-        "domain": { "type": "string", "minLength": 1 },
-        "businessObject": { "type": "string", "minLength": 1 },
-        "ontologyIri": { "type": "string", "minLength": 1 },
-        "semanticType": { "type": "string", "minLength": 1 },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "disabled"
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "Function",
+            "Action"
+          ]
+        },
+        "domain": {
+          "type": "string",
+          "minLength": 1
+        },
+        "businessObject": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ontologyIri": {
+          "type": "string",
+          "minLength": 1
+        },
+        "semanticType": {
+          "type": "string",
+          "minLength": 1
+        },
         "aliases": {
           "type": "array",
-          "items": { "type": "string", "minLength": 1 }
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
         },
         "examples": {
           "type": "array",
-          "items": { "type": "string", "minLength": 1 }
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
         },
         "inputs": {
           "type": "array",
           "minItems": 1,
-          "items": { "$ref": "#/$defs/ioField" }
+          "items": {
+            "$ref": "#/$defs/ioField"
+          }
         },
         "outputs": {
           "type": "array",
           "minItems": 1,
-          "items": { "$ref": "#/$defs/outputField" }
+          "items": {
+            "$ref": "#/$defs/outputField"
+          }
         },
-        "executor": { "$ref": "#/$defs/executor" },
-        "executorBinding": { "$ref": "#/$defs/executorBinding" },
-        "evalLinkage": { "$ref": "#/$defs/evalLinkage" },
-        "governance": { "$ref": "#/$defs/governance" },
-        "narrative": { "$ref": "#/$defs/narrative" },
-        "intent": { "$ref": "#/$defs/intentBlock" }
+        "executor": {
+          "$ref": "#/$defs/executor"
+        },
+        "executorBinding": {
+          "$ref": "#/$defs/executorBinding"
+        },
+        "evalLinkage": {
+          "$ref": "#/$defs/evalLinkage"
+        },
+        "governance": {
+          "$ref": "#/$defs/governance"
+        },
+        "narrative": {
+          "$ref": "#/$defs/narrative"
+        },
+        "intent": {
+          "$ref": "#/$defs/intentBlock"
+        }
       },
       "allOf": [
         {
           "if": {
-            "properties": { "kind": { "const": "Function" } },
-            "required": ["kind"]
+            "properties": {
+              "kind": {
+                "const": "Function"
+              }
+            },
+            "required": [
+              "kind"
+            ]
           },
           "then": {
             "properties": {
               "governance": {
                 "properties": {
-                  "sideEffect": { "const": "none" },
-                  "requiresApproval": { "const": false },
-                  "approvalPolicy": { "const": "not_required" }
+                  "sideEffect": {
+                    "const": "none"
+                  },
+                  "requiresApproval": {
+                    "const": false
+                  },
+                  "approvalPolicy": {
+                    "const": "not_required"
+                  }
                 }
               }
             }
@@ -95,16 +164,28 @@
         },
         {
           "if": {
-            "properties": { "kind": { "const": "Action" } },
-            "required": ["kind"]
+            "properties": {
+              "kind": {
+                "const": "Action"
+              }
+            },
+            "required": [
+              "kind"
+            ]
           },
           "then": {
             "properties": {
               "governance": {
                 "properties": {
-                  "sideEffect": { "const": "sap_write" },
-                  "requiresApproval": { "const": true },
-                  "approvalPolicy": { "const": "human_required" }
+                  "sideEffect": {
+                    "const": "sap_write"
+                  },
+                  "requiresApproval": {
+                    "const": true
+                  },
+                  "approvalPolicy": {
+                    "const": "human_required"
+                  }
                 }
               }
             }
@@ -115,104 +196,298 @@
     "ioField": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["name", "semanticType", "bindingKind", "required", "type", "sapParameter"],
+      "required": [
+        "name",
+        "semanticType",
+        "bindingKind",
+        "required",
+        "type",
+        "sapParameter"
+      ],
       "properties": {
-        "name": { "type": "string", "minLength": 1 },
-        "semanticName": { "type": "string", "minLength": 1 },
-        "semanticType": { "type": "string", "minLength": 1 },
-        "bindingKind": { "type": "string", "enum": ["identifier", "fact"] },
-        "satisfiableByFactType": { "type": "string", "minLength": 1 },
-        "required": { "type": "boolean" },
-        "type": { "type": "string", "enum": ["string", "number", "integer", "boolean", "object", "array"] },
-        "minLength": { "type": "integer", "minimum": 0 },
-        "maxLength": { "type": "integer", "minimum": 1 },
-        "pattern": { "type": "string", "minLength": 1 },
-        "sapParameter": { "type": "string", "minLength": 1 },
-        "extraction": { "$ref": "#/$defs/extractionBlock" },
-        "binding": { "$ref": "#/$defs/inputBindingBlock" }
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "semanticName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "semanticType": {
+          "type": "string",
+          "minLength": 1
+        },
+        "bindingKind": {
+          "type": "string",
+          "enum": [
+            "identifier",
+            "fact"
+          ]
+        },
+        "satisfiableByFactType": {
+          "type": "string",
+          "minLength": 1
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "string",
+            "number",
+            "integer",
+            "boolean",
+            "object",
+            "array"
+          ]
+        },
+        "minLength": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "maxLength": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "pattern": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sapParameter": {
+          "type": "string",
+          "minLength": 1
+        },
+        "extraction": {
+          "$ref": "#/$defs/extractionBlock"
+        },
+        "binding": {
+          "$ref": "#/$defs/inputBindingBlock"
+        }
       },
       "allOf": [
         {
           "if": {
-            "properties": { "bindingKind": { "const": "fact" } },
-            "required": ["bindingKind"]
+            "properties": {
+              "bindingKind": {
+                "const": "fact"
+              }
+            },
+            "required": [
+              "bindingKind"
+            ]
           },
-          "then": { "required": ["satisfiableByFactType"] }
+          "then": {
+            "required": [
+              "satisfiableByFactType"
+            ]
+          }
         }
       ]
     },
     "outputField": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["name", "semanticType", "type", "evidenceRole"],
+      "required": [
+        "name",
+        "semanticType",
+        "type",
+        "evidenceRole"
+      ],
       "properties": {
-        "name": { "type": "string", "minLength": 1 },
-        "semanticType": { "type": "string", "minLength": 1 },
-        "type": { "type": "string", "enum": ["string", "number", "integer", "boolean", "object", "array"] },
-        "evidenceRole": { "type": "string", "minLength": 1 },
-        "factTypeRef": { "type": "string", "minLength": 1 }
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "semanticType": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "string",
+            "number",
+            "integer",
+            "boolean",
+            "object",
+            "array"
+          ]
+        },
+        "evidenceRole": {
+          "type": "string",
+          "minLength": 1
+        },
+        "factTypeRef": {
+          "type": "string",
+          "minLength": 1
+        }
       },
       "allOf": [
         {
           "if": {
-            "properties": { "evidenceRole": { "const": "primaryFact" } },
-            "required": ["evidenceRole"]
+            "properties": {
+              "evidenceRole": {
+                "const": "primaryFact"
+              }
+            },
+            "required": [
+              "evidenceRole"
+            ]
           },
-          "then": { "required": ["factTypeRef"] }
+          "then": {
+            "required": [
+              "factTypeRef"
+            ]
+          }
         }
       ]
     },
     "executor": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["type"],
+      "required": [
+        "type"
+      ],
       "properties": {
-        "type": { "type": "string", "enum": ["JCO_RFC", "ODATA", "REST_JSON"] },
-        "rfcName": { "type": "string", "minLength": 1 },
+        "type": {
+          "type": "string",
+          "enum": [
+            "JCO_RFC",
+            "ODATA",
+            "REST_JSON",
+            "PG_MASTERDATA_READ"
+          ]
+        },
+        "rfcName": {
+          "type": "string",
+          "minLength": 1
+        },
         "inputMapping": {
           "type": "object",
           "minProperties": 1,
-          "additionalProperties": { "type": "string", "minLength": 1 }
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          }
         },
         "outputMapping": {
           "type": "object",
           "minProperties": 1,
-          "additionalProperties": { "type": "string", "minLength": 1 }
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "queryTemplateId": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "allOf": [
         {
-          "if": { "properties": { "type": { "const": "JCO_RFC" } }, "required": ["type"] },
-          "then": { "required": ["rfcName", "inputMapping", "outputMapping"] }
+          "if": {
+            "properties": {
+              "type": {
+                "const": "JCO_RFC"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "required": [
+              "rfcName",
+              "inputMapping",
+              "outputMapping"
+            ]
+          }
         },
         {
-          "if": { "properties": { "type": { "const": "REST_JSON" } }, "required": ["type"] },
-          "then": { "required": ["rfcName", "inputMapping", "outputMapping"] }
+          "if": {
+            "properties": {
+              "type": {
+                "const": "REST_JSON"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "required": [
+              "rfcName",
+              "inputMapping",
+              "outputMapping"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "PG_MASTERDATA_READ"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "required": [
+              "queryTemplateId",
+              "inputMapping",
+              "outputMapping"
+            ]
+          }
         }
       ]
     },
     "executorBinding": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["type", "bindingId"],
+      "required": [
+        "type",
+        "bindingId"
+      ],
       "properties": {
         "type": {
           "type": "string",
-          "enum": ["JCO_RFC", "ODATA", "CDS_ADT", "CDS_ODATA", "REST_JSON"]
+          "enum": [
+            "JCO_RFC",
+            "ODATA",
+            "CDS_ADT",
+            "CDS_ODATA",
+            "REST_JSON",
+            "PG_MASTERDATA_READ"
+          ]
         },
-        "bindingId": { "type": "string", "minLength": 1 }
+        "bindingId": {
+          "type": "string",
+          "minLength": 1
+        }
       }
     },
     "evalLinkage": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["evalFile", "caseIds"],
+      "required": [
+        "evalFile",
+        "caseIds"
+      ],
       "properties": {
-        "evalFile": { "type": "string", "minLength": 1 },
+        "evalFile": {
+          "type": "string",
+          "minLength": 1
+        },
         "caseIds": {
           "type": "array",
           "minItems": 1,
-          "items": { "type": "string", "minLength": 1 }
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
         }
       }
     },
@@ -227,40 +502,105 @@
         "auditRequired"
       ],
       "properties": {
-        "sideEffect": { "type": "string", "enum": ["none", "read", "write", "sap_write"] },
-        "requiresApproval": { "type": "boolean" },
-        "approvalPolicy": { "type": "string", "enum": ["not_required", "human_required"] },
-        "dataClassification": { "type": "string", "minLength": 1 },
-        "auditRequired": { "type": "boolean" }
+        "sideEffect": {
+          "type": "string",
+          "enum": [
+            "none",
+            "read",
+            "write",
+            "sap_write"
+          ]
+        },
+        "requiresApproval": {
+          "type": "boolean"
+        },
+        "approvalPolicy": {
+          "type": "string",
+          "enum": [
+            "not_required",
+            "human_required"
+          ]
+        },
+        "dataClassification": {
+          "type": "string",
+          "minLength": 1
+        },
+        "auditRequired": {
+          "type": "boolean"
+        }
       }
     },
     "narrative": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["factShape", "promptTemplate", "fallbackTemplate", "detailFormatter"],
+      "required": [
+        "factShape",
+        "promptTemplate",
+        "fallbackTemplate",
+        "detailFormatter"
+      ],
       "allOf": [
         {
           "description": "`fieldMapping` is consumed by exactly one code path: `_resolve_template_vars` (narrator.py), reached only from the `single-value` narration body. The `list` and `action-receipt` paths never read it, so requiring it there would mandate a value nothing consumes.",
-          "if": { "properties": { "factShape": { "const": "single-value" } }, "required": ["factShape"] },
-          "then": { "required": ["fieldMapping"] }
+          "if": {
+            "properties": {
+              "factShape": {
+                "const": "single-value"
+              }
+            },
+            "required": [
+              "factShape"
+            ]
+          },
+          "then": {
+            "required": [
+              "fieldMapping"
+            ]
+          }
         }
       ],
       "properties": {
-        "factShape": { "type": "string", "enum": ["single-value", "list", "action-receipt"] },
-        "promptTemplate": { "type": "string", "minLength": 1 },
-        "fallbackTemplate": { "type": "string", "minLength": 1 },
+        "factShape": {
+          "type": "string",
+          "enum": [
+            "single-value",
+            "list",
+            "action-receipt"
+          ]
+        },
+        "promptTemplate": {
+          "type": "string",
+          "minLength": 1
+        },
+        "fallbackTemplate": {
+          "type": "string",
+          "minLength": 1
+        },
         "fieldMapping": {
           "type": "object",
           "minProperties": 1,
-          "additionalProperties": { "type": "string", "minLength": 1 }
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          }
         },
-        "detailFormatter": { "type": "string", "enum": ["mrp-table", "po-list", "none"] }
+        "detailFormatter": {
+          "type": "string",
+          "enum": [
+            "mrp-table",
+            "po-list",
+            "none"
+          ]
+        }
       }
     },
     "intentBlock": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["intentName", "primaryKeywords"],
+      "required": [
+        "intentName",
+        "primaryKeywords"
+      ],
       "properties": {
         "intentName": {
           "type": "string",
@@ -270,18 +610,27 @@
         "primaryKeywords": {
           "type": "array",
           "minItems": 1,
-          "items": { "type": "string", "minLength": 1 },
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
           "description": "Strong trigger keywords; at least one is required. Must stay disjoint from weakKeywords (enforced by the validator, not expressible in plain JSON Schema)."
         },
         "weakKeywords": {
           "type": "array",
-          "items": { "type": "string", "minLength": 1 },
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
           "description": "Weak confirmation keywords that only reinforce a primary hit."
         },
         "triggerKeywords": {
           "type": "array",
           "minItems": 1,
-          "items": { "type": "string", "minLength": 1 },
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
           "description": "Override for the trigger keyword set; defaults to primaryKeywords when absent."
         },
         "fieldNames": {
@@ -290,28 +639,42 @@
           "additionalProperties": {
             "type": "object",
             "minProperties": 1,
-            "additionalProperties": { "type": "string", "minLength": 1 }
+            "additionalProperties": {
+              "type": "string",
+              "minLength": 1
+            }
           },
           "description": "Per-locale display names for input fields, keyed by locale then field name."
         },
         "requireAny": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["inputs", "missingName"],
+          "required": [
+            "inputs",
+            "missingName"
+          ],
           "properties": {
             "inputs": {
               "type": "array",
               "minItems": 1,
-              "items": { "type": "string", "minLength": 1 }
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
             },
-            "missingName": { "type": "string", "minLength": 1 }
+            "missingName": {
+              "type": "string",
+              "minLength": 1
+            }
           },
           "description": "If none of these input fields could be extracted, ask for missingName."
         },
         "clarifyPrompt": {
           "type": "object",
           "minProperties": 1,
-          "additionalProperties": { "$ref": "#/$defs/localePrompt" },
+          "additionalProperties": {
+            "$ref": "#/$defs/localePrompt"
+          },
           "description": "Per-locale clarification prompt cases and fallback template."
         }
       }
@@ -321,7 +684,9 @@
       "additionalProperties": false,
       "properties": {
         "strategy": {
-          "enum": ["groupByBindingKind"],
+          "enum": [
+            "groupByBindingKind"
+          ],
           "description": "Rendering strategy: missing fields are grouped by binding source kind; at most one prompt per group per round, rendered from fieldNames display names."
         },
         "maxRounds": {
@@ -335,14 +700,23 @@
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["missing", "text"],
+            "required": [
+              "missing",
+              "text"
+            ],
             "properties": {
               "missing": {
                 "type": "array",
                 "minItems": 1,
-                "items": { "type": "string", "minLength": 1 }
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
               },
-              "text": { "type": "string", "minLength": 1 }
+              "text": {
+                "type": "string",
+                "minLength": 1
+              }
             }
           },
           "description": "Optional exact missing-set override, checked before strategy rendering."
@@ -350,8 +724,15 @@
         "fallback": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["template"],
-          "properties": { "template": { "type": "string", "minLength": 1 } },
+          "required": [
+            "template"
+          ],
+          "properties": {
+            "template": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
           "description": "Template rendered when the strategy budget is exhausted (or when no strategy is declared and no case matches)."
         }
       }
@@ -359,107 +740,270 @@
     "extractionBlock": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["matchers"],
+      "required": [
+        "matchers"
+      ],
       "description": "DEPRECATED: use definitions.inputBinding instead. Replace extraction.matchers with binding.sources[{kind: userUtterance, matchers: [...]}].",
       "properties": {
         "matchers": {
           "type": "array",
           "minItems": 1,
-          "items": { "$ref": "#/$defs/extractionMatcher" }
+          "items": {
+            "$ref": "#/$defs/extractionMatcher"
+          }
         },
-        "priority": { "type": "integer" },
+        "priority": {
+          "type": "integer"
+        },
         "excludes": {
           "type": "array",
-          "items": { "type": "string", "minLength": 1 }
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
         },
-        "resolver": { "enum": ["date", "quantity", "text", "relative_date"] },
-        "when": { "$ref": "#/$defs/extractionCondition" },
-        "requiredWhen": { "$ref": "#/$defs/extractionCondition" },
-        "reaskSuspect": { "type": "boolean" }
+        "resolver": {
+          "enum": [
+            "date",
+            "quantity",
+            "text",
+            "relative_date"
+          ]
+        },
+        "when": {
+          "$ref": "#/$defs/extractionCondition"
+        },
+        "requiredWhen": {
+          "$ref": "#/$defs/extractionCondition"
+        },
+        "reaskSuspect": {
+          "type": "boolean"
+        }
       }
     },
     "extractionMatcher": {
       "type": "object",
-      "required": ["kind"],
+      "required": [
+        "kind"
+      ],
       "properties": {
-        "kind": { "enum": ["keyword", "regex", "semanticType"] },
-        "pattern": { "type": "string", "minLength": 1 },
-        "value": { "type": "string", "minLength": 1 },
-        "ref": { "type": "string", "minLength": 1 },
-        "ignoreCase": { "type": "boolean" },
-        "scan": { "enum": ["first", "all"] }
+        "kind": {
+          "enum": [
+            "keyword",
+            "regex",
+            "semanticType"
+          ]
+        },
+        "pattern": {
+          "type": "string",
+          "minLength": 1
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ignoreCase": {
+          "type": "boolean"
+        },
+        "scan": {
+          "enum": [
+            "first",
+            "all"
+          ]
+        }
       },
       "allOf": [
-        { "if": { "properties": { "kind": { "const": "keyword" } } },
-          "then": { "required": ["pattern", "value"] } },
-        { "if": { "properties": { "kind": { "const": "regex" } } },
-          "then": { "required": ["pattern"] } },
-        { "if": { "properties": { "kind": { "const": "semanticType" } } },
-          "then": { "required": ["ref"] } }
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "keyword"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "pattern",
+              "value"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "regex"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "pattern"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "semanticType"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "ref"
+            ]
+          }
+        }
       ]
     },
     "extractionCondition": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["field", "equals"],
+      "required": [
+        "field",
+        "equals"
+      ],
       "properties": {
-        "field": { "type": "string", "minLength": 1 },
-        "equals": { "type": "string" }
+        "field": {
+          "type": "string",
+          "minLength": 1
+        },
+        "equals": {
+          "type": "string"
+        }
       }
     },
     "inputBindingBlock": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["sources"],
+      "required": [
+        "sources"
+      ],
       "properties": {
         "sources": {
           "type": "array",
           "minItems": 1,
-          "items": { "$ref": "#/$defs/bindingSource" }
+          "items": {
+            "$ref": "#/$defs/bindingSource"
+          }
         },
         "elicitIfMissing": {
           "type": "boolean",
           "description": "False skips clarification for the field even when no source produces a value."
         },
-        "priority": { "type": "integer" },
+        "priority": {
+          "type": "integer"
+        },
         "excludes": {
           "type": "array",
-          "items": { "type": "string", "minLength": 1 }
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
         },
-        "resolver": { "enum": ["date", "quantity", "text", "relative_date"] },
-        "when": { "$ref": "#/$defs/extractionCondition" },
-        "requiredWhen": { "$ref": "#/$defs/extractionCondition" },
-        "reaskSuspect": { "type": "boolean" }
+        "resolver": {
+          "enum": [
+            "date",
+            "quantity",
+            "text",
+            "relative_date"
+          ]
+        },
+        "when": {
+          "$ref": "#/$defs/extractionCondition"
+        },
+        "requiredWhen": {
+          "$ref": "#/$defs/extractionCondition"
+        },
+        "reaskSuspect": {
+          "type": "boolean"
+        }
       },
       "description": "Binding sources for an input: userUtterance (matcher-driven), capabilityOutput (reserved for future dependency edges; accepted and validated, execution unimplemented), default (constant). Sources are evaluated in priority capabilityOutput > userUtterance > default; the first produced value wins."
     },
     "bindingSource": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["kind"],
+      "required": [
+        "kind"
+      ],
       "properties": {
-        "kind": { "enum": ["userUtterance", "capabilityOutput", "default"] },
+        "kind": {
+          "enum": [
+            "userUtterance",
+            "capabilityOutput",
+            "default"
+          ]
+        },
         "matchers": {
           "type": "array",
           "minItems": 1,
-          "items": { "$ref": "#/$defs/extractionMatcher" }
+          "items": {
+            "$ref": "#/$defs/extractionMatcher"
+          }
         },
-        "factType": { "type": "string", "minLength": 1 },
-        "field": { "type": "string", "minLength": 1 },
-        "value": { "type": "string", "minLength": 1 }
+        "factType": {
+          "type": "string",
+          "minLength": 1
+        },
+        "field": {
+          "type": "string",
+          "minLength": 1
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1
+        }
       },
       "allOf": [
         {
-          "if": { "properties": { "kind": { "const": "userUtterance" } } },
-          "then": { "required": ["matchers"] }
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "userUtterance"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "matchers"
+            ]
+          }
         },
         {
-          "if": { "properties": { "kind": { "const": "capabilityOutput" } } },
-          "then": { "required": ["factType", "field"] }
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "capabilityOutput"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "factType",
+              "field"
+            ]
+          }
         },
         {
-          "if": { "properties": { "kind": { "const": "default" } } },
-          "then": { "required": ["value"] }
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "default"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "value"
+            ]
+          }
         }
       ]
     }

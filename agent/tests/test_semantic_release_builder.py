@@ -24,7 +24,7 @@ def test_build_package_happy_path():
     legacy = [s for s in document["sources"] if s["role"] == "legacy"]
     assert len(legacy) == 5
     semantic = [s for s in document["sources"] if s["role"] == "semantic"]
-    assert len(semantic) == 8
+    assert len(semantic) == 9
     assert document["businessValidity"] == {"applicability": []}
     assert document["compilerVersion"] == "0.1.0"
 

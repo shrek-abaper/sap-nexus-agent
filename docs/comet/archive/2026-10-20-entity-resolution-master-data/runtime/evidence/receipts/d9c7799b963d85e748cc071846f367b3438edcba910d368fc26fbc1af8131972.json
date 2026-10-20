@@ -1,0 +1,28 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "manual-evidence",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "entity-resolution-master-data",
+    "sourceRevision": 10,
+    "contractHash": "666febf09bfa30372dc90ccaac9fcdbc13121466568d1244dadfb5b8ac0ebf7a",
+    "scopeHash": "5f18afb2765e694a1323fe41c36e69f067fff76042ba16c63123a40ac84cde22",
+    "snapshotHash": "211a11bfcba58946dfba3877c817c057c42024b51722167a85e8998683e6216b",
+    "artifactHash": "94ee99e4a75c2382a50b80864748e8b07c192a40735d5e023705100cb3323aa1"
+  },
+  "acceptanceIds": [
+    "acceptance-c326b1d42879db7c636da58af6b74ff3a20d6a3fbcac1704c8d0fc46827f0360"
+  ],
+  "actor": "native-runtime:manual-evidence",
+  "issuedAt": "2026-10-20T10:57:06.886Z",
+  "evidence": {
+    "steps": [
+      "核查 pg_trgm 创建位置：db/migrations/0001 仅在 sap_nexus_dev 与 sap_nexus_test（隔离测试库）执行"
+    ],
+    "observations": [
+      "扩展仅创建于隔离环境；生产未触碰；README 明确生产安装扩展不在授权内"
+    ]
+  },
+  "receiptHash": "d9c7799b963d85e748cc071846f367b3438edcba910d368fc26fbc1af8131972"
+}

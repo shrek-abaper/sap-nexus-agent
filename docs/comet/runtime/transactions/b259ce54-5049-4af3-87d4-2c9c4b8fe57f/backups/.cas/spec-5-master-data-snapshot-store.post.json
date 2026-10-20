@@ -1,0 +1,11 @@
+{
+  "schema": "comet.native.archive-cas.v1",
+  "operationId": "spec-5-master-data-snapshot-store",
+  "role": "post",
+  "hash": "bb323355b3915ff731d8b28c685e3a45da4239047ba3aa5c8f0cf18274c5ae5d",
+  "identity": {
+    "dev": 2096,
+    "ino": 665764,
+    "birthtimeMs": 1792494004776.618
+  }
+}

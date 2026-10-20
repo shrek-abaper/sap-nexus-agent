@@ -195,3 +195,36 @@ bindings:
     constraints:
       sideEffect: none
       timeoutMs: 300000
+  - bindingId: md.material.search-pg
+    type: PG_MASTERDATA_READ
+    # Fixed parameterized query template. SQL, table/column names, and the
+    # connection string live in trusted server-side Provider configuration,
+    # never in the registry (prompt §3.1/§4.2).
+    queryTemplateId: md.material.search
+    auth:
+      type: credential-reference
+      credentialRef: pg-masterdata-readonly
+    constraints:
+      sideEffect: none
+      timeoutMs: 5000
+      maxRows: 50
+  - bindingId: md.customer.search-pg
+    type: PG_MASTERDATA_READ
+    queryTemplateId: md.customer.search
+    auth:
+      type: credential-reference
+      credentialRef: pg-masterdata-readonly
+    constraints:
+      sideEffect: none
+      timeoutMs: 5000
+      maxRows: 50
+  - bindingId: md.supplier.search-pg
+    type: PG_MASTERDATA_READ
+    queryTemplateId: md.supplier.search
+    auth:
+      type: credential-reference
+      credentialRef: pg-masterdata-readonly
+    constraints:
+      sideEffect: none
+      timeoutMs: 5000
+      maxRows: 50

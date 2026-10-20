@@ -1,0 +1,109 @@
+version: 1
+# Ontology-driven master-data entity resolution rules.
+#
+# Declares logical objects, identity, searchable/display fields, resolution
+# policy, and semantic parameter bindings for description-driven entity
+# resolution. This file is a logical contract: it contains no database
+# credentials, no physical table/column names, and no SQL. Physical mapping
+# lives in trusted server-side configuration consumed only by the Provider.
+#
+# Cross-references validated by sap_nexus_agent.entity_resolution.rules:
+# - objectTypeId / identifierSemanticType must match ontology/object-types.yaml
+# - searchCapabilityId must exist in registry/capabilities.yaml as a READ
+#   capability (sideEffect: none, approvalPolicy: not_required)
+# - parameterBindings capabilityId+inputName must exist and carry the object
+#   identifier semanticType
+objectTypes:
+  - objectTypeId: sapnexus:Material
+    identifierSemanticType: sapnexus:MaterialNumber
+    identifierField: material
+    displayNameField: description
+    searchCapabilityId: MD.Material.Search
+    searchableFields:
+      - field: description
+        kind: label
+      - field: alias
+        kind: alias
+      - field: basicText
+        kind: attribute
+      - field: materialGroup
+        kind: attribute
+      - field: sizeDimension
+        kind: attribute
+    distinguishingFields: [description, materialGroup, sizeDimension, baseUnitOfMeasure]
+    organizationalFilters:
+      - field: plant
+        semanticType: sapnexus:Plant
+    languages: [zh-CN, en]
+    confirmationPolicy:
+      # exactCode binds only after get-by-key existence/validity evidence.
+      exactCode: bind-with-evidence
+      # Conservative v1 (brief D4): even a unique exact label/alias hit asks.
+      exactLabelUnique: confirm
+      fuzzy: confirm
+    candidateDisplayFields: [material, description, materialGroup, sizeDimension, baseUnitOfMeasure]
+    parameterBindings:
+      - capabilityId: MM.Inventory.GetAvailability
+        inputName: material
+      - capabilityId: MM.Material.GetInfo
+        inputName: material
+      - capabilityId: SD.SalesOrder.GetList
+        inputName: material
+  - objectTypeId: sapnexus:Customer
+    identifierSemanticType: sapnexus:CustomerNumber
+    identifierField: customer
+    displayNameField: name
+    searchCapabilityId: MD.Customer.Search
+    searchableFields:
+      - field: name
+        kind: label
+      - field: alias
+        kind: alias
+      - field: city
+        kind: attribute
+      - field: searchTerm
+        kind: attribute
+    distinguishingFields: [name, city, country]
+    organizationalFilters:
+      - field: companyCode
+        semanticType: sapnexus:CompanyCode
+    languages: [zh-CN, en]
+    confirmationPolicy:
+      exactCode: bind-with-evidence
+      exactLabelUnique: confirm
+      fuzzy: confirm
+    candidateDisplayFields: [customer, name, city, country]
+    parameterBindings:
+      - capabilityId: FI.AR.GetOpenItems
+        inputName: customer
+      - capabilityId: SD.SalesOrder.GetList
+        inputName: customerNumber
+  - objectTypeId: sapnexus:Supplier
+    identifierSemanticType: sapnexus:Supplier
+    identifierField: supplier
+    displayNameField: name
+    searchCapabilityId: MD.Supplier.Search
+    searchableFields:
+      - field: name
+        kind: label
+      - field: alias
+        kind: alias
+      - field: city
+        kind: attribute
+      - field: searchTerm
+        kind: attribute
+    distinguishingFields: [name, city, country]
+    organizationalFilters:
+      - field: companyCode
+        semanticType: sapnexus:CompanyCode
+    languages: [zh-CN, en]
+    confirmationPolicy:
+      exactCode: bind-with-evidence
+      exactLabelUnique: confirm
+      fuzzy: confirm
+    candidateDisplayFields: [supplier, name, city, country]
+    parameterBindings:
+      - capabilityId: MM.PurchaseOrder.GetList
+        inputName: vendor
+      - capabilityId: FI.AP.GetOpenItems
+        inputName: vendor

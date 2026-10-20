@@ -122,6 +122,9 @@ def test_registry_v2_metadata_does_not_change_runtime_descriptors():
     assert tuple(sorted(catalog.capability_ids)) == (
         "FI.AP.GetOpenItems",
         "FI.AR.GetOpenItems",
+        "MD.Customer.Search",
+        "MD.Material.Search",
+        "MD.Supplier.Search",
         "MM.Inventory.GetAvailability",
         "MM.Material.GetInfo",
         "MM.PR.CreateDraft",

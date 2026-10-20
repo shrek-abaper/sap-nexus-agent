@@ -324,6 +324,11 @@ def reduce_context(request: ContextReductionRequest) -> ContextResolution:
             state_version=prior.state_version + 1,
             registry_snapshot_id=request.registry_snapshot_id,
             expires_at=pending.expires_at,
+            capability_ids=pending.capability_ids,
+            batch_ref=pending.batch_ref,
+            planner_ref=pending.planner_ref,
+            planner_goals=pending.planner_goals,
+            entity_choice=pending.entity_choice,
         )
 
     next_state = ConversationReadState(

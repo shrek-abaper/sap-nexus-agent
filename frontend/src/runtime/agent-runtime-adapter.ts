@@ -1622,6 +1622,20 @@ async function emitTerminalOutcome(
 ): Promise<void> {
   await emitMatchDecisionEventIfPresent(push, outcome);
 
+  if (outcome.entityChoice) {
+    // Master-data ENTITY_CHOICE: the display-safe candidate set travels as a
+    // redacted artifact; the authoritative pending stays server-side.
+    await push({
+      type: "entity_choice_created",
+      state: "narrated",
+      artifact: redactArtifact({
+        label: "EntityChoiceSet",
+        kind: "entity-choice",
+        payload: toJsonValue(outcome.entityChoice)
+      })
+    });
+  }
+
   if (outcome.responseText) {
     await push({
       type: "narrative_created",

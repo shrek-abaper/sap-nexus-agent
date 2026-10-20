@@ -16,6 +16,7 @@ export type AgentRunEventType =
   | "run_completed"
   | "run_failed"
   | "match_decision_created"
+  | "entity_choice_created"
   | "batch_confirm_requested"
   | "node_state_changed"
   | "intent_recognized"

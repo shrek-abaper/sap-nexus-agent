@@ -1,0 +1,28 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "manual-evidence",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "entity-resolution-master-data",
+    "sourceRevision": 10,
+    "contractHash": "666febf09bfa30372dc90ccaac9fcdbc13121466568d1244dadfb5b8ac0ebf7a",
+    "scopeHash": "5f18afb2765e694a1323fe41c36e69f067fff76042ba16c63123a40ac84cde22",
+    "snapshotHash": "211a11bfcba58946dfba3877c817c057c42024b51722167a85e8998683e6216b",
+    "artifactHash": "94ee99e4a75c2382a50b80864748e8b07c192a40735d5e023705100cb3323aa1"
+  },
+  "acceptanceIds": [
+    "acceptance-1eb06ac6dc692e436cbfd8fa5e40148f923dd5eb0b4ef30ba7c3bf0969f6cabb"
+  ],
+  "actor": "native-runtime:manual-evidence",
+  "issuedAt": "2026-10-20T10:57:05.839Z",
+  "evidence": {
+    "steps": [
+      "按 master-data/README.md 逐步执行：apt 安装、service 启动、createuser/createdb、0001/0002 迁移、md_search 角色、三类 fixtures 导入、pytest 19 项"
+    ],
+    "observations": [
+      "全部步骤已实际执行成功（PUBLISHED ×3，19/19 通过）；README 含完整可复制命令；未安装 Docker、未删卷、未改系统服务"
+    ]
+  },
+  "receiptHash": "71cd2cbfdac6445758b35905921fc389a8f1437744f0df4221afa41aa01daed4"
+}

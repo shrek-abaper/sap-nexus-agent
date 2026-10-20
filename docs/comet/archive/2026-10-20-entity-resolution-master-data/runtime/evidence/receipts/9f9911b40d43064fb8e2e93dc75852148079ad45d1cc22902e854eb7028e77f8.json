@@ -1,0 +1,28 @@
+{
+  "schema": "comet.native.verification-receipt.v3",
+  "kind": "manual-evidence",
+  "role": "acceptance-evidence",
+  "status": "passed",
+  "bindings": {
+    "change": "entity-resolution-master-data",
+    "sourceRevision": 10,
+    "contractHash": "666febf09bfa30372dc90ccaac9fcdbc13121466568d1244dadfb5b8ac0ebf7a",
+    "scopeHash": "5f18afb2765e694a1323fe41c36e69f067fff76042ba16c63123a40ac84cde22",
+    "snapshotHash": "211a11bfcba58946dfba3877c817c057c42024b51722167a85e8998683e6216b",
+    "artifactHash": "94ee99e4a75c2382a50b80864748e8b07c192a40735d5e023705100cb3323aa1"
+  },
+  "acceptanceIds": [
+    "acceptance-dcf7dc284a409ecd7fa0cd3c43c0e16c673e2405b2d3c6e97dee218bedfbe453"
+  ],
+  "actor": "native-runtime:manual-evidence",
+  "issuedAt": "2026-10-20T10:57:07.421Z",
+  "evidence": {
+    "steps": [
+      "DSH 冒烟（dev server:3100 + smoke gateway + 真实 PG）：er-smoke-4 两轮（描述→entityChoice→'第二个'→complete，DEMOA2/1000/12 EA）；er-smoke-7 两轮（'苏州那家'→complete，customer=C10001）"
+    ],
+    "observations": [
+      "候选卡片含真实属性+快照/提取时间+缩小范围入口（quick-reply 按钮=普通用户turn）；pending 时无下游读取；UI 浏览器层与真实模型未实测（不在授权内），按钮协议经等价用户turn验证"
+    ]
+  },
+  "receiptHash": "9f9911b40d43064fb8e2e93dc75852148079ad45d1cc22902e854eb7028e77f8"
+}

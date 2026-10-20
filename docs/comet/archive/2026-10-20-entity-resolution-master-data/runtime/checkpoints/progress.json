@@ -1,0 +1,15 @@
+{
+  "schema": "comet.native.progress-checkpoint.v1",
+  "id": "da673049-4f3f-432d-b9a8-1b9902958ae4",
+  "change": "entity-resolution-master-data",
+  "phase": "build",
+  "previousRevision": 8,
+  "stateRevision": 9,
+  "summary": "阶段B+C完成：服务端编排（hook1选择/hook2描述/hook2b显式编码存在性校验）+ENTITY_CHOICE一等pending（Python+TS同步）+特性开关ENTITY_RESOLUTION_MODE（默认off，旧路径保持）+resolve-read-turn两阶段接入网关+DSH候选卡片（快速回复按钮）。测试：编排15+对象复用4+TS(durable 47+semantic-tools 5+dsh-chat 22)全绿；frontend 643过；agent全套件1931过/2已知挂。已知边界：可选槽位（SD.SO customerNumber）v1不触发解析（契约层已验证映射）",
+  "nextAction": "阶段D：§11剩余反向用例（27/29/30/23）+性能记录+master-data README与回滚文档+三端全量验证+verification.md取证后正式Verify",
+  "inputHash": "87aa45763903812873da74d3a3df4c34318e6632423d17993b416636ac181e40",
+  "manifestHash": "3278f6c9edc12b8e38027801c1d03ad0d98db50eeee673e214ff2bd1ea2fa538",
+  "manifestRef": "runtime/checkpoints/manifests/3278f6c9edc12b8e38027801c1d03ad0d98db50eeee673e214ff2bd1ea2fa538.json",
+  "artifactCount": 76,
+  "createdAt": "2026-10-20T07:49:42.654Z"
+}

@@ -1,0 +1,69 @@
+{
+  "batch": {
+    "sourceSystem": "S4H",
+    "client": "100",
+    "objectType": "sapnexus:Material",
+    "snapshotKind": "full",
+    "sourceExtractedAt": "2026-10-10T00:00:00Z",
+    "coverage": {
+      "sourceSystems": ["S4H"],
+      "clients": ["100"],
+      "objectTypes": ["sapnexus:Material"]
+    }
+  },
+  "entities": [
+    {
+      "canonicalCode": "DEMOA1",
+      "status": "active",
+      "descriptions": [
+        { "language": "zh-CN", "text": "蓝色耐高温密封圈 Ø20", "official": true },
+        { "language": "en", "text": "Blue high-temp seal ring D20", "official": false }
+      ],
+      "attributes": { "materialGroup": "SEAL", "sizeDimension": "20mm", "baseUnitOfMeasure": "EA", "basicText": "FKM 材质，耐温 200°C" },
+      "aliases": [
+        { "alias": "密封圈蓝", "source": "approved-list", "scope": "sandbox", "active": true }
+      ],
+      "orgScopes": [
+        { "field": "plant", "value": "1000" },
+        { "field": "plant", "value": "2000" }
+      ]
+    },
+    {
+      "canonicalCode": "DEMOA2",
+      "status": "active",
+      "descriptions": [
+        { "language": "zh-CN", "text": "蓝色耐高温密封圈 Ø25（改型）", "official": true },
+        { "language": "en", "text": "Blue high-temp seal ring D25 rev2", "official": false }
+      ],
+      "attributes": { "materialGroup": "SEAL", "sizeDimension": "25mm", "baseUnitOfMeasure": "EA", "basicText": "FKM 材质，耐温 220°C" },
+      "aliases": [],
+      "orgScopes": [
+        { "field": "plant", "value": "1000" }
+      ]
+    },
+    {
+      "canonicalCode": "00SEAL01",
+      "status": "active",
+      "descriptions": [
+        { "language": "zh-CN", "text": "通用 O 型圈 10x2", "official": true }
+      ],
+      "attributes": { "materialGroup": "SEAL", "sizeDimension": "10x2mm", "baseUnitOfMeasure": "EA", "basicText": "NBR 材质" },
+      "aliases": [],
+      "orgScopes": [
+        { "field": "plant", "value": "1000" }
+      ]
+    },
+    {
+      "canonicalCode": "SEAL-HT/B",
+      "status": "active",
+      "descriptions": [
+        { "language": "zh-CN", "text": "高温垫片 1.5mm", "official": true }
+      ],
+      "attributes": { "materialGroup": "GASKET", "sizeDimension": "1.5mm", "baseUnitOfMeasure": "EA", "basicText": "石墨复合" },
+      "aliases": [],
+      "orgScopes": [
+        { "field": "plant", "value": "2000" }
+      ]
+    }
+  ]
+}

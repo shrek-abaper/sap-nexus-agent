@@ -324,3 +324,38 @@ factTypes:
         cardinality: many
         optional: true
         description: Clearing date, blank while still open (CLEAR_DATE).
+  - factTypeId: sapnexus:EntityCandidateSetFact
+    name: Entity Candidate Set Fact
+    description: >-
+      Governed result of one master-data entity search: the deduplicated
+      candidate set together with the snapshot it was read from and the
+      completeness of the result within the authorized scope. The model never
+      fabricates canonical codes; every candidate identity comes from the
+      Provider response recorded here.
+    businessObject: EntityCandidateSet
+    predicate: sapnexus:hasEntityCandidateSet
+    semanticType: sapnexus:EntityCandidateSet
+    keyedBy:
+      - sapnexus:EntityObjectType
+      - sapnexus:MasterDataSnapshotId
+    fields:
+      - name: objectType
+        semanticType: sapnexus:EntityObjectType
+        cardinality: one
+        optional: false
+        description: Logical object type that was searched.
+      - name: candidates
+        semanticType: sapnexus:EntityCandidateSet
+        cardinality: many
+        optional: false
+        description: Deduplicated candidate entries with stable entity keys.
+      - name: snapshotId
+        semanticType: sapnexus:MasterDataSnapshotId
+        cardinality: one
+        optional: false
+        description: Snapshot the candidate set was read from.
+      - name: resultCompleteness
+        semanticType: sapnexus:ResultCompleteness
+        cardinality: one
+        optional: false
+        description: complete-result-set or partial/truncated within authorized scope.

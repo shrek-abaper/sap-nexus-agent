@@ -1005,7 +1005,7 @@ def test_the_selector_and_the_closure_share_one_pullability_rule():
 
     sources = load_semantic_sources(REPO_ROOT)
     cards = discover_cards(build_registry_snapshot(sources), sources)
-    assert len(cards) == 7  # non-vacuity: the loop below has something to check
+    assert len(cards) == 10  # non-vacuity: the loop below has something to check
     for card in cards:
         raw = next(
             c

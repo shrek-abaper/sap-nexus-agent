@@ -30,6 +30,7 @@ SEMANTIC_FILES = [
     "ontology/definitions.yaml",
     "ontology/object-links.yaml",
     "ontology/business-rules.yaml",
+    "ontology/entity-resolution.yaml",
 ]
 
 

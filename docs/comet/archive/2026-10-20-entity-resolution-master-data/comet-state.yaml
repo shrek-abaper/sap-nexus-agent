@@ -1,0 +1,39 @@
+schema: comet.native.v3
+minimum_runtime_version: 3
+revision: 12
+verification_protocol: legacy-v1
+name: entity-resolution-master-data
+language: zh-CN
+phase: archive
+brief: brief.md
+approval: confirmed
+approved_contract_hash: 666febf09bfa30372dc90ccaac9fcdbc13121466568d1244dadfb5b8ac0ebf7a
+spec_changes:
+  - capability: entity-choice-protocol
+    operation: create
+    source: specs/entity-choice-protocol/spec.md
+    base_hash: null
+  - capability: entity-resolution-contracts
+    operation: create
+    source: specs/entity-resolution-contracts/spec.md
+    base_hash: null
+  - capability: entity-resolution-orchestration
+    operation: create
+    source: specs/entity-resolution-orchestration/spec.md
+    base_hash: null
+  - capability: entity-search-provider
+    operation: create
+    source: specs/entity-search-provider/spec.md
+    base_hash: null
+  - capability: master-data-snapshot-store
+    operation: create
+    source: specs/master-data-snapshot-store/spec.md
+    base_hash: null
+verification_result: pass
+verification_report: verification.md
+implementation_scope: runtime/evidence/scopes/5f18afb2765e694a1323fe41c36e69f067fff76042ba16c63123a40ac84cde22.json
+verification_evidence: runtime/evidence/verifications/f30eff2694eb81dbc875fa32b14117ef65c787a16a83ee09ef7fe7dbff9bfee9.json
+partial_allowance: null
+archived: true
+created_at: 2026-10-20
+run_id: 1ab5b982-98da-4b6d-bf4c-b6763134d72f

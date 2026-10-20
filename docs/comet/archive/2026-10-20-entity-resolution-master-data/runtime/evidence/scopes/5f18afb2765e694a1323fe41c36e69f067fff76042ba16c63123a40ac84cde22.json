@@ -1,0 +1,1791 @@
+{
+  "schema": "comet.native.implementation-scope.v2",
+  "contractHash": "666febf09bfa30372dc90ccaac9fcdbc13121466568d1244dadfb5b8ac0ebf7a",
+  "baselineProjectionRef": "runtime/evidence/snapshots/d10535f0bc6baa25f46df348acafe13f1ff82fb2395a951c2e1024e81c4c7768.json",
+  "baselineProjectionHash": "d10535f0bc6baa25f46df348acafe13f1ff82fb2395a951c2e1024e81c4c7768",
+  "currentProjectionRef": "runtime/evidence/snapshots/211a11bfcba58946dfba3877c817c057c42024b51722167a85e8998683e6216b.json",
+  "currentProjectionHash": "211a11bfcba58946dfba3877c817c057c42024b51722167a85e8998683e6216b",
+  "complete": true,
+  "declaredArtifacts": [
+    {
+      "path": "agent/sap_nexus_agent/cli.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/sap_nexus_agent/context_reducer.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/sap_nexus_agent/entity_resolution/__init__.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/sap_nexus_agent/entity_resolution/models.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/sap_nexus_agent/entity_resolution/orchestration.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/sap_nexus_agent/entity_resolution/rules.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/sap_nexus_agent/entity_resolution/service.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/sap_nexus_agent/master_data/__init__.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/sap_nexus_agent/master_data/importer.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/sap_nexus_agent/master_data/provider.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/sap_nexus_agent/orchestrator.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/sap_nexus_agent/read_context.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/sap_nexus_agent/semantic_release/assets.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/sap_nexus_agent/workbench_output.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_capability_selector.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_cli_context.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_contract_files.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_entity_resolution_orchestration.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_entity_resolution_parties.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_entity_resolution_rules.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_entity_resolution_security.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_master_data_pg.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_ontology_codegen.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_planner_capability_card.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_registry_loader.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_semantic_planning_contract.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_semantic_release_assets.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_semantic_release_builder.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_semantic_release_properties.py",
+      "kind": "file"
+    },
+    {
+      "path": "agent/tests/test_semantic_release_validation.py",
+      "kind": "file"
+    },
+    {
+      "path": "db/migrations/0001_master_data.sql",
+      "kind": "file"
+    },
+    {
+      "path": "db/migrations/0002_master_data_roles.sql",
+      "kind": "file"
+    },
+    {
+      "path": "evals/entity_resolution_cases.json",
+      "kind": "file"
+    },
+    {
+      "path": "evals/matcher_cases.yaml",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/modules/agent-console/view-model.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/modules/dsh-chat/DshChat.tsx",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/modules/dsh-chat/ToolCallCard.tsx",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/modules/dsh-chat/types.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/runtime/agent-runtime-adapter.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/runtime/durable/jsonl-conversation-store.test.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/runtime/durable/jsonl-conversation-store.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/runtime/durable/types.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/runtime/run-event-schema.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/runtime/semantic-tools/execute-tool.test.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/runtime/semantic-tools/map-events.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/runtime/semantic-tools/types.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/runtime/semantic-tools/validate.test.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/runtime/semantic-tools/validate.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/server/dsh/runtime.ts",
+      "kind": "file"
+    },
+    {
+      "path": "frontend/src/shared/types/artifacts.ts",
+      "kind": "file"
+    },
+    {
+      "path": "master-data/README.md",
+      "kind": "file"
+    },
+    {
+      "path": "master-data/fixtures/customers-v1.json",
+      "kind": "file"
+    },
+    {
+      "path": "master-data/fixtures/materials-v1.json",
+      "kind": "file"
+    },
+    {
+      "path": "master-data/fixtures/materials-v2.json",
+      "kind": "file"
+    },
+    {
+      "path": "master-data/fixtures/suppliers-v1.json",
+      "kind": "file"
+    },
+    {
+      "path": "master-data/physical-mappings.yaml",
+      "kind": "file"
+    },
+    {
+      "path": "ontology/entity-resolution.yaml",
+      "kind": "file"
+    },
+    {
+      "path": "ontology/fact-types.yaml",
+      "kind": "file"
+    },
+    {
+      "path": "ontology/generated/manifest.json",
+      "kind": "file"
+    },
+    {
+      "path": "ontology/generated/semantic-release.json",
+      "kind": "file"
+    },
+    {
+      "path": "ontology/generated/shacl-inputs.ttl",
+      "kind": "file"
+    },
+    {
+      "path": "ontology/generated/skos-capabilities.ttl",
+      "kind": "file"
+    },
+    {
+      "path": "ontology/md-entity-search.owl",
+      "kind": "file"
+    },
+    {
+      "path": "ontology/object-types.yaml",
+      "kind": "file"
+    },
+    {
+      "path": "registry/capabilities.yaml",
+      "kind": "file"
+    },
+    {
+      "path": "registry/executor-bindings.yaml",
+      "kind": "file"
+    },
+    {
+      "path": "schemas/capability.schema.json",
+      "kind": "file"
+    },
+    {
+      "path": "schemas/entity-resolution.schema.json",
+      "kind": "file"
+    },
+    {
+      "path": "schemas/executor-binding.schema.json",
+      "kind": "file"
+    },
+    {
+      "path": "scripts/validate_registry_contract.py",
+      "kind": "file"
+    },
+    {
+      "path": "services/gateway/app/build.gradle",
+      "kind": "file"
+    },
+    {
+      "path": "services/gateway/core/src/main/java/com/sapnexus/gateway/registry/BindingDefinition.java",
+      "kind": "file"
+    },
+    {
+      "path": "services/gateway/core/src/main/java/com/sapnexus/gateway/registry/BindingRegistryLoader.java",
+      "kind": "file"
+    },
+    {
+      "path": "services/gateway/core/src/main/java/com/sapnexus/gateway/registry/CapabilityDefinition.java",
+      "kind": "file"
+    },
+    {
+      "path": "services/gateway/core/src/main/java/com/sapnexus/gateway/registry/CapabilityRegistryLoader.java",
+      "kind": "file"
+    },
+    {
+      "path": "services/gateway/core/src/main/java/com/sapnexus/gateway/result/ErrorType.java",
+      "kind": "file"
+    },
+    {
+      "path": "services/gateway/core/src/test/java/com/sapnexus/gateway/registry/ExtractionMetadataIndifferenceTest.java",
+      "kind": "file"
+    },
+    {
+      "path": "services/gateway/masterdata/build.gradle",
+      "kind": "file"
+    },
+    {
+      "path": "services/gateway/masterdata/src/main/java/com/sapnexus/gateway/masterdata/MasterdataQueries.java",
+      "kind": "file"
+    },
+    {
+      "path": "services/gateway/masterdata/src/main/java/com/sapnexus/gateway/masterdata/MasterdataQueryRunner.java",
+      "kind": "file"
+    },
+    {
+      "path": "services/gateway/masterdata/src/main/java/com/sapnexus/gateway/masterdata/PgMasterdataProperties.java",
+      "kind": "file"
+    },
+    {
+      "path": "services/gateway/masterdata/src/main/java/com/sapnexus/gateway/masterdata/PgMasterdataTechnicalAdapter.java",
+      "kind": "file"
+    },
+    {
+      "path": "services/gateway/masterdata/src/main/java/com/sapnexus/gateway/masterdata/PhysicalMappings.java",
+      "kind": "file"
+    },
+    {
+      "path": "services/gateway/masterdata/src/test/java/com/sapnexus/gateway/masterdata/PgMasterdataTechnicalAdapterTest.java",
+      "kind": "file"
+    },
+    {
+      "path": "services/gateway/settings.gradle",
+      "kind": "file"
+    }
+  ],
+  "changes": [
+    {
+      "path": "agent/sap_nexus_agent/cli.py",
+      "kind": "modified",
+      "before": {
+        "hash": "0e5728ac98d772c7741dceb73a856e5b38d46d4bec1d89bb39e7b661a90649dd",
+        "size": 18080
+      },
+      "after": {
+        "hash": "2519620a9349db4bff55d1706e0a5c218657636227dd84ef7463d4a0ff657d69",
+        "size": 18652
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/cli.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/sap_nexus_agent/context_reducer.py",
+      "kind": "modified",
+      "before": {
+        "hash": "bda355f5e83b0131a9654b55b285cfa5ad33591e95477c352bf554d784c96301",
+        "size": 16987
+      },
+      "after": {
+        "hash": "e162240a65f32a517b81d603d36cbe77ed5aa6dd40237bef99003bf0ecc05c58",
+        "size": 17222
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/context_reducer.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/sap_nexus_agent/entity_resolution/__init__.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "524798e20a40456f68538d07e760d36b4a374008c9771bbe468ab5c1e231d79c",
+        "size": 605
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/entity_resolution/__init__.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/sap_nexus_agent/entity_resolution/models.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "ade9fff63c9c942ad393ba1274f9def146caeba59d6ddd7808768fa48a35f3d7",
+        "size": 8815
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/entity_resolution/models.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/sap_nexus_agent/entity_resolution/orchestration.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "5ca8f10151cfa1632919be62461275bffcb218d837b84828ba23eeeab58efed6",
+        "size": 10338
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/entity_resolution/orchestration.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/sap_nexus_agent/entity_resolution/rules.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "bf124818000bcaf2ee988f174d864de79aad22a3e0ebee1935fb5acfbf4bf328",
+        "size": 8575
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/entity_resolution/rules.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/sap_nexus_agent/entity_resolution/service.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "b97c2c882d463dce0ee784f089ece0d813b6396a5de34bb03f4f94dc3a1d8122",
+        "size": 9240
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/entity_resolution/service.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/sap_nexus_agent/master_data/__init__.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "803fca0b5862c868ca3e369826d69c77410a9bcd1c3e56cad98b0fb9fe6e8a46",
+        "size": 728
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/master_data/__init__.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/sap_nexus_agent/master_data/importer.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "7354b39a4fb8220d851e6f3bcdd9c20d055b68658a66b29070750afe3e5d52a8",
+        "size": 13378
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/master_data/importer.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/sap_nexus_agent/master_data/provider.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "bf96a3a59aac6bba4a44bead79a304f5260f96249e41528cd184414f390829b9",
+        "size": 16368
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/master_data/provider.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/sap_nexus_agent/orchestrator.py",
+      "kind": "modified",
+      "before": {
+        "hash": "6444ca53a50109134f168589a963d59fabedfbe2352ec6d41ef70cd38f3ad41f",
+        "size": 92644
+      },
+      "after": {
+        "hash": "52233aec5a0a8c0dd5f74e7b3db91d1257a9bb20c00b879176f1709b041f1cc2",
+        "size": 108558
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/orchestrator.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/sap_nexus_agent/read_context.py",
+      "kind": "modified",
+      "before": {
+        "hash": "fe4f025d674de3c9ad4b863e37230a4a98af3ea40850b6f057b5d81ac750a85c",
+        "size": 24166
+      },
+      "after": {
+        "hash": "ff3585149a5354b642745faa0dad832f7990aae1d73c55552ee5aad33675e338",
+        "size": 26252
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/read_context.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/sap_nexus_agent/semantic_release/assets.py",
+      "kind": "modified",
+      "before": {
+        "hash": "dbe239cc4512684b9cc16b46e322deee6491a57c568de8d2fe36731295dc5685",
+        "size": 2153
+      },
+      "after": {
+        "hash": "b83878aa255083b48e73890f03fc08146eb1134d05039b29625dda3316c51c5c",
+        "size": 2278
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/semantic_release/assets.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/sap_nexus_agent/workbench_output.py",
+      "kind": "modified",
+      "before": {
+        "hash": "73dd47e44a34fcd04884322dcab1d2ef2e356dd3b34fe67d950509acf37014d7",
+        "size": 9896
+      },
+      "after": {
+        "hash": "c8ff0868803448d3eff94ff507f6a8bf74b1ee4f2b8fc48cdbda951f63b7dcb9",
+        "size": 10169
+      },
+      "attributedTo": [
+        {
+          "path": "agent/sap_nexus_agent/workbench_output.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_capability_selector.py",
+      "kind": "modified",
+      "before": {
+        "hash": "31bd19faa4eae6796b46b0c9871768a2e072f31e04bcbfb17446e598ecae175f",
+        "size": 39567
+      },
+      "after": {
+        "hash": "156c1445575a71be29ba08594bdf7427b0494ca87e3b05e30e0902cf83f0e2ad",
+        "size": 39568
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_capability_selector.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_cli_context.py",
+      "kind": "modified",
+      "before": {
+        "hash": "8021bcd00db8af72b3f3b23bbcc20c07c143efb880b4b2f08a98c40ae57bdb25",
+        "size": 9133
+      },
+      "after": {
+        "hash": "04d631bc8eb33561f94164ee5986c7279d8b76745e553f09a6f354b472cd3db2",
+        "size": 11065
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_cli_context.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_contract_files.py",
+      "kind": "modified",
+      "before": {
+        "hash": "f58a8359e945a30814c422877392cb85336865f63a28a22bb6ffe7feff7f22ff",
+        "size": 24741
+      },
+      "after": {
+        "hash": "411a4e7c6392b0fc96c77786d49e931c5e24ccf6ceb30eec3f9b445df3575442",
+        "size": 25013
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_contract_files.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_entity_resolution_orchestration.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "d1c16ce220fd07a43b67ba93f979815179b5e23d05d5beccf334d28dfd2155f1",
+        "size": 15433
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_entity_resolution_orchestration.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_entity_resolution_parties.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "04eb6044238099252cb4eb19ecba72812dc9b36cc6bff515428993e24649a42a",
+        "size": 7383
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_entity_resolution_parties.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_entity_resolution_rules.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "8fd7b44f1ae29533db1ba8acc8d8ada3393091288ea4e777f4a81d51a0fd0404",
+        "size": 3239
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_entity_resolution_rules.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_entity_resolution_security.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "d47db569e4a6fc97465c46f30c4423663243b8cba6cd47170b0e6f89cd5709e8",
+        "size": 3570
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_entity_resolution_security.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_master_data_pg.py",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "e0cb5f35cadb85f1a56e508b26931eb48a559e94e6a61252dd103daf9f1bbb4d",
+        "size": 11564
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_master_data_pg.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_ontology_codegen.py",
+      "kind": "modified",
+      "before": {
+        "hash": "17ab638983d3a5d29f545e90e291c5f2bedbd4c0be57c075d7629f39963c7a64",
+        "size": 4477
+      },
+      "after": {
+        "hash": "43ac53bdea91b251ffdb385b502c09e47fd5c72d07194ecdcffcca2051d1a200",
+        "size": 4477
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_ontology_codegen.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_planner_capability_card.py",
+      "kind": "modified",
+      "before": {
+        "hash": "7a808f4ae23d6673dec5b2215364cfc0a5692567f3c331911480e1a217d65162",
+        "size": 39447
+      },
+      "after": {
+        "hash": "08f98c35fd1da900e4de6cd60bccb0d4db5f72a11ce7bb3e8cb83872ae7bbf6a",
+        "size": 39538
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_planner_capability_card.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_registry_loader.py",
+      "kind": "modified",
+      "before": {
+        "hash": "8d19f2cdb5f4e8ae5626aef5ec08a6e88c31392e0517dcfa4ffdd53c4b0d6337",
+        "size": 9864
+      },
+      "after": {
+        "hash": "fd57a5bf145bc17a105f19dd87bae2151e55a514b8df008e2b6e0473e9fea1ac",
+        "size": 9954
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_registry_loader.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_semantic_planning_contract.py",
+      "kind": "modified",
+      "before": {
+        "hash": "b8a05a5b9d95b20e0b1bdd245803f21007b2618f68f5375e5f5dba94201628ca",
+        "size": 132920
+      },
+      "after": {
+        "hash": "a2e935611fb62ba78decb4565cd3cf15681496c4b889bb98137e4e1047ec6b51",
+        "size": 133323
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_semantic_planning_contract.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_semantic_release_assets.py",
+      "kind": "modified",
+      "before": {
+        "hash": "bb7ace1a088d7afa48a17172c524d82762fabd98af594fc167ae68a7f62e0d78",
+        "size": 10807
+      },
+      "after": {
+        "hash": "bb7cd7888a60cb3b40c9c123efe9ab7b1bb875c4251b6453dcc31e0f83429df8",
+        "size": 10871
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_semantic_release_assets.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_semantic_release_builder.py",
+      "kind": "modified",
+      "before": {
+        "hash": "e3f3463b19b7e921e0daa4dff885552f22b998f36d0f3c0461c0ea88665193e6",
+        "size": 1985
+      },
+      "after": {
+        "hash": "030ff6e420eac52a89d580077e97ee9a625efe3a3c668635fa940fbd0a095f42",
+        "size": 1985
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_semantic_release_builder.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_semantic_release_properties.py",
+      "kind": "modified",
+      "before": {
+        "hash": "df30165c6b5f98c07d94445a3198bae7a1fc57eaa66631ef694e32f2c88cb667",
+        "size": 5507
+      },
+      "after": {
+        "hash": "0c5d54181a0bf1ab649e4fdddb682cf610e547b022c8f62a9132370c9f4dc1e8",
+        "size": 5546
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_semantic_release_properties.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "agent/tests/test_semantic_release_validation.py",
+      "kind": "modified",
+      "before": {
+        "hash": "210757215cc70a7c4fb2c173b7379822a1abf990a5da3a5cf182f2b1142b4523",
+        "size": 9121
+      },
+      "after": {
+        "hash": "8020c3e8c4670fdee2bdb0fd41067985ad62ba3acac6b6d37bbd3c5e6da6a0a8",
+        "size": 9163
+      },
+      "attributedTo": [
+        {
+          "path": "agent/tests/test_semantic_release_validation.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "db/migrations/0001_master_data.sql",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "53a0c72b709c6622f830a9bb7eab1938f7df63cf4991b5a72b8bca986c1568d8",
+        "size": 6876
+      },
+      "attributedTo": [
+        {
+          "path": "db/migrations/0001_master_data.sql",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "db/migrations/0002_master_data_roles.sql",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "b166737d6f1d489a7cadfe8212ee9328e4889785b552c4d06a2cf022c5054269",
+        "size": 1030
+      },
+      "attributedTo": [
+        {
+          "path": "db/migrations/0002_master_data_roles.sql",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "evals/entity_resolution_cases.json",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "385c122f9cb134aa3894a95776ff9d3678d1acc4b8280cf3091f2aab81cecbcf",
+        "size": 1575
+      },
+      "attributedTo": [
+        {
+          "path": "evals/entity_resolution_cases.json",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "evals/matcher_cases.yaml",
+      "kind": "modified",
+      "before": {
+        "hash": "c0fe7a304020b6e1f5c81b504afa0b9ccc05720807dad06f18212bd4e60d1f70",
+        "size": 27349
+      },
+      "after": {
+        "hash": "1a9f689e31299a58a0f1470e6ffc97018071fae7d3c77d29521e7ee8bb71ad7f",
+        "size": 27349
+      },
+      "attributedTo": [
+        {
+          "path": "evals/matcher_cases.yaml",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/modules/agent-console/view-model.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "f46a224b381e697ef1b1fbf07c0d1cde3d7925638257092c5aeaa841c90a2deb",
+        "size": 20766
+      },
+      "after": {
+        "hash": "8e7d84a585f08809be51cb83fabccaf342068e4d76d4b9e457237cf1e22b8427",
+        "size": 20807
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/modules/agent-console/view-model.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/modules/dsh-chat/DshChat.tsx",
+      "kind": "modified",
+      "before": {
+        "hash": "76af409927a04a29e0d4ad3583fe1bf202d52784a7ce8ecb0994bff93d617e0d",
+        "size": 20514
+      },
+      "after": {
+        "hash": "980147ee22a2e2a931a102b9e87793f2653b0c4f0238734f2c34f7eadd9bdeb0",
+        "size": 20534
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/modules/dsh-chat/DshChat.tsx",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/modules/dsh-chat/ToolCallCard.tsx",
+      "kind": "modified",
+      "before": {
+        "hash": "89d7275170279e7c33e010301788c21e94114f80d76950b89dcbdbfcdd3a9ed7",
+        "size": 18691
+      },
+      "after": {
+        "hash": "40816af463160c6da5a7e10f66e09b295bbeff0043197f00f398454d2dc1af6c",
+        "size": 20724
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/modules/dsh-chat/ToolCallCard.tsx",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/modules/dsh-chat/types.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "017f3b03aa9a4d9854616174f914bcca78d453cb6d36fffcd5b65bfa036c903e",
+        "size": 4334
+      },
+      "after": {
+        "hash": "03ebe387f96e98856f02d2ea4008d528fda6bdfda072c525484ea20523a17798",
+        "size": 4889
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/modules/dsh-chat/types.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/agent-runtime-adapter.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "c8b4ec67c1e191aa8aa5245018a46a0d4ffd5350749c59734cb254dda085f173",
+        "size": 68886
+      },
+      "after": {
+        "hash": "3fa5fcffc0733ab6f03ff827372403b4b163a37723735719e1f1fad3327b4d57",
+        "size": 69315
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/agent-runtime-adapter.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/durable/jsonl-conversation-store.test.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "caa44390ba162f7b684f72810252708f4b0ac10300a0860b7dff6dfa4463627b",
+        "size": 24581
+      },
+      "after": {
+        "hash": "159b7d5df974459fff42347bcbd580c52f7fb7c3de1fc74472750e548456dc51",
+        "size": 25709
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/durable/jsonl-conversation-store.test.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/durable/jsonl-conversation-store.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "43c3fe233b405c46c30e664f6092e9c931494914046aaf0b101636bf63c33d78",
+        "size": 35341
+      },
+      "after": {
+        "hash": "2f9b4726b0e049e6e8d2d56f27125a3f0fd76d40d7f5b6230a180764ce6696e3",
+        "size": 38672
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/durable/jsonl-conversation-store.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/durable/types.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "fb74c59e53c78ed4fe9236a2bb0d44d838ca1c39c97257113e64fea48b51f192",
+        "size": 8942
+      },
+      "after": {
+        "hash": "56ecb646b965a3df7867565af19329cdeeff202545eb7eef9c540e9fbb365bb3",
+        "size": 10152
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/durable/types.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/run-event-schema.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "2cf2426cfd414053501c01a7011ffdf44998507245f18d19b58afd6c1656d3b6",
+        "size": 2323
+      },
+      "after": {
+        "hash": "eb9d9367838ad7826413cefee91359495360ccb0f0908f721e33cc5724d2bf31",
+        "size": 2351
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/run-event-schema.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/semantic-tools/execute-tool.test.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "8cf9b0738a984be0c02150639fd6d2671be7f205d9b891dcf9d27be5935b5851",
+        "size": 4071
+      },
+      "after": {
+        "hash": "5b5c525ee035578ce1fed8ed3d7df240e10e6461cdc71c85073f8429c8f89d9e",
+        "size": 7002
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/semantic-tools/execute-tool.test.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/semantic-tools/map-events.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "94ef2c55241de808085b4f63e0fec7a751d02329ca4a3a602ea3f7247cd04156",
+        "size": 12385
+      },
+      "after": {
+        "hash": "25848faa74297f3bfe77b31d9914f1d8bce9e5fad797b89e6f91a54b35f39ec5",
+        "size": 12685
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/semantic-tools/map-events.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/semantic-tools/types.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "f0fb2a5b11497259d24f1ef1b59a10813ac5ba0679df7b444bf1b1287468d0dc",
+        "size": 4302
+      },
+      "after": {
+        "hash": "9a9fc50047ea4a5aa95a73d9457113b7db04536beb8b1fbb51ec80fb6e0289e8",
+        "size": 4612
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/semantic-tools/types.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/semantic-tools/validate.test.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "8021884a800d59b2d08638e010453dd4ad044fb478f5b7e7589604ac1174a3c8",
+        "size": 4823
+      },
+      "after": {
+        "hash": "1dc9f7fb0ec01e218cd8299f44c566d01398e0735494d0feaa81cd110da7e3b5",
+        "size": 6294
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/semantic-tools/validate.test.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/runtime/semantic-tools/validate.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "c00ccadf9bc66a921df7710dfd35e94a6e381d6b2cc2d17e58043aba4cea05ba",
+        "size": 8271
+      },
+      "after": {
+        "hash": "1ebb3273d926c67537b1b36d5d2d7f2363bee6e9c1b249f4f1924999693ca8ab",
+        "size": 8846
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/runtime/semantic-tools/validate.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/server/dsh/runtime.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "f3029b56cdfb0d9e4676147f579f012466dc0a1425615caf0aa0f96afe86a204",
+        "size": 24825
+      },
+      "after": {
+        "hash": "efd703fd005a4a53ff4c941d4561a6e6e7f7f038942f2741c8d201d421be85a1",
+        "size": 25061
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/server/dsh/runtime.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/shared/types/artifacts.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "c0174c68f563f558b7f6db0eb573e3791588d49757a8b9a3190b25dc917dcf8b",
+        "size": 662
+      },
+      "after": {
+        "hash": "cc76b2a060f3b3ee730e0d048b2cd2608b5a383bfbad5e91b9c0e3bea0d9e2a9",
+        "size": 684
+      },
+      "attributedTo": [
+        {
+          "path": "frontend/src/shared/types/artifacts.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "master-data/README.md",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "70d5448c717f179cafa4ad81697c6c5906b52554a8e8dc2f967749dba1c997e8",
+        "size": 5918
+      },
+      "attributedTo": [
+        {
+          "path": "master-data/README.md",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "master-data/fixtures/customers-v1.json",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "2c6790c7c7adb8444e26a976780635e7c713f693e17d36f4d802cbd2a4e0b35e",
+        "size": 2681
+      },
+      "attributedTo": [
+        {
+          "path": "master-data/fixtures/customers-v1.json",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "master-data/fixtures/materials-v1.json",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "8da78920faea6ecca5219efa98d0cd66245fbbb8bf5846447eae668410180d85",
+        "size": 3239
+      },
+      "attributedTo": [
+        {
+          "path": "master-data/fixtures/materials-v1.json",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "master-data/fixtures/materials-v2.json",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "3d98f7200e6d9c28851ac34a19885c62f9610cc2332e61e7da8f8f9a01a037e3",
+        "size": 2382
+      },
+      "attributedTo": [
+        {
+          "path": "master-data/fixtures/materials-v2.json",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "master-data/fixtures/suppliers-v1.json",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "9e36061b65770761a227d6e64e25ca4d8dc2cd1bcd38afaa3a54346441a7dd10",
+        "size": 2192
+      },
+      "attributedTo": [
+        {
+          "path": "master-data/fixtures/suppliers-v1.json",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "master-data/physical-mappings.yaml",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "611b4417a63081a2a3d932ffbe44bd90cf3df1d67613b243665756b92873691e",
+        "size": 2308
+      },
+      "attributedTo": [
+        {
+          "path": "master-data/physical-mappings.yaml",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "ontology/entity-resolution.yaml",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "7d76c4ab1d5ed423b0f19061bf75db612bd34f1290b2a4f3f030f1269c21fb2d",
+        "size": 3909
+      },
+      "attributedTo": [
+        {
+          "path": "ontology/entity-resolution.yaml",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "ontology/fact-types.yaml",
+      "kind": "modified",
+      "before": {
+        "hash": "ee63d312c7804fde3a27c8f39489f11d873c3031327fdc2cbecdc8d75bf67679",
+        "size": 12988
+      },
+      "after": {
+        "hash": "46ff30a798fae4b135d4102ed70028a74b29329e71ac5a0ae8c2e304522a0bf5",
+        "size": 14448
+      },
+      "attributedTo": [
+        {
+          "path": "ontology/fact-types.yaml",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "ontology/generated/manifest.json",
+      "kind": "modified",
+      "before": {
+        "hash": "aea0acd0705110765d98c25c350aa304c99b66966fbf11f150763689d719186c",
+        "size": 188
+      },
+      "after": {
+        "hash": "5475971f20935291d029e0a791f83236b0b3bfda7b088e476a798d0a65268682",
+        "size": 188
+      },
+      "attributedTo": [
+        {
+          "path": "ontology/generated/manifest.json",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "ontology/generated/semantic-release.json",
+      "kind": "modified",
+      "before": {
+        "hash": "4acc187b3bbf70a4de17a5c4d2f98828045069f34d36163a6ae7a0ccff77cda6",
+        "size": 3120
+      },
+      "after": {
+        "hash": "b3663681a48152544a2f614a56f44aa32bfb581d790d56e4b5656ebcccb0d7ce",
+        "size": 3326
+      },
+      "attributedTo": [
+        {
+          "path": "ontology/generated/semantic-release.json",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "ontology/generated/shacl-inputs.ttl",
+      "kind": "modified",
+      "before": {
+        "hash": "0c621c013a57e35689651a7c00323932b9e3c27b4c122ac500daa2bab1ed5aea",
+        "size": 8483
+      },
+      "after": {
+        "hash": "d746f5467a7a9eef8d80caf5e0a9ffab3cd221bfd3403f26cddfcc85dd0ae5ec",
+        "size": 11606
+      },
+      "attributedTo": [
+        {
+          "path": "ontology/generated/shacl-inputs.ttl",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "ontology/generated/skos-capabilities.ttl",
+      "kind": "modified",
+      "before": {
+        "hash": "c40c7567785af1c96e6dd5f6b5d6da2a0f91d121715f00b8741bbe194a9c045e",
+        "size": 4658
+      },
+      "after": {
+        "hash": "93fe672463fbbd1ef05d8aea962b82f50a702316d95eac05158e784440fb9f2a",
+        "size": 6083
+      },
+      "attributedTo": [
+        {
+          "path": "ontology/generated/skos-capabilities.ttl",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "ontology/md-entity-search.owl",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "6d0d7834f9276bbda2fe5bd5d37bbf85d661b0d8d9846d04653aa2fdd218b817",
+        "size": 2258
+      },
+      "attributedTo": [
+        {
+          "path": "ontology/md-entity-search.owl",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "ontology/object-types.yaml",
+      "kind": "modified",
+      "before": {
+        "hash": "ae809251ab7bfd0533cb1e68d70d7f9b519f20fa3c76fb8868cb07c2407c7f46",
+        "size": 1062
+      },
+      "after": {
+        "hash": "7d32bb70b4f1889b7a3d1d2d0156e6b222cf64efe0712d0c82bc624b23dbc14f",
+        "size": 1186
+      },
+      "attributedTo": [
+        {
+          "path": "ontology/object-types.yaml",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "registry/capabilities.yaml",
+      "kind": "modified",
+      "before": {
+        "hash": "1c04805b076c50befa193e61445e43ffaf602ef078d365e46fe5ab591ed0bf85",
+        "size": 34781
+      },
+      "after": {
+        "hash": "a1b36ba5c637d7d5da3f248c7be2ba145aa5178cdc0bfe7507af16061455ba76",
+        "size": 45019
+      },
+      "attributedTo": [
+        {
+          "path": "registry/capabilities.yaml",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "registry/executor-bindings.yaml",
+      "kind": "modified",
+      "before": {
+        "hash": "d259c1b5ea3d67aa62ab330ee2838873f3b5d2a0735c4e7539ef4f0c6ea11eab",
+        "size": 5595
+      },
+      "after": {
+        "hash": "e8204bab2853954aa358964080e53174f319521b4e947964f8dc9619f027bdc5",
+        "size": 6615
+      },
+      "attributedTo": [
+        {
+          "path": "registry/executor-bindings.yaml",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "schemas/capability.schema.json",
+      "kind": "modified",
+      "before": {
+        "hash": "b8d0b5bc189d4705ef0e9a63a60ccb38b310829c0fb5ce3c53ac93f603c95010",
+        "size": 17031
+      },
+      "after": {
+        "hash": "201ec149ceb15736d5906a2a67a5afc85e5aa45623f4ce742a42c44c42be61e1",
+        "size": 23385
+      },
+      "attributedTo": [
+        {
+          "path": "schemas/capability.schema.json",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "schemas/entity-resolution.schema.json",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "5ee8842e97437779b2c087a234ace62c5dc2a524d1c0be28448a1c7aa82aa33e",
+        "size": 3995
+      },
+      "attributedTo": [
+        {
+          "path": "schemas/entity-resolution.schema.json",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "schemas/executor-binding.schema.json",
+      "kind": "modified",
+      "before": {
+        "hash": "89b365cecd49eb5e5d606e4f37a180bb3c85ad455a4059fcbe5dfb17dd858ba9",
+        "size": 3839
+      },
+      "after": {
+        "hash": "1739dd99ff8b845ba44d9434dbad6b4cccf1d12ddb1c66a0dd45934e933756cd",
+        "size": 5974
+      },
+      "attributedTo": [
+        {
+          "path": "schemas/executor-binding.schema.json",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "scripts/validate_registry_contract.py",
+      "kind": "modified",
+      "before": {
+        "hash": "0a99fa4b1e652e2f09a68d5796ffa8281661893b8216e11be735fd041b7c4704",
+        "size": 33295
+      },
+      "after": {
+        "hash": "9d9908605c9985077dcee5dbdf461e14bfa7670ce60e2f178f007e36ecffdf24",
+        "size": 34710
+      },
+      "attributedTo": [
+        {
+          "path": "scripts/validate_registry_contract.py",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "services/gateway/app/build.gradle",
+      "kind": "modified",
+      "before": {
+        "hash": "8cc54a07326d1db2bfa26a635ced62ff04219dd4c7a22bbf3c0f632e122787b8",
+        "size": 625
+      },
+      "after": {
+        "hash": "9472b4a86f2b15a2306ed63aff21378dc7e06559d52ee0649ef327980c3d7ddc",
+        "size": 667
+      },
+      "attributedTo": [
+        {
+          "path": "services/gateway/app/build.gradle",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "services/gateway/core/src/main/java/com/sapnexus/gateway/registry/BindingDefinition.java",
+      "kind": "modified",
+      "before": {
+        "hash": "765aa3dc783789e446a63099bcf60b8322929e41f418e79e4cfea73f8f0e9462",
+        "size": 1768
+      },
+      "after": {
+        "hash": "745312586212dcd9e5bd5de46c98f10060870d47d07cf90d5a43695fdb430c84",
+        "size": 2598
+      },
+      "attributedTo": [
+        {
+          "path": "services/gateway/core/src/main/java/com/sapnexus/gateway/registry/BindingDefinition.java",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "services/gateway/core/src/main/java/com/sapnexus/gateway/registry/BindingRegistryLoader.java",
+      "kind": "modified",
+      "before": {
+        "hash": "c4261d0ceff49858855a74d12f27b023470c73eba145d81f40137041a7912c47",
+        "size": 3581
+      },
+      "after": {
+        "hash": "1a61cb135ebfea799d3defe97fe327f469d744af948c130e5b31b2d5b4683642",
+        "size": 3635
+      },
+      "attributedTo": [
+        {
+          "path": "services/gateway/core/src/main/java/com/sapnexus/gateway/registry/BindingRegistryLoader.java",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "services/gateway/core/src/main/java/com/sapnexus/gateway/registry/CapabilityDefinition.java",
+      "kind": "modified",
+      "before": {
+        "hash": "71942ed8c29704665eca0c231a09550b8294e301a233cef6dd34ac15964fefcd",
+        "size": 2898
+      },
+      "after": {
+        "hash": "25e24a7faa1b237fdffee743bb071b71ac8bf70ac725c8947d5c114c6fb6f07b",
+        "size": 3303
+      },
+      "attributedTo": [
+        {
+          "path": "services/gateway/core/src/main/java/com/sapnexus/gateway/registry/CapabilityDefinition.java",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "services/gateway/core/src/main/java/com/sapnexus/gateway/registry/CapabilityRegistryLoader.java",
+      "kind": "modified",
+      "before": {
+        "hash": "a2449c5731edc12081aaf12075e0326b80c1d32024ad6fa59fded94cc3f912b4",
+        "size": 6684
+      },
+      "after": {
+        "hash": "0c4f400091e1088b9891c6e271eda6dd1f77657da9f75f66e1e061a225bed380",
+        "size": 6738
+      },
+      "attributedTo": [
+        {
+          "path": "services/gateway/core/src/main/java/com/sapnexus/gateway/registry/CapabilityRegistryLoader.java",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "services/gateway/core/src/main/java/com/sapnexus/gateway/result/ErrorType.java",
+      "kind": "modified",
+      "before": {
+        "hash": "ebf16647e21fb7baa77c7273c48247f56dd0582feba596d137f829b7c8814bc0",
+        "size": 416
+      },
+      "after": {
+        "hash": "1f5fdaec67fa5c7a098813b7ec07d22e4ff785ab028f97ecddae68ec27594047",
+        "size": 585
+      },
+      "attributedTo": [
+        {
+          "path": "services/gateway/core/src/main/java/com/sapnexus/gateway/result/ErrorType.java",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "services/gateway/core/src/test/java/com/sapnexus/gateway/registry/ExtractionMetadataIndifferenceTest.java",
+      "kind": "modified",
+      "before": {
+        "hash": "2aed9a877c3378349cbff17c5c890a330da8d4e6cbab187706e25eac7b9633ce",
+        "size": 6345
+      },
+      "after": {
+        "hash": "03ba7b35e539cdea7d1a701322b03e08033da82f91ca81539caf34bc16a60dc0",
+        "size": 6347
+      },
+      "attributedTo": [
+        {
+          "path": "services/gateway/core/src/test/java/com/sapnexus/gateway/registry/ExtractionMetadataIndifferenceTest.java",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "services/gateway/masterdata/build.gradle",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "ef77bc2e78d2fc5295bc3189cc91c3a9545320ba1136a471fcabfd14b2960eb1",
+        "size": 388
+      },
+      "attributedTo": [
+        {
+          "path": "services/gateway/masterdata/build.gradle",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "services/gateway/masterdata/src/main/java/com/sapnexus/gateway/masterdata/MasterdataQueries.java",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "412b330bbaf979e2a547af6126633e16868a9a45be6aff82f3fafb06bfd17b7e",
+        "size": 3375
+      },
+      "attributedTo": [
+        {
+          "path": "services/gateway/masterdata/src/main/java/com/sapnexus/gateway/masterdata/MasterdataQueries.java",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "services/gateway/masterdata/src/main/java/com/sapnexus/gateway/masterdata/MasterdataQueryRunner.java",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "ca98daaf4b3e4cd2253a07dda4693bbfef86c0bda9db43b23b9d4c02df866f91",
+        "size": 3591
+      },
+      "attributedTo": [
+        {
+          "path": "services/gateway/masterdata/src/main/java/com/sapnexus/gateway/masterdata/MasterdataQueryRunner.java",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "services/gateway/masterdata/src/main/java/com/sapnexus/gateway/masterdata/PgMasterdataProperties.java",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "1ecf6157e0f5a95d31885c08e8455953d5e0a336c9dd2d64d5c1fdd9b39a807b",
+        "size": 2457
+      },
+      "attributedTo": [
+        {
+          "path": "services/gateway/masterdata/src/main/java/com/sapnexus/gateway/masterdata/PgMasterdataProperties.java",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "services/gateway/masterdata/src/main/java/com/sapnexus/gateway/masterdata/PgMasterdataTechnicalAdapter.java",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "970ca8bf3aee056f2697eecc0489a217411e9a3d9c53fa146250b670aacacd0a",
+        "size": 22160
+      },
+      "attributedTo": [
+        {
+          "path": "services/gateway/masterdata/src/main/java/com/sapnexus/gateway/masterdata/PgMasterdataTechnicalAdapter.java",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "services/gateway/masterdata/src/main/java/com/sapnexus/gateway/masterdata/PhysicalMappings.java",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "4620aa7ed68cf21128a55b65e3a503dde0bc941dbd541f4e827ef126cbfdd30c",
+        "size": 2937
+      },
+      "attributedTo": [
+        {
+          "path": "services/gateway/masterdata/src/main/java/com/sapnexus/gateway/masterdata/PhysicalMappings.java",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "services/gateway/masterdata/src/test/java/com/sapnexus/gateway/masterdata/PgMasterdataTechnicalAdapterTest.java",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "hash": "ca92a00640d3eaba9b8286b6a43f4ff915d36b2ddac4d83f9cde26035b5ddc61",
+        "size": 12668
+      },
+      "attributedTo": [
+        {
+          "path": "services/gateway/masterdata/src/test/java/com/sapnexus/gateway/masterdata/PgMasterdataTechnicalAdapterTest.java",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "services/gateway/settings.gradle",
+      "kind": "modified",
+      "before": {
+        "hash": "d377fa45f62340033b483bc14be62c157d1e27f859413c46000a8f788be22d7e",
+        "size": 333
+      },
+      "after": {
+        "hash": "4333e38040606fc620f723e1f081803227fb2c03584e50c0d2484d13d472773b",
+        "size": 347
+      },
+      "attributedTo": [
+        {
+          "path": "services/gateway/settings.gradle",
+          "kind": "file"
+        }
+      ]
+    }
+  ],
+  "unattributed": [],
+  "unresolvedScopes": [],
+  "noCodeReason": null,
+  "scopeHash": "5f18afb2765e694a1323fe41c36e69f067fff76042ba16c63123a40ac84cde22"
+}

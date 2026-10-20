@@ -5,6 +5,7 @@ dependencies {
     implementation project(':jco')
     implementation project(':odata')
     implementation project(':rest')
+    implementation project(':masterdata')
 
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
