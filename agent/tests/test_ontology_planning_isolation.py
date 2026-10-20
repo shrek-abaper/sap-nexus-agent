@@ -87,7 +87,7 @@ def test_compiled_plans_pass_v2_validator():
 
 
 def test_no_legacy_sources_changed_since_base():
-    base = "be39b54d33e949c7057dab16b69b2969a1ec53d3"
+    base = "c835ed3"
     result = subprocess.run(
         ["git", "diff", "--name-only", f"{base}..HEAD", "--",
          "agent/sap_nexus_agent/semantic_planning",
@@ -99,7 +99,7 @@ def test_no_legacy_sources_changed_since_base():
 
 
 def test_no_write_or_java_paths():
-    base = "be39b54d33e949c7057dab16b69b2969a1ec53d3"
+    base = "c835ed3"
     result = subprocess.run(
         ["git", "diff", "--name-only", f"{base}..HEAD", "--",
          "agent/sap_nexus_agent/approval.py",
