@@ -44,6 +44,7 @@ SAP Nexus Agent aims to be a **supplier of SAP capabilities**, not yet another S
 - Java 17 (no standalone Gradle install needed — the repo ships `services/gateway/gradlew`)
 - Python 3.12+
 - Node.js 20+
+- PostgreSQL 16+ (read-only retrieval projection for master-data entity resolution; required when `ENTITY_RESOLUTION_MODE=on`, pg_trgm ships in `postgresql-contrib`)
 - SAP JCo 3 library files (for live SAP execution)
 - SAP On-Prem connectivity and credentials (for live smoke tests)
 - An OpenAI-compatible LLM endpoint and API key (for DSH Chat / harness-dsh; Rule mode and offline tests need neither)
@@ -63,7 +64,10 @@ python3 -m venv .venv                          # Python 3.12+ required
 
 ```bash
 cp .env.example .env
-# Fill in SAP connection parameters; for DSH also set SAP_NEXUS_LLM_BASE_URL / SAP_NEXUS_LLM_API_KEY / SAP_NEXUS_LLM_MODEL
+# Fill in SAP connection parameters (unified as SAP_ASHOST + SAP_HTTP_PORT / SAP_SYSNR plus shared
+# identity; no SAP_URL / SAP_REST2RFC_*). For DSH also set LLM_* (or the dsh-specific SAP_NEXUS_LLM_*).
+# Master-data entity resolution (description -> candidates -> pick -> verified code binding):
+# ENTITY_RESOLUTION_MODE=on + PG_MASTERDATA_* (see master-data/README.md)
 ```
 
 ### Verification Baseline (as of 2026-09-26)
@@ -96,7 +100,9 @@ npm --prefix frontend install   # first time only: start.sh requires frontend/no
 ./start.sh
 ```
 
-Then open `http://127.0.0.1:3000/` — the root path redirects to `/chat` (DSH Chat); the legacy evidence Workbench remains at `/workbench`. The script sets no distro-specific `JAVA_HOME` default; when unset it uses the system Java (must be 17). Or start the services manually, step by step:
+Then open `http://127.0.0.1:3000/` — the root path redirects to `/chat` (DSH Chat); the legacy evidence Workbench remains at `/workbench`. The script sets no distro-specific `JAVA_HOME` default; when unset it uses the system Java (must be 17).
+
+Master-data entity resolution additionally needs a local PostgreSQL: `sudo service postgresql start`, plus the one-time migration/role/import steps in `master-data/README.md`. With `ENTITY_RESOLUTION_MODE` left at `off` (the default), no PG is needed and the legacy code-entry behavior is fully preserved. Or start the services manually, step by step:
 
 Terminal 1 — Gateway:
 
@@ -214,6 +220,12 @@ harness (rule / llm intent); the classic Workbench at /workbench shares the same
 - **Business-semantic tool surface (Semantic Tool contract v2)**: the harness sees only 4 business tools (see [“Harness-Visible Surface”](#harness-visible-surface-business-semantic-tools-contract-v2) below) — never a `capabilityId`, `rfcName`, `bindingId`, URL, or credential; technical-key injection is rejected fail-closed at the facade
 - **One server-enforced governance chain**: the HTTP facade and the in-process dsh handlers share `executeSemanticTool`; intent selection, CallPlan, validation, and approval all stay server-side. The harness process has no surface that reaches the Gateway / RFC / bindings / credentials directly (locked by `harness-dsh/tests/architecture.test.ts`)
 
+### Master-Data Entity Resolution (description -> candidates -> pick -> verified code)
+
+- **Ontology-driven entity resolution**: when the user gives only a material/customer/supplier description or short name, the system searches real candidates from a local PostgreSQL retrieval projection through the registered `MD.*.Search` READ capabilities (fixed parameterized SQL, pg_trgm as a supplement), presents them as a first-class `ENTITY_CHOICE` candidate card (buttons or "the second one / the one in Suzhou / none of them"), and on confirmation binds the verified canonical code into the original capability's parameters and resumes execution. The model can never fabricate codes; a code-shape check is not an existence or authorization check
+- **Conservative confirmation and invalidation**: only an exact, visible, active code may bind directly (with verification evidence); everything else asks the user. Snapshot/config/permission drift safely invalidates stale selections. With `ENTITY_RESOLUTION_MODE` at `off` (default), the legacy code-entry behavior is fully preserved
+- **PG is a read-only retrieval projection, not a second authority**: atomic full-snapshot publishing, idempotent import, least-privilege read role; the `maintain` CLI (upsert/deactivate/export) goes through governed batches only (see `master-data/README.md`)
+
 ### Replaceable Harness (DSH Pilot)
 
 - **Two harness forms**: the standalone `harness-dsh/` Node CLI (a dsh T-A-O loop calling the semantic-tool facade over HTTP) and the in-app **DSH Chat** (`/chat`, a server-side in-process dsh runtime with streamed reasoning traces, tool cards, and approval interaction); the root path `/` now 307-redirects to `/chat`
@@ -262,7 +274,7 @@ The current implementation assessed against the target architecture's S1–S5 bu
 - **The offline end-to-end governed composition main chain works**: intent → CallPlan → validation/execution → ExecutionResult → ReasoningFact → narrative → durable Workbench replay → plan-aware single Action continuation; the TypeScript composition coordinator wires up PlanExecutor, OutputProjection, Recommendation, and grounded Narrative (the single-capability `CallPlan` main chain remains available).
 - **Python Agent responsibilities**: LLM-first intent, closed-set recall, five-state decisioning, and PlanGraph v2 authoring; runs either as a subprocess spawned on demand by the Next server or standalone via the CLI.
 - **Release gate milestone**: the offline L1/L2/L3 gate reached its highest consecutive level `L3_ACTION_GOVERNED` on 2026-08-19; scale, the four hard-gate figures, and reproduction commands are in the [“Verification Baseline”](#verification-baseline-as-of-2026-09-26), and forensics on the older 2026-08-10 report are in [roadmap §1.1.4](docs/wiki/sap-nexus-agent-implementation-roadmap.md).
-- **SAP connectivity**: all seven capabilities have real-SAP execution paths — the MM domain via JCo/OData; **the three SD/FI list capabilities migrated to REST_JSON** (2026-09-25) through the in-SAP pure-ABAP rest2rfc SICF gateway, with post-migration row-for-row, all-fields live equivalence (AP/AR/SD all verified). JCo/ODATA/REST_JSON share one set of SAP host, client, user, and password (`SAP_ASHOST` + `SAP_HTTP_PORT` / `SAP_SYSNR`); connection values and credentials exist only in Gateway-controlled configuration. Any live WRITE still requires exact-subject Human Approval.
+- **SAP connectivity**: the 7 business capabilities have real-SAP execution paths — the MM domain via JCo/OData; **the three SD/FI list capabilities migrated to REST_JSON** (2026-09-25) through the in-SAP pure-ABAP rest2rfc SICF gateway, with post-migration row-for-row, all-fields live equivalence (AP/AR/SD all verified). All three paths share the unified address model `SAP_ASHOST` + `SAP_HTTP_PORT` (OData and SICF share the ICM HTTP port) / `SAP_SYSNR` (JCo) plus shared identity; connection values and credentials exist only in Gateway-controlled configuration. The 3 `MD.*.Search` capabilities reach the local PG projection through `PG_MASTERDATA_READ`. Any live WRITE still requires exact-subject Human Approval.
 
 ---
 
@@ -292,9 +304,11 @@ The harness may name only business tools and slots; internally the server select
 | `SD.SalesOrder.GetList`        | Sales Order List (VA05-style)                       | `REST_JSON` | `BAPI_SALESORDER_GETLIST`     | ✅ active (live equivalence proven)  |
 | `FI.AR.GetOpenItems`           | Customer Open Receivables                           | `REST_JSON` | `BAPI_AR_ACC_GETOPENITEMS`    | ✅ active (live equivalence proven)  |
 | `FI.AP.GetOpenItems`           | Vendor Open Payables                                | `REST_JSON` | `BAPI_AP_ACC_GETOPENITEMS`    | ✅ active (live equivalence proven)  |
+| `MD.Material.Search` | Material master search (description/alias/attributes) | `PG_MASTERDATA_READ` | local PostgreSQL read-only projection | ✅ active |
+| `MD.Customer.Search` | Customer master search | `PG_MASTERDATA_READ` | local PostgreSQL read-only projection | ✅ active |
+| `MD.Supplier.Search` | Supplier master search | `PG_MASTERDATA_READ` | local PostgreSQL read-only projection | ✅ active |
 
-7 capabilities: 6 read-only (`kind: Function`, `sideEffect: none`) plus one write
-(`MM.PR.CreateDraft`), which cannot execute without a recorded human confirmation.
+10 capabilities total: 9 read-only (`kind: Function`, `sideEffect: none`) + 1 write (`MM.PR.CreateDraft`, which requires a recorded human confirmation before execution). Seven connect directly to SAP; the three `MD.*.Search` capabilities reach a local PG retrieval projection through `PG_MASTERDATA_READ` (an imported projection of SAP master data, not a second authority).
 
 ---
 
@@ -306,8 +320,10 @@ frontend/                Next.js: DSH Chat (/chat), classic Workbench (/workbenc
                          semantic-tool facade, server-side dsh runtime, composition runtime
 harness-dsh/             Replaceable-harness pilot: standalone Node CLI (dsh T-A-O, pinned 0.1.5-rc.1)
 services/
-  gateway/               Java Spring Boot SAP Gateway (modules core/jco/odata/rest/app, the only security boundary)
+  gateway/               Java Spring Boot SAP Gateway (modules core/jco/odata/rest/masterdata/app, the only security boundary)
   odata-service/         Python OData read-only microservice (:8081)
+master-data/             Master-data entity resolution: physical mappings, synthetic fixtures, PG bootstrap/migration/import/maintenance guide (README)
+db/migrations/           Master-data projection PG schema migrations (snapshot registry, read-only views, pg_trgm indexes, read-only role)
 tests/live/              Gated live equivalence verification (skipped by default; SAP_REST2RFC_LIVE=1)
 registry/                Capability registry and executor binding catalog (single YAML source)
 schemas/                 JSON Schema contracts
@@ -333,8 +349,9 @@ docs/
 | Server orchestration           | React/Next.js server side: Semantic Tool Facade, Composition Runtime, durable JSONL stores                                                                    |
 | Gateway                        | Java 17 / Spring Boot / Gradle multi-module (the only security boundary)                                                                                      |
 | SAP Connectivity               | SAP JCo 3 (RFC) + SAP OData (HTTP via odata-service) + SICF rest2rfc (HTTP/JSON, REST_JSON); credentials shared across the three paths                       |
+| Master-data projection         | PostgreSQL 16 + pg_trgm: snapshot registry, atomic full-snapshot publishing, least-privilege read role; `PG_MASTERDATA_READ` executor (Gateway masterdata module, HikariCP + pgjdbc) |
 | Frontend                       | React / Next.js / TypeScript                                                                                                                                  |
-| Capability Registry            | YAML + JSON Schema                                                                                                                                            |
+| Capability Registry            | YAML + JSON Schema (10 registered capabilities)                                                                                                                                            |
 | Ontology                       | YAML + JSON Schema + immutable in-memory graph; offline OWL skeleton; graph database and compile-time derivation pipeline are target-state                    |
 | Runtime State                  | Local JSONL/file-backed Run/Session/Approval + JSONL traces; not a shared multi-worker/HA store; shared/production durable runtime requires a separate change |
 | Authentication & Authorization | Placeholder principal, not productized; shared environments require server-owned principal / tenant / role / data scope / ApprovalActor                      |

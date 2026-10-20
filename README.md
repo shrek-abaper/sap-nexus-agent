@@ -44,6 +44,7 @@ SAP Nexus Agent 的目标是做 **SAP 能力的供应方**，而不是又一个 
 - Java 17（无需单独安装 Gradle，仓库自带 `services/gateway/gradlew`）
 - Python 3.12+
 - Node.js 20+
+- PostgreSQL 16+（主数据实体解析的只读检索投影；启用 `ENTITY_RESOLUTION_MODE=on` 时需要，pg_trgm 来自 `postgresql-contrib`）
 - SAP JCo 3 库（用于 SAP 实时执行）
 - SAP On-Prem 连接与凭证（用于实时冒烟测试）
 - OpenAI-compatible LLM 端点与 API Key（DSH Chat / harness-dsh 使用；Rule 模式与离线测试不需要）
@@ -63,7 +64,9 @@ python3 -m venv .venv                          # 需 Python 3.12+
 
 ```bash
 cp .env.example .env
-# 填入 SAP 连接参数；DSH 使用时另需 SAP_NEXUS_LLM_BASE_URL / SAP_NEXUS_LLM_API_KEY / SAP_NEXUS_LLM_MODEL
+# 填入 SAP 连接参数（统一为 SAP_ASHOST + SAP_HTTP_PORT / SAP_SYSNR + 共享身份，无 SAP_URL / SAP_REST2RFC_*）；
+# DSH 使用时另需 LLM_*（或 dsh 专用覆盖 SAP_NEXUS_LLM_*）
+# 主数据实体解析（描述→候选→选择→真实编码绑定）：ENTITY_RESOLUTION_MODE=on + PG_MASTERDATA_*（见 master-data/README.md）
 ```
 
 ### 验证基线（截至 2026-09-26）
@@ -96,7 +99,9 @@ npm --prefix frontend install   # 首次需要：start.sh 要求 frontend/node_m
 ./start.sh
 ```
 
-启动后打开 `http://127.0.0.1:3000/`，根路径自动跳转 `/chat`（DSH Chat）；旧版证据 Workbench 仍在 `/workbench`。脚本不设置发行版专属的 `JAVA_HOME` 默认值，未设置时使用系统 Java（须为 17）。也可以按下面分步手动启动：
+启动后打开 `http://127.0.0.1:3000/`，根路径自动跳转 `/chat`（DSH Chat）；旧版证据 Workbench 仍在 `/workbench`。脚本不设置发行版专属的 `JAVA_HOME` 默认值，未设置时使用系统 Java（须为 17）。
+
+主数据实体解析另需本地 PostgreSQL：`sudo service postgresql start`，一次性迁移/角色/导入步骤见 `master-data/README.md`；`ENTITY_RESOLUTION_MODE` 保持 `off`（默认）时无需 PG，旧编码路径行为完全保持。也可以按下面分步手动启动：
 
 终端 1 — Gateway：
 
@@ -209,6 +214,12 @@ PYTHONPATH=agent .venv/bin/python -m sap_nexus_agent.cli \
 - **业务语义级工具面（Semantic Tool 契约 v2）**：harness 只见 4 个业务工具（见下文[「Harness 可见面」](#harness-可见面业务语义工具契约-v2)），不出现 `capabilityId` / `rfcName` / `bindingId` / URL / 凭证；技术键注入在 facade 层 fail-closed
 - **同一条服务端强制治理链**：HTTP facade 与 in-process dsh handler 共用 `executeSemanticTool`，意图选择、CallPlan、校验、审批全部在服务端；harness 进程内没有任何直连 Gateway / RFC / 绑定 / 凭证的调用面（`harness-dsh/tests/architecture.test.ts` 锁定）
 
+### 主数据实体解析（描述 → 候选 → 选择 → 真实编码）
+
+- **本体驱动的实体解析**：用户只给出物料/客户/供应商的描述或简称时，系统经注册的 `MD.*.Search` 只读能力从本地 PostgreSQL 检索投影搜索真实候选（固定参数化 SQL + pg_trgm 补充），以一等 `ENTITY_CHOICE` 状态展示候选卡片（按钮或"第二个 / 苏州那家 / 都不是"），确认后把真实编码绑定到原业务能力参数并恢复执行。模型无权编造编码；编码形状检查不替代存在性与权限检查
+- **保守确认与失效语义**：仅"精确编码 + 可见 + 有效"可直接绑定（附验证证据），其余一律用户确认；快照/配置/权限漂移使旧选择安全失效。`ENTITY_RESOLUTION_MODE`（默认 `off`）关闭时旧编码路径行为完全保持
+- **PG 是只读检索投影，不是第二权威源**：full snapshot 原子发布、幂等导入、只读角色；维护入口 `maintain` CLI（upsert/deactivate/export 均经受治理批次，见 `master-data/README.md`）
+
 ### 可替换 Harness（DSH 打样）
 
 - **两个 harness 形态**：`harness-dsh/` 独立 Node CLI（dsh T-A-O 循环，经 HTTP 调 semantic-tool facade）与 Next.js 内置的 **DSH Chat**（`/chat`，服务端 in-process dsh runtime，支持流式推理轨迹、工具卡与审批交互）；根路径 `/` 已 307 跳转至 `/chat`
@@ -257,7 +268,7 @@ PYTHONPATH=agent .venv/bin/python -m sap_nexus_agent.cli \
 - **离线端到端治理编排主链可用**：意图 → CallPlan → 校验/执行 → ExecutionResult → ReasoningFact → 叙述 → durable Workbench 回放 → plan-aware single Action continuation；TypeScript composition coordinator 已接通 PlanExecutor、OutputProjection、Recommendation、grounded Narrative（单能力 `CallPlan` 主链保持可用）。
 - **Python Agent 职责**：LLM-first intent、closed-set recall、五态决策和 PlanGraph v2 authoring；作为 Next 服务端按需 spawn 的子进程运行，也可经 CLI 独立运行。
 - **Release gate 里程碑**：offline L1/L2/L3 gate 于 2026-08-19 达成最高连续等级 `L3_ACTION_GOVERNED`；规模、四项 hard gates 数值与复现命令见[「验证基线」](#验证基线截至-2026-09-26)，2026-08-10 旧报告的取证说明见[路线图 §1.1.4](docs/wiki/sap-nexus-agent-implementation-roadmap.md)。
-- **SAP 连通性**：七个能力均有真实 SAP 执行路径——MM 域经 JCo/OData；**SD/FI 三个 list 能力已迁移到 REST_JSON**（2026-09-25），经 SAP 内部纯 ABAP rest2rfc SICF 网关返回，迁移后 live 逐行、全字段等价（AP/AR/SD 均已实测）。JCo/ODATA/REST_JSON 三路共用同一套 SAP host、client、user、password（`SAP_ASHOST` + `SAP_HTTP_PORT` / `SAP_SYSNR`），连接值与凭据只存在于 Gateway 受控配置。任何 live WRITE 仍需 exact-subject Human Approval。
+- **SAP 连通性**：7 个业务能力均有真实 SAP 执行路径——MM 域经 JCo/OData；**SD/FI 三个 list 能力已迁移到 REST_JSON**（2026-09-25），经 SAP 内部纯 ABAP rest2rfc SICF 网关返回，迁移后 live 逐行、全字段等价（AP/AR/SD 均已实测）。JCo/ODATA/REST_JSON 三路共用统一地址模型 `SAP_ASHOST` + `SAP_HTTP_PORT`（OData 与 SICF 同 ICM 端口）/ `SAP_SYSNR`（JCo）+ 共享身份；连接值与凭据只存在于 Gateway 受控配置。3 个 `MD.*.Search` 经 `PG_MASTERDATA_READ` 访问本地 PG 投影。任何 live WRITE 仍需 exact-subject Human Approval。
 
 ---
 
@@ -287,8 +298,11 @@ harness 只能命名业务工具与槽位；工具内部由服务端从已注册
 | `SD.SalesOrder.GetList` | 销售订单列表查询（VA05 风格） | `REST_JSON` | `BAPI_SALESORDER_GETLIST` | ✅ active（live 等价已证） |
 | `FI.AR.GetOpenItems` | 客户应收未清项查询 | `REST_JSON` | `BAPI_AR_ACC_GETOPENITEMS` | ✅ active（live 等价已证） |
 | `FI.AP.GetOpenItems` | 供应商应付未清项查询 | `REST_JSON` | `BAPI_AP_ACC_GETOPENITEMS` | ✅ active（live 等价已证） |
+| `MD.Material.Search` | 物料主数据检索（描述/别名/属性） | `PG_MASTERDATA_READ` | 本地 PostgreSQL 只读投影 | ✅ active |
+| `MD.Customer.Search` | 客户主数据检索 | `PG_MASTERDATA_READ` | 本地 PostgreSQL 只读投影 | ✅ active |
+| `MD.Supplier.Search` | 供应商主数据检索 | `PG_MASTERDATA_READ` | 本地 PostgreSQL 只读投影 | ✅ active |
 
-共 7 个能力：6 个只读（`kind: Function`，`sideEffect: none`）+ 1 个写入（`MM.PR.CreateDraft`，执行前必须存在已记录的人工确认）。
+共 10 个能力：9 个只读（`kind: Function`，`sideEffect: none`）+ 1 个写入（`MM.PR.CreateDraft`，执行前必须存在已记录的人工确认）。其中 7 个直连 SAP，3 个 `MD.*.Search` 经 `PG_MASTERDATA_READ` 访问本地 PG 检索投影（SAP 主数据的导入投影，不是第二权威源）。
 
 ---
 
@@ -300,8 +314,10 @@ frontend/                Next.js：DSH Chat（/chat）、经典 Workbench（/wor
                          semantic-tool facade、服务端 dsh runtime、composition runtime
 harness-dsh/             可替换 harness 打样：独立 Node CLI（dsh T-A-O，钉 0.1.5-rc.1）
 services/
-  gateway/               Java Spring Boot SAP Gateway（多模块 core/jco/odata/rest/app，唯一安全边界）
+  gateway/               Java Spring Boot SAP Gateway（多模块 core/jco/odata/rest/masterdata/app，唯一安全边界）
   odata-service/         Python OData 只读微服务（:8081）
+master-data/             主数据实体解析：物理映射、合成 fixtures、PG 启动/迁移/导入/维护说明（README）
+db/migrations/           主数据投影 PG schema 迁移（快照注册表、只读视图、pg_trgm 索引、只读角色）
 tests/live/              Gated live 等价验证（默认 skip，SAP_REST2RFC_LIVE=1 启用）
 registry/                能力注册表和执行器绑定目录（YAML 单一来源）
 schemas/                 JSON Schema 契约
@@ -326,7 +342,8 @@ docs/
 | Agent | Python package + OpenAI-compatible LLM（默认 DeepSeek `deepseek-chat`）+ Rule 混合 |
 | 服务端编排 | React/Next.js 服务端：Semantic Tool Facade、Composition Runtime、durable JSONL store |
 | Gateway | Java 17 / Spring Boot / Gradle 多模块（唯一安全边界） |
-| SAP 连接 | SAP JCo 3 (RFC) + SAP OData (HTTP，经 odata-service) + SICF rest2rfc (HTTP/JSON，REST_JSON)；三路共用凭据 |
+| SAP 连接 | SAP JCo 3 (RFC) + SAP OData (HTTP，经 odata-service) + SICF rest2rfc (HTTP/JSON，REST_JSON)；三路共用统一地址与凭据（`SAP_ASHOST` + `SAP_HTTP_PORT` / `SAP_SYSNR`） |
+| 主数据投影 | PostgreSQL 16 + pg_trgm：快照注册表、原子 full-snapshot 发布、只读角色；`PG_MASTERDATA_READ` executor（Gateway masterdata 模块，HikariCP + pgjdbc） |
 | 前端 | React / Next.js / TypeScript |
 | 能力注册 | YAML + JSON Schema |
 | 本体 | YAML + JSON Schema + 不可变内存图；OWL 骨架 offline；图数据库与编译期派生管线为目标态 |
@@ -356,7 +373,7 @@ docs/
 | | |
 |---|---|
 | AGENTS.md / CLAUDE.md | 项目级 Agent 行为规则 |
-| registry/ | 能力注册表（7 个已注册能力） |
+| registry/ | 能力注册表（10 个已注册能力） |
 | harness-dsh/ | 可替换 harness（DSH CLI） |
 | frontend/src/server/dsh/ | 服务端 dsh runtime 与语义工具接线 |
 | ontology/ | OWL 本体骨架 |
