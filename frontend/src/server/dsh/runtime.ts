@@ -26,6 +26,7 @@ export const DEFAULT_DSH_PERSONA = [
   "你只能通过提供的语义工具获取 SAP 业务事实（库存/采购订单/销售订单/应收应付/补货建议）。",
   "禁止猜测任何库存、在途、金额、工厂或凭证数据；所有业务数值必须引用工具返回。",
   "当工具要求澄清（缺少物料/工厂/客户/供应商/公司代码等）时，用简体中文向用户追问缺失项。",
+  "当用户只给出物料/客户/供应商的描述、名称或简称而没有编号时，必须直接调用对应工具：只把原话放进 utterance（有工厂/公司代码就一并带上），系统会从主数据检索真实候选并向用户展示候选卡片让用户选择；禁止先向用户反问编号，禁止编造编号，也禁止声称无法查询。",
   "发起工具调用前，先用一两句简体中文说明你的查询计划（要回答什么、准备调用哪个工具、依据哪些参数）。",
   "涉及补货写入时，先依据工具返回的审批卡片向用户复述参数，然后明确告知用户必须点击审批卡片上的「批准」或「拒绝」按钮完成决定；不要让用户用文字回复批准/拒绝（聊天文字不会触发任何审批或 SAP 写入），在用户点击前不要声称已经创建。",
   "回答简洁、分点清晰，币种与单位随数值给出。",
@@ -161,18 +162,18 @@ class SessionTappingAdapter extends LlmAdapter {
 
 const TOOL_SPECS: Record<string, ParameterSchemaSpec> = {
   diagnose_material_supply: {
-    utterance: { type: "string", required: true, description: "用户完整的自然语言问题" },
-    material: { type: "string", description: "物料编号，如 DEMOA1" },
+    utterance: { type: "string", required: true, description: "用户完整的自然语言问题（原样传入，不要改写）" },
+    material: { type: "string", description: "物料编号（如 DEMOA1）。没有编号时不要填写、也不要向用户反问编号：只传 utterance，系统会从主数据检索候选并让用户确认" },
     plant: { type: "string", description: "工厂编码，如 1000" },
   },
   review_customer_exposure: {
-    utterance: { type: "string", required: true, description: "用户完整的自然语言问题" },
-    customerNumber: { type: "string", required: true, description: "客户编号" },
+    utterance: { type: "string", required: true, description: "用户完整的自然语言问题（原样传入，不要改写）" },
+    customerNumber: { type: "string", description: "客户编号。没有编号时不要填写、也不要向用户反问编号：只传 utterance 和公司代码，系统会检索候选并让用户确认" },
     companyCode: { type: "string", description: "公司代码（应收未清项必需）" },
   },
   review_vendor_exposure: {
-    utterance: { type: "string", required: true, description: "用户完整的自然语言问题" },
-    vendor: { type: "string", required: true, description: "供应商编号，如 DEMOV1" },
+    utterance: { type: "string", required: true, description: "用户完整的自然语言问题（原样传入，不要改写）" },
+    vendor: { type: "string", description: "供应商编号。没有编号时不要填写、也不要向用户反问编号：只传 utterance 和公司代码，系统会检索候选并让用户确认" },
     companyCode: { type: "string", required: true, description: "公司代码，如 1000" },
   },
   propose_replenishment: {
@@ -545,11 +546,11 @@ function evidenceAmount(row: unknown): string {
 function toolDescription(name: string): string {
   switch (name) {
     case "diagnose_material_supply":
-      return "诊断物料供应：回答某物料在某工厂的可用库存与在途采购订单（只读）。";
+      return "诊断物料供应：回答某物料在某工厂的可用库存与在途采购订单（只读）。用户只给物料描述（没有编号）时也必须调用本工具：把原话放进 utterance，系统会检索真实候选并让用户选择，禁止编造或反问编号。";
     case "review_customer_exposure":
-      return "客户敞口：查询某客户的销售订单（净值/币种）与应收未清项（金额/到期日，需公司代码）。只读。";
+      return "客户敞口：查询某客户的销售订单（净值/币种）与应收未清项（金额/到期日，需公司代码）。只读。用户只给客户名称/简称时也必须调用本工具：把原话放进 utterance，系统会检索真实候选并让用户选择，禁止编造或反问编号。";
     case "review_vendor_exposure":
-      return "供应商敞口：查询某供应商的应付未清项（金额/币种/到期基准日，需公司代码）。只读。";
+      return "供应商敞口：查询某供应商的应付未清项（金额/币种/到期基准日，需公司代码）。只读。用户只给供应商名称/简称时也必须调用本工具：把原话放进 utterance，系统会检索真实候选并让用户选择，禁止编造或反问编号。";
     case "propose_replenishment":
       return "补货建议：依据库存与目标需求量计算缺口，生成一个待人工审批的采购申请提案（不会直接写入）。";
     case "analyze_business_question":

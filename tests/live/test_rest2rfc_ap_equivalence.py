@@ -9,11 +9,11 @@ and asserts the established baseline row counts.
 Skipped by default. Run:
 
     SAP_REST2RFC_LIVE=1 \\
-    SAP_REST2RFC_BASE_URL=http://<host>:<port> \\
+    SAP_ASHOST=<host> SAP_HTTP_PORT=<port> \\
     ../../.venv/bin/python -m pytest tests/live/test_rest2rfc_ap_equivalence.py -v -s
 
 Credentials come only from the environment:
-SAP_REST2RFC_CLIENT/USER/PASSWORD (fallback SAP_CLIENT/SAP_USER/SAP_PASSWORD).
+SAP_CLIENT / SAP_USER / SAP_PASSWORD (canonical, shared with JCo and OData).
 The Java Gateway must be running; its URL defaults to http://127.0.0.1:8080
 (SAP_NEXUS_GATEWAY_URL).
 """
@@ -140,11 +140,13 @@ def _camel(s: str) -> str:
 
 @pytest.mark.parametrize("scenario", SCENARIOS, ids=[s["id"] for s in SCENARIOS])
 def test_migrated_capability_equivalent_and_at_baseline(scenario, capsys):
-    base_url = _env("SAP_REST2RFC_BASE_URL")
-    assert base_url, "SAP_REST2RFC_BASE_URL is required"
-    client = _env("SAP_REST2RFC_CLIENT", _env("SAP_CLIENT", "800"))
-    user = _env("SAP_REST2RFC_USER", _env("SAP_USER"))
-    password = _env("SAP_REST2RFC_PASSWORD", _env("SAP_PASSWORD"))
+    ashost = _env("SAP_ASHOST")
+    http_port = _env("SAP_HTTP_PORT")
+    assert ashost and http_port, "SAP_ASHOST and SAP_HTTP_PORT are required"
+    base_url = f"http://{ashost}:{http_port}"
+    client = _env("SAP_CLIENT", "800")
+    user = _env("SAP_USER")
+    password = _env("SAP_PASSWORD")
 
     # Direct SICF call.
     sicf_url = f"{base_url}/sap/bc/rest2rfc?RFC={scenario['rfc']}&sap-client={client}"

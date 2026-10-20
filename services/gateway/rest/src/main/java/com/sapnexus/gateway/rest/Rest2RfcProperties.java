@@ -9,9 +9,10 @@ import java.util.Map;
  * Gateway-controlled endpoint catalog for the pure-ABAP rest2rfc SICF gateway.
  *
  * <p>Property prefix: {@code sap.gateway.rest2rfc}. Endpoints are keyed by the
- * binding {@code systemRef}. Any blank field is resolved from environment
- * variables ({@code SAP_REST2RFC_*}, falling back to the shared {@code SAP_*}
- * values); credentials MUST NOT appear in the registry or these properties in
+ * binding {@code systemRef}. Any blank field is resolved from the canonical
+ * SAP environment ({@code SAP_ASHOST} / {@code SAP_HTTP_PORT} for the address,
+ * {@code SAP_CLIENT} / {@code SAP_USER} / {@code SAP_PASSWORD} for identity);
+ * credentials MUST NOT appear in the registry or these properties in
  * deployed form.
  */
 @ConfigurationProperties(prefix = "sap.gateway.rest2rfc")

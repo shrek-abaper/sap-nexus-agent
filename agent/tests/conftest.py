@@ -18,6 +18,13 @@ def _isolate_llm_env(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _isolate_entity_resolution_flag(monkeypatch):
+    """Hermetic tests: the dev .env may enable entity resolution; suites that
+    exercise it set the flag explicitly via monkeypatch."""
+    monkeypatch.setenv("ENTITY_RESOLUTION_MODE", "off")
+
+
+@pytest.fixture(autouse=True)
 def _disable_decision_trace(monkeypatch):
     # Keep test runs from appending to the real runtime/traces/decisions.jsonl.
     # Tests that exercise recording override this with their own temp path.

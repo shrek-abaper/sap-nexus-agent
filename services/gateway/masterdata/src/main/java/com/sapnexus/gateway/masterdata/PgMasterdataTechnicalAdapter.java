@@ -200,7 +200,8 @@ public class PgMasterdataTechnicalAdapter implements TechnicalAdapter {
             for (String value : entry.getValue()) {
                 for (Map<String, Object> row : rows.query(
                         MasterdataQueries.CODES_BY_ORG_SCOPE,
-                        List.of(template.objectType(), entry.getKey(), value))) {
+                        List.of(template.objectType(), template.objectType(),
+                                entry.getKey(), value, template.objectType(), entry.getKey()))) {
                     matching.add(String.valueOf(row.get("canonical_code")));
                 }
             }

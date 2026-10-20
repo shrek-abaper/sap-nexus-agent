@@ -2528,8 +2528,21 @@ def _finalize_narrative(
 
 
 def _entity_resolution_enabled() -> bool:
-    """Feature flag (spec case 28): off keeps the legacy code-entry path."""
-    return os.environ.get("ENTITY_RESOLUTION_MODE", "off").strip().lower() == "on"
+    """Feature flag (spec case 28): off keeps the legacy code-entry path.
+
+    Resolution order: process env, then repo .env (the Next dev server does
+    not reliably propagate .env into spawned subprocess env, so the Python
+    CLI reads it directly — same convenience pattern as llm_client).
+    """
+    value = os.environ.get("ENTITY_RESOLUTION_MODE")
+    if value is None:
+        try:
+            from dotenv import dotenv_values
+
+            value = dotenv_values().get("ENTITY_RESOLUTION_MODE")
+        except Exception:
+            value = None
+    return (value or "off").strip().lower() == "on"
 
 
 def _read_context_mode() -> str:

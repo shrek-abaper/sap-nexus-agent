@@ -132,7 +132,6 @@ def test_cli_resolve_read_turn_never_constructs_gateway(capsys, monkeypatch):
 
     monkeypatch.setattr("sap_nexus_agent.cli.GatewayClient", forbidden_gateway)
 
-    monkeypatch.delenv("ENTITY_RESOLUTION_MODE", raising=False)
 
     exit_code = main([
         "查库存",

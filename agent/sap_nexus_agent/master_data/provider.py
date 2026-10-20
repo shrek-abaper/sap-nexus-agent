@@ -181,10 +181,24 @@ class MasterDataProvider:
             return None
         codes: set[str] | None = None
         for field, value in required.items():
+            # Visibility semantics: an entity is excluded only when it HAS
+            # extension rows for this field and none matches. Entities with
+            # no extension rows for the field (e.g. client-level objects or
+            # scopes not modeled in the projection) stay visible — absence of
+            # an imported extension is not proof of unavailability.
             rows = self._execute(
-                "SELECT canonical_code FROM md.v_entity_org_scope_current"
-                " WHERE object_type = %s AND org_field = %s AND org_value = %s",
-                (template["objectType"], field, value),
+                "SELECT canonical_code FROM md.v_entity_current"
+                " WHERE object_type = %s AND ("
+                "   canonical_code IN ("
+                "     SELECT canonical_code FROM md.v_entity_org_scope_current"
+                "     WHERE object_type = %s AND org_field = %s AND org_value = %s)"
+                "   OR NOT EXISTS ("
+                "     SELECT 1 FROM md.v_entity_org_scope_current o"
+                "     WHERE o.object_type = %s AND o.org_field = %s"
+                "       AND o.canonical_code = md.v_entity_current.canonical_code)"
+                " )",
+                (template["objectType"], template["objectType"], field, value,
+                 template["objectType"], field),
             )
             matching = {row[0] for row in rows}
             codes = matching if codes is None else codes & matching

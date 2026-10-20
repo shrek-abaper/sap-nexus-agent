@@ -102,7 +102,7 @@ def test_live_reachability_and_auth():
     Closes Design Doc §7 Q1 (reachability) and Q5 (auth method).
     """
     client = _make_client()
-    assert client._destination.base_url, "SAP_URL must be set in .env"
+    assert client._destination.base_url, "SAP_ASHOST and SAP_HTTP_PORT must be set in .env"
     assert client._destination.username, "SAP_USER must be set in .env"
     assert client._destination.password, "SAP_PASSWORD must be set in .env"
 

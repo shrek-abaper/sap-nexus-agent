@@ -36,7 +36,7 @@ from sap_nexus_agent.entity_resolution.service import (
 # Longest phrases first: replacement is sequential substring removal.
 _STOPWORDS = (
     "查一下", "帮我查", "未清应收", "未清应付", "查询", "告诉我",
-    "销售订单", "采购订单", "公司代码", "未清项", "有哪些", "未清", "应收", "应付", "账款",
+    "销售订单", "采购订单", "公司代码", "有限公司", "未清项", "有哪些", "未清", "应收", "应付", "账款",
     "库存", "还有多少", "多少", "还有", "什么",
     "在", "的", "是", "有", "工厂", "公司", "呢", "吗", "？", "?",
 )
@@ -46,12 +46,16 @@ _EXPIRY_MINUTES = 15
 def extract_mention(utterance: str, resolved_values: tuple[str, ...]) -> str:
     """Best-effort deterministic mention: utterance minus bound slot values
     and capability stopwords. Never treated as an identifier."""
-    mention = utterance
+    # Server-appended slot hints ("[已知条件] ..." from buildToolQuery) only
+    # repeat already-bound values; they must not pollute the mention.
+    mention = utterance.split("[已知条件", 1)[0]
     for value in resolved_values:
         if value:
             mention = mention.replace(value, " ")
     for stopword in _STOPWORDS:
         mention = mention.replace(stopword, " ")
+    # Clause punctuation carries no retrieval value (e.g. "苏州豪骏，").
+    mention = re.sub(r"[，。、；：,.;:!?()（）\[\]【】]", " ", mention)
     return re.sub(r"\s+", " ", mention).strip()
 
 

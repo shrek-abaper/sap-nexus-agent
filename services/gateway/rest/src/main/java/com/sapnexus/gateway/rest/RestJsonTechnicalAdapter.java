@@ -152,6 +152,13 @@ public class RestJsonTechnicalAdapter implements TechnicalAdapter {
                 request.executorType(), messages, data, duration, adapterMetadata);
     }
 
+    /**
+     * Resolves the endpoint from (optional) configured overrides and the
+     * canonical SAP environment: {@code SAP_ASHOST} + {@code SAP_HTTP_PORT}
+     * for the address (the ICM HTTP port is shared by OData and SICF on the
+     * same application server) and {@code SAP_CLIENT} / {@code SAP_USER} /
+     * {@code SAP_PASSWORD} for identity. No REST2RFC-specific env vars exist.
+     */
     private TargetEndpoint resolveEndpoint(BindingDefinition binding) {
         Rest2RfcProperties.Endpoint configured = binding.systemRef() == null
                 ? null : properties.getSystems().get(binding.systemRef());
@@ -161,14 +168,10 @@ public class RestJsonTechnicalAdapter implements TechnicalAdapter {
         String configuredPassword = configured == null ? null : configured.getPassword();
         String configuredPath = configured == null ? null : configured.getPath();
 
-        String baseUrl = firstNonBlank(configuredBaseUrl,
-                System.getenv("SAP_REST2RFC_BASE_URL"), sharedHttpBaseUrl());
-        String client = firstNonBlank(configuredClient,
-                System.getenv("SAP_REST2RFC_CLIENT"), System.getenv("SAP_CLIENT"));
-        String user = firstNonBlank(configuredUser,
-                System.getenv("SAP_REST2RFC_USER"), System.getenv("SAP_USER"));
-        String password = firstNonBlank(configuredPassword,
-                System.getenv("SAP_REST2RFC_PASSWORD"), System.getenv("SAP_PASSWORD"));
+        String baseUrl = firstNonBlank(configuredBaseUrl, sharedHttpBaseUrl());
+        String client = firstNonBlank(configuredClient, System.getenv("SAP_CLIENT"));
+        String user = firstNonBlank(configuredUser, System.getenv("SAP_USER"));
+        String password = firstNonBlank(configuredPassword, System.getenv("SAP_PASSWORD"));
         String path = firstNonBlank(binding.pathTemplate(), configuredPath, DEFAULT_PATH);
         return new TargetEndpoint(baseUrl, path, client, user, password);
     }
@@ -322,9 +325,9 @@ public class RestJsonTechnicalAdapter implements TechnicalAdapter {
     }
 
     /**
-     * Derives the SICF base URL from the shared SAP destination when no
-     * rest2rfc-specific URL is configured: the ICM HTTP port is shared by
-     * OData and SICF on the same application server.
+     * Derives the SICF base URL from the canonical SAP address: the ICM HTTP
+     * port (SAP_HTTP_PORT) on the application server (SAP_ASHOST) is shared
+     * by OData and SICF on the same application server.
      */
     private static String sharedHttpBaseUrl() {
         String host = System.getenv("SAP_ASHOST");

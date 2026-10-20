@@ -88,6 +88,7 @@ function factKey(fact: NormalizedFact): string {
 describe.skipIf(!existsSync(venvPython))("cross-harness consistency (offline fixtures)", () => {
   let server: Server;
   let gatewayUrl: string;
+  let previousErMode: string | undefined;
   let currentCase: CrossCase;
   let storeDir: string;
   let previousGatewayUrl: string | undefined;
@@ -123,6 +124,10 @@ describe.skipIf(!existsSync(venvPython))("cross-harness consistency (offline fix
     gatewayUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
     previousGatewayUrl = process.env.SAP_NEXUS_GATEWAY_URL;
     process.env.SAP_NEXUS_GATEWAY_URL = gatewayUrl;
+    // Tests must be hermetic: the dev .env may enable entity resolution,
+    // which changes clarification behavior for code-first fixtures.
+    previousErMode = process.env.ENTITY_RESOLUTION_MODE;
+    process.env.ENTITY_RESOLUTION_MODE = "off";
 
     storeDir = mkdtempSync(path.join(tmpdir(), "cross-harness-"));
     setDurableStoresForTests(
@@ -137,6 +142,8 @@ describe.skipIf(!existsSync(venvPython))("cross-harness consistency (offline fix
     resetAgentSessionsForTests();
     if (previousGatewayUrl === undefined) delete process.env.SAP_NEXUS_GATEWAY_URL;
     else process.env.SAP_NEXUS_GATEWAY_URL = previousGatewayUrl;
+    if (previousErMode === undefined) delete process.env.ENTITY_RESOLUTION_MODE;
+    else process.env.ENTITY_RESOLUTION_MODE = previousErMode;
     await server.close();
     rmSync(storeDir, { recursive: true, force: true });
   });

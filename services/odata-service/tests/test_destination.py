@@ -1,8 +1,9 @@
 """Tests for Destination env-var loading.
 
-Env var names are aligned with sap-sto-create (SAP_URL / SAP_USER / SAP_PASSWORD
-/ SAP_CLIENT / SAP_LANG) so credentials are shared across OData + JCo paths.
-SAP_ODATA_TIMEOUT_SECONDS is OData-specific and retained.
+Env var names are aligned with sap-sto-create (SAP_USER / SAP_PASSWORD /
+SAP_CLIENT / SAP_LANG) so credentials are shared across OData + JCo paths,
+and the address comes from the canonical SAP_ASHOST + SAP_HTTP_PORT pair
+(SAP_URL no longer exists). SAP_ODATA_TIMEOUT_SECONDS is OData-specific.
 """
 
 from __future__ import annotations
@@ -24,7 +25,8 @@ def _clean_env(monkeypatch):
 
 
 def test_load_destination_reads_aligned_env_vars(_clean_env, monkeypatch):
-    monkeypatch.setenv("SAP_URL", "https://sap.example.local:44300/")
+    monkeypatch.setenv("SAP_ASHOST", "sap.example.local")
+    monkeypatch.setenv("SAP_HTTP_PORT", "44300")
     monkeypatch.setenv("SAP_CLIENT", "100")
     monkeypatch.setenv("SAP_USER", "odata_user")
     monkeypatch.setenv("SAP_PASSWORD", "secret")
@@ -33,7 +35,7 @@ def test_load_destination_reads_aligned_env_vars(_clean_env, monkeypatch):
 
     dest = load_destination()
 
-    assert dest.base_url == "https://sap.example.local:44300"  # trailing slash stripped
+    assert dest.base_url == "http://sap.example.local:44300"  # derived from ASHOST+HTTP_PORT
     assert dest.sap_client == "100"
     assert dest.username == "odata_user"
     assert dest.password == "secret"
@@ -42,11 +44,12 @@ def test_load_destination_reads_aligned_env_vars(_clean_env, monkeypatch):
 
 
 def test_load_destination_defaults(_clean_env, monkeypatch):
-    monkeypatch.setenv("SAP_URL", "https://sap.example.local")
+    monkeypatch.setenv("SAP_ASHOST", "sap.example.local")
+    monkeypatch.setenv("SAP_HTTP_PORT", "44300")
 
     dest = load_destination()
 
-    assert dest.base_url == "https://sap.example.local"
+    assert dest.base_url == "http://sap.example.local:44300"
     assert dest.sap_client == "800"
     assert dest.username == ""
     assert dest.password == ""

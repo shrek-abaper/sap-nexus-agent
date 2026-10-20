@@ -15,6 +15,10 @@ _SEMANTIC_LABELS = {
     "purchaseordernumber": ("采购订单", "po"),
     "supplier": ("供应商",),
     "unitofmeasure": ("单位",),
+    # "5200公司" / "公司代码 1000" phrasings: the generic label patterns only
+    # capture ASCII runs immediately before the label, so Chinese company
+    # names cannot false-positive.
+    "companycode": ("公司代码", "公司"),
 }
 
 

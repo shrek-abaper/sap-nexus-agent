@@ -72,6 +72,30 @@ curl --noproxy '*' -X POST http://127.0.0.1:8080/capabilities/MD.Material.Search
 - `SAP_NEXUS_MD_DSN` / `SAP_NEXUS_MD_DBNAME`（默认 `sap_nexus_dev`）：Python 导入器/Provider 连接。
 - `SAP_NEXUS_MD_TEST_DBNAME`（默认 `sap_nexus_test`）：集成测试库。
 
+## 日常维护（maintain CLI）
+
+不直接 UPDATE 表：每次编辑读取当前 active 快照 → 内存中应用变更 → 经 `import_snapshot` 发布**新的 full snapshot**（默认干跑，`--apply` 才发布）。校验、原子发布、幂等、回滚到上一快照的保证全部继承。
+
+```bash
+M="PYTHONPATH=agent .venv/bin/python -m sap_nexus_agent.master_data.maintain"
+
+$M list sapnexus:Material                 # 当前快照实体一览（状态/描述/属性/组织范围）
+$M show sapnexus:Material DEMOA1          # 单个实体详情（JSON）
+$M upsert sapnexus:Material DEMOX1 \
+    --name-zh "丁腈密封垫 3mm" \
+    --attr materialGroup=GASKET --attr sizeDimension=3mm --attr baseUnitOfMeasure=EA \
+    --org plant=1000 --apply              # 新增或更新（属性合并，非覆盖）
+$M deactivate sapnexus:Customer C10001 --apply   # 停用（候选中消失，get-by-key 仍可见状态）
+$M activate sapnexus:Customer C10001 --apply     # 恢复
+$M remove sapnexus:Supplier V90000 --apply       # 从下一快照移除
+$M export sapnexus:Material backup-materials.json  # 导出当前快照（回滚/审计输入）
+```
+
+- 编辑语义：`upsert` 合并属性/别名/组织范围（不丢未提及字段）；`--name-zh` 自动成为唯一 official 描述。
+- `--source-time` 记录来源提取时间；缺省如实记 unknown，不用导入时间冒充。
+- 非法输入（未声明属性、缺失 official 描述等）整批拒绝，不部分发布。
+- 回滚误操作：`export` 的文件可经 importer 重新导入，或用快照 status 翻转（见下节）。
+
 ## 快照语义与回滚
 
 - 仅支持 **full snapshot**；incremental 批次被明确拒绝。批次重复导入幂等（内容哈希去重）。

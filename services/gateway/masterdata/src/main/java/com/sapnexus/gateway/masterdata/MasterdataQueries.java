@@ -18,9 +18,20 @@ final class MasterdataQueries {
                     + " FROM md.v_entity_current"
                     + " WHERE object_type = ? AND source_system = ANY(?) AND client = ANY(?)";
 
+    // Visibility semantics: exclude only entities that HAVE extension rows
+    // for the field and none matches; entities with no extension rows for the
+    // field stay visible (an unimported extension is not unavailability).
     static final String CODES_BY_ORG_SCOPE =
-            "SELECT canonical_code FROM md.v_entity_org_scope_current"
-                    + " WHERE object_type = ? AND org_field = ? AND org_value = ?";
+            "SELECT canonical_code FROM md.v_entity_current"
+                    + " WHERE object_type = ? AND ("
+                    + "   canonical_code IN ("
+                    + "     SELECT canonical_code FROM md.v_entity_org_scope_current"
+                    + "     WHERE object_type = ? AND org_field = ? AND org_value = ?)"
+                    + "   OR NOT EXISTS ("
+                    + "     SELECT 1 FROM md.v_entity_org_scope_current o"
+                    + "     WHERE o.object_type = ? AND o.org_field = ?"
+                    + "       AND o.canonical_code = md.v_entity_current.canonical_code)"
+                    + " )";
 
     static final String DESCRIPTIONS =
             "SELECT canonical_code, language, description, is_official"

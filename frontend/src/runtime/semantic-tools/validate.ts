@@ -1,3 +1,5 @@
+import { existsSync, readFileSync } from "node:fs";
+import { resolve as resolvePath } from "node:path";
 import {
   DIAGNOSE_MATERIAL_SUPPLY,
   PROPOSE_REPLENISHMENT,
@@ -83,9 +85,44 @@ const REQUIRED_SLOTS: Record<SemanticToolName, string[]> = {
 /** Feature flag (spec case 28): with entity resolution enabled, a party
  * description in the utterance replaces the up-front party-code requirement;
  * the governed resolution layer finds and verifies the real code instead.
- * Organizational filters (companyCode) stay required. */
+ * Organizational filters (companyCode) stay required.
+ *
+ * Reads process env first, then the repo .env (Next dev does not reliably
+ * propagate .env into every server context; the Python CLI has the same
+ * fallback, keeping both sides consistent). */
 function entityResolutionEnabled(): boolean {
-  return (process.env.ENTITY_RESOLUTION_MODE ?? "off").trim().toLowerCase() === "on";
+  return entityResolutionFlag() === "on";
+}
+
+let cachedFlag: string | undefined;
+function entityResolutionFlag(): string {
+  if (cachedFlag !== undefined) return cachedFlag;
+  const direct = process.env.ENTITY_RESOLUTION_MODE;
+  if (direct !== undefined) {
+    cachedFlag = direct.trim().toLowerCase();
+    return cachedFlag;
+  }
+  cachedFlag = readFlagFromEnvFile();
+  return cachedFlag;
+}
+
+function readFlagFromEnvFile(): string {
+  try {
+    // next dev runs with CWD=frontend; the repo .env sits one level up.
+    const candidates = ["../.env", ".env"];
+    for (const candidate of candidates) {
+      const path = resolvePath(process.cwd(), candidate);
+      if (!existsSync(path)) continue;
+      const text = readFileSync(path, "utf8");
+      for (const line of text.split("\n")) {
+        const match = line.match(/^\s*ENTITY_RESOLUTION_MODE\s*=\s*(\S+)/);
+        if (match) return match[1].trim().toLowerCase();
+      }
+    }
+  } catch {
+    // fall through to off
+  }
+  return "off";
 }
 
 const RESOLVABLE_PARTY_SLOTS = new Set(["customerNumber", "vendor"]);

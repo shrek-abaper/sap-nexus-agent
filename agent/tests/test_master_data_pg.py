@@ -236,6 +236,24 @@ def test_truncation_never_claims_uniqueness(provider):
     assert len(result.candidates) == 1
 
 
+def test_org_filter_visibility_semantics(provider):
+    # Entities WITH extension rows are filtered by them; entities with NO
+    # extension rows for the field stay visible (unimported extension is not
+    # unavailability). DEMOC-style: C20010 has companyCode=2000, C10001 has
+    # 1000; a material without plant rows would pass any plant filter.
+    result = provider.search(
+        SearchRequest("md.customer.search", query="华远", org_filters={"companyCode": "2000"}), SCOPE
+    )
+    codes = {c.key.canonical_code for c in result.candidates}
+    assert "C20010" in codes            # matching row
+    assert "C10001" not in codes        # has rows, none matches 2000
+    result = provider.search(
+        SearchRequest("md.customer.search", query="华远", org_filters={"companyCode": "1000"}), SCOPE
+    )
+    codes = {c.key.canonical_code for c in result.candidates}
+    assert "C20010" not in codes and "C10001" in codes
+
+
 def test_org_filter_cannot_widen_trusted_scope(provider):
     narrow = TrustedScope(
         principal="plant-user",

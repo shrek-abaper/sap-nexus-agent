@@ -381,7 +381,7 @@ def test_execute_redaction_no_destination_in_response():
         assert "password" not in body_str.lower()
         assert "base_url" not in body_str
         assert "SAP_PASSWORD" not in body_str
-        assert "SAP_URL" not in body_str
+        assert "SAP_URL" not in body_str  # SAP_URL no longer exists; guard stays as a tripwire
         allowed = {"success", "purchaseOrders", "totalCount", "errorType", "messages", "traceId"}
         assert set(body.keys()) <= allowed
     finally:
