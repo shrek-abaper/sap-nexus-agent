@@ -31,6 +31,10 @@ describe("ontology analysis flag", () => {
     expect(handlers[ONTOLOGY_ANALYSIS_TOOL]).toBeUndefined();
     expect(Object.keys(handlers).sort()).toEqual([
       "diagnose_material_supply",
+      // Discovery tools are always registered (catalog is pure metadata;
+      // the directory degrades to an explicit unavailable response).
+      "list_capabilities",
+      "list_master_data",
       "propose_replenishment",
       "review_customer_exposure",
       "review_vendor_exposure",

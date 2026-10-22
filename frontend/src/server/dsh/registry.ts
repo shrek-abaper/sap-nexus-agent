@@ -1,9 +1,18 @@
 import "server-only";
 import {
   createDshRuntime,
+  masterDataToolSpec,
   type DshRuntime,
   type ToolHandler,
 } from "./runtime";
+import {
+  CAPABILITY_CATALOG_TOOL,
+  MASTER_DATA_DIRECTORY_TOOL,
+  createCapabilityCatalogHandler,
+  createMasterDataDirectoryHandler,
+  masterDataObjectTypes,
+  type DiscoveryRunner,
+} from "./discovery-handler";
 import { OpenAiCompatibleAdapter } from "./openai-compatible-adapter";
 import { executeSemanticTool } from "../../runtime/semantic-tools/execute-tool";
 import { PLACEHOLDER_PRINCIPAL } from "../../runtime/principal/types";
@@ -44,6 +53,7 @@ export function ontologyAnalysisEnabled(): boolean {
 
 export interface DshHandlerOptions {
   ontologyRunner?: OntologyAnalysisRunner;
+  discoveryRunner?: DiscoveryRunner;
 }
 
 // Tool handlers run the SAME governed server entry as the HTTP facade; the
@@ -71,6 +81,11 @@ export function buildDshHandlers(options: DshHandlerOptions = {}): Record<string
     [REVIEW_CUSTOMER_EXPOSURE]: handler(REVIEW_CUSTOMER_EXPOSURE),
     [REVIEW_VENDOR_EXPOSURE]: handler(REVIEW_VENDOR_EXPOSURE),
     [PROPOSE_REPLENISHMENT]: handler(PROPOSE_REPLENISHMENT),
+    // Discovery tools are always on: the catalog is pure registry metadata
+    // (works even when data services are down), and the directory degrades
+    // to an explicit unavailable message instead of a hallucinated answer.
+    [MASTER_DATA_DIRECTORY_TOOL]: createMasterDataDirectoryHandler(options.discoveryRunner),
+    [CAPABILITY_CATALOG_TOOL]: createCapabilityCatalogHandler(options.discoveryRunner),
   };
   if (ontologyAnalysisEnabled()) {
     handlers[ONTOLOGY_ANALYSIS_TOOL] = createOntologyAnalysisHandler(
@@ -83,11 +98,15 @@ export function buildDshHandlers(options: DshHandlerOptions = {}): Record<string
 export async function getDshRuntime(): Promise<DshRuntime> {
   if (!globalForDsh.__sapNexusDshRuntime) {
     const config = envModelConfig();
+    const objectTypes = masterDataObjectTypes();
     globalForDsh.__sapNexusDshRuntime = createDshRuntime({
       provider: PROVIDER,
       model: config.model,
       adapter: new OpenAiCompatibleAdapter(config),
       handlers: buildDshHandlers(),
+      toolSpecOverrides: objectTypes.length > 0
+        ? { [MASTER_DATA_DIRECTORY_TOOL]: masterDataToolSpec(objectTypes) }
+        : {},
     });
   }
   return globalForDsh.__sapNexusDshRuntime;

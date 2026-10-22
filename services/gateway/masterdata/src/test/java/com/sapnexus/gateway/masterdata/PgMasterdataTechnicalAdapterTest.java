@@ -166,6 +166,41 @@ class PgMasterdataTechnicalAdapterTest {
     }
 
     @Test
+    void browseWithoutQueryOrKeyListsActiveInScopeEntities() {
+        rows.on(MasterdataQueries.DESCRIPTIONS, List.of(
+                row("canonical_code", "DEMOA1", "language", "zh-CN",
+                        "description", "蓝色耐高温密封圈 Ø20", "is_official", true),
+                row("canonical_code", "DEMOA2", "language", "zh-CN",
+                        "description", "蓝色耐高温密封圈 Ø25", "is_official", true)));
+        rows.on(MasterdataQueries.ORG_SCOPES, List.of(
+                row("canonical_code", "DEMOA1", "org_field", "plant", "org_value", "1000")));
+
+        TechnicalExecutionResult result = adapter.execute(request(Map.of()));
+
+        assertThat(result.success()).isTrue();
+        List<Map<String, Object>> candidates =
+                (List<Map<String, Object>>) result.data().get("candidates");
+        // inactive DEMOC9 is excluded; browse lists codes in sorted order
+        assertThat(candidates).extracting(c -> c.get("canonicalCode"))
+                .containsExactly("DEMOA1", "DEMOA2");
+        assertThat(candidates.get(0).get("matchKind")).isEqualTo("browse");
+        assertThat(result.data().get("resultCompleteness")).isEqualTo("complete-result-set");
+        // no retrieval queries are issued in browse mode
+        assertThat(rows.executedSql).doesNotContain(MasterdataQueries.CODES_BY_SUBSTRING);
+        assertThat(rows.executedSql).doesNotContain(MasterdataQueries.CODES_BY_TRIGRAM);
+    }
+
+    @Test
+    void exactCodeMissDoesNotFallIntoBrowse() {
+        TechnicalExecutionResult result = adapter.execute(request(Map.of("entityKey", "NOPE")));
+
+        assertThat(result.success()).isTrue();
+        List<Map<String, Object>> candidates =
+                (List<Map<String, Object>>) result.data().get("candidates");
+        assertThat(candidates).isEmpty();
+    }
+
+    @Test
     void exactCodeWinsOverTextRetrieval() {
         TechnicalExecutionResult result = adapter.execute(request(Map.of("entityKey", "demoa1")));
 

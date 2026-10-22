@@ -18,8 +18,16 @@ import { createUserMessage } from "@deepseek-ai/dsh-llm";
 import type { JsonValue } from "../../shared/types/artifacts";
 import type { SemanticToolResponse } from "../../runtime/semantic-tools/types";
 import type { OntologyAnalysisToolResponse } from "./ontology-analysis-handler";
+import type {
+  CapabilityCatalogToolResponse,
+  MasterDataDirectoryToolResponse,
+} from "./discovery-handler";
 
-export type ToolResponse = SemanticToolResponse | OntologyAnalysisToolResponse;
+export type ToolResponse =
+  | SemanticToolResponse
+  | OntologyAnalysisToolResponse
+  | MasterDataDirectoryToolResponse
+  | CapabilityCatalogToolResponse;
 
 export const DEFAULT_DSH_PERSONA = [
   "你是 SAP Nexus 的 DeepSeek Harness 运行时，也是本工作台唯一的对话运行时。",
@@ -27,6 +35,8 @@ export const DEFAULT_DSH_PERSONA = [
   "禁止猜测任何库存、在途、金额、工厂或凭证数据；所有业务数值必须引用工具返回。",
   "当工具要求澄清（缺少物料/工厂/客户/供应商/公司代码等）时，用简体中文向用户追问缺失项。",
   "当用户只给出物料/客户/供应商的描述、名称或简称而没有编号时，必须直接调用对应工具：只把原话放进 utterance（有工厂/公司代码就一并带上），系统会从主数据检索真实候选并向用户展示候选卡片让用户选择；禁止先向用户反问编号，禁止编造编号，也禁止声称无法查询。",
+  "发现类问题必须路由到专用工具：用户问“有哪些/列出 物料/客户/供应商”等主数据清单时调用 list_master_data；问“你能做什么/有哪些能力/支持哪些查询”时调用 list_capabilities；禁止用 diagnose_material_supply 等业务工具回答这类问题。",
+  "当工具返回不可用、失败或要求澄清时，只能如实复述工具返回的状态与建议的下一步；禁止补充任何工具未返回的编号、名称、数值或“内置样例数据”。",
   "发起工具调用前，先用一两句简体中文说明你的查询计划（要回答什么、准备调用哪个工具、依据哪些参数）。",
   "涉及补货写入时，先依据工具返回的审批卡片向用户复述参数，然后明确告知用户必须点击审批卡片上的「批准」或「拒绝」按钮完成决定；不要让用户用文字回复批准/拒绝（聊天文字不会触发任何审批或 SAP 写入），在用户点击前不要声称已经创建。",
   "回答简洁、分点清晰，币种与单位随数值给出。",
@@ -56,6 +66,9 @@ export type CreateDshRuntimeOptions = {
   adapter: LlmAdapter;
   handlers: Record<string, ToolHandler>;
   persona?: string;
+  /** Startup-derived spec overrides (e.g. the list_master_data objectType
+   * enum parsed from the ontology rules), merged over TOOL_SPECS. */
+  toolSpecOverrides?: Record<string, ParameterSchemaSpec>;
 };
 
 export type DshStreamEvent =
@@ -163,7 +176,7 @@ class SessionTappingAdapter extends LlmAdapter {
 const TOOL_SPECS: Record<string, ParameterSchemaSpec> = {
   diagnose_material_supply: {
     utterance: { type: "string", required: true, description: "用户完整的自然语言问题（原样传入，不要改写）" },
-    material: { type: "string", description: "物料编号（如 DEMOA1）。没有编号时不要填写、也不要向用户反问编号：只传 utterance，系统会从主数据检索候选并让用户确认" },
+    material: { type: "string", description: "物料编号。没有编号时不要填写、也不要向用户反问编号：只传 utterance，系统会从主数据检索候选并让用户确认" },
     plant: { type: "string", description: "工厂编码，如 1000" },
   },
   review_customer_exposure: {
@@ -201,11 +214,30 @@ const TOOL_SPECS: Record<string, ParameterSchemaSpec> = {
       ],
       description: "问题类型（受控枚举）：库存+单位/订单按供应商汇总/按供应商过滤/下周到货/断供确定性/创建采购申请",
     },
-    material: { type: "string", description: "物料编号，如 DEMOA2" },
+    material: { type: "string", description: "物料编号" },
     plant: { type: "string", description: "工厂编码，如 1000" },
     vendor: { type: "string", description: "供应商编号" },
   },
+  list_master_data: masterDataToolSpec(),
+  list_capabilities: {},
 };
+
+/** list_master_data 的参数规约。objectType 枚举在运行时从
+ * ontology/entity-resolution.yaml 派生（registry.ts 在启动时注入）；
+ * 派生失败时退化为自由字符串。 */
+export function masterDataToolSpec(objectTypes?: string[]): ParameterSchemaSpec {
+  return {
+    objectType: {
+      type: "string",
+      required: true,
+      ...(objectTypes && objectTypes.length > 0 ? { enum: objectTypes } : {}),
+      description: "主数据对象类型（枚举值来自本体注册，如 sapnexus:Material 物料 / sapnexus:Customer 客户 / sapnexus:Supplier 供应商）",
+    },
+    query: { type: "string", description: "语义检索词（名称/别名/属性）；不填则列出授权范围内该类型的全部主数据" },
+    orgFilter: { type: "string", description: "组织范围过滤值（物料按工厂、客户/供应商按公司代码）" },
+    limit: { type: "number", description: "返回上限（1-50，默认 20）" },
+  };
+}
 
 export async function createDshRuntime(options: CreateDshRuntimeOptions): Promise<DshRuntime> {
   const ctx = new Context();
@@ -226,9 +258,13 @@ export async function createDshRuntime(options: CreateDshRuntimeOptions): Promis
   ctx.llm.registerAdapter([options.provider], options.adapter);
 
   const sessions = new Map<string, AgentSession>();
+  const toolSpecs: Record<string, ParameterSchemaSpec> = {
+    ...TOOL_SPECS,
+    ...(options.toolSpecOverrides ?? {}),
+  };
 
   for (const [name, handler] of Object.entries(options.handlers)) {
-    const spec = TOOL_SPECS[name];
+    const spec = toolSpecs[name];
     if (!spec) throw new Error(`No tool spec registered for ${name}`);
     ctx.tools.register(defineTool({
       name,
@@ -507,7 +543,9 @@ export async function createDshRuntime(options: CreateDshRuntimeOptions): Promis
 // server-generated narrative. JSON internals are intentionally omitted so the
 // model cannot confuse a null MRP elementQty with the fact value.
 export function toolResultToModelText(result: ToolResponse): string {
-  if ("kind" in result && result.kind === "ontology-analysis") {
+  // Discovery/ontology responses already carry a deterministic narrative
+  // with an explicit no-improvisation guard line; pass it through verbatim.
+  if ("kind" in result && result.kind !== undefined) {
     return result.narrative.summary;
   }
   return semanticToolModelText(result as SemanticToolResponse);
@@ -555,6 +593,10 @@ function toolDescription(name: string): string {
       return "补货建议：依据库存与目标需求量计算缺口，生成一个待人工审批的采购申请提案（不会直接写入）。";
     case "analyze_business_question":
       return "本体约束只读分析：返回库存/采购订单事实、注册算子分析结果与缺口说明（只读，不执行写入）。注意：本工具的事实数据始终来自离线样例（fixtures），不连接真实 SAP——SAP_NEXUS_LLM_LIVE 只把问题解释升级为模型解释，不切换数据源；需要真实 SAP 数据时改用 diagnose_material_supply / review_customer_exposure / review_vendor_exposure。模型只负责生成结构化草案，服务端保留全部校验与执行授权。";
+    case "list_master_data":
+      return "主数据清单：按对象类型列出或语义检索授权范围内的主数据（只读）。用户问“有哪些物料/客户/供应商”“列出主数据”时必须用本工具：objectType 选对应类型，不带 query 返回全量清单，带 query 做语义检索，orgFilter 可按工厂/公司代码收窄。结果来自主数据快照，禁止补充未返回的编号。";
+    case "list_capabilities":
+      return "能力目录：列出当前已注册的全部能力（域、只读/写入、说明、必需参数），来自能力注册中心快照。用户问“你能做什么/有哪些能力/支持哪些查询”时必须用本工具；禁止声称存在未列出的能力。";
     default:
       return name;
   }

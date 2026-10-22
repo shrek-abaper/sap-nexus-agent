@@ -142,7 +142,53 @@ def _main_impl(argv: list[str] | None = None) -> int:
         help="Continue one server-owned non-READ selection without parsing again",
     )
     parser.add_argument("--turn-id", help="Server-owned conversation turn identifier")
+    parser.add_argument(
+        "--list-master-data",
+        action="store_true",
+        help="List/browse master-data entities via the governed MD search capability (stdin: objectType/query/orgFilter/limit)",
+    )
+    parser.add_argument(
+        "--list-capabilities",
+        action="store_true",
+        help="Print the governed capability catalog as JSON",
+    )
     args = parser.parse_args(argv)
+
+    if args.list_master_data:
+        try:
+            payload = json.load(sys.stdin)
+            if not isinstance(payload, dict):
+                raise ValueError("payload must be an object")
+        except (json.JSONDecodeError, ValueError):
+            if args.json:
+                print(json.dumps({
+                    "status": "invalid",
+                    "objectType": "",
+                    "candidates": [],
+                    "message": "Invalid master-data directory payload.",
+                }))
+            return 2
+        from sap_nexus_agent.discovery import list_master_data
+
+        limit = payload.get("limit")
+        result = list_master_data(
+            object_type=str(payload.get("objectType") or ""),
+            gateway=GatewayClient(args.gateway_url),
+            query=payload.get("query") if isinstance(payload.get("query"), str) else None,
+            org_filter=payload.get("orgFilter") if isinstance(payload.get("orgFilter"), str) else None,
+            limit=int(limit) if isinstance(limit, (int, float)) else None,
+            repo_root=_resolve_repo_root(),
+        )
+        print(json.dumps(result, ensure_ascii=False))
+        return 0
+
+    if args.list_capabilities:
+        from sap_nexus_agent.discovery import list_capabilities
+
+        print(json.dumps(
+            list_capabilities(repo_root=_resolve_repo_root()), ensure_ascii=False
+        ))
+        return 0
 
     if args.resolve_read_turn:
         if not args.query:

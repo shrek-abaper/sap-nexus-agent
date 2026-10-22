@@ -27,6 +27,9 @@ Starts the local development services needed for manual Agent testing:
   - OData service: Python OData read-only microservice (:8081) from services/odata-service/
   - Frontend: Next.js dev server from frontend/ — DSH Chat at /chat (the root
     path redirects there); the legacy evidence Workbench remains at /workbench
+  - PostgreSQL: system service (master-data projection for entity resolution
+    and list_master_data). start.sh starts it if down (sudo -n) but NEVER
+    stops it — stop/restart leave PostgreSQL running.
 
 Usage:
   ./start.sh [start] [--dry-run]   Start all dev services (default)
@@ -49,8 +52,16 @@ Environment overrides:
   START_RUNTIME_DIR=runtime/dev-services
   SAP_NEXUS_ONTOLOGY_ANALYSIS_ENABLED=1   # register analyze_business_question DSH tool (also settable in .env)
   SAP_NEXUS_LLM_LIVE=1                    # paid model interpreter for ontology free-text + live LLM intent (also in .env)
+  PG_MASTERDATA_JDBC_URL=jdbc:postgresql://127.0.0.1:5432/sap_nexus_dev  # Gateway master-data store (in .env)
+  PG_MASTERDATA_USER / PG_MASTERDATA_PASSWORD                           # read-only role, in .env (see master-data/README.md)
+  SAP_NEXUS_MD_DBNAME=sap_nexus_dev        # dev database name for the readiness check
 
 Notes:
+  - PostgreSQL: if pg_isready fails, start.sh tries 'sudo -n service postgresql start'.
+    When sudo needs a password the launch CONTINUES without it (master-data search and
+    list_master_data then answer "unavailable" instead of failing). Start it yourself
+    with 'sudo service postgresql start', then './start.sh restart' so the Gateway
+    re-initialises its connection pool. First-time DB bootstrap: master-data/README.md.
   - Root .env is loaded via python-dotenv when present, but its contents are never printed.
   - The two SAP_NEXUS_* ontology flags are off when unset: the DSH tool stays unregistered
     and ontology questions use the offline fake interpreter. Set them in .env or the shell;
@@ -145,12 +156,55 @@ print_plan() {
   local python_cmd=$2
   cat <<PLAN
 Dry run: SAP Nexus Agent services would start with:
+  PostgreSQL : pg_isready; if down: sudo -n service postgresql start (never stopped by this script)
   OData svc  : cd services/odata-service && PYTHONPATH=. ODATA_SERVICE_PORT=$ODATA_SERVICE_PORT $python_cmd -c 'from odata_service.server import run; run(...)'
   Gateway    : cd services/gateway && JAVA_HOME=${JAVA_HOME:-} GRADLE_USER_HOME=$GRADLE_USER_HOME SERVER_PORT=$GATEWAY_PORT SAP_GATEWAY_ODATA_PROXY_URL=http://127.0.0.1:$ODATA_SERVICE_PORT $gradle_cmd --no-daemon --offline bootRun
   Frontend  : npm --prefix frontend run dev -- --hostname $FRONTEND_HOST --port $FRONTEND_PORT (DSH Chat at /chat)
   Agent      : SAP_NEXUS_GATEWAY_URL=${SAP_NEXUS_GATEWAY_URL:-http://127.0.0.1:$GATEWAY_PORT} SAP_NEXUS_INTENT_MODE=${SAP_NEXUS_INTENT_MODE:-hybrid}
   Logs       : $LOG_DIR
 PLAN
+}
+
+# PostgreSQL holds the master-data projection (entity resolution, MD.*.Search,
+# list_master_data). It is a system service: start it when down, but never
+# stop it — stop/restart leave it running, and it may be shared with other
+# work. Everything here is best-effort: the rest of the stack degrades to an
+# explicit "主数据检索服务暂时不可用" answer when PG stays down.
+ensure_postgres() {
+  if ! command -v pg_isready >/dev/null 2>&1; then
+    log "PostgreSQL client tools not found; skipping master-data store (install per master-data/README.md)."
+    return 0
+  fi
+  if pg_isready -q -t 2; then
+    log "PostgreSQL is already accepting connections."
+  else
+    log "PostgreSQL is down; trying 'sudo -n service postgresql start'."
+    if sudo -n service postgresql start >/dev/null 2>&1; then
+      local tries=0
+      until pg_isready -q -t 2; do
+        tries=$((tries + 1))
+        if [[ "$tries" -ge 15 ]]; then
+          break
+        fi
+        sleep 1
+      done
+    fi
+    if pg_isready -q -t 2; then
+      log "PostgreSQL started."
+    else
+      log "WARN: PostgreSQL is not running (sudo needs a password, or the service failed to come up)."
+      log "      Master-data search / list_master_data will answer 'unavailable'."
+      log "      Fix: sudo service postgresql start, then './start.sh restart'."
+      return 0
+    fi
+  fi
+  # Best-effort dev DB check: missing database/role is a bootstrap issue, not
+  # a launch blocker — point at the README instead of auto-creating with sudo.
+  local dbname=${SAP_NEXUS_MD_DBNAME:-sap_nexus_dev}
+  if ! psql -d "$dbname" -c 'select 1' >/dev/null 2>&1; then
+    log "WARN: database '$dbname' is not reachable as $USER."
+    log "      First-time bootstrap (createuser/createdb/migrations/fixtures): master-data/README.md."
+  fi
 }
 
 start_service() {
@@ -193,6 +247,9 @@ stop_all() {
       rm -f "$pid_file"
     done
   fi
+
+  # PostgreSQL is intentionally NOT stopped here: it is a system service that
+  # may be shared with other work; ensure_postgres only ever starts it.
 
   local port pid
   for port in "$FRONTEND_PORT" "$GATEWAY_PORT" "$ODATA_SERVICE_PORT"; do
@@ -276,6 +333,10 @@ if [[ -f "$ROOT_DIR/.env" ]]; then
 else
   log "Root .env not found. Gateway may start with degraded SAP connectivity."
 fi
+
+# Master-data store before the Gateway, so the PG_MASTERDATA_READ pool finds a
+# reachable database on first use. Best-effort: the launch continues without it.
+ensure_postgres
 
 if [[ -d "${JAVA_HOME:-}" ]]; then
   export JAVA_HOME

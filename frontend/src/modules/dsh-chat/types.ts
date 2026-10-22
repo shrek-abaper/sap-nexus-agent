@@ -77,6 +77,43 @@ export type DshEntityChoiceSet = {
   }[];
 };
 
+// Client-safe mirrors of the server discovery tool responses (no server imports).
+export type DshMasterDataDirectoryResult = {
+  kind: "master-data-directory";
+  status: string;
+  objectType: string;
+  candidates: {
+    canonicalCode: string;
+    displayName: string;
+    matchKind: string;
+    status: string;
+    distinguishing: Record<string, string>;
+    orgScopes: { field: string; value: string }[];
+  }[];
+  snapshotId?: string;
+  resultCompleteness?: string;
+  sourceExtractedAt?: string | null;
+  narrative?: { summary: string; limitations: string[] };
+  error?: { errorType: string; message: string };
+};
+
+export type DshCapabilityCatalogResult = {
+  kind: "capability-catalog";
+  status: string;
+  capabilities: {
+    capabilityId: string;
+    name: string;
+    description: string;
+    domain: string;
+    sideEffect: string;
+    requiresApproval: boolean;
+    requiredInputs: string[];
+  }[];
+  snapshotId?: string;
+  narrative?: { summary: string; limitations: string[] };
+  error?: { errorType: string; message: string };
+};
+
 // Client-safe mirror of the server OntologyAnalysisToolResponse (no server imports).
 export type DshOntologyField = { value: string; semanticType: string };
 export type DshOntologyToolResult = {
@@ -108,7 +145,8 @@ export type DshToolCall = {
   name: string;
   args: Record<string, unknown>;
   status: "running" | "completed" | "failed" | "awaiting_approval";
-  result?: DshSemanticToolResult | DshOntologyToolResult;
+  result?: DshSemanticToolResult | DshOntologyToolResult
+    | DshMasterDataDirectoryResult | DshCapabilityCatalogResult;
   error?: string;
 };
 

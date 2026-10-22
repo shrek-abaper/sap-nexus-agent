@@ -49,7 +49,11 @@ export function isOntologyResult(result: unknown): result is DshOntologyToolResu
 }
 
 export function isSemanticToolResult(result: unknown): result is DshSemanticToolResult {
-  return typeof result === "object" && result !== null && !isOntologyResult(result);
+  return (
+    typeof result === "object" &&
+    result !== null &&
+    (result as { kind?: unknown }).kind === undefined
+  );
 }
 
 function factLine(fact: DshOntologyFact): string {

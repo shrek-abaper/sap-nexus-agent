@@ -4,6 +4,12 @@ import { useEffect, useState } from "react";
 import type { DshEntityChoiceSet, DshToolCall } from "./types";
 import { isOntologyResult, isSemanticToolResult, ontologySections } from "./ontology-card";
 import {
+  catalogSections,
+  directorySections,
+  isCapabilityCatalogResult,
+  isMasterDataDirectoryResult,
+} from "./directory-card";
+import {
   approvalExecutionFromEvent,
   isRejectionEvent,
   type ApprovalExecution,
@@ -17,6 +23,8 @@ const TOOL_LABELS: Record<string, string> = {
   review_vendor_exposure: "供应商敞口",
   propose_replenishment: "补货建议（写入）",
   analyze_business_question: "本体只读分析",
+  list_master_data: "主数据清单",
+  list_capabilities: "能力目录",
 };
 
 const EVIDENCE_LABELS: Record<string, string> = {
@@ -54,6 +62,10 @@ const ARG_LABELS: Record<string, string> = {
   targetDate: "目标日期",
   purchasingGroup: "采购组",
   questionType: "问题类型",
+  objectType: "对象类型",
+  query: "检索词",
+  orgFilter: "组织范围",
+  limit: "上限",
 };
 
 export function ToolCallCard({
@@ -224,6 +236,62 @@ export function ToolCallCard({
                   </ul>
                 </div>
               ) : null}
+              {call.result.narrative?.summary ? (
+                <div className="dsh-tool__narrative">{call.result.narrative.summary}</div>
+              ) : null}
+              <details className="dsh-tool__raw">
+                <summary>原始结果（完整 JSON）</summary>
+                <pre>{JSON.stringify(call.result, null, 2)}</pre>
+              </details>
+            </div>
+          );
+        })()
+      ) : null}
+
+      {call.result && isMasterDataDirectoryResult(call.result) ? (
+        (() => {
+          const sections = directorySections(call.result);
+          return (
+            <div className="dsh-tool__ontology" data-testid="directory-card">
+              <div className="dsh-tool__section-title">{sections.meta}</div>
+              {sections.entries.length > 0 ? (
+                <ol className="dsh-tool__section-list">
+                  {sections.entries.map((line, index) => <li key={index}>{line}</li>)}
+                </ol>
+              ) : (
+                <div className="dsh-tool__narrative">（当前授权范围内没有匹配的主数据）</div>
+              )}
+              {sections.truncated ? (
+                <ul className="dsh-tool__limitations">
+                  <li>结果已按上限截断；可补充检索词或组织范围缩小范围。</li>
+                </ul>
+              ) : null}
+              {call.result.narrative?.summary ? (
+                <div className="dsh-tool__narrative">{call.result.narrative.summary}</div>
+              ) : null}
+              <details className="dsh-tool__raw">
+                <summary>原始结果（完整 JSON）</summary>
+                <pre>{JSON.stringify(call.result, null, 2)}</pre>
+              </details>
+            </div>
+          );
+        })()
+      ) : null}
+
+      {call.result && isCapabilityCatalogResult(call.result) ? (
+        (() => {
+          const sections = catalogSections(call.result);
+          return (
+            <div className="dsh-tool__ontology" data-testid="catalog-card">
+              <div className="dsh-tool__section-title">{sections.meta}</div>
+              <ul className="dsh-tool__section-list">
+                {sections.entries.map((entry) => (
+                  <li key={entry.capabilityId}>
+                    <span className="dsh-chip">{entry.capabilityId}</span>{" "}
+                    {entry.label} — {entry.description}
+                  </li>
+                ))}
+              </ul>
               {call.result.narrative?.summary ? (
                 <div className="dsh-tool__narrative">{call.result.narrative.summary}</div>
               ) : null}
@@ -432,7 +500,7 @@ export function ToolCallCard({
 function summaryFor(call: DshToolCall): string {
   if (call.error) return call.error;
   const parts: string[] = [];
-  for (const key of ["material", "customerNumber", "customer", "vendor", "plant", "companyCode"]) {
+  for (const key of ["material", "customerNumber", "customer", "vendor", "plant", "companyCode", "objectType", "query"]) {
     const value = call.args?.[key];
     if (typeof value === "string" && value) parts.push(value);
     if (parts.length >= 2) break;

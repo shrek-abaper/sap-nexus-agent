@@ -44,6 +44,7 @@ public class PgMasterdataTechnicalAdapter implements TechnicalAdapter {
     private static final String MATCH_APPROVED_ALIAS = "approved-alias";
     private static final String MATCH_SUBSTRING = "substring";
     private static final String MATCH_TRIGRAM = "trigram";
+    private static final String MATCH_BROWSE = "browse";
     private static final String COMPLETE = "complete-result-set";
     private static final String TRUNCATED = "partial-truncated";
 
@@ -178,6 +179,13 @@ public class PgMasterdataTechnicalAdapter implements TechnicalAdapter {
                     }
                 }
             }
+        }
+
+        // Browse mode: neither a key nor a query lists every in-scope entity
+        // (still filtered to active + org-visible below), ordered by code.
+        if ((entityKey == null || entityKey.isBlank()) && (query == null || query.isBlank())) {
+            entities.keySet().stream().sorted().forEach(code ->
+                    matches.put(code, new MatchInfo(MATCH_BROWSE, null)));
         }
 
         // Org narrowing: trusted-scope org restrictions apply first; a request
